@@ -1,0 +1,553 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "./themes.css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0.008 326);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0.008 326);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0.008 326);
+    --primary: oklch(0.52 0.105 223.128);
+    --primary-foreground: oklch(0.984 0.019 200.873);
+    --secondary: oklch(0.967 0.001 286.375);
+    --secondary-foreground: oklch(0.21 0.006 285.885);
+    --muted: oklch(0.96 0.003 325.6);
+    /* Secondary text carries real content here — emails, dates, counts, units —
+       so it sits a step darker than stock shadcn: 4.6:1 on a card was not
+       enough once it lands on a tinted one. */
+    --muted-foreground: oklch(0.5 0.034 322.5);
+    --accent: oklch(0.52 0.105 223.128);
+    --accent-foreground: oklch(0.984 0.019 200.873);
+    /* Deep enough to clear 4.5:1 as badge text on its own 10% tint. */
+    --destructive: oklch(0.48 0.21 27.325);
+    --border: oklch(0.922 0.005 325.62);
+    --input: oklch(0.922 0.005 325.62);
+    --ring: oklch(0.711 0.019 323.02);
+    --chart-1: oklch(0.828 0.111 230.318);
+    --chart-2: oklch(0.685 0.169 237.323);
+    --chart-3: oklch(0.588 0.158 241.966);
+    --chart-4: oklch(0.5 0.134 242.749);
+    --chart-5: oklch(0.443 0.11 240.79);
+    --radius: 0.45rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0.008 326);
+    --sidebar-primary: oklch(0.609 0.126 221.723);
+    --sidebar-primary-foreground: oklch(0.984 0.019 200.873);
+    --sidebar-accent: oklch(0.96 0.003 325.6);
+    --sidebar-accent-foreground: oklch(0.212 0.019 322.12);
+    --sidebar-border: oklch(0.922 0.005 325.62);
+    --sidebar-ring: oklch(0.711 0.019 323.02);
+}
+
+.dark {
+    --background: oklch(0.145 0.008 326);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.212 0.019 322.12);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.212 0.019 322.12);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.45 0.085 224.283);
+    --primary-foreground: oklch(0.984 0.019 200.873);
+    --secondary: oklch(0.274 0.006 286.033);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.263 0.024 320.12);
+    --muted-foreground: oklch(0.711 0.019 323.02);
+    --accent: oklch(0.45 0.085 224.283);
+    --accent-foreground: oklch(0.984 0.019 200.873);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.542 0.034 322.5);
+    --chart-1: oklch(0.828 0.111 230.318);
+    --chart-2: oklch(0.685 0.169 237.323);
+    --chart-3: oklch(0.588 0.158 241.966);
+    --chart-4: oklch(0.5 0.134 242.749);
+    --chart-5: oklch(0.443 0.11 240.79);
+    --sidebar: oklch(0.212 0.019 322.12);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.715 0.143 215.221);
+    --sidebar-primary-foreground: oklch(0.302 0.056 229.695);
+    --sidebar-accent: oklch(0.263 0.024 320.12);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.542 0.034 322.5);
+}
+
+/* ---------- Interaction surfaces ---------- */
+/* Hover and selected own their own tokens rather than borrowing --accent: every
+   palette here ships --accent as the full brand colour, which is far too loud
+   for a hover and forces near-white ink that breaks the moment a component
+   repaints the background under it. These are mixed from --foreground instead,
+   so one pair stays legible on every surface, in every palette, in both themes.
+   The block further down aliases --accent onto them so stock shadcn components
+   inherit the same hover without each one overriding the pair by hand. */
+
+:root {
+    /* The one hover tint in the product. Mixed from --foreground so it lands on
+       the same side of every surface it can cover — card, popover, sidebar,
+       table band — and so full-strength --foreground stays readable on top of
+       it. Kept light enough that a dense table row does not read as selected:
+       selected is --surface-selected plus the edge marker below. */
+    --surface-hover: color-mix(in oklab, var(--foreground) 10%, transparent);
+    --surface-hover-foreground: var(--foreground);
+
+    /* A table row is a big target, so the same tint that reads as a light touch
+       on a menu item reads as a slab across a full-width row. Rows get their own
+       step, about half as strong, which still tracks the pointer without
+       flattening the type on top of it. */
+    --surface-row-hover: color-mix(in oklab, var(--foreground) 5%, transparent);
+    --surface-selected: color-mix(in oklab, var(--primary) 14%, transparent);
+
+    /* A pane that sits *behind* the content it navigates: a message list beside
+       a conversation, a folder rail beside a reading pane. Opaque, and only a
+       breath off --card — enough that the eye reads two planes and knows which
+       one it is reading, not enough to look like a second colour. Anything that
+       has to stand out on it (an unread row) goes back up to --card. */
+    --surface-sunken: color-mix(in oklab, var(--foreground) 3%, var(--card));
+
+    /* Table headers stick to the top of a scrolling list, so their tint has to
+       be opaque: a translucent one lets the rows beneath show through it. The
+       band carries the separation on its own, which is why the header row needs
+       no rule under it. */
+    --surface-head: color-mix(in oklab, var(--muted) 60%, var(--border));
+
+    /* The scrim behind a modal. A flat dark grey and no blur on purpose: a
+       dialog here is nearly always opened off a list, and blurring that list
+       destroys the context the person opened the dialog to act on. 60% is
+       enough to push the page back without hiding what is on it. */
+    --surface-overlay: color-mix(in oklab, oklch(0.24 0.012 322) 60%, transparent);
+
+    /* Light painted accents. Full-strength --primary is reserved for actions,
+       the selected edge marker, and focus — never for decoration. */
+    --primary-tint: var(--primary);
+    --primary-surface: color-mix(in oklab, var(--primary) 10%, transparent);
+}
+
+/* In dark mode --primary is itself dark, so a primary tint barely shifts
+   luminance against a dark surface (measured 1.23:1 even at 38%). Selected
+   falls back to a foreground tint there, and the primary edge marker below
+   carries the meaning instead. */
+/* This preset makes dark-mode --primary *darker* than its light-mode value, so
+   it cannot tint a dark surface or sit on one as text. --chart-1 is the light
+   end of the same accent ramp and is identical in both themes, so dark mode
+   draws its accents from there instead. */
+:root.dark {
+    /* Dark surfaces need a touch more of the tint to shift the same amount. */
+    --surface-hover: color-mix(in oklab, var(--foreground) 14%, transparent);
+    --surface-row-hover: color-mix(in oklab, var(--foreground) 8%, transparent);
+    --surface-selected: color-mix(in oklab, var(--chart-1) 20%, transparent);
+    /* Dark --muted is lighter than --card, so the same mix would read as a
+       bright stripe; it takes less of it to separate the band from the rows. */
+    --surface-head: color-mix(in oklab, var(--muted) 60%, var(--card));
+
+    /* Dark mode layers the other way round: the page is darker than the card,
+       so a recessed pane leans towards the page rather than towards the ink. */
+    --surface-sunken: color-mix(in oklab, var(--background) 55%, var(--card));
+
+    /* A dark-mode dialog sits on a surface barely lighter than the page, so
+       the scrim is what separates the two: the grey it mixes from goes almost
+       to black rather than the mix going denser than the 60% used in light. */
+    --surface-overlay: color-mix(in oklab, oklch(0.07 0.012 322) 60%, transparent);
+
+    --primary-tint: var(--chart-1);
+    --primary-surface: color-mix(in oklab, var(--chart-1) 14%, transparent);
+}
+
+/* Every interactive surface in the product hovers the same way: this tint plus
+   full-strength ink. shadcn's own components reach for --accent / --sidebar-accent
+   for that state, and stock --accent here is the full brand colour paired with
+   near-white ink — which goes unreadable the moment anything repaints the
+   background (the menu popups do, to stay translucent). Pointing both pairs at
+   the hover tokens fixes every component that uses them at once, instead of
+   leaving each one to override the pair by hand.
+
+   themes.css sets these under `:root[data-accent="…"]` / `:root[data-base="…"]`,
+   so an override has to match that specificity and come later — hence the
+   attribute selectors alongside the bare ones. The dark variants are listed too
+   because `:root[data-accent="…"].dark` outranks a single-attribute selector. */
+
+:root,
+:root.dark,
+:root[data-accent],
+:root[data-accent].dark {
+    --accent: var(--surface-hover);
+    --accent-foreground: var(--surface-hover-foreground);
+}
+
+:root,
+:root.dark,
+:root[data-base],
+:root[data-base].dark {
+    --sidebar-accent: var(--surface-hover);
+    --sidebar-accent-foreground: var(--sidebar-foreground);
+}
+
+/* ---------- Top navigation (inverted brand bar) ---------- */
+/* The global header flips the page relationship: the brand colour becomes the
+   surface and --primary-foreground becomes the ink. Every preset already ships
+   that pair with guaranteed contrast in both themes, so the bar inverts safely
+   no matter which palette is active. The selected tab inverts a second time —
+   a solid --primary-foreground pill with --primary text — which reads as the
+   single lightest shape on the bar instead of a faint tint. */
+
+:root {
+    --nav: var(--primary);
+    --nav-foreground: var(--primary-foreground);
+    /* Decorative marks only (the account chevron). Tab labels use full ink —
+       see the note in provider-header.tsx. */
+    --nav-muted-foreground: color-mix(in oklab, var(--primary-foreground) 80%, var(--primary));
+    --nav-border: color-mix(in oklab, var(--primary-foreground) 18%, transparent);
+    --nav-hover: color-mix(in oklab, var(--primary-foreground) 14%, transparent);
+    /* The count pill keeps the bar's own ink, so the fill has to stay well
+       darker than that ink: lightening it is what breaks the pair. */
+    --nav-subtle: color-mix(in oklab, var(--primary-foreground) 13%, transparent);
+    --nav-active: var(--primary-foreground);
+    --nav-active-foreground: var(--primary);
+}
+
+/* ---------- Video stage (a fixed dark canvas) ---------- */
+/* The call stage stays dark in both themes and in every preset. A light canvas
+   fights the picture, and a canvas mixed from --primary — which is what the
+   stage borrowed before these tokens existed — tints the video with the brand
+   hue. The chrome around the stage carries the theme instead.
+   Measured against --stage: --stage-foreground 15.9:1, --stage-muted-foreground
+   8.7:1, and --stage-foreground over the subtle and hover fills 5.7:1 and
+   5.2:1. Muted ink on those fills is only 3.1:1, so it is not a pair to use. */
+
+:root {
+    --stage: oklch(0.22 0.01 285);
+    --stage-foreground: oklch(0.97 0 0);
+    --stage-muted-foreground: oklch(0.78 0.005 285);
+    --stage-border: color-mix(in oklab, var(--stage-foreground) 18%, transparent);
+    --stage-hover: color-mix(in oklab, var(--stage-foreground) 14%, transparent);
+    --stage-subtle: color-mix(in oklab, var(--stage-foreground) 12%, transparent);
+    /* The pinned/active control inverts, as the nav's selected tab does. */
+    --stage-active: var(--stage-foreground);
+    --stage-active-foreground: var(--stage);
+}
+
+/* ---------- Status colors ---------- */
+/* Clinical screens need more than --destructive: availability, eligibility and
+   workflow states read as success / warning / info. Each tone is a text colour
+   plus a painted surface mixed from it, so badges stay legible in both themes.
+   Dark mode lifts lightness because these sit on dark surfaces as text. */
+
+:root {
+    /* Each of these is read as text on a tint mixed from itself, which is the
+       hardest case: the lightness here is what makes that pair clear AA. */
+    --success: oklch(0.48 0.12 152);
+    --warning: oklch(0.48 0.12 62);
+    --info: oklch(0.48 0.13 250);
+
+    --success-surface: color-mix(in oklab, var(--success) 12%, transparent);
+    --warning-surface: color-mix(in oklab, var(--warning) 14%, transparent);
+    --info-surface: color-mix(in oklab, var(--info) 12%, transparent);
+}
+
+:root.dark {
+    --success: oklch(0.78 0.13 152);
+    --warning: oklch(0.8 0.13 75);
+    --info: oklch(0.77 0.1 250);
+
+    --success-surface: color-mix(in oklab, var(--success) 18%, transparent);
+    --warning-surface: color-mix(in oklab, var(--warning) 18%, transparent);
+    --info-surface: color-mix(in oklab, var(--info) 18%, transparent);
+}
+
+/* ---------- Contrast overrides on the generated palettes ---------- */
+/* themes.css sets these under `:root[data-base="…"]`, which outranks a plain
+   `:root` rule, so an override has to match that specificity — `[data-base]`
+   does, and comes later in the cascade. Two pairs in the stock palettes fall
+   under 4.5:1 in this product: secondary text, which carries real content here
+   (emails, dates, units), and destructive as badge text on its own 10% tint. */
+
+:root[data-base] {
+    --muted-foreground: oklch(0.51 0.01 300);
+    --destructive: oklch(0.48 0.21 27.325);
+}
+
+/* Dark mode clears AA on everything except this one: the destructive ink on its
+   own 20% tint lands at 4.35:1. The dark palettes use `.dark` on top of the
+   attribute, so the override has to carry it too. */
+:root[data-base].dark {
+    --destructive: oklch(0.75 0.17 22.216);
+}
+
+/* ---------- Category colors ---------- */
+/* Care programs are a category, not a status: nothing about "MAT" is good or
+   bad, so they must not borrow success/warning/destructive. --chart-1..5 is a
+   single-hue ramp of the accent, which cannot tell five programs apart either.
+   These five hues are evenly spaced and used only as a soft tint behind their
+   own text, so a row of them reads as a set rather than five alarms. */
+
+:root {
+    --category-1: oklch(0.52 0.11 220);
+    --category-2: oklch(0.52 0.12 285);
+    --category-3: oklch(0.53 0.12 62);
+    --category-4: oklch(0.54 0.14 350);
+    --category-5: oklch(0.51 0.11 155);
+
+    --category-1-surface: color-mix(in oklab, var(--category-1) 12%, transparent);
+    --category-2-surface: color-mix(in oklab, var(--category-2) 12%, transparent);
+    --category-3-surface: color-mix(in oklab, var(--category-3) 12%, transparent);
+    --category-4-surface: color-mix(in oklab, var(--category-4) 12%, transparent);
+    --category-5-surface: color-mix(in oklab, var(--category-5) 12%, transparent);
+}
+
+:root.dark {
+    --category-1: oklch(0.79 0.1 220);
+    --category-2: oklch(0.79 0.11 285);
+    --category-3: oklch(0.81 0.11 68);
+    --category-4: oklch(0.8 0.12 350);
+    --category-5: oklch(0.79 0.1 155);
+
+    --category-1-surface: color-mix(in oklab, var(--category-1) 18%, transparent);
+    --category-2-surface: color-mix(in oklab, var(--category-2) 18%, transparent);
+    --category-3-surface: color-mix(in oklab, var(--category-3) 18%, transparent);
+    --category-4-surface: color-mix(in oklab, var(--category-4) 18%, transparent);
+    --category-5-surface: color-mix(in oklab, var(--category-5) 18%, transparent);
+}
+
+/* ---------- Care surfaces (patient portal) ---------- */
+/* The patient portal is read by people arriving for therapy, often anxious, so
+   its canvas is a warm paper tone instead of the cool grey the clinical screens
+   work on. Only the canvas is warm: cards stay --card and every action is still
+   --primary, so the portal carries the same brand as the provider side. The
+   progress rail is a whisper of the brand hue mixed into the card, which keeps
+   it tracking whichever accent preset is active. */
+
+:root {
+    --care-canvas: oklch(0.982 0.013 80);
+    --care-rail: color-mix(in oklab, var(--primary) 7%, var(--card));
+    --care-rail-border: color-mix(in oklab, var(--primary) 18%, var(--card));
+    --care-callout: color-mix(in oklab, var(--primary) 5%, var(--card));
+}
+
+:root.dark {
+    --care-canvas: oklch(0.18 0.012 60);
+    --care-rail: color-mix(in oklab, var(--chart-1) 8%, var(--card));
+    --care-rail-border: color-mix(in oklab, var(--chart-1) 20%, var(--card));
+    --care-callout: color-mix(in oklab, var(--chart-1) 6%, var(--card));
+}
+
+@theme inline {
+    --color-care-canvas: var(--care-canvas);
+    --color-care-rail: var(--care-rail);
+    --color-care-rail-border: var(--care-rail-border);
+    --color-care-callout: var(--care-callout);
+}
+
+@theme inline {
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+    --color-info: var(--info);
+    --color-success-surface: var(--success-surface);
+    --color-warning-surface: var(--warning-surface);
+    --color-info-surface: var(--info-surface);
+    --color-category-1: var(--category-1);
+    --color-category-2: var(--category-2);
+    --color-category-3: var(--category-3);
+    --color-category-4: var(--category-4);
+    --color-category-5: var(--category-5);
+    --color-category-1-surface: var(--category-1-surface);
+    --color-category-2-surface: var(--category-2-surface);
+    --color-category-3-surface: var(--category-3-surface);
+    --color-category-4-surface: var(--category-4-surface);
+    --color-category-5-surface: var(--category-5-surface);
+}
+
+/* ---------- Icon stroke weight ---------- */
+/* Hugeicons ships stroke-width as a presentation attribute on each path; CSS
+   outranks that, so one variable re-weights every icon in the product. */
+
+:root { --icon-stroke-width: 1.5; }
+:root[data-icon-stroke="light"] { --icon-stroke-width: 1; }
+:root[data-icon-stroke="regular"] { --icon-stroke-width: 1.5; }
+:root[data-icon-stroke="bold"] { --icon-stroke-width: 2; }
+
+svg path[stroke="currentColor"] {
+    stroke-width: var(--icon-stroke-width);
+}
+
+/* ---------- Typography themes ---------- */
+/* Each font is loaded in app/layout.tsx and exposes its own --font-* variable. */
+
+:root {
+    --font-body: var(--font-inter);
+    --font-display: var(--font-body);
+}
+
+:root[data-font="inter"] { --font-body: var(--font-inter); }
+:root[data-font="roboto"] { --font-body: var(--font-roboto); }
+:root[data-font="noto-sans"] { --font-body: var(--font-noto-sans); }
+:root[data-font="ibm-plex-sans"] { --font-body: var(--font-ibm-plex-sans); }
+:root[data-font="source-sans-3"] { --font-body: var(--font-source-sans-3); }
+:root[data-font="public-sans"] { --font-body: var(--font-public-sans); }
+:root[data-font="dm-sans"] { --font-body: var(--font-dm-sans); }
+:root[data-font="figtree"] { --font-body: var(--font-figtree); }
+:root[data-font="manrope"] { --font-body: var(--font-manrope); }
+:root[data-font="geist"] { --font-body: var(--font-geist); }
+
+:root[data-heading="inherit"] { --font-display: var(--font-body); }
+:root[data-heading="inter"] { --font-display: var(--font-inter); }
+:root[data-heading="roboto"] { --font-display: var(--font-roboto); }
+:root[data-heading="noto-sans"] { --font-display: var(--font-noto-sans); }
+:root[data-heading="ibm-plex-sans"] { --font-display: var(--font-ibm-plex-sans); }
+:root[data-heading="source-sans-3"] { --font-display: var(--font-source-sans-3); }
+:root[data-heading="public-sans"] { --font-display: var(--font-public-sans); }
+:root[data-heading="dm-sans"] { --font-display: var(--font-dm-sans); }
+:root[data-heading="figtree"] { --font-display: var(--font-figtree); }
+:root[data-heading="manrope"] { --font-display: var(--font-manrope); }
+:root[data-heading="geist"] { --font-display: var(--font-geist); }
+
+@theme inline {
+    --color-nav: var(--nav);
+    --color-nav-foreground: var(--nav-foreground);
+    --color-nav-muted-foreground: var(--nav-muted-foreground);
+    --color-nav-border: var(--nav-border);
+    --color-nav-hover: var(--nav-hover);
+    --color-nav-subtle: var(--nav-subtle);
+    --color-nav-active: var(--nav-active);
+    --color-nav-active-foreground: var(--nav-active-foreground);
+    --color-stage: var(--stage);
+    --color-stage-foreground: var(--stage-foreground);
+    --color-stage-muted-foreground: var(--stage-muted-foreground);
+    --color-stage-border: var(--stage-border);
+    --color-stage-hover: var(--stage-hover);
+    --color-stage-subtle: var(--stage-subtle);
+    --color-stage-active: var(--stage-active);
+    --color-stage-active-foreground: var(--stage-active-foreground);
+    --color-surface-hover: var(--surface-hover);
+    --color-surface-row-hover: var(--surface-row-hover);
+    --color-surface-hover-foreground: var(--surface-hover-foreground);
+    --color-surface-selected: var(--surface-selected);
+    --color-surface-head: var(--surface-head);
+    --color-surface-sunken: var(--surface-sunken);
+    --color-surface-overlay: var(--surface-overlay);
+    --color-primary-tint: var(--primary-tint);
+    --color-primary-surface: var(--primary-surface);
+    --font-sans: var(--font-body);
+    --font-heading: var(--font-display);
+    --font-serif: var(--font-roboto-slab);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+  /* Baseline keyboard focus for plain links and buttons. shadcn components set
+     their own outline-none + ring in the utilities layer, so this does not
+     double up on them. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    }
+}
+
+@layer components {
+  /* Selected state never relies on the background tint alone: a solid primary
+     edge keeps it readable in both themes and for low-vision users. */
+  .selected-marker {
+    box-shadow: inset 2px 0 0 0 var(--primary);
+    }
+}
+/* ---------- Prototype hotspots ---------- */
+/* The click-anywhere cue that shows a client what opens a screen or a modal.
+   It keeps its own colour instead of borrowing --primary: the point is to read
+   as review scaffolding sitting above the product, not as one more accent the
+   theme might already be using for a selected row. Muted well below a UI blue
+   on purpose — it has to be findable at a glance and forgettable a second
+   later, not the loudest thing on the screen. */
+:root {
+    --hotspot: oklch(0.58 0.09 250);
+}
+
+.dark {
+    --hotspot: oklch(0.75 0.07 250);
+}
+
+@layer components {
+  .hotspot-layer {
+    position: fixed;
+    inset: 0;
+    /* Above dialogs, sheets and the review layer — a hotspot drawn under the
+       thing it describes tells the client nothing. */
+    z-index: 2147483000;
+    pointer-events: none;
+    }
+  /* The Figma cue: a tinted box, no outline, that appears on every hotspot
+     at once and fades. No sweep and no ripple — anything that travels across
+     the screen reads as a loading shimmer rather than "you can click here". */
+  .hotspot-mark {
+    position: absolute;
+    background: color-mix(in oklab, var(--hotspot) 16%, transparent);
+    opacity: 0;
+    animation: hotspot-flash 0.7s ease-out both;
+    }
+  @keyframes hotspot-flash {
+    0% { opacity: 0; }
+    12% { opacity: 1; }
+    55% { opacity: 1; }
+    100% { opacity: 0; }
+    }
+  /* A plain fade is already still, but some viewers want no motion at all:
+     the marks appear, hold, and go. */
+  @media (prefers-reduced-motion: reduce) {
+    .hotspot-mark {
+      animation: hotspot-hold 0.7s step-end both;
+      }
+    }
+  @keyframes hotspot-hold {
+    0%, 70% { opacity: 1; }
+    100% { opacity: 0; }
+    }
+}
