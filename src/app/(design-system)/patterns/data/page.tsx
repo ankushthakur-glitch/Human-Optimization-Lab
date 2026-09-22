@@ -109,6 +109,7 @@ import {
 } from "@/design-system/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/design-system/ui/toggle-group"
+import { BRAND_NAME } from "@/lib/brand"
 
 /* -------------------------------------------------------------------------- */
 /*  Data                                                                      */
@@ -2005,7 +2006,7 @@ export default function Page() {
           Data patterns
         </h1>
         <p className="mt-2 max-w-3xl text-muted-foreground">
-          Clinic EHR is a content-heavy clinical product: a single unit census
+          {BRAND_NAME} is a content-heavy clinical product: a single unit census
           can run to hundreds of rows, and a chart review can span years. This
           page catalogues every way the system slices, groups, filters and
           presents that volume — each one a working specimen, with a note on

@@ -18,6 +18,7 @@ import {
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
+import { BRAND_NAME } from "@/lib/brand"
 import { Avatar, AvatarFallback } from "@/design-system/ui/avatar"
 import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
@@ -208,7 +209,7 @@ function BrandMark({ collapsed }: { collapsed?: boolean }) {
       <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
         <IconStethoscope className="size-3.5" />
       </span>
-      {!collapsed && <span className="truncate text-sm font-semibold">Clinic EHR</span>}
+      {!collapsed && <span className="truncate text-sm font-semibold">{BRAND_NAME}</span>}
     </div>
   )
 }
@@ -228,7 +229,7 @@ function TopBar({
         <span className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
           <IconStethoscope className="size-3.5" />
         </span>
-        <span className="text-sm font-semibold">Clinic EHR</span>
+        <span className="text-sm font-semibold">{BRAND_NAME}</span>
       </div>
 
       {showNav && (

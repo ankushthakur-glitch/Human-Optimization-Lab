@@ -74,6 +74,39 @@ product screens and it gets its own chrome while the gallery keeps its sidebar.
 The product name lives in one place, `src/lib/brand.ts`. Change `BRAND_NAME`
 there and every title and header follows.
 
+## Brand assets
+
+Served from `public/brand/` — `favicon/` (light/dark at 16/32/48/180 plus the
+512 marks) and `logo/` (the lockup in both tones).
+
+The product name is one constant, `BRAND_NAME` in [src/lib/brand.ts](src/lib/brand.ts),
+alongside `LOGO` with the two lockup paths. Nothing hardcodes the name. The
+favicon is declared through Next's metadata API in [src/app/layout.tsx](src/app/layout.tsx);
+`src/app/favicon.ico` is a multi-resolution fallback built from the light mark.
+
+### What the artwork can and cannot do
+
+Measured across all 141,750 pixels of the supplied lockup, not assumed:
+
+- **It is dark-background only.** 81% of its opaque ink is near-white, so on a
+  light page the wordmark and most of the H disappear and leave the spokes
+  floating alone. `logo-lockup-light.png` is a **luminance inversion generated
+  as a stopgap** — clean only because the artwork is pure grayscale, but not a
+  design deliverable. Ask design for a real light lockup.
+- **It carries zero chroma** (max RGB spread across the whole image is 1). There
+  is no brand hue to derive an accent from, which is why the design system is
+  still on its own `cyan` accent.
+- **It is raster, 750×189.** A primary logo should be resolution-independent;
+  the favicon especially wants vector source.
+- **At 16px the mark aliases** — the fan of ~20 spokes becomes a grey smudge.
+  The H and the disc still read. A fix needs a reduced-detail glyph drawn for
+  small sizes, not a rescale. Most browsers reach for the 32px asset anyway.
+
+The mark is duotone, so it cannot sit on transparency and stay legible against
+both light and dark browser chrome. Two favicon variants ship and the browser
+picks with `prefers-color-scheme`. The header does the same swap in CSS, because
+next-themes toggles a class rather than following the OS setting.
+
 ## Theming
 
 Everything is driven by CSS variables on `<html>`, set by

@@ -23,6 +23,7 @@ import { PrototypeHotspots } from "@/components/prototype-hotspots"
 import { Toaster } from "@/design-system/ui/sonner"
 import { TooltipProvider } from "@/design-system/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { BRAND_NAME, BRAND_SLUG } from "@/lib/brand"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const roboto = Roboto({ subsets: ["latin"], variable: "--font-roboto", preload: false })
@@ -82,8 +83,31 @@ const commentKitTheme = {
 }
 
 export const metadata = {
-  title: "Clinic EHR — Design System",
-  description: "Base design system and component library for the Clinic EHR product.",
+  title: `${BRAND_NAME} — Design System`,
+  description: `Base design system and component library for the ${BRAND_NAME} product.`,
+  /*
+   * The mark is duotone — a white figure knocked out of a black disc — so it
+   * cannot sit on transparency and stay legible against both light and dark
+   * browser chrome. Two variants are shipped and the browser picks by
+   * prefers-color-scheme; `favicon.ico` in src/app/ is the multi-resolution
+   * fallback for anything that ignores `media` (and for bookmarks).
+   *
+   * At 16px the fan of ~20 spokes aliases into a grey smudge. The H and the
+   * disc still read. Fixing it needs a reduced-detail glyph drawn for small
+   * sizes, not a rescale; most browsers reach for the 32px asset anyway.
+   */
+  icons: {
+    icon: [
+      { url: "/brand/favicon/favicon-light-32.png", media: "(prefers-color-scheme: light)", sizes: "32x32", type: "image/png" },
+      { url: "/brand/favicon/favicon-light-16.png", media: "(prefers-color-scheme: light)", sizes: "16x16", type: "image/png" },
+      { url: "/brand/favicon/favicon-dark-32.png", media: "(prefers-color-scheme: dark)", sizes: "32x32", type: "image/png" },
+      { url: "/brand/favicon/favicon-dark-16.png", media: "(prefers-color-scheme: dark)", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [
+      { url: "/brand/favicon/favicon-light-180.png", media: "(prefers-color-scheme: light)", sizes: "180x180" },
+      { url: "/brand/favicon/favicon-dark-180.png", media: "(prefers-color-scheme: dark)", sizes: "180x180" },
+    ],
+  },
 }
 
 export default function RootLayout({
@@ -116,9 +140,9 @@ export default function RootLayout({
         <script
           type="module"
           src="/comment-kit/comment-kit.js"
-          data-namespace="custom-ehr"
-          data-product="ehr"
-          data-brand-words="Clinic EHR,Design System"
+          data-namespace={BRAND_SLUG}
+          data-product="design-system"
+          data-brand-words={`${BRAND_NAME},Design System`}
           data-supabase-url={process.env.NEXT_PUBLIC_SUPABASE_URL}
           data-supabase-key={process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
           data-theme={JSON.stringify(commentKitTheme)}

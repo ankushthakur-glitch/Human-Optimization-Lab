@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { IconMenu, IconMoon, IconSun } from "@/design-system/icons"
 import { useTheme } from "next-themes"
@@ -11,7 +12,7 @@ import { cn } from "@/lib/utils"
 import { ThemeCustomizer } from "@/design-system/theme-customizer"
 import { Button } from "@/design-system/ui/button"
 import { ComponentIcon } from "@/design-system/component-icon"
-import { BRAND_NAME } from "@/lib/brand"
+import { BRAND_NAME, LOGO } from "@/lib/brand"
 
 const OVERVIEW_LINKS = [
   { href: "/", label: "Overview" },
@@ -111,9 +112,28 @@ export function DsShell({ children }: { children: React.ReactNode }) {
         >
           <IconMenu />
         </Button>
-        <Link href="/" className="flex items-baseline gap-2">
-          <span className="font-heading text-sm font-semibold tracking-tight">{BRAND_NAME}</span>
-          <span className="text-sm text-muted-foreground">Design System</span>
+        {/* Both tones ship and CSS hides one. next-themes toggles a class rather
+            than following prefers-color-scheme, so a CSS media query would
+            ignore the in-app theme switch — and picking in JS would flash the
+            wrong lockup before hydration. */}
+        <Link href="/" className="flex items-center gap-2.5">
+          <Image
+            src={LOGO.light}
+            alt={BRAND_NAME}
+            width={LOGO.width}
+            height={LOGO.height}
+            priority
+            className="h-8 w-auto dark:hidden"
+          />
+          <Image
+            src={LOGO.dark}
+            alt={BRAND_NAME}
+            width={LOGO.width}
+            height={LOGO.height}
+            priority
+            className="hidden h-8 w-auto dark:block"
+          />
+          <span className="hidden text-sm text-muted-foreground sm:inline">Design System</span>
         </Link>
         <div className="ml-auto flex items-center gap-2">
           <ThemeCustomizer />

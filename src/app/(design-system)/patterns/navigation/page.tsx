@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 
 import { cn } from "@/lib/utils"
+import { BRAND_NAME } from "@/lib/brand"
 import { Badge } from "@/design-system/ui/badge"
 import {
   Breadcrumb,
@@ -268,7 +269,7 @@ function TopNavBarDemo() {
           <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <IconHeartPulse className="size-4" />
           </span>
-          <span className="font-heading text-sm font-semibold tracking-tight">Clinic EHR</span>
+          <span className="font-heading text-sm font-semibold tracking-tight">{BRAND_NAME}</span>
         </div>
 
         <Separator orientation="vertical" className="h-5" />
@@ -985,7 +986,7 @@ export default function Page() {
         </Badge>
         <h1 className="font-heading text-3xl font-semibold tracking-tight">Navigation patterns</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Every way Clinic EHR moves a clinician from one place to another — app shell, global
+          Every way {BRAND_NAME} moves a clinician from one place to another — app shell, global
           wayfinding, in-chart switching, and row-level actions. Clinical work is deep and
           interruption-driven, so navigation has to preserve patient context at every level. Each
           specimen below is live: click it, open it, right-click it.

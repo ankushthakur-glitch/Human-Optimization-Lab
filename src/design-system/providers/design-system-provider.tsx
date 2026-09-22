@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { BRAND_SLUG } from "@/lib/brand"
 
 export type DesignSystemConfig = {
   base: string
@@ -38,7 +39,7 @@ export const DEFAULT_CONFIG: DesignSystemConfig = {
  * theme the person viewing it last chose, not the brand. Reset in the
  * customizer puts a browser back to DEFAULT_CONFIG.
  */
-const STORAGE_KEY = "custom-ehr-design-system"
+const STORAGE_KEY = `${BRAND_SLUG}-design-system`
 
 type ContextValue = {
   config: DesignSystemConfig
