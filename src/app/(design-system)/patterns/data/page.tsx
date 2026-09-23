@@ -11,7 +11,6 @@ import {
   YAxis,
 } from "recharts"
 import {
-  IconAlert,
   IconChevronDown,
   IconChevronRight,
   IconChevronUp,
@@ -100,16 +99,19 @@ import { Skeleton } from "@/design-system/ui/skeleton"
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/design-system/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/design-system/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/design-system/ui/toggle-group"
-import { BRAND_NAME } from "@/lib/brand"
 
 /* -------------------------------------------------------------------------- */
 /*  Data                                                                      */
@@ -310,21 +312,16 @@ const STATUSES: EncounterStatus[] = ["Active", "Pending", "Discharged"]
 
 function Section({
   title,
-  description,
   children,
 }: {
   title: string
-  description: string
   children: React.ReactNode
 }) {
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <h2 className="font-heading text-xl font-semibold tracking-tight">
-          {title}
-        </h2>
-        <p className="max-w-3xl text-sm text-muted-foreground">{description}</p>
-      </div>
+      <h2 className="font-heading text-xl font-semibold tracking-tight">
+        {title}
+      </h2>
       {children}
     </section>
   )
@@ -341,15 +338,6 @@ function Specimen({
     <div className={`rounded-xl border bg-card p-6 ${className ?? ""}`}>
       {children}
     </div>
-  )
-}
-
-function Guidance({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="max-w-3xl text-sm text-muted-foreground">
-      <span className="font-medium text-foreground">When to use — </span>
-      {children}
-    </p>
   )
 }
 
@@ -464,11 +452,7 @@ function DenseTableDemo() {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={selected.size === 0}
-          >
+          <Button variant="outline" size="sm" disabled={selected.size === 0}>
             <IconPrint data-icon="inline-start" />
             Print
           </Button>
@@ -577,10 +561,6 @@ function DenseTableDemo() {
             </TableRow>
           ))}
         </TableBody>
-        <TableCaption className="pb-6">
-          Sort is client-side here; in production sort server-side and keep the
-          sort key in the URL so a worklist can be shared between clinicians.
-        </TableCaption>
       </Table>
     </Specimen>
   )
@@ -610,9 +590,6 @@ function DensityDemo() {
   return (
     <Specimen>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          Row height only — column set, type scale and alignment stay identical.
-        </p>
         <ToggleGroup
           value={[density]}
           onValueChange={(value) => {
@@ -643,7 +620,9 @@ function DensityDemo() {
                 <TableCell className={`${cell} font-medium`}>
                   {row.patient}
                 </TableCell>
-                <TableCell className={`${cell} font-mono text-muted-foreground`}>
+                <TableCell
+                  className={`${cell} font-mono text-muted-foreground`}
+                >
                   {row.mrn}
                 </TableCell>
                 <TableCell className={cell}>{row.department}</TableCell>
@@ -752,16 +731,13 @@ function FacetedFilterDemo() {
   const rows = ENCOUNTERS.filter(
     (row) =>
       (facets.status.size === 0 || facets.status.has(row.status)) &&
-      (facets.department.size === 0 ||
-        facets.department.has(row.department)) &&
+      (facets.department.size === 0 || facets.department.has(row.department)) &&
       (facets.provider.size === 0 || facets.provider.has(row.provider))
   )
 
   const active: { key: FacetKey; value: string }[] = (
     ["status", "department", "provider"] as FacetKey[]
-  ).flatMap((key) =>
-    Array.from(facets[key]).map((value) => ({ key, value }))
-  )
+  ).flatMap((key) => Array.from(facets[key]).map((value) => ({ key, value })))
 
   return (
     <Specimen>
@@ -1193,7 +1169,7 @@ function MasterDetailDemo() {
                     aria-current={row.id === activeId ? "true" : undefined}
                     className={
                       row.id === activeId
-                        ? "flex w-full flex-col items-start gap-0.5 selected-marker rounded-lg bg-surface-selected px-3 py-2 text-left text-foreground"
+                        ? "selected-marker flex w-full flex-col items-start gap-0.5 rounded-lg bg-surface-selected px-3 py-2 text-left text-foreground"
                         : "flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-left hover:bg-surface-hover"
                     }
                   >
@@ -1249,14 +1225,14 @@ function MasterDetailDemo() {
                 Active problems
               </div>
               <ul className="flex flex-col gap-1 text-sm">
-                {(PROBLEM_SUMMARY[active.id] ?? ["No active problems recorded"]).map(
-                  (problem) => (
-                    <li key={problem} className="flex items-center gap-2">
-                      <IconPulse className="size-3.5 text-muted-foreground" />
-                      {problem}
-                    </li>
-                  )
-                )}
+                {(
+                  PROBLEM_SUMMARY[active.id] ?? ["No active problems recorded"]
+                ).map((problem) => (
+                  <li key={problem} className="flex items-center gap-2">
+                    <IconPulse className="size-3.5 text-muted-foreground" />
+                    {problem}
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
@@ -1394,9 +1370,7 @@ function DrillDownDemo() {
   }
 
   const rows =
-    drill === "all"
-      ? ENCOUNTERS
-      : ENCOUNTERS.filter((e) => e.status === drill)
+    drill === "all" ? ENCOUNTERS : ENCOUNTERS.filter((e) => e.status === drill)
 
   return (
     <Specimen>
@@ -1414,7 +1388,7 @@ function DrillDownDemo() {
             }
           >
             <div className="text-xs text-muted-foreground">{tile.label}</div>
-            <div className="font-heading mt-1 text-2xl font-semibold tabular-nums">
+            <div className="mt-1 font-heading text-2xl font-semibold tabular-nums">
               {countFor(tile.key)}
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
@@ -1738,16 +1712,6 @@ function StateCoverageDemo() {
           </Table>
         ) : null}
       </div>
-
-      <p className="mt-4 flex items-start gap-2 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-        <IconAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
-        <span>
-          A blank table is a bug, not a state. Every data view ships four
-          renderings — skeleton, empty, error, ready — and the error copy must
-          say whether the data shown is stale, because clinicians will act on
-          it.
-        </span>
-      </p>
     </Specimen>
   )
 }
@@ -1764,11 +1728,12 @@ const FLAG_TEXT: Record<ResultFlag, string> = {
   critical: "text-destructive font-semibold",
 }
 
-const FLAG_BADGE: Record<ResultFlag, "outline" | "secondary" | "destructive"> = {
-  normal: "outline",
-  abnormal: "secondary",
-  critical: "destructive",
-}
+const FLAG_BADGE: Record<ResultFlag, "outline" | "secondary" | "destructive"> =
+  {
+    normal: "outline",
+    abnormal: "secondary",
+    critical: "destructive",
+  }
 
 const LAB_PANEL: {
   analyte: string
@@ -1857,11 +1822,6 @@ function LabResultsDemo() {
             </TableRow>
           ))}
         </TableBody>
-        <TableCaption className="pb-6">
-          Abnormality is carried by a Badge and by weight — never by color
-          alone, and never by a literal red. `text-destructive` is reserved for
-          criticals so it keeps its meaning.
-        </TableCaption>
       </Table>
     </Specimen>
   )
@@ -1904,7 +1864,9 @@ function ChartsDemo() {
     <div className="grid gap-4 lg:grid-cols-2">
       <Specimen>
         <div className="mb-4">
-          <h3 className="text-sm font-medium">Encounter volume by department</h3>
+          <h3 className="text-sm font-medium">
+            Encounter volume by department
+          </h3>
           <p className="text-xs text-muted-foreground">
             Rolling 30 days · inpatient vs outpatient
           </p>
@@ -2005,199 +1967,66 @@ export default function Page() {
         <h1 className="font-heading text-3xl font-semibold tracking-tight">
           Data patterns
         </h1>
-        <p className="mt-2 max-w-3xl text-muted-foreground">
-          {BRAND_NAME} is a content-heavy clinical product: a single unit census
-          can run to hundreds of rows, and a chart review can span years. This
-          page catalogues every way the system slices, groups, filters and
-          presents that volume — each one a working specimen, with a note on
-          when to reach for it. Every example is built from the same primitives
-          and semantic tokens, so it re-themes with the rest of the product.
-        </p>
       </header>
 
       <div className="flex flex-col gap-14">
-        <Section
-          title="Dense data table"
-          description="The workhorse. Sortable columns, multi-select with a batch action bar, and a per-row action menu — all driven by plain React state over the table primitives."
-        >
+        <Section title="Dense data table">
           <DenseTableDemo />
-          <Guidance>
-            the user needs to compare records across shared attributes, or act
-            on several at once. Once a set has more than four attributes worth
-            scanning, a table beats a card grid.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Density modes"
-          description="The same worklist at comfortable and compact row heights. Compact removes vertical padding only — never type size for clinical values, never the column set."
-        >
+        <Section title="Density modes">
           <DensityDemo />
-          <Guidance>
-            always offer both on any view that can exceed one screen. Charge
-            nurses and unit clerks scan hundreds of rows a shift and will live
-            in compact; occasional users want comfortable. Persist the choice
-            per user, not per view.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Faceted filtering"
-          description="Dashed-border facet triggers open a checkbox popover; every applied value becomes a removable chip, and the rows actually narrow."
-        >
+        <Section title="Faceted filtering">
           <FacetedFilterDemo />
-          <Guidance>
-            the record set has a few stable, low-cardinality dimensions — status,
-            department, provider, order type. Show the active filters as chips
-            outside the popover: a filtered view that looks unfiltered is how
-            clinicians miss patients.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Search with a scope selector"
-          description="One input, one scope. The scope narrows what is searched before the query runs, so an MRN typed into a global box does not return 400 order lines."
-        >
+        <Section title="Search with a scope selector">
           <ScopedSearchDemo />
-          <Guidance>
-            the same search affordance spans several record types. Default to
-            All, keep the scope visible next to the input, and echo the scope in
-            the empty state so the user can tell a bad query from a bad scope.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Tab segregation with counts"
-          description="Split one record set by a mutually exclusive status and put the count in the tab. Counts are part of the segmentation — an unlabelled tab makes the user click to discover it is empty."
-        >
+        <Section title="Tab segregation with counts">
           <TabSegregationDemo />
-          <Guidance>
-            the statuses are few, exclusive and meaningful workflow stages.
-            Above four or five segments, or when a record can belong to more
-            than one, use facets instead.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Grouped and sectioned lists"
-          description="Rows collapsed under a group key — here department, equally often a date or a visit. Group headers carry their own count and a summary metric."
-        >
+        <Section title="Grouped and sectioned lists">
           <GroupedListDemo />
-          <Guidance>
-            the grouping key is how the user thinks about the work — by unit, by
-            day, by ordering provider. Open the first group or two by default so
-            the view is never a wall of closed headers.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Master–detail split view"
-          description="A census list on the left, the selected record on the right, with a draggable divider. Selection is state, so the detail panel never loses the list context."
-        >
+        <Section title="Master–detail split view">
           <MasterDetailDemo />
-          <Guidance>
-            the user works down a queue and needs detail for each item without
-            losing their place — rounding lists, result inboxes, message
-            triage. Below roughly 900px wide, collapse it to list-then-detail
-            navigation.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Hierarchical and tree data"
-          description="Nested collapsibles for data that is genuinely a tree: organization to facility to unit, or a problem list with sub-conditions. Indentation is a fixed set of literal classes, never computed."
-        >
+        <Section title="Hierarchical and tree data">
           <TreeDemo />
-          <Guidance>
-            depth is meaningful and the user needs to see ancestry. If the
-            hierarchy is only two levels deep, a grouped list reads faster than
-            a tree.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Summary tiles with drill-down"
-          description="A row of KPI tiles that are also the filter control — clicking a tile narrows the table beneath it, and the selected tile stays visibly pressed."
-        >
+        <Section title="Summary tiles with drill-down">
           <DrillDownDemo />
-          <Guidance>
-            a view opens on an overview but every number on it has a worklist
-            behind it. Tiles must be obviously interactive and must show which
-            one is active, or the filtered table below looks like a bug.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Card grid versus table"
-          description="One dataset, two renderings, toggled live. Cards give each record room for a mixed hierarchy; the table gives column-to-column comparison."
-        >
+        <Section title="Card grid versus table">
           <ViewToggleDemo />
-          <Guidance>
-            records are browsed rather than compared — directory listings,
-            care-team pickers, template galleries — reach for cards. For
-            anything a clinician scans down a column of, default to the table
-            and offer cards as the alternative.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Pagination versus infinite scroll"
-          description="Explicit pages with a visible record range. The alternative, infinite scroll, is deliberately not offered as a default here."
-        >
+        <Section title="Pagination versus infinite scroll">
           <PaginationDemo />
-          <Guidance>
-            paginate clinical worklists. Pages are countable, addressable and
-            printable: a user can say &ldquo;page 3 of the ED board&rdquo; and
-            mean something, and &ldquo;showing 5–8 of 12&rdquo; proves nothing
-            was silently dropped. Infinite scroll suits feeds where missing an
-            item is harmless — notification streams, audit logs — and it breaks
-            footers, keyboard navigation and the browser back button. Never use
-            it for a set the user is responsible for clearing.
-          </Guidance>
         </Section>
 
-        <Section
-          title="State coverage"
-          description="Every data view ships four renderings. Toggle between them — the skeleton mirrors the real row rhythm, and the error state says whether the data on screen can still be trusted."
-        >
+        <Section title="State coverage">
           <StateCoverageDemo />
-          <Guidance>
-            always. Specify loading, empty and error alongside the happy path in
-            every data spec. An empty state should also say what to do next;
-            &ldquo;No results&rdquo; on its own is a dead end.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Clinical values with reference ranges"
-          description="A results table where the point of the data is the deviation. Value, units and reference range sit in separate columns so the eye can compare them, with abnormality carried redundantly by weight and by badge."
-        >
+        <Section title="Clinical values with reference ranges">
           <LabResultsDemo />
-          <Guidance>
-            presenting any measured clinical value. Always show the reference
-            range next to the result — a number without its range is not
-            interpretable — and right-align numerics with tabular figures so
-            magnitudes line up.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Charts"
-          description="Aggregate views built on the chart tokens, so the palette re-themes with everything else. Categorical series map to chart-1 … chart-5 in order."
-        >
+        <Section title="Charts">
           <ChartsDemo />
-          <Guidance>
-            the shape of the data matters more than its exact values — volume
-            over time, a vitals trend, throughput by unit. Charts summarise;
-            they never replace the table a clinician needs to act on, so pair
-            them with a drill-down into the underlying rows.
-          </Guidance>
         </Section>
 
-        <Section
-          title="Choosing a pattern"
-          description="A quick decision table for the most common cases."
-        >
+        <Section title="Choosing a pattern">
           <Specimen className="p-0">
             <Table>
               <TableHeader>
@@ -2224,18 +2053,12 @@ export default function Page() {
                     "See where a record sits in a hierarchy",
                     "Collapsible tree",
                   ],
-                  [
-                    "Separate exclusive workflow stages",
-                    "Tabs with counts",
-                  ],
+                  ["Separate exclusive workflow stages", "Tabs with counts"],
                   [
                     "Start from a number and get to the rows behind it",
                     "Summary tiles with drill-down",
                   ],
-                  [
-                    "Scan hundreds of rows per shift",
-                    "Compact density mode",
-                  ],
+                  ["Scan hundreds of rows per shift", "Compact density mode"],
                   [
                     "Judge a trend rather than a value",
                     "Chart, paired with its table",
@@ -2255,44 +2078,20 @@ export default function Page() {
           </Specimen>
         </Section>
 
-        <Section
-          title="Rules that apply to every pattern"
-          description="Non-negotiables for anything in this catalogue."
-        >
+        <Section title="Rules that apply to every pattern">
           <Specimen>
             <ul className="flex flex-col gap-3 text-sm">
               {[
-                [
-                  "Filter state is visible state",
-                  "If rows are hidden, say so on screen and offer a one-click reset. Clinicians must never mistake a filtered view for a complete one.",
-                ],
-                [
-                  "Never encode meaning in color alone",
-                  "Abnormal and critical carry a badge and a weight change as well as `text-destructive`. The system re-themes at runtime and users may be color-vision deficient.",
-                ],
-                [
-                  "Only semantic tokens",
-                  "`bg-card`, `text-muted-foreground`, `bg-chart-1` and friends. A hardcoded hex or a literal Tailwind palette color breaks all 19 accents and both modes.",
-                ],
-                [
-                  "Class names are always literal",
-                  "Status-to-class and density-to-class mappings live in explicit lookup objects with full class strings, because Tailwind cannot generate a class it never sees.",
-                ],
-                [
-                  "Identity columns stay monospaced",
-                  "MRNs, order numbers, timestamps and numeric results use tabular figures so digits align down the column.",
-                ],
-                [
-                  "Every table states its total",
-                  "A footer or caption with a record count is how a user knows the query finished and nothing was truncated.",
-                ],
-              ].map(([rule, detail]) => (
+                "Filter state is visible state",
+                "Never encode meaning in color alone",
+                "Only semantic tokens",
+                "Class names are always literal",
+                "Identity columns stay monospaced",
+                "Every table states its total",
+              ].map((rule) => (
                 <li key={rule} className="flex gap-3">
                   <IconEye className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  <span>
-                    <span className="font-medium">{rule}. </span>
-                    <span className="text-muted-foreground">{detail}</span>
-                  </span>
+                  <span className="font-medium">{rule}</span>
                 </li>
               ))}
             </ul>

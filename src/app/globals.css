@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "./themes.css";
+@import "./themes.custom.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -82,26 +83,34 @@
 /* Hover and selected own their own tokens rather than borrowing --accent: every
    palette here ships --accent as the full brand colour, which is far too loud
    for a hover and forces near-white ink that breaks the moment a component
-   repaints the background under it. These are mixed from --foreground instead,
-   so one pair stays legible on every surface, in every palette, in both themes.
+   repaints the background under it. These are mixed from --primary-tint
+   instead — the brand, thinned to a wash — so every hover in the product reads
+   as the accent rather than as grey, and full-strength --foreground still sits
+   on top of it. --primary-tint rather than --primary because a preset whose
+   --primary is a light fill cannot tint anything; see the note on it.
    The block further down aliases --accent onto them so stock shadcn components
    inherit the same hover without each one overriding the pair by hand. */
 
 :root {
-    /* The one hover tint in the product. Mixed from --foreground so it lands on
-       the same side of every surface it can cover — card, popover, sidebar,
-       table band — and so full-strength --foreground stays readable on top of
-       it. Kept light enough that a dense table row does not read as selected:
+    /* The one hover tint in the product: the brand at a wash, on card, popover,
+       sidebar and table band alike. The percentage is higher than the grey it
+       replaced because --primary-tint is a mid-lightness colour where
+       --foreground is near-black — 14% of the accent lands at roughly the
+       luminance 10% of the ink used to, so the touch weighs the same and now
+       carries the hue. Full-strength --foreground stays the ink on top of it;
        selected is --surface-selected plus the edge marker below. */
-    --surface-hover: color-mix(in oklab, var(--foreground) 10%, transparent);
+    --surface-hover: color-mix(in oklab, var(--primary-tint) 14%, transparent);
     --surface-hover-foreground: var(--foreground);
 
     /* A table row is a big target, so the same tint that reads as a light touch
        on a menu item reads as a slab across a full-width row. Rows get their own
        step, about half as strong, which still tracks the pointer without
        flattening the type on top of it. */
-    --surface-row-hover: color-mix(in oklab, var(--foreground) 5%, transparent);
-    --surface-selected: color-mix(in oklab, var(--primary) 14%, transparent);
+    --surface-row-hover: color-mix(in oklab, var(--primary-tint) 8%, transparent);
+    /* Hover and selected are now the same hue, so the whole distance between
+       them is strength: selected sits far enough above the hover wash to still
+       read as a state once the pointer is over it. */
+    --surface-selected: color-mix(in oklab, var(--primary-tint) 22%, transparent);
 
     /* A pane that sits *behind* the content it navigates: a message list beside
        a conversation, a folder rail beside a reading pane. Opaque, and only a
@@ -122,10 +131,17 @@
        enough to push the page back without hiding what is on it. */
     --surface-overlay: color-mix(in oklab, oklch(0.24 0.012 322) 60%, transparent);
 
-    /* Light painted accents. Full-strength --primary is reserved for actions,
-       the selected edge marker, and focus — never for decoration. */
+    /* The accent as it is *painted* — drawn in, rather than filled behind:
+       accent text and links, the selected edge marker, the tints mixed below.
+       Everything that paints goes through this token rather than --primary
+       directly, because the two are not always the same colour. A preset whose
+       --primary is a light fill under dark ink cannot also set text on a
+       card — it is too faint there — so it points this at a deeper step
+       of the same ramp and keeps both jobs legible. For every preset whose
+       --primary is already dark enough to paint with, this is just --primary.
+       Full-strength --primary stays the fill: buttons, the nav bar, focus. */
     --primary-tint: var(--primary);
-    --primary-surface: color-mix(in oklab, var(--primary) 10%, transparent);
+    --primary-surface: color-mix(in oklab, var(--primary-tint) 10%, transparent);
 }
 
 /* In dark mode --primary is itself dark, so a primary tint barely shifts
@@ -137,10 +153,11 @@
    end of the same accent ramp and is identical in both themes, so dark mode
    draws its accents from there instead. */
 :root.dark {
-    /* Dark surfaces need a touch more of the tint to shift the same amount. */
-    --surface-hover: color-mix(in oklab, var(--foreground) 14%, transparent);
-    --surface-row-hover: color-mix(in oklab, var(--foreground) 8%, transparent);
-    --surface-selected: color-mix(in oklab, var(--chart-1) 20%, transparent);
+    /* Dark surfaces need a touch more of the tint to shift the same amount, and
+       --chart-1 is what --primary-tint already points at here. */
+    --surface-hover: color-mix(in oklab, var(--chart-1) 18%, transparent);
+    --surface-row-hover: color-mix(in oklab, var(--chart-1) 10%, transparent);
+    --surface-selected: color-mix(in oklab, var(--chart-1) 26%, transparent);
     /* Dark --muted is lighter than --card, so the same mix would read as a
        bright stripe; it takes less of it to separate the band from the rows. */
     --surface-head: color-mix(in oklab, var(--muted) 60%, var(--card));
@@ -259,6 +276,121 @@
     --info-surface: color-mix(in oklab, var(--info) 18%, transparent);
 }
 
+/* ---------- Palette ramps ---------- */
+/* Ten numbered steps per family, for the cases a single semantic token cannot
+   cover: a chart needs four shades of one hue, a heat scale needs a gradient,
+   a badge needs a fill one step lighter than the border above it. Step 6 is the
+   base token itself, 1-5 are it thinned into the page, 7-10 are it carried
+   towards the ink.
+
+   Every step is a mix of live variables, so one block serves both themes and
+   all thirty-odd accent presets: --background and --foreground swap in dark
+   mode, which flips the ramp's ends with them — step 1 is always the faintest
+   tint the current canvas can hold and step 10 always the most emphatic ink.
+
+   The primary ramp is built from --primary-tint rather than --primary for the
+   reason given further up: this preset's dark --primary is darker than its
+   light one, so it cannot tint a dark surface. --primary-tint is --primary in
+   light and --chart-1 — the light end of the same accent ramp — in dark.
+
+   These are steps, not semantics. A status still reads --success / --warning /
+   --destructive; the numbered stops exist to shade *within* a meaning, never
+   to invent a new one. */
+
+:root {
+    /* Brand */
+    --primary-1: color-mix(in oklab, var(--primary-tint) 7%, var(--background));
+    --primary-2: color-mix(in oklab, var(--primary-tint) 14%, var(--background));
+    --primary-3: color-mix(in oklab, var(--primary-tint) 24%, var(--background));
+    --primary-4: color-mix(in oklab, var(--primary-tint) 40%, var(--background));
+    --primary-5: color-mix(in oklab, var(--primary-tint) 62%, var(--background));
+    --primary-6: var(--primary-tint);
+    --primary-7: color-mix(in oklab, var(--primary-tint) 78%, var(--foreground));
+    --primary-8: color-mix(in oklab, var(--primary-tint) 58%, var(--foreground));
+    --primary-9: color-mix(in oklab, var(--primary-tint) 40%, var(--foreground));
+    --primary-10: color-mix(in oklab, var(--primary-tint) 24%, var(--foreground));
+
+    /* Success */
+    --success-1: color-mix(in oklab, var(--success) 7%, var(--background));
+    --success-2: color-mix(in oklab, var(--success) 14%, var(--background));
+    --success-3: color-mix(in oklab, var(--success) 24%, var(--background));
+    --success-4: color-mix(in oklab, var(--success) 40%, var(--background));
+    --success-5: color-mix(in oklab, var(--success) 62%, var(--background));
+    --success-6: var(--success);
+    --success-7: color-mix(in oklab, var(--success) 78%, var(--foreground));
+    --success-8: color-mix(in oklab, var(--success) 58%, var(--foreground));
+    --success-9: color-mix(in oklab, var(--success) 40%, var(--foreground));
+    --success-10: color-mix(in oklab, var(--success) 24%, var(--foreground));
+
+    /* Warning */
+    --warning-1: color-mix(in oklab, var(--warning) 7%, var(--background));
+    --warning-2: color-mix(in oklab, var(--warning) 14%, var(--background));
+    --warning-3: color-mix(in oklab, var(--warning) 24%, var(--background));
+    --warning-4: color-mix(in oklab, var(--warning) 40%, var(--background));
+    --warning-5: color-mix(in oklab, var(--warning) 62%, var(--background));
+    --warning-6: var(--warning);
+    --warning-7: color-mix(in oklab, var(--warning) 78%, var(--foreground));
+    --warning-8: color-mix(in oklab, var(--warning) 58%, var(--foreground));
+    --warning-9: color-mix(in oklab, var(--warning) 40%, var(--foreground));
+    --warning-10: color-mix(in oklab, var(--warning) 24%, var(--foreground));
+
+    /* Error — the numbered ramp of --destructive, which is what "error" is
+       called everywhere else in this system. */
+    --destructive-1: color-mix(in oklab, var(--destructive) 7%, var(--background));
+    --destructive-2: color-mix(in oklab, var(--destructive) 14%, var(--background));
+    --destructive-3: color-mix(in oklab, var(--destructive) 24%, var(--background));
+    --destructive-4: color-mix(in oklab, var(--destructive) 40%, var(--background));
+    --destructive-5: color-mix(in oklab, var(--destructive) 62%, var(--background));
+    --destructive-6: var(--destructive);
+    --destructive-7: color-mix(in oklab, var(--destructive) 78%, var(--foreground));
+    --destructive-8: color-mix(in oklab, var(--destructive) 58%, var(--foreground));
+    --destructive-9: color-mix(in oklab, var(--destructive) 40%, var(--foreground));
+    --destructive-10: color-mix(in oklab, var(--destructive) 24%, var(--foreground));
+}
+
+@theme inline {
+    --color-primary-1: var(--primary-1);
+    --color-primary-2: var(--primary-2);
+    --color-primary-3: var(--primary-3);
+    --color-primary-4: var(--primary-4);
+    --color-primary-5: var(--primary-5);
+    --color-primary-6: var(--primary-6);
+    --color-primary-7: var(--primary-7);
+    --color-primary-8: var(--primary-8);
+    --color-primary-9: var(--primary-9);
+    --color-primary-10: var(--primary-10);
+    --color-success-1: var(--success-1);
+    --color-success-2: var(--success-2);
+    --color-success-3: var(--success-3);
+    --color-success-4: var(--success-4);
+    --color-success-5: var(--success-5);
+    --color-success-6: var(--success-6);
+    --color-success-7: var(--success-7);
+    --color-success-8: var(--success-8);
+    --color-success-9: var(--success-9);
+    --color-success-10: var(--success-10);
+    --color-warning-1: var(--warning-1);
+    --color-warning-2: var(--warning-2);
+    --color-warning-3: var(--warning-3);
+    --color-warning-4: var(--warning-4);
+    --color-warning-5: var(--warning-5);
+    --color-warning-6: var(--warning-6);
+    --color-warning-7: var(--warning-7);
+    --color-warning-8: var(--warning-8);
+    --color-warning-9: var(--warning-9);
+    --color-warning-10: var(--warning-10);
+    --color-destructive-1: var(--destructive-1);
+    --color-destructive-2: var(--destructive-2);
+    --color-destructive-3: var(--destructive-3);
+    --color-destructive-4: var(--destructive-4);
+    --color-destructive-5: var(--destructive-5);
+    --color-destructive-6: var(--destructive-6);
+    --color-destructive-7: var(--destructive-7);
+    --color-destructive-8: var(--destructive-8);
+    --color-destructive-9: var(--destructive-9);
+    --color-destructive-10: var(--destructive-10);
+}
+
 /* ---------- Contrast overrides on the generated palettes ---------- */
 /* themes.css sets these under `:root[data-base="…"]`, which outranks a plain
    `:root` rule, so an override has to match that specificity — `[data-base]`
@@ -323,9 +455,9 @@
 
 :root {
     --care-canvas: oklch(0.982 0.013 80);
-    --care-rail: color-mix(in oklab, var(--primary) 7%, var(--card));
-    --care-rail-border: color-mix(in oklab, var(--primary) 18%, var(--card));
-    --care-callout: color-mix(in oklab, var(--primary) 5%, var(--card));
+    --care-rail: color-mix(in oklab, var(--primary-tint) 7%, var(--card));
+    --care-rail-border: color-mix(in oklab, var(--primary-tint) 18%, var(--card));
+    --care-callout: color-mix(in oklab, var(--primary-tint) 5%, var(--card));
 }
 
 :root.dark {
@@ -494,10 +626,12 @@ svg path[stroke="currentColor"] {
 }
 
 @layer components {
-  /* Selected state never relies on the background tint alone: a solid primary
-     edge keeps it readable in both themes and for low-vision users. */
+  /* Selected state never relies on the background tint alone: a solid accent
+     edge keeps it readable in both themes and for low-vision users. It paints
+     rather than fills, so it takes --primary-tint — a 2px rule has to clear
+     3:1 against the card it sits on, which a light-fill --primary would not. */
   .selected-marker {
-    box-shadow: inset 2px 0 0 0 var(--primary);
+    box-shadow: inset 2px 0 0 0 var(--primary-tint);
     }
 }
 /* ---------- Prototype hotspots ---------- */
@@ -549,5 +683,14 @@ svg path[stroke="currentColor"] {
   @keyframes hotspot-hold {
     0%, 70% { opacity: 1; }
     100% { opacity: 0; }
+    }
+}
+
+@layer components {
+  /* Used by the Thinking trigger: a light sweep across the label while the
+     model is still working, so the row reads as live without moving. */
+  @keyframes thinking-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
     }
 }

@@ -4,7 +4,8 @@ import * as React from "react"
 import { IconCheck, IconPalette, IconRefresh } from "@/design-system/icons"
 import { useTheme } from "next-themes"
 
-import { ACCENT_THEMES, BASE_PALETTES, RADIUS_OPTIONS } from "@/design-system/tokens/themes"
+import { BASE_PALETTES, RADIUS_OPTIONS } from "@/design-system/tokens/themes"
+import { ALL_ACCENT_THEMES } from "@/design-system/tokens/accents"
 import { BODY_FONTS, HEADING_FONTS } from "@/design-system/tokens/fonts"
 import { cn } from "@/lib/utils"
 import { useDesignSystem } from "@/design-system/providers/design-system-provider"
@@ -129,7 +130,7 @@ export function ThemeCustomizer() {
 
             <Group label="Accent color" hint="Drives primary, accent, and chart series.">
               <div className="flex flex-wrap gap-2">
-                {ACCENT_THEMES.map((t) => (
+                {ALL_ACCENT_THEMES.map((t) => (
                   <Swatch
                     key={t.name}
                     active={config.accent === t.name}

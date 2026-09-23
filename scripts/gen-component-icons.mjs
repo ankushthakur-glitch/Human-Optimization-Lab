@@ -67,10 +67,6 @@ const MAP = {
   "navigation-menu": ["Menu01Icon"],
   menubar: ["MenuSquareIcon", "Menu02Icon"],
   command: ["CommandIcon"],
-  sidebar: ["SidebarLeftIcon"],
-  "sidebar-icon": ["SidebarLeft01Icon"],
-  "sidebar-inset": ["Layout01Icon"],
-  "sidebar-floating": ["Layout02Icon"],
 
   // Overlays
   dialog: ["Layers01Icon", "WindowsNewIcon", "Square01Icon"],
@@ -89,11 +85,33 @@ const MAP = {
   toast: ["Notification03Icon", "Notification02Icon"],
   spinner: ["Loading03Icon"],
   marker: ["HighlighterIcon"],
+  "border-beam": ["SparklesIcon", "FlashIcon", "Stars02Icon", "MagicWand01Icon"],
 
   // Conversational
   attachment: ["Attachment01Icon", "AttachmentIcon"],
   bubble: ["BubbleChatIcon", "Chat01Icon"],
   questionnaire: ["ChatQuestionIcon", "BubbleChatQuestionIcon", "HelpCircleIcon"],
+  "thinking-orb": ["AiBrain01Icon", "Atom01Icon", "AiBrain04Icon"],
+  "voice-beam": ["AudioWave01Icon", "VoiceIcon", "Mic01Icon"],
+  // Agent UI
+  "loading-state": ["Loading01Icon", "Loading02Icon"],
+  thinking: ["BrainIcon", "AiBrain02Icon"],
+  "streaming-text": ["TypeCursorIcon", "TextIcon"],
+  "tool-chips": ["Wrench01Icon", "ToolsIcon"],
+  "task-rows": ["CheckListIcon", "TaskDone01Icon"],
+  "approval-card": ["CheckmarkBadge01Icon", "ShieldKeyIcon"],
+  "prompt-bar": ["SentIcon", "PromptIcon"],
+  chat: ["Chatting01Icon", "Chat01Icon"],
+  "agent-screen": ["RoboticIcon", "ComputerIcon"],
+
+  // Agent data
+  "recommendation-card": ["Idea01Icon", "Bulb01Icon"],
+  "context-cards": ["FolderLibraryIcon", "Folder02Icon"],
+  "insight-cards": ["AnalyticsUpIcon", "ChartLineData02Icon"],
+  "fine-tune-card": ["SlidersVerticalIcon", "Settings02Icon"],
+  "code-block": ["SourceCodeIcon", "CodeIcon"],
+  search: ["Search01Icon", "Search02Icon"],
+  "selection-actions": ["CursorMagicSelection01Icon", "SelectAllIcon"],
 }
 
 const resolved = {}

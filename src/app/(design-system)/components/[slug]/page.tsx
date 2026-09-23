@@ -1,19 +1,12 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import dynamic from "next/dynamic"
-import { IconChevronLeft, IconChevronRight, IconExternalLink } from "@/design-system/icons"
+import { IconChevronLeft, IconChevronRight } from "@/design-system/icons"
 
 import { ALL_EXAMPLES, getExample, getExampleNeighbours } from "@/lib/examples"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/design-system/ui/breadcrumb"
 import { Separator } from "@/design-system/ui/separator"
 import { ComponentIcon } from "@/design-system/component-icon"
+import { BRAND_NAME } from "@/lib/brand"
 
 const REGISTRY: Record<string, React.ComponentType> = {
   accordion: dynamic(() => import("@/design-system/examples/accordion-example")),
@@ -24,6 +17,7 @@ const REGISTRY: Record<string, React.ComponentType> = {
   avatar: dynamic(() => import("@/design-system/examples/avatar-example")),
   badge: dynamic(() => import("@/design-system/examples/badge-example")),
   breadcrumb: dynamic(() => import("@/design-system/examples/breadcrumb-example")),
+  "border-beam": dynamic(() => import("@/design-system/examples/border-beam-example")),
   bubble: dynamic(() => import("@/design-system/examples/bubble-example")),
   "button-group": dynamic(() => import("@/design-system/examples/button-group-example")),
   button: dynamic(() => import("@/design-system/examples/button-example")),
@@ -62,10 +56,6 @@ const REGISTRY: Record<string, React.ComponentType> = {
   select: dynamic(() => import("@/design-system/examples/select-example")),
   separator: dynamic(() => import("@/design-system/examples/separator-example")),
   sheet: dynamic(() => import("@/design-system/examples/sheet-example")),
-  "sidebar-floating": dynamic(() => import("@/design-system/examples/sidebar-floating-example")),
-  "sidebar-icon": dynamic(() => import("@/design-system/examples/sidebar-icon-example")),
-  "sidebar-inset": dynamic(() => import("@/design-system/examples/sidebar-inset-example")),
-  sidebar: dynamic(() => import("@/design-system/examples/sidebar-example")),
   skeleton: dynamic(() => import("@/design-system/examples/skeleton-example")),
   slider: dynamic(() => import("@/design-system/examples/slider-example")),
   sonner: dynamic(() => import("@/design-system/examples/sonner-example")),
@@ -74,10 +64,29 @@ const REGISTRY: Record<string, React.ComponentType> = {
   table: dynamic(() => import("@/design-system/examples/table-example")),
   tabs: dynamic(() => import("@/design-system/examples/tabs-example")),
   textarea: dynamic(() => import("@/design-system/examples/textarea-example")),
+  "thinking-orb": dynamic(() => import("@/design-system/examples/thinking-orb-example")),
   toast: dynamic(() => import("@/design-system/examples/toast-example")),
   "toggle-group": dynamic(() => import("@/design-system/examples/toggle-group-example")),
   toggle: dynamic(() => import("@/design-system/examples/toggle-example")),
   tooltip: dynamic(() => import("@/design-system/examples/tooltip-example")),
+  "voice-beam": dynamic(() => import("@/design-system/examples/voice-beam-example")),
+
+  "agent-screen": dynamic(() => import("@/design-system/examples/agent-screen-example")),
+  "approval-card": dynamic(() => import("@/design-system/examples/approval-card-example")),
+  "chat": dynamic(() => import("@/design-system/examples/chat-example")),
+  "code-block": dynamic(() => import("@/design-system/examples/code-block-example")),
+  "context-cards": dynamic(() => import("@/design-system/examples/context-cards-example")),
+  "fine-tune-card": dynamic(() => import("@/design-system/examples/fine-tune-card-example")),
+  "insight-cards": dynamic(() => import("@/design-system/examples/insight-cards-example")),
+  "loading-state": dynamic(() => import("@/design-system/examples/loading-state-example")),
+  "prompt-bar": dynamic(() => import("@/design-system/examples/prompt-bar-example")),
+  "recommendation-card": dynamic(() => import("@/design-system/examples/recommendation-card-example")),
+  "search": dynamic(() => import("@/design-system/examples/search-example")),
+  "selection-actions": dynamic(() => import("@/design-system/examples/selection-actions-example")),
+  "streaming-text": dynamic(() => import("@/design-system/examples/streaming-text-example")),
+  "task-rows": dynamic(() => import("@/design-system/examples/task-rows-example")),
+  "thinking": dynamic(() => import("@/design-system/examples/thinking-example")),
+  "tool-chips": dynamic(() => import("@/design-system/examples/tool-chips-example")),
 }
 
 export function generateStaticParams() {
@@ -91,7 +100,7 @@ export async function generateMetadata({
 }) {
   const { slug } = await params
   const example = getExample(slug)
-  return { title: example ? `${example.title} — Clinic EHR Design System` : "Not found" }
+  return { title: example ? `${example.title} — ${BRAND_NAME} Design System` : "Not found" }
 }
 
 export default async function Page({
@@ -111,49 +120,12 @@ export default async function Page({
 
   return (
     <div>
-      <Breadcrumb className="mb-4">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">Design System</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{example.group}</BreadcrumbPage>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{example.title}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      <header className="mb-6">
-        <div className="flex items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-surface text-primary-tint">
-            <ComponentIcon slug={example.slug} className="size-5" />
-          </span>
-          <h1 className="font-heading text-3xl font-semibold tracking-tight">{example.title}</h1>
-        </div>
-        <p className="mt-3 max-w-2xl text-muted-foreground">{example.description}</p>
-        {example.docs && (
-          <a
-            href={`https://ui.shadcn.com/docs/components/${example.docs}`}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
-          >
-            API reference on ui.shadcn.com
-            <IconExternalLink className="size-3.5" />
-          </a>
-        )}
+      <header className="mb-8 flex items-center gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-surface text-primary-tint">
+          <ComponentIcon slug={example.slug} className="size-5" />
+        </span>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight">{example.title}</h1>
       </header>
-
-      <div className="mb-8 rounded-xl border-l-2 border-l-primary bg-muted/40 px-4 py-3">
-        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          When to use it
-        </p>
-        <p className="mt-1 text-sm">{example.guidance}</p>
-      </div>
 
       <Separator className="mb-8" />
 

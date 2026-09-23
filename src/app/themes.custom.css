@@ -1,0 +1,95 @@
+/* Hand-authored accents.
+   themes.css is regenerated wholesale by scripts/gen-themes from the shadcn
+   preset list, so anything that is not a shadcn preset lives here instead —
+   same `:root[data-accent="…"]` shape, same variable set, so it is picked by
+   the customizer and the appearance menu exactly like a generated one.
+
+   These are the only accents the product offers; see tokens/accents.ts. */
+
+/* ---------- Brand blue ---------- */
+/* Taken from the Figma file's variables (Amazing Grace Center), not eyeballed:
+
+     Primary/07-Main  #2c71e5  oklch(0.571 0.190 260.3)  → --primary (fills)
+     Primary/09       #225cc3  oklch(0.499 0.172 260.9)  → --primary-tint (text)
+     Primary/00       #eff9ff  oklch(0.976 0.013 233.7)  → --primary-surface
+
+   The design uses each for a different job and so does this preset: Main is
+   the fill (the active page in the pager, buttons), 09 is what links and the
+   MRN column are *drawn* in, and 00 sits behind the selected segment. White
+   ink on Main is 4.56:1, just inside AA; 09 is 6.2:1 on white, which is why
+   the design reaches for the deeper step whenever the blue is text.
+
+   Dark mode keeps the same fill; globals.css repoints --primary-tint and
+   --primary-surface at --chart-1 there, which is what a dark card needs. */
+
+:root[data-accent="brand-blue"],
+:root[data-accent="brand-blue"].dark {
+  --primary: oklch(0.571 0.19 260.3);
+  --primary-foreground: oklch(1 0 0);
+  --accent: oklch(0.571 0.19 260.3);
+  --accent-foreground: oklch(1 0 0);
+  --chart-1: oklch(0.85 0.1 260.3);
+  --chart-2: oklch(0.72 0.15 260.3);
+  --chart-3: oklch(0.571 0.19 260.3);
+  --chart-4: oklch(0.499 0.172 260.9);
+  --chart-5: oklch(0.36 0.122 260.6);
+  --sidebar-primary: oklch(0.571 0.19 260.3);
+  --sidebar-primary-foreground: oklch(1 0 0);
+}
+
+:root[data-accent="brand-blue"] {
+  --primary-tint: oklch(0.499 0.172 260.9);
+  --primary-surface: oklch(0.976 0.013 233.7);
+}
+
+/* ---------- Brand cyan / brand teal ---------- */
+/* Built to the same contract as brand blue, so switching accent changes the
+   hue and nothing else: each fill is the lightest step at its hue that still
+   carries white ink at AA (4.6:1, like blue's 4.56:1), each tint is the step
+   that reaches blue's 6.2:1 for text, and each surface sits at blue's
+   Primary/00 lightness. Chroma is lower than blue's because sRGB runs out of
+   saturated cyan and teal that dark — these are the most saturated in-gamut
+   values at each lightness, not a softened choice.
+
+     cyan  fill #03809e  tint #006a83  surface #ecfaff   (hue 222)
+     teal  fill #01837e  tint #016d69  surface #eafcfa   (hue 190) */
+
+:root[data-accent="brand-cyan"],
+:root[data-accent="brand-cyan"].dark {
+  --primary: oklch(0.555 0.102 222);
+  --primary-foreground: oklch(1 0 0);
+  --accent: oklch(0.555 0.102 222);
+  --accent-foreground: oklch(1 0 0);
+  --chart-1: oklch(0.85 0.105 222);
+  --chart-2: oklch(0.72 0.133 222);
+  --chart-3: oklch(0.555 0.102 222);
+  --chart-4: oklch(0.485 0.09 222);
+  --chart-5: oklch(0.36 0.067 222);
+  --sidebar-primary: oklch(0.555 0.102 222);
+  --sidebar-primary-foreground: oklch(1 0 0);
+}
+
+:root[data-accent="brand-cyan"] {
+  --primary-tint: oklch(0.485 0.09 222);
+  --primary-surface: oklch(0.976 0.016 222);
+}
+
+:root[data-accent="brand-teal"],
+:root[data-accent="brand-teal"].dark {
+  --primary: oklch(0.551 0.095 190);
+  --primary-foreground: oklch(1 0 0);
+  --accent: oklch(0.551 0.095 190);
+  --accent-foreground: oklch(1 0 0);
+  --chart-1: oklch(0.85 0.105 190);
+  --chart-2: oklch(0.72 0.124 190);
+  --chart-3: oklch(0.551 0.095 190);
+  --chart-4: oklch(0.482 0.083 190);
+  --chart-5: oklch(0.36 0.062 190);
+  --sidebar-primary: oklch(0.551 0.095 190);
+  --sidebar-primary-foreground: oklch(1 0 0);
+}
+
+:root[data-accent="brand-teal"] {
+  --primary-tint: oklch(0.482 0.083 190);
+  --primary-surface: oklch(0.976 0.019 190);
+}

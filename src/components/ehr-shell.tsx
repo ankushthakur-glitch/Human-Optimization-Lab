@@ -1,0 +1,447 @@
+"use client"
+
+import * as React from "react"
+import Image from "next/image"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import {
+  IconCalendar,
+  IconDashboard,
+  IconFileText,
+  IconLab,
+  IconLogout,
+  IconNotification,
+  IconPalette,
+  IconSearch,
+  IconSettings,
+  IconUser,
+  IconUserAdd,
+  IconUserCircle,
+} from "@/design-system/icons"
+
+import { cn } from "@/lib/utils"
+import { BRAND_NAME, LOGO, MARK } from "@/lib/brand"
+import { AppearanceMenuSection } from "@/design-system/appearance-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/design-system/ui/avatar"
+import { Button } from "@/design-system/ui/button"
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/design-system/ui/command"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/design-system/ui/dropdown-menu"
+import { Kbd } from "@/design-system/ui/kbd"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/design-system/ui/tooltip"
+
+/* ------------------------------------------------------------------- nav -- */
+
+export type ModuleId =
+  | "dashboard"
+  | "patients"
+  | "schedule"
+  | "orders"
+  | "results"
+
+type NavItem = {
+  id: ModuleId
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  href?: string
+  count?: number
+}
+
+const PRIMARY_NAV: NavItem[] = [
+  { id: "dashboard", label: "Dashboard", icon: IconDashboard },
+  {
+    id: "patients",
+    label: "Patients",
+    icon: IconUser,
+    href: "/screens/patients",
+  },
+  { id: "schedule", label: "Schedule", icon: IconCalendar, count: 31 },
+  { id: "orders", label: "Orders", icon: IconFileText, count: 7 },
+  { id: "results", label: "Results", icon: IconLab, count: 18 },
+]
+
+/* The top bar is global — identity, search, inbox, account. The sidebar is
+   module navigation. Keeping the two responsibilities apart is what lets the
+   same shell wrap a worklist and a full-page form without either fighting the
+   other for the top row. */
+
+function SideNavLink({
+  item,
+  active,
+  collapsed,
+}: {
+  item: NavItem
+  active: boolean
+  collapsed: boolean
+}) {
+  const content = (
+    <>
+      <item.icon className="size-5 shrink-0" />
+      {!collapsed && (
+        <>
+          <span className="min-w-0 flex-1 truncate text-left">
+            {item.label}
+          </span>
+          {item.count ? (
+            <span
+              className={cn(
+                "shrink-0 text-xs tabular-nums",
+                active
+                  ? "text-primary-foreground/75"
+                  : "text-sidebar-foreground/55"
+              )}
+            >
+              {item.count}
+            </span>
+          ) : null}
+        </>
+      )}
+    </>
+  )
+
+  /* The rail marks the current module with a solid brand fill — the one
+     saturated shape in the sidebar, so the module you are in is legible from
+     the far side of the screen. The pair is --primary / --primary-foreground
+     rather than a hand-picked ink: every preset ships that pair with
+     guaranteed contrast in both themes, including the presets whose --primary
+     is a *light* fill carrying dark ink, so the row inverts correctly
+     whichever palette is active. The count keeps the same ink at 75%, which
+     is the one place a muted step still has to come from the fill's side. */
+  const className = cn(
+    "flex items-center gap-3 rounded-lg text-sm transition-colors",
+    collapsed ? "size-10 justify-center" : "w-full px-3 py-2.5",
+    active
+      ? "bg-primary font-medium text-primary-foreground"
+      : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+  )
+
+  const node = item.href ? (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={className}
+    >
+      {content}
+    </Link>
+  ) : (
+    <button
+      type="button"
+      aria-current={active ? "page" : undefined}
+      className={className}
+    >
+      {content}
+    </button>
+  )
+
+  if (!collapsed) return node
+
+  return (
+    <Tooltip>
+      <TooltipTrigger render={node} />
+      <TooltipContent side="right">{item.label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+/* ----------------------------------------------------------------- shell -- */
+
+export function EhrShell({
+  active = "patients",
+  children,
+}: {
+  active?: ModuleId
+  children: React.ReactNode
+}) {
+  const [collapsed, setCollapsed] = React.useState(false)
+  const [searchOpen, setSearchOpen] = React.useState(false)
+  const router = useRouter()
+
+  React.useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault()
+        setSearchOpen((open) => !open)
+      }
+    }
+    document.addEventListener("keydown", onKeyDown)
+    return () => document.removeEventListener("keydown", onKeyDown)
+  }, [])
+
+  function go(href: string) {
+    setSearchOpen(false)
+    router.push(href)
+  }
+
+  return (
+    /* The approved layout puts the rail against the window edge, full height,
+       with the brand at its top — so the header is a sibling of the rail, not
+       a bar above it. That is what lets the mark sit in the rail's own column
+       and stay put when the rail collapses to icons. */
+    <div className="flex h-svh min-h-0 bg-muted/30">
+      {/* side nav */}
+      <aside
+        className={cn(
+          "hidden shrink-0 flex-col border-r bg-card text-sidebar-foreground transition-[width] duration-200 sm:flex",
+          collapsed ? "w-16" : "w-60"
+        )}
+      >
+        {/* The brand block lines up with the header beside it, so the rule
+            under the header reads as one line across the whole window. */}
+        <Link
+          href="/screens/patients"
+          className={cn(
+            "flex h-14 shrink-0 items-center border-b",
+            collapsed ? "justify-center px-0" : "px-4"
+          )}
+        >
+          {/* The supplied artwork rather than a stand-in glyph and type, so the
+              rail, the design-system header and the browser tab all show the
+              same mark. Both tones ship and CSS hides one: next-themes toggles
+              a class rather than following prefers-color-scheme, so a media
+              query would ignore the in-app switch and picking in JS would flash
+              the wrong tone before hydration.
+
+              The lockup sits at h-8 and the rail's disc at size-8, which is the
+              height the disc inside the lockup renders at — so collapsing the
+              rail drops the wordmark without resizing the mark. */}
+          {collapsed ? (
+            <>
+              <Image
+                src={MARK.light}
+                alt={BRAND_NAME}
+                width={MARK.size}
+                height={MARK.size}
+                priority
+                className="size-8 dark:hidden"
+              />
+              <Image
+                src={MARK.dark}
+                alt={BRAND_NAME}
+                width={MARK.size}
+                height={MARK.size}
+                priority
+                className="hidden size-8 dark:block"
+              />
+            </>
+          ) : (
+            <>
+              <Image
+                src={LOGO.light}
+                alt={BRAND_NAME}
+                width={LOGO.width}
+                height={LOGO.height}
+                priority
+                className="h-8 w-auto dark:hidden"
+              />
+              <Image
+                src={LOGO.dark}
+                alt={BRAND_NAME}
+                width={LOGO.width}
+                height={LOGO.height}
+                priority
+                className="hidden h-8 w-auto dark:block"
+              />
+            </>
+          )}
+        </Link>
+
+        <nav
+          className={cn("flex flex-col gap-1 p-3", collapsed && "items-center")}
+        >
+          {PRIMARY_NAV.map((item) => (
+            <SideNavLink
+              key={item.id}
+              item={item}
+              active={item.id === active}
+              collapsed={collapsed}
+            />
+          ))}
+        </nav>
+
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* global bar */}
+        <header className="relative flex h-14 shrink-0 items-center gap-3 border-b bg-card px-3 sm:px-4">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+            onClick={() => setCollapsed((v) => !v)}
+            className="shrink-0"
+          >
+            <IconMenuGlyph />
+          </Button>
+
+          {/* Search sits on the bar's true centre, which means taking it out of
+              the flow: the account cluster on the right is several times wider
+              than the collapse button on the left, so a flowed field centres
+              itself in the gap between them and lands visibly left of the
+              window's middle. Out of the flow it stays put whichever side
+              grows later — a longer name, one more icon. The wrapper spans the
+              bar and ignores the pointer so the bar stays clickable either side
+              of the field; only the field itself takes events back. */}
+          <div className="pointer-events-none absolute inset-x-0 hidden justify-center px-3 sm:px-4 md:flex">
+            <div className="pointer-events-auto w-full max-w-md">
+              {/* A trigger, not a field: typing happens in the palette, which
+                  opens centred over a backdrop so the page recedes while you
+                  search. */}
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                aria-label="Open global search"
+                className="flex h-8 w-full items-center gap-2 rounded-md border bg-input/30 px-2.5 text-sm text-muted-foreground transition-colors hover:bg-input/50"
+              >
+                <IconSearch className="size-4 shrink-0" />
+                <span className="flex-1 truncate text-left">
+                  Search {BRAND_NAME}
+                </span>
+                <Kbd>⌘K</Kbd>
+              </button>
+            </div>
+          </div>
+
+          <CommandDialog
+            open={searchOpen}
+            onOpenChange={setSearchOpen}
+            title="Global search"
+            description="Search modules and actions"
+            className="top-1/2 -translate-y-1/2 sm:max-w-lg"
+          >
+            <Command>
+              <CommandInput placeholder={`Search ${BRAND_NAME}...`} />
+              <CommandList>
+                <CommandEmpty>No results found.</CommandEmpty>
+                <CommandGroup heading="Actions">
+                  <CommandItem onSelect={() => go("/screens/patients/new")}>
+                    <IconUserAdd />
+                    Add patient
+                  </CommandItem>
+                </CommandGroup>
+                <CommandGroup heading="Go to">
+                  {PRIMARY_NAV
+                    .filter((item) => item.href)
+                    .map((item) => (
+                      <CommandItem
+                        key={item.id}
+                        onSelect={() => go(item.href!)}
+                      >
+                        <item.icon />
+                        {item.label}
+                      </CommandItem>
+                    ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </CommandDialog>
+
+          {/* The reference carries one bell and the account, nothing else. */}
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Notifications"
+              className="relative"
+            >
+              <IconNotification />
+              <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-destructive" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="ghost" size="sm" className="gap-2 px-1.5">
+                    <Avatar className="size-7">
+                      <AvatarImage
+                        src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=96&h=96&q=80"
+                        alt="Dr. Reyes"
+                      />
+                      <AvatarFallback>RM</AvatarFallback>
+                    </Avatar>
+                    <span className="hidden text-left text-xs font-medium sm:block">
+                      Dr. Reyes
+                    </span>
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-72">
+                {/* Base UI requires GroupLabel to live inside a Group. */}
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="flex flex-col gap-0.5 px-2.5 py-2 font-normal">
+                    <span className="text-sm font-medium text-foreground">
+                      Dr. Reyes
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      m.reyes@humanoptimization.com
+                    </span>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem>
+                    <IconUserCircle />
+                    My profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <IconSettings />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem render={<Link href="/" />}>
+                    <IconPalette />
+                    Design system
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                {/* Light, dark or follow the OS. The accent is the product's,
+                    not the clinician's, so the colour row stays out of here. */}
+                <AppearanceMenuSection showAccent={false} />
+                <DropdownMenuSeparator />
+                <DropdownMenuItem render={<Link href="/" />}>
+                  <IconLogout />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
+          {children}
+        </main>
+      </div>
+    </div>
+  )
+}
+
+/* The icon set has no hamburger that reads well at 16px next to the brand mark,
+   so the rail toggle draws its own. */
+function IconMenuGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-4" aria-hidden>
+      <path
+        d="M4 6h16M4 12h10M4 18h16"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}

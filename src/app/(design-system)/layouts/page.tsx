@@ -40,7 +40,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/design-system/ui/table"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/design-system/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/design-system/ui/tooltip"
 
 /* ------------------------------------------------------------------ data -- */
 
@@ -65,12 +69,66 @@ type Patient = {
 }
 
 const PATIENTS: Patient[] = [
-  { id: "1", name: "Amara Okafor", mrn: "MRN-10241", dob: "1984-03-12", provider: "Dr. Reyes", department: "Cardiology", status: "Active", lastSeen: "2026-09-14" },
-  { id: "2", name: "Desmond Hale", mrn: "MRN-10242", dob: "1971-11-02", provider: "Dr. Lin", department: "Endocrinology", status: "Pending", lastSeen: "2026-09-13" },
-  { id: "3", name: "Priya Raghunathan", mrn: "MRN-10243", dob: "1996-06-28", provider: "Dr. Reyes", department: "Primary Care", status: "Active", lastSeen: "2026-09-15" },
-  { id: "4", name: "Marcus Bell", mrn: "MRN-10244", dob: "1959-01-19", provider: "Dr. Osei", department: "Nephrology", status: "Discharged", lastSeen: "2026-09-02" },
-  { id: "5", name: "Lena Sørensen", mrn: "MRN-10245", dob: "1988-09-30", provider: "Dr. Lin", department: "Primary Care", status: "Active", lastSeen: "2026-09-15" },
-  { id: "6", name: "Tobias Frank", mrn: "MRN-10246", dob: "2001-04-07", provider: "Dr. Osei", department: "Orthopedics", status: "Pending", lastSeen: "2026-09-11" },
+  {
+    id: "1",
+    name: "Amara Okafor",
+    mrn: "MRN-10241",
+    dob: "1984-03-12",
+    provider: "Dr. Reyes",
+    department: "Cardiology",
+    status: "Active",
+    lastSeen: "2026-09-14",
+  },
+  {
+    id: "2",
+    name: "Desmond Hale",
+    mrn: "MRN-10242",
+    dob: "1971-11-02",
+    provider: "Dr. Lin",
+    department: "Endocrinology",
+    status: "Pending",
+    lastSeen: "2026-09-13",
+  },
+  {
+    id: "3",
+    name: "Priya Raghunathan",
+    mrn: "MRN-10243",
+    dob: "1996-06-28",
+    provider: "Dr. Reyes",
+    department: "Primary Care",
+    status: "Active",
+    lastSeen: "2026-09-15",
+  },
+  {
+    id: "4",
+    name: "Marcus Bell",
+    mrn: "MRN-10244",
+    dob: "1959-01-19",
+    provider: "Dr. Osei",
+    department: "Nephrology",
+    status: "Discharged",
+    lastSeen: "2026-09-02",
+  },
+  {
+    id: "5",
+    name: "Lena Sørensen",
+    mrn: "MRN-10245",
+    dob: "1988-09-30",
+    provider: "Dr. Lin",
+    department: "Primary Care",
+    status: "Active",
+    lastSeen: "2026-09-15",
+  },
+  {
+    id: "6",
+    name: "Tobias Frank",
+    mrn: "MRN-10246",
+    dob: "2001-04-07",
+    provider: "Dr. Osei",
+    department: "Orthopedics",
+    status: "Pending",
+    lastSeen: "2026-09-11",
+  },
 ]
 
 const KPIS = [
@@ -90,24 +148,25 @@ const VOLUME = [
 
 /* -------------------------------------------------------------- controls -- */
 
-type NavVariant = "sidebar" | "icon" | "inset" | "floating" | "topnav" | "hybrid"
+type NavVariant =
+  "sidebar" | "icon" | "inset" | "floating" | "topnav" | "hybrid"
 type ContentVariant = "table" | "grid" | "split" | "dashboard"
 type Density = "comfortable" | "compact"
 
-const NAV_VARIANTS: { id: NavVariant; label: string; note: string }[] = [
-  { id: "sidebar", label: "Sidebar", note: "Default shell. Deep navigation stays visible." },
-  { id: "icon", label: "Icon rail", note: "Collapsed rail — maximum width for wide tables." },
-  { id: "inset", label: "Inset", note: "Content floats as a card. Calmer, costs some width." },
-  { id: "floating", label: "Floating", note: "Detached sidebar. Spacious, best for dashboards." },
-  { id: "topnav", label: "Top nav", note: "Horizontal nav. Good for shallow information architecture." },
-  { id: "hybrid", label: "Top + sidebar", note: "Global bar plus module nav. Scales to large suites." },
+const NAV_VARIANTS: { id: NavVariant; label: string }[] = [
+  { id: "sidebar", label: "Sidebar" },
+  { id: "icon", label: "Icon rail" },
+  { id: "inset", label: "Inset" },
+  { id: "floating", label: "Floating" },
+  { id: "topnav", label: "Top nav" },
+  { id: "hybrid", label: "Top + sidebar" },
 ]
 
-const CONTENT_VARIANTS: { id: ContentVariant; label: string; note: string }[] = [
-  { id: "table", label: "Data table", note: "Dense worklist with sorting and batch selection." },
-  { id: "grid", label: "Card grid", note: "Scannable cards. Fewer records, more context each." },
-  { id: "split", label: "Master–detail", note: "List beside detail. Review without losing place." },
-  { id: "dashboard", label: "Dashboard", note: "KPI tiles and trends as a landing surface." },
+const CONTENT_VARIANTS: { id: ContentVariant; label: string }[] = [
+  { id: "table", label: "Data table" },
+  { id: "grid", label: "Card grid" },
+  { id: "split", label: "Master–detail" },
+  { id: "dashboard", label: "Dashboard" },
 ]
 
 function OptionButton({
@@ -209,7 +268,9 @@ function BrandMark({ collapsed }: { collapsed?: boolean }) {
       <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
         <IconStethoscope className="size-3.5" />
       </span>
-      {!collapsed && <span className="truncate text-sm font-semibold">{BRAND_NAME}</span>}
+      {!collapsed && (
+        <span className="truncate text-sm font-semibold">{BRAND_NAME}</span>
+      )}
     </div>
   )
 }
@@ -243,7 +304,7 @@ function TopBar({
               className={cn(
                 "rounded-md px-2.5 py-1.5 text-sm transition-colors",
                 item.id === active
-                  ? "bg-surface-selected selected-marker font-medium text-foreground"
+                  ? "selected-marker bg-surface-selected font-medium text-foreground"
                   : "text-muted-foreground hover:bg-surface-hover"
               )}
             >
@@ -286,7 +347,9 @@ function PageHeader({ title }: { title: string }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
       <div>
-        <h2 className="font-heading text-lg font-semibold tracking-tight">{title}</h2>
+        <h2 className="font-heading text-lg font-semibold tracking-tight">
+          {title}
+        </h2>
         <p className="text-xs text-muted-foreground">
           {PATIENTS.length} records · updated just now
         </p>
@@ -294,7 +357,10 @@ function PageHeader({ title }: { title: string }) {
       <div className="flex items-center gap-2">
         <div className="relative">
           <IconSearch className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input className="h-8 w-44 pl-8 text-xs" placeholder="Search patients" />
+          <Input
+            className="h-8 w-44 pl-8 text-xs"
+            placeholder="Search patients"
+          />
         </div>
         <Button size="sm">New encounter</Button>
       </div>
@@ -376,7 +442,9 @@ function WorklistTable({ density }: { density: Density }) {
                   checked={allSelected}
                   indeterminate={selected.size > 0 && !allSelected}
                   onCheckedChange={(checked) =>
-                    setSelected(checked ? new Set(rows.map((r) => r.id)) : new Set())
+                    setSelected(
+                      checked ? new Set(rows.map((r) => r.id)) : new Set()
+                    )
                   }
                 />
               </TableHead>
@@ -402,7 +470,10 @@ function WorklistTable({ density }: { density: Density }) {
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.id} data-selected={selected.has(row.id) || undefined}>
+              <TableRow
+                key={row.id}
+                data-selected={selected.has(row.id) || undefined}
+              >
                 <TableCell className={cn("pl-5", DENSITY_CELL[density])}>
                   <Checkbox
                     aria-label={`Select ${row.name}`}
@@ -420,23 +491,38 @@ function WorklistTable({ density }: { density: Density }) {
                 <TableCell className={cn("font-medium", DENSITY_CELL[density])}>
                   {row.name}
                 </TableCell>
-                <TableCell className={cn("font-mono text-xs text-muted-foreground", DENSITY_CELL[density])}>
+                <TableCell
+                  className={cn(
+                    "font-mono text-xs text-muted-foreground",
+                    DENSITY_CELL[density]
+                  )}
+                >
                   {row.mrn}
                 </TableCell>
-                <TableCell className={cn("text-muted-foreground", DENSITY_CELL[density])}>
+                <TableCell
+                  className={cn("text-muted-foreground", DENSITY_CELL[density])}
+                >
                   {row.provider}
                 </TableCell>
-                <TableCell className={cn("text-muted-foreground", DENSITY_CELL[density])}>
+                <TableCell
+                  className={cn("text-muted-foreground", DENSITY_CELL[density])}
+                >
                   {row.department}
                 </TableCell>
                 <TableCell className={DENSITY_CELL[density]}>
-                  <Badge variant={STATUS_VARIANT[row.status]}>{row.status}</Badge>
+                  <Badge variant={STATUS_VARIANT[row.status]}>
+                    {row.status}
+                  </Badge>
                 </TableCell>
                 <TableCell className={DENSITY_CELL[density]}>
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       render={
-                        <Button variant="ghost" size="icon-xs" aria-label="Row actions">
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label="Row actions"
+                        >
                           <IconMore />
                         </Button>
                       }
@@ -445,7 +531,9 @@ function WorklistTable({ density }: { density: Density }) {
                       <DropdownMenuItem>Open chart</DropdownMenuItem>
                       <DropdownMenuItem>Schedule follow-up</DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive">Void encounter</DropdownMenuItem>
+                      <DropdownMenuItem variant="destructive">
+                        Void encounter
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -463,17 +551,25 @@ function CardGrid() {
     <div className="min-h-0 flex-1 overflow-auto p-5">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {PATIENTS.map((p) => (
-          <div key={p.id} className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+          <div
+            key={p.id}
+            className="flex flex-col gap-3 rounded-xl border bg-card p-4"
+          >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <Avatar className="size-8">
                   <AvatarFallback className="text-xs">
-                    {p.name.split(" ").map((n) => n[0]).join("")}
+                    {p.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{p.name}</p>
-                  <p className="font-mono text-[11px] text-muted-foreground">{p.mrn}</p>
+                  <p className="font-mono text-[11px] text-muted-foreground">
+                    {p.mrn}
+                  </p>
                 </div>
               </div>
               <Badge variant={STATUS_VARIANT[p.status]}>{p.status}</Badge>
@@ -513,11 +609,15 @@ function MasterDetail() {
             onClick={() => setActiveId(p.id)}
             className={cn(
               "flex w-full flex-col gap-0.5 border-b px-4 py-3 text-left transition-colors",
-              p.id === activeId ? "bg-surface-selected" : "hover:bg-surface-hover"
+              p.id === activeId
+                ? "bg-surface-selected"
+                : "hover:bg-surface-hover"
             )}
           >
             <span className="text-sm font-medium">{p.name}</span>
-            <span className="font-mono text-[11px] text-muted-foreground">{p.mrn}</span>
+            <span className="font-mono text-[11px] text-muted-foreground">
+              {p.mrn}
+            </span>
           </button>
         ))}
       </div>
@@ -525,11 +625,16 @@ function MasterDetail() {
         <div className="flex items-center gap-3">
           <Avatar className="size-10">
             <AvatarFallback>
-              {active.name.split(" ").map((n) => n[0]).join("")}
+              {active.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-heading text-lg font-semibold">{active.name}</h3>
+            <h3 className="font-heading text-lg font-semibold">
+              {active.name}
+            </h3>
             <p className="font-mono text-xs text-muted-foreground">
               {active.mrn} · DOB {active.dob}
             </p>
@@ -558,8 +663,9 @@ function MasterDetail() {
           Recent note
         </h4>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Patient reports improved exercise tolerance since the last visit. Blood pressure is at
-          goal on the current regimen. Continue present therapy and recheck in three months.
+          Patient reports improved exercise tolerance since the last visit.
+          Blood pressure is at goal on the current regimen. Continue present
+          therapy and recheck in three months.
         </p>
       </div>
     </div>
@@ -581,8 +687,12 @@ function Dashboard() {
         {KPIS.map((k) => (
           <div key={k.label} className="rounded-xl border bg-card p-4">
             <p className="text-xs text-muted-foreground">{k.label}</p>
-            <p className="mt-1 font-heading text-2xl font-semibold">{k.value}</p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">{k.delta}</p>
+            <p className="mt-1 font-heading text-2xl font-semibold">
+              {k.value}
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              {k.delta}
+            </p>
           </div>
         ))}
       </div>
@@ -593,11 +703,21 @@ function Dashboard() {
           <p className="text-xs text-muted-foreground">This week</p>
           <div className="mt-4 flex h-32 items-end gap-3">
             {VOLUME.map((v) => (
-              <div key={v.day} className="flex flex-1 flex-col items-center gap-1.5">
+              <div
+                key={v.day}
+                className="flex flex-1 flex-col items-center gap-1.5"
+              >
                 <div className="flex h-full w-full items-end">
-                  <div className={cn("w-full rounded-t-md bg-chart-2", BAR_HEIGHTS[v.value])} />
+                  <div
+                    className={cn(
+                      "w-full rounded-t-md bg-chart-2",
+                      BAR_HEIGHTS[v.value]
+                    )}
+                  />
                 </div>
-                <span className="text-[10px] text-muted-foreground">{v.day}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {v.day}
+                </span>
               </div>
             ))}
           </div>
@@ -610,12 +730,17 @@ function Dashboard() {
               <div key={p.id} className="flex items-center gap-2.5">
                 <Avatar className="size-7">
                   <AvatarFallback className="text-[10px]">
-                    {p.name.split(" ").map((n) => n[0]).join("")}
+                    {p.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium">{p.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{p.department}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {p.department}
+                  </p>
                 </div>
                 <Badge variant={STATUS_VARIANT[p.status]}>{p.status}</Badge>
               </div>
@@ -697,7 +822,7 @@ function ScreenPreview({
           <BrandMark />
           <SidebarNav active={activeNav} onSelect={setActiveNav} />
         </aside>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background m-2 ml-0">
+        <div className="m-2 ml-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background">
           {body}
         </div>
       </div>
@@ -734,28 +859,26 @@ export default function Page() {
   const [content, setContent] = React.useState<ContentVariant>("table")
   const [density, setDensity] = React.useState<Density>("comfortable")
 
-  const navNote = NAV_VARIANTS.find((v) => v.id === nav)?.note
-  const contentNote = CONTENT_VARIANTS.find((v) => v.id === content)?.note
-
   return (
     <div>
       <header className="mb-6">
         <Badge variant="secondary" className="mb-3">
           Screens
         </Badge>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">Screen assembler</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          Every shell variation combined with every content pattern, assembled live. Pick a
-          navigation style and a content layout to see the composition you would actually ship —
-          the preview is fully interactive, so sorting, selection, and navigation all work.
-        </p>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight">
+          Screen assembler
+        </h1>
       </header>
 
       <div className="mb-6 grid gap-5 rounded-xl border bg-card p-5 lg:grid-cols-[1fr_1fr_auto]">
         <ControlGroup label="Navigation">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {NAV_VARIANTS.map((v) => (
-              <OptionButton key={v.id} active={nav === v.id} onClick={() => setNav(v.id)}>
+              <OptionButton
+                key={v.id}
+                active={nav === v.id}
+                onClick={() => setNav(v.id)}
+              >
                 {v.label}
               </OptionButton>
             ))}
@@ -779,7 +902,11 @@ export default function Page() {
         <ControlGroup label="Density">
           <div className="flex gap-2 lg:flex-col">
             {(["comfortable", "compact"] as Density[]).map((d) => (
-              <OptionButton key={d} active={density === d} onClick={() => setDensity(d)}>
+              <OptionButton
+                key={d}
+                active={density === d}
+                onClick={() => setDensity(d)}
+              >
                 {d === "comfortable" ? "Comfortable" : "Compact"}
               </OptionButton>
             ))}
@@ -787,27 +914,11 @@ export default function Page() {
         </ControlGroup>
       </div>
 
-      <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
-        <span>
-          <strong className="text-foreground">Shell:</strong> {navNote}
-        </span>
-        <span>
-          <strong className="text-foreground">Content:</strong> {contentNote}
-        </span>
-      </div>
-
       <div className="overflow-hidden rounded-xl border shadow-sm">
         <div className="h-[36rem]">
           <ScreenPreview nav={nav} content={content} density={density} />
         </div>
       </div>
-
-      <p className="mt-3 text-xs text-muted-foreground">
-        Density only affects the data table. Shells are composed from plain layout primitives and
-        semantic tokens rather than the Sidebar component, so they can be nested inside this page
-        and edited freely — see{" "}
-        <code className="font-mono">app/layouts/page.tsx</code>.
-      </p>
     </div>
   )
 }

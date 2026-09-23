@@ -27,7 +27,7 @@ function Menubar({ className, ...props }: MenubarPrimitive.Props) {
   return (
     <MenubarPrimitive
       data-slot="menubar"
-      className={cn("flex h-9 items-center rounded-3xl border p-1", className)}
+      className={cn("flex h-9 items-center rounded-lg border p-1", className)}
       {...props}
     />
   )
@@ -57,7 +57,7 @@ function MenubarTrigger({
     <DropdownMenuTrigger
       data-slot="menubar-trigger"
       className={cn(
-        "flex items-center rounded-2xl px-2 py-0.75 text-sm font-medium outline-hidden select-none hover:bg-surface-hover hover:text-surface-hover-foreground aria-expanded:bg-surface-hover aria-expanded:text-surface-hover-foreground",
+        "flex items-center rounded-md px-2 py-0.75 text-sm font-medium outline-hidden select-none hover:bg-surface-hover hover:text-surface-hover-foreground aria-expanded:bg-surface-hover aria-expanded:text-surface-hover-foreground",
         className
       )}
       {...props}

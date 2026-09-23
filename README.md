@@ -86,26 +86,26 @@ favicon is declared through Next's metadata API in [src/app/layout.tsx](src/app/
 
 ### What the artwork can and cannot do
 
-Measured across all 141,750 pixels of the supplied lockup, not assumed:
+The current artwork is the teal "Human / Optimization Lab" lockup, supplied as a
+2028×539 PNG on transparent. Every file under `public/brand/` is cut from it:
 
-- **It is dark-background only.** 81% of its opaque ink is near-white, so on a
-  light page the wordmark and most of the H disappear and leave the spokes
-  floating alone. `logo-lockup-light.png` is a **luminance inversion generated
-  as a stopgap** — clean only because the artwork is pure grayscale, but not a
-  design deliverable. Ask design for a real light lockup.
-- **It carries zero chroma** (max RGB spread across the whole image is 1). There
-  is no brand hue to derive an accent from, which is why the design system is
-  still on its own `cyan` accent.
-- **It is raster, 750×189.** A primary logo should be resolution-independent;
-  the favicon especially wants vector source.
-- **At 16px the mark aliases** — the fan of ~20 spokes becomes a grey smudge.
-  The H and the disc still read. A fix needs a reduced-detail glyph drawn for
-  small sizes, not a rescale. Most browsers reach for the 32px asset anyway.
+- **Light tone** is the artwork as supplied.
+- **Dark tone** is derived: the mark's gradient lifted toward a light teal and
+  the wordmark taken to near-white, because the supplied teal loses too much
+  contrast on a near-black page. Ask design for a real dark lockup.
+- **The mark** is the H alone, centred on a transparent square, used for the
+  512 marks and the 16/32/48 favicons. The 180 home-screen icons put it on a
+  solid ground (white / near-black) because the OS crops them to a rounded tile.
+- **It is raster.** A primary logo should be resolution-independent; swap in
+  the vector source when design supplies it.
 
-The mark is duotone, so it cannot sit on transparency and stay legible against
-both light and dark browser chrome. Two favicon variants ship and the browser
-picks with `prefers-color-scheme`. The header does the same swap in CSS, because
-next-themes toggles a class rather than following the OS setting.
+Files are prefixed `hol-`. When the artwork changes, give the files new names
+rather than overwriting — Next's image optimizer and browsers cache by URL, so
+same-named replacements keep showing the old logo.
+
+Two favicon variants ship and the browser picks with `prefers-color-scheme`.
+The header does the same swap in CSS, because next-themes toggles a class rather
+than following the OS setting.
 
 ## Theming
 

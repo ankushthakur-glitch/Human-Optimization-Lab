@@ -82,7 +82,12 @@ import {
   PaginationPrevious,
 } from "@/design-system/ui/pagination"
 import { Separator } from "@/design-system/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/design-system/ui/tabs"
 import {
   IconAdd,
   IconAlert,
@@ -117,19 +122,16 @@ import {
 
 function Section({
   title,
-  description,
   children,
 }: {
   title: string
-  description: string
   children: React.ReactNode
 }) {
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <h2 className="font-heading text-xl font-semibold tracking-tight">{title}</h2>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
+      <h2 className="font-heading text-xl font-semibold tracking-tight">
+        {title}
+      </h2>
       {children}
     </section>
   )
@@ -137,22 +139,21 @@ function Section({
 
 function Demo({
   title,
-  guidance,
   children,
   className,
 }: {
   title: string
-  guidance: string
   children: React.ReactNode
   className?: string
 }) {
   return (
     <div className="flex flex-col gap-2.5">
-      <div>
-        <h3 className="font-heading text-sm font-semibold tracking-tight">{title}</h3>
-        <p className="max-w-3xl text-sm text-muted-foreground">{guidance}</p>
+      <h3 className="font-heading text-sm font-semibold tracking-tight">
+        {title}
+      </h3>
+      <div className={cn("rounded-xl border bg-card p-6", className)}>
+        {children}
       </div>
-      <div className={cn("rounded-xl border bg-card p-6", className)}>{children}</div>
     </div>
   )
 }
@@ -165,30 +166,26 @@ const SIDEBAR_VARIANTS = [
   {
     slug: "sidebar",
     title: "Standard sidebar",
-    guidance:
-      "Flush rail against the window edge, collapsing off-canvas. The default for the main EHR shell — worklist, schedule, chart, orders, billing.",
   },
   {
     slug: "sidebar-icon",
     title: "Icon sidebar",
-    guidance:
-      "Collapses to an icon rail instead of disappearing. Best where the clinician needs maximum horizontal room — chart notes, imaging, flowsheets — but must keep one-click module switching.",
   },
   {
     slug: "sidebar-inset",
     title: "Inset sidebar",
-    guidance:
-      "Content sits on a raised card inside the sidebar's surface. Reads as a focused workspace; good for encounter documentation where the chart is clearly the subject.",
   },
   {
     slug: "sidebar-floating",
     title: "Floating sidebar",
-    guidance:
-      "The rail itself is a detached rounded card. Softest of the four — suits administrative areas (billing, reporting, practice settings) more than high-density clinical screens.",
   },
 ] as const
 
-function SidebarDiagram({ variant }: { variant: (typeof SIDEBAR_VARIANTS)[number]["slug"] }) {
+function SidebarDiagram({
+  variant,
+}: {
+  variant: (typeof SIDEBAR_VARIANTS)[number]["slug"]
+}) {
   const rows = (
     <>
       <div className="h-1.5 w-full rounded-full bg-sidebar-foreground/25" />
@@ -232,7 +229,9 @@ function SidebarDiagram({ variant }: { variant: (typeof SIDEBAR_VARIANTS)[number
     return (
       <div className="flex h-28 gap-2 rounded-lg bg-sidebar p-2">
         <div className="flex w-1/4 flex-col gap-1.5 py-1">{rows}</div>
-        <div className="flex-1 rounded-lg border bg-background p-2 shadow-sm">{contentBody}</div>
+        <div className="flex-1 rounded-lg border bg-background p-2 shadow-sm">
+          {contentBody}
+        </div>
       </div>
     )
   }
@@ -251,99 +250,6 @@ function SidebarDiagram({ variant }: { variant: (typeof SIDEBAR_VARIANTS)[number
 /*  2. Top navigation bar                                                     */
 /* -------------------------------------------------------------------------- */
 
-const TOP_NAV = [
-  { label: "Worklist", icon: IconHome },
-  { label: "Schedule", icon: IconCalendar },
-  { label: "Patients", icon: IconTeam },
-  { label: "Orders", icon: IconFileList },
-  { label: "Billing", icon: IconBilling },
-]
-
-function TopNavBarDemo() {
-  const [active, setActive] = React.useState("Worklist")
-
-  return (
-    <div className="overflow-hidden rounded-lg border bg-background">
-      <div className="flex items-center gap-3 px-3 py-2">
-        <div className="flex items-center gap-2 pr-1">
-          <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <IconHeartPulse className="size-4" />
-          </span>
-          <span className="font-heading text-sm font-semibold tracking-tight">{BRAND_NAME}</span>
-        </div>
-
-        <Separator orientation="vertical" className="h-5" />
-
-        <nav className="flex items-center gap-0.5 overflow-x-auto">
-          {TOP_NAV.map((item) => {
-            const Icon = item.icon
-            const isActive = item.label === active
-            return (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => setActive(item.label)}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-3xl px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                  isActive
-                    ? "bg-primary-surface text-primary-tint"
-                    : "text-muted-foreground hover:bg-surface-hover hover:text-surface-hover-foreground"
-                )}
-              >
-                <Icon className="size-4" />
-                {item.label}
-              </button>
-            )
-          })}
-        </nav>
-
-        <div className="ml-auto flex items-center gap-1">
-          <Button variant="ghost" size="icon-sm" aria-label="Notifications">
-            <IconNotification />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button variant="ghost" size="sm" className="gap-2 pl-1" />}
-            >
-              <Avatar size="sm">
-                <AvatarFallback>AR</AvatarFallback>
-              </Avatar>
-              <span className="hidden sm:inline">Dr. A. Reyes</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-56">
-              <DropdownMenuLabel>Signed in — Internal Medicine</DropdownMenuLabel>
-              <DropdownMenuItem>
-                <IconUser />
-                Provider profile
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconStethoscope />
-                Switch care setting
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconSettings />
-                Preferences
-                <DropdownMenuShortcut>⌘,</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive">
-                <IconLogout />
-                Break the glass &amp; sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-      <Separator />
-      <div className="flex items-center gap-2 px-4 py-2 text-xs text-muted-foreground">
-        <IconAlert className="size-3.5 text-destructive" />
-        Context bar: Maria Alvarez · MRN-10241 · 58F · Allergy: Penicillin
-      </div>
-    </div>
-  )
-}
-
 /* -------------------------------------------------------------------------- */
 /*  3. Navigation menu / mega menu                                            */
 /* -------------------------------------------------------------------------- */
@@ -352,16 +258,37 @@ const PATIENT_LINKS = [
   { title: "Patient search", description: "Find by name, MRN, DOB, or phone." },
   { title: "My panel", description: "Patients empanelled to you as PCP." },
   { title: "Recent charts", description: "The last 20 charts you opened." },
-  { title: "Register patient", description: "Create a new medical record number." },
+  {
+    title: "Register patient",
+    description: "Create a new medical record number.",
+  },
 ]
 
 const CLINICAL_LINKS = [
-  { title: "Encounters", description: "Office visits, telehealth, and inpatient stays." },
-  { title: "Medications", description: "Active list, renewals, and e-prescribing." },
-  { title: "Allergies & intolerances", description: "Reactions, severity, and reconciliation." },
-  { title: "Results review", description: "Labs, pathology, and imaging inbox." },
-  { title: "Vitals & flowsheets", description: "Trended observations over time." },
-  { title: "Care plans", description: "Goals, problems, and longitudinal plans." },
+  {
+    title: "Encounters",
+    description: "Office visits, telehealth, and inpatient stays.",
+  },
+  {
+    title: "Medications",
+    description: "Active list, renewals, and e-prescribing.",
+  },
+  {
+    title: "Allergies & intolerances",
+    description: "Reactions, severity, and reconciliation.",
+  },
+  {
+    title: "Results review",
+    description: "Labs, pathology, and imaging inbox.",
+  },
+  {
+    title: "Vitals & flowsheets",
+    description: "Trended observations over time.",
+  },
+  {
+    title: "Care plans",
+    description: "Goals, problems, and longitudinal plans.",
+  },
 ]
 
 function MegaMenuDemo() {
@@ -399,19 +326,35 @@ function MegaMenuDemo() {
           <NavigationMenuContent>
             <ul className="grid w-[230px]">
               <li>
-                <NavigationMenuLink render={<Link href="#" className="flex-row items-center gap-2" />}>
+                <NavigationMenuLink
+                  render={
+                    <Link href="#" className="flex-row items-center gap-2" />
+                  }
+                >
                   <IconLab />
                   Lab orders
                 </NavigationMenuLink>
-                <NavigationMenuLink render={<Link href="#" className="flex-row items-center gap-2" />}>
+                <NavigationMenuLink
+                  render={
+                    <Link href="#" className="flex-row items-center gap-2" />
+                  }
+                >
                   <IconMedication />
                   Prescriptions
                 </NavigationMenuLink>
-                <NavigationMenuLink render={<Link href="#" className="flex-row items-center gap-2" />}>
+                <NavigationMenuLink
+                  render={
+                    <Link href="#" className="flex-row items-center gap-2" />
+                  }
+                >
                   <IconFileText />
                   Referrals
                 </NavigationMenuLink>
-                <NavigationMenuLink render={<Link href="#" className="flex-row items-center gap-2" />}>
+                <NavigationMenuLink
+                  render={
+                    <Link href="#" className="flex-row items-center gap-2" />
+                  }
+                >
                   <IconChart />
                   Order sets
                 </NavigationMenuLink>
@@ -421,7 +364,10 @@ function MegaMenuDemo() {
         </NavigationMenuItem>
 
         <NavigationMenuItem>
-          <NavigationMenuLink render={<Link href="#" />} className={navigationMenuTriggerStyle()}>
+          <NavigationMenuLink
+            render={<Link href="#" />}
+            className={navigationMenuTriggerStyle()}
+          >
             Reports
           </NavigationMenuLink>
         </NavigationMenuItem>
@@ -430,7 +376,13 @@ function MegaMenuDemo() {
   )
 }
 
-function MegaMenuLink({ title, children }: { title: string; children: React.ReactNode }) {
+function MegaMenuLink({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
   return (
     <li>
       <NavigationMenuLink render={<Link href="#" />}>
@@ -496,17 +448,25 @@ function MenubarDemo() {
             Place referral
           </MenubarItem>
           <MenubarSeparator />
-          <MenubarItem disabled>Sign &amp; hold (no pending orders)</MenubarItem>
+          <MenubarItem disabled>
+            Sign &amp; hold (no pending orders)
+          </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
 
       <MenubarMenu>
         <MenubarTrigger>View</MenubarTrigger>
         <MenubarContent className="w-60">
-          <MenubarCheckboxItem checked={showInactive} onCheckedChange={setShowInactive}>
+          <MenubarCheckboxItem
+            checked={showInactive}
+            onCheckedChange={setShowInactive}
+          >
             Show inactive problems
           </MenubarCheckboxItem>
-          <MenubarCheckboxItem checked={showDiscontinued} onCheckedChange={setShowDiscontinued}>
+          <MenubarCheckboxItem
+            checked={showDiscontinued}
+            onCheckedChange={setShowDiscontinued}
+          >
             Show discontinued medications
           </MenubarCheckboxItem>
           <MenubarSeparator />
@@ -537,8 +497,10 @@ function MenubarDemo() {
 /* -------------------------------------------------------------------------- */
 
 const CHART_TAB_BODY: Record<string, string> = {
-  summary: "Snapshot of active problems, medications, allergies, and the last three encounters.",
-  vitals: "BP 138/86 · HR 78 · Temp 36.8 °C · SpO₂ 97% · BMI 29.4 — recorded 2026-09-15 09:32.",
+  summary:
+    "Snapshot of active problems, medications, allergies, and the last three encounters.",
+  vitals:
+    "BP 138/86 · HR 78 · Temp 36.8 °C · SpO₂ 97% · BMI 29.4 — recorded 2026-09-15 09:32.",
   meds: "Metformin 1000 mg BID · Lisinopril 10 mg daily · Atorvastatin 20 mg nightly.",
   labs: "A1c 7.4% (H) · eGFR 68 · LDL 112 (H) — resulted 2026-09-11.",
   notes: "12 progress notes, 3 telephone encounters, 1 discharge summary.",
@@ -648,7 +610,9 @@ function PaginationDemo() {
   const from = (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, totalRows)
 
-  const windowPages = [page - 1, page, page + 1].filter((p) => p > 1 && p < totalPages)
+  const windowPages = [page - 1, page, page + 1].filter(
+    (p) => p > 1 && p < totalPages
+  )
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -780,9 +744,13 @@ function StepperDemo() {
                 <span
                   className={cn(
                     "flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-medium transition-colors",
-                    isComplete && "border-primary bg-primary text-primary-foreground",
-                    isCurrent && "border-primary bg-primary-surface text-primary-tint",
-                    !isComplete && !isCurrent && "border-border text-muted-foreground"
+                    isComplete &&
+                      "border-primary bg-primary text-primary-foreground",
+                    isCurrent &&
+                      "border-primary bg-primary-surface text-primary-tint",
+                    !isComplete &&
+                      !isCurrent &&
+                      "border-border text-muted-foreground"
                   )}
                 >
                   {isComplete ? <IconCheck className="size-3.5" /> : index + 1}
@@ -806,7 +774,9 @@ function StepperDemo() {
 
       <div className="rounded-lg border bg-background p-4">
         <div className="mb-1.5 flex items-center gap-2">
-          <h4 className="font-heading text-sm font-semibold">{current.label}</h4>
+          <h4 className="font-heading text-sm font-semibold">
+            {current.label}
+          </h4>
           <Badge variant="secondary">
             Step {step + 1} of {INTAKE_STEPS.length}
           </Badge>
@@ -815,12 +785,18 @@ function StepperDemo() {
       </div>
 
       <div className="flex items-center justify-between">
-        <Button variant="ghost" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>
+        <Button
+          variant="ghost"
+          disabled={step === 0}
+          onClick={() => setStep((s) => s - 1)}
+        >
           Back
         </Button>
         <Button
           disabled={step === INTAKE_STEPS.length - 1}
-          onClick={() => setStep((s) => Math.min(INTAKE_STEPS.length - 1, s + 1))}
+          onClick={() =>
+            setStep((s) => Math.min(INTAKE_STEPS.length - 1, s + 1))
+          }
         >
           Continue
           <IconChevronRight data-icon="inline-end" />
@@ -835,9 +811,24 @@ function StepperDemo() {
 /* -------------------------------------------------------------------------- */
 
 const WORKLIST_ROWS = [
-  { name: "Alvarez, Maria", mrn: "MRN-10241", reason: "Diabetes follow-up", time: "09:30" },
-  { name: "Okafor, Daniel", mrn: "MRN-10877", reason: "Hypertension recheck", time: "10:00" },
-  { name: "Nakamura, Yuki", mrn: "MRN-11002", reason: "Annual wellness visit", time: "10:30" },
+  {
+    name: "Alvarez, Maria",
+    mrn: "MRN-10241",
+    reason: "Diabetes follow-up",
+    time: "09:30",
+  },
+  {
+    name: "Okafor, Daniel",
+    mrn: "MRN-10877",
+    reason: "Hypertension recheck",
+    time: "10:00",
+  },
+  {
+    name: "Nakamura, Yuki",
+    mrn: "MRN-11002",
+    reason: "Annual wellness visit",
+    time: "10:30",
+  },
 ]
 
 function RowActionsDemo() {
@@ -851,9 +842,13 @@ function RowActionsDemo() {
               {row.mrn} · {row.reason}
             </div>
           </div>
-          <span className="font-mono text-xs text-muted-foreground">{row.time}</span>
+          <span className="font-mono text-xs text-muted-foreground">
+            {row.time}
+          </span>
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="icon-sm" />}
+            >
               <IconMore />
               <span className="sr-only">Actions for {row.name}</span>
             </DropdownMenuTrigger>
@@ -872,7 +867,9 @@ function RowActionsDemo() {
                 Reschedule appointment
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive">Mark as no-show</DropdownMenuItem>
+              <DropdownMenuItem variant="destructive">
+                Mark as no-show
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -903,7 +900,9 @@ function ContextMenuDemo() {
           </ContextMenuSubContent>
         </ContextMenuSub>
         <ContextMenuSeparator />
-        <ContextMenuItem variant="destructive">Discontinue medication</ContextMenuItem>
+        <ContextMenuItem variant="destructive">
+          Discontinue medication
+        </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
   )
@@ -914,13 +913,41 @@ function ContextMenuDemo() {
 /* -------------------------------------------------------------------------- */
 
 const CHART_SECTIONS = [
-  { id: "onthispage-problems", label: "Problem list", body: "Type 2 diabetes mellitus, essential hypertension, hyperlipidemia." },
-  { id: "onthispage-meds", label: "Medications", body: "Metformin, lisinopril, atorvastatin — last reconciled 2026-08-30." },
-  { id: "onthispage-allergies", label: "Allergies", body: "Penicillin — hives (high severity). Latex — contact dermatitis." },
-  { id: "onthispage-vitals", label: "Vitals", body: "BP 138/86, HR 78, Temp 36.8 °C, SpO₂ 97%, BMI 29.4." },
-  { id: "onthispage-labs", label: "Lab results", body: "A1c 7.4% (H), eGFR 68, LDL 112 (H) — resulted 2026-09-11." },
-  { id: "onthispage-immunizations", label: "Immunizations", body: "Influenza 2025-10-04, Tdap 2019-06-12, COVID-19 booster 2025-11-02." },
-  { id: "onthispage-notes", label: "Encounter notes", body: "12 progress notes, 3 telephone encounters, 1 discharge summary." },
+  {
+    id: "onthispage-problems",
+    label: "Problem list",
+    body: "Type 2 diabetes mellitus, essential hypertension, hyperlipidemia.",
+  },
+  {
+    id: "onthispage-meds",
+    label: "Medications",
+    body: "Metformin, lisinopril, atorvastatin — last reconciled 2026-08-30.",
+  },
+  {
+    id: "onthispage-allergies",
+    label: "Allergies",
+    body: "Penicillin — hives (high severity). Latex — contact dermatitis.",
+  },
+  {
+    id: "onthispage-vitals",
+    label: "Vitals",
+    body: "BP 138/86, HR 78, Temp 36.8 °C, SpO₂ 97%, BMI 29.4.",
+  },
+  {
+    id: "onthispage-labs",
+    label: "Lab results",
+    body: "A1c 7.4% (H), eGFR 68, LDL 112 (H) — resulted 2026-09-11.",
+  },
+  {
+    id: "onthispage-immunizations",
+    label: "Immunizations",
+    body: "Influenza 2025-10-04, Tdap 2019-06-12, COVID-19 booster 2025-11-02.",
+  },
+  {
+    id: "onthispage-notes",
+    label: "Encounter notes",
+    body: "12 progress notes, 3 telephone encounters, 1 discharge summary.",
+  },
 ]
 
 function OnThisPageDemo() {
@@ -929,7 +956,9 @@ function OnThisPageDemo() {
   function jump(event: React.MouseEvent<HTMLAnchorElement>, id: string) {
     event.preventDefault()
     setActive(id)
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    document
+      .getElementById(id)
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest" })
   }
 
   return (
@@ -963,8 +992,12 @@ function OnThisPageDemo() {
         <div className="flex flex-col gap-5">
           {CHART_SECTIONS.map((section) => (
             <section key={section.id} id={section.id} className="scroll-mt-4">
-              <h4 className="font-heading text-sm font-semibold">{section.label}</h4>
-              <p className="mt-1 text-sm text-muted-foreground">{section.body}</p>
+              <h4 className="font-heading text-sm font-semibold">
+                {section.label}
+              </h4>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {section.body}
+              </p>
             </section>
           ))}
         </div>
@@ -984,24 +1017,20 @@ export default function Page() {
         <Badge variant="secondary" className="mb-3">
           Patterns
         </Badge>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">Navigation patterns</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          Every way {BRAND_NAME} moves a clinician from one place to another — app shell, global
-          wayfinding, in-chart switching, and row-level actions. Clinical work is deep and
-          interruption-driven, so navigation has to preserve patient context at every level. Each
-          specimen below is live: click it, open it, right-click it.
-        </p>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight">
+          Navigation patterns
+        </h1>
       </header>
 
       <div className="flex flex-col gap-14">
         {/* ---------------------------------------------------------------- */}
-        <Section
-          title="App shell"
-          description="The outermost frame. Pick one sidebar variant per product surface and keep it constant — the shell is the clinician's spatial anchor across an entire shift."
-        >
+        <Section title="App shell">
           <div className="grid gap-4 sm:grid-cols-2">
             {SIDEBAR_VARIANTS.map((variant) => (
-              <div key={variant.slug} className="flex flex-col gap-3 rounded-xl border bg-card p-6">
+              <div
+                key={variant.slug}
+                className="flex flex-col gap-3 rounded-xl border bg-card p-6"
+              >
                 <SidebarDiagram variant={variant.slug} />
                 <div>
                   <div className="flex items-center gap-2">
@@ -1012,7 +1041,6 @@ export default function Page() {
                       {variant.slug}
                     </code>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{variant.guidance}</p>
                 </div>
                 <Link
                   href={`/components/${variant.slug}`}
@@ -1024,56 +1052,26 @@ export default function Page() {
               </div>
             ))}
           </div>
-          <p className="text-sm text-muted-foreground">
-            These four examples each mount their own <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">SidebarProvider</code>{" "}
-            and occupy the full viewport, so they are linked rather than embedded here. Never nest
-            two providers on one screen.
-          </p>
         </Section>
 
         {/* ---------------------------------------------------------------- */}
-        <Section
-          title="Global navigation"
-          description="Wayfinding that stays put no matter which patient is open."
-        >
-          <Demo
-            title="Top navigation bar"
-            guidance="Use when the product has five or fewer top-level modules and the screen needs its full width for tables or flowsheets. Pair it with a persistent patient context bar so the clinician never loses track of whose chart is open."
-          >
-            <TopNavBarDemo />
-          </Demo>
-
-          <Demo
-            title="Navigation menu / mega menu"
-            guidance="For modules with many destinations that benefit from a one-line explanation — Clinical, Orders, Reports. Prefer it over a flat bar when link labels alone are ambiguous (for example, 'Results review' vs. 'Lab orders')."
-          >
+        <Section title="Global navigation">
+          <Demo title="Navigation menu / mega menu">
             <MegaMenuDemo />
           </Demo>
 
-          <Demo
-            title="Menubar"
-            guidance="Application-style File/Edit/View menus for clinical workstations where power users work by keyboard all day. Reserve it for document-like surfaces — note editors, flowsheets, order composers — not for browsing."
-          >
+          <Demo title="Menubar">
             <MenubarDemo />
           </Demo>
 
-          <Demo
-            title="Command palette"
-            guidance="Global quick-jump: patient lookup by name or MRN, plus verbs like 'Order labs'. This is the fastest path for experienced clinicians — bind it to ⌘K and surface the shortcut in the search field so it gets discovered."
-          >
+          <Demo title="Command palette">
             <CommandPaletteDemo />
           </Demo>
         </Section>
 
         {/* ---------------------------------------------------------------- */}
-        <Section
-          title="Positional navigation"
-          description="Telling the clinician where they are, and letting them climb back out."
-        >
-          <Demo
-            title="Breadcrumbs — deep clinical path"
-            guidance="Show the full hierarchy when the user can arrive at a record from several directions, such as a lab result reached from the inbox, the chart, or a worklist. The last crumb is the current page and is never a link."
-          >
+        <Section title="Positional navigation">
+          <Demo title="Breadcrumbs — deep clinical path">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -1089,7 +1087,9 @@ export default function Page() {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="#">2026-09-15 Office visit</BreadcrumbLink>
+                  <BreadcrumbLink href="#">
+                    2026-09-15 Office visit
+                  </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
@@ -1099,10 +1099,7 @@ export default function Page() {
             </Breadcrumb>
           </Demo>
 
-          <Demo
-            title="Breadcrumbs — truncated"
-            guidance="Once the path exceeds roughly four levels, collapse the middle into an ellipsis menu. Always keep the root and the two deepest crumbs visible so the patient and the record stay legible."
-          >
+          <Demo title="Breadcrumbs — truncated">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -1111,14 +1108,18 @@ export default function Page() {
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <DropdownMenu>
-                    <DropdownMenuTrigger render={<Button size="icon-sm" variant="ghost" />}>
+                    <DropdownMenuTrigger
+                      render={<Button size="icon-sm" variant="ghost" />}
+                    >
                       <BreadcrumbEllipsis />
                       <span className="sr-only">Show collapsed path</span>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
                       <DropdownMenuItem>Alvarez, Maria</DropdownMenuItem>
                       <DropdownMenuItem>Encounters</DropdownMenuItem>
-                      <DropdownMenuItem>2026-09-15 Office visit</DropdownMenuItem>
+                      <DropdownMenuItem>
+                        2026-09-15 Office visit
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </BreadcrumbItem>
@@ -1134,23 +1135,14 @@ export default function Page() {
             </Breadcrumb>
           </Demo>
 
-          <Demo
-            title="In-page section nav"
-            guidance="An anchored 'on this page' rail for long chart documents — problem list, medications, allergies, vitals, results. Use it when a single screen scrolls past two or three viewport heights and the clinician needs to land on one section fast."
-          >
+          <Demo title="In-page section nav">
             <OnThisPageDemo />
           </Demo>
         </Section>
 
         {/* ---------------------------------------------------------------- */}
-        <Section
-          title="Switching within a record"
-          description="Tabs keep one patient in context while swapping what you look at. Never use them to switch patients."
-        >
-          <Demo
-            title="Tabs — default (segmented)"
-            guidance="The filled pill track reads as a control, so use it for a small number of peer views inside a card or panel — an encounter's Summary / Vitals / Notes."
-          >
+        <Section title="Switching within a record">
+          <Demo title="Tabs — default (segmented)">
             <Tabs defaultValue="summary">
               <TabsList>
                 <TabsTrigger value="summary">Summary</TabsTrigger>
@@ -1159,18 +1151,19 @@ export default function Page() {
                 <TabsTrigger value="labs">Labs</TabsTrigger>
               </TabsList>
               <div className="mt-2 rounded-xl border p-6 text-muted-foreground">
-                <TabsContent value="summary">{CHART_TAB_BODY.summary}</TabsContent>
-                <TabsContent value="vitals">{CHART_TAB_BODY.vitals}</TabsContent>
+                <TabsContent value="summary">
+                  {CHART_TAB_BODY.summary}
+                </TabsContent>
+                <TabsContent value="vitals">
+                  {CHART_TAB_BODY.vitals}
+                </TabsContent>
                 <TabsContent value="meds">{CHART_TAB_BODY.meds}</TabsContent>
                 <TabsContent value="labs">{CHART_TAB_BODY.labs}</TabsContent>
               </div>
             </Tabs>
           </Demo>
 
-          <Demo
-            title="Tabs — line"
-            guidance="The underline variant sits flush under a page header and carries more items without feeling heavy. This is the default for top-level chart navigation."
-          >
+          <Demo title="Tabs — line">
             <Tabs defaultValue="summary">
               <TabsList variant="line">
                 <TabsTrigger value="summary">Summary</TabsTrigger>
@@ -1180,8 +1173,12 @@ export default function Page() {
                 <TabsTrigger value="notes">Notes</TabsTrigger>
               </TabsList>
               <div className="mt-3 rounded-xl border p-6 text-muted-foreground">
-                <TabsContent value="summary">{CHART_TAB_BODY.summary}</TabsContent>
-                <TabsContent value="vitals">{CHART_TAB_BODY.vitals}</TabsContent>
+                <TabsContent value="summary">
+                  {CHART_TAB_BODY.summary}
+                </TabsContent>
+                <TabsContent value="vitals">
+                  {CHART_TAB_BODY.vitals}
+                </TabsContent>
                 <TabsContent value="meds">{CHART_TAB_BODY.meds}</TabsContent>
                 <TabsContent value="labs">{CHART_TAB_BODY.labs}</TabsContent>
                 <TabsContent value="notes">{CHART_TAB_BODY.notes}</TabsContent>
@@ -1189,20 +1186,23 @@ export default function Page() {
             </Tabs>
           </Demo>
 
-          <Demo
-            title="Tabs — vertical"
-            guidance="Set orientation='vertical' when labels are long or there are more than six of them — settings, templates, payer configuration. It scales further than a horizontal row without truncating or scrolling."
-          >
+          <Demo title="Tabs — vertical">
             <Tabs defaultValue="summary" orientation="vertical">
               <TabsList>
                 <TabsTrigger value="summary">Encounter summary</TabsTrigger>
-                <TabsTrigger value="vitals">Vitals &amp; observations</TabsTrigger>
+                <TabsTrigger value="vitals">
+                  Vitals &amp; observations
+                </TabsTrigger>
                 <TabsTrigger value="meds">Medication list</TabsTrigger>
                 <TabsTrigger value="labs">Lab results</TabsTrigger>
               </TabsList>
               <div className="rounded-xl border p-6 text-muted-foreground">
-                <TabsContent value="summary">{CHART_TAB_BODY.summary}</TabsContent>
-                <TabsContent value="vitals">{CHART_TAB_BODY.vitals}</TabsContent>
+                <TabsContent value="summary">
+                  {CHART_TAB_BODY.summary}
+                </TabsContent>
+                <TabsContent value="vitals">
+                  {CHART_TAB_BODY.vitals}
+                </TabsContent>
                 <TabsContent value="meds">{CHART_TAB_BODY.meds}</TabsContent>
                 <TabsContent value="labs">{CHART_TAB_BODY.labs}</TabsContent>
               </div>
@@ -1211,54 +1211,39 @@ export default function Page() {
         </Section>
 
         {/* ---------------------------------------------------------------- */}
-        <Section
-          title="Sequential navigation"
-          description="When order matters and the user must not skip ahead."
-        >
-          <Demo
-            title="Stepper / wizard"
-            guidance="Composed from separator, badge, and button — the system ships no stepper primitive. Use it for gated flows such as patient intake or prior authorization, where each step validates before the next unlocks. Completed steps stay clickable so the user can go back and correct."
-          >
+        <Section title="Sequential navigation">
+          <Demo title="Stepper / wizard">
             <StepperDemo />
           </Demo>
 
-          <Demo
-            title="Pagination"
-            guidance="For long, stable result sets — patient lists, claim batches, audit logs — where clinicians cite a position ('page 4 of the recall list'). Prefer infinite scroll only for feeds; never for anything a user must work through exhaustively."
-          >
+          <Demo title="Pagination">
             <PaginationDemo />
           </Demo>
         </Section>
 
         {/* ---------------------------------------------------------------- */}
-        <Section
-          title="Contextual navigation"
-          description="Actions and destinations attached to a single row or object, revealed on demand."
-        >
-          <Demo
-            title="Row actions — dropdown menu"
-            guidance="The discoverable default. Put an overflow trigger at the end of every row in a worklist or schedule so the primary action stays a plain row click and secondary destinations stay out of the way."
-          >
+        <Section title="Contextual navigation">
+          <Demo title="Row actions — dropdown menu">
             <RowActionsDemo />
           </Demo>
 
-          <Demo
-            title="Row actions — context menu"
-            guidance="Right-click acceleration for power users on dense clinical grids — medication lists, flowsheets, order queues. Always mirror these items in a visible dropdown; a context menu must never be the only way to reach an action."
-          >
+          <Demo title="Row actions — context menu">
             <ContextMenuDemo />
           </Demo>
         </Section>
 
         {/* ---------------------------------------------------------------- */}
-        <Section
-          title="Choosing a pattern"
-          description="A quick decision table for the four questions that come up most."
-        >
+        <Section title="Choosing a pattern">
           <dl className="grid gap-x-8 gap-y-3 rounded-xl border bg-card p-6 sm:grid-cols-2">
             {[
-              ["Switching modules", "Sidebar (default) or top bar (≤5 modules)"],
-              ["Switching patients", "Command palette or patient search — never tabs"],
+              [
+                "Switching modules",
+                "Sidebar (default) or top bar (≤5 modules)",
+              ],
+              [
+                "Switching patients",
+                "Command palette or patient search — never tabs",
+              ],
               ["Switching views in one chart", "Tabs, line variant"],
               ["Many labelled destinations", "Navigation menu / mega menu"],
               ["Document-editor commands", "Menubar"],

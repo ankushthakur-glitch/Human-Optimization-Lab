@@ -4,13 +4,22 @@ import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import * as FreeIcons from "@hugeicons/core-free-icons"
 
-import { ICON_CATALOG, IconSearch, IconCheck, IconClose } from "@/design-system/icons"
+import {
+  ICON_CATALOG,
+  IconSearch,
+  IconCheck,
+  IconClose,
+} from "@/design-system/icons"
 import { useDesignSystem } from "@/design-system/providers/design-system-provider"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/design-system/ui/badge"
 import { Input } from "@/design-system/ui/input"
 import { Separator } from "@/design-system/ui/separator"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/design-system/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/design-system/ui/tooltip"
 
 type IconData = React.ComponentProps<typeof HugeiconsIcon>["icon"]
 
@@ -22,34 +31,31 @@ const ALL_ICONS: { name: string; icon: IconData }[] = Object.entries(FreeIcons)
 const RESULT_CAP = 240
 
 const STROKES = [
-  { name: "light", value: 1, label: "Light", note: "1.0 — airy, best above 20px" },
-  { name: "regular", value: 1.5, label: "Regular", note: "1.5 — the default" },
-  { name: "bold", value: 2, label: "Bold", note: "2.0 — high contrast, small sizes" },
+  { name: "light", value: 1, label: "Light" },
+  { name: "regular", value: 1.5, label: "Regular" },
+  { name: "bold", value: 2, label: "Bold" },
 ]
 
 const SIZES = [
-  { className: "size-3", label: "size-3", note: "Inside badges" },
-  { className: "size-4", label: "size-4", note: "Default — buttons, menus, inputs" },
-  { className: "size-5", label: "size-5", note: "Section headers" },
-  { className: "size-6", label: "size-6", note: "Empty states" },
-  { className: "size-8", label: "size-8", note: "Feature tiles" },
+  { className: "size-3", label: "size-3" },
+  { className: "size-4", label: "size-4" },
+  { className: "size-5", label: "size-5" },
+  { className: "size-6", label: "size-6" },
+  { className: "size-8", label: "size-8" },
 ]
 
 function Section({
   title,
-  description,
   children,
 }: {
   title: string
-  description: string
   children: React.ReactNode
 }) {
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <h2 className="font-heading text-xl font-semibold tracking-tight">{title}</h2>
-        <p className="max-w-3xl text-sm text-muted-foreground">{description}</p>
-      </div>
+      <h2 className="font-heading text-xl font-semibold tracking-tight">
+        {title}
+      </h2>
       {children}
     </section>
   )
@@ -63,7 +69,10 @@ export default function Page() {
   const results = React.useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return ALL_ICONS.slice(0, RESULT_CAP)
-    return ALL_ICONS.filter((i) => i.name.toLowerCase().includes(q)).slice(0, RESULT_CAP)
+    return ALL_ICONS.filter((i) => i.name.toLowerCase().includes(q)).slice(
+      0,
+      RESULT_CAP
+    )
   }, [query])
 
   const matchCount = React.useMemo(() => {
@@ -88,27 +97,13 @@ export default function Page() {
         <Badge variant="secondary" className="mb-3">
           Iconography
         </Badge>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">Icons</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          The system uses{" "}
-          <a
-            href="https://hugeicons.com/icons/stroke-rounded"
-            target="_blank"
-            rel="noreferrer"
-            className="underline underline-offset-4 hover:text-foreground"
-          >
-            Hugeicons Stroke Rounded
-          </a>{" "}
-          — {ALL_ICONS.length.toLocaleString()} icons, drawn on a 24px grid with rounded caps and
-          joins. Every component in this design system has been regenerated against it.
-        </p>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight">
+          Icons
+        </h1>
       </header>
 
       <div className="flex flex-col gap-14">
-        <Section
-          title="Stroke weight"
-          description="Weight is a global design token, not a per-icon prop. Hugeicons writes stroke-width as an SVG presentation attribute, and CSS outranks that — so one variable re-weights every icon in the product at once."
-        >
+        <Section title="Stroke weight">
           <div className="grid gap-3 sm:grid-cols-3">
             {STROKES.map((s) => (
               <button
@@ -124,42 +119,37 @@ export default function Page() {
                 )}
               >
                 <div className="flex items-center gap-3">
-                  {[FreeIcons.Home01Icon, FreeIcons.Search01Icon, FreeIcons.Calendar01Icon].map(
-                    (icon, i) => (
-                      <HugeiconsIcon
-                        key={i}
-                        icon={icon as IconData}
-                        strokeWidth={s.value}
-                        className="size-6"
-                      />
-                    )
-                  )}
+                  {[
+                    FreeIcons.Home01Icon,
+                    FreeIcons.Search01Icon,
+                    FreeIcons.Calendar01Icon,
+                  ].map((icon, i) => (
+                    <HugeiconsIcon
+                      key={i}
+                      icon={icon as IconData}
+                      strokeWidth={s.value}
+                      className="size-6"
+                    />
+                  ))}
                 </div>
                 <div>
                   <p className="text-sm font-medium">
                     {s.label}
                     {s.name === "regular" && (
-                      <span className="ml-2 text-[10px] text-muted-foreground">DEFAULT</span>
+                      <span className="ml-2 text-[10px] text-muted-foreground">
+                        DEFAULT
+                      </span>
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground">{s.note}</p>
                 </div>
               </button>
             ))}
           </div>
-          <p className="text-sm text-muted-foreground">
-            Selecting a weight here changes it product-wide — the same control lives in{" "}
-            <strong className="text-foreground">Customize</strong>. Current weight:{" "}
-            <code className="font-mono">{config.iconStroke}</code>.
-          </p>
         </Section>
 
         <Separator />
 
-        <Section
-          title="Size"
-          description="Icons inherit currentColor and scale with Tailwind size utilities. Keep optical weight consistent: pair small sizes with the bolder stroke if an icon reads too faint."
-        >
+        <Section title="Size">
           <div className="flex flex-wrap items-end gap-6 rounded-xl border bg-card p-6">
             {SIZES.map((s) => (
               <div key={s.label} className="flex flex-col items-center gap-2">
@@ -171,7 +161,6 @@ export default function Page() {
                 </div>
                 <div className="text-center">
                   <p className="font-mono text-[10px]">{s.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{s.note}</p>
                 </div>
               </div>
             ))}
@@ -180,16 +169,15 @@ export default function Page() {
 
         <Separator />
 
-        <Section
-          title="Available styles"
-          description="Hugeicons publishes nine styles. Only Stroke Rounded ships in the free package that this project installs."
-        >
+        <Section title="Available styles">
           <div className="overflow-hidden rounded-xl border">
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-4 py-2.5 text-left font-medium">Style</th>
-                  <th className="px-4 py-2.5 text-left font-medium">Availability</th>
+                  <th className="px-4 py-2.5 text-left font-medium">
+                    Availability
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -212,7 +200,9 @@ export default function Page() {
                   "Bulk Rounded",
                 ].map((style) => (
                   <tr key={style} className="border-t">
-                    <td className="px-4 py-2.5 text-muted-foreground">{style}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground">
+                      {style}
+                    </td>
                     <td className="px-4 py-2.5">
                       <Badge variant="outline">Requires Hugeicons Pro</Badge>
                     </td>
@@ -221,20 +211,11 @@ export default function Page() {
               </tbody>
             </table>
           </div>
-          <p className="text-sm text-muted-foreground">
-            The other eight styles live in <code className="font-mono">@hugeicons/core-pro-icons</code>,
-            which is not published to public npm and needs a paid licence plus a private registry
-            token. Once that licence exists, swapping is a package install and an import change —
-            the component API is identical, so nothing else in this system has to move.
-          </p>
         </Section>
 
         <Separator />
 
-        <Section
-          title="Design system set"
-          description={`The ${ICON_CATALOG.length} icons wired into this product's components and pages. Import these from @/design-system/icons — they carry no strokeWidth prop, so they follow the global token.`}
-        >
+        <Section title="Design system set">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
             {ICON_CATALOG.map(({ name, source, Icon }) => (
               <Tooltip key={name}>
@@ -262,10 +243,7 @@ export default function Page() {
 
         <Separator />
 
-        <Section
-          title="Full library"
-          description={`All ${ALL_ICONS.length.toLocaleString()} free icons. Search by name, then click to copy the export name for use with HugeiconsIcon.`}
-        >
+        <Section title="Full library">
           <div className="relative max-w-sm">
             <IconSearch className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -313,7 +291,9 @@ export default function Page() {
                       </button>
                     }
                   />
-                  <TooltipContent>{copied === name ? "Copied" : name}</TooltipContent>
+                  <TooltipContent>
+                    {copied === name ? "Copied" : name}
+                  </TooltipContent>
                 </Tooltip>
               ))}
             </div>

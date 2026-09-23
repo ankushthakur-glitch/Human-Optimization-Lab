@@ -18,9 +18,9 @@ const OVERVIEW_LINKS = [
   { href: "/", label: "Overview" },
   { href: "/foundations", label: "Foundations" },
   { href: "/icons", label: "Icons" },
-  { href: "/patterns/navigation", label: "Navigation patterns" },
-  { href: "/patterns/data", label: "Data patterns" },
-  { href: "/layouts", label: "Screen assembler" },
+  { href: "/screens/patients", label: "Patients screen" },
+  { href: "/accents", label: "Primary colour" },
+  { href: "/logo", label: "Logo" },
 ]
 
 function ThemeToggle() {
@@ -102,7 +102,7 @@ export function DsShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-md">
+      <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur-md supports-[backdrop-filter]:bg-background/90">
         <Button
           variant="ghost"
           size="icon-sm"
@@ -133,7 +133,6 @@ export function DsShell({ children }: { children: React.ReactNode }) {
             priority
             className="hidden h-8 w-auto dark:block"
           />
-          <span className="hidden text-sm text-muted-foreground sm:inline">Design System</span>
         </Link>
         <div className="ml-auto flex items-center gap-2">
           <ThemeCustomizer />

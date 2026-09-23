@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { BRAND_SLUG } from "@/lib/brand"
+import { ALL_ACCENT_THEMES, isKnownAccent } from "@/design-system/tokens/accents"
 
 export type DesignSystemConfig = {
   base: string
@@ -19,7 +20,7 @@ export type DesignSystemConfig = {
  */
 export const DEFAULT_CONFIG: DesignSystemConfig = {
   base: "neutral",
-  accent: "cyan",
+  accent: "brand-blue",
   font: "inter",
   heading: "inherit",
   radius: "small",
@@ -49,10 +50,17 @@ type ContextValue = {
 
 const DesignSystemContext = React.createContext<ContextValue | null>(null)
 
-// Applied before paint so a stored theme never flashes the default first.
+// Applied before paint so a stored theme never flashes the default first. A
+// ?accent=… preview (see the provider's effect) is applied here too.
+// An accent saved before the palette was cut to the brand set is dropped, so
+// the page keeps the default the server rendered instead of an unknown one.
 const BOOTSTRAP = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(
   STORAGE_KEY
-)})||"{}");var d=document.documentElement;var k={base:"data-base",accent:"data-accent",font:"data-font",heading:"data-heading",radius:"data-radius",iconStroke:"data-icon-stroke"};for(var p in k){if(c[p]){d.setAttribute(k[p],c[p])}}}catch(e){}})()`
+)})||"{}");if(${JSON.stringify(
+  ALL_ACCENT_THEMES.map((theme) => theme.name)
+)}.indexOf(c.accent)<0){delete c.accent}var d=document.documentElement;var k={base:"data-base",accent:"data-accent",font:"data-font",heading:"data-heading",radius:"data-radius",iconStroke:"data-icon-stroke"};for(var p in k){if(c[p]){d.setAttribute(k[p],c[p])}}var q=new URLSearchParams(location.search).get("accent");if(${JSON.stringify(
+  ALL_ACCENT_THEMES.map((theme) => theme.name)
+)}.indexOf(q)>=0){d.setAttribute("data-accent",q)}}catch(e){}})()`
 
 export function DesignSystemBootstrap() {
   return <script dangerouslySetInnerHTML={{ __html: BOOTSTRAP }} />
@@ -79,11 +87,19 @@ export function DesignSystemProvider({ children }: { children: React.ReactNode }
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const next = { ...DEFAULT_CONFIG, ...JSON.parse(stored) }
+        if (!isKnownAccent(next.accent)) next.accent = DEFAULT_CONFIG.accent
         setState(next)
         apply(next)
       }
     } catch {
       // Ignore unreadable storage (private mode, blocked site data).
+    }
+    // A page can be opened with ?accent=… to preview one preset — the accent
+    // comparison frames three screens this way. It paints the page but is
+    // never saved, so looking at a preview doesn't change the reader's pick.
+    const preview = new URLSearchParams(window.location.search).get("accent")
+    if (isKnownAccent(preview)) {
+      document.documentElement.setAttribute("data-accent", preview)
     }
   }, [])
 
