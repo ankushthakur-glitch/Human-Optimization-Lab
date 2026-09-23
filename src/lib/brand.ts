@@ -30,34 +30,32 @@ export function brandedTitle(page: string) {
 /**
  * The lockup, in the two tones it has to come in.
  *
- * `light` is the supplied artwork as-is: the teal H mark and the "Human /
- * Optimization Lab" wordmark on transparent. `dark` is derived from it for dark
- * pages — the mark keeps its gradient lifted toward a light teal, the wordmark
- * goes near-white — since teal on near-black loses too much contrast. Both are
- * rendered and the wrong one hidden by CSS, so the swap costs no JavaScript
- * and cannot flash the wrong tone on first paint.
- *
- * Replace both with the vector source when design supplies it; these are
- * 2028×539 rasters.
+ * Concept Variation 5 in teal (the heart-figure mark and the two-line
+ * wordmark), copied out of public/brand/concepts/v5 so the concept gallery can
+ * change without moving the product's logo. `light` is the artwork as
+ * supplied; `dark` is the same file with its gradient stops lifted to light
+ * teal, since the supplied gradient runs to near-black and vanishes on a dark
+ * page. Both are rendered and the wrong one hidden by CSS, so the swap costs no
+ * JavaScript and cannot flash the wrong tone on first paint.
  */
 export const LOGO = {
-  light: "/brand/logo/hol-logo-lockup-light.png",
-  dark: "/brand/logo/hol-logo-lockup-dark.png",
-  width: 2028,
-  height: 539,
+  light: "/brand/logo/hol-v5-lockup-light.svg",
+  dark: "/brand/logo/hol-v5-lockup-dark.svg",
+  width: 2219,
+  height: 556,
 } as const
 
 /**
  * The mark on its own — the H without the wordmark, centred on a transparent
  * square — for places too narrow for the lockup, chiefly the collapsed sidebar
- * rail. It is the same artwork the favicons are cut from, so the rail and the
+ * rail. It is the same artwork the favicons are rendered from, so the rail and the
  * browser tab show one thing rather than two.
  *
  * As with LOGO, `light`/`dark` name the scheme each file is drawn for:
  * `light` is the teal mark for light surfaces, `dark` its lifted tone.
  */
 export const MARK = {
-  light: "/brand/favicon/hol-mark-light-512.png",
-  dark: "/brand/favicon/hol-mark-dark-512.png",
+  light: "/brand/favicon/hol-v5-mark-light.svg",
+  dark: "/brand/favicon/hol-v5-mark-dark.svg",
   size: 512,
 } as const

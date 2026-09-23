@@ -18,7 +18,6 @@ const OVERVIEW_LINKS = [
   { href: "/", label: "Overview" },
   { href: "/foundations", label: "Foundations" },
   { href: "/icons", label: "Icons" },
-  { href: "/screens/patients", label: "Patients screen" },
   { href: "/accents", label: "Primary colour" },
   { href: "/logo", label: "Logo" },
 ]

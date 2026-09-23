@@ -98,14 +98,14 @@ export const metadata = {
    */
   icons: {
     icon: [
-      { url: "/brand/favicon/hol-favicon-light-32.png", media: "(prefers-color-scheme: light)", sizes: "32x32", type: "image/png" },
-      { url: "/brand/favicon/hol-favicon-light-16.png", media: "(prefers-color-scheme: light)", sizes: "16x16", type: "image/png" },
-      { url: "/brand/favicon/hol-favicon-dark-32.png", media: "(prefers-color-scheme: dark)", sizes: "32x32", type: "image/png" },
-      { url: "/brand/favicon/hol-favicon-dark-16.png", media: "(prefers-color-scheme: dark)", sizes: "16x16", type: "image/png" },
+      { url: "/brand/favicon/hol-v5-favicon-light-32.png", media: "(prefers-color-scheme: light)", sizes: "32x32", type: "image/png" },
+      { url: "/brand/favicon/hol-v5-favicon-light-16.png", media: "(prefers-color-scheme: light)", sizes: "16x16", type: "image/png" },
+      { url: "/brand/favicon/hol-v5-favicon-dark-32.png", media: "(prefers-color-scheme: dark)", sizes: "32x32", type: "image/png" },
+      { url: "/brand/favicon/hol-v5-favicon-dark-16.png", media: "(prefers-color-scheme: dark)", sizes: "16x16", type: "image/png" },
     ],
     apple: [
-      { url: "/brand/favicon/hol-favicon-light-180.png", media: "(prefers-color-scheme: light)", sizes: "180x180" },
-      { url: "/brand/favicon/hol-favicon-dark-180.png", media: "(prefers-color-scheme: dark)", sizes: "180x180" },
+      { url: "/brand/favicon/hol-v5-favicon-light-180.png", media: "(prefers-color-scheme: light)", sizes: "180x180" },
+      { url: "/brand/favicon/hol-v5-favicon-dark-180.png", media: "(prefers-color-scheme: dark)", sizes: "180x180" },
     ],
   },
 }
@@ -126,7 +126,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       data-base="neutral"
-      data-accent="brand-blue"
+      data-accent="brand-teal"
       data-font="inter"
       data-heading="inherit"
       data-radius="small"

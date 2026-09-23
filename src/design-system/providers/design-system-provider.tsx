@@ -20,7 +20,7 @@ export type DesignSystemConfig = {
  */
 export const DEFAULT_CONFIG: DesignSystemConfig = {
   base: "neutral",
-  accent: "brand-blue",
+  accent: "brand-teal",
   font: "inter",
   heading: "inherit",
   radius: "small",
@@ -42,6 +42,15 @@ export const DEFAULT_CONFIG: DesignSystemConfig = {
  */
 const STORAGE_KEY = `${BRAND_SLUG}-design-system`
 
+/**
+ * Stamped on every save. The whole config is stored, so a browser that only
+ * ever toggled dark mode still carries whatever accent was the default then.
+ * An accent saved without the current stamp is dropped on read, which is how
+ * the switch of default from blue to teal reaches browsers that saved before
+ * it. Bump this when the default accent changes again.
+ */
+const ACCENT_VERSION = 2
+
 type ContextValue = {
   config: DesignSystemConfig
   setConfig: (patch: Partial<DesignSystemConfig>) => void
@@ -58,7 +67,7 @@ const BOOTSTRAP = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.
   STORAGE_KEY
 )})||"{}");if(${JSON.stringify(
   ALL_ACCENT_THEMES.map((theme) => theme.name)
-)}.indexOf(c.accent)<0){delete c.accent}var d=document.documentElement;var k={base:"data-base",accent:"data-accent",font:"data-font",heading:"data-heading",radius:"data-radius",iconStroke:"data-icon-stroke"};for(var p in k){if(c[p]){d.setAttribute(k[p],c[p])}}var q=new URLSearchParams(location.search).get("accent");if(${JSON.stringify(
+)}.indexOf(c.accent)<0||c.accentVersion!==${ACCENT_VERSION}){delete c.accent}var d=document.documentElement;var k={base:"data-base",accent:"data-accent",font:"data-font",heading:"data-heading",radius:"data-radius",iconStroke:"data-icon-stroke"};for(var p in k){if(c[p]){d.setAttribute(k[p],c[p])}}var q=new URLSearchParams(location.search).get("accent");if(${JSON.stringify(
   ALL_ACCENT_THEMES.map((theme) => theme.name)
 )}.indexOf(q)>=0){d.setAttribute("data-accent",q)}}catch(e){}})()`
 
@@ -87,7 +96,13 @@ export function DesignSystemProvider({ children }: { children: React.ReactNode }
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const next = { ...DEFAULT_CONFIG, ...JSON.parse(stored) }
-        if (!isKnownAccent(next.accent)) next.accent = DEFAULT_CONFIG.accent
+        if (
+          !isKnownAccent(next.accent) ||
+          next.accentVersion !== ACCENT_VERSION
+        ) {
+          next.accent = DEFAULT_CONFIG.accent
+        }
+        delete next.accentVersion
         setState(next)
         apply(next)
       }
@@ -108,7 +123,10 @@ export function DesignSystemProvider({ children }: { children: React.ReactNode }
       const next = { ...prev, ...patch }
       apply(next)
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ ...next, accentVersion: ACCENT_VERSION })
+        )
       } catch {
         // Persisting is best-effort.
       }
