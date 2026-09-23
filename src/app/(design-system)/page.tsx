@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { IconGrid, IconImage, IconPalette, IconUser } from "@/design-system/icons"
+import { IconAlert, IconGrid, IconImage, IconLock, IconPalette, IconUser } from "@/design-system/icons"
 
 import { EXAMPLE_GROUPS } from "@/lib/examples"
 import { ComponentIcon } from "@/design-system/component-icon"
@@ -8,6 +8,8 @@ import { BRAND_NAME } from "@/lib/brand"
 const ENTRY_POINTS = [
   { href: "/foundations", icon: IconPalette, title: "Foundations" },
   { href: "/screens/patients", icon: IconUser, title: "Patients screen" },
+  { href: "/screens/login", icon: IconLock, title: "Login flow" },
+  { href: "/screens/errors", icon: IconAlert, title: "Error states" },
   { href: "/accents", icon: IconPalette, title: "Primary colour" },
   { href: "/logo", icon: IconImage, title: "Logo" },
   { href: "/components/button", icon: IconGrid, title: "Components" },

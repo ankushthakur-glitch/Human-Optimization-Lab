@@ -4,6 +4,7 @@ import { cn } from "cn"
 
 import { Skeleton } from "@/design-system/ui/skeleton"
 import { Spinner } from "@/design-system/ui/spinner"
+import { LogoLoader } from "@/design-system/ui/logo-loader"
 
 const loadingStateVariants = cva(
   "group/loading-state flex w-full min-w-0 items-start gap-3 text-sm",
@@ -40,10 +41,10 @@ function LoadingState({
 
 // The indicator is decorative — the surrounding region already announces itself.
 function LoadingStateIndicator({
-  kind = "spinner",
+  kind = "logo",
   className,
   ...props
-}: React.ComponentProps<"span"> & { kind?: "spinner" | "dots" | "pulse" }) {
+}: React.ComponentProps<"span"> & { kind?: "logo" | "spinner" | "dots" | "pulse" }) {
   return (
     <span
       data-slot="loading-state-indicator"
@@ -56,6 +57,11 @@ function LoadingStateIndicator({
       )}
       {...props}
     >
+      {/* The brand's own loader: the mark beating, the one variant that still
+          reads at this size. The region announces itself, so this is silent. */}
+      {kind === "logo" ? (
+        <LogoLoader kind="beat" size="sm" role="presentation" aria-live={undefined} label="" />
+      ) : null}
       {kind === "spinner" ? (
         <Spinner aria-hidden="true" role="presentation" />
       ) : null}

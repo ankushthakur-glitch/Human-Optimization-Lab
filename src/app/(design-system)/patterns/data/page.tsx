@@ -884,26 +884,26 @@ const SEARCH_ITEMS: SearchItem[] = [
   },
   {
     id: "s3",
-    label: "Alvarez, Marisol — Troponin I, serial",
+    label: "Alvarez, Marisol · Troponin I, serial",
     detail: "Order ORD-77120 · STAT · placed 07:51",
     scope: "orders",
   },
   {
     id: "s4",
-    label: "Boone, Terrence — CT head w/o contrast",
+    label: "Boone, Terrence · CT head w/o contrast",
     detail: "Order ORD-77145 · Routine · placed 02:35",
     scope: "orders",
   },
   {
     id: "s5",
-    label: "Alvarez, Marisol — Troponin I 0.42 ng/mL",
-    detail: "Result · high · ref 0.00–0.04 ng/mL",
+    label: "Alvarez, Marisol · Troponin I 0.42 ng/mL",
+    detail: "Result · high · ref 0.00-0.04 ng/mL",
     scope: "results",
   },
   {
     id: "s6",
-    label: "Egwu, Amara — Potassium 6.1 mmol/L",
-    detail: "Result · critical · ref 3.5–5.1 mmol/L",
+    label: "Egwu, Amara · Potassium 6.1 mmol/L",
+    detail: "Result · critical · ref 3.5-5.1 mmol/L",
     scope: "results",
   },
 ]
@@ -1261,8 +1261,8 @@ const ORG_TREE: TreeNode[] = [
         name: "Northgate Regional Hospital",
         meta: "312 beds",
         children: [
-          { name: "3 West — Cardiac Telemetry", meta: "28 beds · 24 occupied" },
-          { name: "4 East — Medical/Surgical", meta: "36 beds · 31 occupied" },
+          { name: "3 West, Cardiac Telemetry", meta: "28 beds · 24 occupied" },
+          { name: "4 East, Medical/Surgical", meta: "36 beds · 31 occupied" },
           { name: "ICU", meta: "18 beds · 17 occupied" },
         ],
       },
@@ -1568,7 +1568,7 @@ function PaginationDemo() {
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
-          Showing {(page - 1) * pageSize + 1}–
+          Showing {(page - 1) * pageSize + 1}-
           {Math.min(page * pageSize, ENCOUNTERS.length)} of {ENCOUNTERS.length}
         </p>
         <Pagination className="mx-0 w-auto justify-end">
@@ -1672,7 +1672,7 @@ function StateCoverageDemo() {
               </EmptyMedia>
               <EmptyTitle>Could not load the census</EmptyTitle>
               <EmptyDescription>
-                The ADT feed did not respond. Clinical data may be stale — do
+                The ADT feed did not respond. Clinical data may be stale. Do
                 not treat this view as the source of truth until it reloads.
               </EmptyDescription>
             </EmptyHeader>
@@ -1746,42 +1746,42 @@ const LAB_PANEL: {
     analyte: "Sodium",
     value: "139",
     unit: "mmol/L",
-    range: "135–145",
+    range: "135-145",
     flag: "normal",
   },
   {
     analyte: "Potassium",
     value: "6.1",
     unit: "mmol/L",
-    range: "3.5–5.1",
+    range: "3.5-5.1",
     flag: "critical",
   },
   {
     analyte: "Creatinine",
     value: "1.8",
     unit: "mg/dL",
-    range: "0.6–1.3",
+    range: "0.6-1.3",
     flag: "abnormal",
   },
   {
     analyte: "Hemoglobin",
     value: "9.4",
     unit: "g/dL",
-    range: "12.0–15.5",
+    range: "12.0-15.5",
     flag: "abnormal",
   },
   {
     analyte: "Troponin I",
     value: "0.42",
     unit: "ng/mL",
-    range: "0.00–0.04",
+    range: "0.00-0.04",
     flag: "critical",
   },
   {
     analyte: "Glucose",
     value: "102",
     unit: "mg/dL",
-    range: "70–110",
+    range: "70-110",
     flag: "normal",
   },
 ]
@@ -1898,7 +1898,7 @@ function ChartsDemo() {
       <Specimen>
         <div className="mb-4">
           <h3 className="text-sm font-medium">
-            Vitals trend — Alvarez, Marisol
+            Vitals trend: Alvarez, Marisol
           </h3>
           <p className="text-xs text-muted-foreground">
             Last 24 hours · BP (mmHg) and heart rate (bpm)
@@ -1994,7 +1994,7 @@ export default function Page() {
           <GroupedListDemo />
         </Section>
 
-        <Section title="Master–detail split view">
+        <Section title="Master-detail split view">
           <MasterDetailDemo />
         </Section>
 
@@ -2047,7 +2047,7 @@ export default function Page() {
                   ],
                   [
                     "Work through a queue item by item",
-                    "Master–detail split view",
+                    "Master-detail split view",
                   ],
                   [
                     "See where a record sits in a hierarchy",

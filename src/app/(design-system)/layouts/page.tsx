@@ -165,7 +165,7 @@ const NAV_VARIANTS: { id: NavVariant; label: string }[] = [
 const CONTENT_VARIANTS: { id: ContentVariant; label: string }[] = [
   { id: "table", label: "Data table" },
   { id: "grid", label: "Card grid" },
-  { id: "split", label: "Master–detail" },
+  { id: "split", label: "Master-detail" },
   { id: "dashboard", label: "Dashboard" },
 ]
 
@@ -335,7 +335,7 @@ function TopBar({
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Preferences</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Sign out</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive">Sign out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

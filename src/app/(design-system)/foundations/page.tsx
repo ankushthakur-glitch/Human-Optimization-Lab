@@ -248,7 +248,7 @@ export default function Page() {
     ],
     [
       "Radius",
-      `${config.radius} — ${RADIUS_OPTIONS.find((r) => r.name === config.radius)?.value}`,
+      `${config.radius} (${RADIUS_OPTIONS.find((r) => r.name === config.radius)?.value})`,
     ],
   ]
 
@@ -391,20 +391,20 @@ export default function Page() {
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border bg-card p-4">
-              <p className="text-xs font-semibold">Body — font-sans</p>
+              <p className="text-xs font-semibold">Body (font-sans)</p>
               <p className="mt-2 text-sm">
                 Patient tolerated the procedure well with no immediate
                 complications noted.
               </p>
             </div>
             <div className="rounded-xl border bg-card p-4">
-              <p className="text-xs font-semibold">Headings — font-heading</p>
+              <p className="text-xs font-semibold">Headings (font-heading)</p>
               <p className="mt-2 font-heading text-lg font-semibold">
                 Assessment &amp; Plan
               </p>
             </div>
             <div className="rounded-xl border bg-card p-4">
-              <p className="text-xs font-semibold">Data — font-mono</p>
+              <p className="text-xs font-semibold">Data (font-mono)</p>
               <p className="mt-2 font-mono text-sm">MRN-10241 · 128/82</p>
             </div>
           </div>

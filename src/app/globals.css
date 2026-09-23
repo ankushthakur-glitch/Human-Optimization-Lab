@@ -537,6 +537,16 @@ svg path[stroke="currentColor"] {
 :root[data-heading="manrope"] { --font-display: var(--font-manrope); }
 :root[data-heading="geist"] { --font-display: var(--font-geist); }
 
+/* The product portal (every route under /screens) is Inter only. The
+   customizer's saved font applies to the design-system site; this rule comes
+   after it, at the same specificity, so the portal keeps Inter whatever was
+   picked there. data-portal is set by app/screens/layout.tsx. */
+:root[data-portal] {
+    --font-body: var(--font-inter);
+    --font-display: var(--font-inter);
+    --font-mono: var(--font-inter);
+}
+
 @theme inline {
     --color-nav: var(--nav);
     --color-nav-foreground: var(--nav-foreground);

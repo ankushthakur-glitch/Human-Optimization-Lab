@@ -43,6 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/design-system/ui/dropdown-menu"
 import { Kbd } from "@/design-system/ui/kbd"
+import { SessionTimeout } from "@/components/session-timeout"
 import {
   Tooltip,
   TooltipContent,
@@ -52,14 +53,10 @@ import {
 /* ------------------------------------------------------------------- nav -- */
 
 export type ModuleId =
-  | "dashboard"
-  | "patients"
-  | "schedule"
-  | "orders"
-  | "results"
+  "dashboard" | "patients" | "schedule" | "orders" | "results"
 
-type NavItem = {
-  id: ModuleId
+export type NavItem = {
+  id: string
   label: string
   icon: React.ComponentType<{ className?: string }>
   href?: string
@@ -162,16 +159,55 @@ function SideNavLink({
   )
 }
 
+/* Who the top bar says is signed in. The EHR screens default to a clinician;
+   the admin console passes its own platform admin. */
+export type ShellAccount = {
+  name: string
+  email: string
+  initials: string
+  avatar?: string
+}
+
+/* A shortcut the command palette offers above "Go to". */
+export type ShellAction = {
+  label: string
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+}
+
+const EHR_ACCOUNT: ShellAccount = {
+  name: "Dr. Reyes",
+  email: "m.reyes@humanoptimization.com",
+  initials: "RM",
+  avatar:
+    "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=96&h=96&q=80",
+}
+
+const EHR_ACTIONS: ShellAction[] = [
+  { label: "Add patient", href: "/screens/patients/new", icon: IconUserAdd },
+]
+
 /* ----------------------------------------------------------------- shell -- */
 
+/* The same frame wraps the EHR and the admin console; only the module list,
+   the home link, the palette shortcuts and the signed-in account differ, so
+   those come in as props with the EHR's as defaults. */
 export function EhrShell({
   active = "patients",
+  nav = PRIMARY_NAV,
+  homeHref = "/screens/patients",
+  account = EHR_ACCOUNT,
+  actions = EHR_ACTIONS,
   children,
 }: {
-  active?: ModuleId
+  active?: ModuleId | (string & {})
+  nav?: NavItem[]
+  homeHref?: string
+  account?: ShellAccount
+  actions?: ShellAction[]
   children: React.ReactNode
 }) {
-  const [collapsed, setCollapsed] = React.useState(false)
+  const [collapsed, setCollapsed] = React.useState(true)
   const [searchOpen, setSearchOpen] = React.useState(false)
   const router = useRouter()
 
@@ -197,6 +233,7 @@ export function EhrShell({
        a bar above it. That is what lets the mark sit in the rail's own column
        and stay put when the rail collapses to icons. */
     <div className="flex h-svh min-h-0 bg-muted/30">
+      <SessionTimeout />
       {/* side nav */}
       <aside
         className={cn(
@@ -207,7 +244,7 @@ export function EhrShell({
         {/* The brand block lines up with the header beside it, so the rule
             under the header reads as one line across the whole window. */}
         <Link
-          href="/screens/patients"
+          href={homeHref}
           className={cn(
             "flex h-14 shrink-0 items-center border-b",
             collapsed ? "justify-center px-0" : "px-4"
@@ -267,7 +304,7 @@ export function EhrShell({
         <nav
           className={cn("flex flex-col gap-1 p-3", collapsed && "items-center")}
         >
-          {PRIMARY_NAV.map((item) => (
+          {nav.map((item) => (
             <SideNavLink
               key={item.id}
               item={item}
@@ -276,7 +313,6 @@ export function EhrShell({
             />
           ))}
         </nav>
-
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -331,24 +367,26 @@ export function EhrShell({
               <CommandInput placeholder={`Search ${BRAND_NAME}...`} />
               <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
-                <CommandGroup heading="Actions">
-                  <CommandItem onSelect={() => go("/screens/patients/new")}>
-                    <IconUserAdd />
-                    Add patient
-                  </CommandItem>
-                </CommandGroup>
-                <CommandGroup heading="Go to">
-                  {PRIMARY_NAV
-                    .filter((item) => item.href)
-                    .map((item) => (
+                {actions.length > 0 && (
+                  <CommandGroup heading="Actions">
+                    {actions.map((action) => (
                       <CommandItem
-                        key={item.id}
-                        onSelect={() => go(item.href!)}
+                        key={action.href}
+                        onSelect={() => go(action.href)}
                       >
-                        <item.icon />
-                        {item.label}
+                        <action.icon />
+                        {action.label}
                       </CommandItem>
                     ))}
+                  </CommandGroup>
+                )}
+                <CommandGroup heading="Go to">
+                  {nav.filter((item) => item.href).map((item) => (
+                    <CommandItem key={item.id} onSelect={() => go(item.href!)}>
+                      <item.icon />
+                      {item.label}
+                    </CommandItem>
+                  ))}
                 </CommandGroup>
               </CommandList>
             </Command>
@@ -370,14 +408,13 @@ export function EhrShell({
                 render={
                   <Button variant="ghost" size="sm" className="gap-2 px-1.5">
                     <Avatar className="size-7">
-                      <AvatarImage
-                        src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=96&h=96&q=80"
-                        alt="Dr. Reyes"
-                      />
-                      <AvatarFallback>RM</AvatarFallback>
+                      {account.avatar && (
+                        <AvatarImage src={account.avatar} alt={account.name} />
+                      )}
+                      <AvatarFallback>{account.initials}</AvatarFallback>
                     </Avatar>
                     <span className="hidden text-left text-xs font-medium sm:block">
-                      Dr. Reyes
+                      {account.name}
                     </span>
                   </Button>
                 }
@@ -387,10 +424,10 @@ export function EhrShell({
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="flex flex-col gap-0.5 px-2.5 py-2 font-normal">
                     <span className="text-sm font-medium text-foreground">
-                      Dr. Reyes
+                      {account.name}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      m.reyes@humanoptimization.com
+                      {account.email}
                     </span>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
@@ -414,7 +451,10 @@ export function EhrShell({
                     not the clinician's, so the colour row stays out of here. */}
                 <AppearanceMenuSection showAccent={false} />
                 <DropdownMenuSeparator />
-                <DropdownMenuItem render={<Link href="/" />}>
+                <DropdownMenuItem
+                  variant="destructive"
+                  render={<Link href="/screens/login" />}
+                >
                   <IconLogout />
                   Log out
                 </DropdownMenuItem>

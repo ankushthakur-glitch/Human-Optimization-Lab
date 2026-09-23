@@ -81,7 +81,6 @@ import {
   HeartbreakIcon,
   HistoryIcon,
   Home01Icon,
-  Hospital01Icon,
   IdentityCardIcon,
   Image01Icon,
   InboxIcon,
@@ -166,6 +165,7 @@ import {
   Video01Icon,
   VideoOffIcon,
   ViewIcon,
+  ViewOffSlashIcon,
   VolumeHighIcon,
   VolumeOffIcon,
   WaveIcon,
@@ -236,6 +236,7 @@ export const IconEdit = createIcon(PencilEdit01Icon)
 export const IconExpandVertical = createIcon(UnfoldMoreIcon)
 export const IconExternalLink = createIcon(LinkSquare01Icon)
 export const IconEye = createIcon(ViewIcon)
+export const IconEyeOff = createIcon(ViewOffSlashIcon)
 export const IconFileAlert = createIcon(FileRemoveIcon)
 export const IconFileCheck = createIcon(FileVerifiedIcon)
 export const IconFileList = createIcon(TaskDaily01Icon)
@@ -259,7 +260,7 @@ export const IconHeartbreak = createIcon(HeartbreakIcon)
 export const IconHeartPulse = createIcon(HeartCheckIcon)
 export const IconHistory = createIcon(HistoryIcon)
 export const IconHome = createIcon(Home01Icon)
-export const IconHospital = createIcon(Hospital01Icon)
+export const IconHospital = createIcon(FirstAidKitIcon)
 export const IconIdCard = createIcon(IdentityCardIcon)
 export const IconImage = createIcon(Image01Icon)
 export const IconInbox = createIcon(InboxIcon)
@@ -402,6 +403,7 @@ export const ICON_CATALOG: { name: string; source: string; Icon: (props: IconPro
   { name: "IconExpandVertical", source: "UnfoldMoreIcon", Icon: IconExpandVertical },
   { name: "IconExternalLink", source: "LinkSquare01Icon", Icon: IconExternalLink },
   { name: "IconEye", source: "ViewIcon", Icon: IconEye },
+  { name: "IconEyeOff", source: "ViewOffSlashIcon", Icon: IconEyeOff },
   { name: "IconFileAlert", source: "FileRemoveIcon", Icon: IconFileAlert },
   { name: "IconFileCheck", source: "FileVerifiedIcon", Icon: IconFileCheck },
   { name: "IconFileList", source: "TaskDaily01Icon", Icon: IconFileList },
@@ -425,7 +427,7 @@ export const ICON_CATALOG: { name: string; source: string; Icon: (props: IconPro
   { name: "IconHeartPulse", source: "HeartCheckIcon", Icon: IconHeartPulse },
   { name: "IconHistory", source: "HistoryIcon", Icon: IconHistory },
   { name: "IconHome", source: "Home01Icon", Icon: IconHome },
-  { name: "IconHospital", source: "Hospital01Icon", Icon: IconHospital },
+  { name: "IconHospital", source: "FirstAidKitIcon", Icon: IconHospital },
   { name: "IconIdCard", source: "IdentityCardIcon", Icon: IconIdCard },
   { name: "IconImage", source: "Image01Icon", Icon: IconImage },
   { name: "IconInbox", source: "InboxIcon", Icon: IconInbox },

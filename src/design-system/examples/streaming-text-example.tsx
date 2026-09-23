@@ -11,7 +11,7 @@ import { Bubble, BubbleContent } from "@/design-system/ui/bubble"
 import { Button } from "@/design-system/ui/button"
 import { LoadingStateIndicator } from "@/design-system/ui/loading-state"
 
-const SUMMARY = `Three of the twelve results are outside the reference range. Potassium is the one worth looking at first — it has moved in the same direction at each of the last three draws.`
+const SUMMARY = `Three of the twelve results are outside the reference range. Potassium is the one worth looking at first. It has moved in the same direction at each of the last three draws.`
 
 const SHORT = `Saved. The note is filed against today's encounter.`
 
@@ -39,11 +39,11 @@ function StreamingSpeeds() {
     <Example title="Cadence">
       <StreamingTextGroup>
         <div className="flex w-full flex-col gap-1">
-          <span className="text-xs text-muted-foreground">Fast — 8ms</span>
+          <span className="text-xs text-muted-foreground">Fast (8ms)</span>
           <StreamingText text={SUMMARY} speed={8} />
         </div>
         <div className="flex w-full flex-col gap-1">
-          <span className="text-xs text-muted-foreground">Slow — 40ms</span>
+          <span className="text-xs text-muted-foreground">Slow (40ms)</span>
           <StreamingText text={SHORT} speed={40} />
         </div>
       </StreamingTextGroup>
@@ -86,7 +86,7 @@ function StreamingInBubble() {
     <Example title="In a message">
       <div className="flex w-full max-w-md flex-col gap-4">
         <Bubble variant="tinted" align="end">
-          <BubbleContent>Summarise today's labs.</BubbleContent>
+          <BubbleContent>Summarise today&apos;s labs.</BubbleContent>
         </Bubble>
         <Bubble variant="ghost">
           <BubbleContent>

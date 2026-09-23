@@ -3,6 +3,8 @@
 import * as React from "react"
 import { createPortal } from "react-dom"
 
+import { useMounted } from "@/hooks/use-mounted"
+
 /**
  * Figma-prototype behaviour for the running app: a click that lands on dead
  * space flashes the things that actually take you somewhere. Clients walking a
@@ -183,9 +185,7 @@ function collect(root: ParentNode, flash: number): Mark[] {
 
 export function PrototypeHotspots() {
   const [marks, setMarks] = React.useState<Mark[] | null>(null)
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => setMounted(true), [])
+  const mounted = useMounted()
 
   React.useEffect(() => {
     let flash = 0

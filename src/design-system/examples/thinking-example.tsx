@@ -75,7 +75,7 @@ function ThinkingInConversation() {
           <ThinkingTrigger>Thought for 4 seconds</ThinkingTrigger>
           <ThinkingContent>
             <ThinkingStep>
-              Checked the visit history first — the scheduling table alone would
+              Checked the visit history first. The scheduling table alone would
               have missed the walk-ins.
             </ThinkingStep>
           </ThinkingContent>

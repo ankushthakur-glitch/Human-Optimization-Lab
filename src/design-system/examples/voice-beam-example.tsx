@@ -12,6 +12,7 @@ import { Button } from "@/design-system/ui/button"
 import { Input } from "@/design-system/ui/input"
 import { Label } from "@/design-system/ui/label"
 import { Switch } from "@/design-system/ui/switch"
+import { useMounted } from "@/hooks/use-mounted"
 
 const COLOR_VARIANTS: VoiceBeamColorVariant[] = ["colorful", "ocean", "sunset", "candy"]
 
@@ -48,7 +49,7 @@ function VoiceBeamSimulated() {
         </div>
       </VoiceBeam>
       <p className="text-xs text-muted-foreground">
-        No microphone needed — <code className="font-mono">level</code> takes a
+        No microphone needed. <code className="font-mono">level</code> takes a
         number or a getter, so any source can drive the glow.
       </p>
     </Example>
@@ -63,8 +64,7 @@ function VoiceBeamMicrophone() {
   // `supported` is probed during render, so it reads false on the server and
   // true in the browser. Gate on mount so the first client render still matches
   // the HTML, then let the real value take over.
-  const [mounted, setMounted] = React.useState(false)
-  React.useEffect(() => setMounted(true), [])
+  const mounted = useMounted()
   const supported = mounted ? mic.supported : true
 
   return (

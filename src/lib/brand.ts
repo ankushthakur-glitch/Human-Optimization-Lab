@@ -19,12 +19,12 @@ export const BRAND_NAME = "Human Optimization"
  */
 export const BRAND_SLUG = "human-optimization"
 
-/** The suffix page titles carry, e.g. "Foundations — Human Optimization". */
-export const titleTemplate = `%s — ${BRAND_NAME}`
+/** The suffix page titles carry, e.g. "Foundations | Human Optimization". */
+export const titleTemplate = `%s | ${BRAND_NAME}`
 
-/** "Foundations — Human Optimization" */
+/** "Foundations | Human Optimization" */
 export function brandedTitle(page: string) {
-  return `${page} — ${BRAND_NAME}`
+  return `${page} | ${BRAND_NAME}`
 }
 
 /**

@@ -1,0 +1,31 @@
+# Logs the day's design deliverables at 7:30 PM IST (14:00 UTC) on weekdays
+# and commits DELIVERABLES-CHANGELOG.md, ready for the 8 PM timesheet fill.
+name: Design deliverables log
+
+on:
+  schedule:
+    - cron: "0 14 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/gen-deliverables.mjs --log
+      - name: Commit the log
+        run: |
+          git add DELIVERABLES-CHANGELOG.md
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: design deliverables log $(TZ=Asia/Kolkata date +%d-%b-%Y)"
+          git push

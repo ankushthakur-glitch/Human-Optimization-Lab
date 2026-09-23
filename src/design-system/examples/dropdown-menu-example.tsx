@@ -2,15 +2,8 @@
 
 import * as React from "react"
 
-import {
-  Example,
-  ExampleWrapper,
-} from "@/design-system/examples/example"
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/design-system/ui/avatar"
+import { Example, ExampleWrapper } from "@/design-system/examples/example"
+import { Avatar, AvatarFallback, AvatarImage } from "@/design-system/ui/avatar"
 import { Button } from "@/design-system/ui/button"
 import {
   Dialog,
@@ -38,7 +31,35 @@ import {
   DropdownMenuTrigger,
 } from "@/design-system/ui/dropdown-menu"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { UserIcon, CreditCardIcon, SettingsIcon, LogoutIcon, LayoutIcon, ActivityIcon, LayoutLeftIcon, ArrowUp01Icon, ArrowDown01Icon, ArrowRight01Icon, MailIcon, MessageIcon, NotificationIcon, WalletIcon, BankIcon, EditIcon, ShareIcon, Archive02Icon, DeleteIcon, CheckmarkBadgeIcon, UnfoldMoreIcon, CopyIcon, ScissorIcon, ClipboardIcon, UserGroupIcon, AddCircleIcon, HelpCircleIcon } from "@hugeicons/core-free-icons"
+import {
+  UserIcon,
+  CreditCardIcon,
+  SettingsIcon,
+  LogoutIcon,
+  LayoutIcon,
+  ActivityIcon,
+  LayoutLeftIcon,
+  ArrowUp01Icon,
+  ArrowDown01Icon,
+  ArrowRight01Icon,
+  MailIcon,
+  MessageIcon,
+  NotificationIcon,
+  WalletIcon,
+  BankIcon,
+  EditIcon,
+  ShareIcon,
+  Archive02Icon,
+  DeleteIcon,
+  CheckmarkBadgeIcon,
+  UnfoldMoreIcon,
+  CopyIcon,
+  ScissorIcon,
+  ClipboardIcon,
+  UserGroupIcon,
+  AddCircleIcon,
+  HelpCircleIcon,
+} from "@hugeicons/core-free-icons"
 
 export default function DropdownMenuExample() {
   return (
@@ -184,7 +205,7 @@ function DropdownMenuWithShortcuts() {
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem variant="destructive">
             Log out
             <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
           </DropdownMenuItem>
@@ -452,7 +473,7 @@ function DropdownMenuWithAvatar() {
         </DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
-      <DropdownMenuItem>
+      <DropdownMenuItem variant="destructive">
         <HugeiconsIcon icon={LogoutIcon} />
         Sign Out
       </DropdownMenuItem>
@@ -467,7 +488,7 @@ function DropdownMenuWithAvatar() {
             render={
               <Button
                 variant="outline"
-                className="h-12 justify-start px-2 md:max-w-[200px] style-sera:font-normal style-sera:tracking-normal style-sera:normal-case"
+                className="style-sera:font-normal style-sera:tracking-normal style-sera:normal-case h-12 justify-start px-2 md:max-w-[200px]"
               />
             }
           >
@@ -481,7 +502,10 @@ function DropdownMenuWithAvatar() {
                 shadcn@example.com
               </span>
             </div>
-            <HugeiconsIcon icon={UnfoldMoreIcon} className="ml-auto text-muted-foreground" />
+            <HugeiconsIcon
+              icon={UnfoldMoreIcon}
+              className="ml-auto text-muted-foreground"
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-(--anchor-width) min-w-56">
             {menuContent}

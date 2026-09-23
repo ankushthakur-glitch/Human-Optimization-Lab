@@ -5,7 +5,7 @@ export type FontOption = {
 }
 
 export const BODY_FONTS: FontOption[] = [
-  { name: "inter", label: "Inter", note: "Neutral UI workhorse — the SaaS default" },
+  { name: "inter", label: "Inter", note: "Neutral UI workhorse, the SaaS default" },
   { name: "roboto", label: "Roboto", note: "Familiar, slightly narrower, dense-table friendly" },
   { name: "noto-sans", label: "Noto Sans", note: "Widest language coverage" },
   { name: "ibm-plex-sans", label: "IBM Plex Sans", note: "Institutional, strong at small sizes" },
@@ -18,6 +18,6 @@ export const BODY_FONTS: FontOption[] = [
 ]
 
 export const HEADING_FONTS: FontOption[] = [
-  { name: "inherit", label: "Same as body", note: "Single-family system — most cohesive" },
+  { name: "inherit", label: "Same as body", note: "Single-family system, the most cohesive" },
   ...BODY_FONTS,
 ]

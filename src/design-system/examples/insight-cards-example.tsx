@@ -75,7 +75,7 @@ function InsightNarrative() {
       <InsightCard>
         <div className="flex items-start gap-2">
           <InsightCardLabel className="flex-1">
-            Potassium — last 5 draws
+            Potassium (last 5 draws)
           </InsightCardLabel>
           <Badge variant="warning">Watch</Badge>
         </div>

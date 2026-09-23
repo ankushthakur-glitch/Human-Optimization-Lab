@@ -1,0 +1,44 @@
+/* Motion for the logo loaders (logo-loader.tsx), taken from the set on the
+   Logo page. A loader that cannot move still shows the mark: under reduced
+   motion every animation stops and the mark simply holds still. */
+
+.ripple { animation: ripple 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite; }
+.fill { animation: fill 2.6s ease-in-out infinite; }
+.dot { animation: dot 1.2s ease-in-out infinite; }
+.bar { animation: bar 1.6s ease-in-out infinite; }
+.beat { animation: beat 1.6s cubic-bezier(0.3, 0, 0.3, 1) infinite; }
+.enter { animation: enter 0.4s ease-out both; }
+
+@keyframes ripple {
+  0% { transform: scale(0.55); opacity: 0.55; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+@keyframes fill {
+  0% { clip-path: inset(100% 0 0 0); opacity: 1; }
+  70% { clip-path: inset(0 0 0 0); opacity: 1; }
+  88% { opacity: 1; }
+  100% { clip-path: inset(0 0 0 0); opacity: 0; }
+}
+@keyframes dot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-4px); }
+}
+@keyframes bar {
+  0% { left: -40%; width: 40%; }
+  60%, 100% { left: 100%; width: 40%; }
+}
+/* Two beats and a rest, the heart the mark is drawn from. */
+@keyframes beat {
+  0%, 50%, 100% { transform: scale(1); }
+  12% { transform: scale(1.12); }
+  24% { transform: scale(0.98); }
+  36% { transform: scale(1.06); }
+}
+@keyframes enter { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fill, .dot, .beat, .enter { animation: none; }
+  .ripple { animation: none; opacity: 0; }
+  /* A still bar says nothing, so it sits parked as a short segment. */
+  .bar { animation: none; left: 30%; width: 40%; }
+}

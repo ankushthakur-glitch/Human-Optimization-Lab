@@ -2,10 +2,7 @@
 
 import * as React from "react"
 
-import {
-  Example,
-  ExampleWrapper,
-} from "@/design-system/examples/example"
+import { Example, ExampleWrapper } from "@/design-system/examples/example"
 import { Button } from "@/design-system/ui/button"
 import { Card, CardContent } from "@/design-system/ui/card"
 import {
@@ -20,7 +17,32 @@ import {
   CommandShortcut,
 } from "@/design-system/ui/command"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { CalendarIcon, SmileIcon, CalculatorIcon, UserIcon, CreditCardIcon, SettingsIcon, HomeIcon, InboxIcon, File02Icon, FolderIcon, PlusSignIcon, FolderAddIcon, CopyIcon, ScissorIcon, ClipboardIcon, DeleteIcon, GridIcon, Menu05Icon, ZoomInAreaIcon, ZoomOutAreaIcon, NotificationIcon, HelpCircleIcon, ImageIcon, CodeIcon } from "@hugeicons/core-free-icons"
+import {
+  CalendarIcon,
+  SmileIcon,
+  CalculatorIcon,
+  UserIcon,
+  CreditCardIcon,
+  SettingsIcon,
+  HomeIcon,
+  InboxIcon,
+  File02Icon,
+  FolderIcon,
+  PlusSignIcon,
+  FolderAddIcon,
+  CopyIcon,
+  ScissorIcon,
+  ClipboardIcon,
+  DeleteIcon,
+  GridIcon,
+  Menu05Icon,
+  ZoomInAreaIcon,
+  ZoomOutAreaIcon,
+  NotificationIcon,
+  HelpCircleIcon,
+  ImageIcon,
+  CodeIcon,
+} from "@hugeicons/core-free-icons"
 
 export default function CommandExample() {
   return (
@@ -282,7 +304,7 @@ function CommandManyItems() {
                   <span>Paste</span>
                   <CommandShortcut>⌘V</CommandShortcut>
                 </CommandItem>
-                <CommandItem>
+                <CommandItem variant="destructive">
                   <HugeiconsIcon icon={DeleteIcon} />
                   <span>Delete</span>
                   <CommandShortcut>⌫</CommandShortcut>

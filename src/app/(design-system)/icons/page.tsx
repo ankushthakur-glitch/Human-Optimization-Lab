@@ -249,7 +249,7 @@ export default function Page() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search icons — heart, calendar, lab…"
+              placeholder="Search icons (heart, calendar, lab…)"
               className="pl-9"
             />
             {query && (

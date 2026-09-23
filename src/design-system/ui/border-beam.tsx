@@ -9,39 +9,45 @@ import {
   type BorderBeamSize,
 } from "border-beam"
 
+import { useMounted } from "@/hooks/use-mounted"
+
 // The pulse presets ship their own `prefers-reduced-motion` block; the rotate
 // presets leave that to the consumer, so we pause them here instead.
 const ROTATE_SIZES = new Set<BorderBeamSize>(["sm", "md", "line"])
 
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)"
+
+function subscribeReducedMotion(onChange: () => void) {
+  const mql = window.matchMedia(REDUCED_MOTION)
+  mql.addEventListener("change", onChange)
+  return () => mql.removeEventListener("change", onChange)
+}
+
 function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false)
-
-  React.useEffect(() => {
-    const mql = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const onChange = () => setPrefersReducedMotion(mql.matches)
-    mql.addEventListener("change", onChange)
-    setPrefersReducedMotion(mql.matches)
-    return () => mql.removeEventListener("change", onChange)
-  }, [])
-
-  return prefersReducedMotion
+  return React.useSyncExternalStore(
+    subscribeReducedMotion,
+    () => window.matchMedia(REDUCED_MOTION).matches,
+    () => false
+  )
 }
 
 /* Which radius the customizer is on. The value itself is not useful here —
    it is a change signal, telling the beam to measure its child again. */
+function subscribeRadius(onChange: () => void) {
+  const observer = new MutationObserver(onChange)
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-radius"],
+  })
+  return () => observer.disconnect()
+}
+
 function useRadiusToken() {
-  const [token, setToken] = React.useState<string | null>(null)
-
-  React.useEffect(() => {
-    const el = document.documentElement
-    const read = () => setToken(el.getAttribute("data-radius"))
-    read()
-    const observer = new MutationObserver(read)
-    observer.observe(el, { attributes: true, attributeFilter: ["data-radius"] })
-    return () => observer.disconnect()
-  }, [])
-
-  return token
+  return React.useSyncExternalStore(
+    subscribeRadius,
+    () => document.documentElement.getAttribute("data-radius"),
+    () => null
+  )
 }
 
 function BorderBeam({
@@ -52,6 +58,7 @@ function BorderBeam({
   ...props
 }: BorderBeamPrimitiveProps) {
   const { resolvedTheme } = useTheme()
+  const mounted = useMounted()
   const prefersReducedMotion = usePrefersReducedMotion()
   const radiusToken = useRadiusToken()
   const ref = React.useRef<HTMLDivElement>(null)
@@ -85,9 +92,10 @@ function BorderBeam({
     return () => child.removeEventListener("transitionend", onTransitionEnd)
   }, [borderRadius, radiusToken, size])
 
-  // `resolvedTheme` is undefined until next-themes hydrates, and the beam
-  // defaults to dark anyway — so both renders agree and hydration stays quiet.
-  const beamTheme = theme ?? (resolvedTheme === "light" ? "light" : "dark")
+  // next-themes knows the theme on the first client render but the server does
+  // not, so hold the beam's dark default until hydration is done.
+  const beamTheme =
+    theme ?? (mounted && resolvedTheme === "light" ? "light" : "dark")
   const shouldAnimate =
     active && !(prefersReducedMotion && ROTATE_SIZES.has(size))
 

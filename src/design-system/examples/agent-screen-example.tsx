@@ -184,7 +184,7 @@ function AgentScreenFull() {
               <ContextCardIcon>
                 <HugeiconsIcon icon={TestTube01Icon} />
               </ContextCardIcon>
-              <ContextCardTitle>Lab panel — 14 Mar</ContextCardTitle>
+              <ContextCardTitle>Lab panel, 14 Mar</ContextCardTitle>
             </ContextCardHeader>
             <ContextCardSource>observation/22190</ContextCardSource>
           </ContextCard>

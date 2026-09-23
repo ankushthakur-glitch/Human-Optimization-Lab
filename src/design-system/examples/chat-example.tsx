@@ -84,7 +84,7 @@ function ChatThread() {
         <Bubble variant="ghost">
           <BubbleContent>
             Ten patients are past their follow-up window. Three are more than a
-            month overdue — R. Álvarez is the furthest out at 41 days.
+            month overdue. R. Álvarez is the furthest out at 41 days.
           </BubbleContent>
         </Bubble>
         <BubbleGroup>

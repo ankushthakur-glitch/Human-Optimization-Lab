@@ -40,7 +40,7 @@ function FineTuneDefault() {
           <div className="min-w-0 flex-1">
             <FineTuneCardTitle>Tune the summary</FineTuneCardTitle>
             <FineTuneCardDescription>
-              Changes apply on the next run — nothing regenerates while you
+              Changes apply on the next run. Nothing regenerates while you
               drag.
             </FineTuneCardDescription>
           </div>

@@ -61,7 +61,7 @@ function ThinkingOrbSizes() {
         ))}
       </div>
       <p className="text-sm text-muted-foreground">
-        The 20px orb sits inline with text, like this <ThinkingOrb state="working" size={20} className="inline-block align-text-bottom" /> — mid-sentence.
+        The 20px orb sits inline with text, like this <ThinkingOrb state="working" size={20} className="inline-block align-text-bottom" />, mid-sentence.
       </p>
     </Example>
   )

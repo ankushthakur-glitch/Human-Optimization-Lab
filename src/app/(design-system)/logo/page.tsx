@@ -115,7 +115,7 @@ function BrowserTab({ src, dark }: { src: string; dark?: boolean }) {
         className="size-4 shrink-0"
         style={dark ? { filter: REVERSE } : undefined}
       />
-      <span className="truncate">Patients — Human Optimization Lab</span>
+      <span className="truncate">Patients | Human Optimization Lab</span>
     </div>
   )
 }
@@ -248,7 +248,7 @@ export default function LogoPage() {
         <div className="md:col-span-2">
           <Panel
             title="Logo with name"
-            detail="Primary lockup — headers, documents, sign-in"
+            detail="Primary lockup: headers, documents, sign-in"
             download={lockup}
           >
             <div className="flex h-full w-full items-center justify-center rounded-lg bg-white">
@@ -258,7 +258,7 @@ export default function LogoPage() {
         </div>
 
         <Panel
-          title="Logo with name — reversed"
+          title="Logo with name (reversed)"
           detail="On the brand colour"
         >
           <Tile bg={tile}>
@@ -267,7 +267,7 @@ export default function LogoPage() {
         </Panel>
 
         <Panel
-          title="Logo with name — on dark"
+          title="Logo with name (on dark)"
           detail="Dark mode and dark imagery"
         >
           <Tile bg="#0a0a0a">
@@ -275,13 +275,13 @@ export default function LogoPage() {
           </Tile>
         </Panel>
 
-        <Panel title="Logo" detail="Mark only — collapsed nav, avatars, small spaces" download={mark}>
+        <Panel title="Logo" detail="Mark only: collapsed nav, avatars, small spaces" download={mark}>
           <Tile bg="#ffffff">
             <img src={mark} alt="Logo mark" className="size-28" />
           </Tile>
         </Panel>
 
-        <Panel title="Logo — reversed" detail="Mark on the brand colour and on dark">
+        <Panel title="Logo (reversed)" detail="Mark on the brand colour and on dark">
           <Tile bg={tile}>
             <img src={mark} alt="" className="size-24" style={{ filter: REVERSE }} />
           </Tile>
@@ -290,7 +290,7 @@ export default function LogoPage() {
           </Tile>
         </Panel>
 
-        <Panel title="Favicon" detail="Browser tab, 16px — light and dark chrome" className="flex-col gap-6">
+        <Panel title="Favicon" detail="Browser tab at 16px, in light and dark chrome" className="flex-col gap-6">
           <div className="flex flex-col gap-2">
             <BrowserTab src={mark} />
             <BrowserTab src={mark} dark />
@@ -306,7 +306,7 @@ export default function LogoPage() {
           </div>
         </Panel>
 
-        <Panel title="App icon" detail="Home screen and PWA — brand, white and dark tiles">
+        <Panel title="App icon" detail="Home screen and PWA: brand, white and dark tiles">
           {[
             { size: 96, bg: tile, reversed: true },
             { size: 96, bg: "#ffffff", reversed: false },
@@ -335,7 +335,7 @@ export default function LogoPage() {
           ))}
         </Panel>
 
-        <Panel title="Social avatar" detail="Profile images — cropped to a circle">
+        <Panel title="Social avatar" detail="Profile images, cropped to a circle">
           <div className="flex size-24 items-center justify-center rounded-full" style={{ background: tile }}>
             <img src={mark} alt="" className="size-14" style={{ filter: REVERSE }} />
           </div>

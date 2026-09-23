@@ -3,6 +3,7 @@
 import * as React from "react"
 import { BRAND_SLUG } from "@/lib/brand"
 import { ALL_ACCENT_THEMES, isKnownAccent } from "@/design-system/tokens/accents"
+import { useMounted } from "@/hooks/use-mounted"
 
 export type DesignSystemConfig = {
   base: string
@@ -85,30 +86,34 @@ function apply(config: DesignSystemConfig) {
   el.setAttribute("data-icon-stroke", config.iconStroke)
 }
 
+function readStoredConfig(): DesignSystemConfig | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (!stored) return null
+    const next = { ...DEFAULT_CONFIG, ...JSON.parse(stored) }
+    if (!isKnownAccent(next.accent) || next.accentVersion !== ACCENT_VERSION) {
+      next.accent = DEFAULT_CONFIG.accent
+    }
+    delete next.accentVersion
+    return next
+  } catch {
+    // Ignore unreadable storage (private mode, blocked site data).
+    return null
+  }
+}
+
 export function DesignSystemProvider({ children }: { children: React.ReactNode }) {
-  const [config, setState] = React.useState<DesignSystemConfig>(DEFAULT_CONFIG)
+  // The bootstrap script already wrote the stored attributes before first
+  // paint; reading the same store once mounted gets those values into React,
+  // so the pickers show the choice that is actually on screen. The server and
+  // the hydrating render both see DEFAULT_CONFIG, so the markup matches.
+  const mounted = useMounted()
+  const stored = React.useMemo(() => (mounted ? readStoredConfig() : null), [mounted])
+  const [picked, setPicked] = React.useState<DesignSystemConfig | null>(null)
+  const config = picked ?? stored ?? DEFAULT_CONFIG
 
   React.useEffect(() => {
-    // The bootstrap script already wrote these attributes before first paint;
-    // this is what gets the same values into React state, so the pickers show
-    // the choice that is actually on screen.
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        const next = { ...DEFAULT_CONFIG, ...JSON.parse(stored) }
-        if (
-          !isKnownAccent(next.accent) ||
-          next.accentVersion !== ACCENT_VERSION
-        ) {
-          next.accent = DEFAULT_CONFIG.accent
-        }
-        delete next.accentVersion
-        setState(next)
-        apply(next)
-      }
-    } catch {
-      // Ignore unreadable storage (private mode, blocked site data).
-    }
+    if (stored) apply(stored)
     // A page can be opened with ?accent=… to preview one preset — the accent
     // comparison frames three screens this way. It paints the page but is
     // never saved, so looking at a preview doesn't change the reader's pick.
@@ -116,11 +121,11 @@ export function DesignSystemProvider({ children }: { children: React.ReactNode }
     if (isKnownAccent(preview)) {
       document.documentElement.setAttribute("data-accent", preview)
     }
-  }, [])
+  }, [stored])
 
   const setConfig = React.useCallback((patch: Partial<DesignSystemConfig>) => {
-    setState((prev) => {
-      const next = { ...prev, ...patch }
+    setPicked((prev) => {
+      const next = { ...(prev ?? stored ?? DEFAULT_CONFIG), ...patch }
       apply(next)
       try {
         localStorage.setItem(
@@ -132,11 +137,11 @@ export function DesignSystemProvider({ children }: { children: React.ReactNode }
       }
       return next
     })
-  }, [])
+  }, [stored])
 
   const reset = React.useCallback(() => {
     apply(DEFAULT_CONFIG)
-    setState(DEFAULT_CONFIG)
+    setPicked(DEFAULT_CONFIG)
     try {
       localStorage.removeItem(STORAGE_KEY)
     } catch {

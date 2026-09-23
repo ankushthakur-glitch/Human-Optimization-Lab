@@ -13,6 +13,7 @@ import { ThemeCustomizer } from "@/design-system/theme-customizer"
 import { Button } from "@/design-system/ui/button"
 import { ComponentIcon } from "@/design-system/component-icon"
 import { BRAND_NAME, LOGO } from "@/lib/brand"
+import { useMounted } from "@/hooks/use-mounted"
 
 const OVERVIEW_LINKS = [
   { href: "/", label: "Overview" },
@@ -24,8 +25,7 @@ const OVERVIEW_LINKS = [
 
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
-  React.useEffect(() => setMounted(true), [])
+  const mounted = useMounted()
 
   return (
     <Button

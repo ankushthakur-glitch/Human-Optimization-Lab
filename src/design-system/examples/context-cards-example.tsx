@@ -40,7 +40,7 @@ function ContextGrid() {
             <ContextCardIcon>
               <HugeiconsIcon icon={Note01Icon} />
             </ContextCardIcon>
-            <ContextCardTitle>Progress note — 12 Mar</ContextCardTitle>
+            <ContextCardTitle>Progress note, 12 Mar</ContextCardTitle>
           </ContextCardHeader>
           <ContextCardBody>
             Patient reports better adherence since switching to the morning
@@ -55,10 +55,10 @@ function ContextGrid() {
             <ContextCardIcon>
               <HugeiconsIcon icon={TestTube01Icon} />
             </ContextCardIcon>
-            <ContextCardTitle>Lab panel — 14 Mar</ContextCardTitle>
+            <ContextCardTitle>Lab panel, 14 Mar</ContextCardTitle>
           </ContextCardHeader>
           <ContextCardBody>
-            A1c 8.2%, eGFR 78, potassium 5.3 — flagged high for the third draw
+            A1c 8.2%, eGFR 78, potassium 5.3. Flagged high for the third draw
             running.
           </ContextCardBody>
           <ContextCardFooter>
@@ -78,7 +78,7 @@ function ContextSingle() {
           <ContextCardIcon>
             <HugeiconsIcon icon={File01Icon} />
           </ContextCardIcon>
-          <ContextCardTitle>Care plan — diabetes</ContextCardTitle>
+          <ContextCardTitle>Care plan (diabetes)</ContextCardTitle>
           <Badge variant="outline" className="ml-auto">
             Primary
           </Badge>
@@ -143,7 +143,7 @@ function ContextAttached() {
                 <ContextCardIcon>
                   <HugeiconsIcon icon={TestTube01Icon} />
                 </ContextCardIcon>
-                <ContextCardTitle>Lab panel — 14 Mar</ContextCardTitle>
+                <ContextCardTitle>Lab panel, 14 Mar</ContextCardTitle>
                 <ContextCardSource className="ml-auto shrink-0">
                   observation/22190
                 </ContextCardSource>
@@ -154,7 +154,7 @@ function ContextAttached() {
                 <ContextCardIcon>
                   <HugeiconsIcon icon={File01Icon} />
                 </ContextCardIcon>
-                <ContextCardTitle>Care plan — diabetes</ContextCardTitle>
+                <ContextCardTitle>Care plan (diabetes)</ContextCardTitle>
                 <ContextCardSource className="ml-auto shrink-0">
                   careplan/311
                 </ContextCardSource>

@@ -60,7 +60,7 @@ export default function NewPatientPage() {
               The full record: identity, contact, care team, coverage and consent.
             </p>
           </div>
-          <Button variant="ghost" size="sm" render={<Link href="/screens/patients" />}>
+          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/screens/patients" />}>
             <IconArrowLeft />
             Back to worklist
           </Button>
@@ -124,7 +124,7 @@ export default function NewPatientPage() {
             <div className="flex items-start gap-2 rounded-xl border bg-card p-4 text-xs text-muted-foreground">
               <IconInfo className="mt-0.5 size-4 shrink-0" />
               <span>
-                Same form as the two overlays on the worklist — the page adds coverage, address
+                Same form as the two overlays on the worklist. The page adds coverage, address
                 and consent.
               </span>
             </div>
@@ -139,7 +139,7 @@ export default function NewPatientPage() {
             Draft is not saved automatically.
           </span>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" render={<Link href="/screens/patients" />}>
+            <Button variant="ghost" nativeButton={false} render={<Link href="/screens/patients" />}>
               Cancel
             </Button>
             <Separator orientation="vertical" className="h-6" />

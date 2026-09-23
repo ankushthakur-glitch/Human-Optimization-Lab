@@ -95,7 +95,7 @@ function RecommendationConfidence() {
                 Consider a referral
               </RecommendationCardTitle>
               <RecommendationCardReason>
-                Weaker signal — inferred from two notes, neither of which says
+                Weaker signal. Inferred from two notes, neither of which says
                 it outright. Worth a look, not worth acting on blind.
               </RecommendationCardReason>
             </div>

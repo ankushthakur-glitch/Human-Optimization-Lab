@@ -56,7 +56,7 @@ function ApprovalDefault() {
             send_portal_message
           </ApprovalCardDetail>
           <ApprovalCardDetail label="Recipient">
-            R. Álvarez — MRN 40921
+            R. Álvarez · MRN 40921
           </ApprovalCardDetail>
           <ApprovalCardDetail label="Subject">
             Repeat A1c before your next visit
@@ -143,7 +143,7 @@ function ApprovalResolved() {
             <div className="min-w-0 flex-1">
               <ApprovalCardTitle>Close the care gap</ApprovalCardTitle>
               <ApprovalCardDescription>
-                Declined — the gap needs a clinician review first.
+                Declined. The gap needs a clinician review first.
               </ApprovalCardDescription>
             </div>
             <Badge variant="outline">Declined</Badge>
@@ -175,7 +175,7 @@ function ApprovalWithScope() {
         <ApprovalCardDetails>
           <ApprovalCardDetail label="Tool">add_problem</ApprovalCardDetail>
           <ApprovalCardDetail label="Code">
-            E11.9 — Type 2 diabetes
+            E11.9: Type 2 diabetes
           </ApprovalCardDetail>
         </ApprovalCardDetails>
         <label className="flex items-center gap-2 text-xs text-muted-foreground">

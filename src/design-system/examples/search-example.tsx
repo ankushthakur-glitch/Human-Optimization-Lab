@@ -49,13 +49,13 @@ const RESULTS: Result[] = [
     icon: UserCircleIcon,
   },
   {
-    title: "Lab panel — 14 Mar",
+    title: "Lab panel, 14 Mar",
     meta: "A1c, eGFR, potassium",
     group: "Results",
     icon: TestTube01Icon,
   },
   {
-    title: "Care plan — diabetes",
+    title: "Care plan (diabetes)",
     meta: "Updated 2 Apr",
     group: "Documents",
     icon: File01Icon,

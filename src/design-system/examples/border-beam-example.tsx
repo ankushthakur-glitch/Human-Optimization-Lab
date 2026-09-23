@@ -40,7 +40,7 @@ function BorderBeamSizes() {
         <Card className="w-full bg-card">
           <CardHeader>
             <CardTitle>Medium</CardTitle>
-            <CardDescription>Full border glow — the default.</CardDescription>
+            <CardDescription>Full border glow (the default).</CardDescription>
           </CardHeader>
         </Card>
       </BorderBeam>
@@ -51,19 +51,19 @@ function BorderBeamSizes() {
 
       <BorderBeam size="line">
         <div className="w-full rounded-xl border bg-card px-4 py-3 text-sm">
-          Line — bottom-only traveling glow
+          Line: bottom-only traveling glow
         </div>
       </BorderBeam>
 
       <BorderBeam size="pulse-inner">
         <div className="w-full rounded-xl border bg-card px-4 py-3 text-sm">
-          Pulse inner — contained breathe
+          Pulse inner: contained breathe
         </div>
       </BorderBeam>
 
       <BorderBeam size="pulse-outside">
         <div className="w-full rounded-xl border bg-card px-4 py-3 text-sm">
-          Pulse outside — outward bloom
+          Pulse outside: outward bloom
         </div>
       </BorderBeam>
     </Example>

@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   // Next blocks its dev resources cross-origin by default — which leaves the
   // page rendered but never hydrated, so every click in a test is a no-op.
   allowedDevOrigins: ["127.0.0.1"],
+  // forbidden() and app/forbidden.tsx — the Permission Denied screen.
+  experimental: { authInterrupts: true },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "avatar.vercel.sh" },

@@ -100,7 +100,7 @@ export async function generateMetadata({
 }) {
   const { slug } = await params
   const example = getExample(slug)
-  return { title: example ? `${example.title} — ${BRAND_NAME} Design System` : "Not found" }
+  return { title: example ? `${example.title} | ${BRAND_NAME} Design System` : "Not found" }
 }
 
 export default async function Page({

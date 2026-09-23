@@ -19,6 +19,7 @@ import {
   DesignSystemBootstrap,
   DesignSystemProvider,
 } from "@/design-system/providers/design-system-provider"
+import { OfflineGate } from "@/components/offline-gate"
 import { PrototypeHotspots } from "@/components/prototype-hotspots"
 import { Toaster } from "@/design-system/ui/sonner"
 import { TooltipProvider } from "@/design-system/ui/tooltip"
@@ -83,7 +84,7 @@ const commentKitTheme = {
 }
 
 export const metadata = {
-  title: `${BRAND_NAME} — Design System`,
+  title: `${BRAND_NAME} | Design System`,
   description: `Base design system and component library for the ${BRAND_NAME} product.`,
   /*
    * The mark is duotone — a white figure knocked out of a black disc — so it
@@ -139,6 +140,7 @@ export default function RootLayout({
             With the Supabase env vars unset it falls back to localStorage. */}
         <script
           type="module"
+          defer
           src="/comment-kit/comment-kit.js"
           data-namespace={BRAND_SLUG}
           data-product="design-system"
@@ -154,6 +156,8 @@ export default function RootLayout({
           <DesignSystemProvider>
             <TooltipProvider>{children}</TooltipProvider>
             <Toaster />
+            {/* Covers every screen with the offline state while disconnected. */}
+            <OfflineGate />
             {/* Click any dead space and every clickable thing on screen blinks —
                 the Figma-prototype cue, so a client can find the flow alone. */}
             <PrototypeHotspots />

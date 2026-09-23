@@ -385,7 +385,7 @@ export function PatientsWorklist() {
     currentPage * pageSize
   )
   /* The range the footer prints, 1-based and clamped so an empty filter
-     reads "0–0 of 0" rather than "1–0 of 0". */
+     reads "0-0 of 0" rather than "1–0 of 0". */
   const rangeStart =
     filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1
   const rangeEnd = Math.min(currentPage * pageSize, filtered.length)
@@ -818,7 +818,7 @@ export function PatientsWorklist() {
                 </Select>
               </div>
               <span className="text-xs text-muted-foreground tabular-nums">
-                {rangeStart}–{rangeEnd} of {filtered.length}
+                {rangeStart}-{rangeEnd} of {filtered.length}
               </span>
             </div>
             <Pagination className="mx-0 w-auto justify-end">

@@ -500,9 +500,9 @@ const CHART_TAB_BODY: Record<string, string> = {
   summary:
     "Snapshot of active problems, medications, allergies, and the last three encounters.",
   vitals:
-    "BP 138/86 · HR 78 · Temp 36.8 °C · SpO₂ 97% · BMI 29.4 — recorded 2026-09-15 09:32.",
+    "BP 138/86 · HR 78 · Temp 36.8 °C · SpO₂ 97% · BMI 29.4 · recorded 2026-09-15 09:32.",
   meds: "Metformin 1000 mg BID · Lisinopril 10 mg daily · Atorvastatin 20 mg nightly.",
-  labs: "A1c 7.4% (H) · eGFR 68 · LDL 112 (H) — resulted 2026-09-11.",
+  labs: "A1c 7.4% (H) · eGFR 68 · LDL 112 (H) · resulted 2026-09-11.",
   notes: "12 progress notes, 3 telephone encounters, 1 discharge summary.",
 }
 
@@ -547,15 +547,15 @@ function CommandPaletteDemo() {
             <CommandGroup heading="Patients">
               <CommandItem onSelect={() => setOpen(false)}>
                 <IconUser />
-                <span>Alvarez, Maria — MRN-10241 · 58F</span>
+                <span>Alvarez, Maria · MRN-10241 · 58F</span>
               </CommandItem>
               <CommandItem onSelect={() => setOpen(false)}>
                 <IconUser />
-                <span>Okafor, Daniel — MRN-10877 · 41M</span>
+                <span>Okafor, Daniel · MRN-10877 · 41M</span>
               </CommandItem>
               <CommandItem onSelect={() => setOpen(false)}>
                 <IconUser />
-                <span>Nakamura, Yuki — MRN-11002 · 33F</span>
+                <span>Nakamura, Yuki · MRN-11002 · 33F</span>
               </CommandItem>
             </CommandGroup>
             <CommandSeparator />
@@ -617,7 +617,7 @@ function PaginationDemo() {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-muted-foreground">
-        Showing <span className="font-mono text-foreground">{from}</span>–
+        Showing <span className="font-mono text-foreground">{from}</span>-
         <span className="font-mono text-foreground">{to}</span> of{" "}
         <span className="font-mono text-foreground">{totalRows}</span> patients
       </p>
@@ -883,7 +883,7 @@ function ContextMenuDemo() {
     <ContextMenu>
       <ContextMenuTrigger className="flex h-24 w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed bg-background text-sm text-muted-foreground">
         <IconMedication className="size-5" />
-        Right-click the medication row — Lisinopril 10 mg daily
+        Right-click the medication row (Lisinopril 10 mg daily)
       </ContextMenuTrigger>
       <ContextMenuContent className="min-w-56">
         <ContextMenuLabel>Lisinopril 10 mg · active</ContextMenuLabel>
@@ -921,12 +921,12 @@ const CHART_SECTIONS = [
   {
     id: "onthispage-meds",
     label: "Medications",
-    body: "Metformin, lisinopril, atorvastatin — last reconciled 2026-08-30.",
+    body: "Metformin, lisinopril, atorvastatin. Last reconciled 2026-08-30.",
   },
   {
     id: "onthispage-allergies",
     label: "Allergies",
-    body: "Penicillin — hives (high severity). Latex — contact dermatitis.",
+    body: "Penicillin: hives (high severity). Latex: contact dermatitis.",
   },
   {
     id: "onthispage-vitals",
@@ -936,7 +936,7 @@ const CHART_SECTIONS = [
   {
     id: "onthispage-labs",
     label: "Lab results",
-    body: "A1c 7.4% (H), eGFR 68, LDL 112 (H) — resulted 2026-09-11.",
+    body: "A1c 7.4% (H), eGFR 68, LDL 112 (H). Resulted 2026-09-11.",
   },
   {
     id: "onthispage-immunizations",
@@ -1071,7 +1071,7 @@ export default function Page() {
 
         {/* ---------------------------------------------------------------- */}
         <Section title="Positional navigation">
-          <Demo title="Breadcrumbs — deep clinical path">
+          <Demo title="Breadcrumbs: deep clinical path">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -1099,7 +1099,7 @@ export default function Page() {
             </Breadcrumb>
           </Demo>
 
-          <Demo title="Breadcrumbs — truncated">
+          <Demo title="Breadcrumbs: truncated">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -1142,7 +1142,7 @@ export default function Page() {
 
         {/* ---------------------------------------------------------------- */}
         <Section title="Switching within a record">
-          <Demo title="Tabs — default (segmented)">
+          <Demo title="Tabs: default (segmented)">
             <Tabs defaultValue="summary">
               <TabsList>
                 <TabsTrigger value="summary">Summary</TabsTrigger>
@@ -1163,7 +1163,7 @@ export default function Page() {
             </Tabs>
           </Demo>
 
-          <Demo title="Tabs — line">
+          <Demo title="Tabs: line">
             <Tabs defaultValue="summary">
               <TabsList variant="line">
                 <TabsTrigger value="summary">Summary</TabsTrigger>
@@ -1186,7 +1186,7 @@ export default function Page() {
             </Tabs>
           </Demo>
 
-          <Demo title="Tabs — vertical">
+          <Demo title="Tabs: vertical">
             <Tabs defaultValue="summary" orientation="vertical">
               <TabsList>
                 <TabsTrigger value="summary">Encounter summary</TabsTrigger>
@@ -1223,11 +1223,11 @@ export default function Page() {
 
         {/* ---------------------------------------------------------------- */}
         <Section title="Contextual navigation">
-          <Demo title="Row actions — dropdown menu">
+          <Demo title="Row actions: dropdown menu">
             <RowActionsDemo />
           </Demo>
 
-          <Demo title="Row actions — context menu">
+          <Demo title="Row actions: context menu">
             <ContextMenuDemo />
           </Demo>
         </Section>
@@ -1242,7 +1242,7 @@ export default function Page() {
               ],
               [
                 "Switching patients",
-                "Command palette or patient search — never tabs",
+                "Command palette or patient search, never tabs",
               ],
               ["Switching views in one chart", "Tabs, line variant"],
               ["Many labelled destinations", "Navigation menu / mega menu"],

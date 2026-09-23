@@ -14,9 +14,11 @@ function useStreamedText(
   const [index, setIndex] = React.useState(0)
 
   // Restart whenever the source text changes.
-  React.useEffect(() => {
+  const [prevText, setPrevText] = React.useState(text)
+  if (text !== prevText) {
+    setPrevText(text)
     setIndex(0)
-  }, [text])
+  }
 
   React.useEffect(() => {
     if (!playing || index >= text.length) return

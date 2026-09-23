@@ -43,7 +43,7 @@ function ScaledScreen({ accent, label }: { accent: string; label: string }) {
     >
       <iframe
         src={`${SCREEN}?accent=${accent}`}
-        title={`Patients screen — ${label}`}
+        title={`Patients screen: ${label}`}
         width={FRAME_W}
         height={FRAME_H}
         className="absolute top-0 left-0 origin-top-left border-0"

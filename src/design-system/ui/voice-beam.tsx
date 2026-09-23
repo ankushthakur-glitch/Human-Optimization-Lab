@@ -10,14 +10,18 @@ import {
   type VoiceBeamType,
 } from "voice-glow"
 
+import { useMounted } from "@/hooks/use-mounted"
+
 function VoiceBeam({ theme, ...props }: VoiceBeamPrimitiveProps) {
   const { resolvedTheme } = useTheme()
+  const mounted = useMounted()
 
   // The beam's own `auto` follows prefers-color-scheme, which can disagree with
   // an explicitly chosen app theme — so resolve from next-themes instead.
-  // `resolvedTheme` is undefined on the server and on the first client render,
-  // and the beam defaults to dark anyway, so hydration stays consistent.
-  const beamTheme = theme ?? (resolvedTheme === "light" ? "light" : "dark")
+  // next-themes knows the theme on the first client render but the server does
+  // not, so hold the beam's dark default until hydration is done.
+  const beamTheme =
+    theme ?? (mounted && resolvedTheme === "light" ? "light" : "dark")
 
   return <VoiceBeamPrimitive data-slot="voice-beam" theme={beamTheme} {...props} />
 }
