@@ -10,7 +10,9 @@ function ThemeProvider({
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="system"
+      /* First visit lands on light; "Auto" stays available in the menu for
+         anyone who wants the OS setting followed. */
+      defaultTheme="light"
       enableSystem
       disableTransitionOnChange
       {...props}
