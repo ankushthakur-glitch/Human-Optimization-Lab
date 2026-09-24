@@ -135,7 +135,7 @@ export function DmeSideFrame({ active, children }: { active: string; children: R
               className="pointer-events-auto h-8 w-full max-w-md justify-start gap-2 rounded-md border-input bg-input/30 px-2.5 font-normal text-muted-foreground hover:bg-input/50 hover:text-muted-foreground dark:bg-input/30"
             >
               <IconSearch />
-              <span className="flex-1 truncate text-left">Search DME Clinical EHR</span>
+              <span className="flex-1 truncate text-left">Search Lakeside Sleep Center</span>
               <Kbd>⌘K</Kbd>
             </Button>
           </div>
