@@ -59,3 +59,8 @@ scripts/.cache
 
 # personal timesheet Apps Script, kept out of the repo
 /scripts/timesheet.gs
+
+# The patient app's web build keeps its assets' source paths, so a few land
+# under public/app/assets/node_modules; the node_modules rule above would
+# drop them from the deploy.
+!/public/app/assets/node_modules/

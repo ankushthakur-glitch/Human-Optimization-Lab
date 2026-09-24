@@ -1,7 +1,3 @@
-// Each weight from its own entry, so the web build ships only these three.
-import { Inter_400Regular } from "@expo-google-fonts/inter/400Regular"
-import { Inter_500Medium } from "@expo-google-fonts/inter/500Medium"
-import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold"
 import { Stack } from "expo-router"
 import { useFonts } from "expo-font"
 import * as SplashScreen from "expo-splash-screen"
@@ -13,6 +9,17 @@ import { color } from "@/lib/theme"
 
 SplashScreen.preventAutoHideAsync()
 
+/* Inter, the portal's face, in the three weights the app uses. The files
+   live in assets/fonts rather than coming from @expo-google-fonts: the web
+   build keeps an asset's source path, and the repo's .gitignore drops
+   anything under a node_modules folder, so fonts from a package never
+   reached the deployed site. */
+const FONTS = {
+  Inter_400Regular: require("../../assets/fonts/Inter_400Regular.ttf"),
+  Inter_500Medium: require("../../assets/fonts/Inter_500Medium.ttf"),
+  Inter_600SemiBold: require("../../assets/fonts/Inter_600SemiBold.ttf"),
+}
+
 /* Which screens exist depends on the account state:
    signed out            activate, sign-in
    one-time password in  set-password
@@ -21,7 +28,7 @@ SplashScreen.preventAutoHideAsync()
    returns to a sign-in form after signing in. */
 function Routes() {
   const { status, activated } = useAuth()
-  const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold })
+  const [fontsLoaded] = useFonts(FONTS)
   const ready = fontsLoaded && status !== "loading"
 
   React.useEffect(() => {
