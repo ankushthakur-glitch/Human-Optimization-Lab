@@ -183,10 +183,9 @@ export function PracticesList() {
       return [
         p.id,
         p.name,
-        p.legalName,
         p.npi,
         p.tenant,
-        p.clinical.city,
+        p.locationName,
         p.manager ? managerName(p.manager) : "",
       ].some((field) => field.toLowerCase().includes(q))
     })
@@ -397,7 +396,7 @@ export function PracticesList() {
                           {practice.name}
                         </Link>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {practice.clinical.city}, {practice.clinical.state}
+                          {practice.locationName}
                         </span>
                       </TableCell>
                       <TableCell className="hidden text-xs text-muted-foreground xl:table-cell">
