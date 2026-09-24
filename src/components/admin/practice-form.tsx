@@ -2,11 +2,7 @@
 
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
-
 import { Button } from "@/design-system/ui/button"
-import { Field, FieldError, FieldLabel } from "@/design-system/ui/field"
-import { Input } from "@/design-system/ui/input"
 import {
   Sheet,
   SheetContent,
@@ -23,6 +19,16 @@ import {
   referralUrlFor,
   tenantFromName,
 } from "@/components/admin/practices-store"
+import {
+  EMAIL,
+  type Errors,
+  VALIDATE,
+  FormSection,
+  READ_ONLY,
+  SheetForm,
+  TextField,
+  digits,
+} from "@/components/form-kit"
 
 /* -------------------------------------------------------------------------- */
 /*  Values and validation                                                      */
@@ -63,14 +69,9 @@ function fromPractice(p: Practice): PracticeInput {
   }
 }
 
-type Errors = Partial<Record<string, string>>
-
-const digits = (value: string) => value.replace(/\D/g, "")
-
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
 function validate(v: PracticeInput): Errors {
   const errors: Errors = {}
+  if (!VALIDATE) return errors
   if (!v.name.trim()) errors.name = "Enter the practice name."
   if (!v.npi) errors.npi = "Enter the group NPI."
   else if (!/^\d{10}$/.test(v.npi))
@@ -97,73 +98,6 @@ function validate(v: PracticeInput): Errors {
   if (v.website && !/^https?:\/\/[^\s.]+\.[^\s]+$/.test(v.website))
     errors.website = "Start with https:// and include the domain."
   return errors
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Pieces                                                                     */
-/* -------------------------------------------------------------------------- */
-
-function Required() {
-  return (
-    <span aria-hidden className="text-destructive">
-      *
-    </span>
-  )
-}
-
-function TextField({
-  id,
-  label,
-  required,
-  error,
-  className,
-  ...input
-}: React.ComponentProps<typeof Input> & {
-  id: string
-  label: string
-  required?: boolean
-  error?: string
-}) {
-  return (
-    <Field data-invalid={error ? true : undefined} className={className}>
-      <FieldLabel htmlFor={id}>
-        {label}
-        {required && <Required />}
-      </FieldLabel>
-      <Input
-        id={id}
-        aria-invalid={error ? true : undefined}
-        aria-required={required || undefined}
-        {...input}
-      />
-      {error && <FieldError>{error}</FieldError>}
-    </Field>
-  )
-}
-
-/* Generated values sit in a flat grey box so they read as not editable. */
-const READ_ONLY = "[&_input]:bg-muted! [&_input]:text-muted-foreground"
-
-/* A light section: a small heading with a hairline running to the edge, then
-   its fields. Structure without boxing every group in its own grey panel. */
-function FormSection({
-  title,
-  children,
-}: {
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <fieldset className="flex shrink-0 flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <legend className="float-left shrink-0 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          {title}
-        </legend>
-        <span aria-hidden className="h-px flex-1 bg-border" />
-      </div>
-      {children}
-    </fieldset>
-  )
 }
 
 /* -------------------------------------------------------------------------- */
@@ -270,17 +204,7 @@ function PracticeFormBody({
         </SheetDescription>
       </SheetHeader>
 
-      <form
-        id="practice-form"
-        noValidate
-        onSubmit={handleSubmit}
-        className={cn(
-          "flex min-h-0 flex-1 flex-col gap-7 overflow-y-auto p-6",
-          /* White fields with a hairline border, as in the reference form,
-             instead of the filled grey default. */
-          "[&_[data-slot=input]]:border-input [&_[data-slot=input]]:bg-background"
-        )}
-      >
+      <SheetForm id="practice-form" onSubmit={handleSubmit}>
         <FormSection title="Practice">
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField
@@ -433,7 +357,7 @@ function PracticeFormBody({
             />
           </div>
         </FormSection>
-      </form>
+      </SheetForm>
 
       <SheetFooter className="mt-0 shrink-0 flex-row items-center justify-end gap-2 border-t p-4">
         <Button variant="outline" onClick={onCancel}>

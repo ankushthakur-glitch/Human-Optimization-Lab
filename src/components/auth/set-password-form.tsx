@@ -2,9 +2,10 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { toast } from "sonner"
+import { toast } from "@/design-system/ui/sonner"
 
 import { PasswordInput } from "@/components/auth/auth-shell"
+import { Required, VALIDATE } from "@/components/form-kit"
 import { Button } from "@/design-system/ui/button"
 import {
   Field,
@@ -44,14 +45,14 @@ export function SetPasswordForm({
   const [submitted, setSubmitted] = React.useState(false)
   const [pending, setPending] = React.useState(false)
 
-  const strong = RULES.every((rule) => rule.test(password))
-  const matches = confirm.length > 0 && confirm === password
+  const strong = !VALIDATE || RULES.every((rule) => rule.test(password))
+  const matches = !VALIDATE || (confirm.length > 0 && confirm === password)
   const passwordError =
     submitted && !strong
       ? "Use at least 12 characters, with upper and lowercase letters, a number and a symbol."
       : undefined
   const confirmError =
-    submitted && !confirm
+    VALIDATE && submitted && !confirm
       ? "Re-enter your new password."
       : submitted && !matches
         ? "Passwords don’t match."
@@ -73,7 +74,8 @@ export function SetPasswordForm({
       <FieldGroup className="gap-5">
         <Field data-invalid={!!passwordError || undefined}>
           <FieldLabel htmlFor="new-password">
-            New password <span className="text-destructive">*</span>
+            New password
+            <Required />
           </FieldLabel>
           <PasswordInput
             id="new-password"
@@ -87,7 +89,8 @@ export function SetPasswordForm({
         </Field>
         <Field data-invalid={!!confirmError || undefined}>
           <FieldLabel htmlFor="confirm-password">
-            Confirm password <span className="text-destructive">*</span>
+            Confirm password
+            <Required />
           </FieldLabel>
           <PasswordInput
             id="confirm-password"

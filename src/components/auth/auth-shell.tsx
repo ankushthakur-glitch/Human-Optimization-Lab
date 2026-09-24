@@ -3,13 +3,13 @@
 import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { REGEXP_ONLY_DIGITS } from "input-otp"
 
 import { BlueprintPanel } from "@/components/auth/brand-panel-blueprint"
 
 import { cn } from "@/lib/utils"
 import { BRAND_NAME, LOGO } from "@/lib/brand"
 import { IconArrowLeft, IconEye, IconEyeOff } from "@/design-system/icons"
+import { Button } from "@/design-system/ui/button"
 import {
   InputGroup,
   InputGroupAddon,
@@ -20,6 +20,7 @@ import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
+  REGEXP_ONLY_DIGITS,
 } from "@/design-system/ui/input-otp"
 
 /* The sign-in screens share one frame: the brand panel on the left and the
@@ -75,13 +76,15 @@ export function AuthShell({
           </header>
           {children}
           {back && (
-            <Link
-              href={back.href}
-              className="mx-auto mt-6 inline-flex items-center gap-1.5 text-sm text-primary-tint hover:underline"
+            <Button
+              variant="link"
+              className="mx-auto mt-6 h-auto p-0 font-normal"
+              nativeButton={false}
+              render={<Link href={back.href} />}
             >
-              <IconArrowLeft className="size-4" />
+              <IconArrowLeft />
               {back.label}
-            </Link>
+            </Button>
           )}
         </div>
         <p className="mt-8 text-center text-xs text-muted-foreground">
@@ -100,7 +103,7 @@ export function PasswordInput({
 }: React.ComponentProps<typeof InputGroupInput> & { invalid?: boolean }) {
   const [visible, setVisible] = React.useState(false)
   return (
-    <InputGroup className="h-10" data-invalid={invalid || undefined}>
+    <InputGroup data-invalid={invalid || undefined}>
       <InputGroupInput
         id={id}
         type={visible ? "text" : "password"}

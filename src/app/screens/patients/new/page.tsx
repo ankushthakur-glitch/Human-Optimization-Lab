@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { toast } from "sonner"
+import { toast } from "@/design-system/ui/sonner"
 import {
   IconArrowLeft,
   IconCheckCircle,
@@ -13,6 +13,7 @@ import {
 
 import { EhrShell } from "@/components/ehr-shell"
 import { AddPatientForm } from "@/components/add-patient-form"
+import { Alert, AlertDescription } from "@/design-system/ui/alert"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -121,13 +122,13 @@ export default function NewPatientPage() {
               </CardContent>
             </Card>
 
-            <div className="flex items-start gap-2 rounded-xl border bg-card p-4 text-xs text-muted-foreground">
-              <IconInfo className="mt-0.5 size-4 shrink-0" />
-              <span>
+            <Alert className="rounded-xl p-4 text-muted-foreground">
+              <IconInfo />
+              <AlertDescription className="text-xs">
                 Same form as the two overlays on the worklist. The page adds coverage, address
                 and consent.
-              </span>
-            </div>
+              </AlertDescription>
+            </Alert>
           </aside>
         </div>
       </div>

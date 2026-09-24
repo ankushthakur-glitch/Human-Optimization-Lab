@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import { AuthShell } from "@/components/auth/auth-shell"
 import { SignInForm } from "@/components/auth/sign-in-form"
+import { INVITEES } from "@/components/auth/invitees"
 
 export const metadata: Metadata = { title: "Sign in" }
 
@@ -13,6 +14,9 @@ export default function SignInScreen() {
       <SignInForm
         next="/screens/login/verify"
         nextForPractice="/screens/login/verify?as=clinic-manager"
+        practiceByEmail={{
+          [INVITEES.provider.email]: "/screens/login/verify?as=provider",
+        }}
       />
     </AuthShell>
   )

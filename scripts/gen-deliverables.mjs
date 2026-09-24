@@ -70,6 +70,28 @@ const PAGES = {
 
   "/screens/patients": [PROVIDER, "Patients", "Patient worklist"],
   "/screens/patients/new": [PROVIDER, "Patients", "Register patient"],
+
+  // The clinic manager's practice portal.
+  "/screens/practice": [PROVIDER, "", "", { skip: true }],
+  "/screens/practice/providers": [PROVIDER, "", "", { skip: true }],
+  "/screens/practice/users": [PROVIDER, "Clinic Manager Portal", "Users: providers tab (list, bulk import)"],
+  "/screens/practice/users/providers/new": [PROVIDER, "Clinic Manager Portal", "Add provider"],
+  "/screens/practice/users/providers/[id]": [PROVIDER, "Clinic Manager Portal", "Provider profile", { url: "/screens/practice/users/providers/PR3132" }],
+  "/screens/practice/users/providers/[id]/edit": [PROVIDER, "Clinic Manager Portal", "Edit provider", { url: "/screens/practice/users/providers/PR3132/edit" }],
+  "/screens/practice/patients": [PROVIDER, "Clinic Manager Portal", "Patients (list, bulk import)"],
+  "/screens/practice/patients/new": [PROVIDER, "Clinic Manager Portal", "Patient onboarding form"],
+  "/screens/practice/patients/[id]": [PROVIDER, "Clinic Manager Portal", "Patient profile", { url: "/screens/practice/patients/P10240" }],
+  "/screens/practice/patients/[id]/edit": [PROVIDER, "Clinic Manager Portal", "Edit patient", { url: "/screens/practice/patients/P10240/edit" }],
+  "/screens/practice/locations": [PROVIDER, "Clinic Manager Portal", "Locations (list)"],
+  "/screens/practice/locations/new": [PROVIDER, "Clinic Manager Portal", "Add location"],
+  "/screens/practice/locations/[id]": [PROVIDER, "Clinic Manager Portal", "Location details", { url: "/screens/practice/locations/LOC1001" }],
+  "/screens/practice/locations/[id]/edit": [PROVIDER, "Clinic Manager Portal", "Edit location", { url: "/screens/practice/locations/LOC1001/edit" }],
+  // A provider's portal, reached from the provider invite.
+  "/screens/provider": [PROVIDER, "", "", { skip: true }],
+  "/screens/provider/patients": [PROVIDER, "Provider Portal", "Patients (list, bulk import, send invites)"],
+  "/screens/provider/patients/new": [PROVIDER, "Provider Portal", "Add patient and send invite"],
+  "/screens/provider/patients/[id]": [PROVIDER, "Provider Portal", "Patient profile", { url: "/screens/provider/patients/P10240" }],
+  "/screens/provider/patients/[id]/edit": [PROVIDER, "Provider Portal", "Edit patient", { url: "/screens/provider/patients/P10240/edit" }],
 }
 
 /** Pages that aren't a page.tsx of their own: [portal, feature, sub, url]. */
@@ -83,11 +105,24 @@ const EXTRA = [
     ["Set password", "/screens/login/set-password"],
     ["Two-factor setup", "/screens/login/two-factor-setup"],
   ].map(([sub, url]) => [PROVIDER, "Clinic Manager Onboarding", sub, `${url}?as=clinic-manager`]),
+  [PROVIDER, "Clinic Manager Portal", "Users: non-clinical users tab (list, add, view, edit panels)", "/screens/practice/users?tab=staff"],
+  // A provider's first sign-in, invited by the clinic manager.
+  ...[
+    ["Invitation email (desktop)", "/screens/login/invite-email"],
+    ["Invitation email (mobile)", "/screens/login/invite-email/mobile"],
+    ["Activate account", "/screens/login/activate"],
+    ["Set password", "/screens/login/set-password"],
+    ["Two-factor setup", "/screens/login/two-factor-setup"],
+  ].map(([sub, url]) => [PROVIDER, "Provider Onboarding", sub, `${url}?as=provider`]),
   // A patient's invitation; the rest of their onboarding is in the mobile app.
   ...[
     ["Invitation email (desktop)", "/screens/login/invite-email"],
     ["Invitation email (mobile)", "/screens/login/invite-email/mobile"],
   ].map(([sub, url]) => [PATIENT, "Patient Onboarding", sub, `${url}?as=patient`]),
+  // The app's signed-out screens, served from public/app. Set password and
+  // home sit behind the app's session, so they have no link of their own.
+  [PATIENT, "Patient Onboarding", "Activate account (mobile app)", "/app/activate"],
+  [PATIENT, "Patient Onboarding", "Sign in (mobile app)", "/app/sign-in"],
 ]
 
 // ── Pages ────────────────────────────────────────────────────────────────

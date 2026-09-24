@@ -3,9 +3,10 @@ import * as React from "react"
 import type { TextInput } from "react-native"
 
 import { Button, FooterLink, FormError, PasswordField, Screen, Stack, TextField, Title } from "@/components/ui"
+import { IconLock, IconMail } from "@/components/icons"
 import { InstallApp } from "@/components/install-app"
 import { useAuth } from "@/lib/auth"
-import { emailError } from "@/lib/validate"
+import { VALIDATE, emailError } from "@/lib/validate"
 
 /** First sign-in, with the email and one-time password from the invitation.
     The email's app link (hol://activate?email=...) fills the email in. */
@@ -21,7 +22,7 @@ export default function ActivateScreen() {
   async function onSubmit() {
     const found = {
       email: emailError(email),
-      code: code.trim() ? undefined : "Enter the one-time password from your invitation email.",
+      code: !VALIDATE || code.trim() ? undefined : "Enter the one-time password from your invitation email.",
     }
     setErrors(found)
     if (found.email || found.code) return
@@ -39,6 +40,7 @@ export default function ActivateScreen() {
         <FormError message={errors.form} />
         <TextField
           label="Email"
+          icon={IconMail}
           required
           value={email}
           onChangeText={setEmail}
@@ -55,10 +57,11 @@ export default function ActivateScreen() {
         <PasswordField
           ref={codeRef}
           label="One-time password"
+          icon={IconLock}
           required
           value={code}
           onChangeText={setCode}
-          placeholder="From your invitation email"
+          placeholder="Enter one-time password"
           autoComplete="one-time-code"
           textContentType="oneTimeCode"
           returnKeyType="go"

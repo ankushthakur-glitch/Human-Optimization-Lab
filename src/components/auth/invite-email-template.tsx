@@ -78,6 +78,9 @@ export function InviteEmailTemplate({
   const web = variant === "web"
   const invitee = INVITEES[key]
   const manager = key === "clinic-manager"
+  const provider = key === "provider"
+  /* Practice staff sign in with an Organization ID. */
+  const staff = manager || provider
   const patient = key === "patient"
   const { sender } = invitee
   const label = cn(web && "font-medium")
@@ -121,6 +124,19 @@ export function InviteEmailTemplate({
             <p className="mb-[1.6em]">
               Your account is ready. Download the app on your phone and sign in
               to get started.
+            </p>
+          </>
+        ) : provider ? (
+          <>
+            <p>
+              <span className="font-medium">{sender.name}</span>, clinic
+              manager at{" "}
+              <span className="font-medium">{invitee.practice}</span>, has
+              invited you to the {BRAND_NAME} provider portal.
+            </p>
+            <p className="mb-[1.6em]">
+              Your account is ready. Activate it to sign in, add your patients
+              and invite them to the {BRAND_NAME} app.
             </p>
           </>
         ) : manager ? (
@@ -224,11 +240,11 @@ export function InviteEmailTemplate({
           </li>
         </ol>
 
-        <p className={cn(manager && "mb-[1.6em]")}>
+        <p className={cn(staff && "mb-[1.6em]")}>
           The one-time password works once. After you set your own password you
           won&rsquo;t need it again.
         </p>
-        {manager && (
+        {staff && (
           <p>
             Keep your Organization ID. You&rsquo;ll enter it with your email and
             password each time you sign in.
@@ -236,7 +252,7 @@ export function InviteEmailTemplate({
         )}
         <p>
           If you have any questions or need help accessing{" "}
-          {patient ? "the app" : manager ? "the portal" : "the admin console"},
+          {patient ? "the app" : staff ? "the portal" : "the admin console"},
           please contact {patient ? invitee.practice : sender.name} at{" "}
           <span
             className="underline underline-offset-2"

@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 
 import { CodeInput, DEMO_WRONG_CODE } from "@/components/auth/auth-shell"
+import { VALIDATE } from "@/components/form-kit"
 import { Button } from "@/design-system/ui/button"
 import { Field, FieldError, FieldLabel } from "@/design-system/ui/field"
 import { Spinner } from "@/design-system/ui/spinner"
@@ -16,7 +17,8 @@ const RESEND_AFTER = 30
  * the one that enables 2FA, and the reset code sent by email.
  *
  * The prototype takes any six digits except 000000, which stands in for a
- * wrong code so the error state can be reviewed.
+ * wrong code so the error state can be reviewed. With VALIDATE off it takes
+ * anything.
  */
 export function CodeForm({
   next,
@@ -47,11 +49,11 @@ export function CodeForm({
   }, [wait])
 
   function submit(value = code) {
-    if (value.length < 6) {
+    if (VALIDATE && value.length < 6) {
       setError("Enter all six digits.")
       return
     }
-    if (value === DEMO_WRONG_CODE) {
+    if (VALIDATE && value === DEMO_WRONG_CODE) {
       setError("That code isn’t right. Check your app and try again.")
       setCode("")
       return
@@ -108,13 +110,14 @@ export function CodeForm({
           {wait > 0 ? (
             <span>Resend in {wait}s</span>
           ) : (
-            <button
+            <Button
               type="button"
-              className="text-primary-tint hover:underline"
+              variant="link"
+              className="h-auto p-0 font-normal"
               onClick={() => setWait(RESEND_AFTER)}
             >
               Resend code
-            </button>
+            </Button>
           )}
         </p>
       )}

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { toast } from "sonner"
+import { toast } from "@/design-system/ui/sonner"
 import {
   IconChevronDown,
   IconDownload,
@@ -18,6 +18,7 @@ import { AddPatientForm } from "@/components/add-patient-form"
 import { Avatar, AvatarFallback } from "@/design-system/ui/avatar"
 import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
+import { Card } from "@/design-system/ui/card"
 import { ButtonGroup } from "@/design-system/ui/button-group"
 import { Checkbox } from "@/design-system/ui/checkbox"
 import {
@@ -626,7 +627,7 @@ export function PatientsWorklist() {
         {/* The card carries the design's "Shadow 1" (0 0 5px, 8% black) and a
             hairline in the same --border as the row rules, so the table's edge
             reads as one outline with the lines inside it. */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border bg-card shadow-[0_0_5px_rgb(0_0_0/0.08)]">
+        <Card className="min-h-0 flex-1 gap-0 rounded-md border border-border py-0 shadow-[0_0_5px_rgb(0_0_0/0.08)] ring-0">
           {/* table */}
           <div className="min-h-0 flex-1 overflow-auto">
             {rows.length === 0 ? (
@@ -851,7 +852,7 @@ export function PatientsWorklist() {
               </PaginationContent>
             </Pagination>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* ------------------------------------------------ center modal ----- */}

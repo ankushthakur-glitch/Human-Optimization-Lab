@@ -353,18 +353,19 @@ export function EhrShell({
               {/* A trigger, not a field: typing happens in the palette, which
                   opens centred over a backdrop so the page recedes while you
                   search. */}
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setSearchOpen(true)}
                 aria-label="Open global search"
-                className="flex h-8 w-full items-center gap-2 rounded-md border bg-input/30 px-2.5 text-sm text-muted-foreground transition-colors hover:bg-input/50"
+                className="h-8 w-full justify-start gap-2 rounded-md border-input bg-input/30 px-2.5 font-normal text-muted-foreground hover:bg-input/50 hover:text-muted-foreground dark:bg-input/30"
               >
-                <IconSearch className="size-4 shrink-0" />
+                <IconSearch />
                 <span className="flex-1 truncate text-left">
                   Search {BRAND_NAME}
                 </span>
                 <Kbd>⌘K</Kbd>
-              </button>
+              </Button>
             </div>
           </div>
 

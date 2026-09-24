@@ -130,6 +130,7 @@ export function AddPatientForm({
   return (
     <form
       id={id}
+      noValidate
       onSubmit={(event) => {
         event.preventDefault()
         onSubmit?.(event)

@@ -88,14 +88,7 @@ export function formatDate(iso: string) {
   })
 }
 
-/* The phone mask the reference uses: (123)-456-7890. */
-export function formatPhone(value: string) {
-  const d = value.replace(/\D/g, "").slice(0, 10)
-  if (d.length === 0) return ""
-  if (d.length <= 3) return `(${d}`
-  if (d.length <= 6) return `(${d.slice(0, 3)})-${d.slice(3)}`
-  return `(${d.slice(0, 3)})-${d.slice(3, 6)}-${d.slice(6)}`
-}
+export { formatPhone } from "@/components/form-kit"
 
 export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"]
 
@@ -174,7 +167,7 @@ const HAND_WRITTEN: Practice[] = [
     website: "https://www.harborviewlongevity.com",
     status: "Active",
     createdAt: "2026-09-22",
-    clinicians: 4,
+    clinicians: 8,
     patients: 131,
     manager: {
       firstName: "Marcus",
@@ -534,7 +527,7 @@ const SAMPLE_ROWS: SampleRow[] = [
 
 /* NPIs carry a Luhn check digit computed over the "80840" prefix plus the
    first nine digits, so the samples pass the same validation real ones do. */
-function withNpiCheckDigit(base9: string) {
+export function withNpiCheckDigit(base9: string) {
   const digits = `80840${base9}`.split("").map(Number)
   let sum = 0
   for (let i = 0; i < digits.length; i++) {

@@ -11,34 +11,37 @@ import {
   TextInput,
   View,
   type TextInputProps,
+  type TextStyle,
 } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
+import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { IconEye, IconEyeOff } from "@/components/icons"
-import { color, font, gutter, radius } from "@/lib/theme"
+import { color, font, gutter, radius, touchRadius } from "@/lib/theme"
 
 /* The few building blocks the patient app's screens share, built to the web
    portal's design system so the app and the portal look like one product:
    the sign-in frame of src/components/auth/auth-shell.tsx (lockup, title,
-   form, copyright line), shadcn's filled inputs with the ring on focus, and
-   the default button. No subtitles or hint lines, per the portal's copy
-   rules. */
+   form, copyright line), shadcn's filled inputs and the default button,
+   sized up for thumbs and set on a branded band and sheet. No subtitles or
+   hint lines, per the portal's copy rules. */
 
 const LOGO = require("../../assets/logo-lockup.png")
 
-/** A scrolling form screen that keeps its fields above the keyboard. */
+/** A scrolling form screen that keeps its fields above the keyboard: the
+    lockup on a soft teal band, the form on a white sheet rising over it. */
 export function Screen({ children }: { children: React.ReactNode }) {
+  const insets = useSafeAreaInsets()
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Centred in the space above the copyright line, as the portal's
-              sign-in frame centres its form. */}
-          <View style={styles.body}>
+          <View style={[styles.hero, { paddingTop: insets.top + 72 }]}>
+            <HeroArt />
             <Image
               source={LOGO}
               style={styles.logo}
@@ -46,14 +49,35 @@ export function Screen({ children }: { children: React.ReactNode }) {
               accessibilityRole="image"
               accessibilityLabel="Human Optimization Lab"
             />
-            {children}
           </View>
-          <Text style={styles.copyright}>
-            © {new Date().getFullYear()} Human Optimization. All rights reserved.
-          </Text>
+          <View style={styles.sheet}>
+            <View style={styles.sheetBody}>{children}</View>
+            <Text style={styles.copyright}>
+              © {new Date().getFullYear()} Human Optimization. All rights reserved.
+            </Text>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  )
+}
+
+/** The band behind the lockup: a teal wash with two soft rings of the brand
+    colour, sliced to whatever width the phone is. */
+function HeroArt() {
+  return (
+    <Svg style={StyleSheet.absoluteFill} viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
+      <Defs>
+        <LinearGradient id="wash" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={color.primaryHalo} />
+          <Stop offset="1" stopColor={color.brandTint} />
+        </LinearGradient>
+      </Defs>
+      <Rect width="400" height="300" fill="url(#wash)" />
+      <Circle cx="400" cy="0" r="130" fill={color.primary} fillOpacity={0.07} />
+      <Circle cx="400" cy="0" r="75" fill={color.primary} fillOpacity={0.06} />
+      <Circle cx="0" cy="300" r="110" fill={color.background} fillOpacity={0.45} />
+    </Svg>
   )
 }
 
@@ -79,12 +103,14 @@ type FieldProps = TextInputProps & {
   label: string
   required?: boolean
   error?: string
+  /** Drawn inside the input's box, on the left; teal while focused. */
+  icon?: React.ComponentType<{ color: string }>
   /** Rendered inside the input's box, on the right. */
   trailing?: React.ReactNode
 }
 
 export const TextField = React.forwardRef<TextInput, FieldProps>(function TextField(
-  { label, required, error, trailing, style, onFocus, onBlur, ...input },
+  { label, required, error, icon: Icon, trailing, style, onFocus, onBlur, ...input },
   ref
 ) {
   const [focused, setFocused] = React.useState(false)
@@ -95,9 +121,14 @@ export const TextField = React.forwardRef<TextInput, FieldProps>(function TextFi
         {required && <Text style={styles.required}> *</Text>}
       </Text>
       <View style={[styles.inputBox, focused && styles.inputBoxFocused, !!error && styles.inputBoxInvalid]}>
+        {Icon && (
+          <View style={styles.leading}>
+            <Icon color={error ? color.error : focused ? color.primary : color.muted} />
+          </View>
+        )}
         <TextInput
           ref={ref}
-          style={[styles.input, style]}
+          style={[styles.input, !!Icon && styles.inputWithIcon, style]}
           placeholderTextColor={color.placeholder}
           accessibilityLabel={label}
           accessibilityHint={error}
@@ -196,26 +227,35 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: color.background },
   fill: { flex: 1 },
   // On a wide screen the form keeps the portal's 420 width.
-  scroll: {
-    flexGrow: 1,
+  scroll: { flexGrow: 1 },
+  hero: { alignItems: "center", paddingBottom: 96, overflow: "hidden", backgroundColor: color.brandTint },
+  logo: { width: 208, height: 52 },
+  // Rises 32 over the band so the band reads as the sheet's backdrop.
+  sheet: {
+    flex: 1,
+    marginTop: -32,
+    backgroundColor: color.background,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingTop: 36,
+    paddingBottom: 20,
+    boxShadow: "0 -6px 24px rgba(1, 131, 126, 0.08)",
+  },
+  // On a wide screen the form keeps the portal's 420 width.
+  sheetBody: {
+    flex: 1,
     width: "100%",
     maxWidth: 420 + gutter * 2,
     alignSelf: "center",
     paddingHorizontal: gutter,
-    paddingTop: 40,
-    paddingBottom: 24,
   },
-  body: { flex: 1, justifyContent: "center" },
-  // The portal's h-10 lockup with 40 below it (mb-10).
-  logo: { width: 160, height: 40, marginBottom: 40 },
-  // text-2xl font-semibold tracking-tight, 32 below it (mb-8).
   title: {
     fontFamily: font.semibold,
-    fontSize: 24,
-    lineHeight: 32,
-    letterSpacing: -0.6,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.7,
     color: color.text,
-    marginBottom: 32,
+    marginBottom: 28,
   },
 
   field: { gap: 6 },
@@ -224,29 +264,36 @@ const styles = StyleSheet.create({
   inputBox: {
     flexDirection: "row",
     alignItems: "center",
-    height: 44,
+    height: 52,
     borderWidth: 1,
     borderColor: "transparent",
-    borderRadius: radius,
+    borderRadius: touchRadius,
     backgroundColor: color.inputFill,
   },
-  inputBoxFocused: { borderColor: color.ring, boxShadow: `0 0 0 3px ${color.ringHalo}` },
+  inputBoxFocused: {
+    borderColor: color.primary,
+    backgroundColor: color.background,
+    boxShadow: `0 0 0 3px ${color.primaryHalo}`,
+  },
   inputBoxInvalid: { borderColor: color.error, boxShadow: `0 0 0 3px ${color.errorHalo}` },
   input: {
     flex: 1,
     height: "100%",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     fontFamily: font.regular,
     fontSize: 16,
     color: color.text,
-    // The box draws the focus state; the browser's own outline would double it.
-    outlineWidth: 0,
+    // The box draws the focus state; the browser's own ring would double it
+    // and, even transparent, paints over the box's border.
+    ...Platform.select({ web: { outlineStyle: "none" } as unknown as TextStyle }),
   },
+  leading: { paddingLeft: 14 },
+  inputWithIcon: { paddingLeft: 10 },
   error: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.error },
   toggle: {
-    width: 32,
-    height: 32,
-    marginRight: 6,
+    width: 36,
+    height: 36,
+    marginRight: 8,
     borderRadius: radius,
     alignItems: "center",
     justifyContent: "center",
@@ -254,7 +301,7 @@ const styles = StyleSheet.create({
   togglePressed: { backgroundColor: color.border },
 
   formError: {
-    borderRadius: radius,
+    borderRadius: touchRadius,
     backgroundColor: color.errorTint,
     borderWidth: 1,
     borderColor: color.errorHalo,
@@ -264,28 +311,29 @@ const styles = StyleSheet.create({
   formErrorText: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.error },
 
   button: {
-    height: 44,
-    borderRadius: radius,
+    height: 52,
+    marginTop: 4,
+    borderRadius: touchRadius,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     paddingHorizontal: 16,
   },
-  buttonPrimary: { backgroundColor: color.primary },
+  buttonPrimary: { backgroundColor: color.primary, boxShadow: "0 6px 16px rgba(1, 131, 126, 0.28)" },
   buttonPrimaryPressed: { backgroundColor: color.primaryPressed },
   buttonOutline: { borderWidth: 1, borderColor: color.border, backgroundColor: color.background },
   buttonOutlinePressed: { backgroundColor: color.surface },
   buttonPending: { opacity: 0.7 },
-  buttonText: { fontFamily: font.medium, fontSize: 14, color: color.onPrimary },
+  buttonText: { fontFamily: font.semibold, fontSize: 16, color: color.onPrimary },
   buttonTextOutline: { color: color.text },
 
-  footer: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", marginTop: 24 },
-  footerText: { fontFamily: font.regular, fontSize: 14, color: color.muted },
-  link: { fontFamily: font.medium, fontSize: 14, color: color.primary },
+  footer: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", marginTop: 28 },
+  footerText: { fontFamily: font.regular, fontSize: 15, color: color.muted },
+  link: { fontFamily: font.semibold, fontSize: 15, color: color.primary },
 
   copyright: {
-    marginTop: 32,
+    marginTop: 40,
     textAlign: "center",
     fontFamily: font.regular,
     fontSize: 12,

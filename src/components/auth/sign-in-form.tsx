@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import { PasswordInput } from "@/components/auth/auth-shell"
+import { Required, VALIDATE } from "@/components/form-kit"
 import { Button } from "@/design-system/ui/button"
 import { Checkbox } from "@/design-system/ui/checkbox"
 import {
@@ -37,10 +38,13 @@ type Errors = { orgId?: string; email?: string; secret?: string }
  * The Organization ID is the practice's Practice ID. Practice staff sign in
  * with it; the Super Admin leaves it blank, as the admin console belongs to no
  * practice. So a filled ID goes to `nextForPractice`, a blank one to `next`.
+ * Practice staff whose email is in `practiceByEmail` (a provider, say) go to
+ * their own portal instead.
  */
 export function SignInForm({
   next,
   nextForPractice = next,
+  practiceByEmail = {},
   defaultOrgId = "",
   defaultEmail = "",
   orgRequired = false,
@@ -49,6 +53,7 @@ export function SignInForm({
 }: {
   next: string
   nextForPractice?: string
+  practiceByEmail?: Record<string, string>
   defaultOrgId?: string
   defaultEmail?: string
   /** A clinic manager's invite: the ID is part of their account. */
@@ -67,6 +72,7 @@ export function SignInForm({
 
   function validate(): Errors {
     const found: Errors = {}
+    if (!VALIDATE) return found
     const id = orgId.trim()
     if (showOrgId) {
       if (!id && orgRequired) found.orgId = MESSAGES.orgMissing
@@ -85,7 +91,10 @@ export function SignInForm({
     if (Object.keys(found).length) return
     setPending(true)
     // A prototype: no account is checked, the delay just shows the busy state.
-    const target = showOrgId && orgId.trim() ? nextForPractice : next
+    const target =
+      showOrgId && orgId.trim()
+        ? (practiceByEmail[email.trim().toLowerCase()] ?? nextForPractice)
+        : next
     window.setTimeout(() => router.push(target), 600)
   }
 
@@ -96,12 +105,7 @@ export function SignInForm({
           <Field data-invalid={!!errors.orgId || undefined}>
             <FieldLabel htmlFor="org-id">
               Organization ID
-              {orgRequired && (
-                <>
-                  {" "}
-                  <span className="text-destructive">*</span>
-                </>
-              )}
+              {orgRequired && <Required />}
             </FieldLabel>
             <Input
               id="org-id"
@@ -109,7 +113,7 @@ export function SignInForm({
               autoComplete="organization"
               maxLength={6}
               placeholder="e.g. 123456"
-              className="h-10 tabular-nums"
+              className="tabular-nums"
               value={orgId}
               onChange={(e) => setOrgId(e.target.value.replace(/\D/g, ""))}
               aria-invalid={!!errors.orgId || undefined}
@@ -119,14 +123,14 @@ export function SignInForm({
         )}
         <Field data-invalid={!!errors.email || undefined}>
           <FieldLabel htmlFor="email">
-            Email <span className="text-destructive">*</span>
+            Email
+            <Required />
           </FieldLabel>
           <Input
             id="email"
             type="email"
             autoComplete="email"
             placeholder="Enter Email"
-            className="h-10"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             aria-invalid={!!errors.email || undefined}
@@ -135,8 +139,8 @@ export function SignInForm({
         </Field>
         <Field data-invalid={!!errors.secret || undefined}>
           <FieldLabel htmlFor="secret">
-            {temporary ? "One-time password" : "Password"}{" "}
-            <span className="text-destructive">*</span>
+            {temporary ? "One-time password" : "Password"}
+            <Required />
           </FieldLabel>
           <PasswordInput
             id="secret"
@@ -156,12 +160,14 @@ export function SignInForm({
                 Remember me
               </Label>
             </div>
-            <Link
-              href="/screens/login/forgot-password"
-              className="text-sm text-primary-tint hover:underline"
+            <Button
+              variant="link"
+              className="h-auto p-0 font-normal"
+              nativeButton={false}
+              render={<Link href="/screens/login/forgot-password" />}
             >
               Forgot Password?
-            </Link>
+            </Button>
           </div>
         )}
         <Button type="submit" size="lg" className="w-full" disabled={pending}>

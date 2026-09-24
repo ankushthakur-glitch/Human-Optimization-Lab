@@ -4,6 +4,7 @@ import * as React from "react"
 import { Platform } from "react-native"
 
 import { PATIENT } from "@/lib/patient"
+import { VALIDATE } from "@/lib/validate"
 
 /* Account state for the patient app.
 
@@ -78,10 +79,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       async activate(email, oneTimePassword) {
         await settle()
-        if (!sameEmail(email) || oneTimePassword.trim() !== PATIENT.oneTimePassword) {
+        if (VALIDATE && (!sameEmail(email) || oneTimePassword.trim() !== PATIENT.oneTimePassword)) {
           return { ok: false, message: "That email and one-time password don’t match our records." }
         }
-        if (activated) {
+        if (VALIDATE && activated) {
           return {
             ok: false,
             message: "This one-time password has already been used. Sign in with your password.",
@@ -105,13 +106,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async signIn(email, password) {
         await settle()
         const saved = await store.getItemAsync(KEY_HASH)
-        if (!saved) {
+        if (VALIDATE && !saved) {
           return {
             ok: false,
             message: "Activate your account with the one-time password from your invitation email first.",
           }
         }
-        if (!sameEmail(email) || (await hash(password)) !== saved) {
+        if (VALIDATE && (!sameEmail(email) || (await hash(password)) !== saved)) {
           return { ok: false, message: "That email and password don’t match our records." }
         }
         await store.setItemAsync(KEY_SIGNED_IN, "1")

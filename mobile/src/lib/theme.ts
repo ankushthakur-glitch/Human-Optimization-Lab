@@ -6,6 +6,10 @@
 export const color = {
   /** --primary */
   primary: "#01837E",
+  /** The brand teal at 25%: the focus halo and the header's glow. */
+  primaryHalo: "#C0E0DF",
+  /** The header band's soft teal wash. */
+  brandTint: "#E6F3F2",
   /** --primary at 80%, the portal's button hover; used for pressed. */
   primaryPressed: "#4F9B97",
   onPrimary: "#FFFFFF",
@@ -36,6 +40,8 @@ export const font = {
   semibold: "Inter_600SemiBold",
 } as const
 
-/** --radius (0.45rem) as the portal's inputs and buttons render it. */
+/** --radius (0.45rem) as the portal renders it; fields and buttons on a
+    phone use the rounder, taller touch size. */
 export const radius = 7.2
+export const touchRadius = 12
 export const gutter = 24

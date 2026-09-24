@@ -1,10 +1,12 @@
 /* Who the invitation and first sign-in are for. The same screens serve
-   three people: the Super Admin invited to the admin console, a practice's
-   clinic manager invited from the Practices module, and a patient invited by
-   their practice to the mobile app. The link carries `?as=clinic-manager` or
-   `?as=patient`; without it the screens show the Super Admin. */
+   four people: the Super Admin invited to the admin console, a practice's
+   clinic manager invited from the Practices module, a provider the clinic
+   manager invites to the provider portal, and a patient invited by their
+   practice to the mobile app. The link carries `?as=clinic-manager`,
+   `?as=provider` or `?as=patient`; without it the screens show the Super
+   Admin. */
 
-export type InviteeKey = "super-admin" | "clinic-manager" | "patient"
+export type InviteeKey = "super-admin" | "clinic-manager" | "provider" | "patient"
 
 /** Who sent the invitation: named in the letter and its contact footer. */
 export type Sender = {
@@ -14,6 +16,15 @@ export type Sender = {
   website: string
   phone: string
   address: string
+}
+
+const CLINIC_MANAGER: Sender = {
+  name: "Marcus Whitfield",
+  title: "Clinic Manager",
+  email: "marcus.whitfield@harborviewlongevity.com",
+  website: "harborviewlongevity.com",
+  phone: "(229) 555-0142",
+  address: "450 Harbor Drive, Anytown, CA 12345",
 }
 
 const PLATFORM_ADMIN: Sender = {
@@ -32,7 +43,7 @@ export type Invitee = {
   /** The practice's Practice ID, typed at sign-in. The admin console has none. */
   orgId?: string
   practice?: string
-  /** "Super Admin" or "Clinic Manager", as it reads in a title. */
+  /** "Super Admin", "Clinic Manager" or "Provider", as it reads in a title. */
   role: string
   consoleName: string
   consoleUrl: string
@@ -64,6 +75,19 @@ export const INVITEES: Record<InviteeKey, Invitee> = {
     home: "/screens/practice/users",
     sender: PLATFORM_ADMIN,
   },
+  /* Elise Harrington (PR3132 in the practice's sample data). */
+  provider: {
+    key: "provider",
+    firstName: "Elise",
+    email: "elise.harrington@harborviewlongevity.com",
+    orgId: "954150",
+    practice: "Harborview Longevity Clinic",
+    role: "Provider",
+    consoleName: "Provider Portal",
+    consoleUrl: "portal.humanoptimizationlab.com/activate",
+    home: "/screens/provider/patients",
+    sender: CLINIC_MANAGER,
+  },
   /* Signs in on the patient app (mobile/), not the web, so `consoleUrl` is
      the app's download link and there is no web home. */
   patient: {
@@ -75,25 +99,18 @@ export const INVITEES: Record<InviteeKey, Invitee> = {
     consoleName: "App",
     consoleUrl: "humanoptimizationlab.com/app",
     home: "",
-    sender: {
-      name: "Marcus Whitfield",
-      title: "Clinic Manager",
-      email: "marcus.whitfield@harborviewlongevity.com",
-      website: "harborviewlongevity.com",
-      phone: "(229) 555-0142",
-      address: "450 Harbor Drive, Anytown, CA 12345",
-    },
+    sender: CLINIC_MANAGER,
   },
 }
 
 /** Reads `?as=` from a page's search params. */
 export function inviteeFrom(as: string | string[] | undefined): Invitee {
-  return as === "clinic-manager" || as === "patient"
+  return as === "clinic-manager" || as === "provider" || as === "patient"
     ? INVITEES[as]
     : INVITEES["super-admin"]
 }
 
-/** Keeps a clinic manager or patient on their own path from screen to screen. */
+/** Keeps a clinic manager, provider or patient on their own path from screen to screen. */
 export function withInvitee(href: string, key: InviteeKey) {
   return key === "super-admin" ? href : `${href}?as=${key}`
 }

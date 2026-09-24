@@ -2,6 +2,7 @@ import * as React from "react"
 import type { TextInput } from "react-native"
 
 import { Button, PasswordField, Screen, Stack, Title } from "@/components/ui"
+import { IconLock } from "@/components/icons"
 import { useAuth } from "@/lib/auth"
 import { confirmError, newPasswordError } from "@/lib/validate"
 
@@ -29,6 +30,7 @@ export default function SetPasswordScreen() {
       <Stack>
         <PasswordField
           label="New password"
+          icon={IconLock}
           required
           value={password}
           onChangeText={setValue}
@@ -42,6 +44,7 @@ export default function SetPasswordScreen() {
         <PasswordField
           ref={confirmRef}
           label="Confirm password"
+          icon={IconLock}
           required
           value={confirm}
           onChangeText={setConfirm}

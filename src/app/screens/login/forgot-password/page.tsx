@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 
 import { AuthShell } from "@/components/auth/auth-shell"
+import { VALIDATE } from "@/components/form-kit"
 import { Button } from "@/design-system/ui/button"
 import {
   Field,
@@ -25,8 +26,8 @@ export default function ForgotPasswordScreen() {
 
   function onSubmit(event: React.FormEvent) {
     event.preventDefault()
-    if (!email.trim()) return setError("Enter your email address.")
-    if (!EMAIL.test(email.trim()))
+    if (VALIDATE && !email.trim()) return setError("Enter your email address.")
+    if (VALIDATE && !EMAIL.test(email.trim()))
       return setError("Enter a valid email address, like name@practice.com.")
     setError(undefined)
     setPending(true)
@@ -49,7 +50,6 @@ export default function ForgotPasswordScreen() {
             type="email"
             autoComplete="email"
             placeholder="name@practice.com"
-            className="h-10"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             aria-invalid={!!error || undefined}

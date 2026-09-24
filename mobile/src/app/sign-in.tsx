@@ -3,9 +3,10 @@ import * as React from "react"
 import type { TextInput } from "react-native"
 
 import { Button, FooterLink, FormError, PasswordField, Screen, Stack, TextField, Title } from "@/components/ui"
+import { IconLock, IconMail } from "@/components/icons"
 import { InstallApp } from "@/components/install-app"
 import { useAuth } from "@/lib/auth"
-import { emailError } from "@/lib/validate"
+import { VALIDATE, emailError } from "@/lib/validate"
 
 /** A returning patient: email and the password they set. */
 export default function SignInScreen() {
@@ -17,7 +18,7 @@ export default function SignInScreen() {
   const passwordRef = React.useRef<TextInput>(null)
 
   async function onSubmit() {
-    const found = { email: emailError(email), password: password ? undefined : "Enter your password." }
+    const found = { email: emailError(email), password: !VALIDATE || password ? undefined : "Enter your password." }
     setErrors(found)
     if (found.email || found.password) return
     setPending(true)
@@ -33,6 +34,7 @@ export default function SignInScreen() {
         <FormError message={errors.form} />
         <TextField
           label="Email"
+          icon={IconMail}
           required
           value={email}
           onChangeText={setEmail}
@@ -49,10 +51,11 @@ export default function SignInScreen() {
         <PasswordField
           ref={passwordRef}
           label="Password"
+          icon={IconLock}
           required
           value={password}
           onChangeText={setPassword}
-          placeholder="Password"
+          placeholder="Enter password"
           autoComplete="current-password"
           textContentType="password"
           returnKeyType="go"

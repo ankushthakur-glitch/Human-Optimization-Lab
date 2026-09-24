@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { toast } from "sonner"
+import { toast } from "@/design-system/ui/sonner"
 import {
   IconArrowLeft,
   IconCopy,
@@ -23,6 +23,13 @@ import {
 } from "@/components/admin/practices-store"
 import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/design-system/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,27 +67,35 @@ function InfoCard({
   action?: React.ReactNode
 }) {
   return (
-    <section className="@container overflow-hidden rounded-lg border bg-card">
-      <header className="flex min-h-11 items-center justify-between gap-2 border-b px-4 py-2">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {action}
-      </header>
-      <dl
-        className={cn(
-          "grid gap-x-8 gap-y-3 p-4",
-          columns === 2 && "@2xl:grid-cols-2"
-        )}
-      >
-        {rows.map((row) => (
-          <InfoRow
-            key={row.label}
-            label={row.label}
-            value={row.value}
-            wide={row.wide}
-          />
-        ))}
-      </dl>
-    </section>
+    <Card className="@container gap-0 rounded-lg border py-0 shadow-none ring-0 [--card-spacing:--spacing(4)]">
+      <CardHeader className="min-h-11 items-center gap-2 rounded-none border-b py-2 [.border-b]:pb-2">
+        <CardTitle
+          role="heading"
+          aria-level={2}
+          className="text-sm font-semibold"
+        >
+          {title}
+        </CardTitle>
+        {action && <CardAction className="self-center">{action}</CardAction>}
+      </CardHeader>
+      <CardContent className="py-4">
+        <dl
+          className={cn(
+            "grid gap-x-8 gap-y-3",
+            columns === 2 && "@2xl:grid-cols-2"
+          )}
+        >
+          {rows.map((row) => (
+            <InfoRow
+              key={row.label}
+              label={row.label}
+              value={row.value}
+              wide={row.wide}
+            />
+          ))}
+        </dl>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -117,7 +132,9 @@ function copy(text: string, what: string) {
   )
 }
 
-const LINK = "text-primary-tint underline-offset-4 hover:underline"
+/* Emails and links inside a value: a link Button that still wraps. */
+const LINK =
+  "h-auto justify-start p-0 text-left font-normal whitespace-normal [overflow-wrap:anywhere]"
 
 /* -------------------------------------------------------------------------- */
 /*  Screen                                                                     */
@@ -290,23 +307,34 @@ function DetailsCards({
               label: "Email",
               wide: true,
               value: practice.email && (
-                <a href={`mailto:${practice.email}`} className={LINK}>
+                <Button
+                  variant="link"
+                  className={LINK}
+                  nativeButton={false}
+                  render={<a href={`mailto:${practice.email}`} />}
+                >
                   {practice.email}
-                </a>
+                </Button>
               ),
             },
             {
               label: "Website",
               wide: true,
               value: practice.website && (
-                <a
-                  href={practice.website}
-                  target="_blank"
-                  rel="noreferrer"
+                <Button
+                  variant="link"
                   className={LINK}
+                  nativeButton={false}
+                  render={
+                    <a
+                      href={practice.website}
+                      target="_blank"
+                      rel="noreferrer"
+                    />
+                  }
                 >
                   {practice.website.replace(/^https?:\/\//, "")}
-                </a>
+                </Button>
               ),
             },
           ]}
@@ -324,9 +352,14 @@ function DetailsCards({
             {
               label: "Email",
               value: contact.email && (
-                <a href={`mailto:${contact.email}`} className={LINK}>
+                <Button
+                  variant="link"
+                  className={LINK}
+                  nativeButton={false}
+                  render={<a href={`mailto:${contact.email}`} />}
+                >
                   {contact.email}
-                </a>
+                </Button>
               ),
             },
             { label: "Phone", value: contact.phone },

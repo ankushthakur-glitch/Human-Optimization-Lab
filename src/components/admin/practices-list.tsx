@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { toast } from "sonner"
+import { toast } from "@/design-system/ui/sonner"
 import {
   IconCopy,
   IconFilter,
@@ -24,6 +24,7 @@ import {
 } from "@/components/admin/practices-store"
 import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
+import { Card } from "@/design-system/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -323,7 +324,7 @@ export function PracticesList() {
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border bg-card shadow-[0_0_5px_rgb(0_0_0/0.08)]">
+        <Card className="min-h-0 flex-1 gap-0 rounded-md border border-border py-0 shadow-[0_0_5px_rgb(0_0_0/0.08)] ring-0">
           <div className="min-h-0 flex-1 overflow-auto">
             {rows.length === 0 ? (
               <Empty className="h-full">
@@ -389,12 +390,18 @@ export function PracticesList() {
                       </TableCell>
                       <TableCell className="max-w-[18rem]">
                         {/* The name opens the practice's details page. */}
-                        <Link
-                          href={`/screens/admin/practices/${practice.id}`}
-                          className="block truncate font-medium text-primary-tint underline-offset-4 hover:underline"
+                        <Button
+                          variant="link"
+                          className="block h-auto max-w-full truncate p-0 text-left"
+                          nativeButton={false}
+                          render={
+                            <Link
+                              href={`/screens/admin/practices/${practice.id}`}
+                            />
+                          }
                         >
                           {practice.name}
-                        </Link>
+                        </Button>
                         <span className="block truncate text-xs text-muted-foreground">
                           {practice.locationName}
                         </span>
@@ -538,7 +545,7 @@ export function PracticesList() {
               </PaginationContent>
             </Pagination>
           </div>
-        </div>
+        </Card>
       </div>
 
       {actions.dialogs}

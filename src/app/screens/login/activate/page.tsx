@@ -22,7 +22,9 @@ export default async function ActivateScreen({
       description={
         invitee.key === "patient"
           ? `You’ve been invited by ${invitee.practice}. Sign in with the details from your email.`
-          : invitee.practice
+          : invitee.key === "provider"
+            ? `You’ve been invited to ${invitee.practice} as a Provider. Sign in with the details from your email.`
+            : invitee.practice
             ? `You’ve been invited to ${invitee.practice} as its Clinic Manager. Sign in with the details from your email.`
             : "You’ve been invited to the admin console as a Super Admin. Sign in with the one-time password from your email."
       }

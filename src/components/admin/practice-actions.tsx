@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { toast } from "sonner"
+import { toast } from "@/design-system/ui/sonner"
 import {
   IconCheckCircle,
   IconEdit,
@@ -32,8 +32,7 @@ import {
   DialogTitle,
 } from "@/design-system/ui/dialog"
 import { DropdownMenuItem } from "@/design-system/ui/dropdown-menu"
-import { Field, FieldError, FieldLabel } from "@/design-system/ui/field"
-import { Input } from "@/design-system/ui/input"
+import { Field, FieldLabel } from "@/design-system/ui/field"
 import {
   Select,
   SelectContent,
@@ -43,6 +42,7 @@ import {
   SelectValue,
 } from "@/design-system/ui/select"
 import { PracticeFormSheet } from "@/components/admin/practice-form"
+import { TextField, VALIDATE } from "@/components/form-kit"
 import {
   type ClinicManagerInput,
   type Practice,
@@ -72,6 +72,7 @@ const GENDER_ITEMS = [
 
 function validateManager(v: ClinicManagerInput) {
   const errors: Partial<Record<keyof ClinicManagerInput, string>> = {}
+  if (!VALIDATE) return errors
   if (!v.email.trim()) errors.email = "Enter their work email."
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim()))
     errors.email = "Enter a valid email address."
@@ -80,39 +81,6 @@ function validateManager(v: ClinicManagerInput) {
   if (v.phone && v.phone.replace(/\D/g, "").length !== 10)
     errors.phone = "Enter a 10-digit phone number."
   return errors
-}
-
-function ManagerField({
-  id,
-  label,
-  required,
-  error,
-  ...input
-}: React.ComponentProps<typeof Input> & {
-  id: string
-  label: string
-  required?: boolean
-  error?: string
-}) {
-  return (
-    <Field data-invalid={error ? true : undefined}>
-      <FieldLabel htmlFor={id}>
-        {label}
-        {required && (
-          <span aria-hidden className="text-destructive">
-            *
-          </span>
-        )}
-      </FieldLabel>
-      <Input
-        id={id}
-        aria-invalid={error ? true : undefined}
-        aria-required={required || undefined}
-        {...input}
-      />
-      {error && <FieldError>{error}</FieldError>}
-    </Field>
-  )
 }
 
 /** The clinic manager is the practice's own admin: invited here, by email. */
@@ -209,7 +177,7 @@ function InviteManagerBody({
         onSubmit={handleSubmit}
         className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6"
       >
-        <ManagerField
+        <TextField
           id="manager-email"
           label="Email"
           required
@@ -221,7 +189,7 @@ function InviteManagerBody({
           error={errors.email}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          <ManagerField
+          <TextField
             id="manager-firstName"
             label="First name"
             required
@@ -231,7 +199,7 @@ function InviteManagerBody({
             onChange={set("firstName")}
             error={errors.firstName}
           />
-          <ManagerField
+          <TextField
             id="manager-lastName"
             label="Last name"
             required
@@ -242,7 +210,7 @@ function InviteManagerBody({
             error={errors.lastName}
           />
         </div>
-        <ManagerField
+        <TextField
           id="manager-middleName"
           label="Middle name"
           autoComplete="additional-name"
@@ -251,7 +219,7 @@ function InviteManagerBody({
           onChange={set("middleName")}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          <ManagerField
+          <TextField
             id="manager-phone"
             label="Phone"
             type="tel"

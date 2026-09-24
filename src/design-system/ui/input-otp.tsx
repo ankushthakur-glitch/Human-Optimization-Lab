@@ -84,3 +84,4 @@ function InputOTPSeparator({ ...props }: React.ComponentProps<"div">) {
 }
 
 export { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator }
+export { REGEXP_ONLY_DIGITS } from "input-otp"
