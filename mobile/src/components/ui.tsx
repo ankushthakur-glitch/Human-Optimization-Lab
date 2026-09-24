@@ -14,17 +14,20 @@ import {
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 
+import { IconEye, IconEyeOff } from "@/components/icons"
 import { color, font, gutter, radius } from "@/lib/theme"
 
-/* The few building blocks the patient app's screens share, styled after the
-   web portal's auth screens: the lockup on top, a title, fields with the
-   label close above the input, errors under the field, one full-width button.
-   No subtitles or hint lines, per the portal's copy rules. */
+/* The few building blocks the patient app's screens share, built to the web
+   portal's design system so the app and the portal look like one product:
+   the sign-in frame of src/components/auth/auth-shell.tsx (lockup, title,
+   form, copyright line), shadcn's filled inputs with the ring on focus, and
+   the default button. No subtitles or hint lines, per the portal's copy
+   rules. */
 
 const LOGO = require("../../assets/logo-lockup.png")
 
 /** A scrolling form screen that keeps its fields above the keyboard. */
-export function Screen({ children, logo = true }: { children: React.ReactNode; logo?: boolean }) {
+export function Screen({ children }: { children: React.ReactNode }) {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -33,7 +36,9 @@ export function Screen({ children, logo = true }: { children: React.ReactNode; l
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {logo && (
+          {/* Centred in the space above the copyright line, as the portal's
+              sign-in frame centres its form. */}
+          <View style={styles.body}>
             <Image
               source={LOGO}
               style={styles.logo}
@@ -41,8 +46,11 @@ export function Screen({ children, logo = true }: { children: React.ReactNode; l
               accessibilityRole="image"
               accessibilityLabel="Human Optimization Lab"
             />
-          )}
-          {children}
+            {children}
+          </View>
+          <Text style={styles.copyright}>
+            © {new Date().getFullYear()} Human Optimization. All rights reserved.
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -86,13 +94,7 @@ export const TextField = React.forwardRef<TextInput, FieldProps>(function TextFi
         {label}
         {required && <Text style={styles.required}> *</Text>}
       </Text>
-      <View
-        style={[
-          styles.inputBox,
-          focused && styles.inputBoxFocused,
-          !!error && styles.inputBoxInvalid,
-        ]}
-      >
+      <View style={[styles.inputBox, focused && styles.inputBoxFocused, !!error && styles.inputBoxInvalid]}>
         <TextInput
           ref={ref}
           style={[styles.input, style]}
@@ -116,7 +118,7 @@ export const TextField = React.forwardRef<TextInput, FieldProps>(function TextFi
   )
 })
 
-/** A text field with a Show / Hide toggle. */
+/** A text field with the portal's eye toggle to show or hide what's typed. */
 export const PasswordField = React.forwardRef<TextInput, Omit<FieldProps, "trailing" | "secureTextEntry">>(
   function PasswordField(props, ref) {
     const [visible, setVisible] = React.useState(false)
@@ -131,11 +133,11 @@ export const PasswordField = React.forwardRef<TextInput, Omit<FieldProps, "trail
           <Pressable
             onPress={() => setVisible((v) => !v)}
             hitSlop={8}
-            style={styles.toggle}
+            style={({ pressed }) => [styles.toggle, pressed && styles.togglePressed]}
             accessibilityRole="button"
             accessibilityLabel={visible ? "Hide password" : "Show password"}
           >
-            <Text style={styles.toggleText}>{visible ? "Hide" : "Show"}</Text>
+            {visible ? <IconEyeOff color={color.muted} /> : <IconEye color={color.muted} />}
           </Pressable>
         }
       />
@@ -193,18 +195,28 @@ export const Stack = ({ children, gap = 20 }: { children: React.ReactNode; gap?:
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: color.background },
   fill: { flex: 1 },
-  // On a wide screen (the web build) the form keeps a phone's width.
+  // On a wide screen the form keeps the portal's 420 width.
   scroll: {
     flexGrow: 1,
     width: "100%",
-    maxWidth: 440,
+    maxWidth: 420 + gutter * 2,
     alignSelf: "center",
     paddingHorizontal: gutter,
-    paddingTop: 32,
+    paddingTop: 40,
     paddingBottom: 24,
   },
-  logo: { width: 176, height: 44, marginBottom: 40 },
-  title: { fontFamily: font.semibold, fontSize: 24, lineHeight: 32, color: color.text, marginBottom: 24 },
+  body: { flex: 1, justifyContent: "center" },
+  // The portal's h-10 lockup with 40 below it (mb-10).
+  logo: { width: 160, height: 40, marginBottom: 40 },
+  // text-2xl font-semibold tracking-tight, 32 below it (mb-8).
+  title: {
+    fontFamily: font.semibold,
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -0.6,
+    color: color.text,
+    marginBottom: 32,
+  },
 
   field: { gap: 6 },
   label: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: color.text },
@@ -212,38 +224,47 @@ const styles = StyleSheet.create({
   inputBox: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 48,
+    height: 44,
     borderWidth: 1,
-    borderColor: color.border,
+    borderColor: "transparent",
     borderRadius: radius,
-    backgroundColor: color.background,
+    backgroundColor: color.inputFill,
   },
-  inputBoxFocused: { borderColor: color.borderFocus, borderWidth: 1.5 },
-  inputBoxInvalid: { borderColor: color.error },
+  inputBoxFocused: { borderColor: color.ring, boxShadow: `0 0 0 3px ${color.ringHalo}` },
+  inputBoxInvalid: { borderColor: color.error, boxShadow: `0 0 0 3px ${color.errorHalo}` },
   input: {
     flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    height: "100%",
+    paddingHorizontal: 12,
     fontFamily: font.regular,
     fontSize: 16,
     color: color.text,
+    // The box draws the focus state; the browser's own outline would double it.
+    outlineWidth: 0,
   },
-  error: { fontFamily: font.regular, fontSize: 13, lineHeight: 18, color: color.error },
-  toggle: { paddingHorizontal: 14, paddingVertical: 12 },
-  toggleText: { fontFamily: font.medium, fontSize: 14, color: color.primary },
+  error: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.error },
+  toggle: {
+    width: 32,
+    height: 32,
+    marginRight: 6,
+    borderRadius: radius,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  togglePressed: { backgroundColor: color.border },
 
   formError: {
     borderRadius: radius,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: color.errorTint,
     borderWidth: 1,
-    borderColor: "#FECACA",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: color.errorHalo,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  formErrorText: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: "#B91C1C" },
+  formErrorText: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.error },
 
   button: {
-    minHeight: 50,
+    height: 44,
     borderRadius: radius,
     flexDirection: "row",
     alignItems: "center",
@@ -255,11 +276,19 @@ const styles = StyleSheet.create({
   buttonPrimaryPressed: { backgroundColor: color.primaryPressed },
   buttonOutline: { borderWidth: 1, borderColor: color.border, backgroundColor: color.background },
   buttonOutlinePressed: { backgroundColor: color.surface },
-  buttonPending: { opacity: 0.8 },
-  buttonText: { fontFamily: font.semibold, fontSize: 16, color: color.onPrimary },
+  buttonPending: { opacity: 0.7 },
+  buttonText: { fontFamily: font.medium, fontSize: 14, color: color.onPrimary },
   buttonTextOutline: { color: color.text },
 
   footer: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", marginTop: 24 },
   footerText: { fontFamily: font.regular, fontSize: 14, color: color.muted },
   link: { fontFamily: font.medium, fontSize: 14, color: color.primary },
+
+  copyright: {
+    marginTop: 32,
+    textAlign: "center",
+    fontFamily: font.regular,
+    fontSize: 12,
+    color: color.muted,
+  },
 })

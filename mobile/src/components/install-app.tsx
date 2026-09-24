@@ -64,5 +64,5 @@ export function InstallApp() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: "auto", paddingTop: 32 },
+  wrap: { marginTop: 24 },
 })
