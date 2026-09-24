@@ -93,7 +93,7 @@ export function FormSection({
   children: React.ReactNode
 }) {
   return (
-    <fieldset className="flex shrink-0 flex-col gap-4">
+    <fieldset className="flex shrink-0 flex-col gap-3">
       <div className="flex items-center gap-3">
         <legend className="float-left shrink-0 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {title}

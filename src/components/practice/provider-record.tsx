@@ -59,6 +59,7 @@ import {
   ProfileAvatar,
   RecordCard,
   RecordPage,
+  RowRemoveButton,
   SignatureDialog,
 } from "@/components/practice/record-page"
 import { DeactivateDialog } from "@/components/practice/sheets"
@@ -595,18 +596,14 @@ function ProviderForm({ provider }: { provider?: Provider }) {
                     value={l.expiry}
                     onChange={(e) => setLicense(i, { expiry: e.target.value })}
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Remove license ${i + 1}`}
-                    className="mt-1 text-destructive hover:text-destructive"
+                  <RowRemoveButton
+                    label={`Remove license ${i + 1}`}
+                    className="sm:col-span-2 lg:col-span-1"
+                    labelClassName="max-lg:hidden"
                     onClick={() =>
                       set("licenses")(values.licenses.filter((_, j) => j !== i))
                     }
-                  >
-                    <IconTrash />
-                  </Button>
+                  />
                 </div>
               ))}
             </div>

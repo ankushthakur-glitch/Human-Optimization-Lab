@@ -82,6 +82,43 @@ export function RecordPage({
   )
 }
 
+/* Destructive icon buttons carry a soft red tint so they read as delete. */
+export const REMOVE_TINT =
+  "bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive"
+
+/* The delete button that ends a repeatable row of fields. An invisible label
+   keeps it on the inputs' line while the row sits on one line; `labelClassName`
+   hides that label at the breakpoints where the row wraps. */
+export function RowRemoveButton({
+  label,
+  onClick,
+  className,
+  labelClassName,
+}: {
+  label: string
+  onClick: () => void
+  className?: string
+  labelClassName?: string
+}) {
+  return (
+    <Field className={cn("items-end", className)}>
+      <FieldLabel aria-hidden className={cn("invisible", labelClassName)}>
+        Remove
+      </FieldLabel>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label={label}
+        className={cn("w-9!", REMOVE_TINT)}
+        onClick={onClick}
+      >
+        <IconTrash />
+      </Button>
+    </Field>
+  )
+}
+
 export function RecordCard({
   title,
   action,
@@ -262,7 +299,7 @@ export function PhotoField({
             variant="ghost"
             size="icon-sm"
             aria-label="Remove picture"
-            className="text-destructive hover:text-destructive"
+            className={REMOVE_TINT}
             onClick={() => onChange("")}
           >
             <IconTrash />

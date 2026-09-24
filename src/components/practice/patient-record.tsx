@@ -11,7 +11,6 @@ import {
   IconLockOpen,
   IconMail,
   IconMoreVertical,
-  IconTrash,
   IconUser,
 } from "@/design-system/icons"
 
@@ -27,7 +26,6 @@ import {
   focusFirstError,
   formatPhone,
 } from "@/components/form-kit"
-import { Field, FieldLabel } from "@/design-system/ui/field"
 import { StatusBadge } from "@/components/practice/directory"
 import {
   CONTACT_METHODS,
@@ -67,6 +65,7 @@ import {
   ProfileAvatar,
   RecordCard,
   RecordPage,
+  RowRemoveButton,
 } from "@/components/practice/record-page"
 import { DeactivateDialog } from "@/components/practice/sheets"
 import { checkDuplicate } from "@/components/practice/patient-duplicates"
@@ -695,28 +694,16 @@ function PatientForm({ patient }: { patient?: Patient }) {
                       value={contact.email}
                       onChange={(e) => change({ email: e.target.value })}
                     />
-                    <Field className="items-end sm:col-span-2 xl:col-span-1">
-                      <FieldLabel
-                        aria-hidden
-                        className="invisible max-xl:hidden"
-                      >
-                        Remove
-                      </FieldLabel>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Remove emergency contact"
-                        className="w-9! bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive"
-                        onClick={() =>
-                          set("emergencyContacts")(
-                            values.emergencyContacts.filter((_, j) => j !== i)
-                          )
-                        }
-                      >
-                        <IconTrash />
-                      </Button>
-                    </Field>
+                    <RowRemoveButton
+                      label="Remove emergency contact"
+                      className="sm:col-span-2 xl:col-span-1"
+                      labelClassName="max-xl:hidden"
+                      onClick={() =>
+                        set("emergencyContacts")(
+                          values.emergencyContacts.filter((_, j) => j !== i)
+                        )
+                      }
+                    />
                   </div>
                 )
               })}
