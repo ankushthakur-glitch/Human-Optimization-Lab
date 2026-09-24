@@ -18,31 +18,48 @@ import { Label } from "@/design-system/ui/label"
 import { Spinner } from "@/design-system/ui/spinner"
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const ORG_ID = /^\d{6}$/
 
 const MESSAGES = {
+  orgMissing: "Enter your Organization ID.",
+  orgInvalid: "Enter the 6-digit Organization ID from your invitation email.",
   emailMissing: "Enter your email address.",
   emailInvalid: "Enter a valid email address, like name@practice.com.",
   secretMissing: "Enter your password.",
 }
 
-type Errors = { email?: string; secret?: string }
+type Errors = { orgId?: string; email?: string; secret?: string }
 
 /**
- * Email and password. The same form serves a returning user and someone
- * arriving from their invite with a temporary password — `next` is where a
- * valid submit goes, which is the only thing that differs.
+ * Organization ID, email and password. The same form serves a returning user
+ * and someone arriving from their invite with a temporary password.
+ *
+ * The Organization ID is the practice's Practice ID. Practice staff sign in
+ * with it; the Super Admin leaves it blank, as the admin console belongs to no
+ * practice. So a filled ID goes to `nextForPractice`, a blank one to `next`.
  */
 export function SignInForm({
   next,
+  nextForPractice = next,
+  defaultOrgId = "",
   defaultEmail = "",
+  orgRequired = false,
+  showOrgId = true,
   temporary = false,
 }: {
   next: string
+  nextForPractice?: string
+  defaultOrgId?: string
   defaultEmail?: string
+  /** A clinic manager's invite: the ID is part of their account. */
+  orgRequired?: boolean
+  /** The Super Admin's invite has no practice, so no ID to ask for. */
+  showOrgId?: boolean
   /** Invite path: the password is the one-time one from the email. */
   temporary?: boolean
 }) {
   const router = useRouter()
+  const [orgId, setOrgId] = React.useState(defaultOrgId)
   const [email, setEmail] = React.useState(defaultEmail)
   const [secret, setSecret] = React.useState("")
   const [errors, setErrors] = React.useState<Errors>({})
@@ -50,6 +67,11 @@ export function SignInForm({
 
   function validate(): Errors {
     const found: Errors = {}
+    const id = orgId.trim()
+    if (showOrgId) {
+      if (!id && orgRequired) found.orgId = MESSAGES.orgMissing
+      else if (id && !ORG_ID.test(id)) found.orgId = MESSAGES.orgInvalid
+    }
     if (!email.trim()) found.email = MESSAGES.emailMissing
     else if (!EMAIL.test(email.trim())) found.email = MESSAGES.emailInvalid
     if (!secret) found.secret = MESSAGES.secretMissing
@@ -63,12 +85,38 @@ export function SignInForm({
     if (Object.keys(found).length) return
     setPending(true)
     // A prototype: no account is checked, the delay just shows the busy state.
-    window.setTimeout(() => router.push(next), 600)
+    const target = showOrgId && orgId.trim() ? nextForPractice : next
+    window.setTimeout(() => router.push(target), 600)
   }
 
   return (
     <form onSubmit={onSubmit} noValidate>
       <FieldGroup className="gap-5">
+        {showOrgId && (
+          <Field data-invalid={!!errors.orgId || undefined}>
+            <FieldLabel htmlFor="org-id">
+              Organization ID
+              {orgRequired && (
+                <>
+                  {" "}
+                  <span className="text-destructive">*</span>
+                </>
+              )}
+            </FieldLabel>
+            <Input
+              id="org-id"
+              inputMode="numeric"
+              autoComplete="organization"
+              maxLength={6}
+              placeholder="e.g. 123456"
+              className="h-10 tabular-nums"
+              value={orgId}
+              onChange={(e) => setOrgId(e.target.value.replace(/\D/g, ""))}
+              aria-invalid={!!errors.orgId || undefined}
+            />
+            {errors.orgId && <FieldError>{errors.orgId}</FieldError>}
+          </Field>
+        )}
         <Field data-invalid={!!errors.email || undefined}>
           <FieldLabel htmlFor="email">
             Email <span className="text-destructive">*</span>
@@ -77,7 +125,7 @@ export function SignInForm({
             id="email"
             type="email"
             autoComplete="email"
-            placeholder="name@practice.com"
+            placeholder="Enter Email"
             className="h-10"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -93,9 +141,7 @@ export function SignInForm({
           <PasswordInput
             id="secret"
             autoComplete={temporary ? "one-time-code" : "current-password"}
-            placeholder={
-              temporary ? "From your invitation email" : "Your password"
-            }
+            placeholder={temporary ? "From your invitation email" : "Password"}
             value={secret}
             onChange={(e) => setSecret(e.target.value)}
             invalid={!!errors.secret}
@@ -114,13 +160,13 @@ export function SignInForm({
               href="/screens/login/forgot-password"
               className="text-sm text-primary-tint hover:underline"
             >
-              Forgot password?
+              Forgot Password?
             </Link>
           </div>
         )}
         <Button type="submit" size="lg" className="w-full" disabled={pending}>
           {pending && <Spinner />}
-          {temporary ? "Continue" : "Sign in"}
+          {temporary ? "Continue" : "Sign In"}
         </Button>
       </FieldGroup>
     </form>

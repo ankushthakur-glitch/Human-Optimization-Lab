@@ -69,7 +69,10 @@ export function CodeForm({
     }, 600)
   }
 
-  if (entering) return <LogoSplash overlay status="Loading patients" />
+  if (entering) {
+    const status = next?.startsWith("/screens/admin") ? "Loading practices" : "Loading patients"
+    return <LogoSplash overlay status={status} />
+  }
 
   return (
     <form

@@ -73,7 +73,17 @@ const PAGES = {
 }
 
 /** Pages that aren't a page.tsx of their own: [portal, feature, sub, url]. */
-const EXTRA = [[GLOBAL, "Error States", "Page not found", "/screens/page-not-found"]]
+const EXTRA = [
+  [GLOBAL, "Error States", "Page not found", "/screens/page-not-found"],
+  // A clinic manager's first sign-in: the shared login screens with ?as=.
+  ...[
+    ["Invitation email (desktop)", "/screens/login/invite-email"],
+    ["Invitation email (mobile)", "/screens/login/invite-email/mobile"],
+    ["Activate account", "/screens/login/activate"],
+    ["Set password", "/screens/login/set-password"],
+    ["Two-factor setup", "/screens/login/two-factor-setup"],
+  ].map(([sub, url]) => [PROVIDER, "Clinic Manager Onboarding", sub, `${url}?as=clinic-manager`]),
+]
 
 // ── Pages ────────────────────────────────────────────────────────────────
 

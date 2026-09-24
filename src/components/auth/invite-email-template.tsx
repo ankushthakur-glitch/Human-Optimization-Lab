@@ -1,10 +1,17 @@
+import { Fragment } from "react"
 import Image from "next/image"
 import Link from "next/link"
 
 import { cn } from "@/lib/utils"
 import { BRAND_NAME, LOGO } from "@/lib/brand"
+import {
+  INVITEES,
+  withInvitee,
+  type InviteeKey,
+} from "@/components/auth/invitees"
 
-/* The Super Admin invitation as it is sent: a logo header, the letter, and a
+/* The invitation as it is sent, to a Super Admin or to a practice's clinic
+   manager: a logo header, the letter, and a
    contact footer for the admin who sent it. Laid out from the approved email
    template (Figma "Main Container" for web, "Email Temp" for mobile), recoloured
    from its blue to the brand teal.
@@ -30,31 +37,48 @@ const FIRST_SIGN_IN = [
   "Set up two-factor authentication with an authenticator app",
 ]
 
-function EmailLink({ children }: { children: React.ReactNode }) {
+/* Long values (the console link, the email address) drop to their own line as
+   a whole rather than leaving "https://" behind, and only wrap at a natural
+   point: after a slash or before the @, never mid-word. */
+function Breakable({ text }: { text: string }) {
+  return text.split(/(?<=\/)(?!\/)|(?=@)/).map((part, i) => (
+    <Fragment key={i}>
+      {i > 0 && <wbr />}
+      {part}
+    </Fragment>
+  ))
+}
+
+function EmailLink({ invitee, text }: { invitee: InviteeKey; text: string }) {
   return (
     <Link
-      href="/screens/login/activate"
-      className="break-words underline decoration-from-font underline-offset-2"
+      href={withInvitee("/screens/login/activate", invitee)}
+      className="inline-block max-w-full underline decoration-from-font underline-offset-2"
       style={{ color: TEAL }}
     >
-      {children}
+      <Breakable text={text} />
     </Link>
   )
 }
 
 export function InviteEmailTemplate({
   variant = "web",
+  invitee: key = "super-admin",
   className,
 }: {
   variant?: "web" | "mobile"
+  invitee?: InviteeKey
   className?: string
 }) {
   const web = variant === "web"
+  const invitee = INVITEES[key]
+  const manager = key === "clinic-manager"
+  const label = cn(web && "font-medium")
 
   return (
     <div
       className={cn(
-        "flex flex-col overflow-hidden rounded-2xl border border-[#e6e6e6] bg-[#fafafa] text-sm leading-[1.6] text-[#393939]",
+        "@container flex flex-col overflow-hidden rounded-2xl border border-[#e6e6e6] bg-[#fafafa] text-sm leading-[1.6] text-[#393939]",
         className
       )}
       style={{ fontFamily: "var(--font-inter), Inter, Arial, sans-serif" }}
@@ -70,32 +94,54 @@ export function InviteEmailTemplate({
       </div>
 
       <div className={web ? "px-7 py-5" : "px-4 py-5"}>
-        <p className={cn(!web && "mb-[1.6em]")}>Dear Jordan,</p>
-        <p>
-          <span className="font-medium">Maya Chen</span>, platform admin at{" "}
-          {BRAND_NAME} Lab, has invited you to the {BRAND_NAME} admin console
-          as a Super Admin.
-        </p>
-        <p className="mb-[1.6em]">
-          Your account is ready. Activate it to sign in and manage practices,
-          users and platform settings in one place.
-        </p>
+        <p className={cn(!web && "mb-[1.6em]")}>Dear {invitee.firstName},</p>
+        {manager ? (
+          <>
+            <p>
+              <span className="font-medium">Maya Chen</span>, platform admin at{" "}
+              {BRAND_NAME} Lab, has added{" "}
+              <span className="font-medium">{invitee.practice}</span> to{" "}
+              {BRAND_NAME} and invited you as its Clinic Manager.
+            </p>
+            <p className="mb-[1.6em]">
+              Your account is ready. Activate it to sign in and manage your
+              practice&rsquo;s clinicians, patients and settings in one place.
+            </p>
+          </>
+        ) : (
+          <>
+            <p>
+              <span className="font-medium">Maya Chen</span>, platform admin at{" "}
+              {BRAND_NAME} Lab, has invited you to the {BRAND_NAME} admin console
+              as a Super Admin.
+            </p>
+            <p className="mb-[1.6em]">
+              Your account is ready. Activate it to sign in and manage practices,
+              users and platform settings in one place.
+            </p>
+          </>
+        )}
 
         <p>Next Steps:</p>
         <ol className="list-decimal">
           <li className="ms-[21px] mb-[1.6em]">
-            Click the link below to activate your Super Admin account:
+            Click the link below to activate your {invitee.role} account:
             <br />
-            <span className={cn(web && "font-medium")}>Admin Console Link :</span>{" "}
-            <EmailLink>
-              https://<wbr />admin.humanoptimizationlab.com/<wbr />activate
-            </EmailLink>
+            <span className={label}>{invitee.consoleName} Link :</span>{" "}
+            <EmailLink invitee={key} text={`https://${invitee.consoleUrl}`} />
+            {invitee.orgId && (
+              <>
+                <br />
+                <span className={label}>Organization ID :</span>{" "}
+                <span className="tracking-wide tabular-nums">{invitee.orgId}</span>
+              </>
+            )}
             <br />
-            <span className={cn(web && "font-medium")}>Email ID :</span>{" "}
-            <EmailLink>jordan.reyes@humanoptimization.com</EmailLink>
+            <span className={label}>Email ID :</span>{" "}
+            <EmailLink invitee={key} text={invitee.email} />
             <br />
-            <span className={cn(web && "font-medium")}>One-Time Password :</span>{" "}
-            <span className="tracking-wide tabular-nums">Kq7-mW2p-Xa9</span>
+            <span className={label}>One-Time Password :</span>{" "}
+            <span className="tracking-wide whitespace-nowrap tabular-nums">Kq7-mW2p-Xa9</span>
           </li>
           <li className="ms-[21px] mb-[1.6em]">
             The first time you sign in, you&rsquo;ll be asked to:
@@ -109,12 +155,19 @@ export function InviteEmailTemplate({
           </li>
         </ol>
 
-        <p>
+        <p className={cn(manager && "mb-[1.6em]")}>
           The one-time password works once. After you set your own password
           you won&rsquo;t need it again.
         </p>
+        {manager && (
+          <p>
+            Keep your Organization ID. You&rsquo;ll enter it with your email
+            and password each time you sign in.
+          </p>
+        )}
         <p>
-          If you have any questions or need help accessing the admin console, please
+          If you have any questions or need help accessing{" "}
+          {manager ? "the portal" : "the admin console"}, please
           contact Maya Chen at{" "}
           <span className="underline underline-offset-2" style={{ color: TEAL }}>
             (229) 555-0109
@@ -151,8 +204,8 @@ export function InviteEmailTemplate({
             {CONTACTS.map(({ icon, text, link }) => (
               <li key={text} className="flex items-center gap-2">
                 <Image src={icon} alt="" width={20} height={20} className="shrink-0" />
-                <span className={cn("min-w-0 break-words", link && "underline underline-offset-2")}>
-                  {text}
+                <span className={cn("min-w-0", link && "underline underline-offset-2")}>
+                  <Breakable text={text} />
                 </span>
               </li>
             ))}
@@ -164,7 +217,7 @@ export function InviteEmailTemplate({
             alt=""
             width={LOGO.width}
             height={LOGO.height}
-            className="hidden h-12 w-auto shrink-0 sm:block"
+            className="hidden h-12 w-auto shrink-0 @xl:block"
           />
         ) : null}
       </div>

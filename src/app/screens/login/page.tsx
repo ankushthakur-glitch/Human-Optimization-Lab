@@ -5,14 +5,15 @@ import { SignInForm } from "@/components/auth/sign-in-form"
 
 export const metadata: Metadata = { title: "Sign in" }
 
-/** Returning user: email and password, then the authenticator code. */
+/** Returning user: Organization ID, email and password, then the
+    authenticator code. Practice staff give their ID; the Super Admin doesn't. */
 export default function SignInScreen() {
   return (
-    <AuthShell
-      title="Sign in to your account"
-      description="Welcome back. Sign in to see your patients."
-    >
-      <SignInForm next="/screens/login/verify" />
+    <AuthShell title="Sign in to your account">
+      <SignInForm
+        next="/screens/login/verify"
+        nextForPractice="/screens/login/verify?as=clinic-manager"
+      />
     </AuthShell>
   )
 }

@@ -3,6 +3,7 @@ import Image from "next/image"
 
 import { BRAND_NAME, MARK } from "@/lib/brand"
 import { InviteEmailTemplate } from "@/components/auth/invite-email-template"
+import { inviteeFrom } from "@/components/auth/invitees"
 import {
   IconButton,
   InboxChip,
@@ -45,7 +46,13 @@ function StatusBar() {
   )
 }
 
-export default function InviteEmailMobileScreen() {
+export default async function InviteEmailMobileScreen({
+  searchParams,
+}: {
+  searchParams: Promise<{ as?: string | string[] }>
+}) {
+  const invitee = inviteeFrom((await searchParams).as)
+
   return (
     <div
       className="flex min-h-svh items-center justify-center bg-[#e9eef6] text-[#1f1f1f] [color-scheme:light] sm:py-8"
@@ -71,7 +78,7 @@ export default function InviteEmailMobileScreen() {
           {/* subject */}
           <div className="flex h-11 items-center gap-2 pr-4 pl-4">
             <h1 className="min-w-0 flex-1 truncate text-[22px] leading-7">
-              Welcome to {BRAND_NAME}: Activate Your Super Admin Account
+              Welcome to {BRAND_NAME}: Activate Your {invitee.role} Account
             </h1>
             <Sym name="label_important" size={22} className="text-[#747775]" />
             <InboxChip />
@@ -101,7 +108,7 @@ export default function InviteEmailMobileScreen() {
 
           {/* message */}
           <div className="px-2 pt-4 pb-4">
-            <InviteEmailTemplate variant="mobile" />
+            <InviteEmailTemplate variant="mobile" invitee={invitee.key} />
           </div>
         </div>
 

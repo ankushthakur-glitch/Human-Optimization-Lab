@@ -4,6 +4,7 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { BRAND_NAME, LOGO, MARK } from "@/lib/brand"
 import { InviteEmailTemplate } from "@/components/auth/invite-email-template"
+import { inviteeFrom } from "@/components/auth/invitees"
 import {
   IconButton,
   InboxChip,
@@ -57,7 +58,13 @@ const REPLY_ACTIONS = [
 
 const SIDE_PANEL = ["calendar_today", "lightbulb", "task_alt", "person"]
 
-export default function InviteEmailScreen() {
+export default async function InviteEmailScreen({
+  searchParams,
+}: {
+  searchParams: Promise<{ as?: string | string[] }>
+}) {
+  const invitee = inviteeFrom((await searchParams).as)
+
   return (
     <div
       className="relative flex h-svh flex-col overflow-hidden bg-[#f8fafd] text-[#1f1f1f] [color-scheme:light]"
@@ -208,7 +215,7 @@ export default function InviteEmailScreen() {
               {/* subject */}
               <div className="flex items-start gap-2 pt-[22px] pl-[56px]">
                 <h1 className="flex-1 text-[22px] leading-7 text-[#1f1f1f]">
-                  Welcome to {BRAND_NAME}: Activate Your Super Admin Account
+                  Welcome to {BRAND_NAME}: Activate Your {invitee.role} Account
                   <Sym
                     name="label_important"
                     size={20}
@@ -258,7 +265,7 @@ export default function InviteEmailScreen() {
 
               {/* body */}
               <div className="mt-5 pl-[56px]">
-                <InviteEmailTemplate />
+                <InviteEmailTemplate invitee={invitee.key} />
                 <div className="mt-6 flex flex-wrap gap-2">
                   {REPLY_ACTIONS.map(({ icon, label }) => (
                     <span
