@@ -1,0 +1,8 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "package.json": "package-lock.json, next.config.ts, next-env.d.ts, tsconfig.json, tsconfig.tsbuildinfo, eslint.config.mjs, postcss.config.mjs, playwright.config.ts, components.json, .prettierrc, .prettierignore, .gitignore",
+    "README.md": "AGENTS.md, DELIVERABLES-CHANGELOG.md"
+  }
+}
