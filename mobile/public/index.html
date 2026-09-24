@@ -51,6 +51,7 @@
           font-family: Inter, system-ui, sans-serif;
         }
         #device {
+          position: relative;
           width: 375px;
           height: min(812px, calc(100% - 64px));
           overflow: hidden;
@@ -63,7 +64,17 @@
           flex-shrink: 0;
           color: #1f1f1f;
         }
+        /* Drawn over the app, as on a phone: every screen opens on the teal
+           band, so the time and icons are white (the app's light status
+           bar), and the band reaches up behind them. */
         .status-bar {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 1;
+          color: #ffffff;
+          pointer-events: none;
           height: 44px;
           align-items: center;
           justify-content: space-between;
@@ -100,9 +111,9 @@
       <div class="device-chrome status-bar" aria-hidden="true">
         <span>9:41</span>
         <span class="status-icons">
-          <svg width="18" height="12" viewBox="0 0 18 12" fill="#1f1f1f"><rect x="0" y="8" width="3" height="4" rx="1" /><rect x="5" y="5.5" width="3" height="6.5" rx="1" /><rect x="10" y="3" width="3" height="9" rx="1" /><rect x="15" y="0" width="3" height="12" rx="1" /></svg>
-          <svg width="16" height="12" viewBox="0 0 16 12" fill="#1f1f1f"><path d="M8 2.4c2.3 0 4.4.9 6 2.4l1.3-1.3A10.3 10.3 0 0 0 8 .5 10.3 10.3 0 0 0 .7 3.5L2 4.8a8.4 8.4 0 0 1 6-2.4Zm0 3.7c1.3 0 2.5.5 3.4 1.3l1.3-1.3A6.6 6.6 0 0 0 8 4.2c-1.8 0-3.5.7-4.7 1.9l1.3 1.3C5.5 6.6 6.7 6.1 8 6.1Zm0 3.6c-.5 0-1 .2-1.4.6L8 11.7l1.4-1.4A2 2 0 0 0 8 9.7Z" /></svg>
-          <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="3.5" stroke="#1f1f1f" stroke-opacity="0.4" /><rect x="2" y="2" width="17" height="8" rx="2" fill="#1f1f1f" /><rect x="24" y="4" width="1.5" height="4" rx="0.75" fill="#1f1f1f" fill-opacity="0.4" /></svg>
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="#ffffff"><rect x="0" y="8" width="3" height="4" rx="1" /><rect x="5" y="5.5" width="3" height="6.5" rx="1" /><rect x="10" y="3" width="3" height="9" rx="1" /><rect x="15" y="0" width="3" height="12" rx="1" /></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="#ffffff"><path d="M8 2.4c2.3 0 4.4.9 6 2.4l1.3-1.3A10.3 10.3 0 0 0 8 .5 10.3 10.3 0 0 0 .7 3.5L2 4.8a8.4 8.4 0 0 1 6-2.4Zm0 3.7c1.3 0 2.5.5 3.4 1.3l1.3-1.3A6.6 6.6 0 0 0 8 4.2c-1.8 0-3.5.7-4.7 1.9l1.3 1.3C5.5 6.6 6.7 6.1 8 6.1Zm0 3.6c-.5 0-1 .2-1.4.6L8 11.7l1.4-1.4A2 2 0 0 0 8 9.7Z" /></svg>
+          <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="3.5" stroke="#ffffff" stroke-opacity="0.4" /><rect x="2" y="2" width="17" height="8" rx="2" fill="#ffffff" /><rect x="24" y="4" width="1.5" height="4" rx="0.75" fill="#ffffff" fill-opacity="0.4" /></svg>
         </span>
       </div>
       <div id="root"></div>

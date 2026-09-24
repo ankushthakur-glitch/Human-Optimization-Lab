@@ -82,6 +82,8 @@ const PAGES = {
   "/screens/practice/patients/new": [PROVIDER, "Clinic Manager Portal", "Patient onboarding form"],
   "/screens/practice/patients/[id]": [PROVIDER, "Clinic Manager Portal", "Patient profile", { url: "/screens/practice/patients/P10240" }],
   "/screens/practice/patients/[id]/edit": [PROVIDER, "Clinic Manager Portal", "Edit patient", { url: "/screens/practice/patients/P10240/edit" }],
+  "/screens/practice/patients/duplicates": [PROVIDER, "Clinic Manager Portal", "Possible duplicates queue"],
+  "/screens/practice/patients/duplicates/[id]": [PROVIDER, "Clinic Manager Portal", "Review possible duplicate", { url: "/screens/practice/patients/duplicates/DR1001" }],
   "/screens/practice/locations": [PROVIDER, "Clinic Manager Portal", "Locations (list)"],
   "/screens/practice/locations/new": [PROVIDER, "Clinic Manager Portal", "Add location"],
   "/screens/practice/locations/[id]": [PROVIDER, "Clinic Manager Portal", "Location details", { url: "/screens/practice/locations/LOC1001" }],

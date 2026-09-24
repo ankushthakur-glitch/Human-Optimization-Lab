@@ -27,6 +27,7 @@ import {
   focusFirstError,
   formatPhone,
 } from "@/components/form-kit"
+import { Field, FieldLabel } from "@/design-system/ui/field"
 import { StatusBadge } from "@/components/practice/directory"
 import {
   CONTACT_METHODS,
@@ -40,6 +41,7 @@ import {
   PRONOUNS,
   RACES,
   RECORD_STATUSES,
+  REACTIVATABLE,
   RELATIONSHIPS,
   SEXES,
   TIME_ZONES,
@@ -67,7 +69,16 @@ import {
   RecordPage,
 } from "@/components/practice/record-page"
 import { DeactivateDialog } from "@/components/practice/sheets"
-import { Alert, AlertDescription, AlertTitle } from "@/design-system/ui/alert"
+import { checkDuplicate } from "@/components/practice/patient-duplicates"
+import {
+  DuplicateDialog,
+  type FoundDuplicate,
+  PatientPrecheck,
+  precheckKey,
+  clearDraft,
+  peekDraft,
+  ReactivateDialog,
+} from "@/components/practice/duplicates"
 import { Button } from "@/design-system/ui/button"
 import { Checkbox } from "@/design-system/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/design-system/ui/radio-group"
@@ -90,9 +101,9 @@ import { Skeleton } from "@/design-system/ui/skeleton"
 /* Onboarding takes demographics and contact details only: no medical data
    before the patient has consented. Records are pulled once they accept. */
 
-
 const GRID = "grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
-const GRID5 = "grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+const GRID5 =
+  "grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
 
 /* 123-45-6789, typed or pasted. */
 function formatSsn(value: string) {
@@ -101,22 +112,6 @@ function formatSsn(value: string) {
 }
 
 const maskSsn = (ssn: string) => (ssn ? `***-**-${ssn.slice(-4)}` : "")
-
-/* The soft duplicate check from the onboarding spec: same name and date of
-   birth, plus the same email or mobile. Flagged, never blocked. */
-export function findDuplicate(v: PatientInput, list: Patient[]) {
-  if (!VALIDATE) return undefined
-  const same = (a: string, b: string) =>
-    a.trim().toLowerCase() === b.trim().toLowerCase()
-  return list.find(
-    (p) =>
-      same(p.firstName, v.firstName) &&
-      same(p.lastName, v.lastName) &&
-      p.dob === v.dob &&
-      ((v.email && same(p.email, v.email)) ||
-        (v.phone && digits(p.phone) === digits(v.phone)))
-  )
-}
 
 function validate(v: PatientInput, others: Patient[]): Errors {
   const e: Errors = {}
@@ -146,7 +141,8 @@ function validate(v: PatientInput, others: Patient[]): Errors {
   if (!v.locationId) e.locationId = "Select a location."
   if (!v.providerId) e.providerId = "Select a primary provider."
   v.emergencyContacts.forEach((c, i) => {
-    if (c.name.trim() && !c.phone) e[`emergency-${i}-phone`] = "Enter their phone number."
+    if (c.name.trim() && !c.phone)
+      e[`emergency-${i}-phone`] = "Enter their phone number."
   })
   return e
 }
@@ -171,38 +167,40 @@ function PatientForm({ patient }: { patient?: Patient }) {
   const { items } = patients.use()
   const loc = useLocationLookup()
   const prov = useProviderLookup()
-  const {
-    patientsHref: LIST_HREF,
-    patientHref,
-    selfProviderId,
-  } = usePortal()
+  const { patientsHref: LIST_HREF, patientHref, selfProviderId } = usePortal()
   /* In a provider's portal a new patient starts as theirs, at their first
      location. */
+  /* A new patient arrives with the details the Add patient popup already
+     checked; opened directly (a quick action), the popup shows first. */
+  const [cleared, setCleared] = React.useState(() =>
+    patient ? null : peekDraft()
+  )
+  React.useEffect(clearDraft, [])
   const [values, setValues] = React.useState<PatientInput>(() => {
     if (patient) return structuredClone(patient)
     const self = prov.all.find((p) => p.id === selfProviderId)
-    return self
+    const base = self
       ? {
           ...emptyPatient(),
           providerId: self.id,
           locationId: self.locationIds[0] ?? "",
         }
       : emptyPatient()
+    return cleared ? { ...base, ...cleared } : base
   })
   const [recordStatus, setRecordStatus] = React.useState(
     patient?.status === "Inactive" ? "Inactive" : "Active"
   )
   const [attempted, setAttempted] = React.useState(false)
-  const [confirmedDuplicate, setConfirmedDuplicate] = React.useState(false)
+  /* What the duplicate check found for a new patient; its dialog decides
+     whether a record gets created at all. */
+  const [found, setFound] = React.useState<FoundDuplicate | null>(null)
   const others = items.filter((p) => p.id !== patient?.id)
   const errors = attempted ? validate(values, others) : {}
-  const duplicate =
-    !patient && attempted ? findDuplicate(values, others) : undefined
 
   const set =
     <K extends keyof PatientInput>(key: K) =>
     (value: PatientInput[K]) => {
-      setConfirmedDuplicate(false)
       setValues((prev) => ({ ...prev, [key]: value }))
     }
   const text =
@@ -220,19 +218,30 @@ function PatientForm({ patient }: { patient?: Patient }) {
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setAttempted(true)
-    const found = validate(values, others)
-    if (focusFirstError(found, "patient")) {
+    if (focusFirstError(validate(values, others), "patient")) {
       toast.error("Some details need attention.")
       return
     }
-    if (!patient && findDuplicate(values, others) && !confirmedDuplicate) {
-      setConfirmedDuplicate(true)
-      toast.warning("Possible duplicate", {
-        description:
-          "Check the notice at the top, then save again to add anyway.",
-      })
-      return
+    /* Every new record is checked against the practice's patients before
+       it is created or invited; again here only if the checked details
+       were changed in the form. */
+    if (
+      !patient &&
+      values.firstName.trim() &&
+      values.dob &&
+      (!cleared || precheckKey(cleared) !== precheckKey(values))
+    ) {
+      const check = checkDuplicate(values, others)
+      if (check.kind !== "none") {
+        setFound(check)
+        return
+      }
     }
+    save()
+  }
+
+  function save() {
+    setFound(null)
     const clean: PatientInput = {
       ...values,
       firstName: values.firstName.trim(),
@@ -247,7 +256,8 @@ function PatientForm({ patient }: { patient?: Patient }) {
     }
     /* Portal access "Yes" sends the invite on save, unless it went already. */
     const invite = (id: string, status: Patient["status"]) => {
-      if (clean.portalAccess && status === "Not invited") sendPatientInvites([id])
+      if (clean.portalAccess && status === "Not invited")
+        sendPatientInvites([id])
     }
     if (patient) {
       const status: Patient["status"] =
@@ -285,15 +295,22 @@ function PatientForm({ patient }: { patient?: Patient }) {
         </Button>
       }
     >
-      {duplicate && (
-        <Alert className="border-warning/40 bg-warning-surface text-warning">
-          <AlertTitle>Possible duplicate</AlertTitle>
-          <AlertDescription>
-            {fullName(duplicate)} ({duplicate.id}), born {usDate(duplicate.dob)}
-            , already exists. Save again to add this patient anyway.
-          </AlertDescription>
-        </Alert>
+      {!patient && (
+        <PatientPrecheck
+          open={!cleared}
+          onCancel={() => router.push(LIST_HREF)}
+          onClear={(next) => {
+            setCleared(next)
+            setValues((prev) => ({ ...prev, ...next }))
+          }}
+        />
       )}
+      <DuplicateDialog
+        found={found}
+        incoming={values}
+        onClose={() => setFound(null)}
+        onCreate={save}
+      />
       <form
         id="patient-page-form"
         noValidate
@@ -545,16 +562,17 @@ function PatientForm({ patient }: { patient?: Patient }) {
           title="Patient portal access"
           action={
             <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-sm sm:flex-nowrap">
-              <span id="patient-portalAccess-label" className="sm:whitespace-nowrap">
+              <span
+                id="patient-portalAccess-label"
+                className="sm:whitespace-nowrap"
+              >
                 Give this patient access to the patient portal?
                 <Required />
               </span>
               <RadioGroup
                 aria-labelledby="patient-portalAccess-label"
                 value={values.portalAccess ? "yes" : "no"}
-                onValueChange={(next) =>
-                  set("portalAccess")(next === "yes")
-                }
+                onValueChange={(next) => set("portalAccess")(next === "yes")}
                 className="flex items-center gap-4"
               >
                 {(["yes", "no"] as const).map((option) => (
@@ -610,14 +628,6 @@ function PatientForm({ patient }: { patient?: Patient }) {
               }
               error={errors.providerId}
             />
-            <TextField
-              id="patient-registrationDate"
-              label="Registration date"
-              type="date"
-              className="xl:col-span-2"
-              value={values.registrationDate}
-              onChange={text("registrationDate")}
-            />
           </div>
         </RecordCard>
 
@@ -652,7 +662,7 @@ function PatientForm({ patient }: { patient?: Patient }) {
                 return (
                   <div
                     key={i}
-                    className="grid items-start gap-x-4 gap-y-5 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1fr)]"
+                    className="grid items-start gap-x-4 gap-y-5 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]"
                   >
                     <SelectField
                       id={`patient-emergency-${i}-relationship`}
@@ -685,13 +695,19 @@ function PatientForm({ patient }: { patient?: Patient }) {
                       value={contact.email}
                       onChange={(e) => change({ email: e.target.value })}
                     />
-                    <div className="flex justify-end sm:col-span-2 xl:col-span-1 xl:pt-6">
+                    <Field className="items-end sm:col-span-2 xl:col-span-1">
+                      <FieldLabel
+                        aria-hidden
+                        className="invisible max-xl:hidden"
+                      >
+                        Remove
+                      </FieldLabel>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         aria-label="Remove emergency contact"
-                        className="text-destructive hover:text-destructive"
+                        className="w-9! bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive"
                         onClick={() =>
                           set("emergencyContacts")(
                             values.emergencyContacts.filter((_, j) => j !== i)
@@ -700,7 +716,7 @@ function PatientForm({ patient }: { patient?: Patient }) {
                       >
                         <IconTrash />
                       </Button>
-                    </div>
+                    </Field>
                   </div>
                 )
               })}
@@ -732,6 +748,8 @@ function ProfileBody({ patient: p }: { patient: Patient }) {
   const loc = useLocationLookup()
   const prov = useProviderLookup()
   const [deactivating, setDeactivating] = React.useState(false)
+  const [reactivating, setReactivating] = React.useState(false)
+  const closed = REACTIVATABLE.includes(p.status)
 
   return (
     <RecordPage
@@ -783,14 +801,12 @@ function ProfileBody({ patient: p }: { patient: Patient }) {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
-                  onClick={() => {
-                    if (p.status !== "Inactive") return setDeactivating(true)
-                    patients.patch(p.id, { status: "Active" })
-                    toast.success(`${fullName(p)} is active again`)
-                  }}
+                  onClick={() =>
+                    closed ? setReactivating(true) : setDeactivating(true)
+                  }
                 >
-                  {p.status === "Inactive" ? <IconLockOpen /> : <IconLock />}
-                  {p.status === "Inactive" ? "Activate" : "Deactivate"}
+                  {closed ? <IconLockOpen /> : <IconLock />}
+                  {closed ? "Reactivate" : "Deactivate"}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
@@ -798,6 +814,22 @@ function ProfileBody({ patient: p }: { patient: Patient }) {
         </div>
       }
     >
+      {(p.reactivatedAt || p.mergedAt) && (
+        <div className="flex flex-col gap-1 rounded-lg border border-info/30 bg-info-surface px-4 py-2.5 text-sm text-info">
+          {p.reactivatedAt && (
+            <p>
+              Reactivated on {shortDate(p.reactivatedAt)}. Fresh consent
+              requested.
+            </p>
+          )}
+          {p.mergedAt && (
+            <p>
+              A duplicate record was merged into this one on{" "}
+              {shortDate(p.mergedAt)}.
+            </p>
+          )}
+        </div>
+      )}
       <RecordCard title="Patient basic details">
         <div className="flex flex-col gap-5 md:flex-row">
           <ProfileAvatar
@@ -923,6 +955,10 @@ function ProfileBody({ patient: p }: { patient: Patient }) {
           toast.success(`${fullName(p)} is deactivated`)
           setDeactivating(false)
         }}
+      />
+      <ReactivateDialog
+        patient={reactivating ? p : null}
+        onClose={() => setReactivating(false)}
       />
     </RecordPage>
   )

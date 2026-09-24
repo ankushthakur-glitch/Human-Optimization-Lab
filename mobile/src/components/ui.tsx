@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
   type TextInputProps,
   type TextStyle,
 } from "react-native"
@@ -27,11 +28,21 @@ import { buttonRadius, color, font, gutter, radius, touchRadius } from "@/lib/th
 
 const MARK = require("../../assets/logo-mark-white.png")
 
+/** On a wide browser the web build sits in a drawn phone (public/index.html)
+    whose 44px status bar overlays the app, so the band clears it as it
+    clears a real one. The breakpoint matches that page's media query. */
+function useTopInset() {
+  const insets = useSafeAreaInsets()
+  const { width } = useWindowDimensions()
+  if (Platform.OS === "web" && width >= 640) return Math.max(insets.top, 44)
+  return insets.top
+}
+
 /** A scrolling form screen that keeps its fields above the keyboard: the
     white mark and the screen's title on a teal band, the form on a white
     sheet rising over it. */
 export function Screen({ title, children }: { title: string; children: React.ReactNode }) {
-  const insets = useSafeAreaInsets()
+  const top = useTopInset()
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -40,7 +51,7 @@ export function Screen({ title, children }: { title: string; children: React.Rea
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.hero, { paddingTop: insets.top + 64 }]}>
+          <View style={[styles.hero, { paddingTop: top + 64 }]}>
             <HeroArt />
             <View style={styles.heroBody}>
               <Image

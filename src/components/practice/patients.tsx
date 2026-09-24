@@ -19,6 +19,7 @@ import {
   BulkImportDialog,
   type ImportSpec,
   type ParsedRow,
+  type RowOutcome,
   isoFromUsDate,
   pick,
 } from "@/components/practice/bulk-import"
@@ -42,6 +43,8 @@ import {
   sendPatientInvites,
   patients,
   providerName,
+  REACTIVATABLE,
+  reactivatePatient,
   shortDate,
   useLocationLookup,
   useProviderLookup,
@@ -49,7 +52,17 @@ import {
 } from "@/components/practice/practice-data"
 import { PatientsFrame, usePortal } from "@/components/practice/portal"
 import { DeactivateDialog } from "@/components/practice/sheets"
-import { findDuplicate } from "@/components/practice/patient-record"
+import {
+  checkDuplicate,
+  matchedText,
+  queueForReview,
+} from "@/components/practice/patient-duplicates"
+import {
+  DuplicateQueueBanner,
+  ReactivateDialog,
+  usePatientPrecheck,
+  portalUser,
+} from "@/components/practice/duplicates"
 import { Button } from "@/design-system/ui/button"
 import { DropdownMenuItem } from "@/design-system/ui/dropdown-menu"
 
@@ -88,7 +101,9 @@ function BulkSendInvite({
       onClick={() => {
         sendPatientInvites(pending.map((p) => p.id))
         toast.success(
-          pending.length === 1 ? "Invite sent" : `${pending.length} invites sent`
+          pending.length === 1
+            ? "Invite sent"
+            : `${pending.length} invites sent`
         )
         onDone()
       }}
@@ -103,8 +118,74 @@ function BulkSendInvite({
 /*  Bulk import                                                                */
 /* -------------------------------------------------------------------------- */
 
+/* The duplicate check's verdict on one imported row: nothing (a new record),
+   or where the row goes instead. Rows earlier in the same file count too. */
+function rowOutcome(
+  value: PatientInput,
+  existing: Patient[],
+  earlier: { row: number; value: PatientInput }[]
+): RowOutcome | undefined {
+  const check = checkDuplicate(value, existing)
+  if (check.kind === "none") {
+    const repeat = earlier.find(
+      (e) =>
+        checkDuplicate(value, [
+          {
+            ...e.value,
+            id: "",
+            status: "Not invited",
+            invitedAt: "",
+            source: "Bulk import",
+          },
+        ]).kind === "exact"
+    )
+    return repeat
+      ? {
+          kind: "skip",
+          badge: `Repeats row ${repeat.row}`,
+          note: "Same patient as an earlier row in this file.",
+        }
+      : undefined
+  }
+  const p = check.patient
+  const who = `${fullName(p)} (${p.id})`
+  if (check.kind === "possible")
+    return {
+      kind: "review",
+      badge: "Possible duplicate",
+      note: `May be ${who}: ${matchedText(check.matched).toLowerCase()} match. Goes to the review queue.`,
+      ref: p.id,
+    }
+  if (check.action === "reactivate")
+    return {
+      kind: "reactivate",
+      badge: "Reactivate",
+      note: `Matches ${who}, ${p.status.toLowerCase()}. Reactivated with a fresh consent request.`,
+      ref: p.id,
+    }
+  return {
+    kind: "skip",
+    badge:
+      check.action === "keep"
+        ? "Already active"
+        : p.status === "Invited"
+          ? "Already invited"
+          : "Already on file",
+    note:
+      check.action === "keep"
+        ? `Matches ${who}. Record kept, no second invite.`
+        : p.status === "Invited"
+          ? `Matches ${who}. Existing record and invite reused.`
+          : `Matches ${who}. Existing record reused.`,
+    ref: p.id,
+  }
+}
+
 function usePatientImport(): ImportSpec<PatientInput> {
   const { items } = patients.use()
+  const portal = usePortal()
+  /* Rows already read from the file being imported, for in-file repeats. */
+  const batch = React.useRef<{ row: number; value: PatientInput }[]>([])
   const loc = useLocationLookup()
   const prov = useProviderLookup()
   const activeLocations = loc.active.map((l) => l.name)
@@ -154,6 +235,7 @@ function usePatientImport(): ImportSpec<PatientInput> {
       },
     ],
     parse(c, row): ParsedRow<PatientInput> {
+      if (row === 2) batch.current = []
       const errors: string[] = []
       const first = c["First name"]
       const last = c["Last name"]
@@ -219,10 +301,12 @@ function usePatientImport(): ImportSpec<PatientInput> {
         locationId: locationId ?? "",
         providerId: provider?.id ?? "",
       }
-      if (!errors.length && items.some((p) => p.email.toLowerCase() === email))
-        errors.push("A patient with this email already exists.")
       if (!VALIDATE) errors.length = 0
-      const duplicate = errors.length ? undefined : findDuplicate(value, items)
+      const outcome =
+        errors.length || !first || !dob
+          ? undefined
+          : rowOutcome(value, items, batch.current)
+      if (!errors.length) batch.current.push({ row, value })
 
       return {
         row,
@@ -231,14 +315,41 @@ function usePatientImport(): ImportSpec<PatientInput> {
           .filter(Boolean)
           .join(" | "),
         errors,
-        warning: duplicate
-          ? `Matches ${fullName(duplicate)} (${duplicate.id}) on name, date of birth and contact.`
-          : undefined,
+        outcome,
         key: email || undefined,
         value: errors.length ? undefined : value,
       }
     },
     onImport: (values) => addPatients(values, "Bulk import"),
+    onResolve(rows) {
+      const review: Parameters<typeof queueForReview>[0] = []
+      for (const r of rows) {
+        const o = r.outcome
+        if (!o?.ref || !r.value) continue
+        if (o.kind === "reactivate") {
+          /* The file's physician when it names one, else the record's own. */
+          const current = items.find((p) => p.id === o.ref)
+          const named = Boolean(r.value.providerId && r.value.locationId)
+          reactivatePatient(o.ref, {
+            providerId: named
+              ? r.value.providerId
+              : (current?.providerId ?? ""),
+            locationId: named
+              ? r.value.locationId
+              : (current?.locationId ?? ""),
+          })
+        } else if (o.kind === "review") {
+          const check = checkDuplicate(r.value, items)
+          review.push({
+            incoming: r.value,
+            matchId: o.ref,
+            matched: check.kind === "none" ? [] : check.matched,
+            source: "Bulk import",
+          })
+        }
+      }
+      if (review.length) queueForReview(review, portalUser(portal.key))
+    },
     addOnly: true,
   }
 }
@@ -257,8 +368,10 @@ export function PatientsScreen() {
   const { patientHref } = portal
   const [importing, setImporting] = React.useState(false)
   const [deactivating, setDeactivating] = React.useState<Patient | null>(null)
+  const [reactivating, setReactivating] = React.useState<Patient | null>(null)
 
-  const openCreate = () => router.push(portal.newPatientHref)
+  const precheck = usePatientPrecheck()
+  const openCreate = precheck.open
   useImportParam(() => setImporting(true))
 
   const columns: Column<Patient>[] = [
@@ -355,16 +468,17 @@ export function PatientsScreen() {
               Resend invite
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem
-            onClick={() => {
-              if (p.status !== "Inactive") return setDeactivating(p)
-              patients.patch(p.id, { status: "Active" })
-              toast.success(`${fullName(p)} is active again`)
-            }}
-          >
-            {p.status === "Inactive" ? <IconLockOpen /> : <IconLock />}
-            {p.status === "Inactive" ? "Activate" : "Deactivate"}
-          </DropdownMenuItem>
+          {REACTIVATABLE.includes(p.status) ? (
+            <DropdownMenuItem onClick={() => setReactivating(p)}>
+              <IconLockOpen />
+              Reactivate
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={() => setDeactivating(p)}>
+              <IconLock />
+              Deactivate
+            </DropdownMenuItem>
+          )}
         </RowMenu>
       ),
     },
@@ -372,6 +486,7 @@ export function PatientsScreen() {
 
   return (
     <PatientsFrame>
+      <DuplicateQueueBanner />
       <Directory
         title="Patients"
         noun="patients"
@@ -395,7 +510,14 @@ export function PatientsScreen() {
           },
         ]}
         statusTabs={{
-          options: ["Active", "Invited", "Not invited", "Inactive"],
+          options: [
+            "Active",
+            "Invited",
+            "Not invited",
+            "Inactive",
+            "Discharged",
+            "Consent withdrawn",
+          ],
           value: (p) => p.status,
         }}
         primaryAction={{
@@ -436,6 +558,13 @@ export function PatientsScreen() {
         open={importing}
         onOpenChange={setImporting}
         spec={importSpec}
+      />
+
+      {precheck.dialog}
+
+      <ReactivateDialog
+        patient={reactivating}
+        onClose={() => setReactivating(null)}
       />
 
       <DeactivateDialog

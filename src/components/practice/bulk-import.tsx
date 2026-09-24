@@ -68,7 +68,25 @@ export type ParsedRow<T> = {
   warning?: string
   /** Rows with the same key in one file are flagged as repeats. */
   key?: string
+  /** The row matched a record already on file: it isn't created as new. */
+  outcome?: RowOutcome
 }
+
+/* What happens to a row that matched an existing record: skipped (already on
+   file), reactivated (fresh consent), or held for review. */
+export type RowOutcome = {
+  kind: "skip" | "reactivate" | "review"
+  badge: string
+  note: string
+  /** The existing record the row matched. */
+  ref?: string
+}
+
+const OUTCOME_VARIANT = {
+  skip: "secondary",
+  reactivate: "info",
+  review: "warning",
+} as const
 
 export type ImportSpec<T> = {
   one: string
@@ -79,6 +97,9 @@ export type ImportSpec<T> = {
   /** Turns one row's cells (keyed by column header) into a value or errors. */
   parse: (cells: Record<string, string>, row: number) => ParsedRow<T>
   onImport: (values: T[]) => void
+  /** Rows the duplicate check routed elsewhere (see RowOutcome). Setting it
+      replaces the "skip possible duplicates" choice with per-row outcomes. */
+  onResolve?: (rows: ParsedRow<T>[]) => void
   /** Adds the records without emailing anyone; invites go out by hand later. */
   addOnly?: boolean
 }
@@ -370,22 +391,36 @@ function ImportBody<T>({
   }
 
   const invalid = rows?.filter((r) => r.errors.length) ?? []
-  const flagged = rows?.filter((r) => !r.errors.length && r.warning) ?? []
+  const routed = rows?.filter((r) => !r.errors.length && r.outcome) ?? []
+  const flagged =
+    rows?.filter((r) => !r.errors.length && !r.outcome && r.warning) ?? []
   const ready =
     rows?.filter(
-      (r) => !r.errors.length && r.value && !(skipDuplicates && r.warning)
+      (r) =>
+        !r.errors.length &&
+        r.value &&
+        !r.outcome &&
+        !(skipDuplicates && r.warning)
     ) ?? []
+  const count = (kind: RowOutcome["kind"]) =>
+    routed.filter((r) => r.outcome?.kind === kind).length
+  const actionable = count("reactivate") + count("review")
 
   function runImport() {
-    spec.onImport(ready.map((r) => r.value as T))
+    if (ready.length) spec.onImport(ready.map((r) => r.value as T))
+    if (routed.length) spec.onResolve?.(routed)
     onDone()
-    const count = ready.length
-    const noun = count === 1 ? spec.one : spec.many
-    toast.success(`${count} ${noun} ${spec.addOnly ? "added" : "invited"}`, {
-      description:
-        invalid.length + (skipDuplicates ? flagged.length : 0) > 0
-          ? `${invalid.length + (skipDuplicates ? flagged.length : 0)} rows were skipped.`
-          : undefined,
+    const n = ready.length
+    const noun = n === 1 ? spec.one : spec.many
+    const skipped =
+      invalid.length + count("skip") + (skipDuplicates ? flagged.length : 0)
+    const notes = [
+      count("reactivate") && `${count("reactivate")} reactivated`,
+      count("review") && `${count("review")} sent to review`,
+      skipped && `${skipped} ${skipped === 1 ? "row" : "rows"} skipped`,
+    ].filter(Boolean)
+    toast.success(`${n} ${noun} ${spec.addOnly ? "added" : "invited"}`, {
+      description: notes.length ? `${notes.join(", ")}.` : undefined,
     })
   }
 
@@ -482,6 +517,7 @@ function ImportBody<T>({
               rows={rows}
               invalid={invalid}
               flagged={flagged}
+              routed={routed}
               ready={ready.length}
               skipDuplicates={skipDuplicates}
               onSkipDuplicates={setSkipDuplicates}
@@ -495,10 +531,15 @@ function ImportBody<T>({
         <Button variant="outline" onClick={onDone}>
           Cancel
         </Button>
-        <Button disabled={!rows || ready.length === 0} onClick={runImport}>
-          {rows && ready.length > 0
-            ? `${spec.addOnly ? "Add" : "Invite"} ${ready.length} ${ready.length === 1 ? spec.one : spec.many}`
-            : `${spec.addOnly ? "Add" : "Invite"} ${spec.many}`}
+        <Button
+          disabled={!rows || ready.length + actionable === 0}
+          onClick={runImport}
+        >
+          {rows && spec.onResolve && ready.length + actionable > 0
+            ? `Import ${ready.length + actionable} ${ready.length + actionable === 1 ? "row" : "rows"}`
+            : rows && ready.length > 0
+              ? `${spec.addOnly ? "Add" : "Invite"} ${ready.length} ${ready.length === 1 ? spec.one : spec.many}`
+              : `${spec.addOnly ? "Add" : "Invite"} ${spec.many}`}
         </Button>
       </DialogFooter>
     </>
@@ -511,6 +552,7 @@ function Review<T>({
   rows,
   invalid,
   flagged,
+  routed,
   ready,
   skipDuplicates,
   onSkipDuplicates,
@@ -521,6 +563,7 @@ function Review<T>({
   rows: ParsedRow<T>[]
   invalid: ParsedRow<T>[]
   flagged: ParsedRow<T>[]
+  routed: ParsedRow<T>[]
   ready: number
   skipDuplicates: boolean
   onSkipDuplicates: (skip: boolean) => void
@@ -530,10 +573,13 @@ function Review<T>({
   const ordered = [...rows].sort(
     (a, b) =>
       Number(b.errors.length > 0) - Number(a.errors.length > 0) ||
+      Number(Boolean(b.outcome)) - Number(Boolean(a.outcome)) ||
       Number(Boolean(b.warning)) - Number(Boolean(a.warning)) ||
       a.row - b.row
   )
   const issues = [...invalid, ...flagged]
+  const routedCount = (kind: RowOutcome["kind"]) =>
+    routed.filter((r) => r.outcome?.kind === kind).length
 
   return (
     <div className="flex min-h-0 flex-col gap-4">
@@ -563,28 +609,63 @@ function Review<T>({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Stat
-          icon={<IconCheckCircle className="size-4" />}
-          tone="success"
-          label="Ready"
-          value={rows.length - invalid.length - flagged.length}
-        />
-        <Stat
-          icon={<IconWarning className="size-4" />}
-          tone="warning"
-          label="Possible duplicates"
-          value={flagged.length}
-        />
-        <Stat
-          icon={<IconAlert className="size-4" />}
-          tone="destructive"
-          label="Errors"
-          value={invalid.length}
-        />
-      </div>
+      {spec.onResolve ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <Stat
+            icon={<IconCheckCircle className="size-4" />}
+            tone="success"
+            label="New records"
+            value={rows.length - invalid.length - routed.length}
+          />
+          <Stat
+            icon={<IconFileText className="size-4" />}
+            tone="neutral"
+            label="Already on file"
+            value={routedCount("skip")}
+          />
+          <Stat
+            icon={<IconRefresh className="size-4" />}
+            tone="info"
+            label="To reactivate"
+            value={routedCount("reactivate")}
+          />
+          <Stat
+            icon={<IconWarning className="size-4" />}
+            tone="warning"
+            label="Needs review"
+            value={routedCount("review")}
+          />
+          <Stat
+            icon={<IconAlert className="size-4" />}
+            tone="destructive"
+            label="Errors"
+            value={invalid.length}
+          />
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Stat
+            icon={<IconCheckCircle className="size-4" />}
+            tone="success"
+            label="Ready"
+            value={rows.length - invalid.length - flagged.length}
+          />
+          <Stat
+            icon={<IconWarning className="size-4" />}
+            tone="warning"
+            label="Possible duplicates"
+            value={flagged.length}
+          />
+          <Stat
+            icon={<IconAlert className="size-4" />}
+            tone="destructive"
+            label="Errors"
+            value={invalid.length}
+          />
+        </div>
+      )}
 
-      {flagged.length > 0 && (
+      {flagged.length > 0 && !spec.onResolve && (
         <Label className="flex items-center gap-2 text-sm font-normal">
           <Checkbox
             checked={skipDuplicates}
@@ -624,6 +705,15 @@ function Review<T>({
                         {r.errors.join(" ")}
                       </span>
                     </div>
+                  ) : r.outcome ? (
+                    <div className="flex flex-col gap-1">
+                      <Badge variant={OUTCOME_VARIANT[r.outcome.kind]}>
+                        {r.outcome.badge}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {r.outcome.note}
+                      </span>
+                    </div>
                   ) : r.warning ? (
                     <div className="flex flex-col gap-1">
                       <Badge variant="warning">
@@ -634,7 +724,9 @@ function Review<T>({
                       </span>
                     </div>
                   ) : (
-                    <Badge variant="success">Ready</Badge>
+                    <Badge variant="success">
+                      {spec.onResolve ? "New record" : "Ready"}
+                    </Badge>
                   )}
                 </TableCell>
               </TableRow>
@@ -643,7 +735,7 @@ function Review<T>({
         </Table>
       </div>
 
-      {ready === 0 && (
+      {ready === 0 && routed.length === 0 && (
         <p className="text-sm text-destructive">
           No rows can be imported yet. Fix the errors in the file, then choose
           it again.
@@ -660,12 +752,14 @@ function Stat({
   value,
 }: {
   icon: React.ReactNode
-  tone: "success" | "warning" | "destructive"
+  tone: "success" | "warning" | "destructive" | "info" | "neutral"
   label: string
   value: number
 }) {
   const toneClass = {
     success: "bg-success-surface text-success",
+    info: "bg-info-surface text-info",
+    neutral: "bg-muted text-muted-foreground",
     warning: "bg-warning-surface text-warning",
     destructive: "bg-destructive/10 text-destructive",
   }[tone]

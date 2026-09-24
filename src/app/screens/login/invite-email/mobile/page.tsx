@@ -17,8 +17,8 @@ export const metadata: Metadata = { title: "Invitation email (mobile)" }
 
 /* The invitation as it arrives on a phone: open in a mail app, laid out from
    the approved mobile email frame (375 × 812). On a phone the frame fills the
-   screen; on anything wider it sits in a device outline so the proportions
-   hold.
+   screen and the device draws its own status bar and home indicator, so the
+   drawn ones only appear in the device outline shown on anything wider.
 
    Like the web screen, the app is always light and carries no mail provider's
    logo or wordmark. The letter is the shared email template. */
@@ -31,7 +31,7 @@ const TOP_ACTIONS = [
 
 function StatusBar() {
   return (
-    <div className="flex h-11 shrink-0 items-center justify-between px-4" style={ROBOTO}>
+    <div className="hidden h-11 shrink-0 items-center justify-between px-4 sm:flex" style={ROBOTO}>
       <span className="w-9 text-[15px] font-medium tracking-tight">9:16</span>
       <span className="flex items-center gap-1">
         <Sym name="signal_cellular_alt" size={20} fill />
@@ -60,7 +60,7 @@ export default async function InviteEmailMobileScreen({
     >
       <MailFonts />
 
-      <div className="flex h-svh w-full max-w-[375px] flex-col overflow-hidden bg-[#f8fafd] sm:h-[812px] sm:rounded-[44px] sm:shadow-[0_0_0_10px_#1f1f1f,0_24px_60px_rgba(0,0,0,0.25)]">
+      <div className="flex h-svh w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)] sm:max-w-[375px] sm:pt-0 bg-[#f8fafd] sm:h-[812px] sm:rounded-[44px] sm:shadow-[0_0_0_10px_#1f1f1f,0_24px_60px_rgba(0,0,0,0.25)]">
         <StatusBar />
 
         {/* app bar */}
@@ -76,13 +76,15 @@ export default async function InviteEmailMobileScreen({
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           {/* subject */}
-          <div className="flex h-11 items-center gap-2 pr-4 pl-4">
-            <h1 className="min-w-0 flex-1 truncate text-[22px] leading-7">
+          <div className="flex min-h-11 items-start gap-2 px-4 pt-2 sm:h-11 sm:items-center sm:pt-0">
+            <h1 className="min-w-0 flex-1 text-[22px] leading-7 sm:truncate">
               Welcome to {BRAND_NAME}: Activate Your {invitee.role} Account
             </h1>
-            <Sym name="label_important" size={22} className="text-[#747775]" />
-            <InboxChip />
-            <IconButton name="star" label="Not starred" size={32} icon={22} className="-mr-1 ml-1" />
+            <span className="flex h-7 shrink-0 items-center gap-2">
+              <Sym name="label_important" size={22} className="text-[#747775]" />
+              <InboxChip />
+              <IconButton name="star" label="Not starred" size={32} icon={22} className="-mr-1 ml-1" />
+            </span>
           </div>
 
           {/* sender */}
@@ -113,7 +115,7 @@ export default async function InviteEmailMobileScreen({
         </div>
 
         {/* bottom navigation + home indicator */}
-        <div className="shrink-0 bg-[#e9eef6]">
+        <div className="shrink-0 bg-[#e9eef6] pb-[env(safe-area-inset-bottom)] sm:pb-0">
           <div className="flex h-11 px-4">
             <span className="flex flex-1 items-center justify-center">
               <span className="flex h-7 w-14 items-center justify-center rounded-full bg-[#d3e3fd] text-[#041e49]">
@@ -124,7 +126,7 @@ export default async function InviteEmailMobileScreen({
               <Sym name="videocam" size={24} />
             </span>
           </div>
-          <div className="flex h-7 items-start justify-center pt-3.5">
+          <div className="hidden h-7 items-start justify-center pt-3.5 sm:flex">
             <span className="h-1 w-[134px] rounded-full bg-[#1f1f1f]" />
           </div>
         </div>

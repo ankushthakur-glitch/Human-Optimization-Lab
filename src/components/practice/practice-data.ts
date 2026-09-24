@@ -32,6 +32,14 @@ export const PRACTICE = {
 /* -------------------------------------------------------------------------- */
 
 export type PersonStatus = "Not invited" | "Invited" | "Active" | "Inactive"
+/* A patient's record can also be closed by the practice (discharged) or by
+   the patient (consent withdrawn); both come back only with fresh consent. */
+export type PatientStatus = PersonStatus | "Discharged" | "Consent withdrawn"
+export const REACTIVATABLE: readonly PatientStatus[] = [
+  "Inactive",
+  "Discharged",
+  "Consent withdrawn",
+]
 export type LocationStatus = "Active" | "Inactive"
 
 export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"]
@@ -289,9 +297,13 @@ export type Patient = {
   providerId: string
   registrationDate: string
   emergencyContacts: EmergencyContact[]
-  status: PersonStatus
+  status: PatientStatus
   invitedAt: string
   source: "Manual" | "Bulk import"
+  /** Set when a closed record was reopened; fresh consent was requested. */
+  reactivatedAt?: string
+  /** Set when a duplicate was merged into this record. */
+  mergedAt?: string
 }
 
 export type EmergencyContact = {
@@ -319,7 +331,7 @@ export type StaffUserInput = Omit<
 >
 export type PatientInput = Omit<
   Patient,
-  "id" | "status" | "invitedAt" | "source"
+  "id" | "status" | "invitedAt" | "source" | "reactivatedAt" | "mergedAt"
 >
 
 /* -------------------------------------------------------------------------- */
@@ -489,7 +501,7 @@ export function emptyPatient(): PatientInput {
     portalAccess: true,
     locationId: "",
     providerId: "",
-    registrationDate: "",
+    registrationDate: isoDaysAgo(0),
     emergencyContacts: [emptyEmergencyContact()],
   }
 }
@@ -522,6 +534,18 @@ const patientHeadshot = (sex: string, i: number) => {
     1 + (i % PATIENT_HEADSHOTS[key])
   }.jpg`
 }
+
+/* Half of every list carries a picture and half falls back to initials,
+   scattered so the table doesn't read as a strict alternation. */
+const PHOTO_PATTERN = [1, 0, 1, 1, 0, 1, 0, 0]
+const hasPhoto = (i: number) => PHOTO_PATTERN[i % PHOTO_PATTERN.length] === 1
+
+/* Staff first names that take a woman's headshot from the pool. */
+const FEMALE_STAFF = new Set([
+  "Alana", "Carmen", "Elodie", "Gemma", "Ivy", "Kaia", "Mila", "Olive",
+  "Riley", "Sienna", "Uma", "Willa", "Yvette", "Aurora", "Daphne", "Freya",
+  "Hazel", "Jade", "Lena", "Nadia", "Penelope", "Stella", "Vera",
+])
 
 const LOCATION_BASE: Omit<Location, LocationExtra>[] = [
   {
@@ -681,9 +705,11 @@ const LOCATIONS: Location[] = [...LOCATION_BASE, ...MORE_LOCATION_BASE].map((l, 
   taxonomyCode: "261QP2300X",
   ftin: `33-${String(4_102_870 + i * 11).padStart(7, "0")}`,
   website: i === 0 ? "https://www.harborviewlongevity.com" : "",
-  photo: `/practice/locations/${
-    i < LOCATION_BASE.length ? slug(l.name) : SITE_PHOTOS[i % SITE_PHOTOS.length]
-  }.jpg`,
+  photo: hasPhoto(i)
+    ? `/practice/locations/${
+        i < LOCATION_BASE.length ? slug(l.name) : SITE_PHOTOS[i % SITE_PHOTOS.length]
+      }.jpg`
+    : "",
 }))
 
 type ProviderRow = [
@@ -794,7 +820,11 @@ const PROVIDERS: Provider[] = PROVIDER_ROWS.map((row, i) => {
       TAXONOMY_CODES[0],
     languages: i % 3 === 0 ? ["English", "Spanish"] : ["English"],
     ssn: `${pad(521 + i * 7, 3)}-${pad(40 + i, 2)}-${pad(1_842 + i * 311, 4)}`,
-    photo: i < 8 ? headshot(firstName, lastName) : "",
+    photo: !hasPhoto(i)
+      ? ""
+      : i < 8
+        ? headshot(firstName, lastName)
+        : patientHeadshot(gender, i + 5),
     address1: `${1_200 + i * 45} ${["Prospect St", "Torrey Pines Rd", "Coast Blvd", "Via de la Valle"][i % 4]}`,
     address2: i % 2 ? `Apt ${i + 2}B` : "",
     zip: ["92037", "92014", "92008", "92037"][i % 4],
@@ -872,7 +902,7 @@ const USERS: StaffUser[] = [
     status: "Active",
     invitedAt: "2026-09-22",
     lastActive: "2026-09-23",
-    photo: headshot("Graham", "Pellegrini"),
+    photo: "",
   },
   {
     id: "U16455",
@@ -898,7 +928,7 @@ const USERS: StaffUser[] = [
     status: "Inactive",
     invitedAt: "2026-09-10",
     lastActive: "2026-09-15",
-    photo: headshot("Victor", "Lindqvist"),
+    photo: "",
   },
   ...moreUsers(),
 ]
@@ -942,7 +972,9 @@ function moreUsers(): StaffUser[] {
       invitedAt: isoDaysAgo(3 + i * 2),
       lastActive:
         status === "Invited" ? "" : isoDaysAgo(status === "Inactive" ? 20 + i : i % 4),
-      photo: "",
+      photo: hasPhoto(i)
+        ? patientHeadshot(FEMALE_STAFF.has(firstName) ? "Female" : "Male", i + 3)
+        : "",
     }
   })
 }
@@ -981,8 +1013,16 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
   const active = PROVIDERS.filter((p) => p.status === "Active")
   const provider = active[i % active.length]
   const locationId = provider.locationIds[i % provider.locationIds.length]
-  const status: PersonStatus =
-    i % 9 === 4 ? "Inactive" : i % 4 === 1 ? "Invited" : "Active"
+  const status: PatientStatus =
+    i % 9 === 4
+      ? "Inactive"
+      : i % 23 === 7
+        ? "Discharged"
+        : i % 29 === 12
+          ? "Consent withdrawn"
+          : i % 4 === 1
+            ? "Invited"
+            : "Active"
   const area = locationId === "LOC1003" ? "760" : "858"
   return {
     id: `P${pad(10_240 + i * 17, 5)}`,
@@ -994,7 +1034,7 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
     sex: sexFor(firstName),
     genderIdentity: "",
     languages: i % 6 === 0 ? ["English", "Spanish"] : ["English"],
-    photo: patientHeadshot(sexFor(firstName), i),
+    photo: hasPhoto(i) ? patientHeadshot(sexFor(firstName), i) : "",
     address1: `${100 + i * 13} ${["Pearl St", "Ocean Ave", "Camino Real", "Olive Ave", "El Paseo"][i % 5]}`,
     address2: "",
     zip: area === "760" ? "92008" : ["92037", "92014"][i % 2],
@@ -1036,7 +1076,10 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
 /*  Stores                                                                     */
 /* -------------------------------------------------------------------------- */
 
-const VERSION = "v9"
+const VERSION = "v11"
+
+/** The sample patients, before any session edits: the duplicate queue seeds from them. */
+export const PATIENT_SEED = PATIENTS
 
 export const locations = createCollection("hol-practice-locations", LOCATIONS, VERSION)
 export const providers = createCollection("hol-practice-providers", PROVIDERS, VERSION)
@@ -1102,6 +1145,52 @@ export function addPatients(
   })
   patients.add(created)
   return created
+}
+
+/* Reopening a discharged or withdrawn record keeps its history and sends a
+   fresh consent request with the portal invite. */
+export function reactivatePatient(
+  id: string,
+  assign: { providerId: string; locationId: string }
+) {
+  patients.patch(id, {
+    ...assign,
+    status: "Invited",
+    invitedAt: today(),
+    reactivatedAt: today(),
+  })
+}
+
+/* A merge keeps the existing record and its history. The incoming record
+   only fills what the existing one left blank. Returns what it filled. */
+const MERGE_FIELDS: [keyof PatientInput, string][] = [
+  ["middleName", "Middle name"],
+  ["preferredName", "Preferred name"],
+  ["sex", "Sex at birth"],
+  ["email", "Email"],
+  ["phone", "Mobile number"],
+  ["homePhone", "Home phone"],
+  ["address1", "Address"],
+  ["address2", "Address line 2"],
+  ["city", "City"],
+  ["zip", "ZIP code"],
+]
+
+export function mergeFields(existing: Patient, incoming: PatientInput) {
+  return MERGE_FIELDS.filter(
+    ([key]) => !existing[key] && Boolean(incoming[key])
+  ).map(([key, label]) => ({ key, label }))
+}
+
+export function mergePatient(id: string, incoming: PatientInput) {
+  const existing = patients.get().find((p) => p.id === id)
+  if (!existing) return []
+  const filled = mergeFields(existing, incoming)
+  patients.patch(id, {
+    ...Object.fromEntries(filled.map(({ key }) => [key, incoming[key]])),
+    mergedAt: today(),
+  })
+  return filled.map((f) => f.label)
 }
 
 /** Emails the patient portal invite to patients added without one. */

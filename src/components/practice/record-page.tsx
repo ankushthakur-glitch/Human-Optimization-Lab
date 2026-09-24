@@ -14,6 +14,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/design-system/ui/avatar"
+import { avatarTone } from "@/components/practice/directory"
 import { Button } from "@/design-system/ui/button"
 import {
   Card,
@@ -95,7 +96,7 @@ export function RecordCard({
   return (
     <Card
       className={cn(
-        "min-w-0 rounded-lg border shadow-[0_0_5px_rgb(0_0_0/0.06)] ring-0 [--card-spacing:--spacing(5)]",
+        "min-w-0 gap-3 rounded-lg border shadow-[0_0_5px_rgb(0_0_0/0.06)] ring-0 [--card-spacing:--spacing(5)]",
         className
       )}
     >
@@ -314,7 +315,9 @@ export function ProfileAvatar({
       {picker.input}
       <Avatar className="size-24 border">
         {photo && <AvatarImage src={photo} alt={name} />}
-        <AvatarFallback className="text-xl">{initials}</AvatarFallback>
+        <AvatarFallback className={cn("text-xl font-medium", avatarTone(name))}>
+          {initials}
+        </AvatarFallback>
       </Avatar>
       <Button
         variant="outline"

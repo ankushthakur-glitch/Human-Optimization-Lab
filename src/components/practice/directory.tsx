@@ -12,7 +12,7 @@ import {
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
-import type { PersonStatus } from "@/components/practice/practice-data"
+import type { PatientStatus } from "@/components/practice/practice-data"
 import { Avatar, AvatarFallback, AvatarImage } from "@/design-system/ui/avatar"
 import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
@@ -80,16 +80,18 @@ import {
 /* -------------------------------------------------------------------------- */
 
 const STATUS_VARIANT: Record<
-  PersonStatus,
-  "success" | "warning" | "destructive" | "secondary"
+  PatientStatus,
+  "success" | "warning" | "destructive" | "secondary" | "info" | "outline"
 > = {
   "Not invited": "secondary",
   Active: "success",
   Invited: "warning",
   Inactive: "destructive",
+  Discharged: "info",
+  "Consent withdrawn": "outline",
 }
 
-export function StatusBadge({ status }: { status: PersonStatus }) {
+export function StatusBadge({ status }: { status: PatientStatus }) {
   return <Badge variant={STATUS_VARIANT[status]}>{status}</Badge>
 }
 
@@ -129,7 +131,7 @@ export function BulkResend({
   rows,
   onDone,
 }: {
-  rows: { status: PersonStatus }[]
+  rows: { status: PatientStatus }[]
   onDone: () => void
 }) {
   const pending = rows.filter((row) => row.status === "Invited").length
@@ -235,7 +237,23 @@ function pageSlots(current: number, total: number): (number | "gap")[] {
   return slots
 }
 
-function initials(name: string) {
+/* Subtle tints for initials avatars, picked from the name so a person keeps
+   the same colour everywhere they appear. */
+const AVATAR_TONES = [
+  "bg-category-1-surface text-category-1",
+  "bg-category-2-surface text-category-2",
+  "bg-category-3-surface text-category-3",
+  "bg-category-4-surface text-category-4",
+  "bg-category-5-surface text-category-5",
+]
+
+export function avatarTone(name: string) {
+  let hash = 0
+  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
+  return AVATAR_TONES[hash % AVATAR_TONES.length]
+}
+
+export function initials(name: string) {
   return name
     .split(" ")
     .filter(Boolean)
@@ -261,7 +279,9 @@ export function PersonCell({
     <div className="flex min-w-0 items-center gap-2.5">
       <Avatar className="size-8 shrink-0">
         {photo && <AvatarImage src={photo} alt="" />}
-        <AvatarFallback>{initials(name)}</AvatarFallback>
+        <AvatarFallback className={cn("font-medium", avatarTone(name))}>
+          {initials(name)}
+        </AvatarFallback>
       </Avatar>
       <Button variant="link" className={NAME_LINK} onClick={onOpen}>
         {name}

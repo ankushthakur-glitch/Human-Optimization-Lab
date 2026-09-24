@@ -13,6 +13,7 @@ export type Collection<T extends { id: string }> = {
   get: () => T[]
   add: (items: T[]) => void
   patch: (id: string, changes: Partial<T>) => void
+  remove: (id: string) => void
 }
 
 export function createCollection<T extends { id: string }>(
@@ -78,6 +79,10 @@ export function createCollection<T extends { id: string }>(
       items = items.map((item) =>
         item.id === id ? { ...item, ...changes } : item
       )
+      emit()
+    },
+    remove(id) {
+      items = items.filter((item) => item.id !== id)
       emit()
     },
   }
