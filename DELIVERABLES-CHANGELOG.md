@@ -34,6 +34,24 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Built the Super Admin Practices module: practice list and practice details
 - Practice setup now captures group NPI and a primary contact; addresses dropped from the form
 - Set up the Design Deliverables sheet
+- Auth, error states, Super Admin practices and design deliverables register
+- Capture legal name, NPI, primary contact, programs and plan limits on practice setup
+- Serve the invite and first sign-in to clinic managers as well as the Super Admin
+- Drop legal name, addresses, programs and plan limits from practice setup
+- Drop title from the practice primary contact
+- Drop the default location option from practice setup
+- Remove practice delete; deactivate is the only way to take a practice offline
+- React Native patient app with invite, activation and set password
+- Ship the app's fonts so the /app web build renders
+- Match the portal's design system and show the app in a phone frame on wide screens
+- Cyan DME Clinical EHR demo gallery at /dme
+- Layout options and primary colour customization in the DME demo gallery
+- Use the gallery's theme customizer in the DME demo, add plum
+- Rebrand demo as Lakeside Sleep Center, deepen plum
+- Clinic manager and provider portals, onboarding flows, bulk import
+- Rebuild patient app web bundle
+- Refine patient records, locations and users; mobile UI polish
+- Patient duplicate review, record refinements; rebuild mobile bundle
 - Added: Global Pages / Authentication / Sign in
 - Added: Global Pages / Authentication / Two-factor verification
 - Added: Global Pages / Authentication / Two-factor setup
@@ -51,3 +69,42 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Added: Global Pages / Error States / Page not found
 - Added: Super Admin Portal / Practices / Practice list
 - Added: Super Admin Portal / Practices / Practice details
+- Added: Global Pages / Dme / Foundations
+- Added: Global Pages / Dme / Icons
+- Added: Global Pages / Dme / Layouts
+- Added: Global Pages / Dme / Dme
+- Added: Global Pages / Dme Screens / Side Nav
+- Added: Global Pages / Dme Screens / Top Nav
+- Added: Provider Portal / Clinic Manager Portal / Edit location
+- Added: Provider Portal / Clinic Manager Portal / Location details
+- Added: Provider Portal / Clinic Manager Portal / Add location
+- Added: Provider Portal / Clinic Manager Portal / Locations (list)
+- Added: Provider Portal / Clinic Manager Portal / Edit patient
+- Added: Provider Portal / Clinic Manager Portal / Patient profile
+- Added: Provider Portal / Clinic Manager Portal / Review possible duplicate
+- Added: Provider Portal / Clinic Manager Portal / Possible duplicates queue
+- Added: Provider Portal / Clinic Manager Portal / Patient onboarding form
+- Added: Provider Portal / Clinic Manager Portal / Patients (list, bulk import)
+- Added: Provider Portal / Clinic Manager Portal / Users: providers tab (list, bulk import)
+- Added: Provider Portal / Clinic Manager Portal / Edit provider
+- Added: Provider Portal / Clinic Manager Portal / Provider profile
+- Added: Provider Portal / Clinic Manager Portal / Add provider
+- Added: Provider Portal / Provider Portal / Edit patient
+- Added: Provider Portal / Provider Portal / Patient profile
+- Added: Provider Portal / Provider Portal / Add patient and send invite
+- Added: Provider Portal / Provider Portal / Patients (list, bulk import, send invites)
+- Added: Provider Portal / Clinic Manager Onboarding / Invitation email (desktop)
+- Added: Provider Portal / Clinic Manager Onboarding / Invitation email (mobile)
+- Added: Provider Portal / Clinic Manager Onboarding / Activate account
+- Added: Provider Portal / Clinic Manager Onboarding / Set password
+- Added: Provider Portal / Clinic Manager Onboarding / Two-factor setup
+- Added: Provider Portal / Clinic Manager Portal / Users: non-clinical users tab (list, add, view, edit panels)
+- Added: Provider Portal / Provider Onboarding / Invitation email (desktop)
+- Added: Provider Portal / Provider Onboarding / Invitation email (mobile)
+- Added: Provider Portal / Provider Onboarding / Activate account
+- Added: Provider Portal / Provider Onboarding / Set password
+- Added: Provider Portal / Provider Onboarding / Two-factor setup
+- Added: Patient Portal / Patient Onboarding / Invitation email (desktop)
+- Added: Patient Portal / Patient Onboarding / Invitation email (mobile)
+- Added: Patient Portal / Patient Onboarding / Activate account (mobile app)
+- Added: Patient Portal / Patient Onboarding / Sign in (mobile app)
