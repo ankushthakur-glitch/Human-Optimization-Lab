@@ -32,6 +32,7 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Built the error states: page not found, permission denied, offline, session expired
 - Added the session timeout warning and the logo loader
 - Built the Super Admin Practices module: practice list and practice details
+- Practice setup now captures legal name, group NPI, primary contact, enabled programs (all 11) and plan limits
 - Set up the Design Deliverables sheet
 - Added: Global Pages / Authentication / Sign in
 - Added: Global Pages / Authentication / Two-factor verification

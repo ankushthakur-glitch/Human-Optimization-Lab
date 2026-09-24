@@ -132,7 +132,7 @@ export function InviteManagerDialog({
   return (
     <Dialog open={practice !== null} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85svh] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
-        {/* Mounted per open, so every invite starts blank. */}
+        {/* Mounted per open, so every invite starts from a fresh draft. */}
         {practice && (
           <InviteManagerBody
             practice={practice}
@@ -151,7 +151,15 @@ function InviteManagerBody({
   practice: Practice
   onDone: () => void
 }) {
-  const [values, setValues] = React.useState(EMPTY_MANAGER)
+  /* The primary contact is usually who runs the practice day to day, so the
+     invite starts from them; the admin can change anyone. */
+  const [values, setValues] = React.useState<ClinicManagerInput>(() => ({
+    ...EMPTY_MANAGER,
+    firstName: practice.primaryContact.firstName,
+    lastName: practice.primaryContact.lastName,
+    email: practice.primaryContact.email,
+    phone: practice.primaryContact.phone,
+  }))
   const [attempted, setAttempted] = React.useState(false)
 
   const errors = attempted ? validateManager(values) : {}
@@ -179,7 +187,16 @@ function InviteManagerBody({
     practiceStore.inviteManager(practice.id, manager)
     onDone()
     toast.success("Invite sent", {
-      description: `${managerName(manager)} will get an email to set up their account for ${practice.name}.`,
+      description: `${managerName(manager)} will get an email with ${practice.name}’s Organization ID and a one-time password.`,
+      // The prototype's inbox always shows the sample clinic manager's email.
+      action: {
+        label: "View email",
+        onClick: () =>
+          window.open(
+            "/screens/login/invite-email?as=clinic-manager",
+            "_blank"
+          ),
+      },
     })
   }
 

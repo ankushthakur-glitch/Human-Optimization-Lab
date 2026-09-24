@@ -26,10 +26,60 @@ export type ClinicManager = {
   invitedAt: string
 }
 
+/* The practice's business contact for HOL (contracts, billing, onboarding).
+   Not a portal user: the clinic manager is the one who signs in. */
+export type PrimaryContact = {
+  firstName: string
+  lastName: string
+  title: string
+  email: string
+  phone: string
+}
+
+/* The initial optimization program family, in the order of the Master
+   Discovery Architecture (V1.9). */
+export const PROGRAMS = [
+  { id: "weight-loss", name: "Weight Loss" },
+  { id: "bone-density", name: "Bone Density" },
+  { id: "cardiovascular-lipid", name: "Cardiovascular & Lipid" },
+  { id: "blood-sugar-metabolic", name: "Blood Sugar & Metabolic" },
+  { id: "blood-pressure", name: "Blood Pressure" },
+  { id: "kidney-health", name: "Kidney Health" },
+  { id: "muscle-strength", name: "Muscle, Strength & Functional Fitness" },
+  { id: "sleep-recovery", name: "Sleep & Recovery" },
+  { id: "male-hormone", name: "Male Hormone & Testosterone" },
+  { id: "womens-midlife", name: "Women's Midlife & Menopause" },
+  { id: "liver-metabolic", name: "Liver & Metabolic Liver" },
+] as const
+
+export type ProgramId = (typeof PROGRAMS)[number]["id"]
+
+export const ALL_PROGRAM_IDS: ProgramId[] = PROGRAMS.map((p) => p.id)
+
+/* null means no cap. */
+export type PlanLimits = {
+  clinicianSeats: number | null
+  patients: number | null
+  locations: number | null
+  aiQuestionsPerPatient: number | null
+}
+
+export const DEFAULT_PLAN_LIMITS: PlanLimits = {
+  clinicianSeats: 10,
+  patients: 500,
+  locations: 3,
+  aiQuestionsPerPatient: 10,
+}
+
+export function limitText(limit: number | null) {
+  return limit === null ? "Unlimited" : limit.toLocaleString("en-US")
+}
+
 export type PracticeStatus = "Active" | "Inactive"
 
 export type Practice = {
   id: string
+  legalName: string
   name: string
   tenant: string
   referralUrl: string
@@ -43,6 +93,9 @@ export type Practice = {
   billingSameAsClinical: boolean
   billing: Address
   defaultLocation: boolean
+  primaryContact: PrimaryContact
+  programs: ProgramId[]
+  limits: PlanLimits
   status: PracticeStatus
   createdAt: string
   clinicians: number
@@ -160,31 +213,96 @@ export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"]
 /*  Sample data                                                                */
 /* -------------------------------------------------------------------------- */
 
-/* Fictional practices only. Phone numbers sit in the 555-01xx range that is
-   reserved for fiction. */
+const ENTITY_SUFFIXES = ["PLLC", "LLC", "P.C.", "Medical Group, Inc."]
+
+/* Contacts for practices that have no clinic manager yet. */
+const CONTACTS: [firstName: string, lastName: string][] = [
+  ["Rachel", "Moreau"],
+  ["Thomas", "Albright"],
+  ["Nina", "Castellano"],
+  ["Victor", "Huang"],
+  ["Laura", "Kimball"],
+  ["Peter", "Osei"],
+]
+
+const CONTACT_TITLES = [
+  "Practice Administrator",
+  "Operations Director",
+  "Medical Director",
+  "Office Manager",
+]
+
+/* Weight Loss and Bone Density are the reference programs, so every sample
+   practice runs them; the rest vary so the details page shows a spread. */
+function samplePrograms(seed: number): ProgramId[] {
+  if (seed % 4 === 0) return ALL_PROGRAM_IDS
+  return ALL_PROGRAM_IDS.filter(
+    (_, i) => i < 2 || (seed + i * 3) % 5 < 2 + (seed % 3)
+  )
+}
+
+function sampleLimits(seed: number, clinicians: number): PlanLimits {
+  if (seed % 5 === 0)
+    return {
+      clinicianSeats: null,
+      patients: null,
+      locations: null,
+      aiQuestionsPerPatient: 10,
+    }
+  const seats = Math.max(5, Math.ceil((clinicians + 2) / 5) * 5)
+  return {
+    clinicianSeats: seats,
+    patients: seats * 100,
+    locations: 1 + (seed % 4),
+    aiQuestionsPerPatient: seed % 2 === 0 ? 10 : 5,
+  }
+}
+
 function practice(
   p: Omit<
     Practice,
+    | "legalName"
     | "tenant"
     | "referralUrl"
     | "billing"
     | "billingSameAsClinical"
     | "defaultLocation"
+    | "primaryContact"
+    | "programs"
+    | "limits"
   > & {
     billing?: Address
   }
 ): Practice {
   const tenant = tenantFromName(p.name)
+  const seed = Number(p.id)
+  const domain = p.email.split("@")[1] ?? `${tenant.replace(/_/g, "")}.com`
+  const [firstName, lastName] = p.manager
+    ? [p.manager.firstName, p.manager.lastName]
+    : CONTACTS[seed % CONTACTS.length]
   return {
     ...p,
+    legalName: `${p.name}, ${ENTITY_SUFFIXES[seed % ENTITY_SUFFIXES.length]}`,
     tenant,
     referralUrl: referralUrlFor(tenant),
     billingSameAsClinical: !p.billing,
     billing: p.billing ?? p.clinical,
     defaultLocation: true,
+    primaryContact: {
+      firstName,
+      lastName,
+      title: CONTACT_TITLES[seed % CONTACT_TITLES.length],
+      email:
+        p.manager?.email || `${firstName}.${lastName}@${domain}`.toLowerCase(),
+      phone: p.manager?.phone || p.contactNumber,
+    },
+    programs: samplePrograms(seed),
+    limits: sampleLimits(seed, p.clinicians),
   }
 }
 
+/* Fictional practices only. Phone numbers sit in the 555-01xx range that is
+   reserved for fiction. */
 const address = (
   line1: string,
   city: string,
@@ -1030,7 +1148,9 @@ const SEED: Practice[] = [...HAND_WRITTEN, ...generatedPractices()]
    instead of letting them replace the new rows after mount. */
 
 const STORAGE_KEY = "hol-admin-practices"
-const SEED_VERSION = SEED.map((p) => p.id).join(",")
+/* Bump the schema tag whenever the Practice shape changes, so sessions saved
+   before the change don't load rows missing the new fields. */
+const SEED_VERSION = `v2:${SEED.map((p) => p.id).join(",")}`
 
 let practices: Practice[] = SEED
 let hydrated = false

@@ -20,7 +20,9 @@ import { usePracticeActions } from "@/components/admin/practice-actions"
 import {
   type Address,
   type Practice,
+  PROGRAMS,
   formatDate,
+  limitText,
   usePractices,
 } from "@/components/admin/practices-store"
 import { Badge } from "@/design-system/ui/badge"
@@ -131,6 +133,43 @@ function copy(text: string, what: string) {
 }
 
 const LINK = "text-primary-tint underline-offset-4 hover:underline"
+
+/* "12 of 15" against a cap, "Unlimited (12 in use)" without one. */
+function usage(used: number, limit: number | null) {
+  const count = used.toLocaleString("en-US")
+  return limit === null
+    ? `Unlimited (${count} in use)`
+    : `${count} of ${limitText(limit)}`
+}
+
+function ProgramsCard({ practice }: { practice: Practice }) {
+  const enabled = PROGRAMS.filter((p) => practice.programs.includes(p.id))
+  return (
+    <section className="overflow-hidden rounded-lg border bg-card">
+      <header className="flex min-h-11 items-center justify-between gap-2 border-b px-4 py-2">
+        <h2 className="text-sm font-semibold">Programs</h2>
+        <span className="text-sm text-muted-foreground">
+          {enabled.length} of {PROGRAMS.length} enabled
+        </span>
+      </header>
+      <ul className="flex flex-wrap gap-2 p-4">
+        {PROGRAMS.map((program) => {
+          const on = practice.programs.includes(program.id)
+          return (
+            <li key={program.id}>
+              <Badge variant={on ? "info" : "outline"}>
+                <span className={cn(!on && "text-muted-foreground")}>
+                  {program.name}
+                </span>
+                <span className="sr-only">{on ? ", enabled" : ", off"}</span>
+              </Badge>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
 
 /* -------------------------------------------------------------------------- */
 /*  Screen                                                                     */
@@ -251,7 +290,7 @@ function DetailsCards({
   practice: Practice
   onInvite: (practice: Practice) => void
 }) {
-  const { manager } = practice
+  const { manager, primaryContact: contact, limits } = practice
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -260,8 +299,10 @@ function DetailsCards({
           title="Practice information"
           columns={2}
           rows={[
+            { label: "Legal name", value: practice.legalName, wide: true },
             { label: "Practice name", value: practice.name },
             { label: "Practice ID", value: practice.id },
+            { label: "Group NPI", value: practice.npi },
             {
               label: "Tenant name",
               value: <span>{practice.tenant}</span>,
@@ -305,7 +346,6 @@ function DetailsCards({
           rows={[
             { label: "Location name", value: practice.locationName },
             { label: "Contact number", value: practice.contactNumber },
-            { label: "Group NPI", value: practice.npi },
             { label: "Fax", value: practice.fax },
             {
               label: "Email",
@@ -332,9 +372,50 @@ function DetailsCards({
             },
           ]}
         />
+        <ProgramsCard practice={practice} />
       </div>
 
       <div className="flex flex-col gap-4">
+        <InfoCard
+          title="Primary contact"
+          rows={[
+            {
+              label: "Name",
+              value: `${contact.firstName} ${contact.lastName}`.trim(),
+            },
+            { label: "Title", value: contact.title },
+            {
+              label: "Email",
+              value: contact.email && (
+                <a href={`mailto:${contact.email}`} className={LINK}>
+                  {contact.email}
+                </a>
+              ),
+            },
+            { label: "Phone", value: contact.phone },
+          ]}
+        />
+        <InfoCard
+          title="Plan limits"
+          rows={[
+            {
+              label: "Clinician seats",
+              value: usage(practice.clinicians, limits.clinicianSeats),
+            },
+            {
+              label: "Patients",
+              value: usage(practice.patients, limits.patients),
+            },
+            { label: "Locations", value: limitText(limits.locations) },
+            {
+              label: "AI questions",
+              value:
+                limits.aiQuestionsPerPatient === null
+                  ? "Unlimited"
+                  : `${limits.aiQuestionsPerPatient} per patient, monthly`,
+            },
+          ]}
+        />
         <InfoCard
           title="Addresses"
           rows={[

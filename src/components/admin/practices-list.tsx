@@ -183,6 +183,8 @@ export function PracticesList() {
       return [
         p.id,
         p.name,
+        p.legalName,
+        p.npi,
         p.tenant,
         p.clinical.city,
         p.manager ? managerName(p.manager) : "",

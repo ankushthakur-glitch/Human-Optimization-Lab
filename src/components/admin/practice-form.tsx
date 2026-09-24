@@ -31,8 +31,13 @@ import {
 } from "@/design-system/ui/sheet"
 import {
   type Address,
+  type PlanLimits,
   type Practice,
   type PracticeInput,
+  type PrimaryContact,
+  ALL_PROGRAM_IDS,
+  DEFAULT_PLAN_LIMITS,
+  PROGRAMS,
   US_STATES,
   formatPhone,
   referralUrlFor,
@@ -52,7 +57,16 @@ const EMPTY_ADDRESS: Address = {
   zip: "",
 }
 
+const EMPTY_CONTACT: PrimaryContact = {
+  firstName: "",
+  lastName: "",
+  title: "",
+  email: "",
+  phone: "",
+}
+
 const EMPTY: PracticeInput = {
+  legalName: "",
   name: "",
   tenant: "",
   referralUrl: "",
@@ -66,10 +80,14 @@ const EMPTY: PracticeInput = {
   billingSameAsClinical: true,
   billing: EMPTY_ADDRESS,
   defaultLocation: true,
+  primaryContact: EMPTY_CONTACT,
+  programs: ALL_PROGRAM_IDS,
+  limits: DEFAULT_PLAN_LIMITS,
 }
 
 function fromPractice(p: Practice): PracticeInput {
   return {
+    legalName: p.legalName,
     name: p.name,
     tenant: p.tenant,
     referralUrl: p.referralUrl,
@@ -83,6 +101,9 @@ function fromPractice(p: Practice): PracticeInput {
     billingSameAsClinical: p.billingSameAsClinical,
     billing: p.billing,
     defaultLocation: p.defaultLocation,
+    primaryContact: p.primaryContact,
+    programs: p.programs,
+    limits: p.limits,
   }
 }
 
@@ -99,16 +120,57 @@ function validateAddress(a: Address, prefix: string, errors: Errors) {
     errors[`${prefix}.zip`] = "Use 5 digits, or ZIP+4 like 80107-9120."
 }
 
-function validate(v: PracticeInput): Errors {
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/* In use today, so an edit can't set a cap below what the practice has. */
+type Usage = { clinicians: number; patients: number }
+
+function validateLimits(l: PlanLimits, usage: Usage, errors: Errors) {
+  const floor = (key: keyof PlanLimits, min: number, message: string) => {
+    const value = l[key]
+    if (value !== null && value < min) errors[`limits.${key}`] = message
+  }
+  floor(
+    "clinicianSeats",
+    Math.max(1, usage.clinicians),
+    usage.clinicians > 1
+      ? `The practice already has ${usage.clinicians} clinicians.`
+      : "Allow at least 1 clinician."
+  )
+  floor(
+    "patients",
+    Math.max(1, usage.patients),
+    usage.patients > 1
+      ? `The practice already has ${usage.patients} patients.`
+      : "Allow at least 1 patient."
+  )
+  floor("locations", 1, "Allow at least 1 location.")
+  floor("aiQuestionsPerPatient", 0, "Enter 0 or more.")
+}
+
+function validate(v: PracticeInput, usage: Usage): Errors {
   const errors: Errors = {}
+  if (!v.legalName.trim()) errors.legalName = "Enter the legal name."
   if (!v.name.trim()) errors.name = "Enter the practice name."
+  if (!v.npi) errors.npi = "Enter the group NPI."
+  else if (!/^\d{10}$/.test(v.npi))
+    errors.npi = "A group NPI is exactly 10 digits."
+  const c = v.primaryContact
+  if (!c.firstName.trim())
+    errors["primaryContact.firstName"] = "Enter a first name."
+  if (!c.lastName.trim())
+    errors["primaryContact.lastName"] = "Enter a last name."
+  if (!c.email.trim()) errors["primaryContact.email"] = "Enter an email."
+  else if (!EMAIL.test(c.email.trim()))
+    errors["primaryContact.email"] = "Enter a valid email address."
+  if (!c.phone) errors["primaryContact.phone"] = "Enter a phone number."
+  else if (digits(c.phone).length !== 10)
+    errors["primaryContact.phone"] = "Enter a 10-digit phone number."
   if (!v.locationName.trim()) errors.locationName = "Enter a location name."
   if (!v.contactNumber) errors.contactNumber = "Enter a contact number."
   else if (digits(v.contactNumber).length !== 10)
     errors.contactNumber = "Enter a 10-digit phone number."
-  if (v.npi && !/^\d{10}$/.test(v.npi))
-    errors.npi = "A group NPI is exactly 10 digits."
-  if (v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email))
+  if (v.email && !EMAIL.test(v.email))
     errors.email = "Enter a valid email address."
   if (v.fax && digits(v.fax).length !== 10)
     errors.fax = "Enter a 10-digit fax number."
@@ -116,6 +178,8 @@ function validate(v: PracticeInput): Errors {
     errors.website = "Start with https:// and include the domain."
   validateAddress(v.clinical, "clinical", errors)
   if (!v.billingSameAsClinical) validateAddress(v.billing, "billing", errors)
+  if (v.programs.length === 0) errors.programs = "Enable at least one program."
+  validateLimits(v.limits, usage, errors)
   return errors
 }
 
@@ -323,6 +387,37 @@ function FormSection({
   )
 }
 
+/* A cap on the plan. Left blank, it reads "Unlimited" and stores null. */
+function LimitField({
+  id,
+  label,
+  value,
+  onChange,
+  error,
+}: {
+  id: string
+  label: string
+  value: number | null
+  onChange: (next: number | null) => void
+  error?: string
+}) {
+  return (
+    <TextField
+      id={id}
+      label={label}
+      inputMode="numeric"
+      maxLength={6}
+      placeholder="Unlimited"
+      value={value === null ? "" : String(value)}
+      onChange={(event) => {
+        const raw = event.target.value.replace(/\D/g, "")
+        onChange(raw === "" ? null : Number(raw))
+      }}
+      error={error}
+    />
+  )
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Sheet                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -379,11 +474,40 @@ function PracticeFormBody({
 
   const tenant = editing ? values.tenant : tenantFromName(values.name)
   const referralUrl = editing ? values.referralUrl : referralUrlFor(tenant)
-  const errors = attempted ? validate(values) : {}
+  const usage = {
+    clinicians: practice?.clinicians ?? 0,
+    patients: practice?.patients ?? 0,
+  }
+  const errors = attempted ? validate(values, usage) : {}
 
   function set<K extends keyof PracticeInput>(key: K, value: PracticeInput[K]) {
     setValues((prev) => ({ ...prev, [key]: value }))
   }
+
+  const setContact =
+    (key: keyof PrimaryContact, format?: (value: string) => string) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = format ? format(event.target.value) : event.target.value
+      setValues((prev) => ({
+        ...prev,
+        primaryContact: { ...prev.primaryContact, [key]: value },
+      }))
+    }
+
+  const setLimit = (key: keyof PlanLimits) => (value: number | null) =>
+    setValues((prev) => ({ ...prev, limits: { ...prev.limits, [key]: value } }))
+
+  /* Programs stay in catalog order however they were ticked. */
+  function toggleProgram(id: (typeof PROGRAMS)[number]["id"], on: boolean) {
+    setValues((prev) => ({
+      ...prev,
+      programs: ALL_PROGRAM_IDS.filter((p) =>
+        p === id ? on : prev.programs.includes(p)
+      ),
+    }))
+  }
+  const allPrograms = values.programs.length === ALL_PROGRAM_IDS.length
+  const somePrograms = values.programs.length > 0 && !allPrograms
 
   const billing = values.billingSameAsClinical
     ? values.clinical
@@ -392,7 +516,7 @@ function PracticeFormBody({
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setAttempted(true)
-    const found = validate(values)
+    const found = validate(values, usage)
     const first = Object.keys(found)[0]
     if (first) {
       document.getElementById(`practice-${first.replace(".", "-")}`)?.focus()
@@ -400,7 +524,15 @@ function PracticeFormBody({
     }
     onSubmit({
       ...values,
+      legalName: values.legalName.trim(),
       name: values.name.trim(),
+      primaryContact: {
+        ...values.primaryContact,
+        firstName: values.primaryContact.firstName.trim(),
+        lastName: values.primaryContact.lastName.trim(),
+        title: values.primaryContact.title.trim(),
+        email: values.primaryContact.email.trim(),
+      },
       tenant,
       referralUrl,
       billing: values.billingSameAsClinical ? values.clinical : values.billing,
@@ -412,7 +544,8 @@ function PracticeFormBody({
       <SheetHeader className="shrink-0 border-b">
         <SheetTitle>{editing ? "Edit practice" : "Add practice"}</SheetTitle>
         <SheetDescription className="sr-only">
-          Practice details, location and addresses.
+          Practice details, primary contact, location, addresses, programs and
+          plan limits.
         </SheetDescription>
       </SheetHeader>
 
@@ -430,16 +563,38 @@ function PracticeFormBody({
       >
         <FormSection title="Practice">
           <TextField
-            id="practice-name"
-            label="Practice name"
+            id="practice-legalName"
+            label="Legal name"
             required
-            placeholder="Enter practice name"
-            autoComplete="organization"
-            value={values.name}
-            onChange={(event) => set("name", event.target.value)}
-            error={errors.name}
+            placeholder="Registered business name"
+            value={values.legalName}
+            onChange={(event) => set("legalName", event.target.value)}
+            error={errors.legalName}
           />
           <div className="grid gap-4 sm:grid-cols-2">
+            <TextField
+              id="practice-name"
+              label="Practice name"
+              required
+              placeholder="Enter practice name"
+              autoComplete="organization"
+              value={values.name}
+              onChange={(event) => set("name", event.target.value)}
+              error={errors.name}
+            />
+            <TextField
+              id="practice-npi"
+              label="Group NPI number"
+              required
+              inputMode="numeric"
+              maxLength={10}
+              placeholder="10-digit NPI"
+              value={values.npi}
+              onChange={(event) =>
+                set("npi", event.target.value.replace(/\D/g, ""))
+              }
+              error={errors.npi}
+            />
             <TextField
               id="practice-tenant"
               label="Tenant name"
@@ -458,6 +613,63 @@ function PracticeFormBody({
               tabIndex={-1}
               value={referralUrl}
               className={READ_ONLY}
+            />
+          </div>
+        </FormSection>
+
+        <FormSection title="Primary contact">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField
+              id="practice-primaryContact-firstName"
+              label="First name"
+              required
+              placeholder="Enter first name"
+              autoComplete="off"
+              value={values.primaryContact.firstName}
+              onChange={setContact("firstName")}
+              error={errors["primaryContact.firstName"]}
+            />
+            <TextField
+              id="practice-primaryContact-lastName"
+              label="Last name"
+              required
+              placeholder="Enter last name"
+              autoComplete="off"
+              value={values.primaryContact.lastName}
+              onChange={setContact("lastName")}
+              error={errors["primaryContact.lastName"]}
+            />
+            <TextField
+              id="practice-primaryContact-email"
+              label="Email"
+              required
+              type="email"
+              autoComplete="off"
+              placeholder="name@practice.com"
+              value={values.primaryContact.email}
+              onChange={setContact("email")}
+              error={errors["primaryContact.email"]}
+            />
+            <TextField
+              id="practice-primaryContact-phone"
+              label="Phone"
+              required
+              type="tel"
+              inputMode="tel"
+              autoComplete="off"
+              placeholder="(123)-456-7890"
+              value={values.primaryContact.phone}
+              onChange={setContact("phone", formatPhone)}
+              error={errors["primaryContact.phone"]}
+            />
+            <TextField
+              id="practice-primaryContact-title"
+              label="Title"
+              placeholder="Practice Administrator"
+              autoComplete="off"
+              value={values.primaryContact.title}
+              onChange={setContact("title")}
+              className="sm:col-span-2"
             />
           </div>
         </FormSection>
@@ -486,18 +698,6 @@ function PracticeFormBody({
                 set("contactNumber", formatPhone(event.target.value))
               }
               error={errors.contactNumber}
-            />
-            <TextField
-              id="practice-npi"
-              label="Group NPI number"
-              inputMode="numeric"
-              maxLength={10}
-              placeholder="10-digit NPI"
-              value={values.npi}
-              onChange={(event) =>
-                set("npi", event.target.value.replace(/\D/g, ""))
-              }
-              error={errors.npi}
             />
             <TextField
               id="practice-email"
@@ -583,6 +783,88 @@ function PracticeFormBody({
             errors={errors}
             disabled={values.billingSameAsClinical}
           />
+        </FormSection>
+
+        <FormSection
+          title="Programs"
+          action={
+            <FieldLabel
+              htmlFor="practice-programs-all"
+              className="items-center text-sm font-normal"
+            >
+              <Checkbox
+                id="practice-programs-all"
+                checked={allPrograms}
+                indeterminate={somePrograms}
+                onCheckedChange={(checked) =>
+                  set("programs", checked ? ALL_PROGRAM_IDS : [])
+                }
+              />
+              Select all
+            </FieldLabel>
+          }
+        >
+          <Field data-invalid={errors.programs ? true : undefined}>
+            <div
+              role="group"
+              aria-label="Enabled programs"
+              className="grid gap-x-4 gap-y-3 sm:grid-cols-2"
+            >
+              {PROGRAMS.map((program, i) => (
+                <FieldLabel
+                  key={program.id}
+                  htmlFor={
+                    i === 0 ? "practice-programs" : `program-${program.id}`
+                  }
+                  className="items-center font-normal"
+                >
+                  <Checkbox
+                    id={i === 0 ? "practice-programs" : `program-${program.id}`}
+                    checked={values.programs.includes(program.id)}
+                    onCheckedChange={(checked) =>
+                      toggleProgram(program.id, checked)
+                    }
+                    aria-invalid={errors.programs ? true : undefined}
+                  />
+                  {program.name}
+                </FieldLabel>
+              ))}
+            </div>
+            {errors.programs && <FieldError>{errors.programs}</FieldError>}
+          </Field>
+        </FormSection>
+
+        <FormSection title="Plan limits">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <LimitField
+              id="practice-limits-clinicianSeats"
+              label="Clinician seats"
+              value={values.limits.clinicianSeats}
+              onChange={setLimit("clinicianSeats")}
+              error={errors["limits.clinicianSeats"]}
+            />
+            <LimitField
+              id="practice-limits-patients"
+              label="Patients"
+              value={values.limits.patients}
+              onChange={setLimit("patients")}
+              error={errors["limits.patients"]}
+            />
+            <LimitField
+              id="practice-limits-locations"
+              label="Locations"
+              value={values.limits.locations}
+              onChange={setLimit("locations")}
+              error={errors["limits.locations"]}
+            />
+            <LimitField
+              id="practice-limits-aiQuestionsPerPatient"
+              label="AI questions per patient, monthly"
+              value={values.limits.aiQuestionsPerPatient}
+              onChange={setLimit("aiQuestionsPerPatient")}
+              error={errors["limits.aiQuestionsPerPatient"]}
+            />
+          </div>
         </FormSection>
       </form>
 
