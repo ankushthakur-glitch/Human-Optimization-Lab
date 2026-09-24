@@ -368,10 +368,10 @@ export function PracticesList() {
                     <TableHead className="hidden lg:table-cell">
                       Clinic manager
                     </TableHead>
-                    <TableHead className="hidden text-right sm:table-cell">
+                    <TableHead className="hidden text-center sm:table-cell">
                       Clinicians
                     </TableHead>
-                    <TableHead className="hidden text-right sm:table-cell">
+                    <TableHead className="hidden text-center sm:table-cell">
                       Patients
                     </TableHead>
                     <TableHead>Status</TableHead>
@@ -432,10 +432,10 @@ export function PracticesList() {
                           onInvite={() => actions.openInvite(practice)}
                         />
                       </TableCell>
-                      <TableCell className="hidden text-right tabular-nums sm:table-cell">
+                      <TableCell className="hidden text-center tabular-nums sm:table-cell">
                         {practice.clinicians}
                       </TableCell>
-                      <TableCell className="hidden text-right tabular-nums sm:table-cell">
+                      <TableCell className="hidden text-center tabular-nums sm:table-cell">
                         {practice.patients}
                       </TableCell>
                       <TableCell>
