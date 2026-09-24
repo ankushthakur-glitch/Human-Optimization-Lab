@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import type { TextInput } from "react-native"
 
-import { Button, FooterLink, FormError, PasswordField, Screen, Stack, TextField, Title } from "@/components/ui"
+import { Button, FooterLink, FormError, PasswordField, Screen, Stack, TextField } from "@/components/ui"
 import { IconLock, IconMail } from "@/components/icons"
 import { InstallApp } from "@/components/install-app"
 import { useAuth } from "@/lib/auth"
@@ -34,8 +34,7 @@ export default function ActivateScreen() {
   }
 
   return (
-    <Screen>
-      <Title>Activate your account</Title>
+    <Screen title="Activate your account">
       <Stack>
         <FormError message={errors.form} />
         <TextField

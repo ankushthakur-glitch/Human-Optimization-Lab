@@ -66,7 +66,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/design-system/ui/empty"
-import { Field, FieldError, FieldLabel } from "@/design-system/ui/field"
+import { Field, FieldError } from "@/design-system/ui/field"
 import { Input } from "@/design-system/ui/input"
 import { Skeleton } from "@/design-system/ui/skeleton"
 import {
@@ -95,18 +95,6 @@ function formatFtin(value: string) {
   return d.length <= 2 ? d : `${d.slice(0, 2)}-${d.slice(2)}`
 }
 
-export function billingAddress(l: LocationInput) {
-  return l.billingSame
-    ? personAddress(l)
-    : personAddress({
-        address1: l.billingAddress1,
-        address2: l.billingAddress2,
-        city: l.billingCity,
-        state: l.billingState,
-        zip: l.billingZip,
-      })
-}
-
 function validate(v: LocationInput, others: Location[]): Errors {
   const e: Errors = {}
   if (!VALIDATE) return e
@@ -131,13 +119,6 @@ function validate(v: LocationInput, others: Location[]): Errors {
   if (!/^\d{5}$/.test(v.zip)) e.zip = "Enter a 5-digit ZIP code."
   if (!v.city.trim()) e.city = "Enter a city."
   if (!v.state) e.state = "Select a state."
-  if (!v.billingSame) {
-    if (!v.billingAddress1.trim())
-      e.billingAddress1 = "Enter the street address."
-    if (!/^\d{5}$/.test(v.billingZip))
-      e.billingZip = "Enter a 5-digit ZIP code."
-    if (!v.billingCity.trim()) e.billingCity = "Enter a city."
-  }
   v.hours.forEach((h, i) => {
     if (h.open && (!h.start || !h.end || h.end <= h.start))
       e[`hours${i}`] = "End after start."
@@ -216,13 +197,6 @@ function LocationForm({ location }: { location?: Location }) {
       ...values,
       name: values.name.trim(),
       email: values.email.trim(),
-      ...(values.billingSame && {
-        billingAddress1: values.address1,
-        billingAddress2: values.address2,
-        billingZip: values.zip,
-        billingCity: values.city,
-        billingState: values.state,
-      }),
     }
     if (location) {
       locations.patch(location.id, { ...clean, status })
@@ -234,16 +208,6 @@ function LocationForm({ location }: { location?: Location }) {
       router.push(locationHref(created.id))
     }
   }
-
-  const billing = values.billingSame
-    ? {
-        billingAddress1: values.address1,
-        billingAddress2: values.address2,
-        billingZip: values.zip,
-        billingCity: values.city,
-        billingState: values.state,
-      }
-    : values
 
   return (
     <RecordPage
@@ -422,76 +386,6 @@ function LocationForm({ location }: { location?: Location }) {
               value={values.state}
               onChange={set("state")}
               error={errors.state}
-            />
-          </div>
-        </RecordCard>
-
-        <RecordCard
-          title="Billing address"
-          action={
-            <Field orientation="horizontal" className="w-auto gap-2">
-              <Checkbox
-                id="location-billingSame"
-                checked={values.billingSame}
-                onCheckedChange={(c) => set("billingSame")(c === true)}
-              />
-              <FieldLabel
-                htmlFor="location-billingSame"
-                className="font-normal"
-              >
-                Same as practice address
-              </FieldLabel>
-            </Field>
-          }
-        >
-          <div className={ADDRESS_GRID}>
-            <TextField
-              id="location-billingAddress1"
-              label="Address line 1"
-              required={!values.billingSame}
-              disabled={values.billingSame}
-              value={billing.billingAddress1}
-              onChange={text("billingAddress1")}
-              error={errors.billingAddress1}
-            />
-            <TextField
-              id="location-billingAddress2"
-              label="Address line 2"
-              disabled={values.billingSame}
-              value={billing.billingAddress2}
-              onChange={text("billingAddress2")}
-            />
-            <TextField
-              id="location-billingZip"
-              label="ZIP code"
-              required={!values.billingSame}
-              disabled={values.billingSame}
-              inputMode="numeric"
-              maxLength={5}
-              value={billing.billingZip}
-              onChange={text("billingZip", digits)}
-              error={errors.billingZip}
-            />
-            <TextField
-              id="location-billingCity"
-              label="City"
-              required={!values.billingSame}
-              disabled={values.billingSame}
-              value={billing.billingCity}
-              onChange={text("billingCity")}
-              error={errors.billingCity}
-            />
-            <SelectField
-              id="location-billingState"
-              label="State"
-              options={US_STATES}
-              value={billing.billingState}
-              onChange={set("billingState")}
-              className={
-                values.billingSame
-                  ? "pointer-events-none opacity-60"
-                  : undefined
-              }
             />
           </div>
         </RecordCard>
@@ -714,7 +608,6 @@ function ProfileBody({ location: l }: { location: Location }) {
           className="md:grid-cols-2"
           items={[
             { label: "Practice address", value: personAddress(l) },
-            { label: "Billing address", value: billingAddress(l) },
           ]}
         />
       </RecordCard>

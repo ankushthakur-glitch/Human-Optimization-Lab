@@ -1,7 +1,7 @@
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { Button, Screen, Stack, Title } from "@/components/ui"
+import { Button, Screen, Stack } from "@/components/ui"
 import { InstallApp } from "@/components/install-app"
 import { useAuth } from "@/lib/auth"
 import { PATIENT } from "@/lib/patient"
@@ -17,8 +17,7 @@ export default function HomeScreen() {
   ]
 
   return (
-    <Screen>
-      <Title>Welcome, {PATIENT.firstName}</Title>
+    <Screen title={`Welcome, ${PATIENT.firstName}`}>
       <Stack gap={24}>
         <View style={styles.card}>
           {details.map(({ label, value }) => (

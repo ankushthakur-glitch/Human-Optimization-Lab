@@ -14,23 +14,23 @@ import {
   type TextStyle,
 } from "react-native"
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
-import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from "react-native-svg"
+import Svg, { Circle } from "react-native-svg"
 
 import { IconEye, IconEyeOff } from "@/components/icons"
-import { color, font, gutter, radius, touchRadius } from "@/lib/theme"
+import { buttonRadius, color, font, gutter, radius, touchRadius } from "@/lib/theme"
 
 /* The few building blocks the patient app's screens share, built to the web
    portal's design system so the app and the portal look like one product:
-   the sign-in frame of src/components/auth/auth-shell.tsx (lockup, title,
-   form, copyright line), shadcn's filled inputs and the default button,
-   sized up for thumbs and set on a branded band and sheet. No subtitles or
-   hint lines, per the portal's copy rules. */
+   outlined inputs and the default button, sized up for thumbs and set on a
+   teal band and a white sheet. No subtitles or hint lines, per the portal's
+   copy rules. */
 
-const LOGO = require("../../assets/logo-lockup.png")
+const MARK = require("../../assets/logo-mark-white.png")
 
 /** A scrolling form screen that keeps its fields above the keyboard: the
-    lockup on a soft teal band, the form on a white sheet rising over it. */
-export function Screen({ children }: { children: React.ReactNode }) {
+    white mark and the screen's title on a teal band, the form on a white
+    sheet rising over it. */
+export function Screen({ title, children }: { title: string; children: React.ReactNode }) {
   const insets = useSafeAreaInsets()
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
@@ -40,21 +40,23 @@ export function Screen({ children }: { children: React.ReactNode }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.hero, { paddingTop: insets.top + 72 }]}>
+          <View style={[styles.hero, { paddingTop: insets.top + 64 }]}>
             <HeroArt />
-            <Image
-              source={LOGO}
-              style={styles.logo}
-              resizeMode="contain"
-              accessibilityRole="image"
-              accessibilityLabel="Human Optimization Lab"
-            />
+            <View style={styles.heroBody}>
+              <Image
+                source={MARK}
+                style={styles.mark}
+                resizeMode="contain"
+                accessibilityRole="image"
+                accessibilityLabel="Human Optimization Lab"
+              />
+              <Text style={styles.title} accessibilityRole="header">
+                {title}
+              </Text>
+            </View>
           </View>
           <View style={styles.sheet}>
             <View style={styles.sheetBody}>{children}</View>
-            <Text style={styles.copyright}>
-              © {new Date().getFullYear()} Human Optimization. All rights reserved.
-            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -62,30 +64,34 @@ export function Screen({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** The band behind the lockup: a teal wash with two soft rings of the brand
-    colour, sliced to whatever width the phone is. */
+/** The band's art: a wide white ring off the top right corner and a soft
+    disc at the bottom left, pinned to the right edge whatever the width. */
 function HeroArt() {
   return (
-    <Svg style={StyleSheet.absoluteFill} viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
-      <Defs>
-        <LinearGradient id="wash" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={color.primaryHalo} />
-          <Stop offset="1" stopColor={color.brandTint} />
-        </LinearGradient>
-      </Defs>
-      <Rect width="400" height="300" fill="url(#wash)" />
-      <Circle cx="400" cy="0" r="130" fill={color.primary} fillOpacity={0.07} />
-      <Circle cx="400" cy="0" r="75" fill={color.primary} fillOpacity={0.06} />
-      <Circle cx="0" cy="300" r="110" fill={color.background} fillOpacity={0.45} />
+    <Svg style={styles.heroArt} viewBox="0 0 390 320" preserveAspectRatio="xMaxYMin slice">
+      <Circle cx="360" cy="30" r="170" fill="none" stroke={color.onPrimary} strokeOpacity={0.08} strokeWidth={40} />
+      <Circle cx="20" cy="300" r="90" fill={color.onPrimary} fillOpacity={0.05} />
     </Svg>
   )
 }
 
-export function Title({ children }: { children: React.ReactNode }) {
+/** A right-aligned text link under a field, e.g. "Forgot password?". */
+export function TextLink({ children, onPress }: { children: string; onPress: () => void }) {
   return (
-    <Text style={styles.title} accessibilityRole="header">
-      {children}
-    </Text>
+    <Pressable onPress={onPress} hitSlop={8} accessibilityRole="link" style={styles.textLink}>
+      <Text style={styles.link}>{children}</Text>
+    </Pressable>
+  )
+}
+
+/** A hairline with "or" between two ways to sign in. */
+export function Divider() {
+  return (
+    <View style={styles.divider}>
+      <View style={styles.rule} />
+      <Text style={styles.dividerText}>or</Text>
+      <View style={styles.rule} />
+    </View>
   )
 }
 
@@ -181,11 +187,14 @@ export function Button({
   onPress,
   pending = false,
   variant = "primary",
+  icon: Icon,
 }: {
   children: string
   onPress: () => void
   pending?: boolean
   variant?: "primary" | "outline"
+  /** Drawn before the label, e.g. Face ID on the outline button. */
+  icon?: React.ComponentType<{ color: string }>
 }) {
   const primary = variant === "primary"
   return (
@@ -202,12 +211,13 @@ export function Button({
       ]}
     >
       {pending && <ActivityIndicator color={primary ? color.onPrimary : color.primary} size="small" />}
+      {!pending && Icon && <Icon color={color.text} />}
       <Text style={[styles.buttonText, !primary && styles.buttonTextOutline]}>{children}</Text>
     </Pressable>
   )
 }
 
-/** "Already set a password? Sign in", centred under the form. */
+/** "Already set a password? Sign in", at the foot of the sheet. */
 export function FooterLink({ prompt, action, onPress }: { prompt: string; action: string; onPress: () => void }) {
   return (
     <View style={styles.footer}>
@@ -228,18 +238,25 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   // On a wide screen the form keeps the portal's 420 width.
   scroll: { flexGrow: 1 },
-  hero: { alignItems: "center", paddingBottom: 96, overflow: "hidden", backgroundColor: color.brandTint },
-  logo: { width: 208, height: 52 },
-  // Rises 32 over the band so the band reads as the sheet's backdrop.
+  hero: { paddingBottom: 72, overflow: "hidden", backgroundColor: color.primary },
+  heroArt: { position: "absolute", top: 0, right: 0, width: 390, height: 320 },
+  heroBody: {
+    width: "100%",
+    maxWidth: 420 + gutter * 2,
+    alignSelf: "center",
+    paddingHorizontal: gutter,
+    gap: 22,
+  },
+  mark: { width: 36, height: 43 },
+  // Rises 28 over the band so the band reads as the sheet's backdrop.
   sheet: {
     flex: 1,
-    marginTop: -32,
+    marginTop: -28,
     backgroundColor: color.background,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingTop: 36,
-    paddingBottom: 20,
-    boxShadow: "0 -6px 24px rgba(1, 131, 126, 0.08)",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 32,
+    paddingBottom: 24,
   },
   // On a wide screen the form keeps the portal's 420 width.
   sheetBody: {
@@ -251,11 +268,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: font.semibold,
-    fontSize: 28,
-    lineHeight: 34,
-    letterSpacing: -0.7,
-    color: color.text,
-    marginBottom: 28,
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -0.8,
+    color: color.onPrimary,
   },
 
   field: { gap: 6 },
@@ -266,9 +282,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     height: 52,
     borderWidth: 1,
-    borderColor: "transparent",
+    borderColor: color.inputBorder,
     borderRadius: touchRadius,
-    backgroundColor: color.inputFill,
+    backgroundColor: color.background,
   },
   inputBoxFocused: {
     borderColor: color.primary,
@@ -311,32 +327,29 @@ const styles = StyleSheet.create({
   formErrorText: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.error },
 
   button: {
-    height: 52,
-    marginTop: 4,
-    borderRadius: touchRadius,
+    height: 54,
+    borderRadius: buttonRadius,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     paddingHorizontal: 16,
   },
-  buttonPrimary: { backgroundColor: color.primary, boxShadow: "0 6px 16px rgba(1, 131, 126, 0.28)" },
+  buttonPrimary: { backgroundColor: color.primary, boxShadow: "0 8px 18px rgba(1, 131, 126, 0.28)" },
   buttonPrimaryPressed: { backgroundColor: color.primaryPressed },
   buttonOutline: { borderWidth: 1, borderColor: color.border, backgroundColor: color.background },
   buttonOutlinePressed: { backgroundColor: color.surface },
   buttonPending: { opacity: 0.7 },
   buttonText: { fontFamily: font.semibold, fontSize: 16, color: color.onPrimary },
-  buttonTextOutline: { color: color.text },
+  buttonTextOutline: { fontFamily: font.medium, color: color.text },
 
-  footer: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", marginTop: 28 },
+  textLink: { alignSelf: "flex-end", marginTop: -4 },
+  divider: { flexDirection: "row", alignItems: "center", gap: 12 },
+  rule: { flex: 1, height: 1, backgroundColor: color.border },
+  dividerText: { fontFamily: font.regular, fontSize: 13, color: color.muted },
+
+  // Pinned to the foot of the sheet, however short the form.
+  footer: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", marginTop: "auto", paddingTop: 32 },
   footerText: { fontFamily: font.regular, fontSize: 15, color: color.muted },
   link: { fontFamily: font.semibold, fontSize: 15, color: color.primary },
-
-  copyright: {
-    marginTop: 40,
-    textAlign: "center",
-    fontFamily: font.regular,
-    fontSize: 12,
-    color: color.muted,
-  },
 })

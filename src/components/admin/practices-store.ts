@@ -167,7 +167,7 @@ const HAND_WRITTEN: Practice[] = [
     website: "https://www.harborviewlongevity.com",
     status: "Active",
     createdAt: "2026-09-22",
-    clinicians: 8,
+    clinicians: 50,
     patients: 131,
     manager: {
       firstName: "Marcus",
@@ -602,7 +602,7 @@ const SEED: Practice[] = [...HAND_WRITTEN, ...generatedPractices()]
 const STORAGE_KEY = "hol-admin-practices"
 /* Bump the schema tag whenever the Practice shape changes, so sessions saved
    before the change don't load rows missing the new fields. */
-const SEED_VERSION = `v5:${SEED.map((p) => p.id).join(",")}`
+const SEED_VERSION = `v6:${SEED.map((p) => p.id).join(",")}`
 
 let practices: Practice[] = SEED
 let hydrated = false
@@ -629,7 +629,9 @@ function hydrate() {
       ? (JSON.parse(saved) as { seed?: string; practices?: Practice[] })
       : null
     if (parsed?.seed === SEED_VERSION && parsed.practices) {
-      practices = parsed.practices
+      /* A practice saved without a name (validation is off in the
+         prototype) would show as a blank row, so it is dropped. */
+      practices = parsed.practices.filter((p) => p.name.trim())
     }
   } catch {
     // Fall back to the sample data.

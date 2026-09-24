@@ -1,7 +1,7 @@
 import * as React from "react"
 import type { TextInput } from "react-native"
 
-import { Button, PasswordField, Screen, Stack, Title } from "@/components/ui"
+import { Button, PasswordField, Screen, Stack } from "@/components/ui"
 import { IconLock } from "@/components/icons"
 import { useAuth } from "@/lib/auth"
 import { confirmError, newPasswordError } from "@/lib/validate"
@@ -25,8 +25,7 @@ export default function SetPasswordScreen() {
   }
 
   return (
-    <Screen>
-      <Title>Set your password</Title>
+    <Screen title="Set your password">
       <Stack>
         <PasswordField
           label="New password"

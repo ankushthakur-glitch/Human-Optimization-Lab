@@ -58,7 +58,8 @@ function Routes() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <StatusBar style="dark" />
+      {/* Light icons: every screen opens on the teal band. */}
+      <StatusBar style="light" />
       <Routes />
     </AuthProvider>
   )

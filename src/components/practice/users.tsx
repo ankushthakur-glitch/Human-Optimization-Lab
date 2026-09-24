@@ -267,7 +267,7 @@ function UserView({
         description={`Details for ${fullName(u)}.`}
       />
       <ViewBody onEdit={onEdit} onClose={onClose}>
-        <section className="rounded-md border p-4">
+        <section>
           <header className="mb-4 flex items-center justify-between gap-3">
             <h3 className="text-sm font-semibold">Basic details</h3>
             <StatusBadge status={u.status} />

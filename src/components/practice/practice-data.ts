@@ -96,7 +96,20 @@ export const GENDER_IDENTITIES = [
   "Transgender man",
   "Prefer not to say",
 ]
-export const CONTACT_METHODS = ["Email", "Mobile (SMS)", "Phone call"]
+export const CONTACT_METHODS = ["Home", "Mobile", "Email"]
+export const RACES = [
+  "American Indian or Alaska Native",
+  "Asian",
+  "Black or African American",
+  "Native Hawaiian or Other Pacific Islander",
+  "White",
+  "Other",
+  "Prefer not to say",
+]
+export const ETHNICITIES = ["Hispanic or Latino", "Not Hispanic or Latino", "Prefer not to say"]
+export const PRONOUNS = ["She/her", "He/him", "They/them", "Prefer not to say"]
+export const MARITAL_STATUSES = ["Single", "Married", "Domestic partner", "Divorced", "Widowed", "Separated"]
+export const RECORD_STATUSES = ["Active", "Inactive"]
 export const RELATIONSHIPS = ["Spouse", "Partner", "Parent", "Child", "Sibling", "Friend", "Other"]
 
 /* CMS place of service codes a concierge practice uses. */
@@ -169,12 +182,6 @@ export type Location = {
   website: string
   /** A data URL, or empty. */
   photo: string
-  billingSame: boolean
-  billingAddress1: string
-  billingAddress2: string
-  billingZip: string
-  billingCity: string
-  billingState: string
   status: LocationStatus
   /** The location the practice was created with. */
   primary?: boolean
@@ -267,18 +274,39 @@ export type Patient = {
   phone: string
   homePhone: string
   email: string
-  preferredContact: string
+  /** Set when the patient has no email; the portal invite then can't go. */
+  noEmail: boolean
+  preferredContacts: string[]
   timeZone: string
+  race: string
+  ethnicity: string
+  pronoun: string
+  maritalStatus: string
+  ssn: string
+  /** Whether staff mean to invite the patient to the portal. */
+  portalAccess: boolean
   locationId: string
   providerId: string
   registrationDate: string
-  emergencyName: string
-  emergencyRelationship: string
-  emergencyPhone: string
+  emergencyContacts: EmergencyContact[]
   status: PersonStatus
   invitedAt: string
   source: "Manual" | "Bulk import"
 }
+
+export type EmergencyContact = {
+  relationship: string
+  name: string
+  phone: string
+  email: string
+}
+
+export const emptyEmergencyContact = (): EmergencyContact => ({
+  relationship: "",
+  name: "",
+  phone: "",
+  email: "",
+})
 
 export type LocationInput = Omit<Location, "id" | "status" | "primary">
 export type ProviderInput = Omit<
@@ -428,12 +456,6 @@ export function emptyLocation(): LocationInput {
     ftin: "",
     website: "",
     photo: "",
-    billingSame: true,
-    billingAddress1: "",
-    billingAddress2: "",
-    billingZip: "",
-    billingCity: "",
-    billingState: "CA",
   }
 }
 
@@ -456,14 +478,19 @@ export function emptyPatient(): PatientInput {
     phone: "",
     homePhone: "",
     email: "",
-    preferredContact: "Email",
+    noEmail: false,
+    preferredContacts: ["Email"],
     timeZone: "Pacific (PT)",
+    race: "",
+    ethnicity: "",
+    pronoun: "",
+    maritalStatus: "",
+    ssn: "",
+    portalAccess: true,
     locationId: "",
     providerId: "",
     registrationDate: "",
-    emergencyName: "",
-    emergencyRelationship: "",
-    emergencyPhone: "",
+    emergencyContacts: [emptyEmergencyContact()],
   }
 }
 
@@ -479,6 +506,8 @@ export function defaultHours(): WorkingDay[] {
     end: "17:00",
   }))
 }
+
+const pad = (n: number, width: number) => String(n).padStart(width, "0")
 
 /* Seed pictures, served from public/practice: a headshot per provider and
    staff user, and a pool of headshots the patients cycle through. */
@@ -582,28 +611,79 @@ const LOCATION_BASE: Omit<Location, LocationExtra>[] = [
 
 type LocationExtra =
   | "contactPerson" | "specialtyType" | "specialtyCode" | "groupNpi" | "taxonomyCode"
-  | "ftin" | "website" | "photo" | "billingSame" | "billingAddress1" | "billingAddress2"
-  | "billingZip" | "billingCity" | "billingState"
+  | "ftin" | "website" | "photo"
 
 const CONTACT_PEOPLE = ["Marcus Whitfield", "Janelle Ortega", "Imani Caldwell", "Graham Pellegrini", "Victor Lindqvist"]
 
-const LOCATIONS: Location[] = LOCATION_BASE.map((l, i) => ({
+/* More sites across Southern California so the list has enough rows to page,
+   search and filter: [name, zip, area code]. Everything else is derived from
+   the row's position so the data is stable across reloads. */
+const MORE_SITES: [name: string, zip: string, area: string][] = [
+  ["Encinitas", "92024", "760"], ["Solana Beach", "92075", "858"],
+  ["Oceanside", "92054", "760"], ["Escondido", "92025", "760"],
+  ["Poway", "92064", "858"], ["Coronado", "92118", "619"],
+  ["Point Loma", "92106", "619"], ["Mission Valley", "92108", "619"],
+  ["Hillcrest", "92103", "619"], ["North Park", "92104", "619"],
+  ["Pacific Beach", "92109", "858"], ["Sorrento Valley", "92121", "858"],
+  ["Carmel Valley", "92130", "858"], ["Rancho Bernardo", "92127", "858"],
+  ["Chula Vista", "91910", "619"], ["Eastlake", "91914", "619"],
+  ["Temecula", "92590", "951"], ["Murrieta", "92562", "951"],
+  ["San Marcos", "92069", "760"], ["Vista", "92081", "760"],
+  ["Newport Beach", "92660", "949"], ["Irvine", "92618", "949"],
+  ["Laguna Beach", "92651", "949"], ["Dana Point", "92629", "949"],
+  ["San Clemente", "92672", "949"], ["Huntington Beach", "92648", "714"],
+  ["Costa Mesa", "92626", "714"], ["Tustin", "92780", "714"],
+  ["Mission Viejo", "92691", "949"], ["Santa Monica", "90401", "310"],
+  ["Beverly Hills", "90210", "310"], ["Pasadena", "91101", "626"],
+  ["Manhattan Beach", "90266", "310"], ["Malibu", "90265", "310"],
+  ["Palm Springs", "92262", "760"], ["Palm Desert", "92260", "760"],
+  ["La Quinta", "92253", "760"], ["Santa Barbara", "93101", "805"],
+  ["Montecito", "93108", "805"], ["Thousand Oaks", "91360", "805"],
+  ["Westlake Village", "91361", "805"], ["Brentwood", "90049", "310"],
+  ["Studio City", "91604", "818"], ["Calabasas", "91302", "818"],
+  ["Long Beach", "90802", "562"],
+]
+
+const SITE_STREETS = ["Coast Hwy", "Main St", "Ocean Blvd", "Park Ave", "Grand Ave", "Via Real"]
+const SITE_PHOTOS = ["la-jolla", "del-mar", "carlsbad", "rancho-santa-fe"]
+
+const MORE_LOCATION_BASE: Omit<Location, LocationExtra>[] = MORE_SITES.map(
+  ([name, zip, area], i) => ({
+    id: `LOC${1006 + i}`,
+    name,
+    placeOfService: "Office",
+    phone: `(${area})-555-${pad(100 + ((i * 3) % 100), 4)}`,
+    email: i % 4 === 3 ? "" : `${name.toLowerCase().replace(/\s+/g, "")}@${PRACTICE.domain}`,
+    fax: i % 3 === 0 ? "" : `(${area})-555-${pad(100 + ((i * 3 + 1) % 100), 4)}`,
+    address1: `${1_000 + i * 37} ${SITE_STREETS[i % SITE_STREETS.length]}`,
+    address2: i % 2 ? `Suite ${100 + i * 2}` : "",
+    city: name,
+    state: "CA",
+    zip,
+    timeZone: "Pacific (PT)",
+    hours:
+      i % 4 === 1
+        ? defaultHours().map((d) =>
+            d.day === "Saturday" ? { ...d, open: true, start: "09:00", end: "13:00" } : d
+          )
+        : defaultHours(),
+    status: i % 8 === 5 ? "Inactive" : "Active",
+  })
+)
+
+const LOCATIONS: Location[] = [...LOCATION_BASE, ...MORE_LOCATION_BASE].map((l, i) => ({
   ...l,
   placeOfService: l.placeOfService === "Telehealth" ? "02 Telehealth" : "11 Office",
   contactPerson: CONTACT_PEOPLE[i % CONTACT_PEOPLE.length],
-  specialtyType: ["Longevity Medicine", "Primary Care", "Preventive Medicine", "Internal Medicine", "Primary Care"][i],
-  specialtyCode: ["2083P0500X", "261QP2300X", "2083P0500X", "207R00000X", "261QP2300X"][i],
+  specialtyType: ["Longevity Medicine", "Primary Care", "Preventive Medicine", "Internal Medicine", "Primary Care"][i % 5],
+  specialtyCode: ["2083P0500X", "261QP2300X", "2083P0500X", "207R00000X", "261QP2300X"][i % 5],
   groupNpi: withNpiCheckDigit(`1760${String(493_21 + i * 7).padStart(5, "0")}`),
   taxonomyCode: "261QP2300X",
   ftin: `33-${String(4_102_870 + i * 11).padStart(7, "0")}`,
   website: i === 0 ? "https://www.harborviewlongevity.com" : "",
-  photo: `/practice/locations/${slug(l.name)}.jpg`,
-  billingSame: i !== 2,
-  billingAddress1: i === 2 ? "PO Box 2210" : l.address1,
-  billingAddress2: i === 2 ? "" : l.address2,
-  billingZip: i === 2 ? "92018" : l.zip,
-  billingCity: i === 2 ? "Carlsbad" : l.city,
-  billingState: l.state,
+  photo: `/practice/locations/${
+    i < LOCATION_BASE.length ? slug(l.name) : SITE_PHOTOS[i % SITE_PHOTOS.length]
+  }.jpg`,
 }))
 
 type ProviderRow = [
@@ -626,9 +706,57 @@ const PROVIDER_ROWS: ProviderRow[] = [
   ["PA", "Dominic", "Ashworth", "Sports Medicine", "Provider", ["LOC1003"], "Invited", "Male"],
   ["RN", "Priscilla", "Vance", "Nutrition", "Provider", ["LOC1004"], "Invited", "Female"],
   ["MD", "Colin", "Merriweather", "Internal Medicine", "Provider", ["LOC1005"], "Inactive", "Male"],
+  ...moreProviderRows(),
 ]
 
-const pad = (n: number, width: number) => String(n).padStart(width, "0")
+/* The rest of the 50 providers, built from name pairs so each is unique. */
+function moreProviderRows(): ProviderRow[] {
+  const names: [first: string, last: string, gender: string][] = [
+    ["Adeline", "Beaumont", "Female"], ["Bennett", "Crawford", "Male"],
+    ["Cecilia", "Duarte", "Female"], ["Declan", "Everhart", "Male"],
+    ["Evangeline", "Foster", "Female"], ["Fletcher", "Garrison", "Male"],
+    ["Genevieve", "Holt", "Female"], ["Hugo", "Iverson", "Male"],
+    ["Ingrid", "Jaramillo", "Female"], ["Jasper", "Kowalski", "Male"],
+    ["Juliet", "Langford", "Female"], ["Kieran", "Maddox", "Male"],
+    ["Lucia", "Nakagawa", "Female"], ["Malcolm", "Ostrander", "Male"],
+    ["Mirabel", "Prescott", "Female"], ["Nikhil", "Raman", "Male"],
+    ["Odette", "Sandoval", "Female"], ["Pierce", "Talbot", "Male"],
+    ["Rosalie", "Upton", "Female"], ["Silas", "Vandermeer", "Male"],
+    ["Serena", "Wexler", "Female"], ["Theo", "Yamamoto", "Male"],
+    ["Valentina", "Zeller", "Female"], ["Wyatt", "Abbott", "Male"],
+    ["Yara", "Blackwood", "Female"], ["Zachary", "Chen", "Male"],
+    ["Annika", "Dalton", "Female"], ["Brooks", "Emerson", "Male"],
+    ["Colette", "Fairchild", "Female"], ["Dorian", "Gallagher", "Male"],
+    ["Esme", "Hargrove", "Female"], ["Finnegan", "Irwin", "Male"],
+    ["Greta", "Jovanovic", "Female"], ["Harlan", "Keating", "Male"],
+    ["Iris", "Lachance", "Female"], ["Joaquin", "Mendoza", "Male"],
+    ["Katarina", "Novak", "Female"], ["Leander", "Oakes", "Male"],
+    ["Marisol", "Pineda", "Female"], ["Nathaniel", "Radcliffe", "Male"],
+    ["Paloma", "Serrano", "Female"], ["Rowan", "Thornton", "Male"],
+  ]
+  const credentials = ["MD", "MD", "DO", "NP", "PA", "MD", "RN"]
+  const clinical = SPECIALTIES.filter((s) => s !== "Nutrition")
+  const sites = [...LOCATION_BASE, ...MORE_LOCATION_BASE]
+    .filter((l) => l.status === "Active")
+    .map((l) => l.id)
+  return names.map(([first, last, gender], i) => {
+    const credential = credentials[i % credentials.length]
+    const status: PersonStatus =
+      i % 11 === 6 ? "Inactive" : i % 5 === 2 ? "Invited" : "Active"
+    return [
+      credential,
+      first,
+      last,
+      credential === "RN" ? "Nutrition" : clinical[i % clinical.length],
+      credential === "MD" && i % 6 === 0 ? "Supervising provider" : "Provider",
+      i % 3 === 0
+        ? [sites[i % sites.length], sites[(i + 7) % sites.length]]
+        : [sites[i % sites.length]],
+      status,
+      gender,
+    ]
+  })
+}
 
 function isoDaysAgo(days: number) {
   return new Date(Date.UTC(2026, 8, 24) - days * 86_400_000)
@@ -661,17 +789,19 @@ const PROVIDERS: Provider[] = PROVIDER_ROWS.map((row, i) => {
     npi: withNpiCheckDigit(`1${pad((i * 3_141_593 + 27_182_818) % 100_000_000, 8)}`),
     specialty,
     role,
-    taxonomyCode: TAXONOMY_BY_SPECIALTY[credential === "MD" || credential === "DO" ? specialty : credential],
+    taxonomyCode:
+      TAXONOMY_BY_SPECIALTY[credential === "MD" || credential === "DO" ? specialty : credential] ??
+      TAXONOMY_CODES[0],
     languages: i % 3 === 0 ? ["English", "Spanish"] : ["English"],
     ssn: `${pad(521 + i * 7, 3)}-${pad(40 + i, 2)}-${pad(1_842 + i * 311, 4)}`,
-    photo: headshot(firstName, lastName),
+    photo: i < 8 ? headshot(firstName, lastName) : "",
     address1: `${1_200 + i * 45} ${["Prospect St", "Torrey Pines Rd", "Coast Blvd", "Via de la Valle"][i % 4]}`,
     address2: i % 2 ? `Apt ${i + 2}B` : "",
     zip: ["92037", "92014", "92008", "92037"][i % 4],
     city: ["La Jolla", "Del Mar", "Carlsbad", "La Jolla"][i % 4],
     state: "CA",
-    telephone: `(858)-555-${pad(170 + i, 4)}`,
-    phone: `(858)-555-${pad(160 + i, 4)}`,
+    telephone: `(858)-555-${pad(100 + ((70 + i) % 100), 4)}`,
+    phone: `(858)-555-${pad(100 + ((60 + i) % 100), 4)}`,
     fax: i % 2 ? "" : "(858)-555-0119",
     email: `${firstName}.${lastName}@${PRACTICE.domain}`.toLowerCase(),
     timeZone: "Pacific (PT)",
@@ -693,7 +823,7 @@ const PROVIDERS: Provider[] = PROVIDER_ROWS.map((row, i) => {
         expiry: `20${27 + (i % 3)}-${pad(1 + ((i * 4) % 12), 2)}-30`,
       },
       ...(credential === "MD" || credential === "DO"
-        ? [{ type: "DEA Registration", state: "CA", number: `F${lastName[0]}${pad(410_233 + i * 71, 7)}`, expiry: `2028-${pad(2 + i, 2)}-28` }]
+        ? [{ type: "DEA Registration", state: "CA", number: `F${lastName[0]}${pad(410_233 + i * 71, 7)}`, expiry: `2028-${pad(1 + ((i + 1) % 12), 2)}-28` }]
         : []),
     ],
     signature: "",
@@ -770,7 +900,52 @@ const USERS: StaffUser[] = [
     lastActive: "2026-09-15",
     photo: headshot("Victor", "Lindqvist"),
   },
+  ...moreUsers(),
 ]
+
+/* The rest of the 50 staff users. Values derive from the row's position so
+   the list is stable across reloads. */
+function moreUsers(): StaffUser[] {
+  const names: [first: string, last: string][] = [
+    ["Alana", "Brennan"], ["Bryce", "Calloway"], ["Carmen", "Delgado"],
+    ["Dante", "Eriksen"], ["Elodie", "Farrow"], ["Franco", "Gutierrez"],
+    ["Gemma", "Harlow"], ["Hector", "Ibarra"], ["Ivy", "Jennings"],
+    ["Jonas", "Kerrigan"], ["Kaia", "Lowell"], ["Liam", "Macaulay"],
+    ["Mila", "Navarro"], ["Nico", "Ortiz"], ["Olive", "Pacheco"],
+    ["Parker", "Quintana"], ["Riley", "Sato"], ["Sienna", "Trujillo"],
+    ["Tristan", "Ulloa"], ["Uma", "Villanueva"], ["Vance", "Winslow"],
+    ["Willa", "Xiong"], ["Xavier", "Yates"], ["Yvette", "Zamora"],
+    ["Zane", "Albright"], ["Aurora", "Bishop"], ["Blake", "Cortez"],
+    ["Daphne", "Donovan"], ["Elias", "Estrada"], ["Freya", "Flynn"],
+    ["Grant", "Gilmore"], ["Hazel", "Hensley"], ["Ian", "Ivers"],
+    ["Jade", "Jimenez"], ["Kai", "Kimura"], ["Lena", "Lambert"],
+    ["Marco", "Molina"], ["Nadia", "Nguyen"], ["Oscar", "Olsen"],
+    ["Penelope", "Price"], ["Reid", "Ramirez"], ["Stella", "Sutton"],
+    ["Tobias", "Tran"], ["Vera", "Vaughn"], ["Wade", "Whitman"],
+  ]
+  const sites = LOCATIONS.filter((l) => l.status === "Active").map((l) => l.id)
+  return names.map(([firstName, lastName], i) => {
+    const status: PersonStatus =
+      i % 9 === 7 ? "Inactive" : i % 4 === 2 ? "Invited" : "Active"
+    return {
+      id: `U${pad(60_120 + i * 373, 5)}`,
+      firstName,
+      lastName,
+      role: USER_ROLES[i % USER_ROLES.length],
+      email: `${firstName}.${lastName}@${PRACTICE.domain}`.toLowerCase(),
+      phone: i % 6 === 5 ? "" : `(858)-555-${pad(100 + ((i * 7 + 3) % 100), 4)}`,
+      locationIds:
+        i % 3 === 0
+          ? [sites[i % sites.length], sites[(i + 5) % sites.length]]
+          : [sites[i % sites.length]],
+      status,
+      invitedAt: isoDaysAgo(3 + i * 2),
+      lastActive:
+        status === "Invited" ? "" : isoDaysAgo(status === "Inactive" ? 20 + i : i % 4),
+      photo: "",
+    }
+  })
+}
 
 const FIRST_NAMES = [
   "Amelia", "Benjamin", "Charlotte", "Daniel", "Eleanor", "Felix", "Gabriela",
@@ -828,14 +1003,29 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
     phone: `(${area})-555-${pad(100 + (i % 100), 4)}`,
     homePhone: "",
     email: `${firstName}.${lastName}${i > 60 ? i : ""}@example.com`.toLowerCase(),
-    preferredContact: CONTACT_METHODS[i % 3],
+    noEmail: false,
+    preferredContacts: [CONTACT_METHODS[i % 3]],
     timeZone: "Pacific (PT)",
+    race: "",
+    ethnicity: "",
+    pronoun: "",
+    maritalStatus: "",
+    ssn: "",
+    portalAccess: true,
     locationId,
     providerId: provider.id,
     registrationDate: isoDaysAgo(Math.floor(i / 3)),
-    emergencyName: i % 3 === 0 ? "" : `${FIRST_NAMES[(i * 5 + 2) % FIRST_NAMES.length]} ${lastName}`,
-    emergencyRelationship: i % 3 === 0 ? "" : RELATIONSHIPS[i % 4],
-    emergencyPhone: i % 3 === 0 ? "" : `(${area})-555-${pad(150 + (i % 50), 4)}`,
+    emergencyContacts:
+      i % 3 === 0
+        ? []
+        : [
+            {
+              relationship: RELATIONSHIPS[i % 4],
+              name: `${FIRST_NAMES[(i * 5 + 2) % FIRST_NAMES.length]} ${lastName}`,
+              phone: `(${area})-555-${pad(150 + (i % 50), 4)}`,
+              email: "",
+            },
+          ],
     status,
     invitedAt: isoDaysAgo(Math.floor(i / 3)),
     source: i % 5 === 2 ? "Bulk import" : "Manual",
@@ -846,7 +1036,7 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
 /*  Stores                                                                     */
 /* -------------------------------------------------------------------------- */
 
-const VERSION = "v7"
+const VERSION = "v9"
 
 export const locations = createCollection("hol-practice-locations", LOCATIONS, VERSION)
 export const providers = createCollection("hol-practice-providers", PROVIDERS, VERSION)

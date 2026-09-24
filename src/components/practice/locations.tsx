@@ -20,10 +20,7 @@ import {
   StatusBadge,
   type Column,
 } from "@/components/practice/directory"
-import {
-  billingAddress,
-  locationHref,
-} from "@/components/practice/location-record"
+import { locationHref } from "@/components/practice/location-record"
 import {
   type Location,
   PLACES_OF_SERVICE,
@@ -190,7 +187,6 @@ export function LocationsScreen() {
           Specialty: l.specialtyType,
           "Place of service": l.placeOfService,
           "Practice address": personAddress(l),
-          "Billing address": billingAddress(l),
           "Contact number": l.phone,
           Email: l.email,
           "Group NPI": l.groupNpi,

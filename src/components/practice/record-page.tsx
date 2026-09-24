@@ -90,7 +90,7 @@ export function RecordCard({
   title: string
   action?: React.ReactNode
   className?: string
-  children: React.ReactNode
+  children?: React.ReactNode
 }) {
   return (
     <Card
@@ -109,7 +109,7 @@ export function RecordCard({
         </CardTitle>
         {action && <CardAction className="self-center">{action}</CardAction>}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      {children && <CardContent>{children}</CardContent>}
     </Card>
   )
 }

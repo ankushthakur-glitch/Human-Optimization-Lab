@@ -2,8 +2,8 @@ import { router } from "expo-router"
 import * as React from "react"
 import type { TextInput } from "react-native"
 
-import { Button, FooterLink, FormError, PasswordField, Screen, Stack, TextField, Title } from "@/components/ui"
-import { IconLock, IconMail } from "@/components/icons"
+import { Button, Divider, FooterLink, FormError, PasswordField, Screen, Stack, TextField, TextLink } from "@/components/ui"
+import { IconFaceId, IconLock, IconMail } from "@/components/icons"
 import { InstallApp } from "@/components/install-app"
 import { useAuth } from "@/lib/auth"
 import { VALIDATE, emailError } from "@/lib/validate"
@@ -28,8 +28,7 @@ export default function SignInScreen() {
   }
 
   return (
-    <Screen>
-      <Title>Sign in</Title>
+    <Screen title="Welcome back">
       <Stack>
         <FormError message={errors.form} />
         <TextField
@@ -62,15 +61,17 @@ export default function SignInScreen() {
           onSubmitEditing={onSubmit}
           error={errors.password}
         />
+        {/* Password reset and Face ID have no flow behind them yet. */}
+        <TextLink onPress={() => {}}>Forgot password?</TextLink>
         <Button onPress={onSubmit} pending={pending}>
-          Sign In
+          Sign in
+        </Button>
+        <Divider />
+        <Button variant="outline" icon={IconFaceId} onPress={() => {}}>
+          Sign in with Face ID
         </Button>
       </Stack>
-      <FooterLink
-        prompt="Have a one-time password?"
-        action="Activate your account"
-        onPress={() => router.replace("/activate")}
-      />
+      <FooterLink prompt="Have a one-time password?" action="Activate" onPress={() => router.replace("/activate")} />
       <InstallApp />
     </Screen>
   )

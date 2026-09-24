@@ -5,11 +5,13 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "@/design-system/ui/sonner"
 import {
+  IconAdd,
   IconEdit,
   IconLock,
   IconLockOpen,
   IconMail,
   IconMoreVertical,
+  IconTrash,
   IconUser,
 } from "@/design-system/icons"
 
@@ -18,6 +20,7 @@ import {
   type Errors,
   VALIDATE,
   MultiSelectField,
+  Required,
   SelectField,
   TextField,
   digits,
@@ -27,15 +30,22 @@ import {
 import { StatusBadge } from "@/components/practice/directory"
 import {
   CONTACT_METHODS,
+  type EmergencyContact,
+  ETHNICITIES,
   GENDER_IDENTITIES,
   LANGUAGES,
+  MARITAL_STATUSES,
   type Patient,
   type PatientInput,
+  PRONOUNS,
+  RACES,
+  RECORD_STATUSES,
   RELATIONSHIPS,
   SEXES,
   TIME_ZONES,
   US_STATES,
   ageFrom,
+  emptyEmergencyContact,
   emptyPatient,
   fullName,
   addPatients,
@@ -59,6 +69,8 @@ import {
 import { DeactivateDialog } from "@/components/practice/sheets"
 import { Alert, AlertDescription, AlertTitle } from "@/design-system/ui/alert"
 import { Button } from "@/design-system/ui/button"
+import { Checkbox } from "@/design-system/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/design-system/ui/radio-group"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,6 +92,15 @@ import { Skeleton } from "@/design-system/ui/skeleton"
 
 
 const GRID = "grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+const GRID5 = "grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+
+/* 123-45-6789, typed or pasted. */
+function formatSsn(value: string) {
+  const d = digits(value).slice(0, 9)
+  return [d.slice(0, 3), d.slice(3, 5), d.slice(5)].filter(Boolean).join("-")
+}
+
+const maskSsn = (ssn: string) => (ssn ? `***-**-${ssn.slice(-4)}` : "")
 
 /* The soft duplicate check from the onboarding spec: same name and date of
    birth, plus the same email or mobile. Flagged, never blocked. */
@@ -107,22 +128,26 @@ function validate(v: PatientInput, others: Patient[]): Errors {
     e.dob = "Date of birth can't be in the future."
   if (!v.sex) e.sex = "Select sex at birth."
   if (v.zip && !/^\d{5}$/.test(v.zip)) e.zip = "Enter a 5-digit ZIP code."
-  for (const key of ["phone", "homePhone", "emergencyPhone"] as const) {
+  for (const key of ["phone", "homePhone"] as const) {
     if (v[key] && digits(v[key]).length !== 10) e[key] = "Enter 10 digits."
   }
-  if (!v.email.trim()) e.email = "Enter their email."
+  if (v.noEmail) {
+    /* No email to check. */
+  } else if (!v.email.trim()) e.email = "Enter their email."
   else if (!EMAIL.test(v.email.trim())) e.email = "Enter a valid email address."
   else if (
     others.some((p) => p.email.toLowerCase() === v.email.trim().toLowerCase())
   )
     e.email = "Another patient uses this email."
-  /* SMS needs a mobile number to go to. */
-  if (v.preferredContact === "Mobile (SMS)" && !v.phone)
-    e.phone = "Enter a mobile number for SMS."
+  /* Texts need a mobile number to go to. */
+  if (v.preferredContacts.includes("Mobile") && !v.phone)
+    e.phone = "Enter a mobile number for texts."
+  if (v.ssn && digits(v.ssn).length !== 9) e.ssn = "Enter 9 digits."
   if (!v.locationId) e.locationId = "Select a location."
   if (!v.providerId) e.providerId = "Select a primary provider."
-  if (v.emergencyName.trim() && !v.emergencyPhone)
-    e.emergencyPhone = "Enter their phone number."
+  v.emergencyContacts.forEach((c, i) => {
+    if (c.name.trim() && !c.phone) e[`emergency-${i}-phone`] = "Enter their phone number."
+  })
   return e
 }
 
@@ -164,6 +189,9 @@ function PatientForm({ patient }: { patient?: Patient }) {
         }
       : emptyPatient()
   })
+  const [recordStatus, setRecordStatus] = React.useState(
+    patient?.status === "Inactive" ? "Inactive" : "Active"
+  )
   const [attempted, setAttempted] = React.useState(false)
   const [confirmedDuplicate, setConfirmedDuplicate] = React.useState(false)
   const others = items.filter((p) => p.id !== patient?.id)
@@ -210,18 +238,38 @@ function PatientForm({ patient }: { patient?: Patient }) {
       firstName: values.firstName.trim(),
       middleName: values.middleName.trim(),
       lastName: values.lastName.trim(),
-      email: values.email.trim(),
+      email: values.noEmail ? "" : values.email.trim(),
+      portalAccess: values.portalAccess && !values.noEmail,
+      /* Rows left blank are dropped rather than saved empty. */
+      emergencyContacts: values.emergencyContacts.filter(
+        (c) => c.name.trim() || c.phone || c.email.trim() || c.relationship
+      ),
+    }
+    /* Portal access "Yes" sends the invite on save, unless it went already. */
+    const invite = (id: string, status: Patient["status"]) => {
+      if (clean.portalAccess && status === "Not invited") sendPatientInvites([id])
     }
     if (patient) {
-      patients.patch(patient.id, clean)
+      const status: Patient["status"] =
+        recordStatus === "Inactive"
+          ? "Inactive"
+          : patient.status === "Inactive"
+            ? "Active"
+            : patient.status
+      patients.patch(patient.id, { ...clean, status })
+      if (recordStatus === "Active") invite(patient.id, status)
       toast.success("Patient updated", { description: fullName(clean) })
       router.push(patientHref(patient.id))
     } else {
-      /* Saving never emails the patient: staff send the portal invite by
-         hand from the profile or the list once the record is ready. */
       const [created] = addPatients([clean], "Manual")
+      if (recordStatus === "Inactive")
+        patients.patch(created.id, { status: "Inactive" })
+      else invite(created.id, created.status)
       toast.success("Patient added", {
-        description: `Send ${fullName(clean)} the portal invite when ready.`,
+        description:
+          clean.portalAccess && recordStatus === "Active"
+            ? `${fullName(clean)} will get an email to join the patient portal.`
+            : fullName(clean),
       })
       router.push(patientHref(created.id))
     }
@@ -253,158 +301,275 @@ function PatientForm({ patient }: { patient?: Patient }) {
         className="flex flex-col gap-4"
       >
         <RecordCard title="Patient basic details">
-          <div className={GRID}>
-            <TextField
-              id="patient-firstName"
-              label="First name"
-              required
-              value={values.firstName}
-              onChange={text("firstName")}
-              error={errors.firstName}
-            />
-            <TextField
-              id="patient-middleName"
-              label="Middle name"
-              value={values.middleName}
-              onChange={text("middleName")}
-            />
-            <TextField
-              id="patient-lastName"
-              label="Last name"
-              required
-              value={values.lastName}
-              onChange={text("lastName")}
-              error={errors.lastName}
-            />
-            <TextField
-              id="patient-preferredName"
-              label="Preferred name"
-              value={values.preferredName}
-              onChange={text("preferredName")}
-            />
-            <TextField
-              id="patient-dob"
-              label="Date of birth"
-              required
-              type="date"
-              max={new Date().toISOString().slice(0, 10)}
-              value={values.dob}
-              onChange={text("dob")}
-              error={errors.dob}
-            />
-            <SelectField
-              id="patient-sex"
-              label="Sex at birth"
-              required
-              options={SEXES}
-              value={values.sex}
-              onChange={set("sex")}
-              error={errors.sex}
-            />
-            <SelectField
-              id="patient-genderIdentity"
-              label="Gender identity"
-              options={GENDER_IDENTITIES}
-              value={values.genderIdentity}
-              onChange={set("genderIdentity")}
-            />
-            <MultiSelectField
-              id="patient-languages"
-              label="Languages spoken"
-              options={LANGUAGES}
-              value={values.languages}
-              onChange={set("languages")}
-              className="xl:col-span-2"
-            />
-            <div className="xl:col-span-2">
-              <PhotoField value={values.photo} onChange={set("photo")} />
+          <div className="flex flex-col gap-5">
+            <div className={GRID}>
+              <TextField
+                id="patient-firstName"
+                label="First name"
+                required
+                value={values.firstName}
+                onChange={text("firstName")}
+                error={errors.firstName}
+              />
+              <TextField
+                id="patient-middleName"
+                label="Middle name"
+                value={values.middleName}
+                onChange={text("middleName")}
+              />
+              <TextField
+                id="patient-lastName"
+                label="Last name"
+                required
+                value={values.lastName}
+                onChange={text("lastName")}
+                error={errors.lastName}
+              />
+              <TextField
+                id="patient-preferredName"
+                label="Preferred name"
+                value={values.preferredName}
+                onChange={text("preferredName")}
+              />
+              <TextField
+                id="patient-dob"
+                label="Date of birth"
+                required
+                type="date"
+                max={new Date().toISOString().slice(0, 10)}
+                value={values.dob}
+                onChange={text("dob")}
+                error={errors.dob}
+              />
+              <SelectField
+                id="patient-sex"
+                label="Sex at birth"
+                required
+                options={SEXES}
+                value={values.sex}
+                onChange={set("sex")}
+                error={errors.sex}
+              />
+            </div>
+            <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[3fr_3fr_2fr_2fr_2fr]">
+              <TextField
+                id="patient-address1"
+                label="Address line 1"
+                autoComplete="off"
+                value={values.address1}
+                onChange={text("address1")}
+              />
+              <TextField
+                id="patient-address2"
+                label="Address line 2"
+                autoComplete="off"
+                value={values.address2}
+                onChange={text("address2")}
+              />
+              <TextField
+                id="patient-city"
+                label="City"
+                value={values.city}
+                onChange={text("city")}
+              />
+              <SelectField
+                id="patient-state"
+                label="State"
+                options={US_STATES}
+                value={values.state}
+                onChange={set("state")}
+              />
+              <TextField
+                id="patient-zip"
+                label="ZIP code"
+                inputMode="numeric"
+                maxLength={5}
+                value={values.zip}
+                onChange={text("zip", digits)}
+                error={errors.zip}
+              />
+            </div>
+            <div className={GRID5}>
+              <TextField
+                id="patient-phone"
+                label="Mobile number"
+                type="tel"
+                value={values.phone}
+                onChange={text("phone", formatPhone)}
+                error={errors.phone}
+              />
+              <TextField
+                id="patient-homePhone"
+                label="Home phone number"
+                type="tel"
+                value={values.homePhone}
+                onChange={text("homePhone", formatPhone)}
+                error={errors.homePhone}
+              />
+              <div className="flex flex-col gap-2">
+                <TextField
+                  id="patient-email"
+                  label="Email"
+                  required={!values.noEmail}
+                  type="email"
+                  autoComplete="off"
+                  value={values.email}
+                  onChange={text("email")}
+                  error={errors.email}
+                  disabled={values.noEmail || patient?.status === "Active"}
+                />
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={values.noEmail}
+                    disabled={patient?.status === "Active"}
+                    onCheckedChange={(checked) =>
+                      setValues((prev) => ({
+                        ...prev,
+                        noEmail: checked,
+                        email: checked ? "" : prev.email,
+                        portalAccess: checked ? false : prev.portalAccess,
+                        preferredContacts: checked
+                          ? prev.preferredContacts.filter((c) => c !== "Email")
+                          : prev.preferredContacts,
+                      }))
+                    }
+                  />
+                  Patient doesn&apos;t have an email
+                </label>
+              </div>
+              <SelectField
+                id="patient-timeZone"
+                label="Time zone"
+                options={TIME_ZONES}
+                value={values.timeZone}
+                onChange={set("timeZone")}
+              />
+              <fieldset className="flex flex-col gap-2">
+                <legend className="mb-2 text-sm font-medium">
+                  Preferred communication
+                </legend>
+                <div className="flex h-9 flex-wrap items-center gap-x-4 gap-y-2">
+                  {CONTACT_METHODS.map((method) => (
+                    <label
+                      key={method}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <Checkbox
+                        checked={values.preferredContacts.includes(method)}
+                        disabled={method === "Email" && values.noEmail}
+                        onCheckedChange={(checked) =>
+                          set("preferredContacts")(
+                            checked
+                              ? [...values.preferredContacts, method]
+                              : values.preferredContacts.filter(
+                                  (c) => c !== method
+                                )
+                          )
+                        }
+                      />
+                      {method}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
             </div>
           </div>
         </RecordCard>
 
-        <RecordCard title="Patient contact details">
-          <div className={GRID}>
-            <TextField
-              id="patient-address1"
-              label="Address line 1"
-              className="xl:col-span-2"
-              autoComplete="off"
-              value={values.address1}
-              onChange={text("address1")}
-            />
-            <TextField
-              id="patient-address2"
-              label="Address line 2"
-              className="xl:col-span-2"
-              autoComplete="off"
-              value={values.address2}
-              onChange={text("address2")}
-            />
-            <TextField
-              id="patient-zip"
-              label="ZIP code"
-              inputMode="numeric"
-              maxLength={5}
-              value={values.zip}
-              onChange={text("zip", digits)}
-              error={errors.zip}
-            />
-            <TextField
-              id="patient-city"
-              label="City"
-              value={values.city}
-              onChange={text("city")}
+        <RecordCard title="Additional details">
+          <div className={GRID5}>
+            <MultiSelectField
+              id="patient-languages"
+              label="Language"
+              options={LANGUAGES}
+              value={values.languages}
+              onChange={set("languages")}
             />
             <SelectField
-              id="patient-state"
-              label="State"
-              options={US_STATES}
-              value={values.state}
-              onChange={set("state")}
+              id="patient-race"
+              label="Race"
+              options={RACES}
+              value={values.race}
+              onChange={set("race")}
             />
-            <TextField
-              id="patient-phone"
-              label="Mobile number"
-              type="tel"
-              value={values.phone}
-              onChange={text("phone", formatPhone)}
-              error={errors.phone}
+            <SelectField
+              id="patient-ethnicity"
+              label="Ethnicity"
+              options={ETHNICITIES}
+              value={values.ethnicity}
+              onChange={set("ethnicity")}
             />
-            <TextField
-              id="patient-homePhone"
-              label="Home phone"
-              type="tel"
-              value={values.homePhone}
-              onChange={text("homePhone", formatPhone)}
-              error={errors.homePhone}
+            <SelectField
+              id="patient-genderIdentity"
+              label="Gender"
+              options={GENDER_IDENTITIES}
+              value={values.genderIdentity}
+              onChange={set("genderIdentity")}
             />
-            <TextField
-              id="patient-email"
-              label="Email"
+            <SelectField
+              id="patient-pronoun"
+              label="Pronoun"
+              options={PRONOUNS}
+              value={values.pronoun}
+              onChange={set("pronoun")}
+            />
+            <SelectField
+              id="patient-status"
+              label="Status"
               required
-              type="email"
+              options={RECORD_STATUSES}
+              value={recordStatus}
+              onChange={(next) => setRecordStatus(next || "Active")}
+            />
+            <SelectField
+              id="patient-maritalStatus"
+              label="Marital status"
+              options={MARITAL_STATUSES}
+              value={values.maritalStatus}
+              onChange={set("maritalStatus")}
+            />
+            <TextField
+              id="patient-ssn"
+              label="SSN"
+              inputMode="numeric"
               autoComplete="off"
-              value={values.email}
-              onChange={text("email")}
-              error={errors.email}
-              disabled={patient?.status === "Active"}
+              value={values.ssn}
+              onChange={text("ssn", formatSsn)}
+              error={errors.ssn}
             />
-            <SelectField
-              id="patient-preferredContact"
-              label="Preferred contact"
-              options={CONTACT_METHODS}
-              value={values.preferredContact}
-              onChange={set("preferredContact")}
-            />
-            <SelectField
-              id="patient-timeZone"
-              label="Time zone"
-              options={TIME_ZONES}
-              value={values.timeZone}
-              onChange={set("timeZone")}
-            />
+            <PhotoField value={values.photo} onChange={set("photo")} />
           </div>
         </RecordCard>
+
+        <RecordCard
+          title="Patient portal access"
+          action={
+            <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-sm sm:flex-nowrap">
+              <span id="patient-portalAccess-label" className="sm:whitespace-nowrap">
+                Give this patient access to the patient portal?
+                <Required />
+              </span>
+              <RadioGroup
+                aria-labelledby="patient-portalAccess-label"
+                value={values.portalAccess ? "yes" : "no"}
+                onValueChange={(next) =>
+                  set("portalAccess")(next === "yes")
+                }
+                className="flex items-center gap-4"
+              >
+                {(["yes", "no"] as const).map((option) => (
+                  <label key={option} className="flex items-center gap-2">
+                    <RadioGroupItem
+                      value={option}
+                      disabled={option === "yes" && values.noEmail}
+                    />
+                    {option === "yes" ? "Yes" : "No"}
+                  </label>
+                ))}
+              </RadioGroup>
+            </div>
+          }
+        />
 
         <RecordCard title="Care team">
           <div className={GRID}>
@@ -456,33 +621,91 @@ function PatientForm({ patient }: { patient?: Patient }) {
           </div>
         </RecordCard>
 
-        <RecordCard title="Emergency contact">
-          <div className={GRID}>
-            <TextField
-              id="patient-emergencyName"
-              label="Full name"
-              className="xl:col-span-2"
-              value={values.emergencyName}
-              onChange={text("emergencyName")}
-            />
-            <SelectField
-              id="patient-emergencyRelationship"
-              label="Relationship"
-              className="xl:col-span-2"
-              options={RELATIONSHIPS}
-              value={values.emergencyRelationship}
-              onChange={set("emergencyRelationship")}
-            />
-            <TextField
-              id="patient-emergencyPhone"
-              label="Phone number"
-              type="tel"
-              className="xl:col-span-2"
-              value={values.emergencyPhone}
-              onChange={text("emergencyPhone", formatPhone)}
-              error={errors.emergencyPhone}
-            />
-          </div>
+        <RecordCard
+          title="Emergency contact details"
+          action={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                set("emergencyContacts")([
+                  ...values.emergencyContacts,
+                  emptyEmergencyContact(),
+                ])
+              }
+            >
+              <IconAdd />
+              {values.emergencyContacts.length ? "Add more" : "Add"}
+            </Button>
+          }
+        >
+          {values.emergencyContacts.length > 0 && (
+            <div className="flex flex-col gap-5">
+              {values.emergencyContacts.map((contact, i) => {
+                const change = (patch: Partial<EmergencyContact>) =>
+                  set("emergencyContacts")(
+                    values.emergencyContacts.map((c, j) =>
+                      j === i ? { ...c, ...patch } : c
+                    )
+                  )
+                return (
+                  <div
+                    key={i}
+                    className="grid items-start gap-x-4 gap-y-5 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1fr)]"
+                  >
+                    <SelectField
+                      id={`patient-emergency-${i}-relationship`}
+                      label="Relationship with patient"
+                      options={RELATIONSHIPS}
+                      value={contact.relationship}
+                      onChange={(relationship) => change({ relationship })}
+                    />
+                    <TextField
+                      id={`patient-emergency-${i}-name`}
+                      label="Emergency contact name"
+                      value={contact.name}
+                      onChange={(e) => change({ name: e.target.value })}
+                    />
+                    <TextField
+                      id={`patient-emergency-${i}-phone`}
+                      label="Phone number"
+                      type="tel"
+                      value={contact.phone}
+                      onChange={(e) =>
+                        change({ phone: formatPhone(e.target.value) })
+                      }
+                      error={errors[`emergency-${i}-phone`]}
+                    />
+                    <TextField
+                      id={`patient-emergency-${i}-email`}
+                      label="Email"
+                      type="email"
+                      autoComplete="off"
+                      value={contact.email}
+                      onChange={(e) => change({ email: e.target.value })}
+                    />
+                    <div className="flex justify-end sm:col-span-2 xl:col-span-1 xl:pt-6">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remove emergency contact"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() =>
+                          set("emergencyContacts")(
+                            values.emergencyContacts.filter((_, j) => j !== i)
+                          )
+                        }
+                      >
+                        <IconTrash />
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </RecordCard>
       </form>
     </RecordPage>
@@ -596,8 +819,6 @@ function ProfileBody({ patient: p }: { patient: Patient }) {
                   value: p.dob && `${usDate(p.dob)} (${ageFrom(p.dob)} yrs)`,
                 },
                 { label: "Sex at birth", value: p.sex },
-                { label: "Gender identity", value: p.genderIdentity },
-                { label: "Languages spoken", value: p.languages.join(", ") },
                 { label: "Status", value: <StatusBadge status={p.status} /> },
               ]}
             />
@@ -610,11 +831,30 @@ function ProfileBody({ patient: p }: { patient: Patient }) {
           className="sm:grid-cols-2 lg:grid-cols-5"
           items={[
             { label: "Mobile number", value: p.phone },
-            { label: "Home phone", value: p.homePhone },
-            { label: "Email", value: p.email },
-            { label: "Preferred contact", value: p.preferredContact },
+            { label: "Home phone number", value: p.homePhone },
+            { label: "Email", value: p.noEmail ? "No email" : p.email },
+            {
+              label: "Preferred communication",
+              value: p.preferredContacts.join(", "),
+            },
             { label: "Time zone", value: p.timeZone },
             { label: "Address", value: personAddress(p), wide: true },
+          ]}
+        />
+      </RecordCard>
+
+      <RecordCard title="Additional details">
+        <DetailGrid
+          className="sm:grid-cols-2 lg:grid-cols-4"
+          items={[
+            { label: "Language", value: p.languages.join(", ") },
+            { label: "Race", value: p.race },
+            { label: "Ethnicity", value: p.ethnicity },
+            { label: "Gender", value: p.genderIdentity },
+            { label: "Pronoun", value: p.pronoun },
+            { label: "Marital status", value: p.maritalStatus },
+            { label: "SSN", value: maskSsn(p.ssn) },
+            { label: "Portal access", value: p.portalAccess ? "Yes" : "No" },
           ]}
         />
       </RecordCard>
@@ -649,21 +889,29 @@ function ProfileBody({ patient: p }: { patient: Patient }) {
                         : "Inactive",
               },
               { label: "Invited", value: shortDate(p.invitedAt) },
-              { label: "Added by", value: p.source },
             ]}
           />
         </RecordCard>
       </div>
 
-      <RecordCard title="Emergency contact">
-        <DetailGrid
-          className="sm:grid-cols-3"
-          items={[
-            { label: "Full name", value: p.emergencyName },
-            { label: "Relationship", value: p.emergencyRelationship },
-            { label: "Phone number", value: p.emergencyPhone },
-          ]}
-        />
+      <RecordCard title="Emergency contact details">
+        <div className="flex flex-col gap-5">
+          {(p.emergencyContacts.length
+            ? p.emergencyContacts
+            : [emptyEmergencyContact()]
+          ).map((c, i) => (
+            <DetailGrid
+              key={i}
+              className="sm:grid-cols-2 lg:grid-cols-4"
+              items={[
+                { label: "Relationship with patient", value: c.relationship },
+                { label: "Name", value: c.name },
+                { label: "Phone number", value: c.phone },
+                { label: "Email", value: c.email },
+              ]}
+            />
+          ))}
+        </div>
       </RecordCard>
 
       <DeactivateDialog
