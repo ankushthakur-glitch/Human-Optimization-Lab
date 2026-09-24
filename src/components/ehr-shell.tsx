@@ -189,6 +189,15 @@ const EHR_ACTIONS: ShellAction[] = [
 
 /* ----------------------------------------------------------------- shell -- */
 
+/* A demo can put the same screens in a different frame without forking them:
+   inside this provider the shell hands its children to the override instead. */
+export type EhrShellFrame = (props: {
+  active: string
+  children: React.ReactNode
+}) => React.ReactNode
+
+export const EhrShellOverride = React.createContext<EhrShellFrame | null>(null)
+
 /* The same frame wraps the EHR and the admin console; only the module list,
    the home link, the palette shortcuts and the signed-in account differ, so
    those come in as props with the EHR's as defaults. */
@@ -210,6 +219,7 @@ export function EhrShell({
   const [collapsed, setCollapsed] = React.useState(true)
   const [searchOpen, setSearchOpen] = React.useState(false)
   const router = useRouter()
+  const frame = React.useContext(EhrShellOverride)
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -226,6 +236,8 @@ export function EhrShell({
     setSearchOpen(false)
     router.push(href)
   }
+
+  if (frame) return frame({ active, children })
 
   return (
     /* The approved layout puts the rail against the window edge, full height,

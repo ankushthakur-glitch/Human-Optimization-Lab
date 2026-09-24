@@ -3,16 +3,18 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { IconMenu, IconMoon, IconSun } from "@/design-system/icons"
+import { IconMenu, IconMoon, IconPalette, IconSun } from "@/design-system/icons"
 import { useTheme } from "next-themes"
 
 import { EXAMPLE_GROUPS } from "@/lib/examples"
-import { DME_ACCENT } from "@/lib/dme-brand"
 import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/ui/button"
 import { ComponentIcon } from "@/design-system/component-icon"
 import { DmeLogo } from "@/components/dme/dme-logo"
 import { useMounted } from "@/hooks/use-mounted"
+import { useDmeAccent } from "@/components/dme/use-dme-accent"
+import { DmeAccentPicker } from "@/components/dme/dme-accent-picker"
+import { Popover, PopoverContent, PopoverTrigger } from "@/design-system/ui/popover"
 
 const BASE = "/dme"
 
@@ -20,38 +22,16 @@ const OVERVIEW_LINKS = [
   { href: BASE, label: "Overview" },
   { href: `${BASE}/foundations`, label: "Foundations" },
   { href: `${BASE}/icons`, label: "Icons" },
+  { href: `${BASE}/layouts`, label: "Layout" },
+  { href: `${BASE}/customization`, label: "Customization" },
 ]
 
 /** Gallery routes that have a DME twin; any other internal link lands on the overview. */
-const MIRRORED = [/^\/components\/[\w-]+$/, /^\/foundations$/, /^\/icons$/]
+const MIRRORED = [/^\/components\/[\w-]+$/, /^\/foundations$/, /^\/icons$/, /^\/layouts$/, /^\/customization$/]
 
 function toDmeHref(href: string) {
   if (href === "/") return BASE
   return MIRRORED.some((re) => re.test(href)) ? `${BASE}${href}` : BASE
-}
-
-/**
- * Keeps the page cyan while the demo is open. The shared provider repaints the
- * stored accent after mount, so the attribute is put back whenever it changes,
- * and the visitor's own pick is restored on the way out.
- */
-function useLockedAccent() {
-  React.useEffect(() => {
-    const el = document.documentElement
-    const previous = el.getAttribute("data-accent")
-    const lock = () => {
-      if (el.getAttribute("data-accent") !== DME_ACCENT) {
-        el.setAttribute("data-accent", DME_ACCENT)
-      }
-    }
-    lock()
-    const observer = new MutationObserver(lock)
-    observer.observe(el, { attributes: true, attributeFilter: ["data-accent"] })
-    return () => {
-      observer.disconnect()
-      if (previous) el.setAttribute("data-accent", previous)
-    }
-  }, [])
 }
 
 function ThemeToggle() {
@@ -130,7 +110,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 export function DmeShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
-  useLockedAccent()
+  const accent = useDmeAccent()
 
   // The reused gallery pages link to the original gallery; keep the demo inside /dme.
   const keepInDemo = (event: React.MouseEvent) => {
@@ -158,6 +138,22 @@ export function DmeShell({ children }: { children: React.ReactNode }) {
           <DmeLogo />
         </Link>
         <div className="ml-auto flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger
+              render={
+                <Button variant="ghost" size="sm" className="gap-1.5">
+                  <IconPalette />
+                  Customize
+                </Button>
+              }
+            />
+            <PopoverContent align="end" className="w-80">
+              <div className="mb-2 text-xs font-semibold tracking-wide text-foreground/70 uppercase">
+                Primary colour
+              </div>
+              <DmeAccentPicker value={accent} />
+            </PopoverContent>
+          </Popover>
           <ThemeToggle />
         </div>
       </header>

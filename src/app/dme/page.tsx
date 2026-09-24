@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { IconGrid, IconImage, IconPalette } from "@/design-system/icons"
+import { IconGrid, IconImage, IconMenu, IconPalette } from "@/design-system/icons"
 
 import { EXAMPLE_GROUPS } from "@/lib/examples"
 import { DME_NAME } from "@/lib/dme-brand"
@@ -8,6 +8,8 @@ import { ComponentIcon } from "@/design-system/component-icon"
 const ENTRY_POINTS = [
   { href: "/dme/foundations", icon: IconPalette, title: "Foundations" },
   { href: "/dme/icons", icon: IconImage, title: "Icons" },
+  { href: "/dme/layouts", icon: IconMenu, title: "Layout" },
+  { href: "/dme/customization", icon: IconPalette, title: "Customization" },
   { href: "/dme/components/button", icon: IconGrid, title: "Components" },
 ]
 
