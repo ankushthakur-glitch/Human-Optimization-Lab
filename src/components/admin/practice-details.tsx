@@ -286,11 +286,6 @@ function DetailsCards({
         <InfoCard
           title="Location"
           columns={2}
-          action={
-            practice.defaultLocation ? (
-              <Badge variant="info">Default location</Badge>
-            ) : null
-          }
           rows={[
             { label: "Location name", value: practice.locationName },
             { label: "Contact number", value: practice.contactNumber },

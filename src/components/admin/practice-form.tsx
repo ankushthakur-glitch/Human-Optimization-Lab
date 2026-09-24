@@ -5,7 +5,6 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 import { Button } from "@/design-system/ui/button"
-import { Checkbox } from "@/design-system/ui/checkbox"
 import { Field, FieldError, FieldLabel } from "@/design-system/ui/field"
 import { Input } from "@/design-system/ui/input"
 import {
@@ -46,7 +45,6 @@ const EMPTY: PracticeInput = {
   email: "",
   fax: "",
   website: "",
-  defaultLocation: true,
   primaryContact: EMPTY_CONTACT,
 }
 
@@ -61,7 +59,6 @@ function fromPractice(p: Practice): PracticeInput {
     email: p.email,
     fax: p.fax,
     website: p.website,
-    defaultLocation: p.defaultLocation,
     primaryContact: p.primaryContact,
   }
 }
@@ -435,17 +432,6 @@ function PracticeFormBody({
               error={errors.website}
             />
           </div>
-          <FieldLabel
-            htmlFor="practice-default"
-            className="items-center font-normal"
-          >
-            <Checkbox
-              id="practice-default"
-              checked={values.defaultLocation}
-              onCheckedChange={(checked) => set("defaultLocation", checked)}
-            />
-            Set as the practice&apos;s default location
-          </FieldLabel>
         </FormSection>
       </form>
 
