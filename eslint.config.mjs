@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The patient app has its own toolchain (Expo); see mobile/.
+    "mobile/**",
+    "public/app/**",
   ]),
 ]);
 

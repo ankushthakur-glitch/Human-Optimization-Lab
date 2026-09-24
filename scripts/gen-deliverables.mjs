@@ -83,6 +83,11 @@ const EXTRA = [
     ["Set password", "/screens/login/set-password"],
     ["Two-factor setup", "/screens/login/two-factor-setup"],
   ].map(([sub, url]) => [PROVIDER, "Clinic Manager Onboarding", sub, `${url}?as=clinic-manager`]),
+  // A patient's invitation; the rest of their onboarding is in the mobile app.
+  ...[
+    ["Invitation email (desktop)", "/screens/login/invite-email"],
+    ["Invitation email (mobile)", "/screens/login/invite-email/mobile"],
+  ].map(([sub, url]) => [PATIENT, "Patient Onboarding", sub, `${url}?as=patient`]),
 ]
 
 // ── Pages ────────────────────────────────────────────────────────────────

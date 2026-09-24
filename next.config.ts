@@ -7,6 +7,16 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   // forbidden() and app/forbidden.tsx — the Permission Denied screen.
   experimental: { authInterrupts: true },
+  // The patient app's web build (mobile/, `npm run build:web`) is served from
+  // public/app. Its files are found as they are; any other /app path, like
+  // the invitation's /app/activate?email=... link, loads the app's page and
+  // the app routes it.
+  async rewrites() {
+    return [
+      { source: "/app", destination: "/app/index.html" },
+      { source: "/app/:path*", destination: "/app/index.html" },
+    ]
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "avatar.vercel.sh" },

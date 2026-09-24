@@ -10,9 +10,9 @@ import {
   type InviteeKey,
 } from "@/components/auth/invitees"
 
-/* The invitation as it is sent, to a Super Admin or to a practice's clinic
-   manager: a logo header, the letter, and a
-   contact footer for the admin who sent it. Laid out from the approved email
+/* The invitation as it is sent, to a Super Admin, a practice's clinic
+   manager, or a patient invited to the mobile app: a logo header, the letter,
+   and a contact footer for whoever sent it. Laid out from the approved email
    template (Figma "Main Container" for web, "Email Temp" for mobile), recoloured
    from its blue to the brand teal.
 
@@ -25,17 +25,11 @@ import {
 
 const TEAL = "#01837E"
 
-const CONTACTS = [
-  { icon: "/email/envelope.svg", text: "maya.chen@humanoptimization.com", link: true },
-  { icon: "/email/globe.svg", text: "humanoptimizationlab.com", link: true },
-  { icon: "/email/phone.svg", text: "(229) 555-0109" },
-  { icon: "/email/map-pin.svg", text: "123 Main Street, Anytown, CA 12345" },
-]
-
-const FIRST_SIGN_IN = [
-  "Create your own password",
-  "Set up two-factor authentication with an authenticator app",
-]
+/* A patient's app link, as the prototype follows it: the patient app's web
+   build, served by this site at /app, opening on activation with the email
+   filled in. The live link will be a store redirect that does the same. */
+const appLink = (email: string) =>
+  `/app/activate?email=${encodeURIComponent(email)}`
 
 /* Long values (the console link, the email address) drop to their own line as
    a whole rather than leaving "https://" behind, and only wrap at a natural
@@ -50,6 +44,17 @@ function Breakable({ text }: { text: string }) {
 }
 
 function EmailLink({ invitee, text }: { invitee: InviteeKey; text: string }) {
+  if (invitee === "patient") {
+    return (
+      <a
+        href={appLink(INVITEES.patient.email)}
+        className="inline-block max-w-full underline decoration-from-font underline-offset-2"
+        style={{ color: TEAL }}
+      >
+        <Breakable text={text} />
+      </a>
+    )
+  }
   return (
     <Link
       href={withInvitee("/screens/login/activate", invitee)}
@@ -73,7 +78,19 @@ export function InviteEmailTemplate({
   const web = variant === "web"
   const invitee = INVITEES[key]
   const manager = key === "clinic-manager"
+  const patient = key === "patient"
+  const { sender } = invitee
   const label = cn(web && "font-medium")
+  const contacts = [
+    { icon: "/email/envelope.svg", text: sender.email, link: true },
+    { icon: "/email/globe.svg", text: sender.website, link: true },
+    { icon: "/email/phone.svg", text: sender.phone },
+    { icon: "/email/map-pin.svg", text: sender.address },
+  ]
+  const firstSignIn = [
+    "Create your own password",
+    "Set up two-factor authentication with an authenticator app",
+  ]
 
   return (
     <div
@@ -95,7 +112,18 @@ export function InviteEmailTemplate({
 
       <div className={web ? "px-7 py-5" : "px-4 py-5"}>
         <p className={cn(!web && "mb-[1.6em]")}>Dear {invitee.firstName},</p>
-        {manager ? (
+        {patient ? (
+          <>
+            <p>
+              <span className="font-medium">{invitee.practice}</span> has
+              invited you to the {BRAND_NAME} app.
+            </p>
+            <p className="mb-[1.6em]">
+              Your account is ready. Download the app on your phone and sign in
+              to get started.
+            </p>
+          </>
+        ) : manager ? (
           <>
             <p>
               <span className="font-medium">Maya Chen</span>, platform admin at{" "}
@@ -112,65 +140,109 @@ export function InviteEmailTemplate({
           <>
             <p>
               <span className="font-medium">Maya Chen</span>, platform admin at{" "}
-              {BRAND_NAME} Lab, has invited you to the {BRAND_NAME} admin console
-              as a Super Admin.
+              {BRAND_NAME} Lab, has invited you to the {BRAND_NAME} admin
+              console as a Super Admin.
             </p>
             <p className="mb-[1.6em]">
-              Your account is ready. Activate it to sign in and manage practices,
-              users and platform settings in one place.
+              Your account is ready. Activate it to sign in and manage
+              practices, users and platform settings in one place.
             </p>
           </>
         )}
 
         <p>Next Steps:</p>
         <ol className="list-decimal">
-          <li className="ms-[21px] mb-[1.6em]">
-            Click the link below to activate your {invitee.role} account:
-            <br />
-            <span className={label}>{invitee.consoleName} Link :</span>{" "}
-            <EmailLink invitee={key} text={`https://${invitee.consoleUrl}`} />
-            {invitee.orgId && (
-              <>
+          {patient ? (
+            <>
+              <li className="ms-[21px] mb-[1.6em]">
+                Download the {BRAND_NAME} app on your phone:
                 <br />
-                <span className={label}>Organization ID :</span>{" "}
-                <span className="tracking-wide tabular-nums">{invitee.orgId}</span>
+                <span className={label}>App Link :</span>{" "}
+                <EmailLink
+                  invitee={key}
+                  text={`https://${invitee.consoleUrl}`}
+                />
+              </li>
+              <li className="ms-[21px] mb-[1.6em]">
+                Open the app and sign in with:
+                <br />
+                <span className={label}>Email ID :</span>{" "}
+                <span className="inline-block max-w-full">
+                  <Breakable text={invitee.email} />
+                </span>
+                <br />
+                <span className={label}>One-Time Password :</span>{" "}
+                <span className="tracking-wide whitespace-nowrap tabular-nums">
+                  Hx4-pR8t-Lm2
+                </span>
+              </li>
+            </>
+          ) : (
+            <li className="ms-[21px] mb-[1.6em]">
+              Click the link below to activate your {invitee.role} account:
+              <br />
+              <span className={label}>{invitee.consoleName} Link :</span>{" "}
+              <EmailLink invitee={key} text={`https://${invitee.consoleUrl}`} />
+              {invitee.orgId && (
+                <>
+                  <br />
+                  <span className={label}>Organization ID :</span>{" "}
+                  <span className="tracking-wide tabular-nums">
+                    {invitee.orgId}
+                  </span>
+                </>
+              )}
+              <br />
+              <span className={label}>Email ID :</span>{" "}
+              <EmailLink invitee={key} text={invitee.email} />
+              <br />
+              <span className={label}>One-Time Password :</span>{" "}
+              <span className="tracking-wide whitespace-nowrap tabular-nums">
+                Kq7-mW2p-Xa9
+              </span>
+            </li>
+          )}
+          <li className="ms-[21px] mb-[1.6em]">
+            {/* A patient sets a password and is in; staff also set up two-factor. */}
+            {patient ? (
+              <>
+                The first time you sign in, you&rsquo;ll be asked to create your
+                own password.
+              </>
+            ) : (
+              <>
+                The first time you sign in, you&rsquo;ll be asked to:
+                <ul className="list-disc">
+                  {firstSignIn.map((step) => (
+                    <li key={step} className="ms-[21px]">
+                      {step}
+                    </li>
+                  ))}
+                </ul>
               </>
             )}
-            <br />
-            <span className={label}>Email ID :</span>{" "}
-            <EmailLink invitee={key} text={invitee.email} />
-            <br />
-            <span className={label}>One-Time Password :</span>{" "}
-            <span className="tracking-wide whitespace-nowrap tabular-nums">Kq7-mW2p-Xa9</span>
-          </li>
-          <li className="ms-[21px] mb-[1.6em]">
-            The first time you sign in, you&rsquo;ll be asked to:
-            <ul className="list-disc">
-              {FIRST_SIGN_IN.map((step) => (
-                <li key={step} className="ms-[21px]">
-                  {step}
-                </li>
-              ))}
-            </ul>
           </li>
         </ol>
 
         <p className={cn(manager && "mb-[1.6em]")}>
-          The one-time password works once. After you set your own password
-          you won&rsquo;t need it again.
+          The one-time password works once. After you set your own password you
+          won&rsquo;t need it again.
         </p>
         {manager && (
           <p>
-            Keep your Organization ID. You&rsquo;ll enter it with your email
-            and password each time you sign in.
+            Keep your Organization ID. You&rsquo;ll enter it with your email and
+            password each time you sign in.
           </p>
         )}
         <p>
           If you have any questions or need help accessing{" "}
-          {manager ? "the portal" : "the admin console"}, please
-          contact Maya Chen at{" "}
-          <span className="underline underline-offset-2" style={{ color: TEAL }}>
-            (229) 555-0109
+          {patient ? "the app" : manager ? "the portal" : "the admin console"},
+          please contact {patient ? invitee.practice : sender.name} at{" "}
+          <span
+            className="underline underline-offset-2"
+            style={{ color: TEAL }}
+          >
+            {sender.phone}
           </span>
           .
         </p>
@@ -196,15 +268,26 @@ export function InviteEmailTemplate({
                 web ? "text-xl leading-[1.4]" : "text-lg leading-[1.45]"
               )}
             >
-              Maya Chen
+              {sender.name}
             </span>
-            <span className="text-[#606060]">( Platform Admin )</span>
+            <span className="text-[#606060]">( {sender.title} )</span>
           </p>
           <ul className="flex flex-col gap-2">
-            {CONTACTS.map(({ icon, text, link }) => (
+            {contacts.map(({ icon, text, link }) => (
               <li key={text} className="flex items-center gap-2">
-                <Image src={icon} alt="" width={20} height={20} className="shrink-0" />
-                <span className={cn("min-w-0", link && "underline underline-offset-2")}>
+                <Image
+                  src={icon}
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="shrink-0"
+                />
+                <span
+                  className={cn(
+                    "min-w-0",
+                    link && "underline underline-offset-2"
+                  )}
+                >
                   <Breakable text={text} />
                 </span>
               </li>
