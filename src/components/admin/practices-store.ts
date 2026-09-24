@@ -22,7 +22,6 @@ export type ClinicManager = {
 export type PrimaryContact = {
   firstName: string
   lastName: string
-  title: string
   email: string
   phone: string
 }
@@ -115,13 +114,6 @@ const CONTACTS: [firstName: string, lastName: string][] = [
   ["Peter", "Osei"],
 ]
 
-const CONTACT_TITLES = [
-  "Practice Administrator",
-  "Operations Director",
-  "Medical Director",
-  "Office Manager",
-]
-
 function practice(
   p: Omit<
     Practice,
@@ -142,7 +134,6 @@ function practice(
     primaryContact: {
       firstName,
       lastName,
-      title: CONTACT_TITLES[seed % CONTACT_TITLES.length],
       email:
         p.manager?.email || `${firstName}.${lastName}@${domain}`.toLowerCase(),
       phone: p.manager?.phone || p.contactNumber,
@@ -623,7 +614,7 @@ const SEED: Practice[] = [...HAND_WRITTEN, ...generatedPractices()]
 const STORAGE_KEY = "hol-admin-practices"
 /* Bump the schema tag whenever the Practice shape changes, so sessions saved
    before the change don't load rows missing the new fields. */
-const SEED_VERSION = `v3:${SEED.map((p) => p.id).join(",")}`
+const SEED_VERSION = `v4:${SEED.map((p) => p.id).join(",")}`
 
 let practices: Practice[] = SEED
 let hydrated = false

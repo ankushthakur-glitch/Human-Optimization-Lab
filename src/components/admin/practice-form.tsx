@@ -32,7 +32,6 @@ import {
 const EMPTY_CONTACT: PrimaryContact = {
   firstName: "",
   lastName: "",
-  title: "",
   email: "",
   phone: "",
 }
@@ -258,7 +257,6 @@ function PracticeFormBody({
         ...values.primaryContact,
         firstName: values.primaryContact.firstName.trim(),
         lastName: values.primaryContact.lastName.trim(),
-        title: values.primaryContact.title.trim(),
         email: values.primaryContact.email.trim(),
       },
       tenant,
@@ -377,15 +375,6 @@ function PracticeFormBody({
               value={values.primaryContact.phone}
               onChange={setContact("phone", formatPhone)}
               error={errors["primaryContact.phone"]}
-            />
-            <TextField
-              id="practice-primaryContact-title"
-              label="Title"
-              placeholder="Practice Administrator"
-              autoComplete="off"
-              value={values.primaryContact.title}
-              onChange={setContact("title")}
-              className="sm:col-span-2"
             />
           </div>
         </FormSection>

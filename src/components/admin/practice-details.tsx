@@ -330,7 +330,6 @@ function DetailsCards({
               label: "Name",
               value: `${contact.firstName} ${contact.lastName}`.trim(),
             },
-            { label: "Title", value: contact.title },
             {
               label: "Email",
               value: contact.email && (
