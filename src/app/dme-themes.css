@@ -130,24 +130,24 @@
 }
 
 /* ---------- Plum ---------- */
-/* #633761, supplied as is. Already dark enough to be its own text colour,
-   so the tint repeats the fill. */
+/* Started from #633761; lifted and saturated at the same hue so it reads as a
+   primary fill, while still carrying white ink at AA. */
 :root[data-accent="dme-plum"],
 :root[data-accent="dme-plum"].dark {
-  --primary: oklch(0.408 0.087 328.7);
+  --primary: oklch(0.56 0.15 330);
   --primary-foreground: oklch(1 0 0);
-  --accent: oklch(0.408 0.087 328.7);
+  --accent: oklch(0.56 0.15 330);
   --accent-foreground: oklch(1 0 0);
-  --chart-1: oklch(0.85 0.052 328.7);
-  --chart-2: oklch(0.72 0.074 328.7);
-  --chart-3: oklch(0.55 0.087 328.7);
-  --chart-4: oklch(0.408 0.087 328.7);
-  --chart-5: oklch(0.3 0.06 328.7);
-  --sidebar-primary: oklch(0.408 0.087 328.7);
+  --chart-1: oklch(0.86 0.08 330);
+  --chart-2: oklch(0.74 0.12 330);
+  --chart-3: oklch(0.56 0.15 330);
+  --chart-4: oklch(0.49 0.135 330);
+  --chart-5: oklch(0.36 0.091 330);
+  --sidebar-primary: oklch(0.56 0.15 330);
   --sidebar-primary-foreground: oklch(1 0 0);
 }
 
 :root[data-accent="dme-plum"] {
-  --primary-tint: oklch(0.408 0.087 328.7);
-  --primary-surface: oklch(0.975 0.018 328.7);
+  --primary-tint: oklch(0.49 0.135 330);
+  --primary-surface: oklch(0.975 0.018 330);
 }

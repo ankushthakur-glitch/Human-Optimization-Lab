@@ -17,7 +17,7 @@ export const DME_ACCENTS = [
   { name: "dme-emerald", label: "Emerald", swatch: "oklch(0.55 0.13 162)" },
   { name: "dme-coral", label: "Coral", swatch: "oklch(0.57 0.17 33)" },
   { name: "dme-rose", label: "Rose", swatch: "oklch(0.55 0.2 8)" },
-  { name: "dme-plum", label: "Plum", swatch: "#633761" },
+  { name: "dme-plum", label: "Plum", swatch: "oklch(0.56 0.15 330)" },
 ] as const
 
 export function isDmeAccent(name: unknown): name is string {
