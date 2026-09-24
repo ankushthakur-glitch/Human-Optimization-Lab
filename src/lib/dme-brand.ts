@@ -6,8 +6,8 @@ export const DME_ACCENT = "brand-cyan"
 export const DME_ACCENT_KEY = "dme-accent"
 
 /**
- * The primary colours the demo's customization offers: the default cyan plus
- * six more, authored in app/dme-themes.css.
+ * The primary colours the demo's customizer offers, cyan first as the
+ * default; authored in app/dme-themes.css.
  */
 export const DME_ACCENTS = [
   { name: "brand-cyan", label: "Cyan", swatch: "oklch(0.555 0.102 222)" },
@@ -17,6 +17,7 @@ export const DME_ACCENTS = [
   { name: "dme-emerald", label: "Emerald", swatch: "oklch(0.55 0.13 162)" },
   { name: "dme-coral", label: "Coral", swatch: "oklch(0.57 0.17 33)" },
   { name: "dme-rose", label: "Rose", swatch: "oklch(0.55 0.2 8)" },
+  { name: "dme-plum", label: "Plum", swatch: "#633761" },
 ] as const
 
 export function isDmeAccent(name: unknown): name is string {

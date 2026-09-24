@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { IconMenu, IconMoon, IconPalette, IconSun } from "@/design-system/icons"
+import { IconMenu, IconMoon, IconSun } from "@/design-system/icons"
 import { useTheme } from "next-themes"
 
 import { EXAMPLE_GROUPS } from "@/lib/examples"
@@ -12,9 +12,9 @@ import { Button } from "@/design-system/ui/button"
 import { ComponentIcon } from "@/design-system/component-icon"
 import { DmeLogo } from "@/components/dme/dme-logo"
 import { useMounted } from "@/hooks/use-mounted"
-import { useDmeAccent } from "@/components/dme/use-dme-accent"
-import { DmeAccentPicker } from "@/components/dme/dme-accent-picker"
-import { Popover, PopoverContent, PopoverTrigger } from "@/design-system/ui/popover"
+import { setDmeAccent, useDmeAccent } from "@/components/dme/use-dme-accent"
+import { ThemeCustomizer } from "@/design-system/theme-customizer"
+import { DME_ACCENT, DME_ACCENTS } from "@/lib/dme-brand"
 
 const BASE = "/dme"
 
@@ -23,11 +23,10 @@ const OVERVIEW_LINKS = [
   { href: `${BASE}/foundations`, label: "Foundations" },
   { href: `${BASE}/icons`, label: "Icons" },
   { href: `${BASE}/layouts`, label: "Layout" },
-  { href: `${BASE}/customization`, label: "Customization" },
 ]
 
 /** Gallery routes that have a DME twin; any other internal link lands on the overview. */
-const MIRRORED = [/^\/components\/[\w-]+$/, /^\/foundations$/, /^\/icons$/, /^\/layouts$/, /^\/customization$/]
+const MIRRORED = [/^\/components\/[\w-]+$/, /^\/foundations$/, /^\/icons$/, /^\/layouts$/]
 
 function toDmeHref(href: string) {
   if (href === "/") return BASE
@@ -138,22 +137,14 @@ export function DmeShell({ children }: { children: React.ReactNode }) {
           <DmeLogo />
         </Link>
         <div className="ml-auto flex items-center gap-2">
-          <Popover>
-            <PopoverTrigger
-              render={
-                <Button variant="ghost" size="sm" className="gap-1.5">
-                  <IconPalette />
-                  Customize
-                </Button>
-              }
-            />
-            <PopoverContent align="end" className="w-80">
-              <div className="mb-2 text-xs font-semibold tracking-wide text-foreground/70 uppercase">
-                Primary colour
-              </div>
-              <DmeAccentPicker value={accent} />
-            </PopoverContent>
-          </Popover>
+          <ThemeCustomizer
+            accents={{
+              options: DME_ACCENTS,
+              value: accent,
+              onChange: setDmeAccent,
+              onReset: () => setDmeAccent(DME_ACCENT),
+            }}
+          />
           <ThemeToggle />
         </div>
       </header>

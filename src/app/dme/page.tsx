@@ -9,7 +9,6 @@ const ENTRY_POINTS = [
   { href: "/dme/foundations", icon: IconPalette, title: "Foundations" },
   { href: "/dme/icons", icon: IconImage, title: "Icons" },
   { href: "/dme/layouts", icon: IconMenu, title: "Layout" },
-  { href: "/dme/customization", icon: IconPalette, title: "Customization" },
   { href: "/dme/components/button", icon: IconGrid, title: "Components" },
 ]
 

@@ -89,9 +89,25 @@ function OptionButton({
   )
 }
 
-export function ThemeCustomizer() {
-  const { config, setConfig, reset } = useDesignSystem()
+/* A product built on the library can offer its own accent list (the DME demo
+   does); without it the picker offers the library's. */
+export type CustomizerAccents = {
+  options: readonly { name: string; label: string; swatch: string }[]
+  value: string
+  onChange: (name: string) => void
+  onReset: () => void
+}
+
+export function ThemeCustomizer({ accents }: { accents?: CustomizerAccents } = {}) {
+  const { config, setConfig, reset: resetConfig } = useDesignSystem()
   const { theme, setTheme } = useTheme()
+  const accentOptions = accents?.options ?? ALL_ACCENT_THEMES
+  const accentValue = accents?.value ?? config.accent
+  const pickAccent = accents?.onChange ?? ((name: string) => setConfig({ accent: name }))
+  const reset = () => {
+    resetConfig()
+    accents?.onReset()
+  }
 
   return (
     <Popover>
@@ -130,13 +146,13 @@ export function ThemeCustomizer() {
 
             <Group label="Accent color" hint="Drives primary, accent, and chart series.">
               <div className="flex flex-wrap gap-2">
-                {ALL_ACCENT_THEMES.map((t) => (
+                {accentOptions.map((t) => (
                   <Swatch
                     key={t.name}
-                    active={config.accent === t.name}
+                    active={accentValue === t.name}
                     color={t.swatch}
                     title={t.label}
-                    onClick={() => setConfig({ accent: t.name })}
+                    onClick={() => pickAccent(t.name)}
                   />
                 ))}
               </div>
