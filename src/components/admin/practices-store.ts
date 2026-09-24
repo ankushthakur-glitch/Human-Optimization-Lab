@@ -689,9 +689,6 @@ export const practiceStore = {
   setStatus(id: string, status: PracticeStatus) {
     update(practices.map((p) => (p.id === id ? { ...p, status } : p)))
   },
-  remove(id: string) {
-    update(practices.filter((p) => p.id !== id))
-  },
   inviteManager(id: string, input: ClinicManagerInput) {
     const manager: ClinicManager = {
       ...input,

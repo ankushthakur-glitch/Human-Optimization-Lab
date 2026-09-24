@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
   IconArrowLeft,
@@ -126,10 +125,7 @@ const LINK = "text-primary-tint underline-offset-4 hover:underline"
 
 export function PracticeDetails({ id }: { id: string }) {
   const { practices, ready } = usePractices()
-  const router = useRouter()
-  const actions = usePracticeActions({
-    onDeleted: () => router.push("/screens/admin/practices"),
-  })
+  const actions = usePracticeActions()
   const practice = practices.find((p) => p.id === id)
 
   return (

@@ -5,11 +5,9 @@ import { toast } from "sonner"
 import {
   IconCheckCircle,
   IconEdit,
-  IconHospital,
   IconLock,
   IconLockOpen,
   IconMail,
-  IconTrash,
   IconUserAdd,
 } from "@/design-system/icons"
 
@@ -24,7 +22,6 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/design-system/ui/alert-dialog"
-import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/ui/button"
 import {
   Dialog,
@@ -34,10 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/design-system/ui/dialog"
-import {
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/design-system/ui/dropdown-menu"
+import { DropdownMenuItem } from "@/design-system/ui/dropdown-menu"
 import { Field, FieldError, FieldLabel } from "@/design-system/ui/field"
 import { Input } from "@/design-system/ui/input"
 import {
@@ -313,124 +307,6 @@ function InviteManagerBody({
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Delete, confirmed by typing the name                                       */
-/* -------------------------------------------------------------------------- */
-
-/* Deleting a practice takes its patients' access with it, so a click is not
-   enough: the admin types the practice's name, as GitHub asks for a repo's. */
-export function DeletePracticeDialog({
-  practice,
-  onOpenChange,
-  onConfirm,
-}: {
-  practice: Practice | null
-  onOpenChange: (open: boolean) => void
-  onConfirm: (practice: Practice) => void
-}) {
-  return (
-    <Dialog open={practice !== null} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-sm">
-        {practice && (
-          <DeletePracticeBody
-            practice={practice}
-            onConfirm={onConfirm}
-            onCancel={() => onOpenChange(false)}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function DeletePracticeBody({
-  practice,
-  onConfirm,
-  onCancel,
-}: {
-  practice: Practice
-  onConfirm: (practice: Practice) => void
-  onCancel: () => void
-}) {
-  const [typed, setTyped] = React.useState("")
-  const matches = typed.trim() === practice.name
-  const plural = (n: number, word: string) =>
-    `${n} ${word}${n === 1 ? "" : "s"}`
-
-  return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault()
-        if (matches) onConfirm(practice)
-      }}
-    >
-      <DialogHeader className="px-5 pt-5">
-        <DialogTitle>Delete practice</DialogTitle>
-        <DialogDescription className="sr-only">
-          Type the practice name to confirm deleting it.
-        </DialogDescription>
-      </DialogHeader>
-
-      <div className="flex flex-col gap-4 px-5 py-4">
-        {/* What is about to go, on one line. */}
-        <div className="flex items-center gap-3 rounded-lg border p-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-destructive/10 text-destructive">
-            <IconHospital className="size-5" />
-          </span>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium">{practice.name}</div>
-            <div className="text-xs text-muted-foreground">
-              {plural(practice.clinicians, "clinician")},{" "}
-              {plural(practice.patients, "patient")}
-            </div>
-          </div>
-        </div>
-
-        <p className="text-sm text-destructive">
-          This permanently removes the practice and all access to it.
-        </p>
-
-        <Field>
-          <FieldLabel
-            htmlFor="delete-practice-confirm"
-            className="block font-normal"
-          >
-            Type <span className="font-semibold">{practice.name}</span> to
-            confirm
-          </FieldLabel>
-          <Input
-            id="delete-practice-confirm"
-            autoComplete="off"
-            autoFocus
-            value={typed}
-            onChange={(event) => setTyped(event.target.value)}
-            className="border-input bg-background"
-          />
-        </Field>
-      </div>
-
-      <DialogFooter className="mx-0 mb-0 flex-row justify-end gap-2 rounded-none border-t bg-transparent px-5 py-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          variant="destructive"
-          /* Solid once the name matches, so the armed state is unmistakable. */
-          className={cn(
-            matches &&
-              "bg-destructive text-white hover:bg-destructive/90 dark:bg-destructive dark:hover:bg-destructive/90"
-          )}
-          disabled={!matches}
-        >
-          <IconTrash />
-          Delete practice
-        </Button>
-      </DialogFooter>
-    </form>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
 /*  Everything a practice's actions menu can open                              */
 /* -------------------------------------------------------------------------- */
 
@@ -439,15 +315,12 @@ function DeletePracticeBody({
  * page open the same sheets and dialogs. Render `dialogs` once on the screen;
  * call the openers from anywhere.
  */
-export function usePracticeActions({
-  onDeleted,
-}: { onDeleted?: (practice: Practice) => void } = {}) {
+export function usePracticeActions() {
   const [formOpen, setFormOpen] = React.useState(false)
   const [editing, setEditing] = React.useState<Practice | undefined>()
   const [created, setCreated] = React.useState<Practice | null>(null)
   const [inviting, setInviting] = React.useState<Practice | null>(null)
   const [deactivating, setDeactivating] = React.useState<Practice | null>(null)
-  const [deleting, setDeleting] = React.useState<Practice | null>(null)
 
   const openCreate = React.useCallback(() => {
     setEditing(undefined)
@@ -504,14 +377,6 @@ export function usePracticeActions({
         <DropdownMenuItem onClick={() => toggleStatus(practice)}>
           {practice.status === "Active" ? <IconLock /> : <IconLockOpen />}
           {practice.status === "Active" ? "Deactivate" : "Activate"}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onClick={() => setDeleting(practice)}
-        >
-          <IconTrash />
-          Delete
         </DropdownMenuItem>
       </>
     )
@@ -613,17 +478,6 @@ export function usePracticeActions({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <DeletePracticeDialog
-        practice={deleting}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        onConfirm={(practice) => {
-          setDeleting(null)
-          practiceStore.remove(practice.id)
-          toast.success("Practice deleted", { description: practice.name })
-          onDeleted?.(practice)
-        }}
-      />
     </>
   )
 
