@@ -566,7 +566,7 @@ export function PatientsWorklist() {
           ) : (
             <div className="flex flex-wrap items-center justify-end gap-3">
               <div className="w-full sm:w-[200px]">
-                <InputGroup className="h-8 rounded-md">
+                <InputGroup className="h-8 border-border bg-card">
                   <InputGroupAddon>
                     <IconSearch className="size-4" />
                   </InputGroupAddon>
