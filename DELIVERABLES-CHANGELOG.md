@@ -108,3 +108,16 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Added: Patient Portal / Patient Onboarding / Invitation email (mobile)
 - Added: Patient Portal / Patient Onboarding / Activate account (mobile app)
 - Added: Patient Portal / Patient Onboarding / Sign in (mobile app)
+
+## 25-Sep-2026
+
+- Practice and provider adoption views, table pager; practice directory refinements
+- Onboarding prototype, mobile error states, health record view
+- Added: Patient Portal / Patient Onboarding / Consent
+- Added: Patient Portal / Patient Onboarding / Daily habits
+- Added: Patient Portal / Patient Onboarding / Medications
+- Added: Patient Portal / Error States (mobile app) / All error states
+- Added: Patient Portal / Error States (mobile app) / Page not found
+- Added: Patient Portal / Error States (mobile app) / Session expired
+- Added: Patient Portal / Error States (mobile app) / No internet connection
+- Added: Patient Portal / Error States (mobile app) / Something went wrong
