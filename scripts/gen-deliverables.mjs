@@ -94,6 +94,12 @@ const PAGES = {
   "/screens/provider/patients/new": [PROVIDER, "Provider Portal", "Add patient and send invite"],
   "/screens/provider/patients/[id]": [PROVIDER, "Provider Portal", "Patient profile", { url: "/screens/provider/patients/P10240" }],
   "/screens/provider/patients/[id]/edit": [PROVIDER, "Provider Portal", "Edit patient", { url: "/screens/provider/patients/P10240/edit" }],
+  // The patient app's onboarding prototype: listed in EXTRA after the app's
+  // sign in, so the Patient Onboarding rows run in the order a patient sees.
+  "/screens/app": [PATIENT, "", "", { skip: true }],
+  "/screens/app/consent": [PATIENT, "", "", { skip: true }],
+  "/screens/app/habits": [PATIENT, "", "", { skip: true }],
+  "/screens/app/medications": [PATIENT, "", "", { skip: true }],
 }
 
 /** Pages that aren't a page.tsx of their own: [portal, feature, sub, url]. */
@@ -125,6 +131,9 @@ const EXTRA = [
   // home sit behind the app's session, so they have no link of their own.
   [PATIENT, "Patient Onboarding", "Activate account (mobile app)", "/app/activate"],
   [PATIENT, "Patient Onboarding", "Sign in (mobile app)", "/app/sign-in"],
+  [PATIENT, "Patient Onboarding", "Consent", "/screens/app/consent"],
+  [PATIENT, "Patient Onboarding", "Daily habits", "/screens/app/habits"],
+  [PATIENT, "Patient Onboarding", "Medications", "/screens/app/medications"],
   // The app's error states; errors/ is a review index that opens each one.
   [PATIENT, "Error States (mobile app)", "All error states", "/app/errors"],
   [PATIENT, "Error States (mobile app)", "Page not found", "/app/errors/this-page-does-not-exist"],
