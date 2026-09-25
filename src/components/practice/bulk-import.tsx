@@ -43,6 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/design-system/ui/table"
+import { TablePager, usePaged } from "@/components/table-pager"
 
 /* -------------------------------------------------------------------------- */
 /*  Spec                                                                       */
@@ -577,6 +578,7 @@ function Review<T>({
       Number(Boolean(b.warning)) - Number(Boolean(a.warning)) ||
       a.row - b.row
   )
+  const paged = usePaged(ordered, 8)
   const issues = [...invalid, ...flagged]
   const routedCount = (kind: RowOutcome["kind"]) =>
     routed.filter((r) => r.outcome?.kind === kind).length
@@ -675,8 +677,8 @@ function Review<T>({
         </Label>
       )}
 
-      <div className="max-h-[40svh] overflow-auto rounded-md border">
-        <Table>
+      <div className="overflow-hidden rounded-md border">
+        <Table containerClassName="max-h-[40svh] overflow-auto">
           <TableHeader className="sticky top-0 z-10 bg-surface-head [&_th]:h-8 [&_th]:px-3 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
             <TableRow>
               <TableHead className="w-14">Row</TableHead>
@@ -686,7 +688,7 @@ function Review<T>({
             </TableRow>
           </TableHeader>
           <TableBody className="[&_td]:px-3 [&_td]:py-2 [&_td]:align-top">
-            {ordered.map((r) => (
+            {paged.visible.map((r) => (
               <TableRow key={r.row}>
                 <TableCell className="text-muted-foreground tabular-nums">
                   {r.row}
@@ -733,6 +735,7 @@ function Review<T>({
             ))}
           </TableBody>
         </Table>
+        <TablePager paged={paged} className="px-3 py-2" />
       </div>
 
       {ready === 0 && routed.length === 0 && (

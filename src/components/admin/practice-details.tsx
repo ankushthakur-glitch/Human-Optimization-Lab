@@ -16,6 +16,16 @@ import {
 import { cn } from "@/lib/utils"
 import { AdminShell } from "@/components/admin/admin-shell"
 import { usePracticeActions } from "@/components/admin/practice-actions"
+import { usePracticeAdoption } from "@/components/admin/practice-adoption"
+import {
+  AdoptionTabs,
+  type PracticeTab,
+} from "@/components/admin/practice-adoption-view"
+import {
+  holAverages,
+  KpiGrid,
+  practiceKpis,
+} from "@/components/admin/adoption-kpis"
 import {
   type Practice,
   formatDate,
@@ -140,7 +150,13 @@ const LINK =
 /*  Screen                                                                     */
 /* -------------------------------------------------------------------------- */
 
-export function PracticeDetails({ id }: { id: string }) {
+export function PracticeDetails({
+  id,
+  tab,
+}: {
+  id: string
+  tab: PracticeTab
+}) {
   const { practices, ready } = usePractices()
   const actions = usePracticeActions()
   const practice = practices.find((p) => p.id === id)
@@ -148,7 +164,7 @@ export function PracticeDetails({ id }: { id: string }) {
   return (
     <AdminShell active="practices">
       {practice ? (
-        <PracticeBody practice={practice} actions={actions} />
+        <PracticeBody practice={practice} actions={actions} tab={tab} />
       ) : !ready ? (
         /* Saved changes load after mount; a practice created this session is
            only known once they have, so hold the frame until then. */
@@ -186,12 +202,19 @@ export function PracticeDetails({ id }: { id: string }) {
 function PracticeBody({
   practice,
   actions,
+  tab,
 }: {
   practice: Practice
   actions: ReturnType<typeof usePracticeActions>
+  tab: PracticeTab
 }) {
+  const adoption = usePracticeAdoption(practice)
+  const { practices } = usePractices()
+  const hol = React.useMemo(() => holAverages(practices), [practices])
+
   /* Same frame as the Practices list: the practice's name where the list has
-     its heading, actions on the right, and the cards on the sunken canvas. */
+     its heading, actions on the right, then the adoption numbers and the
+     profile, providers and users tabs. */
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto bg-surface-sunken px-4 pt-4 pb-6 sm:px-6">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
@@ -205,7 +228,7 @@ function PracticeBody({
           >
             <IconArrowLeft />
           </Button>
-          <h1 className="truncate font-heading text-xl font-semibold tracking-tight">
+          <h1 className="truncate font-heading text-lg font-semibold tracking-tight">
             {practice.name}
           </h1>
           <Badge
@@ -240,7 +263,15 @@ function PracticeBody({
         </div>
       </div>
 
-      <DetailsCards practice={practice} onInvite={actions.openInvite} />
+      <KpiGrid kpis={practiceKpis(adoption, hol)} />
+      <AdoptionTabs
+        practiceId={practice.id}
+        initialTab={tab}
+        adoption={adoption}
+        details={
+          <DetailsCards practice={practice} onInvite={actions.openInvite} />
+        }
+      />
     </div>
   )
 }

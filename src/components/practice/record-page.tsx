@@ -47,12 +47,16 @@ export function RecordPage({
   backHref,
   badge,
   action,
+  fill,
   children,
 }: {
   title: string
   backHref: string
   badge?: React.ReactNode
   action?: React.ReactNode
+  /** For a page that is one table: the body takes the full height and the
+      table scrolls inside it instead of the page. */
+  fill?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -75,8 +79,15 @@ export function RecordPage({
         </div>
         {action}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
-        <div className="flex flex-col gap-4">{children}</div>
+      <div
+        className={cn(
+          "min-h-0 flex-1 px-4 pb-6",
+          fill ? "flex flex-col overflow-hidden" : "overflow-y-auto"
+        )}
+      >
+        <div className={cn("flex flex-col gap-4", fill && "min-h-0 flex-1")}>
+          {children}
+        </div>
       </div>
     </div>
   )

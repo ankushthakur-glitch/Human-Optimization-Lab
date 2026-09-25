@@ -325,7 +325,7 @@ export function PracticesList() {
         </div>
 
         <Card className="min-h-0 flex-1 gap-0 rounded-md border border-border py-0 shadow-[0_0_5px_rgb(0_0_0/0.08)] ring-0">
-          <div className="min-h-0 flex-1 overflow-auto">
+          <div className="min-h-0 flex-1 overflow-auto [&>[data-slot=table-container]]:overflow-visible">
             {rows.length === 0 ? (
               <Empty className="h-full">
                 <EmptyHeader>

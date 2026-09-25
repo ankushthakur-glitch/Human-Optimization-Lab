@@ -13,6 +13,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import type { PatientStatus } from "@/components/practice/practice-data"
+import { TablePager, usePaged } from "@/components/table-pager"
 import { Avatar, AvatarFallback, AvatarImage } from "@/design-system/ui/avatar"
 import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
@@ -37,15 +38,6 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/design-system/ui/input-group"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/design-system/ui/pagination"
 import {
   Popover,
   PopoverContent,
@@ -195,22 +187,6 @@ export type ToolbarAction = {
   onClick: () => void
 }
 
-/* The worklist's page sizes, so every list pages the same way. */
-const PAGE_SIZES = [
-  { label: "8", value: "8" },
-  { label: "15", value: "15" },
-  { label: "25", value: "25" },
-]
-
-/* The pager matches the patients worklist: 26px squares at 4px radius. */
-const PAGE_LINK =
-  "size-[26px] cursor-pointer rounded-[4px] text-sm font-normal text-muted-foreground " +
-  "data-[active=true]:border-transparent data-[active=true]:bg-primary " +
-  "data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary/90"
-
-const PAGE_STEP =
-  "size-[26px] cursor-pointer px-0! text-muted-foreground [&>span]:hidden!"
-
 /* The worklist's segmented switch: square segments inside one 6px outline,
    a 1px rule between them, the selected one on the primary surface. */
 export const SUB_TAB =
@@ -221,21 +197,6 @@ export const SUB_TAB =
 
 export const SUB_TABS_LIST =
   "h-8! gap-0 overflow-hidden rounded-md border bg-card p-0"
-
-/* At most seven slots: first, last, the current page and its neighbours. */
-function pageSlots(current: number, total: number): (number | "gap")[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const pages = new Set([1, total, current - 1, current, current + 1])
-  const sorted = [...pages]
-    .filter((n) => n >= 1 && n <= total)
-    .sort((a, b) => a - b)
-  const slots: (number | "gap")[] = []
-  sorted.forEach((n, i) => {
-    if (i > 0 && n - sorted[i - 1] > 1) slots.push("gap")
-    slots.push(n)
-  })
-  return slots
-}
 
 /* Subtle tints for initials avatars, picked from the name so a person keeps
    the same colour everywhere they appear. */
@@ -353,8 +314,6 @@ export function Directory<T extends { id: string }>({
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState("all")
   const [values, setValues] = React.useState<Record<string, string>>({})
-  const [page, setPage] = React.useState(1)
-  const [pageSize, setPageSize] = React.useState(15)
   const [selected, setSelected] = React.useState<string[]>([])
 
   const filtered = React.useMemo(() => {
@@ -372,15 +331,9 @@ export function Directory<T extends { id: string }>({
   }, [rows, query, status, statusTabs, values, filters, search])
 
   const activeFilters = Object.values(values).filter(Boolean).length
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
-  const currentPage = Math.min(page, totalPages)
-  const visible = filtered.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  )
-  const rangeStart =
-    filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1
-  const rangeEnd = Math.min(currentPage * pageSize, filtered.length)
+  const paged = usePaged(filtered)
+  const visible = paged.visible
+  const setPage = paged.setPage
 
   const selectedRows = rows.filter((row) => selected.includes(row.id))
   const allOnPageSelected =
@@ -605,7 +558,7 @@ export function Directory<T extends { id: string }>({
       </div>
 
       <Card className="min-h-0 flex-1 gap-0 rounded-md border border-border py-0 shadow-[0_0_5px_rgb(0_0_0/0.08)] ring-0">
-        <div className="min-h-0 flex-1 overflow-auto">
+        <div className="min-h-0 flex-1 overflow-auto [&>[data-slot=table-container]]:overflow-visible">
           {visible.length === 0 ? (
             <Empty className="h-full">
               <EmptyHeader>
@@ -670,75 +623,7 @@ export function Directory<T extends { id: string }>({
           )}
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t px-4 py-[11px]">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                Rows per page:
-              </span>
-              <Select
-                items={PAGE_SIZES}
-                value={String(pageSize)}
-                onValueChange={(value: string | null) => {
-                  setPageSize(Number(value ?? 15))
-                  setPage(1)
-                }}
-              >
-                <SelectTrigger
-                  size="sm"
-                  className="h-7 w-16 rounded-md text-xs"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {PAGE_SIZES.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {rangeStart}-{rangeEnd} of {filtered.length}
-            </span>
-          </div>
-          <Pagination className="mx-0 w-auto justify-end">
-            <PaginationContent className="gap-1.5">
-              <PaginationItem>
-                <PaginationPrevious
-                  className={PAGE_STEP}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                />
-              </PaginationItem>
-              {pageSlots(currentPage, totalPages).map((slot, i) =>
-                slot === "gap" ? (
-                  <PaginationItem key={`gap-${i}`}>
-                    <PaginationEllipsis className="size-[26px]" />
-                  </PaginationItem>
-                ) : (
-                  <PaginationItem key={slot}>
-                    <PaginationLink
-                      className={PAGE_LINK}
-                      isActive={slot === currentPage}
-                      onClick={() => setPage(slot)}
-                    >
-                      {slot}
-                    </PaginationLink>
-                  </PaginationItem>
-                )
-              )}
-              <PaginationItem>
-                <PaginationNext
-                  className={PAGE_STEP}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
+        <TablePager paged={paged} />
       </Card>
     </div>
   )

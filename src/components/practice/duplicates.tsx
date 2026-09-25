@@ -83,6 +83,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/design-system/ui/table"
+import { TablePager, usePaged } from "@/components/table-pager"
 
 /* The screens of the duplicate workflow (see patient-duplicates.ts for the
    rules): the outcome dialog the add form opens, the reactivate dialog, the
@@ -990,11 +991,12 @@ export function DuplicateQueueScreen() {
   const { items, ready } = duplicateReviews.use()
   const { items: list } = patients.use()
   const portal = usePortal()
+  const paged = usePaged(items)
 
   return (
     <PatientsFrame>
-      <RecordPage title="Possible duplicates" backHref={portal.patientsHref}>
-        <div className="overflow-hidden rounded-lg border bg-card shadow-[0_0_5px_rgb(0_0_0/0.06)]">
+      <RecordPage title="Possible duplicates" backHref={portal.patientsHref} fill>
+        <div className="flex min-h-80 flex-1 flex-col overflow-hidden rounded-lg border bg-card shadow-[0_0_5px_rgb(0_0_0/0.06)]">
           {!ready ? (
             <Skeleton className="m-5 h-40" />
           ) : items.length === 0 ? (
@@ -1017,9 +1019,9 @@ export function DuplicateQueueScreen() {
               </EmptyContent>
             </Empty>
           ) : (
-            <div className="overflow-x-auto [&_td:first-child]:pl-5 [&_td:last-child]:pr-5 [&_th:first-child]:pl-5 [&_th:last-child]:pr-5">
-              <Table>
-                <TableHeader className="bg-surface-head [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
+            <div className="flex min-h-0 flex-1 flex-col [&_td:first-child]:pl-5 [&_td:last-child]:pr-5 [&_th:first-child]:pl-5 [&_th:last-child]:pr-5">
+              <Table containerClassName="min-h-0 flex-1 overflow-auto">
+                <TableHeader className="sticky top-0 z-10 bg-surface-head [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
                   <TableRow>
                     <TableHead>Incoming patient</TableHead>
                     <TableHead>Possible match</TableHead>
@@ -1037,7 +1039,7 @@ export function DuplicateQueueScreen() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((r) => {
+                  {paged.visible.map((r) => {
                     const match = list.find((p) => p.id === r.matchId)
                     return (
                       <TableRow key={r.id}>
@@ -1101,6 +1103,7 @@ export function DuplicateQueueScreen() {
                   })}
                 </TableBody>
               </Table>
+              <TablePager paged={paged} />
             </div>
           )}
         </div>

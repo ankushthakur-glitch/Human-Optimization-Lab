@@ -1005,6 +1005,14 @@ function sexFor(name: string) {
   return FEMALE.has(name) ? "Female" : "Male"
 }
 
+/* A stable 0 to 99 roll per patient, so who has enrolled doesn't line up
+   with the provider rotation. One physician's patients mostly haven't
+   enrolled: the case the admin console's adoption view flags. */
+const LAGGING_PROVIDER = "PR3133"
+function enrollRoll(i: number) {
+  return (Math.imul(i + 1, 2_654_435_761) >>> 0) % 100
+}
+
 /* 131 patients, matching the count the admin console shows for the practice.
    Every value is derived from the row's position, so the list is stable. */
 const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
@@ -1020,8 +1028,10 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
         ? "Discharged"
         : i % 29 === 12
           ? "Consent withdrawn"
-          : i % 4 === 1
-            ? "Invited"
+          : enrollRoll(i) < (provider.id === LAGGING_PROVIDER ? 85 : 30)
+            ? enrollRoll(i * 3 + 1) < 25
+              ? "Not invited"
+              : "Invited"
             : "Active"
   const area = locationId === "LOC1003" ? "760" : "858"
   return {
@@ -1067,7 +1077,7 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
             },
           ],
     status,
-    invitedAt: isoDaysAgo(Math.floor(i / 3)),
+    invitedAt: status === "Not invited" ? "" : isoDaysAgo(Math.floor(i / 3)),
     source: i % 5 === 2 ? "Bulk import" : "Manual",
   }
 })
@@ -1076,7 +1086,7 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
 /*  Stores                                                                     */
 /* -------------------------------------------------------------------------- */
 
-const VERSION = "v11"
+const VERSION = "v13"
 
 /** The sample patients, before any session edits: the duplicate queue seeds from them. */
 export const PATIENT_SEED = PATIENTS
