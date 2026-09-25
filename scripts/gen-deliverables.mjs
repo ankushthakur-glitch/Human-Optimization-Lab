@@ -125,6 +125,12 @@ const EXTRA = [
   // home sit behind the app's session, so they have no link of their own.
   [PATIENT, "Patient Onboarding", "Activate account (mobile app)", "/app/activate"],
   [PATIENT, "Patient Onboarding", "Sign in (mobile app)", "/app/sign-in"],
+  // The app's error states; errors/ is a review index that opens each one.
+  [PATIENT, "Error States (mobile app)", "All error states", "/app/errors"],
+  [PATIENT, "Error States (mobile app)", "Page not found", "/app/errors/this-page-does-not-exist"],
+  [PATIENT, "Error States (mobile app)", "Session expired", "/app/errors/session-expired"],
+  [PATIENT, "Error States (mobile app)", "No internet connection", "/app/errors/offline"],
+  [PATIENT, "Error States (mobile app)", "Something went wrong", "/app/errors/crash"],
 ]
 
 // ── Pages ────────────────────────────────────────────────────────────────

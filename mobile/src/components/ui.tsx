@@ -31,7 +31,7 @@ const MARK = require("../../assets/logo-mark-white.png")
 /** On a wide browser the web build sits in a drawn phone (public/index.html)
     whose 44px status bar overlays the app, so the band clears it as it
     clears a real one. The breakpoint matches that page's media query. */
-function useTopInset() {
+export function useTopInset() {
   const insets = useSafeAreaInsets()
   const { width } = useWindowDimensions()
   if (Platform.OS === "web" && width >= 640) return Math.max(insets.top, 44)

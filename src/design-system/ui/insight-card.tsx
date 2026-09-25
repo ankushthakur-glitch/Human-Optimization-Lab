@@ -28,10 +28,7 @@ function InsightCardLabel({
   return (
     <div
       data-slot="insight-card-label"
-      className={cn(
-        "text-xs font-medium tracking-wide text-muted-foreground uppercase",
-        className
-      )}
+      className={cn("text-xs font-medium text-muted-foreground", className)}
       {...props}
     />
   )

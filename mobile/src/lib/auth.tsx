@@ -1,7 +1,7 @@
 import * as Crypto from "expo-crypto"
 import * as SecureStore from "expo-secure-store"
 import * as React from "react"
-import { Platform } from "react-native"
+import { AppState, Platform } from "react-native"
 
 import { PATIENT } from "@/lib/patient"
 import { VALIDATE } from "@/lib/validate"
@@ -23,6 +23,11 @@ import { VALIDATE } from "@/lib/validate"
 const KEY_HASH = "hol.passwordHash"
 const KEY_SIGNED_IN = "hol.signedIn"
 
+/** A signed-in patient who leaves the app untouched this long is signed out,
+    as the portal does. Checked every IDLE_CHECK_MS and on returning to the app. */
+const IDLE_MS = 15 * 60 * 1000
+const IDLE_CHECK_MS = 15 * 1000
+
 export type Status =
   | "loading"
   /** No session. */
@@ -30,6 +35,8 @@ export type Status =
   /** Signed in with the one-time password; must set a password before going on. */
   | "mustSetPassword"
   | "signedIn"
+  /** Signed out for inactivity; the patient sees why before signing in again. */
+  | "expired"
 
 type Result = { ok: true } | { ok: false; message: string }
 
@@ -41,6 +48,8 @@ type Auth = {
   setPassword: (password: string) => Promise<Result>
   signIn: (email: string, password: string) => Promise<Result>
   signOut: () => Promise<void>
+  /** Marks the patient as active, holding off the idle sign-out. */
+  touch: () => void
 }
 
 const AuthContext = React.createContext<Auth | null>(null)
@@ -62,6 +71,10 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 600))
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = React.useState<Status>("loading")
   const [activated, setActivated] = React.useState(false)
+  const lastActive = React.useRef(Date.now())
+  const touch = React.useCallback(() => {
+    lastActive.current = Date.now()
+  }, [])
 
   React.useEffect(() => {
     Promise.all([store.getItemAsync(KEY_HASH), store.getItemAsync(KEY_SIGNED_IN)])
@@ -71,6 +84,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => setStatus("signedOut"))
   }, [])
+
+  React.useEffect(() => {
+    if (status !== "signedIn") return
+    touch()
+    const check = () => {
+      if (Date.now() - lastActive.current < IDLE_MS) return
+      store.deleteItemAsync(KEY_SIGNED_IN)
+      setStatus("expired")
+    }
+    // Timers stop while the app is in the background, so check on return too.
+    const timer = setInterval(check, IDLE_CHECK_MS)
+    const subscription = AppState.addEventListener("change", (state) => state === "active" && check())
+    return () => {
+      clearInterval(timer)
+      subscription.remove()
+    }
+  }, [status, touch])
 
   const value = React.useMemo<Auth>(
     () => ({
@@ -116,6 +146,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { ok: false, message: "That email and password don’t match our records." }
         }
         await store.setItemAsync(KEY_SIGNED_IN, "1")
+        // Signing in with a password means one was set, even when the demo
+        // build waves the check through, so signing out (or timing out)
+        // leads back to sign in rather than activation.
+        setActivated(true)
         setStatus("signedIn")
         return { ok: true }
       },
@@ -124,8 +158,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await store.deleteItemAsync(KEY_SIGNED_IN)
         setStatus("signedOut")
       },
+
+      touch,
     }),
-    [status, activated]
+    [status, activated, touch]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

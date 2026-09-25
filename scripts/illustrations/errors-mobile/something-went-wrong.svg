@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1080" viewBox="0 0 1440 1080">
+  <!-- Drawn to sit with the portal's error art (3:4 canvas, pale blob, a
+       teal subject, a red badge, motion ticks) for the app's crash state. -->
+  <defs>
+    <linearGradient id="teal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22A8A1"/>
+      <stop offset="1" stop-color="#138C87"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF7B76"/>
+      <stop offset="1" stop-color="#F45B57"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#199B96" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <!-- backdrop -->
+  <path fill="#E8F1F3" d="M420 250C520 140 640 150 760 190C880 230 980 200 1080 215C1210 235 1270 330 1250 450C1235 540 1160 560 1170 640C1180 720 1280 760 1240 840C1200 920 1060 900 960 880C860 860 780 930 660 925C540 920 470 860 350 830C230 800 150 760 160 640C170 530 280 500 320 420C350 360 360 310 420 250Z"/>
+  <circle cx="250" cy="260" r="58" fill="#D3ECEB"/>
+  <circle cx="1225" cy="590" r="40" fill="#D3ECEB"/>
+  <path fill="#D3ECEB" d="M240 820C300 790 400 800 470 830C530 855 520 900 460 900C390 900 330 880 270 880C215 880 195 845 240 820Z"/>
+  <path fill="#D3ECEB" d="M980 925C1030 885 1130 880 1175 900C1215 920 1200 965 1140 970C1080 975 1020 975 985 965C955 957 960 940 980 925Z"/>
+
+  <!-- motion ticks -->
+  <g stroke="#199B96" stroke-width="16" stroke-linecap="round">
+    <path d="M455 318L500 368"/>
+    <path d="M395 420L462 446"/>
+    <path d="M392 520L455 512"/>
+  </g>
+
+  <!-- phone -->
+  <g filter="url(#soft)">
+    <rect x="555" y="250" width="330" height="560" rx="54" fill="#CDEBEA"/>
+    <rect x="555" y="250" width="330" height="560" rx="54" fill="none" stroke="url(#teal)" stroke-width="30"/>
+  </g>
+  <rect x="672" y="286" width="96" height="16" rx="8" fill="#199B96"/>
+  <!-- screen: a card, two lines, and a trace that drops off -->
+  <rect x="612" y="350" width="216" height="120" rx="20" fill="#FEFEFE"/>
+  <path d="M640 430L680 400L716 424L748 384L782 440" fill="none" stroke="#199B96" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="612" y="505" width="216" height="22" rx="11" fill="#FEFEFE"/>
+  <rect x="612" y="555" width="150" height="22" rx="11" fill="#FEFEFE"/>
+  <rect x="612" y="620" width="216" height="72" rx="20" fill="#199B96" opacity="0.35"/>
+
+  <!-- badge -->
+  <circle cx="880" cy="740" r="112" fill="#FEFEFE" opacity="0.9"/>
+  <circle cx="880" cy="740" r="96" fill="url(#red)"/>
+  <rect x="866" y="676" width="28" height="84" rx="14" fill="#FFFFFF"/>
+  <circle cx="880" cy="796" r="16" fill="#FFFFFF"/>
+</svg>

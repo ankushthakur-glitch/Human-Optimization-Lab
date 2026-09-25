@@ -1,8 +1,7 @@
-import { router } from "expo-router"
 import * as React from "react"
 import type { TextInput } from "react-native"
 
-import { Button, Divider, FooterLink, FormError, PasswordField, Screen, Stack, TextField, TextLink } from "@/components/ui"
+import { Button, Divider, FormError, PasswordField, Screen, Stack, TextField, TextLink } from "@/components/ui"
 import { IconFaceId, IconLock, IconMail } from "@/components/icons"
 import { InstallApp } from "@/components/install-app"
 import { useAuth } from "@/lib/auth"
@@ -71,7 +70,6 @@ export default function SignInScreen() {
           Sign in with Face ID
         </Button>
       </Stack>
-      <FooterLink prompt="Have a one-time password?" action="Activate" onPress={() => router.replace("/activate")} />
       <InstallApp />
     </Screen>
   )

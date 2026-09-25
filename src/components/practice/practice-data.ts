@@ -58,7 +58,12 @@ export const SPECIALTIES = [
 ]
 
 /* Non-clinical users are all Staff; the sub role says what they do. */
-export const USER_ROLES = ["Front desk", "Nurse", "Care coordinator", "Medical assistant"]
+export const USER_ROLES = [
+  "Front desk",
+  "Nurse",
+  "Care coordinator",
+  "Medical assistant",
+]
 
 export const LANGUAGES = [
   "English",
@@ -114,14 +119,38 @@ export const RACES = [
   "Other",
   "Prefer not to say",
 ]
-export const ETHNICITIES = ["Hispanic or Latino", "Not Hispanic or Latino", "Prefer not to say"]
+export const ETHNICITIES = [
+  "Hispanic or Latino",
+  "Not Hispanic or Latino",
+  "Prefer not to say",
+]
 export const PRONOUNS = ["She/her", "He/him", "They/them", "Prefer not to say"]
-export const MARITAL_STATUSES = ["Single", "Married", "Domestic partner", "Divorced", "Widowed", "Separated"]
+export const MARITAL_STATUSES = [
+  "Single",
+  "Married",
+  "Domestic partner",
+  "Divorced",
+  "Widowed",
+  "Separated",
+]
 export const RECORD_STATUSES = ["Active", "Inactive"]
-export const RELATIONSHIPS = ["Spouse", "Partner", "Parent", "Child", "Sibling", "Friend", "Other"]
+export const RELATIONSHIPS = [
+  "Spouse",
+  "Partner",
+  "Parent",
+  "Child",
+  "Sibling",
+  "Friend",
+  "Other",
+]
 
 /* CMS place of service codes a concierge practice uses. */
-export const PLACES_OF_SERVICE = ["11 Office", "02 Telehealth", "10 Telehealth in home", "12 Home"]
+export const PLACES_OF_SERVICE = [
+  "11 Office",
+  "02 Telehealth",
+  "10 Telehealth in home",
+  "12 Home",
+]
 
 export const SPECIALTY_TYPES = [
   "Primary Care",
@@ -140,10 +169,57 @@ export const TIME_ZONES = [
 ]
 
 export const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID",
-  "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO",
-  "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA",
-  "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "DC",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
 ]
 
 export const DAYS = [
@@ -363,7 +439,12 @@ export function personAddress(p: {
   state: string
   zip: string
 }) {
-  return [p.address1, p.address2, p.city, [p.state, p.zip].filter(Boolean).join(" ")]
+  return [
+    p.address1,
+    p.address2,
+    p.city,
+    [p.state, p.zip].filter(Boolean).join(" "),
+  ]
     .filter(Boolean)
     .join(", ")
 }
@@ -542,9 +623,29 @@ const hasPhoto = (i: number) => PHOTO_PATTERN[i % PHOTO_PATTERN.length] === 1
 
 /* Staff first names that take a woman's headshot from the pool. */
 const FEMALE_STAFF = new Set([
-  "Alana", "Carmen", "Elodie", "Gemma", "Ivy", "Kaia", "Mila", "Olive",
-  "Riley", "Sienna", "Uma", "Willa", "Yvette", "Aurora", "Daphne", "Freya",
-  "Hazel", "Jade", "Lena", "Nadia", "Penelope", "Stella", "Vera",
+  "Alana",
+  "Carmen",
+  "Elodie",
+  "Gemma",
+  "Ivy",
+  "Kaia",
+  "Mila",
+  "Olive",
+  "Riley",
+  "Sienna",
+  "Uma",
+  "Willa",
+  "Yvette",
+  "Aurora",
+  "Daphne",
+  "Freya",
+  "Hazel",
+  "Jade",
+  "Lena",
+  "Nadia",
+  "Penelope",
+  "Stella",
+  "Vera",
 ])
 
 const LOCATION_BASE: Omit<Location, LocationExtra>[] = [
@@ -579,7 +680,9 @@ const LOCATION_BASE: Omit<Location, LocationExtra>[] = [
     zip: "92014",
     timeZone: "Pacific (PT)",
     hours: defaultHours().map((d) =>
-      d.day === "Saturday" ? { ...d, open: true, start: "09:00", end: "13:00" } : d
+      d.day === "Saturday"
+        ? { ...d, open: true, start: "09:00", end: "13:00" }
+        : d
     ),
     status: "Active",
   },
@@ -634,41 +737,82 @@ const LOCATION_BASE: Omit<Location, LocationExtra>[] = [
 ]
 
 type LocationExtra =
-  | "contactPerson" | "specialtyType" | "specialtyCode" | "groupNpi" | "taxonomyCode"
-  | "ftin" | "website" | "photo"
+  | "contactPerson"
+  | "specialtyType"
+  | "specialtyCode"
+  | "groupNpi"
+  | "taxonomyCode"
+  | "ftin"
+  | "website"
+  | "photo"
 
-const CONTACT_PEOPLE = ["Marcus Whitfield", "Janelle Ortega", "Imani Caldwell", "Graham Pellegrini", "Victor Lindqvist"]
+const CONTACT_PEOPLE = [
+  "Marcus Whitfield",
+  "Janelle Ortega",
+  "Imani Caldwell",
+  "Graham Pellegrini",
+  "Victor Lindqvist",
+]
 
 /* More sites across Southern California so the list has enough rows to page,
    search and filter: [name, zip, area code]. Everything else is derived from
    the row's position so the data is stable across reloads. */
 const MORE_SITES: [name: string, zip: string, area: string][] = [
-  ["Encinitas", "92024", "760"], ["Solana Beach", "92075", "858"],
-  ["Oceanside", "92054", "760"], ["Escondido", "92025", "760"],
-  ["Poway", "92064", "858"], ["Coronado", "92118", "619"],
-  ["Point Loma", "92106", "619"], ["Mission Valley", "92108", "619"],
-  ["Hillcrest", "92103", "619"], ["North Park", "92104", "619"],
-  ["Pacific Beach", "92109", "858"], ["Sorrento Valley", "92121", "858"],
-  ["Carmel Valley", "92130", "858"], ["Rancho Bernardo", "92127", "858"],
-  ["Chula Vista", "91910", "619"], ["Eastlake", "91914", "619"],
-  ["Temecula", "92590", "951"], ["Murrieta", "92562", "951"],
-  ["San Marcos", "92069", "760"], ["Vista", "92081", "760"],
-  ["Newport Beach", "92660", "949"], ["Irvine", "92618", "949"],
-  ["Laguna Beach", "92651", "949"], ["Dana Point", "92629", "949"],
-  ["San Clemente", "92672", "949"], ["Huntington Beach", "92648", "714"],
-  ["Costa Mesa", "92626", "714"], ["Tustin", "92780", "714"],
-  ["Mission Viejo", "92691", "949"], ["Santa Monica", "90401", "310"],
-  ["Beverly Hills", "90210", "310"], ["Pasadena", "91101", "626"],
-  ["Manhattan Beach", "90266", "310"], ["Malibu", "90265", "310"],
-  ["Palm Springs", "92262", "760"], ["Palm Desert", "92260", "760"],
-  ["La Quinta", "92253", "760"], ["Santa Barbara", "93101", "805"],
-  ["Montecito", "93108", "805"], ["Thousand Oaks", "91360", "805"],
-  ["Westlake Village", "91361", "805"], ["Brentwood", "90049", "310"],
-  ["Studio City", "91604", "818"], ["Calabasas", "91302", "818"],
+  ["Encinitas", "92024", "760"],
+  ["Solana Beach", "92075", "858"],
+  ["Oceanside", "92054", "760"],
+  ["Escondido", "92025", "760"],
+  ["Poway", "92064", "858"],
+  ["Coronado", "92118", "619"],
+  ["Point Loma", "92106", "619"],
+  ["Mission Valley", "92108", "619"],
+  ["Hillcrest", "92103", "619"],
+  ["North Park", "92104", "619"],
+  ["Pacific Beach", "92109", "858"],
+  ["Sorrento Valley", "92121", "858"],
+  ["Carmel Valley", "92130", "858"],
+  ["Rancho Bernardo", "92127", "858"],
+  ["Chula Vista", "91910", "619"],
+  ["Eastlake", "91914", "619"],
+  ["Temecula", "92590", "951"],
+  ["Murrieta", "92562", "951"],
+  ["San Marcos", "92069", "760"],
+  ["Vista", "92081", "760"],
+  ["Newport Beach", "92660", "949"],
+  ["Irvine", "92618", "949"],
+  ["Laguna Beach", "92651", "949"],
+  ["Dana Point", "92629", "949"],
+  ["San Clemente", "92672", "949"],
+  ["Huntington Beach", "92648", "714"],
+  ["Costa Mesa", "92626", "714"],
+  ["Tustin", "92780", "714"],
+  ["Mission Viejo", "92691", "949"],
+  ["Santa Monica", "90401", "310"],
+  ["Beverly Hills", "90210", "310"],
+  ["Pasadena", "91101", "626"],
+  ["Manhattan Beach", "90266", "310"],
+  ["Malibu", "90265", "310"],
+  ["Palm Springs", "92262", "760"],
+  ["Palm Desert", "92260", "760"],
+  ["La Quinta", "92253", "760"],
+  ["Santa Barbara", "93101", "805"],
+  ["Montecito", "93108", "805"],
+  ["Thousand Oaks", "91360", "805"],
+  ["Westlake Village", "91361", "805"],
+  ["Brentwood", "90049", "310"],
+  ["Studio City", "91604", "818"],
+  ["Calabasas", "91302", "818"],
   ["Long Beach", "90802", "562"],
 ]
 
-const SITE_STREETS = ["Coast Hwy", "Main St", "Ocean Blvd", "Park Ave", "Grand Ave", "Via Real"]
+const SITE_STREETS = [
+  "Coast Hwy",
+  "Main St",
+  "Ocean Blvd",
+  "Park Ave",
+  "Grand Ave",
+  "Via Real",
+]
 const SITE_PHOTOS = ["la-jolla", "del-mar", "carlsbad", "rancho-santa-fe"]
 
 const MORE_LOCATION_BASE: Omit<Location, LocationExtra>[] = MORE_SITES.map(
@@ -677,8 +821,12 @@ const MORE_LOCATION_BASE: Omit<Location, LocationExtra>[] = MORE_SITES.map(
     name,
     placeOfService: "Office",
     phone: `(${area})-555-${pad(100 + ((i * 3) % 100), 4)}`,
-    email: i % 4 === 3 ? "" : `${name.toLowerCase().replace(/\s+/g, "")}@${PRACTICE.domain}`,
-    fax: i % 3 === 0 ? "" : `(${area})-555-${pad(100 + ((i * 3 + 1) % 100), 4)}`,
+    email:
+      i % 4 === 3
+        ? ""
+        : `${name.toLowerCase().replace(/\s+/g, "")}@${PRACTICE.domain}`,
+    fax:
+      i % 3 === 0 ? "" : `(${area})-555-${pad(100 + ((i * 3 + 1) % 100), 4)}`,
     address1: `${1_000 + i * 37} ${SITE_STREETS[i % SITE_STREETS.length]}`,
     address2: i % 2 ? `Suite ${100 + i * 2}` : "",
     city: name,
@@ -688,29 +836,50 @@ const MORE_LOCATION_BASE: Omit<Location, LocationExtra>[] = MORE_SITES.map(
     hours:
       i % 4 === 1
         ? defaultHours().map((d) =>
-            d.day === "Saturday" ? { ...d, open: true, start: "09:00", end: "13:00" } : d
+            d.day === "Saturday"
+              ? { ...d, open: true, start: "09:00", end: "13:00" }
+              : d
           )
         : defaultHours(),
     status: i % 8 === 5 ? "Inactive" : "Active",
   })
 )
 
-const LOCATIONS: Location[] = [...LOCATION_BASE, ...MORE_LOCATION_BASE].map((l, i) => ({
-  ...l,
-  placeOfService: l.placeOfService === "Telehealth" ? "02 Telehealth" : "11 Office",
-  contactPerson: CONTACT_PEOPLE[i % CONTACT_PEOPLE.length],
-  specialtyType: ["Longevity Medicine", "Primary Care", "Preventive Medicine", "Internal Medicine", "Primary Care"][i % 5],
-  specialtyCode: ["2083P0500X", "261QP2300X", "2083P0500X", "207R00000X", "261QP2300X"][i % 5],
-  groupNpi: withNpiCheckDigit(`1760${String(493_21 + i * 7).padStart(5, "0")}`),
-  taxonomyCode: "261QP2300X",
-  ftin: `33-${String(4_102_870 + i * 11).padStart(7, "0")}`,
-  website: i === 0 ? "https://www.harborviewlongevity.com" : "",
-  photo: hasPhoto(i)
-    ? `/practice/locations/${
-        i < LOCATION_BASE.length ? slug(l.name) : SITE_PHOTOS[i % SITE_PHOTOS.length]
-      }.jpg`
-    : "",
-}))
+const LOCATIONS: Location[] = [...LOCATION_BASE, ...MORE_LOCATION_BASE].map(
+  (l, i) => ({
+    ...l,
+    placeOfService:
+      l.placeOfService === "Telehealth" ? "02 Telehealth" : "11 Office",
+    contactPerson: CONTACT_PEOPLE[i % CONTACT_PEOPLE.length],
+    specialtyType: [
+      "Longevity Medicine",
+      "Primary Care",
+      "Preventive Medicine",
+      "Internal Medicine",
+      "Primary Care",
+    ][i % 5],
+    specialtyCode: [
+      "2083P0500X",
+      "261QP2300X",
+      "2083P0500X",
+      "207R00000X",
+      "261QP2300X",
+    ][i % 5],
+    groupNpi: withNpiCheckDigit(
+      `1760${String(493_21 + i * 7).padStart(5, "0")}`
+    ),
+    taxonomyCode: "261QP2300X",
+    ftin: `33-${String(4_102_870 + i * 11).padStart(7, "0")}`,
+    website: i === 0 ? "https://www.harborviewlongevity.com" : "",
+    photo: hasPhoto(i)
+      ? `/practice/locations/${
+          i < LOCATION_BASE.length
+            ? slug(l.name)
+            : SITE_PHOTOS[i % SITE_PHOTOS.length]
+        }.jpg`
+      : "",
+  })
+)
 
 type ProviderRow = [
   credential: string,
@@ -724,41 +893,134 @@ type ProviderRow = [
 ]
 
 const PROVIDER_ROWS: ProviderRow[] = [
-  ["MD", "Elise", "Harrington", "Internal Medicine", "Supervising provider", ["LOC1001", "LOC1004"], "Active", "Female"],
-  ["MD", "Rafael", "Quintero", "Endocrinology", "Provider", ["LOC1001", "LOC1002"], "Active", "Male"],
-  ["DO", "Naomi", "Feldstein", "Preventive Medicine", "Provider", ["LOC1002"], "Active", "Female"],
-  ["NP", "Tessa", "Moriarty", "Family Medicine", "Provider", ["LOC1003", "LOC1004"], "Active", "Female"],
-  ["MD", "Kenji", "Albrecht", "Cardiology", "Supervising provider", ["LOC1001"], "Active", "Male"],
-  ["PA", "Dominic", "Ashworth", "Sports Medicine", "Provider", ["LOC1003"], "Invited", "Male"],
-  ["RN", "Priscilla", "Vance", "Nutrition", "Provider", ["LOC1004"], "Invited", "Female"],
-  ["MD", "Colin", "Merriweather", "Internal Medicine", "Provider", ["LOC1005"], "Inactive", "Male"],
+  [
+    "MD",
+    "Elise",
+    "Harrington",
+    "Internal Medicine",
+    "Supervising provider",
+    ["LOC1001", "LOC1004"],
+    "Active",
+    "Female",
+  ],
+  [
+    "MD",
+    "Rafael",
+    "Quintero",
+    "Endocrinology",
+    "Provider",
+    ["LOC1001", "LOC1002"],
+    "Active",
+    "Male",
+  ],
+  [
+    "DO",
+    "Naomi",
+    "Feldstein",
+    "Preventive Medicine",
+    "Provider",
+    ["LOC1002"],
+    "Active",
+    "Female",
+  ],
+  [
+    "NP",
+    "Tessa",
+    "Moriarty",
+    "Family Medicine",
+    "Provider",
+    ["LOC1003", "LOC1004"],
+    "Active",
+    "Female",
+  ],
+  [
+    "MD",
+    "Kenji",
+    "Albrecht",
+    "Cardiology",
+    "Supervising provider",
+    ["LOC1001"],
+    "Active",
+    "Male",
+  ],
+  [
+    "PA",
+    "Dominic",
+    "Ashworth",
+    "Sports Medicine",
+    "Provider",
+    ["LOC1003"],
+    "Invited",
+    "Male",
+  ],
+  [
+    "RN",
+    "Priscilla",
+    "Vance",
+    "Nutrition",
+    "Provider",
+    ["LOC1004"],
+    "Invited",
+    "Female",
+  ],
+  [
+    "MD",
+    "Colin",
+    "Merriweather",
+    "Internal Medicine",
+    "Provider",
+    ["LOC1005"],
+    "Inactive",
+    "Male",
+  ],
   ...moreProviderRows(),
 ]
 
 /* The rest of the 50 providers, built from name pairs so each is unique. */
 function moreProviderRows(): ProviderRow[] {
   const names: [first: string, last: string, gender: string][] = [
-    ["Adeline", "Beaumont", "Female"], ["Bennett", "Crawford", "Male"],
-    ["Cecilia", "Duarte", "Female"], ["Declan", "Everhart", "Male"],
-    ["Evangeline", "Foster", "Female"], ["Fletcher", "Garrison", "Male"],
-    ["Genevieve", "Holt", "Female"], ["Hugo", "Iverson", "Male"],
-    ["Ingrid", "Jaramillo", "Female"], ["Jasper", "Kowalski", "Male"],
-    ["Juliet", "Langford", "Female"], ["Kieran", "Maddox", "Male"],
-    ["Lucia", "Nakagawa", "Female"], ["Malcolm", "Ostrander", "Male"],
-    ["Mirabel", "Prescott", "Female"], ["Nikhil", "Raman", "Male"],
-    ["Odette", "Sandoval", "Female"], ["Pierce", "Talbot", "Male"],
-    ["Rosalie", "Upton", "Female"], ["Silas", "Vandermeer", "Male"],
-    ["Serena", "Wexler", "Female"], ["Theo", "Yamamoto", "Male"],
-    ["Valentina", "Zeller", "Female"], ["Wyatt", "Abbott", "Male"],
-    ["Yara", "Blackwood", "Female"], ["Zachary", "Chen", "Male"],
-    ["Annika", "Dalton", "Female"], ["Brooks", "Emerson", "Male"],
-    ["Colette", "Fairchild", "Female"], ["Dorian", "Gallagher", "Male"],
-    ["Esme", "Hargrove", "Female"], ["Finnegan", "Irwin", "Male"],
-    ["Greta", "Jovanovic", "Female"], ["Harlan", "Keating", "Male"],
-    ["Iris", "Lachance", "Female"], ["Joaquin", "Mendoza", "Male"],
-    ["Katarina", "Novak", "Female"], ["Leander", "Oakes", "Male"],
-    ["Marisol", "Pineda", "Female"], ["Nathaniel", "Radcliffe", "Male"],
-    ["Paloma", "Serrano", "Female"], ["Rowan", "Thornton", "Male"],
+    ["Adeline", "Beaumont", "Female"],
+    ["Bennett", "Crawford", "Male"],
+    ["Cecilia", "Duarte", "Female"],
+    ["Declan", "Everhart", "Male"],
+    ["Evangeline", "Foster", "Female"],
+    ["Fletcher", "Garrison", "Male"],
+    ["Genevieve", "Holt", "Female"],
+    ["Hugo", "Iverson", "Male"],
+    ["Ingrid", "Jaramillo", "Female"],
+    ["Jasper", "Kowalski", "Male"],
+    ["Juliet", "Langford", "Female"],
+    ["Kieran", "Maddox", "Male"],
+    ["Lucia", "Nakagawa", "Female"],
+    ["Malcolm", "Ostrander", "Male"],
+    ["Mirabel", "Prescott", "Female"],
+    ["Nikhil", "Raman", "Male"],
+    ["Odette", "Sandoval", "Female"],
+    ["Pierce", "Talbot", "Male"],
+    ["Rosalie", "Upton", "Female"],
+    ["Silas", "Vandermeer", "Male"],
+    ["Serena", "Wexler", "Female"],
+    ["Theo", "Yamamoto", "Male"],
+    ["Valentina", "Zeller", "Female"],
+    ["Wyatt", "Abbott", "Male"],
+    ["Yara", "Blackwood", "Female"],
+    ["Zachary", "Chen", "Male"],
+    ["Annika", "Dalton", "Female"],
+    ["Brooks", "Emerson", "Male"],
+    ["Colette", "Fairchild", "Female"],
+    ["Dorian", "Gallagher", "Male"],
+    ["Esme", "Hargrove", "Female"],
+    ["Finnegan", "Irwin", "Male"],
+    ["Greta", "Jovanovic", "Female"],
+    ["Harlan", "Keating", "Male"],
+    ["Iris", "Lachance", "Female"],
+    ["Joaquin", "Mendoza", "Male"],
+    ["Katarina", "Novak", "Female"],
+    ["Leander", "Oakes", "Male"],
+    ["Marisol", "Pineda", "Female"],
+    ["Nathaniel", "Radcliffe", "Male"],
+    ["Paloma", "Serrano", "Female"],
+    ["Rowan", "Thornton", "Male"],
   ]
   const credentials = ["MD", "MD", "DO", "NP", "PA", "MD", "RN"]
   const clinical = SPECIALTIES.filter((s) => s !== "Nutrition")
@@ -803,7 +1065,16 @@ const TAXONOMY_BY_SPECIALTY: Record<string, string> = {
 }
 
 const PROVIDERS: Provider[] = PROVIDER_ROWS.map((row, i) => {
-  const [credential, firstName, lastName, specialty, role, locationIds, status, gender] = row
+  const [
+    credential,
+    firstName,
+    lastName,
+    specialty,
+    role,
+    locationIds,
+    status,
+    gender,
+  ] = row
   return {
     id: `PR${3132 + i}`,
     credential,
@@ -812,12 +1083,15 @@ const PROVIDERS: Provider[] = PROVIDER_ROWS.map((row, i) => {
     lastName,
     dob: `19${70 + ((i * 7) % 20)}-${pad(1 + ((i * 5) % 12), 2)}-${pad(3 + ((i * 11) % 25), 2)}`,
     gender,
-    npi: withNpiCheckDigit(`1${pad((i * 3_141_593 + 27_182_818) % 100_000_000, 8)}`),
+    npi: withNpiCheckDigit(
+      `1${pad((i * 3_141_593 + 27_182_818) % 100_000_000, 8)}`
+    ),
     specialty,
     role,
     taxonomyCode:
-      TAXONOMY_BY_SPECIALTY[credential === "MD" || credential === "DO" ? specialty : credential] ??
-      TAXONOMY_CODES[0],
+      TAXONOMY_BY_SPECIALTY[
+        credential === "MD" || credential === "DO" ? specialty : credential
+      ] ?? TAXONOMY_CODES[0],
     languages: i % 3 === 0 ? ["English", "Spanish"] : ["English"],
     ssn: `${pad(521 + i * 7, 3)}-${pad(40 + i, 2)}-${pad(1_842 + i * 311, 4)}`,
     photo: !hasPhoto(i)
@@ -847,13 +1121,26 @@ const PROVIDERS: Provider[] = PROVIDER_ROWS.map((row, i) => {
         : `${credential} program graduate; ${3 + i} years in preventive and lifestyle care.`,
     licenses: [
       {
-        type: credential === "RN" || credential === "NP" ? "Nursing License" : "State Medical License",
+        type:
+          credential === "RN" || credential === "NP"
+            ? "Nursing License"
+            : "State Medical License",
         state: "CA",
-        number: credential === "RN" ? `RN${pad(845_210 + i * 37, 6)}` : `A${pad(128_400 + i * 913, 6)}`,
+        number:
+          credential === "RN"
+            ? `RN${pad(845_210 + i * 37, 6)}`
+            : `A${pad(128_400 + i * 913, 6)}`,
         expiry: `20${27 + (i % 3)}-${pad(1 + ((i * 4) % 12), 2)}-30`,
       },
       ...(credential === "MD" || credential === "DO"
-        ? [{ type: "DEA Registration", state: "CA", number: `F${lastName[0]}${pad(410_233 + i * 71, 7)}`, expiry: `2028-${pad(1 + ((i + 1) % 12), 2)}-28` }]
+        ? [
+            {
+              type: "DEA Registration",
+              state: "CA",
+              number: `F${lastName[0]}${pad(410_233 + i * 71, 7)}`,
+              expiry: `2028-${pad(1 + ((i + 1) % 12), 2)}-28`,
+            },
+          ]
         : []),
     ],
     signature: "",
@@ -937,21 +1224,51 @@ const USERS: StaffUser[] = [
    the list is stable across reloads. */
 function moreUsers(): StaffUser[] {
   const names: [first: string, last: string][] = [
-    ["Alana", "Brennan"], ["Bryce", "Calloway"], ["Carmen", "Delgado"],
-    ["Dante", "Eriksen"], ["Elodie", "Farrow"], ["Franco", "Gutierrez"],
-    ["Gemma", "Harlow"], ["Hector", "Ibarra"], ["Ivy", "Jennings"],
-    ["Jonas", "Kerrigan"], ["Kaia", "Lowell"], ["Liam", "Macaulay"],
-    ["Mila", "Navarro"], ["Nico", "Ortiz"], ["Olive", "Pacheco"],
-    ["Parker", "Quintana"], ["Riley", "Sato"], ["Sienna", "Trujillo"],
-    ["Tristan", "Ulloa"], ["Uma", "Villanueva"], ["Vance", "Winslow"],
-    ["Willa", "Xiong"], ["Xavier", "Yates"], ["Yvette", "Zamora"],
-    ["Zane", "Albright"], ["Aurora", "Bishop"], ["Blake", "Cortez"],
-    ["Daphne", "Donovan"], ["Elias", "Estrada"], ["Freya", "Flynn"],
-    ["Grant", "Gilmore"], ["Hazel", "Hensley"], ["Ian", "Ivers"],
-    ["Jade", "Jimenez"], ["Kai", "Kimura"], ["Lena", "Lambert"],
-    ["Marco", "Molina"], ["Nadia", "Nguyen"], ["Oscar", "Olsen"],
-    ["Penelope", "Price"], ["Reid", "Ramirez"], ["Stella", "Sutton"],
-    ["Tobias", "Tran"], ["Vera", "Vaughn"], ["Wade", "Whitman"],
+    ["Alana", "Brennan"],
+    ["Bryce", "Calloway"],
+    ["Carmen", "Delgado"],
+    ["Dante", "Eriksen"],
+    ["Elodie", "Farrow"],
+    ["Franco", "Gutierrez"],
+    ["Gemma", "Harlow"],
+    ["Hector", "Ibarra"],
+    ["Ivy", "Jennings"],
+    ["Jonas", "Kerrigan"],
+    ["Kaia", "Lowell"],
+    ["Liam", "Macaulay"],
+    ["Mila", "Navarro"],
+    ["Nico", "Ortiz"],
+    ["Olive", "Pacheco"],
+    ["Parker", "Quintana"],
+    ["Riley", "Sato"],
+    ["Sienna", "Trujillo"],
+    ["Tristan", "Ulloa"],
+    ["Uma", "Villanueva"],
+    ["Vance", "Winslow"],
+    ["Willa", "Xiong"],
+    ["Xavier", "Yates"],
+    ["Yvette", "Zamora"],
+    ["Zane", "Albright"],
+    ["Aurora", "Bishop"],
+    ["Blake", "Cortez"],
+    ["Daphne", "Donovan"],
+    ["Elias", "Estrada"],
+    ["Freya", "Flynn"],
+    ["Grant", "Gilmore"],
+    ["Hazel", "Hensley"],
+    ["Ian", "Ivers"],
+    ["Jade", "Jimenez"],
+    ["Kai", "Kimura"],
+    ["Lena", "Lambert"],
+    ["Marco", "Molina"],
+    ["Nadia", "Nguyen"],
+    ["Oscar", "Olsen"],
+    ["Penelope", "Price"],
+    ["Reid", "Ramirez"],
+    ["Stella", "Sutton"],
+    ["Tobias", "Tran"],
+    ["Vera", "Vaughn"],
+    ["Wade", "Whitman"],
   ]
   const sites = LOCATIONS.filter((l) => l.status === "Active").map((l) => l.id)
   return names.map(([firstName, lastName], i) => {
@@ -963,7 +1280,8 @@ function moreUsers(): StaffUser[] {
       lastName,
       role: USER_ROLES[i % USER_ROLES.length],
       email: `${firstName}.${lastName}@${PRACTICE.domain}`.toLowerCase(),
-      phone: i % 6 === 5 ? "" : `(858)-555-${pad(100 + ((i * 7 + 3) % 100), 4)}`,
+      phone:
+        i % 6 === 5 ? "" : `(858)-555-${pad(100 + ((i * 7 + 3) % 100), 4)}`,
       locationIds:
         i % 3 === 0
           ? [sites[i % sites.length], sites[(i + 5) % sites.length]]
@@ -971,33 +1289,103 @@ function moreUsers(): StaffUser[] {
       status,
       invitedAt: isoDaysAgo(3 + i * 2),
       lastActive:
-        status === "Invited" ? "" : isoDaysAgo(status === "Inactive" ? 20 + i : i % 4),
+        status === "Invited"
+          ? ""
+          : isoDaysAgo(status === "Inactive" ? 20 + i : i % 4),
       photo: hasPhoto(i)
-        ? patientHeadshot(FEMALE_STAFF.has(firstName) ? "Female" : "Male", i + 3)
+        ? patientHeadshot(
+            FEMALE_STAFF.has(firstName) ? "Female" : "Male",
+            i + 3
+          )
         : "",
     }
   })
 }
 
 const FIRST_NAMES = [
-  "Amelia", "Benjamin", "Charlotte", "Daniel", "Eleanor", "Felix", "Gabriela",
-  "Harrison", "Isla", "Jonah", "Keira", "Leonardo", "Madeline", "Nolan",
-  "Ophelia", "Preston", "Quinn", "Rosalind", "Sebastian", "Tamsin", "Ulrich",
-  "Vivian", "Wesley", "Ximena", "Yusuf", "Zara", "Adrian", "Beatrice",
-  "Cyrus", "Delphine", "Emmett", "Fiona", "Gideon",
+  "Amelia",
+  "Benjamin",
+  "Charlotte",
+  "Daniel",
+  "Eleanor",
+  "Felix",
+  "Gabriela",
+  "Harrison",
+  "Isla",
+  "Jonah",
+  "Keira",
+  "Leonardo",
+  "Madeline",
+  "Nolan",
+  "Ophelia",
+  "Preston",
+  "Quinn",
+  "Rosalind",
+  "Sebastian",
+  "Tamsin",
+  "Ulrich",
+  "Vivian",
+  "Wesley",
+  "Ximena",
+  "Yusuf",
+  "Zara",
+  "Adrian",
+  "Beatrice",
+  "Cyrus",
+  "Delphine",
+  "Emmett",
+  "Fiona",
+  "Gideon",
 ]
 const LAST_NAMES = [
-  "Abernathy", "Bellweather", "Castellanos", "Dunmore", "Ellsworth",
-  "Fairbanks", "Galloway", "Hollister", "Ingram", "Jardine", "Kensington",
-  "Lockhart", "Montague", "Northcott", "Oyelaran", "Pemberton", "Quayle",
-  "Rutherford", "Sinclair", "Thackeray", "Underhill", "Valdivia", "Whitlock",
-  "Yardley", "Zimmerman", "Achebe", "Brightman", "Coventry", "Delacroix",
+  "Abernathy",
+  "Bellweather",
+  "Castellanos",
+  "Dunmore",
+  "Ellsworth",
+  "Fairbanks",
+  "Galloway",
+  "Hollister",
+  "Ingram",
+  "Jardine",
+  "Kensington",
+  "Lockhart",
+  "Montague",
+  "Northcott",
+  "Oyelaran",
+  "Pemberton",
+  "Quayle",
+  "Rutherford",
+  "Sinclair",
+  "Thackeray",
+  "Underhill",
+  "Valdivia",
+  "Whitlock",
+  "Yardley",
+  "Zimmerman",
+  "Achebe",
+  "Brightman",
+  "Coventry",
+  "Delacroix",
 ]
 
 const FEMALE = new Set([
-  "Amelia", "Charlotte", "Eleanor", "Gabriela", "Isla", "Keira", "Madeline",
-  "Ophelia", "Rosalind", "Tamsin", "Vivian", "Ximena", "Zara", "Beatrice",
-  "Delphine", "Fiona",
+  "Amelia",
+  "Charlotte",
+  "Eleanor",
+  "Gabriela",
+  "Isla",
+  "Keira",
+  "Madeline",
+  "Ophelia",
+  "Rosalind",
+  "Tamsin",
+  "Vivian",
+  "Ximena",
+  "Zara",
+  "Beatrice",
+  "Delphine",
+  "Fiona",
 ])
 
 function sexFor(name: string) {
@@ -1052,7 +1440,8 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
     state: "CA",
     phone: `(${area})-555-${pad(100 + (i % 100), 4)}`,
     homePhone: "",
-    email: `${firstName}.${lastName}${i > 60 ? i : ""}@example.com`.toLowerCase(),
+    email:
+      `${firstName}.${lastName}${i > 60 ? i : ""}@example.com`.toLowerCase(),
     noEmail: false,
     preferredContacts: [CONTACT_METHODS[i % 3]],
     timeZone: "Pacific (PT)",
@@ -1082,19 +1471,52 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
   }
 })
 
+/* The first sample patient is Olivia Bennett, the patient the invitation
+   email and the patient app (mobile/) are built around, under Dr. Elise
+   Harrington, so her record reads the same in the portal and the app. */
+export const OLIVIA_ID = PATIENTS[0].id
+PATIENTS[0] = {
+  ...PATIENTS[0],
+  firstName: "Olivia",
+  lastName: "Bennett",
+  sex: "Female",
+  dob: "1978-04-16",
+  email: INVITEES.patient.email,
+  photo: patientHeadshot("Female", 0),
+  providerId: "PR3132",
+  locationId:
+    PROVIDERS.find((p) => p.id === "PR3132")?.locationIds[0] ??
+    PATIENTS[0].locationId,
+  status: "Active",
+  invitedAt: isoDaysAgo(30),
+  registrationDate: isoDaysAgo(30),
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Stores                                                                     */
 /* -------------------------------------------------------------------------- */
 
-const VERSION = "v13"
+const VERSION = "v14"
 
 /** The sample patients, before any session edits: the duplicate queue seeds from them. */
 export const PATIENT_SEED = PATIENTS
 
-export const locations = createCollection("hol-practice-locations", LOCATIONS, VERSION)
-export const providers = createCollection("hol-practice-providers", PROVIDERS, VERSION)
+export const locations = createCollection(
+  "hol-practice-locations",
+  LOCATIONS,
+  VERSION
+)
+export const providers = createCollection(
+  "hol-practice-providers",
+  PROVIDERS,
+  VERSION
+)
 export const users = createCollection("hol-practice-users", USERS, VERSION)
-export const patients = createCollection("hol-practice-patients", PATIENTS, VERSION)
+export const patients = createCollection(
+  "hol-practice-patients",
+  PATIENTS,
+  VERSION
+)
 
 export function createLocation(input: LocationInput) {
   const location: Location = {
@@ -1137,10 +1559,7 @@ export function inviteUser(input: StaffUserInput) {
 
 /* Adding a patient never emails them: the portal invite is always sent by
    hand afterwards, from the list or the profile (sendPatientInvites). */
-export function addPatients(
-  inputs: PatientInput[],
-  source: Patient["source"]
-) {
+export function addPatients(inputs: PatientInput[], source: Patient["source"]) {
   const taken = [...patients.get()]
   const created = inputs.map((input) => {
     const patient: Patient = {

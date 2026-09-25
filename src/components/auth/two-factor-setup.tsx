@@ -72,7 +72,8 @@ function EnabledDialog({ open, next }: { open: boolean; next: string }) {
           <DialogTitle className="text-lg">Account authenticated</DialogTitle>
           <DialogDescription>
             Two-factor authentication is on. You&rsquo;ll enter a code from
-            your authenticator app each time you sign in.
+            your authenticator app once a week, and when you sign in on a new
+            device.
           </DialogDescription>
         </DialogHeader>
         <div>

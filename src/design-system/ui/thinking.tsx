@@ -96,9 +96,7 @@ function ThinkingStep({
       {...props}
     >
       {label ? (
-        <span className="text-xs font-medium tracking-wide text-foreground/70 uppercase">
-          {label}
-        </span>
+        <span className="text-xs font-medium text-foreground/70">{label}</span>
       ) : null}
       <span className="leading-relaxed whitespace-pre-wrap">{children}</span>
     </div>

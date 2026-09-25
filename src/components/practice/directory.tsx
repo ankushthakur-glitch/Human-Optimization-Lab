@@ -648,7 +648,7 @@ export function DetailSection({
   return (
     <section className={cn("flex flex-col gap-3", className)}>
       <div className="flex items-center gap-3">
-        <h3 className="shrink-0 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <h3 className="shrink-0 text-xs font-semibold text-muted-foreground">
           {title}
         </h3>
         <Separator className="flex-1" />

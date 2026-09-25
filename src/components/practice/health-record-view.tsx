@@ -1,0 +1,846 @@
+"use client"
+
+import * as React from "react"
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceArea,
+  XAxis,
+  YAxis,
+} from "recharts"
+import { toast } from "@/design-system/ui/sonner"
+import {
+  IconAlert,
+  IconLock,
+  IconMail,
+  IconRefresh,
+  IconSparkles,
+} from "@/design-system/icons"
+
+import { cn } from "@/lib/utils"
+import { SelectField } from "@/components/form-kit"
+import { SUB_TAB, SUB_TABS_LIST } from "@/components/practice/directory"
+import {
+  type Biomarker,
+  FREE_AI_LIMIT,
+  type HealthRecord,
+  PLANS,
+  type Trend,
+  healthRecordFor,
+  inRange,
+  latest,
+  planName,
+  rangeLabel,
+  recommendPlan,
+  recommendations,
+  sourceName,
+  suggestedReason,
+  trendOf,
+} from "@/components/practice/health-record"
+import {
+  type Patient,
+  fullName,
+  sendPatientInvites,
+  shortDate,
+  usDate,
+} from "@/components/practice/practice-data"
+import { DetailGrid, RecordCard } from "@/components/practice/record-page"
+import { SideSheet, SideSheetHeader } from "@/components/practice/sheets"
+import { Badge } from "@/design-system/ui/badge"
+import { Button } from "@/design-system/ui/button"
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/design-system/ui/chart"
+import { Checkbox } from "@/design-system/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/design-system/ui/dialog"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/design-system/ui/empty"
+import { Field, FieldLabel } from "@/design-system/ui/field"
+import { SheetFooter } from "@/design-system/ui/sheet"
+import { Skeleton } from "@/design-system/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/design-system/ui/table"
+import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
+import { Textarea } from "@/design-system/ui/textarea"
+
+/* The provider's view of the patient's longitudinal record: one record per
+   patient, pulled after consent from the EHRs, labs and imaging centers the
+   interoperability vendor reaches. Values are read-only here; every one
+   carries where it came from, and a change adds to the history instead of
+   replacing it. Clinical data, so only the provider portal shows it: the
+   clinic manager and other non-clinical users see the profile only. */
+
+export function useHealthRecord(patient: Patient) {
+  return React.useMemo(() => healthRecordFor(patient), [patient])
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Small pieces                                                               */
+/* -------------------------------------------------------------------------- */
+
+const TREND_VARIANT: Record<Trend, "success" | "secondary" | "destructive"> = {
+  Improving: "success",
+  Stable: "secondary",
+  Declining: "destructive",
+}
+
+export function TrendBadge({ trend }: { trend: Trend }) {
+  return <Badge variant={TREND_VARIANT[trend]}>{trend}</Badge>
+}
+
+const STATE_VARIANT = {
+  "Awaiting consent": "outline",
+  Building: "info",
+  Active: "success",
+  "Source exception": "destructive",
+} as const
+
+/** A tiny line of a marker's readings, drawn to the row's height. */
+function Sparkline({ b, className }: { b: Biomarker; className?: string }) {
+  const values = b.readings.map((r) => r.value)
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const span = max - min || 1
+  const w = 64
+  const h = 20
+  const points = values
+    .map(
+      (v, i) =>
+        `${(i / (values.length - 1)) * w},${h - 2 - ((v - min) / span) * (h - 4)}`
+    )
+    .join(" ")
+  const trend = trendOf(b)
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      className={cn("h-5 w-16 overflow-visible", className)}
+      aria-hidden
+    >
+      <polyline
+        points={points}
+        fill="none"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={
+          trend === "Declining"
+            ? "stroke-destructive"
+            : trend === "Improving"
+              ? "stroke-success"
+              : "stroke-muted-foreground"
+        }
+      />
+    </svg>
+  )
+}
+
+function Value({ b }: { b: Biomarker }) {
+  const off = !inRange(b)
+  return (
+    <span className={cn("font-medium tabular-nums", off && "text-destructive")}>
+      {latest(b).value}
+      <span className="ml-1 text-xs font-normal text-muted-foreground">
+        {b.unit}
+      </span>
+    </span>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Tab                                                                        */
+/* -------------------------------------------------------------------------- */
+
+export function HealthRecordTab({ patient }: { patient: Patient }) {
+  const record = useHealthRecord(patient)
+  const [recommending, setRecommending] = React.useState(false)
+
+  if (record.state === "Awaiting consent") {
+    return (
+      <RecordCard title="Health record">
+        <Empty className="py-10">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <IconLock />
+            </EmptyMedia>
+            <EmptyTitle>No record yet</EmptyTitle>
+            <EmptyDescription>
+              {patient.status === "Consent withdrawn"
+                ? `${patient.firstName} withdrew consent. Nothing new is pulled.`
+                : `Records are pulled once ${patient.firstName} accepts the invite and consents.`}
+            </EmptyDescription>
+          </EmptyHeader>
+          {patient.status === "Not invited" && (
+            <EmptyContent>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  sendPatientInvites([patient.id])
+                  toast.success("Invite sent", {
+                    description: `${fullName(patient)} will get an email to join the patient app.`,
+                  })
+                }}
+              >
+                <IconMail />
+                Send invite
+              </Button>
+            </EmptyContent>
+          )}
+        </Empty>
+      </RecordCard>
+    )
+  }
+
+  return (
+    <>
+      <RecordStatus
+        patient={patient}
+        record={record}
+        onRecommend={() => setRecommending(true)}
+      />
+
+      {record.state === "Source exception" && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
+          <div className="flex min-w-0 items-start gap-2.5 text-destructive">
+            <IconAlert className="mt-0.5 size-4 shrink-0" />
+            <p>{record.exception}</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              toast.success("Sync requested", {
+                description:
+                  "HOL will try the source again and update the record.",
+              })
+            }
+          >
+            <IconRefresh />
+            Retry sync
+          </Button>
+        </div>
+      )}
+
+      {record.state === "Building" && <BuildingRecord />}
+
+      {record.state === "Active" && (
+        <>
+          <Recommendation patientId={patient.id} />
+          <BiomarkersCard record={record} />
+          <div className="grid gap-4 xl:grid-cols-2">
+            <RecordCard title="Conditions">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Condition</TableHead>
+                    <TableHead>ICD-10</TableHead>
+                    <TableHead>Onset</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="hidden sm:table-cell">
+                      Source
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {record.conditions.map((c) => (
+                    <TableRow key={c.code}>
+                      <TableCell className="font-medium">{c.name}</TableCell>
+                      <TableCell className="tabular-nums">{c.code}</TableCell>
+                      <TableCell className="tabular-nums">
+                        {shortDate(c.onset)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            c.status === "Active" ? "warning" : "secondary"
+                          }
+                        >
+                          {c.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden text-muted-foreground sm:table-cell">
+                        {sourceName(c.sourceId)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </RecordCard>
+            <RecordCard title="Medications">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Medication</TableHead>
+                    <TableHead>Dose</TableHead>
+                    <TableHead>Started</TableHead>
+                    <TableHead className="hidden sm:table-cell">
+                      Source
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {record.medications.map((m) => (
+                    <TableRow key={m.name}>
+                      <TableCell className="font-medium">{m.name}</TableCell>
+                      <TableCell>{m.dose}</TableCell>
+                      <TableCell className="tabular-nums">
+                        {shortDate(m.started)}
+                      </TableCell>
+                      <TableCell className="hidden text-muted-foreground sm:table-cell">
+                        {sourceName(m.sourceId)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </RecordCard>
+          </div>
+          <RecordCard title="Encounters">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Where</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Clinician
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell">Source</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {record.encounters.map((e) => (
+                  <TableRow key={`${e.date}-${e.type}`}>
+                    <TableCell className="tabular-nums">
+                      {usDate(e.date)}
+                    </TableCell>
+                    <TableCell className="font-medium">{e.type}</TableCell>
+                    <TableCell>{e.where}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {e.clinician || "Not recorded"}
+                    </TableCell>
+                    <TableCell className="hidden text-muted-foreground sm:table-cell">
+                      {sourceName(e.sourceId)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </RecordCard>
+        </>
+      )}
+
+      <RecommendPlanDialog
+        patient={patient}
+        record={record}
+        open={recommending}
+        onOpenChange={setRecommending}
+      />
+    </>
+  )
+}
+
+function RecordStatus({
+  patient,
+  record,
+  onRecommend,
+}: {
+  patient: Patient
+  record: HealthRecord
+  onRecommend: () => void
+}) {
+  const { items } = recommendations.use()
+  const subscribed = items.find(
+    (r) => r.patientId === patient.id && r.status === "Subscribed"
+  )
+  return (
+    <RecordCard
+      title="Longitudinal record"
+      action={
+        record.state === "Active" && (
+          <Button size="sm" onClick={onRecommend}>
+            <IconSparkles />
+            Recommend plan
+          </Button>
+        )
+      }
+    >
+      <DetailGrid
+        className="sm:grid-cols-2 lg:grid-cols-5"
+        items={[
+          {
+            label: "Record",
+            value: (
+              <Badge variant={STATE_VARIANT[record.state]}>
+                {record.state}
+              </Badge>
+            ),
+          },
+          {
+            label: "Plan",
+            value: subscribed ? planName(subscribed.planId) : "Free",
+          },
+          {
+            label: "Last sync",
+            value: record.lastSync ? usDate(record.lastSync) : "",
+          },
+          {
+            label: "Sources",
+            value: record.sourceIds.map(sourceName).join(", "),
+          },
+          {
+            label: "AI questions this month",
+            value: `${record.aiUsed} of ${FREE_AI_LIMIT}`,
+          },
+        ]}
+      />
+    </RecordCard>
+  )
+}
+
+function BuildingRecord() {
+  return (
+    <RecordCard
+      title="Biomarkers"
+      action={<Badge variant="info">Pulling records</Badge>}
+    >
+      <div className="flex flex-col gap-3">
+        {Array.from({ length: 5 }, (_, i) => (
+          <div key={i} className="flex items-center gap-4">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 flex-1" />
+          </div>
+        ))}
+      </div>
+    </RecordCard>
+  )
+}
+
+function Recommendation({ patientId }: { patientId: string }) {
+  const { items } = recommendations.use()
+  const rec = items.find((r) => r.patientId === patientId)
+  if (!rec) return null
+  return (
+    <RecordCard
+      title="Plan recommendation"
+      action={
+        <Badge
+          variant={
+            rec.status === "Subscribed"
+              ? "success"
+              : rec.status === "Declined"
+                ? "secondary"
+                : "info"
+          }
+        >
+          {rec.status}
+        </Badge>
+      }
+    >
+      <DetailGrid
+        className="sm:grid-cols-3"
+        items={[
+          { label: "Plan", value: planName(rec.planId) },
+          { label: "Recommended by", value: rec.by },
+          { label: "Sent", value: usDate(rec.sentAt) },
+          { label: "Reason", value: rec.reason, wide: true },
+        ]}
+      />
+    </RecordCard>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Biomarkers                                                                 */
+/* -------------------------------------------------------------------------- */
+
+type MarkerFilter = "all" | "out" | "declining"
+
+function BiomarkersCard({ record }: { record: HealthRecord }) {
+  const [filter, setFilter] = React.useState<MarkerFilter>("all")
+  const [open, setOpen] = React.useState<Biomarker | null>(null)
+  const all = record.biomarkers
+  const groups: Record<MarkerFilter, Biomarker[]> = {
+    all,
+    out: all.filter((b) => !inRange(b)),
+    declining: all.filter((b) => trendOf(b) === "Declining"),
+  }
+  const rows = groups[filter]
+
+  return (
+    <RecordCard
+      title="Biomarkers"
+      action={
+        <Tabs
+          value={filter}
+          onValueChange={(v) => setFilter(v as MarkerFilter)}
+        >
+          <TabsList className={SUB_TABS_LIST}>
+            <TabsTrigger value="all" className={SUB_TAB}>
+              All ({groups.all.length})
+            </TabsTrigger>
+            <TabsTrigger value="out" className={SUB_TAB}>
+              Out of range ({groups.out.length})
+            </TabsTrigger>
+            <TabsTrigger value="declining" className={SUB_TAB}>
+              Declining ({groups.declining.length})
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      }
+    >
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Biomarker</TableHead>
+            <TableHead>Latest</TableHead>
+            <TableHead className="hidden md:table-cell">Range</TableHead>
+            <TableHead>Trend</TableHead>
+            <TableHead className="hidden lg:table-cell">Result date</TableHead>
+            <TableHead className="hidden xl:table-cell">Source</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((b) => (
+            <TableRow
+              key={b.id}
+              className="cursor-pointer"
+              onClick={() => setOpen(b)}
+            >
+              <TableCell>
+                <Button
+                  variant="link"
+                  className="h-auto p-0 font-medium text-foreground"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setOpen(b)
+                  }}
+                >
+                  {b.name}
+                </Button>
+                <div className="text-xs text-muted-foreground">{b.panel}</div>
+              </TableCell>
+              <TableCell>
+                <Value b={b} />
+              </TableCell>
+              <TableCell className="hidden text-muted-foreground tabular-nums md:table-cell">
+                {rangeLabel(b) || "No range"}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <Sparkline b={b} className="hidden sm:block" />
+                  <TrendBadge trend={trendOf(b)} />
+                </div>
+              </TableCell>
+              <TableCell className="hidden tabular-nums lg:table-cell">
+                {usDate(latest(b).date)}
+              </TableCell>
+              <TableCell className="hidden text-muted-foreground xl:table-cell">
+                {sourceName(latest(b).sourceId)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <BiomarkerSheet marker={open} onClose={() => setOpen(null)} />
+    </RecordCard>
+  )
+}
+
+const chartConfig = {
+  value: { label: "Value", color: "var(--primary)" },
+}
+
+function BiomarkerSheet({
+  marker: b,
+  onClose,
+}: {
+  marker: Biomarker | null
+  onClose: () => void
+}) {
+  return (
+    <SideSheet
+      open={b !== null}
+      onOpenChange={(open) => !open && onClose()}
+      wide
+    >
+      {b && (
+        <>
+          <SideSheetHeader
+            title={b.name}
+            description={`Every ${b.name} result on record, with its source.`}
+            badge={<TrendBadge trend={trendOf(b)} />}
+          />
+          <div className="flex min-h-0 flex-1 flex-col gap-7 overflow-y-auto p-6">
+            <DetailGrid
+              className="grid-cols-2 sm:grid-cols-4"
+              items={[
+                { label: "Latest", value: <Value b={b} /> },
+                { label: "Range", value: rangeLabel(b) },
+                {
+                  label: "Previous",
+                  value: `${b.readings[b.readings.length - 2]?.value ?? ""} ${b.unit}`,
+                },
+                { label: "Panel", value: b.panel },
+              ]}
+            />
+            <ChartContainer
+              config={chartConfig}
+              className="aspect-auto h-56 w-full"
+            >
+              <LineChart
+                data={b.readings.map((r) => ({
+                  date: shortDate(r.date),
+                  value: r.value,
+                }))}
+                margin={{ left: 4, right: 16, top: 8, bottom: 0 }}
+              >
+                <CartesianGrid vertical={false} />
+                {(b.low != null || b.high != null) && (
+                  <ReferenceArea
+                    y1={b.low}
+                    y2={b.high}
+                    fill="var(--success)"
+                    fillOpacity={0.08}
+                    ifOverflow="extendDomain"
+                  />
+                )}
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                />
+                <YAxis
+                  width={40}
+                  tickLine={false}
+                  axisLine={false}
+                  domain={["auto", "auto"]}
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line
+                  dataKey="value"
+                  type="monotone"
+                  stroke="var(--color-value)"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ChartContainer>
+            <div className="flex flex-col gap-2">
+              <h3 className="text-xs font-semibold text-muted-foreground">
+                History
+              </h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Result date</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead className="hidden sm:table-cell">
+                      Source ID
+                    </TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      Imported
+                    </TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      Original value
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[...b.readings].reverse().map((r) => (
+                    <TableRow key={r.sourceRef}>
+                      <TableCell className="tabular-nums">
+                        {usDate(r.date)}
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          "font-medium tabular-nums",
+                          !inRange(b, r.value) && "text-destructive"
+                        )}
+                      >
+                        {r.value} {b.unit}
+                      </TableCell>
+                      <TableCell>{sourceName(r.sourceId)}</TableCell>
+                      <TableCell className="hidden text-muted-foreground tabular-nums sm:table-cell">
+                        {r.sourceRef}
+                      </TableCell>
+                      <TableCell className="hidden tabular-nums md:table-cell">
+                        {usDate(r.importedAt)}
+                      </TableCell>
+                      <TableCell className="hidden text-muted-foreground md:table-cell">
+                        {r.original}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          <SheetFooter className="mt-0 shrink-0 flex-row justify-end border-t p-4">
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+          </SheetFooter>
+        </>
+      )}
+    </SideSheet>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Recommend a plan                                                           */
+/* -------------------------------------------------------------------------- */
+
+export function RecommendPlanDialog({
+  patient,
+  record,
+  open,
+  onOpenChange,
+}: {
+  patient: Patient
+  record: HealthRecord
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        {open && (
+          <RecommendForm
+            patient={patient}
+            record={record}
+            onDone={() => onOpenChange(false)}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function RecommendForm({
+  patient,
+  record,
+  onDone,
+}: {
+  patient: Patient
+  record: HealthRecord
+  onDone: () => void
+}) {
+  const suggested = React.useMemo(() => suggestedReason(record), [record])
+  const metabolic = suggested.findings.some(
+    (id) => id === "a1c" || id === "glucose"
+  )
+  const [plan, setPlan] = React.useState<string>(
+    metabolic ? "Metabolic Health" : "Healthy Longevity"
+  )
+  const [reason, setReason] = React.useState(suggested.text)
+  const [findings, setFindings] = React.useState<string[]>(suggested.findings)
+  const flagged = record.biomarkers.filter(
+    (b) => !inRange(b) || trendOf(b) === "Declining"
+  )
+
+  function send() {
+    const planId = PLANS.find((p) => p.name === plan)?.id ?? "longevity"
+    recommendPlan({
+      patientId: patient.id,
+      planId,
+      reason: reason.trim(),
+      findings,
+      /* The signed-in provider: this tab only shows in the provider portal. */
+      by: "Dr. Elise Harrington",
+    })
+    toast.success("Recommendation sent", {
+      description: `${fullName(patient)} will see it in the HOL app.`,
+    })
+    onDone()
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Recommend a plan</DialogTitle>
+        <DialogDescription className="sr-only">
+          Suggest an optimization plan to the patient with the reason.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="flex flex-col gap-5">
+        <SelectField
+          id="rec-plan"
+          label="Plan"
+          required
+          options={PLANS.map((p) => p.name)}
+          value={plan}
+          onChange={setPlan}
+        />
+        <Field>
+          <FieldLabel>Based on</FieldLabel>
+          <div className="flex flex-col gap-2">
+            {flagged.map((b) => {
+              const checked = findings.includes(b.id)
+              return (
+                <label key={b.id} className="flex items-center gap-2.5 text-sm">
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(next) =>
+                      setFindings((list) =>
+                        next
+                          ? [...list, b.id]
+                          : list.filter((id) => id !== b.id)
+                      )
+                    }
+                  />
+                  <span className="min-w-0 flex-1 truncate">{b.name}</span>
+                  <span className="text-muted-foreground tabular-nums">
+                    {b.readings[0].value} to {latest(b).value} {b.unit}
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="rec-reason">Reason</FieldLabel>
+          <Textarea
+            id="rec-reason"
+            rows={4}
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
+        </Field>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onDone}>
+          Cancel
+        </Button>
+        <Button onClick={send} disabled={!plan || !reason.trim()}>
+          Send to patient
+        </Button>
+      </DialogFooter>
+    </>
+  )
+}

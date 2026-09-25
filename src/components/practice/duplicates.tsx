@@ -439,7 +439,7 @@ function ReactivateBody({
       <div className="flex flex-col gap-5">
         <RecordSummary patient={patient} />
         <section className="flex flex-col gap-3">
-          <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          <h3 className="text-xs font-semibold text-muted-foreground">
             Assign physician
           </h3>
           <AssignPhysician
@@ -995,7 +995,11 @@ export function DuplicateQueueScreen() {
 
   return (
     <PatientsFrame>
-      <RecordPage title="Possible duplicates" backHref={portal.patientsHref} fill>
+      <RecordPage
+        title="Possible duplicates"
+        backHref={portal.patientsHref}
+        fill
+      >
         <div className="flex min-h-80 flex-1 flex-col overflow-hidden rounded-lg border bg-card shadow-[0_0_5px_rgb(0_0_0/0.06)]">
           {!ready ? (
             <Skeleton className="m-5 h-40" />
@@ -1276,7 +1280,7 @@ function ReviewBody({
           </RadioGroup>
           {choice === "separate" && (
             <section className="flex flex-col gap-3 border-t pt-4">
-              <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              <h3 className="text-xs font-semibold text-muted-foreground">
                 Assign physician
               </h3>
               <AssignPhysician
