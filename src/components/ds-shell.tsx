@@ -19,6 +19,7 @@ const OVERVIEW_LINKS = [
   { href: "/", label: "Overview" },
   { href: "/foundations", label: "Foundations" },
   { href: "/icons", label: "Icons" },
+  { href: "/illustrations", label: "Illustrations" },
   { href: "/accents", label: "Primary colour" },
   { href: "/logo", label: "Logo" },
 ]
@@ -53,7 +54,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             className={cn(
               "rounded-md px-2 py-1.5 text-sm transition-colors",
               pathname === link.href
-                ? "bg-surface-selected selected-marker font-medium text-foreground"
+                ? "selected-marker bg-surface-selected font-medium text-foreground"
                 : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
             )}
           >
@@ -78,13 +79,16 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 className={cn(
                   "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
                   active
-                    ? "bg-surface-selected selected-marker font-medium text-foreground"
+                    ? "selected-marker bg-surface-selected font-medium text-foreground"
                     : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
                 )}
               >
                 <ComponentIcon
                   slug={item.slug}
-                  className={cn("size-4 shrink-0", active ? "text-primary-tint" : "opacity-70")}
+                  className={cn(
+                    "size-4 shrink-0",
+                    active ? "text-primary-tint" : "opacity-70"
+                  )}
                 />
                 <span className="min-w-0 truncate">{item.title}</span>
               </Link>
@@ -139,20 +143,24 @@ export function DsShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <div className="flex flex-1 min-h-0">
+      <div className="flex min-h-0 flex-1">
         <aside
           className={cn(
             "w-64 shrink-0 overflow-y-auto border-r p-4",
             "sticky top-14 h-[calc(100svh-3.5rem)]",
             "lg:block",
-            open ? "fixed inset-x-0 top-14 bottom-0 z-40 block w-full bg-background lg:relative lg:inset-auto lg:w-64" : "hidden"
+            open
+              ? "fixed inset-x-0 top-14 bottom-0 z-40 block w-full bg-background lg:relative lg:inset-auto lg:w-64"
+              : "hidden"
           )}
         >
           <NavLinks onNavigate={() => setOpen(false)} />
         </aside>
 
         <main className="min-w-0 flex-1">
-          <div className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-8">{children}</div>
+          <div className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-8">
+            {children}
+          </div>
         </main>
       </div>
     </div>

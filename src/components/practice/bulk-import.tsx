@@ -8,7 +8,6 @@ import {
   IconDownload,
   IconFileText,
   IconRefresh,
-  IconUpload,
   IconWarning,
 } from "@/design-system/icons"
 
@@ -44,6 +43,7 @@ import {
   TableRow,
 } from "@/design-system/ui/table"
 import { TablePager, usePaged } from "@/components/table-pager"
+import { Illustration } from "@/components/illustrations/illustration"
 
 /* -------------------------------------------------------------------------- */
 /*  Spec                                                                       */
@@ -492,7 +492,7 @@ function ImportBody<T>({
                 </>
               ) : (
                 <>
-                  <IconUpload className="size-9 text-muted-foreground" />
+                  <Illustration name="csv-upload" className="size-24" />
                   <p className="text-sm font-medium">Attach CSV File</p>
                   {fileError && (
                     <FieldError className="flex items-center gap-1.5">
@@ -739,10 +739,13 @@ function Review<T>({
       </div>
 
       {ready === 0 && routed.length === 0 && (
-        <p className="text-sm text-destructive">
-          No rows can be imported yet. Fix the errors in the file, then choose
-          it again.
-        </p>
+        <div className="flex items-center gap-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+          <Illustration name="import-errors" className="size-24 shrink-0" />
+          <p className="text-sm text-destructive">
+            No rows can be imported yet. Fix the errors in the file, then choose
+            it again.
+          </p>
+        </div>
       )}
     </div>
   )

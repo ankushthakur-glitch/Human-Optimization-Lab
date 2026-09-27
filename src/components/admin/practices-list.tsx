@@ -78,6 +78,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/design-system/ui/tooltip"
+import { Illustration } from "@/components/illustrations/illustration"
 
 const STATUS_FILTER = [
   { label: "All statuses", value: "all" },
@@ -329,8 +330,14 @@ export function PracticesList() {
             {rows.length === 0 ? (
               <Empty className="h-full">
                 <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    {practices.length === 0 ? <IconHospital /> : <IconSearch />}
+                  <EmptyMedia>
+                    <Illustration
+                      name={
+                        practices.length === 0
+                          ? "practices-empty"
+                          : "no-results"
+                      }
+                    />
                   </EmptyMedia>
                   <EmptyTitle>
                     {practices.length === 0

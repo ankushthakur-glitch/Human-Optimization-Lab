@@ -88,6 +88,7 @@ import {
   TableRow,
 } from "@/design-system/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
+import { Illustration } from "@/components/illustrations/illustration"
 
 /* -------------------------------------------------------------------------- */
 /*  Data                                                                       */
@@ -717,8 +718,8 @@ export function PatientsWorklist() {
             {rows.length === 0 ? (
               <Empty className="h-full">
                 <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <IconSearch />
+                  <EmptyMedia>
+                    <Illustration name="no-results" />
                   </EmptyMedia>
                   <EmptyTitle>No patients match these filters</EmptyTitle>
                   <EmptyDescription>

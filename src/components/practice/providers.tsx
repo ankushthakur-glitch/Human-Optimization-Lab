@@ -411,7 +411,7 @@ export function ProvidersPanel({ heading }: { heading: React.ReactNode }) {
           "Last login": shortDate(p.lastLogin),
           Status: p.status,
         })}
-        emptyIcon={<IconStethoscope />}
+        emptyIllustration="providers-empty"
       />
 
       <BulkImportDialog
@@ -421,6 +421,7 @@ export function ProvidersPanel({ heading }: { heading: React.ReactNode }) {
       />
 
       <DeactivateDialog
+        illustration="deactivate-provider"
         target={deactivating ? providerName(deactivating) : null}
         message="They lose access to the portal and leave provider pickers. Their patients and history stay with the practice."
         onCancel={() => setDeactivating(null)}

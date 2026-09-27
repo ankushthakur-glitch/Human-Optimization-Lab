@@ -2,11 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import {
-  IconArrowLeft,
-  IconSearch,
-  IconStethoscope,
-} from "@/design-system/icons"
+import { IconArrowLeft, IconSearch } from "@/design-system/icons"
 
 import { AdminShell } from "@/components/admin/admin-shell"
 import {
@@ -59,6 +55,7 @@ import {
 } from "@/design-system/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
 import { TablePager, usePaged } from "@/components/table-pager"
+import { Illustration } from "@/components/illustrations/illustration"
 
 /* One provider at one practice, as the HOL admin sees it: how many of their
    patients have enrolled, against the practice as a whole, and every patient
@@ -97,12 +94,18 @@ function Loading() {
   )
 }
 
-function NotFound({ practiceId, title }: { practiceId: string; title: string }) {
+function NotFound({
+  practiceId,
+  title,
+}: {
+  practiceId: string
+  title: string
+}) {
   return (
     <Empty className="flex-1">
       <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <IconStethoscope />
+        <EmptyMedia>
+          <Illustration name="record-not-found" />
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
       </EmptyHeader>
@@ -112,7 +115,9 @@ function NotFound({ practiceId, title }: { practiceId: string; title: string }) 
           size="sm"
           nativeButton={false}
           render={
-            <Link href={`/screens/admin/practices/${practiceId}?tab=providers`} />
+            <Link
+              href={`/screens/admin/practices/${practiceId}?tab=providers`}
+            />
           }
         >
           <IconArrowLeft />
@@ -212,13 +217,21 @@ function PatientsTable({ provider }: { provider: ProviderAdoption }) {
   const rows = provider.patients
     .filter(test)
     .filter(
-      (p) => !q || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)
+      (p) =>
+        !q || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)
     )
-    .sort((a, b) => rank(a.status) - rank(b.status) || a.name.localeCompare(b.name))
+    .sort(
+      (a, b) => rank(a.status) - rank(b.status) || a.name.localeCompare(b.name)
+    )
   const paged = usePaged(rows)
 
   if (provider.patients.length === 0) {
-    return <NothingYet title="No patients assigned yet" />
+    return (
+      <NothingYet
+        title="No patients assigned yet"
+        illustration="patients-empty"
+      />
+    )
   }
 
   return (
@@ -256,13 +269,15 @@ function PatientsTable({ provider }: { provider: ProviderAdoption }) {
       </div>
 
       {rows.length === 0 ? (
-        <NothingYet title="No patients match" />
+        <NothingYet title="No patients match" illustration="no-results" />
       ) : (
         <TableCard pager={<TablePager paged={paged} />}>
           <Table>
             <TableHeader className={HEAD}>
               <TableRow>
-                <TableHead className="hidden md:table-cell">Patient ID</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  Patient ID
+                </TableHead>
                 <TableHead>Patient</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden sm:table-cell">Invited</TableHead>

@@ -64,3 +64,6 @@ scripts/.cache
 # under public/app/assets/node_modules; the node_modules rule above would
 # drop them from the deploy.
 !/public/app/assets/node_modules/
+
+# Cloned Claude skill (its own git repo), not part of the app
+/product-ui-illustrations/

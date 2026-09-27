@@ -11,7 +11,6 @@ import {
   IconLockOpen,
   IconMail,
   IconMoreVertical,
-  IconUser,
 } from "@/design-system/icons"
 
 import {
@@ -102,6 +101,7 @@ import {
   EmptyTitle,
 } from "@/design-system/ui/empty"
 import { Skeleton } from "@/design-system/ui/skeleton"
+import { Illustration } from "@/components/illustrations/illustration"
 
 /* Onboarding takes demographics and contact details only: no medical data
    before the patient has consented. Records are pulled once they accept. */
@@ -655,6 +655,12 @@ function PatientForm({ patient }: { patient?: Patient }) {
             </Button>
           }
         >
+          {values.emergencyContacts.length === 0 && (
+            <div className="flex flex-col items-center gap-2 py-4 text-sm text-muted-foreground">
+              <Illustration name="no-emergency-contact" className="size-28" />
+              No emergency contact added
+            </div>
+          )}
           {values.emergencyContacts.length > 0 && (
             <div className="flex flex-col gap-5">
               {values.emergencyContacts.map((contact, i) => {
@@ -970,31 +976,36 @@ function ProfileBody({ patient: p }: { patient: Patient }) {
           </div>
 
           <RecordCard title="Emergency contact details">
-            <div className="flex flex-col gap-5">
-              {(p.emergencyContacts.length
-                ? p.emergencyContacts
-                : [emptyEmergencyContact()]
-              ).map((c, i) => (
-                <DetailGrid
-                  key={i}
-                  className="sm:grid-cols-2 lg:grid-cols-4"
-                  items={[
-                    {
-                      label: "Relationship with patient",
-                      value: c.relationship,
-                    },
-                    { label: "Name", value: c.name },
-                    { label: "Phone number", value: c.phone },
-                    { label: "Email", value: c.email },
-                  ]}
-                />
-              ))}
-            </div>
+            {p.emergencyContacts.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-4 text-sm text-muted-foreground">
+                <Illustration name="no-emergency-contact" className="size-28" />
+                No emergency contact on file
+              </div>
+            ) : (
+              <div className="flex flex-col gap-5">
+                {p.emergencyContacts.map((c, i) => (
+                  <DetailGrid
+                    key={i}
+                    className="sm:grid-cols-2 lg:grid-cols-4"
+                    items={[
+                      {
+                        label: "Relationship with patient",
+                        value: c.relationship,
+                      },
+                      { label: "Name", value: c.name },
+                      { label: "Phone number", value: c.phone },
+                      { label: "Email", value: c.email },
+                    ]}
+                  />
+                ))}
+              </div>
+            )}
           </RecordCard>
         </>
       )}
 
       <DeactivateDialog
+        illustration="deactivate-person"
         target={deactivating ? fullName(p) : null}
         message="They can no longer sign in to the patient app. Their record stays with the practice."
         onCancel={() => setDeactivating(false)}
@@ -1025,8 +1036,8 @@ function Missing({ ready }: { ready: boolean }) {
       ) : (
         <Empty className="flex-1">
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <IconUser />
+            <EmptyMedia>
+              <Illustration name="record-not-found" />
             </EmptyMedia>
             <EmptyTitle>Patient not found</EmptyTitle>
           </EmptyHeader>

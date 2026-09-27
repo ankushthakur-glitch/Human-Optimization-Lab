@@ -10,13 +10,7 @@ import {
   YAxis,
 } from "recharts"
 import { toast } from "@/design-system/ui/sonner"
-import {
-  IconAlert,
-  IconLock,
-  IconMail,
-  IconRefresh,
-  IconSparkles,
-} from "@/design-system/icons"
+import { IconMail, IconRefresh, IconSparkles } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
 import { SelectField } from "@/components/form-kit"
@@ -73,7 +67,6 @@ import {
 } from "@/design-system/ui/empty"
 import { Field, FieldLabel } from "@/design-system/ui/field"
 import { SheetFooter } from "@/design-system/ui/sheet"
-import { Skeleton } from "@/design-system/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -84,6 +77,10 @@ import {
 } from "@/design-system/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
 import { Textarea } from "@/design-system/ui/textarea"
+import {
+  Illustration,
+  type IllustrationName,
+} from "@/components/illustrations/illustration"
 
 /* The provider's view of the patient's longitudinal record: one record per
    patient, pulled after consent from the EHRs, labs and imaging centers the
@@ -181,8 +178,8 @@ export function HealthRecordTab({ patient }: { patient: Patient }) {
       <RecordCard title="Health record">
         <Empty className="py-10">
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <IconLock />
+            <EmptyMedia>
+              <Illustration name="consent-pending" />
             </EmptyMedia>
             <EmptyTitle>No record yet</EmptyTitle>
             <EmptyDescription>
@@ -222,25 +219,26 @@ export function HealthRecordTab({ patient }: { patient: Patient }) {
       />
 
       {record.state === "Source exception" && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
-          <div className="flex min-w-0 items-start gap-2.5 text-destructive">
-            <IconAlert className="mt-0.5 size-4 shrink-0" />
-            <p>{record.exception}</p>
+        <RecordCard title="Health record">
+          <RecordEmpty illustration="sync-failed" title="Sync failed">
+            {record.exception}
+          </RecordEmpty>
+          <div className="flex justify-center pb-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                toast.success("Sync requested", {
+                  description:
+                    "HOL will try the source again and update the record.",
+                })
+              }
+            >
+              <IconRefresh />
+              Retry sync
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              toast.success("Sync requested", {
-                description:
-                  "HOL will try the source again and update the record.",
-              })
-            }
-          >
-            <IconRefresh />
-            Retry sync
-          </Button>
-        </div>
+        </RecordCard>
       )}
 
       {record.state === "Building" && <BuildingRecord />}
@@ -264,6 +262,13 @@ export function HealthRecordTab({ patient }: { patient: Patient }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {record.conditions.length === 0 && (
+                    <EmptyRow
+                      cols={5}
+                      illustration="no-conditions"
+                      title="No conditions on record"
+                    />
+                  )}
                   {record.conditions.map((c) => (
                     <TableRow key={c.code}>
                       <TableCell className="font-medium">{c.name}</TableCell>
@@ -301,6 +306,13 @@ export function HealthRecordTab({ patient }: { patient: Patient }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {record.medications.length === 0 && (
+                    <EmptyRow
+                      cols={4}
+                      illustration="no-medications"
+                      title="No medications on record"
+                    />
+                  )}
                   {record.medications.map((m) => (
                     <TableRow key={m.name}>
                       <TableCell className="font-medium">{m.name}</TableCell>
@@ -331,6 +343,13 @@ export function HealthRecordTab({ patient }: { patient: Patient }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {record.encounters.length === 0 && (
+                  <EmptyRow
+                    cols={5}
+                    illustration="no-encounters"
+                    title="No encounters on record"
+                  />
+                )}
                 {record.encounters.map((e) => (
                   <TableRow key={`${e.date}-${e.type}`}>
                     <TableCell className="tabular-nums">
@@ -426,16 +445,47 @@ function BuildingRecord() {
       title="Biomarkers"
       action={<Badge variant="info">Pulling records</Badge>}
     >
-      <div className="flex flex-col gap-3">
-        {Array.from({ length: 5 }, (_, i) => (
-          <div key={i} className="flex items-center gap-4">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 flex-1" />
-          </div>
-        ))}
-      </div>
+      <RecordEmpty illustration="record-syncing" title="Building the record">
+        Results appear here as each source reports in.
+      </RecordEmpty>
     </RecordCard>
+  )
+}
+
+/* A record section with nothing in it: the art, one line, and at most a
+   sentence. Sized for a card, smaller than a page's empty state. */
+function RecordEmpty({
+  illustration,
+  title,
+  children,
+}: {
+  illustration: IllustrationName
+  title: string
+  children?: React.ReactNode
+}) {
+  return (
+    <Empty className="gap-3 p-6">
+      <EmptyHeader>
+        <EmptyMedia>
+          <Illustration name={illustration} className="size-28" />
+        </EmptyMedia>
+        <EmptyTitle className="text-base">{title}</EmptyTitle>
+        {children && <EmptyDescription>{children}</EmptyDescription>}
+      </EmptyHeader>
+    </Empty>
+  )
+}
+
+function EmptyRow({
+  cols,
+  ...props
+}: { cols: number } & React.ComponentProps<typeof RecordEmpty>) {
+  return (
+    <TableRow className="hover:bg-transparent">
+      <TableCell colSpan={cols} className="p-0">
+        <RecordEmpty {...props} />
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -524,6 +574,19 @@ function BiomarkersCard({ record }: { record: HealthRecord }) {
           </TableRow>
         </TableHeader>
         <TableBody>
+          {rows.length === 0 && (
+            <EmptyRow
+              cols={6}
+              illustration="biomarkers-in-range"
+              title={
+                filter === "out"
+                  ? "Every biomarker is in range"
+                  : filter === "declining"
+                    ? "Nothing is declining"
+                    : "No biomarkers yet"
+              }
+            />
+          )}
           {rows.map((b) => (
             <TableRow
               key={b.id}
@@ -607,49 +670,58 @@ function BiomarkerSheet({
                 { label: "Panel", value: b.panel },
               ]}
             />
-            <ChartContainer
-              config={chartConfig}
-              className="aspect-auto h-56 w-full"
-            >
-              <LineChart
-                data={b.readings.map((r) => ({
-                  date: shortDate(r.date),
-                  value: r.value,
-                }))}
-                margin={{ left: 4, right: 16, top: 8, bottom: 0 }}
+            {b.readings.length < 2 ? (
+              <RecordEmpty
+                illustration="single-reading"
+                title="One reading so far"
               >
-                <CartesianGrid vertical={false} />
-                {(b.low != null || b.high != null) && (
-                  <ReferenceArea
-                    y1={b.low}
-                    y2={b.high}
-                    fill="var(--success)"
-                    fillOpacity={0.08}
-                    ifOverflow="extendDomain"
+                The trend appears after the next result.
+              </RecordEmpty>
+            ) : (
+              <ChartContainer
+                config={chartConfig}
+                className="aspect-auto h-56 w-full"
+              >
+                <LineChart
+                  data={b.readings.map((r) => ({
+                    date: shortDate(r.date),
+                    value: r.value,
+                  }))}
+                  margin={{ left: 4, right: 16, top: 8, bottom: 0 }}
+                >
+                  <CartesianGrid vertical={false} />
+                  {(b.low != null || b.high != null) && (
+                    <ReferenceArea
+                      y1={b.low}
+                      y2={b.high}
+                      fill="var(--success)"
+                      fillOpacity={0.08}
+                      ifOverflow="extendDomain"
+                    />
+                  )}
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
                   />
-                )}
-                <XAxis
-                  dataKey="date"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                />
-                <YAxis
-                  width={40}
-                  tickLine={false}
-                  axisLine={false}
-                  domain={["auto", "auto"]}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line
-                  dataKey="value"
-                  type="monotone"
-                  stroke="var(--color-value)"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
-              </LineChart>
-            </ChartContainer>
+                  <YAxis
+                    width={40}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={["auto", "auto"]}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line
+                    dataKey="value"
+                    type="monotone"
+                    stroke="var(--color-value)"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                </LineChart>
+              </ChartContainer>
+            )}
             <div className="flex flex-col gap-2">
               <h3 className="text-xs font-semibold text-muted-foreground">
                 History

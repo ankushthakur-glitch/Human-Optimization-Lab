@@ -66,6 +66,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/design-system/ui/tooltip"
+import {
+  Illustration,
+  type IllustrationName,
+} from "@/components/illustrations/illustration"
 
 /* -------------------------------------------------------------------------- */
 /*  Small shared pieces                                                        */
@@ -288,7 +292,7 @@ export function Directory<T extends { id: string }>({
   bulkActions,
   exportName,
   exportRow,
-  emptyIcon,
+  emptyIllustration,
 }: {
   /** The page's name, for screen readers: the toolbar carries no title. */
   title: string
@@ -309,7 +313,7 @@ export function Directory<T extends { id: string }>({
   exportName: string
   /** One row of the Excel export, keyed by column header. */
   exportRow: (row: T) => ExportRow
-  emptyIcon: React.ReactNode
+  emptyIllustration: IllustrationName
 }) {
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState("all")
@@ -562,8 +566,10 @@ export function Directory<T extends { id: string }>({
           {visible.length === 0 ? (
             <Empty className="h-full">
               <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  {rows.length === 0 ? emptyIcon : <IconSearch />}
+                <EmptyMedia>
+                  <Illustration
+                    name={rows.length === 0 ? emptyIllustration : "no-results"}
+                  />
                 </EmptyMedia>
                 <EmptyTitle>
                   {rows.length === 0 ? `No ${noun} yet` : `No ${noun} match`}

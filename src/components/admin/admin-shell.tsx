@@ -17,14 +17,24 @@ import {
 export type AdminModule = "dashboard" | "practices" | "settings"
 
 const ADMIN_NAV: NavItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: IconDashboard },
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: IconDashboard,
+    href: "/screens/admin/dashboard",
+  },
   {
     id: "practices",
     label: "Practices",
     icon: IconHospital,
     href: "/screens/admin/practices",
   },
-  { id: "settings", label: "Settings", icon: IconSettings },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: IconSettings,
+    href: "/screens/admin/settings",
+  },
 ]
 
 /* The platform admin the invite flow introduces (see /screens/login). */

@@ -23,6 +23,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/design-system/ui/sheet"
+import {
+  Illustration,
+  type IllustrationName,
+} from "@/components/illustrations/illustration"
 
 /**
  * The right-hand sheet every practice portal form and record opens in. The
@@ -135,12 +139,15 @@ export function ViewBody({
 export function DeactivateDialog({
   target,
   message,
+  illustration,
   onConfirm,
   onCancel,
 }: {
   /** The name shown in the title; null keeps the dialog closed. */
   target: string | null
   message: string
+  /** Art for what is being deactivated; the lock icon when left out. */
+  illustration?: IllustrationName
   onConfirm: () => void
   onCancel: () => void
 }) {
@@ -149,11 +156,17 @@ export function DeactivateDialog({
       open={target !== null}
       onOpenChange={(open) => !open && onCancel()}
     >
-      <AlertDialogContent>
+      <AlertDialogContent size={illustration ? "sm" : "default"}>
         <AlertDialogHeader>
-          <AlertDialogMedia className="bg-destructive/10 text-destructive">
-            <IconLock />
-          </AlertDialogMedia>
+          {illustration ? (
+            <AlertDialogMedia className="size-28 rounded-none bg-transparent">
+              <Illustration name={illustration} className="size-28" />
+            </AlertDialogMedia>
+          ) : (
+            <AlertDialogMedia className="bg-destructive/10 text-destructive">
+              <IconLock />
+            </AlertDialogMedia>
+          )}
           <AlertDialogTitle>Deactivate {target}?</AlertDialogTitle>
           <AlertDialogDescription>{message}</AlertDialogDescription>
         </AlertDialogHeader>

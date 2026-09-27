@@ -1,0 +1,473 @@
+{
+  "no-results": [
+    {
+      "file": "src/components/admin/practices-list.tsx",
+      "line": 338,
+      "routes": [
+        "/screens/admin/practices"
+      ]
+    },
+    {
+      "file": "src/components/admin/provider-adoption.tsx",
+      "line": 272,
+      "routes": [
+        "/screens/admin/practices/593892/providers/PR4775"
+      ]
+    },
+    {
+      "file": "src/components/patients-worklist.tsx",
+      "line": 722,
+      "routes": [
+        "/screens/patients"
+      ]
+    },
+    {
+      "file": "src/components/practice/directory.tsx",
+      "line": 571,
+      "routes": [
+        "/screens/practice/users",
+        "/screens/practice/patients",
+        "/screens/practice/locations"
+      ]
+    }
+  ],
+  "practices-empty": [
+    {
+      "file": "src/components/admin/practices-list.tsx",
+      "line": 337,
+      "routes": [
+        "/screens/admin/practices"
+      ]
+    }
+  ],
+  "providers-empty": [
+    {
+      "file": "src/components/admin/practice-adoption-view.tsx",
+      "line": 264,
+      "routes": [
+        "/screens/admin/practices/593892"
+      ]
+    },
+    {
+      "file": "src/components/practice/providers.tsx",
+      "line": 414,
+      "routes": [
+        "/screens/practice/users"
+      ]
+    }
+  ],
+  "users-empty": [
+    {
+      "file": "src/components/admin/practice-adoption-view.tsx",
+      "line": 416,
+      "routes": [
+        "/screens/admin/practices/593892"
+      ]
+    },
+    {
+      "file": "src/components/practice/users.tsx",
+      "line": 472,
+      "routes": [
+        "/screens/practice/users"
+      ]
+    }
+  ],
+  "patients-empty": [
+    {
+      "file": "src/components/admin/provider-adoption.tsx",
+      "line": 232,
+      "routes": [
+        "/screens/admin/practices/593892/providers/PR4775"
+      ]
+    },
+    {
+      "file": "src/components/practice/patients.tsx",
+      "line": 553,
+      "routes": [
+        "/screens/practice/patients",
+        "/screens/provider/patients"
+      ]
+    }
+  ],
+  "locations-empty": [
+    {
+      "file": "src/components/practice/locations.tsx",
+      "line": 195,
+      "routes": [
+        "/screens/practice/locations"
+      ]
+    }
+  ],
+  "record-not-found": [
+    {
+      "file": "src/components/admin/practice-details.tsx",
+      "line": 179,
+      "routes": [
+        "/screens/admin/practices/232276"
+      ]
+    },
+    {
+      "file": "src/components/admin/provider-adoption.tsx",
+      "line": 108,
+      "routes": [
+        "/screens/admin/practices/593892/providers/PR4775"
+      ]
+    },
+    {
+      "file": "src/components/practice/location-record.tsx",
+      "line": 651,
+      "routes": [
+        "/screens/practice/locations/LOC1001"
+      ]
+    },
+    {
+      "file": "src/components/practice/patient-record.tsx",
+      "line": 1040,
+      "routes": [
+        "/screens/practice/patients/P10240"
+      ]
+    },
+    {
+      "file": "src/components/practice/provider-record.tsx",
+      "line": 907,
+      "routes": [
+        "/screens/practice/users/providers/PR3132"
+      ]
+    }
+  ],
+  "consent-pending": [
+    {
+      "file": "src/components/practice/health-record-view.tsx",
+      "line": 182,
+      "routes": [
+        "/screens/provider/patients/P10240?tab=record"
+      ]
+    }
+  ],
+  "duplicates-clear": [
+    {
+      "file": "src/components/practice/duplicates.tsx",
+      "line": 1006,
+      "routes": [
+        "/screens/practice/patients/duplicates"
+      ]
+    }
+  ],
+  "review-resolved": [
+    {
+      "file": "src/components/practice/duplicates.tsx",
+      "line": 1137,
+      "routes": [
+        "/screens/practice/patients/duplicates"
+      ]
+    }
+  ],
+  "record-syncing": [
+    {
+      "file": "src/components/practice/health-record-view.tsx",
+      "line": 448,
+      "routes": [
+        "/screens/provider/patients/P10240?tab=record"
+      ]
+    }
+  ],
+  "sync-failed": [
+    {
+      "file": "src/components/practice/health-record-view.tsx",
+      "line": 223,
+      "routes": [
+        "/screens/provider/patients/P10240?tab=record"
+      ]
+    }
+  ],
+  "biomarkers-in-range": [
+    {
+      "file": "src/components/practice/health-record-view.tsx",
+      "line": 580,
+      "routes": [
+        "/screens/provider/patients/P10240?tab=record"
+      ]
+    }
+  ],
+  "no-conditions": [
+    {
+      "file": "src/components/practice/health-record-view.tsx",
+      "line": 268,
+      "routes": [
+        "/screens/provider/patients/P10240?tab=record"
+      ]
+    }
+  ],
+  "no-medications": [
+    {
+      "file": "src/components/practice/health-record-view.tsx",
+      "line": 312,
+      "routes": [
+        "/screens/provider/patients/P10240?tab=record"
+      ]
+    }
+  ],
+  "no-encounters": [
+    {
+      "file": "src/app/(design-system)/patterns/data/page.tsx",
+      "line": 1650,
+      "routes": [
+        "/patterns/data"
+      ]
+    },
+    {
+      "file": "src/components/practice/health-record-view.tsx",
+      "line": 349,
+      "routes": [
+        "/screens/provider/patients/P10240?tab=record"
+      ]
+    }
+  ],
+  "plan-sent": [],
+  "single-reading": [
+    {
+      "file": "src/components/practice/health-record-view.tsx",
+      "line": 675,
+      "routes": [
+        "/screens/provider/patients/P10240?tab=record"
+      ]
+    }
+  ],
+  "sync-requested": [],
+  "load-failed": [
+    {
+      "file": "src/app/(design-system)/patterns/data/page.tsx",
+      "line": 1670,
+      "routes": [
+        "/patterns/data"
+      ]
+    }
+  ],
+  "no-emergency-contact": [
+    {
+      "file": "src/components/practice/patient-record.tsx",
+      "line": 660,
+      "routes": [
+        "/screens/practice/patients/P10240"
+      ]
+    },
+    {
+      "file": "src/components/practice/patient-record.tsx",
+      "line": 981,
+      "routes": [
+        "/screens/practice/patients/P10240"
+      ]
+    }
+  ],
+  "invite-pending": [],
+  "patient-added": [],
+  "invite-sent": [],
+  "already-on-file": [
+    {
+      "file": "src/components/practice/duplicates.tsx",
+      "line": 618,
+      "routes": [
+        "/screens/practice/patients/duplicates"
+      ]
+    }
+  ],
+  "possible-duplicate": [
+    {
+      "file": "src/components/practice/duplicates.tsx",
+      "line": 686,
+      "routes": [
+        "/screens/practice/patients/duplicates"
+      ]
+    }
+  ],
+  "reactivate-record": [
+    {
+      "file": "src/components/practice/duplicates.tsx",
+      "line": 432,
+      "routes": [
+        "/screens/practice/patients/duplicates"
+      ]
+    }
+  ],
+  "no-match-safe": [],
+  "duplicate-precheck": [],
+  "sent-for-review": [],
+  "records-merged": [],
+  "deactivate-person": [
+    {
+      "file": "src/components/practice/patient-record.tsx",
+      "line": 1008,
+      "routes": [
+        "/screens/practice/patients/P10240"
+      ]
+    },
+    {
+      "file": "src/components/practice/patients.tsx",
+      "line": 570,
+      "routes": [
+        "/screens/practice/patients",
+        "/screens/provider/patients"
+      ]
+    },
+    {
+      "file": "src/components/practice/users.tsx",
+      "line": 497,
+      "routes": [
+        "/screens/practice/users"
+      ]
+    }
+  ],
+  "deactivate-provider": [
+    {
+      "file": "src/components/practice/provider-record.tsx",
+      "line": 878,
+      "routes": [
+        "/screens/practice/users/providers/PR3132"
+      ]
+    },
+    {
+      "file": "src/components/practice/providers.tsx",
+      "line": 424,
+      "routes": [
+        "/screens/practice/users"
+      ]
+    }
+  ],
+  "deactivate-location": [
+    {
+      "file": "src/components/practice/location-record.tsx",
+      "line": 624,
+      "routes": [
+        "/screens/practice/locations/LOC1001"
+      ]
+    },
+    {
+      "file": "src/components/practice/locations.tsx",
+      "line": 199,
+      "routes": [
+        "/screens/practice/locations"
+      ]
+    }
+  ],
+  "deactivate-practice": [
+    {
+      "file": "src/components/admin/practice-actions.tsx",
+      "line": 419,
+      "routes": [
+        "/screens/admin/practices"
+      ]
+    }
+  ],
+  "practice-created": [
+    {
+      "file": "src/components/admin/practice-actions.tsx",
+      "line": 379,
+      "routes": [
+        "/screens/admin/practices"
+      ]
+    }
+  ],
+  "invite-manager": [],
+  "no-manager": [
+    {
+      "file": "src/components/admin/practice-details.tsx",
+      "line": 449,
+      "routes": [
+        "/screens/admin/practices/232276"
+      ]
+    }
+  ],
+  "import-complete": [],
+  "location-added": [],
+  "csv-upload": [
+    {
+      "file": "src/components/practice/bulk-import.tsx",
+      "line": 495,
+      "routes": [
+        "/screens/practice/patients"
+      ]
+    }
+  ],
+  "import-errors": [
+    {
+      "file": "src/components/practice/bulk-import.tsx",
+      "line": 743,
+      "routes": [
+        "/screens/practice/patients"
+      ]
+    }
+  ],
+  "csv-template": [],
+  "signature-empty": [
+    {
+      "file": "src/components/practice/provider-record.tsx",
+      "line": 825,
+      "routes": [
+        "/screens/practice/users/providers/PR3132"
+      ]
+    }
+  ],
+  "no-licenses": [
+    {
+      "file": "src/components/practice/provider-record.tsx",
+      "line": 562,
+      "routes": [
+        "/screens/practice/users/providers/PR3132"
+      ]
+    },
+    {
+      "file": "src/components/practice/provider-record.tsx",
+      "line": 847,
+      "routes": [
+        "/screens/practice/users/providers/PR3132"
+      ]
+    }
+  ],
+  "two-factor-on": [],
+  "check-email-code": [],
+  "forgot-password": [],
+  "new-password": [],
+  "activate-account": [],
+  "set-password": [],
+  "authenticator": [],
+  "command-empty": [
+    {
+      "file": "src/components/ehr-shell.tsx",
+      "line": 389,
+      "routes": [
+        "/screens/practice/patients"
+      ]
+    }
+  ],
+  "notifications-clear": [
+    {
+      "file": "src/components/ehr-shell.tsx",
+      "line": 441,
+      "routes": [
+        "/screens/practice/patients"
+      ]
+    }
+  ],
+  "dashboard-soon": [
+    {
+      "file": "src/app/screens/admin/dashboard/page.tsx",
+      "line": 11,
+      "routes": [
+        "/screens/admin/dashboard"
+      ]
+    }
+  ],
+  "settings-empty": [
+    {
+      "file": "src/app/screens/admin/settings/page.tsx",
+      "line": 11,
+      "routes": [
+        "/screens/admin/settings"
+      ]
+    }
+  ],
+  "profile-empty": [],
+  "appointments-empty": [],
+  "messages-empty": [],
+  "reports-empty": []
+}

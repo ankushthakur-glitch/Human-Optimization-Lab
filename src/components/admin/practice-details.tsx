@@ -7,7 +7,6 @@ import {
   IconArrowLeft,
   IconCopy,
   IconEdit,
-  IconHospital,
   IconMail,
   IconMoreVertical,
   IconUserAdd,
@@ -54,6 +53,7 @@ import {
   EmptyTitle,
 } from "@/design-system/ui/empty"
 import { Skeleton } from "@/design-system/ui/skeleton"
+import { Illustration } from "@/components/illustrations/illustration"
 
 /* -------------------------------------------------------------------------- */
 /*  Pieces                                                                     */
@@ -70,11 +70,14 @@ function InfoCard({
   rows,
   columns = 1,
   action,
+  empty,
 }: {
   title: string
   rows: Row[]
   columns?: 1 | 2
   action?: React.ReactNode
+  /** Shown instead of the rows when there is nothing to list. */
+  empty?: React.ReactNode
 }) {
   return (
     <Card className="@container gap-0 rounded-lg border py-0 shadow-none ring-0 [--card-spacing:--spacing(4)]">
@@ -89,21 +92,23 @@ function InfoCard({
         {action && <CardAction className="self-center">{action}</CardAction>}
       </CardHeader>
       <CardContent className="py-4">
-        <dl
-          className={cn(
-            "grid gap-x-8 gap-y-3",
-            columns === 2 && "@2xl:grid-cols-2"
-          )}
-        >
-          {rows.map((row) => (
-            <InfoRow
-              key={row.label}
-              label={row.label}
-              value={row.value}
-              wide={row.wide}
-            />
-          ))}
-        </dl>
+        {empty ?? (
+          <dl
+            className={cn(
+              "grid gap-x-8 gap-y-3",
+              columns === 2 && "@2xl:grid-cols-2"
+            )}
+          >
+            {rows.map((row) => (
+              <InfoRow
+                key={row.label}
+                label={row.label}
+                value={row.value}
+                wide={row.wide}
+              />
+            ))}
+          </dl>
+        )}
       </CardContent>
     </Card>
   )
@@ -150,13 +155,7 @@ const LINK =
 /*  Screen                                                                     */
 /* -------------------------------------------------------------------------- */
 
-export function PracticeDetails({
-  id,
-  tab,
-}: {
-  id: string
-  tab: PracticeTab
-}) {
+export function PracticeDetails({ id, tab }: { id: string; tab: PracticeTab }) {
   const { practices, ready } = usePractices()
   const actions = usePracticeActions()
   const practice = practices.find((p) => p.id === id)
@@ -176,8 +175,8 @@ export function PracticeDetails({
       ) : (
         <Empty className="flex-1">
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <IconHospital />
+            <EmptyMedia>
+              <Illustration name="record-not-found" />
             </EmptyMedia>
             <EmptyTitle>Practice not found</EmptyTitle>
           </EmptyHeader>
@@ -442,7 +441,15 @@ function DetailsCards({
                   { label: "Gender", value: manager.gender },
                   { label: "Invited", value: formatDate(manager.invitedAt) },
                 ]
-              : [{ label: "Name", value: "" }]
+              : []
+          }
+          empty={
+            manager ? undefined : (
+              <div className="flex flex-col items-center gap-2 py-2 text-sm text-muted-foreground">
+                <Illustration name="no-manager" className="size-28" />
+                No clinic manager yet
+              </div>
+            )
           }
         />
       </div>

@@ -9,7 +9,6 @@ import {
   IconLockOpen,
   IconMail,
   IconUserAdd,
-  IconUsersGroup,
 } from "@/design-system/icons"
 
 import {
@@ -470,7 +469,7 @@ export function StaffPanel({ heading }: { heading: React.ReactNode }) {
           "Last activity": shortDate(u.lastActive),
           Status: u.status,
         })}
-        emptyIcon={<IconUsersGroup />}
+        emptyIllustration="users-empty"
       />
 
       <SideSheet
@@ -495,6 +494,7 @@ export function StaffPanel({ heading }: { heading: React.ReactNode }) {
       </SideSheet>
 
       <DeactivateDialog
+        illustration="deactivate-person"
         target={deactivating ? fullName(deactivating) : null}
         message="They lose access to the portal until you activate them again. Nothing they recorded is deleted."
         onCancel={() => setDeactivating(null)}

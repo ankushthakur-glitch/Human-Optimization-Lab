@@ -49,6 +49,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/design-system/ui/tooltip"
+import { Illustration } from "@/components/illustrations/illustration"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/design-system/ui/popover"
 
 /* ------------------------------------------------------------------- nav -- */
 
@@ -379,7 +385,10 @@ export function EhrShell({
             <Command>
               <CommandInput placeholder={`Search ${BRAND_NAME}...`} />
               <CommandList>
-                <CommandEmpty>No results found.</CommandEmpty>
+                <CommandEmpty className="flex flex-col items-center gap-2 py-6">
+                  <Illustration name="command-empty" className="size-28" />
+                  No results found
+                </CommandEmpty>
                 {actions.length > 0 && (
                   <CommandGroup heading="Actions">
                     {actions.map((action) => (
@@ -394,12 +403,17 @@ export function EhrShell({
                   </CommandGroup>
                 )}
                 <CommandGroup heading="Go to">
-                  {nav.filter((item) => item.href).map((item) => (
-                    <CommandItem key={item.id} onSelect={() => go(item.href!)}>
-                      <item.icon />
-                      {item.label}
-                    </CommandItem>
-                  ))}
+                  {nav
+                    .filter((item) => item.href)
+                    .map((item) => (
+                      <CommandItem
+                        key={item.id}
+                        onSelect={() => go(item.href!)}
+                      >
+                        <item.icon />
+                        {item.label}
+                      </CommandItem>
+                    ))}
                 </CommandGroup>
               </CommandList>
             </Command>
@@ -407,15 +421,33 @@ export function EhrShell({
 
           {/* The reference carries one bell and the account, nothing else. */}
           <div className="ml-auto flex shrink-0 items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Notifications"
-              className="relative"
-            >
-              <IconNotification />
-              <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-destructive" />
-            </Button>
+            {/* Nothing sends notifications yet, so the panel is its empty
+                state and the bell carries no unread dot. */}
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Notifications"
+                  />
+                }
+              >
+                <IconNotification />
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72">
+                <div className="flex flex-col items-center gap-2 py-4 text-center">
+                  <Illustration
+                    name="notifications-clear"
+                    className="size-28"
+                  />
+                  <p className="text-sm font-medium">All caught up</p>
+                  <p className="text-xs text-muted-foreground">
+                    New notifications show up here.
+                  </p>
+                </div>
+              </PopoverContent>
+            </Popover>
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={

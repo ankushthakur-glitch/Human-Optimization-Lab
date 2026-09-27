@@ -17,12 +17,10 @@ import {
   IconBuilding,
   IconClose,
   IconDownload,
-  IconWarning,
   IconExpandVertical,
   IconEye,
   IconFilter,
   IconHospital,
-  IconInbox,
   IconGrid,
   IconMore,
   IconPrint,
@@ -112,6 +110,7 @@ import {
   TabsTrigger,
 } from "@/design-system/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/design-system/ui/toggle-group"
+import { Illustration } from "@/components/illustrations/illustration"
 
 /* -------------------------------------------------------------------------- */
 /*  Data                                                                      */
@@ -1647,8 +1646,8 @@ function StateCoverageDemo() {
         {state === "empty" ? (
           <Empty className="border-0">
             <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <IconInbox />
+              <EmptyMedia>
+                <Illustration name="no-encounters" />
               </EmptyMedia>
               <EmptyTitle>No encounters on this worklist</EmptyTitle>
               <EmptyDescription>
@@ -1667,13 +1666,13 @@ function StateCoverageDemo() {
         {state === "error" ? (
           <Empty className="border-0">
             <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <IconWarning className="text-destructive" />
+              <EmptyMedia>
+                <Illustration name="load-failed" />
               </EmptyMedia>
               <EmptyTitle>Could not load the census</EmptyTitle>
               <EmptyDescription>
-                The ADT feed did not respond. Clinical data may be stale. Do
-                not treat this view as the source of truth until it reloads.
+                The ADT feed did not respond. Clinical data may be stale. Do not
+                treat this view as the source of truth until it reloads.
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>

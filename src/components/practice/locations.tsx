@@ -7,7 +7,6 @@ import {
   IconAdd,
   IconEdit,
   IconEye,
-  IconLocation,
   IconLock,
   IconLockOpen,
 } from "@/design-system/icons"
@@ -193,10 +192,11 @@ export function LocationsScreen() {
           Providers: providerCount(l.id),
           Status: l.status,
         })}
-        emptyIcon={<IconLocation />}
+        emptyIllustration="locations-empty"
       />
 
       <DeactivateDialog
+        illustration="deactivate-location"
         target={deactivating?.name ?? null}
         message="Patients can no longer be booked here and it leaves provider and staff pickers. Its records stay."
         onCancel={() => setDeactivating(null)}

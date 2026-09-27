@@ -10,7 +10,6 @@ import {
   IconLock,
   IconLockOpen,
   IconMail,
-  IconUser,
   IconUserAdd,
 } from "@/design-system/icons"
 
@@ -551,7 +550,7 @@ export function PatientsScreen() {
           Invited: shortDate(p.invitedAt),
           Status: p.status,
         })}
-        emptyIcon={<IconUser />}
+        emptyIllustration="patients-empty"
       />
 
       <BulkImportDialog
@@ -568,6 +567,7 @@ export function PatientsScreen() {
       />
 
       <DeactivateDialog
+        illustration="deactivate-person"
         target={deactivating ? fullName(deactivating) : null}
         message="They can no longer sign in to the patient app. Their record stays with the practice."
         onCancel={() => setDeactivating(null)}

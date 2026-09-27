@@ -3,7 +3,6 @@
 import * as React from "react"
 import { toast } from "@/design-system/ui/sonner"
 import {
-  IconCheckCircle,
   IconEdit,
   IconLock,
   IconLockOpen,
@@ -51,6 +50,7 @@ import {
   managerName,
   practiceStore,
 } from "@/components/admin/practices-store"
+import { Illustration } from "@/components/illustrations/illustration"
 
 /* -------------------------------------------------------------------------- */
 /*  Invite clinic manager                                                      */
@@ -376,12 +376,8 @@ export function usePracticeActions() {
       >
         <AlertDialogContent size="sm" className="gap-5 p-6 sm:max-w-sm">
           <div className="flex flex-col items-center gap-3 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-success-surface text-success ring-8 ring-success-surface/50">
-              <IconCheckCircle className="size-6" />
-            </span>
-            <AlertDialogTitle className="mt-2">
-              Practice created
-            </AlertDialogTitle>
+            <Illustration name="practice-created" className="size-32" />
+            <AlertDialogTitle>Practice created</AlertDialogTitle>
             <AlertDialogDescription>
               <span className="font-medium text-foreground">
                 {created?.name}
@@ -417,10 +413,10 @@ export function usePracticeActions() {
         open={deactivating !== null}
         onOpenChange={(open) => !open && setDeactivating(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent size="sm">
           <AlertDialogHeader>
-            <AlertDialogMedia className="bg-destructive/10 text-destructive">
-              <IconLock />
+            <AlertDialogMedia className="size-28 rounded-none bg-transparent">
+              <Illustration name="deactivate-practice" className="size-28" />
             </AlertDialogMedia>
             <AlertDialogTitle>
               Deactivate {deactivating?.name}?

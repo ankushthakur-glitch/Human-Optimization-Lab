@@ -3,11 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import {
-  IconArrowDown,
-  IconArrowUp,
-  IconWarning,
-} from "@/design-system/icons"
+import { IconArrowDown, IconArrowUp, IconWarning } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
 import type {
@@ -31,6 +27,7 @@ import { Card } from "@/design-system/ui/card"
 import {
   Empty,
   EmptyHeader,
+  EmptyMedia,
   EmptyTitle,
 } from "@/design-system/ui/empty"
 import {
@@ -43,6 +40,10 @@ import {
 } from "@/design-system/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
 import { TablePager, usePaged } from "@/components/table-pager"
+import {
+  Illustration,
+  type IllustrationName,
+} from "@/components/illustrations/illustration"
 
 export const pct = (rate: number | null) =>
   rate === null ? "" : `${Math.round(rate * 100)}%`
@@ -52,15 +53,26 @@ export const pct = (rate: number | null) =>
 /* -------------------------------------------------------------------------- */
 
 /* A single meter, not a chart: the filled share of one total. */
-export function Meter({ value, tone = "primary" }: { value: number; tone?: "primary" | "warning" }) {
+export function Meter({
+  value,
+  tone = "primary",
+}: {
+  value: number
+  tone?: "primary" | "warning"
+}) {
   return (
-    <div aria-hidden className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+    <div
+      aria-hidden
+      className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+    >
       <div
         className={cn(
           "h-full rounded-full",
           tone === "warning" ? "bg-warning" : "bg-primary"
         )}
-        style={{ width: `${Math.round(Math.min(1, Math.max(0, value)) * 100)}%` }}
+        style={{
+          width: `${Math.round(Math.min(1, Math.max(0, value)) * 100)}%`,
+        }}
       />
     </div>
   )
@@ -139,17 +151,28 @@ export function TableCard({
 }) {
   return (
     <Card className="min-h-80 flex-1 gap-0 overflow-hidden rounded-md border border-border py-0 shadow-[0_0_5px_rgb(0_0_0/0.08)] ring-0">
-      <div className="min-h-0 flex-1 overflow-auto [&>[data-slot=table-container]]:overflow-visible">{children}</div>
+      <div className="min-h-0 flex-1 overflow-auto [&>[data-slot=table-container]]:overflow-visible">
+        {children}
+      </div>
       {pager}
     </Card>
   )
 }
 
-export function NothingYet({ title }: { title: string }) {
+export function NothingYet({
+  title,
+  illustration,
+}: {
+  title: string
+  illustration: IllustrationName
+}) {
   return (
     <TableCard>
       <Empty className="py-12">
         <EmptyHeader>
+          <EmptyMedia>
+            <Illustration name={illustration} />
+          </EmptyMedia>
           <EmptyTitle>{title}</EmptyTitle>
         </EmptyHeader>
       </Empty>
@@ -169,9 +192,14 @@ function sortProviders(list: ProviderAdoption[], key: SortKey, asc: boolean) {
   const dir = asc ? 1 : -1
   return [...list].sort((a, b) => {
     if (key === "name") return dir * a.name.localeCompare(b.name)
-    if (key === "open") return dir * (a.open - b.open) || a.name.localeCompare(b.name)
+    if (key === "open")
+      return dir * (a.open - b.open) || a.name.localeCompare(b.name)
     if (a.rate === null || b.rate === null) {
-      return a.rate === b.rate ? a.name.localeCompare(b.name) : a.rate === null ? 1 : -1
+      return a.rate === b.rate
+        ? a.name.localeCompare(b.name)
+        : a.rate === null
+          ? 1
+          : -1
     }
     return dir * (a.rate - b.rate) || b.open - a.open
   })
@@ -232,7 +260,9 @@ function ProvidersTable({
   const paged = usePaged(rows)
 
   if (adoption.providers.length === 0) {
-    return <NothingYet title="No providers yet" />
+    return (
+      <NothingYet title="No providers yet" illustration="providers-empty" />
+    )
   }
   const onSort = (key: SortKey) =>
     setSort((s) =>
@@ -244,7 +274,12 @@ function ProvidersTable({
       <Table>
         <TableHeader className={HEAD}>
           <TableRow>
-            <SortHead label="Provider" column="name" sort={sort} onSort={onSort} />
+            <SortHead
+              label="Provider"
+              column="name"
+              sort={sort}
+              onSort={onSort}
+            />
             <TableHead className="hidden md:table-cell">Status</TableHead>
             <SortHead
               label="Patients"
@@ -254,8 +289,12 @@ function ProvidersTable({
               className="text-center"
             />
             <TableHead className="text-center">Enrolled</TableHead>
-            <TableHead className="hidden text-center sm:table-cell">Invited</TableHead>
-            <TableHead className="hidden text-center sm:table-cell">Not invited</TableHead>
+            <TableHead className="hidden text-center sm:table-cell">
+              Invited
+            </TableHead>
+            <TableHead className="hidden text-center sm:table-cell">
+              Not invited
+            </TableHead>
             <SortHead
               label="Enrollment rate"
               column="rate"
@@ -267,7 +306,10 @@ function ProvidersTable({
         </TableHeader>
         <TableBody className="[&_td]:px-4 [&_td]:py-2">
           {paged.visible.map((p) => (
-            <TableRow key={p.id} className={cn(p.behind && "bg-warning-surface/40")}>
+            <TableRow
+              key={p.id}
+              className={cn(p.behind && "bg-warning-surface/40")}
+            >
               <TableCell className="max-w-[18rem]">
                 <div className="flex min-w-0 items-center gap-2">
                   <PersonAvatar name={p.name} photo={p.photo} />
@@ -288,8 +330,12 @@ function ProvidersTable({
               <TableCell className="hidden md:table-cell">
                 <StatusBadge status={p.status} />
               </TableCell>
-              <TableCell className="text-center tabular-nums">{p.open}</TableCell>
-              <TableCell className="text-center tabular-nums">{p.enrolled}</TableCell>
+              <TableCell className="text-center tabular-nums">
+                {p.open}
+              </TableCell>
+              <TableCell className="text-center tabular-nums">
+                {p.enrolled}
+              </TableCell>
               <TableCell className="hidden text-center tabular-nums sm:table-cell">
                 {p.invited}
               </TableCell>
@@ -366,7 +412,8 @@ function UsersTable({ users }: { users: AdoptionUser[] }) {
   )
   const paged = usePaged(rows)
 
-  if (users.length === 0) return <NothingYet title="No users yet" />
+  if (users.length === 0)
+    return <NothingYet title="No users yet" illustration="users-empty" />
 
   return (
     <TableCard pager={<TablePager paged={paged} />}>

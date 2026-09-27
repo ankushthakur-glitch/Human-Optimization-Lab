@@ -7,7 +7,6 @@ import { toast } from "@/design-system/ui/sonner"
 import {
   IconCopy,
   IconEdit,
-  IconLocation,
   IconLock,
   IconLockOpen,
   IconMoreVertical,
@@ -82,6 +81,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/design-system/ui/tooltip"
+import { Illustration } from "@/components/illustrations/illustration"
 
 const LIST_HREF = "/screens/practice/locations"
 export const locationHref = (id: string) => `${LIST_HREF}/${id}`
@@ -606,9 +606,7 @@ function ProfileBody({ location: l }: { location: Location }) {
       <RecordCard title="Address">
         <DetailGrid
           className="md:grid-cols-2"
-          items={[
-            { label: "Practice address", value: personAddress(l) },
-          ]}
+          items={[{ label: "Practice address", value: personAddress(l) }]}
         />
       </RecordCard>
 
@@ -623,6 +621,7 @@ function ProfileBody({ location: l }: { location: Location }) {
       </RecordCard>
 
       <DeactivateDialog
+        illustration="deactivate-location"
         target={deactivating ? l.name : null}
         message="Patients can no longer be booked here and it leaves provider and staff pickers. Its records stay."
         onCancel={() => setDeactivating(false)}
@@ -648,8 +647,8 @@ function Missing({ ready }: { ready: boolean }) {
       ) : (
         <Empty className="flex-1">
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <IconLocation />
+            <EmptyMedia>
+              <Illustration name="record-not-found" />
             </EmptyMedia>
             <EmptyTitle>Location not found</EmptyTitle>
           </EmptyHeader>

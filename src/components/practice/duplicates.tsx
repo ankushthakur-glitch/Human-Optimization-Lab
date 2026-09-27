@@ -7,9 +7,7 @@ import { toast } from "@/design-system/ui/sonner"
 import {
   IconArrowLeft,
   IconCheck,
-  IconCopy,
   IconRefresh,
-  IconUsersGroup,
   IconWarning,
 } from "@/design-system/icons"
 
@@ -84,6 +82,7 @@ import {
   TableRow,
 } from "@/design-system/ui/table"
 import { TablePager, usePaged } from "@/components/table-pager"
+import { Illustration } from "@/components/illustrations/illustration"
 
 /* The screens of the duplicate workflow (see patient-duplicates.ts for the
    rules): the outcome dialog the add form opens, the reactivate dialog, the
@@ -430,6 +429,7 @@ function ReactivateBody({
   return (
     <>
       <DialogHeader>
+        <Illustration name="reactivate-record" className="-ml-2 size-24" />
         <DialogTitle>Reactivate {fullName(patient)}?</DialogTitle>
         <DialogDescription>
           Exact match on {matchedTextFor(patient)}. This patient {state}.
@@ -615,9 +615,7 @@ function ExistingBody({
   return (
     <>
       <DialogHeader>
-        <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-info-surface text-info">
-          <IconCopy className="size-5" />
-        </div>
+        <Illustration name="already-on-file" className="-ml-2 size-24" />
         <DialogTitle>{copy.title}</DialogTitle>
         <DialogDescription>
           Exact match on {matchedText(found.matched).toLowerCase()}. {copy.text}
@@ -685,9 +683,7 @@ function PossibleBody({
   return (
     <>
       <DialogHeader>
-        <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-warning-surface text-warning">
-          <IconWarning className="size-5" />
-        </div>
+        <Illustration name="possible-duplicate" className="-ml-2 size-24" />
         <DialogTitle>Possible duplicate</DialogTitle>
         <DialogDescription>
           Matches {fullName(existing)} ({existing.id}) on{" "}
@@ -1006,8 +1002,8 @@ export function DuplicateQueueScreen() {
           ) : items.length === 0 ? (
             <Empty className="py-10">
               <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <IconUsersGroup />
+                <EmptyMedia>
+                  <Illustration name="duplicates-clear" />
                 </EmptyMedia>
                 <EmptyTitle>No possible duplicates to review</EmptyTitle>
               </EmptyHeader>
@@ -1137,8 +1133,8 @@ export function DuplicateReviewScreen({ id }: { id: string }) {
         ) : (
           <Empty className="flex-1">
             <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <IconCheck />
+              <EmptyMedia>
+                <Illustration name="review-resolved" />
               </EmptyMedia>
               <EmptyTitle>This review is already resolved</EmptyTitle>
             </EmptyHeader>

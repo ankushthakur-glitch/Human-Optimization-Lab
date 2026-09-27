@@ -60,6 +60,8 @@ const PAGES = {
   "/screens/login/invite-email/mobile": [GLOBAL, "Authentication", "Invitation email (mobile)"],
   "/screens/session-expired": [GLOBAL, "Session", "Session expired"],
 
+  "/screens/handoff/illustrations": [GLOBAL, "Design Handoff", "Illustrations: usage and downloads"],
+
   "/screens/errors": [GLOBAL, "Error States", "All error states"],
   "/screens/errors/permission-denied": [GLOBAL, "Error States", "Permission denied"],
   "/screens/errors/offline": [GLOBAL, "Error States", "No internet connection"],

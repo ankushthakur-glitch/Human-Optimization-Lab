@@ -7,76 +7,76 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0.008 326);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0.008 326);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0.008 326);
-    --primary: oklch(0.52 0.105 223.128);
-    --primary-foreground: oklch(0.984 0.019 200.873);
-    --secondary: oklch(0.967 0.001 286.375);
-    --secondary-foreground: oklch(0.21 0.006 285.885);
-    --muted: oklch(0.96 0.003 325.6);
-    /* Secondary text carries real content here — emails, dates, counts, units —
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0.008 326);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0.008 326);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0.008 326);
+  --primary: oklch(0.52 0.105 223.128);
+  --primary-foreground: oklch(0.984 0.019 200.873);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.96 0.003 325.6);
+  /* Secondary text carries real content here — emails, dates, counts, units —
        so it sits a step darker than stock shadcn: 4.6:1 on a card was not
        enough once it lands on a tinted one. */
-    --muted-foreground: oklch(0.5 0.034 322.5);
-    --accent: oklch(0.52 0.105 223.128);
-    --accent-foreground: oklch(0.984 0.019 200.873);
-    /* Deep enough to clear 4.5:1 as badge text on its own 10% tint. */
-    --destructive: oklch(0.48 0.21 27.325);
-    --border: oklch(0.922 0.005 325.62);
-    --input: oklch(0.922 0.005 325.62);
-    --ring: oklch(0.711 0.019 323.02);
-    --chart-1: oklch(0.828 0.111 230.318);
-    --chart-2: oklch(0.685 0.169 237.323);
-    --chart-3: oklch(0.588 0.158 241.966);
-    --chart-4: oklch(0.5 0.134 242.749);
-    --chart-5: oklch(0.443 0.11 240.79);
-    --radius: 0.45rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0.008 326);
-    --sidebar-primary: oklch(0.609 0.126 221.723);
-    --sidebar-primary-foreground: oklch(0.984 0.019 200.873);
-    --sidebar-accent: oklch(0.96 0.003 325.6);
-    --sidebar-accent-foreground: oklch(0.212 0.019 322.12);
-    --sidebar-border: oklch(0.922 0.005 325.62);
-    --sidebar-ring: oklch(0.711 0.019 323.02);
+  --muted-foreground: oklch(0.5 0.034 322.5);
+  --accent: oklch(0.52 0.105 223.128);
+  --accent-foreground: oklch(0.984 0.019 200.873);
+  /* Deep enough to clear 4.5:1 as badge text on its own 10% tint. */
+  --destructive: oklch(0.48 0.21 27.325);
+  --border: oklch(0.922 0.005 325.62);
+  --input: oklch(0.922 0.005 325.62);
+  --ring: oklch(0.711 0.019 323.02);
+  --chart-1: oklch(0.828 0.111 230.318);
+  --chart-2: oklch(0.685 0.169 237.323);
+  --chart-3: oklch(0.588 0.158 241.966);
+  --chart-4: oklch(0.5 0.134 242.749);
+  --chart-5: oklch(0.443 0.11 240.79);
+  --radius: 0.45rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0.008 326);
+  --sidebar-primary: oklch(0.609 0.126 221.723);
+  --sidebar-primary-foreground: oklch(0.984 0.019 200.873);
+  --sidebar-accent: oklch(0.96 0.003 325.6);
+  --sidebar-accent-foreground: oklch(0.212 0.019 322.12);
+  --sidebar-border: oklch(0.922 0.005 325.62);
+  --sidebar-ring: oklch(0.711 0.019 323.02);
 }
 
 .dark {
-    --background: oklch(0.145 0.008 326);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.212 0.019 322.12);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.212 0.019 322.12);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.45 0.085 224.283);
-    --primary-foreground: oklch(0.984 0.019 200.873);
-    --secondary: oklch(0.274 0.006 286.033);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.263 0.024 320.12);
-    --muted-foreground: oklch(0.711 0.019 323.02);
-    --accent: oklch(0.45 0.085 224.283);
-    --accent-foreground: oklch(0.984 0.019 200.873);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.542 0.034 322.5);
-    --chart-1: oklch(0.828 0.111 230.318);
-    --chart-2: oklch(0.685 0.169 237.323);
-    --chart-3: oklch(0.588 0.158 241.966);
-    --chart-4: oklch(0.5 0.134 242.749);
-    --chart-5: oklch(0.443 0.11 240.79);
-    --sidebar: oklch(0.212 0.019 322.12);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.715 0.143 215.221);
-    --sidebar-primary-foreground: oklch(0.302 0.056 229.695);
-    --sidebar-accent: oklch(0.263 0.024 320.12);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.542 0.034 322.5);
+  --background: oklch(0.145 0.008 326);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.212 0.019 322.12);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.212 0.019 322.12);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.45 0.085 224.283);
+  --primary-foreground: oklch(0.984 0.019 200.873);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.263 0.024 320.12);
+  --muted-foreground: oklch(0.711 0.019 323.02);
+  --accent: oklch(0.45 0.085 224.283);
+  --accent-foreground: oklch(0.984 0.019 200.873);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.542 0.034 322.5);
+  --chart-1: oklch(0.828 0.111 230.318);
+  --chart-2: oklch(0.685 0.169 237.323);
+  --chart-3: oklch(0.588 0.158 241.966);
+  --chart-4: oklch(0.5 0.134 242.749);
+  --chart-5: oklch(0.443 0.11 240.79);
+  --sidebar: oklch(0.212 0.019 322.12);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.715 0.143 215.221);
+  --sidebar-primary-foreground: oklch(0.302 0.056 229.695);
+  --sidebar-accent: oklch(0.263 0.024 320.12);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.542 0.034 322.5);
 }
 
 /* ---------- Interaction surfaces ---------- */
@@ -92,46 +92,50 @@
    inherit the same hover without each one overriding the pair by hand. */
 
 :root {
-    /* The one hover tint in the product: the brand at a wash, on card, popover,
+  /* The one hover tint in the product: the brand at a wash, on card, popover,
        sidebar and table band alike. The percentage is higher than the grey it
        replaced because --primary-tint is a mid-lightness colour where
        --foreground is near-black — 14% of the accent lands at roughly the
        luminance 10% of the ink used to, so the touch weighs the same and now
        carries the hue. Full-strength --foreground stays the ink on top of it;
        selected is --surface-selected plus the edge marker below. */
-    --surface-hover: color-mix(in oklab, var(--primary-tint) 14%, transparent);
-    --surface-hover-foreground: var(--foreground);
+  --surface-hover: color-mix(in oklab, var(--primary-tint) 14%, transparent);
+  --surface-hover-foreground: var(--foreground);
 
-    /* A table row is a big target, so the same tint that reads as a light touch
+  /* A table row is a big target, so the same tint that reads as a light touch
        on a menu item reads as a slab across a full-width row. Rows get their own
        step, about half as strong, which still tracks the pointer without
        flattening the type on top of it. */
-    --surface-row-hover: color-mix(in oklab, var(--primary-tint) 8%, transparent);
-    /* Hover and selected are now the same hue, so the whole distance between
+  --surface-row-hover: color-mix(in oklab, var(--primary-tint) 8%, transparent);
+  /* Hover and selected are now the same hue, so the whole distance between
        them is strength: selected sits far enough above the hover wash to still
        read as a state once the pointer is over it. */
-    --surface-selected: color-mix(in oklab, var(--primary-tint) 22%, transparent);
+  --surface-selected: color-mix(in oklab, var(--primary-tint) 22%, transparent);
 
-    /* A pane that sits *behind* the content it navigates: a message list beside
+  /* A pane that sits *behind* the content it navigates: a message list beside
        a conversation, a folder rail beside a reading pane. Opaque, and only a
        breath off --card — enough that the eye reads two planes and knows which
        one it is reading, not enough to look like a second colour. Anything that
        has to stand out on it (an unread row) goes back up to --card. */
-    --surface-sunken: color-mix(in oklab, var(--foreground) 3%, var(--card));
+  --surface-sunken: color-mix(in oklab, var(--foreground) 3%, var(--card));
 
-    /* Table headers stick to the top of a scrolling list, so their tint has to
+  /* Table headers stick to the top of a scrolling list, so their tint has to
        be opaque: a translucent one lets the rows beneath show through it. The
        band carries the separation on its own, which is why the header row needs
        no rule under it. */
-    --surface-head: color-mix(in oklab, var(--muted) 60%, var(--border));
+  --surface-head: color-mix(in oklab, var(--muted) 60%, var(--border));
 
-    /* The scrim behind a modal. A flat dark grey and no blur on purpose: a
+  /* The scrim behind a modal. A flat dark grey and no blur on purpose: a
        dialog here is nearly always opened off a list, and blurring that list
        destroys the context the person opened the dialog to act on. 60% is
        enough to push the page back without hiding what is on it. */
-    --surface-overlay: color-mix(in oklab, oklch(0.24 0.012 322) 60%, transparent);
+  --surface-overlay: color-mix(
+    in oklab,
+    oklch(0.24 0.012 322) 60%,
+    transparent
+  );
 
-    /* The accent as it is *painted* — drawn in, rather than filled behind:
+  /* The accent as it is *painted* — drawn in, rather than filled behind:
        accent text and links, the selected edge marker, the tints mixed below.
        Everything that paints goes through this token rather than --primary
        directly, because the two are not always the same colour. A preset whose
@@ -140,8 +144,8 @@
        of the same ramp and keeps both jobs legible. For every preset whose
        --primary is already dark enough to paint with, this is just --primary.
        Full-strength --primary stays the fill: buttons, the nav bar, focus. */
-    --primary-tint: var(--primary);
-    --primary-surface: color-mix(in oklab, var(--primary-tint) 10%, transparent);
+  --primary-tint: var(--primary);
+  --primary-surface: color-mix(in oklab, var(--primary-tint) 10%, transparent);
 }
 
 /* In dark mode --primary is itself dark, so a primary tint barely shifts
@@ -153,26 +157,30 @@
    end of the same accent ramp and is identical in both themes, so dark mode
    draws its accents from there instead. */
 :root.dark {
-    /* Dark surfaces need a touch more of the tint to shift the same amount, and
+  /* Dark surfaces need a touch more of the tint to shift the same amount, and
        --chart-1 is what --primary-tint already points at here. */
-    --surface-hover: color-mix(in oklab, var(--chart-1) 18%, transparent);
-    --surface-row-hover: color-mix(in oklab, var(--chart-1) 10%, transparent);
-    --surface-selected: color-mix(in oklab, var(--chart-1) 26%, transparent);
-    /* Dark --muted is lighter than --card, so the same mix would read as a
+  --surface-hover: color-mix(in oklab, var(--chart-1) 18%, transparent);
+  --surface-row-hover: color-mix(in oklab, var(--chart-1) 10%, transparent);
+  --surface-selected: color-mix(in oklab, var(--chart-1) 26%, transparent);
+  /* Dark --muted is lighter than --card, so the same mix would read as a
        bright stripe; it takes less of it to separate the band from the rows. */
-    --surface-head: color-mix(in oklab, var(--muted) 60%, var(--card));
+  --surface-head: color-mix(in oklab, var(--muted) 60%, var(--card));
 
-    /* Dark mode layers the other way round: the page is darker than the card,
+  /* Dark mode layers the other way round: the page is darker than the card,
        so a recessed pane leans towards the page rather than towards the ink. */
-    --surface-sunken: color-mix(in oklab, var(--background) 55%, var(--card));
+  --surface-sunken: color-mix(in oklab, var(--background) 55%, var(--card));
 
-    /* A dark-mode dialog sits on a surface barely lighter than the page, so
+  /* A dark-mode dialog sits on a surface barely lighter than the page, so
        the scrim is what separates the two: the grey it mixes from goes almost
        to black rather than the mix going denser than the 60% used in light. */
-    --surface-overlay: color-mix(in oklab, oklch(0.07 0.012 322) 60%, transparent);
+  --surface-overlay: color-mix(
+    in oklab,
+    oklch(0.07 0.012 322) 60%,
+    transparent
+  );
 
-    --primary-tint: var(--chart-1);
-    --primary-surface: color-mix(in oklab, var(--chart-1) 14%, transparent);
+  --primary-tint: var(--chart-1);
+  --primary-surface: color-mix(in oklab, var(--chart-1) 14%, transparent);
 }
 
 /* Every interactive surface in the product hovers the same way: this tint plus
@@ -192,16 +200,16 @@
 :root.dark,
 :root[data-accent],
 :root[data-accent].dark {
-    --accent: var(--surface-hover);
-    --accent-foreground: var(--surface-hover-foreground);
+  --accent: var(--surface-hover);
+  --accent-foreground: var(--surface-hover-foreground);
 }
 
 :root,
 :root.dark,
 :root[data-base],
 :root[data-base].dark {
-    --sidebar-accent: var(--surface-hover);
-    --sidebar-accent-foreground: var(--sidebar-foreground);
+  --sidebar-accent: var(--surface-hover);
+  --sidebar-accent-foreground: var(--sidebar-foreground);
 }
 
 /* ---------- Top navigation (inverted brand bar) ---------- */
@@ -213,18 +221,22 @@
    single lightest shape on the bar instead of a faint tint. */
 
 :root {
-    --nav: var(--primary);
-    --nav-foreground: var(--primary-foreground);
-    /* Decorative marks only (the account chevron). Tab labels use full ink —
+  --nav: var(--primary);
+  --nav-foreground: var(--primary-foreground);
+  /* Decorative marks only (the account chevron). Tab labels use full ink —
        see the note in provider-header.tsx. */
-    --nav-muted-foreground: color-mix(in oklab, var(--primary-foreground) 80%, var(--primary));
-    --nav-border: color-mix(in oklab, var(--primary-foreground) 18%, transparent);
-    --nav-hover: color-mix(in oklab, var(--primary-foreground) 14%, transparent);
-    /* The count pill keeps the bar's own ink, so the fill has to stay well
+  --nav-muted-foreground: color-mix(
+    in oklab,
+    var(--primary-foreground) 80%,
+    var(--primary)
+  );
+  --nav-border: color-mix(in oklab, var(--primary-foreground) 18%, transparent);
+  --nav-hover: color-mix(in oklab, var(--primary-foreground) 14%, transparent);
+  /* The count pill keeps the bar's own ink, so the fill has to stay well
        darker than that ink: lightening it is what breaks the pair. */
-    --nav-subtle: color-mix(in oklab, var(--primary-foreground) 13%, transparent);
-    --nav-active: var(--primary-foreground);
-    --nav-active-foreground: var(--primary);
+  --nav-subtle: color-mix(in oklab, var(--primary-foreground) 13%, transparent);
+  --nav-active: var(--primary-foreground);
+  --nav-active-foreground: var(--primary);
 }
 
 /* ---------- Video stage (a fixed dark canvas) ---------- */
@@ -237,15 +249,15 @@
    5.2:1. Muted ink on those fills is only 3.1:1, so it is not a pair to use. */
 
 :root {
-    --stage: oklch(0.22 0.01 285);
-    --stage-foreground: oklch(0.97 0 0);
-    --stage-muted-foreground: oklch(0.78 0.005 285);
-    --stage-border: color-mix(in oklab, var(--stage-foreground) 18%, transparent);
-    --stage-hover: color-mix(in oklab, var(--stage-foreground) 14%, transparent);
-    --stage-subtle: color-mix(in oklab, var(--stage-foreground) 12%, transparent);
-    /* The pinned/active control inverts, as the nav's selected tab does. */
-    --stage-active: var(--stage-foreground);
-    --stage-active-foreground: var(--stage);
+  --stage: oklch(0.22 0.01 285);
+  --stage-foreground: oklch(0.97 0 0);
+  --stage-muted-foreground: oklch(0.78 0.005 285);
+  --stage-border: color-mix(in oklab, var(--stage-foreground) 18%, transparent);
+  --stage-hover: color-mix(in oklab, var(--stage-foreground) 14%, transparent);
+  --stage-subtle: color-mix(in oklab, var(--stage-foreground) 12%, transparent);
+  /* The pinned/active control inverts, as the nav's selected tab does. */
+  --stage-active: var(--stage-foreground);
+  --stage-active-foreground: var(--stage);
 }
 
 /* ---------- Status colors ---------- */
@@ -255,25 +267,25 @@
    Dark mode lifts lightness because these sit on dark surfaces as text. */
 
 :root {
-    /* Each of these is read as text on a tint mixed from itself, which is the
+  /* Each of these is read as text on a tint mixed from itself, which is the
        hardest case: the lightness here is what makes that pair clear AA. */
-    --success: oklch(0.48 0.12 152);
-    --warning: oklch(0.48 0.12 62);
-    --info: oklch(0.48 0.13 250);
+  --success: oklch(0.48 0.12 152);
+  --warning: oklch(0.48 0.12 62);
+  --info: oklch(0.48 0.13 250);
 
-    --success-surface: color-mix(in oklab, var(--success) 12%, transparent);
-    --warning-surface: color-mix(in oklab, var(--warning) 14%, transparent);
-    --info-surface: color-mix(in oklab, var(--info) 12%, transparent);
+  --success-surface: color-mix(in oklab, var(--success) 12%, transparent);
+  --warning-surface: color-mix(in oklab, var(--warning) 14%, transparent);
+  --info-surface: color-mix(in oklab, var(--info) 12%, transparent);
 }
 
 :root.dark {
-    --success: oklch(0.78 0.13 152);
-    --warning: oklch(0.8 0.13 75);
-    --info: oklch(0.77 0.1 250);
+  --success: oklch(0.78 0.13 152);
+  --warning: oklch(0.8 0.13 75);
+  --info: oklch(0.77 0.1 250);
 
-    --success-surface: color-mix(in oklab, var(--success) 18%, transparent);
-    --warning-surface: color-mix(in oklab, var(--warning) 18%, transparent);
-    --info-surface: color-mix(in oklab, var(--info) 18%, transparent);
+  --success-surface: color-mix(in oklab, var(--success) 18%, transparent);
+  --warning-surface: color-mix(in oklab, var(--warning) 18%, transparent);
+  --info-surface: color-mix(in oklab, var(--info) 18%, transparent);
 }
 
 /* ---------- Palette ramps ---------- */
@@ -298,97 +310,133 @@
    to invent a new one. */
 
 :root {
-    /* Brand */
-    --primary-1: color-mix(in oklab, var(--primary-tint) 7%, var(--background));
-    --primary-2: color-mix(in oklab, var(--primary-tint) 14%, var(--background));
-    --primary-3: color-mix(in oklab, var(--primary-tint) 24%, var(--background));
-    --primary-4: color-mix(in oklab, var(--primary-tint) 40%, var(--background));
-    --primary-5: color-mix(in oklab, var(--primary-tint) 62%, var(--background));
-    --primary-6: var(--primary-tint);
-    --primary-7: color-mix(in oklab, var(--primary-tint) 78%, var(--foreground));
-    --primary-8: color-mix(in oklab, var(--primary-tint) 58%, var(--foreground));
-    --primary-9: color-mix(in oklab, var(--primary-tint) 40%, var(--foreground));
-    --primary-10: color-mix(in oklab, var(--primary-tint) 24%, var(--foreground));
+  /* Brand */
+  --primary-1: color-mix(in oklab, var(--primary-tint) 7%, var(--background));
+  --primary-2: color-mix(in oklab, var(--primary-tint) 14%, var(--background));
+  --primary-3: color-mix(in oklab, var(--primary-tint) 24%, var(--background));
+  --primary-4: color-mix(in oklab, var(--primary-tint) 40%, var(--background));
+  --primary-5: color-mix(in oklab, var(--primary-tint) 62%, var(--background));
+  --primary-6: var(--primary-tint);
+  --primary-7: color-mix(in oklab, var(--primary-tint) 78%, var(--foreground));
+  --primary-8: color-mix(in oklab, var(--primary-tint) 58%, var(--foreground));
+  --primary-9: color-mix(in oklab, var(--primary-tint) 40%, var(--foreground));
+  --primary-10: color-mix(in oklab, var(--primary-tint) 24%, var(--foreground));
 
-    /* Success */
-    --success-1: color-mix(in oklab, var(--success) 7%, var(--background));
-    --success-2: color-mix(in oklab, var(--success) 14%, var(--background));
-    --success-3: color-mix(in oklab, var(--success) 24%, var(--background));
-    --success-4: color-mix(in oklab, var(--success) 40%, var(--background));
-    --success-5: color-mix(in oklab, var(--success) 62%, var(--background));
-    --success-6: var(--success);
-    --success-7: color-mix(in oklab, var(--success) 78%, var(--foreground));
-    --success-8: color-mix(in oklab, var(--success) 58%, var(--foreground));
-    --success-9: color-mix(in oklab, var(--success) 40%, var(--foreground));
-    --success-10: color-mix(in oklab, var(--success) 24%, var(--foreground));
+  /* Success */
+  --success-1: color-mix(in oklab, var(--success) 7%, var(--background));
+  --success-2: color-mix(in oklab, var(--success) 14%, var(--background));
+  --success-3: color-mix(in oklab, var(--success) 24%, var(--background));
+  --success-4: color-mix(in oklab, var(--success) 40%, var(--background));
+  --success-5: color-mix(in oklab, var(--success) 62%, var(--background));
+  --success-6: var(--success);
+  --success-7: color-mix(in oklab, var(--success) 78%, var(--foreground));
+  --success-8: color-mix(in oklab, var(--success) 58%, var(--foreground));
+  --success-9: color-mix(in oklab, var(--success) 40%, var(--foreground));
+  --success-10: color-mix(in oklab, var(--success) 24%, var(--foreground));
 
-    /* Warning */
-    --warning-1: color-mix(in oklab, var(--warning) 7%, var(--background));
-    --warning-2: color-mix(in oklab, var(--warning) 14%, var(--background));
-    --warning-3: color-mix(in oklab, var(--warning) 24%, var(--background));
-    --warning-4: color-mix(in oklab, var(--warning) 40%, var(--background));
-    --warning-5: color-mix(in oklab, var(--warning) 62%, var(--background));
-    --warning-6: var(--warning);
-    --warning-7: color-mix(in oklab, var(--warning) 78%, var(--foreground));
-    --warning-8: color-mix(in oklab, var(--warning) 58%, var(--foreground));
-    --warning-9: color-mix(in oklab, var(--warning) 40%, var(--foreground));
-    --warning-10: color-mix(in oklab, var(--warning) 24%, var(--foreground));
+  /* Warning */
+  --warning-1: color-mix(in oklab, var(--warning) 7%, var(--background));
+  --warning-2: color-mix(in oklab, var(--warning) 14%, var(--background));
+  --warning-3: color-mix(in oklab, var(--warning) 24%, var(--background));
+  --warning-4: color-mix(in oklab, var(--warning) 40%, var(--background));
+  --warning-5: color-mix(in oklab, var(--warning) 62%, var(--background));
+  --warning-6: var(--warning);
+  --warning-7: color-mix(in oklab, var(--warning) 78%, var(--foreground));
+  --warning-8: color-mix(in oklab, var(--warning) 58%, var(--foreground));
+  --warning-9: color-mix(in oklab, var(--warning) 40%, var(--foreground));
+  --warning-10: color-mix(in oklab, var(--warning) 24%, var(--foreground));
 
-    /* Error — the numbered ramp of --destructive, which is what "error" is
+  /* Error — the numbered ramp of --destructive, which is what "error" is
        called everywhere else in this system. */
-    --destructive-1: color-mix(in oklab, var(--destructive) 7%, var(--background));
-    --destructive-2: color-mix(in oklab, var(--destructive) 14%, var(--background));
-    --destructive-3: color-mix(in oklab, var(--destructive) 24%, var(--background));
-    --destructive-4: color-mix(in oklab, var(--destructive) 40%, var(--background));
-    --destructive-5: color-mix(in oklab, var(--destructive) 62%, var(--background));
-    --destructive-6: var(--destructive);
-    --destructive-7: color-mix(in oklab, var(--destructive) 78%, var(--foreground));
-    --destructive-8: color-mix(in oklab, var(--destructive) 58%, var(--foreground));
-    --destructive-9: color-mix(in oklab, var(--destructive) 40%, var(--foreground));
-    --destructive-10: color-mix(in oklab, var(--destructive) 24%, var(--foreground));
+  --destructive-1: color-mix(
+    in oklab,
+    var(--destructive) 7%,
+    var(--background)
+  );
+  --destructive-2: color-mix(
+    in oklab,
+    var(--destructive) 14%,
+    var(--background)
+  );
+  --destructive-3: color-mix(
+    in oklab,
+    var(--destructive) 24%,
+    var(--background)
+  );
+  --destructive-4: color-mix(
+    in oklab,
+    var(--destructive) 40%,
+    var(--background)
+  );
+  --destructive-5: color-mix(
+    in oklab,
+    var(--destructive) 62%,
+    var(--background)
+  );
+  --destructive-6: var(--destructive);
+  --destructive-7: color-mix(
+    in oklab,
+    var(--destructive) 78%,
+    var(--foreground)
+  );
+  --destructive-8: color-mix(
+    in oklab,
+    var(--destructive) 58%,
+    var(--foreground)
+  );
+  --destructive-9: color-mix(
+    in oklab,
+    var(--destructive) 40%,
+    var(--foreground)
+  );
+  --destructive-10: color-mix(
+    in oklab,
+    var(--destructive) 24%,
+    var(--foreground)
+  );
 }
 
 @theme inline {
-    --color-primary-1: var(--primary-1);
-    --color-primary-2: var(--primary-2);
-    --color-primary-3: var(--primary-3);
-    --color-primary-4: var(--primary-4);
-    --color-primary-5: var(--primary-5);
-    --color-primary-6: var(--primary-6);
-    --color-primary-7: var(--primary-7);
-    --color-primary-8: var(--primary-8);
-    --color-primary-9: var(--primary-9);
-    --color-primary-10: var(--primary-10);
-    --color-success-1: var(--success-1);
-    --color-success-2: var(--success-2);
-    --color-success-3: var(--success-3);
-    --color-success-4: var(--success-4);
-    --color-success-5: var(--success-5);
-    --color-success-6: var(--success-6);
-    --color-success-7: var(--success-7);
-    --color-success-8: var(--success-8);
-    --color-success-9: var(--success-9);
-    --color-success-10: var(--success-10);
-    --color-warning-1: var(--warning-1);
-    --color-warning-2: var(--warning-2);
-    --color-warning-3: var(--warning-3);
-    --color-warning-4: var(--warning-4);
-    --color-warning-5: var(--warning-5);
-    --color-warning-6: var(--warning-6);
-    --color-warning-7: var(--warning-7);
-    --color-warning-8: var(--warning-8);
-    --color-warning-9: var(--warning-9);
-    --color-warning-10: var(--warning-10);
-    --color-destructive-1: var(--destructive-1);
-    --color-destructive-2: var(--destructive-2);
-    --color-destructive-3: var(--destructive-3);
-    --color-destructive-4: var(--destructive-4);
-    --color-destructive-5: var(--destructive-5);
-    --color-destructive-6: var(--destructive-6);
-    --color-destructive-7: var(--destructive-7);
-    --color-destructive-8: var(--destructive-8);
-    --color-destructive-9: var(--destructive-9);
-    --color-destructive-10: var(--destructive-10);
+  --color-primary-1: var(--primary-1);
+  --color-primary-2: var(--primary-2);
+  --color-primary-3: var(--primary-3);
+  --color-primary-4: var(--primary-4);
+  --color-primary-5: var(--primary-5);
+  --color-primary-6: var(--primary-6);
+  --color-primary-7: var(--primary-7);
+  --color-primary-8: var(--primary-8);
+  --color-primary-9: var(--primary-9);
+  --color-primary-10: var(--primary-10);
+  --color-success-1: var(--success-1);
+  --color-success-2: var(--success-2);
+  --color-success-3: var(--success-3);
+  --color-success-4: var(--success-4);
+  --color-success-5: var(--success-5);
+  --color-success-6: var(--success-6);
+  --color-success-7: var(--success-7);
+  --color-success-8: var(--success-8);
+  --color-success-9: var(--success-9);
+  --color-success-10: var(--success-10);
+  --color-warning-1: var(--warning-1);
+  --color-warning-2: var(--warning-2);
+  --color-warning-3: var(--warning-3);
+  --color-warning-4: var(--warning-4);
+  --color-warning-5: var(--warning-5);
+  --color-warning-6: var(--warning-6);
+  --color-warning-7: var(--warning-7);
+  --color-warning-8: var(--warning-8);
+  --color-warning-9: var(--warning-9);
+  --color-warning-10: var(--warning-10);
+  --color-destructive-1: var(--destructive-1);
+  --color-destructive-2: var(--destructive-2);
+  --color-destructive-3: var(--destructive-3);
+  --color-destructive-4: var(--destructive-4);
+  --color-destructive-5: var(--destructive-5);
+  --color-destructive-6: var(--destructive-6);
+  --color-destructive-7: var(--destructive-7);
+  --color-destructive-8: var(--destructive-8);
+  --color-destructive-9: var(--destructive-9);
+  --color-destructive-10: var(--destructive-10);
 }
 
 /* ---------- Contrast overrides on the generated palettes ---------- */
@@ -399,15 +447,15 @@
    (emails, dates, units), and destructive as badge text on its own 10% tint. */
 
 :root[data-base] {
-    --muted-foreground: oklch(0.51 0.01 300);
-    --destructive: oklch(0.48 0.21 27.325);
+  --muted-foreground: oklch(0.51 0.01 300);
+  --destructive: oklch(0.48 0.21 27.325);
 }
 
 /* Dark mode clears AA on everything except this one: the destructive ink on its
    own 20% tint lands at 4.35:1. The dark palettes use `.dark` on top of the
    attribute, so the override has to carry it too. */
 :root[data-base].dark {
-    --destructive: oklch(0.75 0.17 22.216);
+  --destructive: oklch(0.75 0.17 22.216);
 }
 
 /* ---------- Category colors ---------- */
@@ -418,31 +466,31 @@
    own text, so a row of them reads as a set rather than five alarms. */
 
 :root {
-    --category-1: oklch(0.52 0.11 220);
-    --category-2: oklch(0.52 0.12 285);
-    --category-3: oklch(0.53 0.12 62);
-    --category-4: oklch(0.54 0.14 350);
-    --category-5: oklch(0.51 0.11 155);
+  --category-1: oklch(0.52 0.11 220);
+  --category-2: oklch(0.52 0.12 285);
+  --category-3: oklch(0.53 0.12 62);
+  --category-4: oklch(0.54 0.14 350);
+  --category-5: oklch(0.51 0.11 155);
 
-    --category-1-surface: color-mix(in oklab, var(--category-1) 12%, transparent);
-    --category-2-surface: color-mix(in oklab, var(--category-2) 12%, transparent);
-    --category-3-surface: color-mix(in oklab, var(--category-3) 12%, transparent);
-    --category-4-surface: color-mix(in oklab, var(--category-4) 12%, transparent);
-    --category-5-surface: color-mix(in oklab, var(--category-5) 12%, transparent);
+  --category-1-surface: color-mix(in oklab, var(--category-1) 12%, transparent);
+  --category-2-surface: color-mix(in oklab, var(--category-2) 12%, transparent);
+  --category-3-surface: color-mix(in oklab, var(--category-3) 12%, transparent);
+  --category-4-surface: color-mix(in oklab, var(--category-4) 12%, transparent);
+  --category-5-surface: color-mix(in oklab, var(--category-5) 12%, transparent);
 }
 
 :root.dark {
-    --category-1: oklch(0.79 0.1 220);
-    --category-2: oklch(0.79 0.11 285);
-    --category-3: oklch(0.81 0.11 68);
-    --category-4: oklch(0.8 0.12 350);
-    --category-5: oklch(0.79 0.1 155);
+  --category-1: oklch(0.79 0.1 220);
+  --category-2: oklch(0.79 0.11 285);
+  --category-3: oklch(0.81 0.11 68);
+  --category-4: oklch(0.8 0.12 350);
+  --category-5: oklch(0.79 0.1 155);
 
-    --category-1-surface: color-mix(in oklab, var(--category-1) 18%, transparent);
-    --category-2-surface: color-mix(in oklab, var(--category-2) 18%, transparent);
-    --category-3-surface: color-mix(in oklab, var(--category-3) 18%, transparent);
-    --category-4-surface: color-mix(in oklab, var(--category-4) 18%, transparent);
-    --category-5-surface: color-mix(in oklab, var(--category-5) 18%, transparent);
+  --category-1-surface: color-mix(in oklab, var(--category-1) 18%, transparent);
+  --category-2-surface: color-mix(in oklab, var(--category-2) 18%, transparent);
+  --category-3-surface: color-mix(in oklab, var(--category-3) 18%, transparent);
+  --category-4-surface: color-mix(in oklab, var(--category-4) 18%, transparent);
+  --category-5-surface: color-mix(in oklab, var(--category-5) 18%, transparent);
 }
 
 /* ---------- Care surfaces (patient portal) ---------- */
@@ -454,185 +502,235 @@
    it tracking whichever accent preset is active. */
 
 :root {
-    --care-canvas: oklch(0.982 0.013 80);
-    --care-rail: color-mix(in oklab, var(--primary-tint) 7%, var(--card));
-    --care-rail-border: color-mix(in oklab, var(--primary-tint) 18%, var(--card));
-    --care-callout: color-mix(in oklab, var(--primary-tint) 5%, var(--card));
+  --care-canvas: oklch(0.982 0.013 80);
+  --care-rail: color-mix(in oklab, var(--primary-tint) 7%, var(--card));
+  --care-rail-border: color-mix(in oklab, var(--primary-tint) 18%, var(--card));
+  --care-callout: color-mix(in oklab, var(--primary-tint) 5%, var(--card));
 }
 
 :root.dark {
-    --care-canvas: oklch(0.18 0.012 60);
-    --care-rail: color-mix(in oklab, var(--chart-1) 8%, var(--card));
-    --care-rail-border: color-mix(in oklab, var(--chart-1) 20%, var(--card));
-    --care-callout: color-mix(in oklab, var(--chart-1) 6%, var(--card));
+  --care-canvas: oklch(0.18 0.012 60);
+  --care-rail: color-mix(in oklab, var(--chart-1) 8%, var(--card));
+  --care-rail-border: color-mix(in oklab, var(--chart-1) 20%, var(--card));
+  --care-callout: color-mix(in oklab, var(--chart-1) 6%, var(--card));
 }
 
 @theme inline {
-    --color-care-canvas: var(--care-canvas);
-    --color-care-rail: var(--care-rail);
-    --color-care-rail-border: var(--care-rail-border);
-    --color-care-callout: var(--care-callout);
+  --color-care-canvas: var(--care-canvas);
+  --color-care-rail: var(--care-rail);
+  --color-care-rail-border: var(--care-rail-border);
+  --color-care-callout: var(--care-callout);
 }
 
 @theme inline {
-    --color-success: var(--success);
-    --color-warning: var(--warning);
-    --color-info: var(--info);
-    --color-success-surface: var(--success-surface);
-    --color-warning-surface: var(--warning-surface);
-    --color-info-surface: var(--info-surface);
-    --color-category-1: var(--category-1);
-    --color-category-2: var(--category-2);
-    --color-category-3: var(--category-3);
-    --color-category-4: var(--category-4);
-    --color-category-5: var(--category-5);
-    --color-category-1-surface: var(--category-1-surface);
-    --color-category-2-surface: var(--category-2-surface);
-    --color-category-3-surface: var(--category-3-surface);
-    --color-category-4-surface: var(--category-4-surface);
-    --color-category-5-surface: var(--category-5-surface);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-success-surface: var(--success-surface);
+  --color-warning-surface: var(--warning-surface);
+  --color-info-surface: var(--info-surface);
+  --color-category-1: var(--category-1);
+  --color-category-2: var(--category-2);
+  --color-category-3: var(--category-3);
+  --color-category-4: var(--category-4);
+  --color-category-5: var(--category-5);
+  --color-category-1-surface: var(--category-1-surface);
+  --color-category-2-surface: var(--category-2-surface);
+  --color-category-3-surface: var(--category-3-surface);
+  --color-category-4-surface: var(--category-4-surface);
+  --color-category-5-surface: var(--category-5-surface);
 }
 
 /* ---------- Icon stroke weight ---------- */
 /* Hugeicons ships stroke-width as a presentation attribute on each path; CSS
    outranks that, so one variable re-weights every icon in the product. */
 
-:root { --icon-stroke-width: 1.5; }
-:root[data-icon-stroke="light"] { --icon-stroke-width: 1; }
-:root[data-icon-stroke="regular"] { --icon-stroke-width: 1.5; }
-:root[data-icon-stroke="bold"] { --icon-stroke-width: 2; }
+:root {
+  --icon-stroke-width: 1.5;
+}
+:root[data-icon-stroke="light"] {
+  --icon-stroke-width: 1;
+}
+:root[data-icon-stroke="regular"] {
+  --icon-stroke-width: 1.5;
+}
+:root[data-icon-stroke="bold"] {
+  --icon-stroke-width: 2;
+}
 
 svg path[stroke="currentColor"] {
-    stroke-width: var(--icon-stroke-width);
+  stroke-width: var(--icon-stroke-width);
 }
 
 /* ---------- Typography themes ---------- */
 /* Each font is loaded in app/layout.tsx and exposes its own --font-* variable. */
 
 :root {
-    --font-body: var(--font-inter);
-    --font-display: var(--font-body);
+  --font-body: var(--font-inter);
+  --font-display: var(--font-body);
 }
 
-:root[data-font="inter"] { --font-body: var(--font-inter); }
-:root[data-font="roboto"] { --font-body: var(--font-roboto); }
-:root[data-font="noto-sans"] { --font-body: var(--font-noto-sans); }
-:root[data-font="ibm-plex-sans"] { --font-body: var(--font-ibm-plex-sans); }
-:root[data-font="source-sans-3"] { --font-body: var(--font-source-sans-3); }
-:root[data-font="public-sans"] { --font-body: var(--font-public-sans); }
-:root[data-font="dm-sans"] { --font-body: var(--font-dm-sans); }
-:root[data-font="figtree"] { --font-body: var(--font-figtree); }
-:root[data-font="manrope"] { --font-body: var(--font-manrope); }
-:root[data-font="geist"] { --font-body: var(--font-geist); }
+:root[data-font="inter"] {
+  --font-body: var(--font-inter);
+}
+:root[data-font="roboto"] {
+  --font-body: var(--font-roboto);
+}
+:root[data-font="noto-sans"] {
+  --font-body: var(--font-noto-sans);
+}
+:root[data-font="ibm-plex-sans"] {
+  --font-body: var(--font-ibm-plex-sans);
+}
+:root[data-font="source-sans-3"] {
+  --font-body: var(--font-source-sans-3);
+}
+:root[data-font="public-sans"] {
+  --font-body: var(--font-public-sans);
+}
+:root[data-font="dm-sans"] {
+  --font-body: var(--font-dm-sans);
+}
+:root[data-font="figtree"] {
+  --font-body: var(--font-figtree);
+}
+:root[data-font="manrope"] {
+  --font-body: var(--font-manrope);
+}
+:root[data-font="geist"] {
+  --font-body: var(--font-geist);
+}
 
-:root[data-heading="inherit"] { --font-display: var(--font-body); }
-:root[data-heading="inter"] { --font-display: var(--font-inter); }
-:root[data-heading="roboto"] { --font-display: var(--font-roboto); }
-:root[data-heading="noto-sans"] { --font-display: var(--font-noto-sans); }
-:root[data-heading="ibm-plex-sans"] { --font-display: var(--font-ibm-plex-sans); }
-:root[data-heading="source-sans-3"] { --font-display: var(--font-source-sans-3); }
-:root[data-heading="public-sans"] { --font-display: var(--font-public-sans); }
-:root[data-heading="dm-sans"] { --font-display: var(--font-dm-sans); }
-:root[data-heading="figtree"] { --font-display: var(--font-figtree); }
-:root[data-heading="manrope"] { --font-display: var(--font-manrope); }
-:root[data-heading="geist"] { --font-display: var(--font-geist); }
+:root[data-heading="inherit"] {
+  --font-display: var(--font-body);
+}
+:root[data-heading="inter"] {
+  --font-display: var(--font-inter);
+}
+:root[data-heading="roboto"] {
+  --font-display: var(--font-roboto);
+}
+:root[data-heading="noto-sans"] {
+  --font-display: var(--font-noto-sans);
+}
+:root[data-heading="ibm-plex-sans"] {
+  --font-display: var(--font-ibm-plex-sans);
+}
+:root[data-heading="source-sans-3"] {
+  --font-display: var(--font-source-sans-3);
+}
+:root[data-heading="public-sans"] {
+  --font-display: var(--font-public-sans);
+}
+:root[data-heading="dm-sans"] {
+  --font-display: var(--font-dm-sans);
+}
+:root[data-heading="figtree"] {
+  --font-display: var(--font-figtree);
+}
+:root[data-heading="manrope"] {
+  --font-display: var(--font-manrope);
+}
+:root[data-heading="geist"] {
+  --font-display: var(--font-geist);
+}
 
 /* The product portal (every route under /screens) is Inter only. The
    customizer's saved font applies to the design-system site; this rule comes
    after it, at the same specificity, so the portal keeps Inter whatever was
    picked there. data-portal is set by app/screens/layout.tsx. */
 :root[data-portal] {
-    --font-body: var(--font-inter);
-    --font-display: var(--font-inter);
-    --font-mono: var(--font-inter);
+  --font-body: var(--font-inter);
+  --font-display: var(--font-inter);
+  --font-mono: var(--font-inter);
 }
 
 @theme inline {
-    --color-nav: var(--nav);
-    --color-nav-foreground: var(--nav-foreground);
-    --color-nav-muted-foreground: var(--nav-muted-foreground);
-    --color-nav-border: var(--nav-border);
-    --color-nav-hover: var(--nav-hover);
-    --color-nav-subtle: var(--nav-subtle);
-    --color-nav-active: var(--nav-active);
-    --color-nav-active-foreground: var(--nav-active-foreground);
-    --color-stage: var(--stage);
-    --color-stage-foreground: var(--stage-foreground);
-    --color-stage-muted-foreground: var(--stage-muted-foreground);
-    --color-stage-border: var(--stage-border);
-    --color-stage-hover: var(--stage-hover);
-    --color-stage-subtle: var(--stage-subtle);
-    --color-stage-active: var(--stage-active);
-    --color-stage-active-foreground: var(--stage-active-foreground);
-    --color-surface-hover: var(--surface-hover);
-    --color-surface-row-hover: var(--surface-row-hover);
-    --color-surface-hover-foreground: var(--surface-hover-foreground);
-    --color-surface-selected: var(--surface-selected);
-    --color-surface-head: var(--surface-head);
-    --color-surface-sunken: var(--surface-sunken);
-    --color-surface-overlay: var(--surface-overlay);
-    --color-primary-tint: var(--primary-tint);
-    --color-primary-surface: var(--primary-surface);
-    --font-sans: var(--font-body);
-    --font-heading: var(--font-display);
-    --font-serif: var(--font-roboto-slab);
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+  --color-nav: var(--nav);
+  --color-nav-foreground: var(--nav-foreground);
+  --color-nav-muted-foreground: var(--nav-muted-foreground);
+  --color-nav-border: var(--nav-border);
+  --color-nav-hover: var(--nav-hover);
+  --color-nav-subtle: var(--nav-subtle);
+  --color-nav-active: var(--nav-active);
+  --color-nav-active-foreground: var(--nav-active-foreground);
+  --color-stage: var(--stage);
+  --color-stage-foreground: var(--stage-foreground);
+  --color-stage-muted-foreground: var(--stage-muted-foreground);
+  --color-stage-border: var(--stage-border);
+  --color-stage-hover: var(--stage-hover);
+  --color-stage-subtle: var(--stage-subtle);
+  --color-stage-active: var(--stage-active);
+  --color-stage-active-foreground: var(--stage-active-foreground);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-row-hover: var(--surface-row-hover);
+  --color-surface-hover-foreground: var(--surface-hover-foreground);
+  --color-surface-selected: var(--surface-selected);
+  --color-surface-head: var(--surface-head);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-primary-tint: var(--primary-tint);
+  --color-primary-surface: var(--primary-surface);
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-display);
+  --font-serif: var(--font-roboto-slab);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+  }
   /* Baseline keyboard focus for plain links and buttons. shadcn components set
      their own outline-none + ring in the utilities layer, so this does not
      double up on them. */
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
-    }
+  }
 }
 
 @layer components {
@@ -642,7 +740,7 @@ svg path[stroke="currentColor"] {
      3:1 against the card it sits on, which a light-fill --primary would not. */
   .selected-marker {
     box-shadow: inset 2px 0 0 0 var(--primary-tint);
-    }
+  }
 }
 /* ---------- Prototype hotspots ---------- */
 /* The click-anywhere cue that shows a client what opens a screen or a modal.
@@ -652,11 +750,11 @@ svg path[stroke="currentColor"] {
    on purpose — it has to be findable at a glance and forgettable a second
    later, not the loudest thing on the screen. */
 :root {
-    --hotspot: oklch(0.58 0.09 250);
+  --hotspot: oklch(0.58 0.09 250);
 }
 
 .dark {
-    --hotspot: oklch(0.75 0.07 250);
+  --hotspot: oklch(0.75 0.07 250);
 }
 
 @layer components {
@@ -667,7 +765,7 @@ svg path[stroke="currentColor"] {
        thing it describes tells the client nothing. */
     z-index: 2147483000;
     pointer-events: none;
-    }
+  }
   /* The Figma cue: a tinted box, no outline, that appears on every hotspot
      at once and fades. No sweep and no ripple — anything that travels across
      the screen reads as a loading shimmer rather than "you can click here". */
@@ -676,31 +774,81 @@ svg path[stroke="currentColor"] {
     background: color-mix(in oklab, var(--hotspot) 16%, transparent);
     opacity: 0;
     animation: hotspot-flash 0.7s ease-out both;
-    }
+  }
   @keyframes hotspot-flash {
-    0% { opacity: 0; }
-    12% { opacity: 1; }
-    55% { opacity: 1; }
-    100% { opacity: 0; }
+    0% {
+      opacity: 0;
     }
+    12% {
+      opacity: 1;
+    }
+    55% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
   /* A plain fade is already still, but some viewers want no motion at all:
      the marks appear, hold, and go. */
   @media (prefers-reduced-motion: reduce) {
     .hotspot-mark {
       animation: hotspot-hold 0.7s step-end both;
-      }
     }
+  }
   @keyframes hotspot-hold {
-    0%, 70% { opacity: 1; }
-    100% { opacity: 0; }
+    0%,
+    70% {
+      opacity: 1;
     }
+    100% {
+      opacity: 0;
+    }
+  }
 }
 
 @layer components {
   /* Used by the Thinking trigger: a light sweep across the label while the
      model is still working, so the row reads as live without moving. */
   @keyframes thinking-shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+      background-position: 200% 0;
     }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+}
+
+/* Empty-state illustrations (src/components/illustrations, drawn with the
+   product-ui-illustrations skill). Every stroke and fill in them reads one of
+   these --il-* slots, so mapping the slots onto the portal's own tokens makes
+   the art follow the base, the accent picker and dark mode with no second
+   file. The line is darker than --border on purpose: at half a unit it
+   antialiases to about half its value. */
+:root {
+  --il-ghost: color-mix(in oklab, var(--foreground) 3%, var(--background));
+  --il-panel: color-mix(in oklab, var(--foreground) 4.5%, var(--card));
+  --il-panel-top: color-mix(in oklab, var(--foreground) 1.5%, var(--card));
+  --il-line: color-mix(in oklab, var(--foreground) 30%, var(--card));
+  --il-surface: var(--card);
+  --il-stroke: var(--foreground);
+  --il-stroke-soft: var(--muted-foreground);
+  --il-fill: color-mix(in oklab, var(--foreground) 16%, var(--card));
+  --il-fill-soft: color-mix(in oklab, var(--foreground) 9%, var(--card));
+  --il-accent: var(--primary-tint);
+  --il-shadow-c: oklch(0.24 0.012 322);
+  --il-shadow-o: 0.14;
+}
+
+:root.dark {
+  --il-ghost: color-mix(in oklab, var(--foreground) 4%, var(--background));
+  --il-panel: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --il-panel-top: color-mix(in oklab, var(--foreground) 8%, var(--background));
+  --il-line: color-mix(in oklab, var(--foreground) 26%, var(--background));
+  --il-surface: color-mix(in oklab, var(--foreground) 12%, var(--background));
+  --il-fill: color-mix(in oklab, var(--foreground) 22%, var(--background));
+  --il-fill-soft: color-mix(in oklab, var(--foreground) 11%, var(--background));
+  --il-shadow-c: #000;
+  --il-shadow-o: 0.55;
 }

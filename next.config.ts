@@ -5,7 +5,9 @@ const nextConfig: NextConfig = {
   // Next blocks its dev resources cross-origin by default — which leaves the
   // page rendered but never hydrated, so every click in a test is a no-op.
   // The LAN address lets a phone on the same Wi-Fi load the dev server.
-  allowedDevOrigins: ["127.0.0.1", "192.168.10.149"],
+  // The LAN entry has to match whatever address this machine currently has;
+  // a stale one blocks the scripts and the page renders but never hydrates.
+  allowedDevOrigins: ["127.0.0.1", "192.168.10.149", "192.168.0.101"],
   // forbidden() and app/forbidden.tsx — the Permission Denied screen.
   experimental: { authInterrupts: true },
   // The patient app's web build (mobile/, `npm run build:web`) is served from

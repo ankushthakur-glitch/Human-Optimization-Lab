@@ -11,8 +11,6 @@ import {
   IconLockOpen,
   IconMail,
   IconMoreVertical,
-  IconSignature,
-  IconStethoscope,
   IconTrash,
 } from "@/design-system/icons"
 
@@ -82,6 +80,7 @@ import {
 import { Field, FieldLabel } from "@/design-system/ui/field"
 import { Skeleton } from "@/design-system/ui/skeleton"
 import { Textarea } from "@/design-system/ui/textarea"
+import { Illustration } from "@/components/illustrations/illustration"
 
 const USERS_HREF = "/screens/practice/users"
 export const providerHref = (id: string) => `${USERS_HREF}/providers/${id}`
@@ -559,7 +558,10 @@ function ProviderForm({ provider }: { provider?: Provider }) {
           }
         >
           {values.licenses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No licenses added.</p>
+            <div className="flex flex-col items-center gap-2 py-4 text-sm text-muted-foreground">
+              <Illustration name="no-licenses" className="size-28" />
+              No licenses added
+            </div>
           ) : (
             <div className="flex flex-col gap-5">
               {values.licenses.map((l, i) => (
@@ -818,9 +820,9 @@ function ProfileBody({
               type="button"
               variant="outline"
               onClick={() => setSigning(true)}
-              className="h-32 w-full flex-col gap-2 rounded-md border-dashed bg-transparent font-normal text-primary-tint hover:bg-primary-surface/40 hover:text-primary-tint"
+              className="h-auto w-full flex-col gap-1 rounded-md border-dashed bg-transparent py-3 font-normal text-primary-tint hover:bg-primary-surface/40 hover:text-primary-tint"
             >
-              <IconSignature className="size-5" />
+              <Illustration name="signature-empty" className="size-24" />
               Add signature
             </Button>
           )}
@@ -841,7 +843,10 @@ function ProfileBody({
 
       <RecordCard title="Licensing and compliance">
         {p.licenses.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No licenses on file.</p>
+          <div className="flex flex-col items-center gap-2 py-4 text-sm text-muted-foreground">
+            <Illustration name="no-licenses" className="size-28" />
+            No licenses on file
+          </div>
         ) : (
           <div className="flex flex-col gap-4">
             {p.licenses.map((l, i) => (
@@ -870,6 +875,7 @@ function ProfileBody({
         }}
       />
       <DeactivateDialog
+        illustration="deactivate-provider"
         target={deactivating ? providerName(p) : null}
         message="They lose access to the portal and leave provider pickers. Their patients and history stay with the practice."
         onCancel={() => setDeactivating(false)}
@@ -897,8 +903,8 @@ function Missing({ ready }: { ready: boolean }) {
       ) : (
         <Empty className="flex-1">
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <IconStethoscope />
+            <EmptyMedia>
+              <Illustration name="record-not-found" />
             </EmptyMedia>
             <EmptyTitle>Provider not found</EmptyTitle>
           </EmptyHeader>
