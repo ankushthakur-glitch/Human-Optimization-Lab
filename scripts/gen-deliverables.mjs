@@ -34,13 +34,16 @@ const BASE_URL = (
 const PORTALS = {
   "Global Pages": "global-pages",
   "Super Admin Portal": "super-admin-portal",
+  "Clinic Manager Portal": "clinic-manager-portal",
   "Provider Portal": "provider-portal",
   "Patient Portal": "patient-portal",
 }
 const GLOBAL = "Global Pages"
 const ADMIN = "Super Admin Portal"
+const MANAGER = "Clinic Manager Portal"
 const PROVIDER = "Provider Portal"
 const PATIENT = "Patient Portal"
+const AUTH = "Login and Authentication"
 
 /** route → [portal, feature, sub feature, options]. `url` gives a dynamic
     route a link; `skip` leaves a route out (redirects, internals). */
@@ -48,54 +51,59 @@ const PAGES = {
   // The design system is one deliverable: its overview links to every page.
   "/": [GLOBAL, "Design System", "Design system"],
 
-  "/screens/login": [GLOBAL, "Authentication", "Sign in"],
-  "/screens/login/verify": [GLOBAL, "Authentication", "Two-factor verification"],
-  "/screens/login/two-factor-setup": [GLOBAL, "Authentication", "Two-factor setup"],
-  "/screens/login/forgot-password": [GLOBAL, "Authentication", "Forgot password"],
-  "/screens/login/reset-code": [GLOBAL, "Authentication", "Reset code sent"],
-  "/screens/login/reset-password": [GLOBAL, "Authentication", "Reset password"],
-  "/screens/login/set-password": [GLOBAL, "Authentication", "Set password"],
-  "/screens/login/activate": [GLOBAL, "Authentication", "Activate account"],
-  "/screens/login/invite-email": [GLOBAL, "Authentication", "Invitation email (desktop)"],
-  "/screens/login/invite-email/mobile": [GLOBAL, "Authentication", "Invitation email (mobile)"],
-  "/screens/session-expired": [GLOBAL, "Session", "Session expired"],
+  // The sign-in screens without ?as= are the Super Admin's; the other portals
+  // reach the same screens through ?as= (see AUTH_EXTRA).
+  "/screens/login/invite-email": [ADMIN, AUTH, "Invitation email (desktop)"],
+  "/screens/login/invite-email/mobile": [ADMIN, AUTH, "Invitation email (mobile)"],
+  "/screens/login/activate": [ADMIN, AUTH, "Activate account"],
+  "/screens/login/set-password": [ADMIN, AUTH, "Set password"],
+  "/screens/login/two-factor-setup": [ADMIN, AUTH, "Two-factor setup"],
+  "/screens/login": [ADMIN, AUTH, "Sign in"],
+  "/screens/login/verify": [ADMIN, AUTH, "Two-factor verification"],
+  "/screens/login/forgot-password": [ADMIN, AUTH, "Forgot password"],
+  "/screens/login/reset-code": [ADMIN, AUTH, "Reset code sent"],
+  "/screens/login/reset-password": [ADMIN, AUTH, "Reset password"],
 
-  "/screens/handoff/illustrations": [GLOBAL, "Design Handoff", "Illustrations: usage and downloads"],
+  "/screens/handoff/illustrations": [GLOBAL, "Illustrations", "Handoff: usage and downloads"],
 
-  "/screens/errors": [GLOBAL, "Error States", "All error states"],
-  "/screens/errors/permission-denied": [GLOBAL, "Error States", "Permission denied"],
-  "/screens/errors/offline": [GLOBAL, "Error States", "No internet connection"],
+  "/screens/errors": [GLOBAL, "Error States (web)", "All error states"],
+  "/screens/errors/permission-denied": [GLOBAL, "Error States (web)", "Permission denied"],
+  "/screens/errors/offline": [GLOBAL, "Error States (web)", "No internet connection"],
+  "/screens/session-expired": [GLOBAL, "Error States (web)", "Session expired"],
 
   "/screens/admin": [ADMIN, "", "", { skip: true }],
   "/screens/admin/practices": [ADMIN, "Practices", "Practice list"],
   "/screens/admin/practices/[id]": [ADMIN, "Practices", "Practice details", { url: "/screens/admin/practices/593892" }],
+  "/screens/admin/practices/[id]/providers/[providerId]": [ADMIN, "Practices", "Provider adoption", { url: "/screens/admin/practices/593892/providers/PR4775" }],
+  "/screens/admin/dashboard": [ADMIN, "Dashboard", "Dashboard (coming soon)"],
+  "/screens/admin/settings": [ADMIN, "Settings", "Settings (coming soon)"],
 
   "/screens/patients": [PROVIDER, "Patients", "Patient worklist"],
   "/screens/patients/new": [PROVIDER, "Patients", "Register patient"],
 
   // The clinic manager's practice portal.
-  "/screens/practice": [PROVIDER, "", "", { skip: true }],
-  "/screens/practice/providers": [PROVIDER, "", "", { skip: true }],
-  "/screens/practice/users": [PROVIDER, "Clinic Manager Portal", "Users: providers tab (list, bulk import)"],
-  "/screens/practice/users/providers/new": [PROVIDER, "Clinic Manager Portal", "Add provider"],
-  "/screens/practice/users/providers/[id]": [PROVIDER, "Clinic Manager Portal", "Provider profile", { url: "/screens/practice/users/providers/PR3132" }],
-  "/screens/practice/users/providers/[id]/edit": [PROVIDER, "Clinic Manager Portal", "Edit provider", { url: "/screens/practice/users/providers/PR3132/edit" }],
-  "/screens/practice/patients": [PROVIDER, "Clinic Manager Portal", "Patients (list, bulk import)"],
-  "/screens/practice/patients/new": [PROVIDER, "Clinic Manager Portal", "Patient onboarding form"],
-  "/screens/practice/patients/[id]": [PROVIDER, "Clinic Manager Portal", "Patient profile", { url: "/screens/practice/patients/P10240" }],
-  "/screens/practice/patients/[id]/edit": [PROVIDER, "Clinic Manager Portal", "Edit patient", { url: "/screens/practice/patients/P10240/edit" }],
-  "/screens/practice/patients/duplicates": [PROVIDER, "Clinic Manager Portal", "Possible duplicates queue"],
-  "/screens/practice/patients/duplicates/[id]": [PROVIDER, "Clinic Manager Portal", "Review possible duplicate", { url: "/screens/practice/patients/duplicates/DR1001" }],
-  "/screens/practice/locations": [PROVIDER, "Clinic Manager Portal", "Locations (list)"],
-  "/screens/practice/locations/new": [PROVIDER, "Clinic Manager Portal", "Add location"],
-  "/screens/practice/locations/[id]": [PROVIDER, "Clinic Manager Portal", "Location details", { url: "/screens/practice/locations/LOC1001" }],
-  "/screens/practice/locations/[id]/edit": [PROVIDER, "Clinic Manager Portal", "Edit location", { url: "/screens/practice/locations/LOC1001/edit" }],
+  "/screens/practice": [MANAGER, "", "", { skip: true }],
+  "/screens/practice/providers": [MANAGER, "", "", { skip: true }],
+  "/screens/practice/users": [MANAGER, "Users", "Users: providers tab (list, bulk import)"],
+  "/screens/practice/users/providers/new": [MANAGER, "Users", "Add provider"],
+  "/screens/practice/users/providers/[id]": [MANAGER, "Users", "Provider profile", { url: "/screens/practice/users/providers/PR3132" }],
+  "/screens/practice/users/providers/[id]/edit": [MANAGER, "Users", "Edit provider", { url: "/screens/practice/users/providers/PR3132/edit" }],
+  "/screens/practice/patients": [MANAGER, "Patients", "Patients (list, bulk import)"],
+  "/screens/practice/patients/new": [MANAGER, "Patients", "Patient onboarding form"],
+  "/screens/practice/patients/[id]": [MANAGER, "Patients", "Patient profile", { url: "/screens/practice/patients/P10240" }],
+  "/screens/practice/patients/[id]/edit": [MANAGER, "Patients", "Edit patient", { url: "/screens/practice/patients/P10240/edit" }],
+  "/screens/practice/patients/duplicates": [MANAGER, "Patients", "Possible duplicates queue"],
+  "/screens/practice/patients/duplicates/[id]": [MANAGER, "Patients", "Review possible duplicate", { url: "/screens/practice/patients/duplicates/DR1001" }],
+  "/screens/practice/locations": [MANAGER, "Locations", "Locations (list)"],
+  "/screens/practice/locations/new": [MANAGER, "Locations", "Add location"],
+  "/screens/practice/locations/[id]": [MANAGER, "Locations", "Location details", { url: "/screens/practice/locations/LOC1001" }],
+  "/screens/practice/locations/[id]/edit": [MANAGER, "Locations", "Edit location", { url: "/screens/practice/locations/LOC1001/edit" }],
   // A provider's portal, reached from the provider invite.
   "/screens/provider": [PROVIDER, "", "", { skip: true }],
-  "/screens/provider/patients": [PROVIDER, "Provider Portal", "Patients (list, bulk import, send invites)"],
-  "/screens/provider/patients/new": [PROVIDER, "Provider Portal", "Add patient and send invite"],
-  "/screens/provider/patients/[id]": [PROVIDER, "Provider Portal", "Patient profile", { url: "/screens/provider/patients/P10240" }],
-  "/screens/provider/patients/[id]/edit": [PROVIDER, "Provider Portal", "Edit patient", { url: "/screens/provider/patients/P10240/edit" }],
+  "/screens/provider/patients": [PROVIDER, "Patients", "Patients (list, bulk import, send invites)"],
+  "/screens/provider/patients/new": [PROVIDER, "Patients", "Add patient and send invite"],
+  "/screens/provider/patients/[id]": [PROVIDER, "Patients", "Patient profile", { url: "/screens/provider/patients/P10240" }],
+  "/screens/provider/patients/[id]/edit": [PROVIDER, "Patients", "Edit patient", { url: "/screens/provider/patients/P10240/edit" }],
   // The patient app's onboarding prototype: listed in EXTRA after the app's
   // sign in, so the Patient Onboarding rows run in the order a patient sees.
   "/screens/app": [PATIENT, "", "", { skip: true }],
@@ -104,44 +112,52 @@ const PAGES = {
   "/screens/app/medications": [PATIENT, "", "", { skip: true }],
 }
 
-/** Pages that aren't a page.tsx of their own: [portal, feature, sub, url]. */
+/** The shared sign-in screens as one portal's user sees them (?as=key). */
+const authFor = (portal, key, subs) =>
+  subs.map(([sub, url]) => [portal, AUTH, sub, `${url}?as=${key}`, -1])
+const WEB_AUTH = [
+  ["Invitation email (desktop)", "/screens/login/invite-email"],
+  ["Invitation email (mobile)", "/screens/login/invite-email/mobile"],
+  ["Activate account", "/screens/login/activate"],
+  ["Set password", "/screens/login/set-password"],
+  ["Two-factor setup", "/screens/login/two-factor-setup"],
+  ["Sign in", "/screens/login"],
+  ["Two-factor verification", "/screens/login/verify"],
+  ["Forgot password", "/screens/login/forgot-password"],
+  ["Reset code sent", "/screens/login/reset-code"],
+  ["Reset password", "/screens/login/reset-password"],
+]
+
+/** Pages that aren't a page.tsx of their own: [portal, feature, sub, url,
+    at?]. `at` -1 puts a row above the portal's listed pages; a route puts it
+    just after that route's row. */
 const EXTRA = [
-  [GLOBAL, "Error States", "Page not found", "/screens/page-not-found"],
-  // A clinic manager's first sign-in: the shared login screens with ?as=.
-  ...[
+  [GLOBAL, "Design System", "Illustration library", "/illustrations"],
+  [GLOBAL, "Error States (web)", "Page not found", "/screens/page-not-found"],
+  // The patient app's error states; errors/ is a review index that opens each one.
+  [GLOBAL, "Error States (mobile app)", "All error states", "/app/errors", "/screens/session-expired"],
+  [GLOBAL, "Error States (mobile app)", "Page not found", "/app/errors/this-page-does-not-exist", "/screens/session-expired"],
+  [GLOBAL, "Error States (mobile app)", "Session expired", "/app/errors/session-expired", "/screens/session-expired"],
+  [GLOBAL, "Error States (mobile app)", "No internet connection", "/app/errors/offline", "/screens/session-expired"],
+  [GLOBAL, "Error States (mobile app)", "Something went wrong", "/app/errors/crash", "/screens/session-expired"],
+
+  ...authFor(MANAGER, "clinic-manager", WEB_AUTH),
+  [MANAGER, "Users", "Users: non-clinical users tab (list, add, view, edit panels)", "/screens/practice/users?tab=staff"],
+
+  ...authFor(PROVIDER, "provider", WEB_AUTH),
+
+  // A patient signs in on the mobile app; only the invitation is on the web.
+  ...authFor(PATIENT, "patient", [
     ["Invitation email (desktop)", "/screens/login/invite-email"],
     ["Invitation email (mobile)", "/screens/login/invite-email/mobile"],
-    ["Activate account", "/screens/login/activate"],
-    ["Set password", "/screens/login/set-password"],
-    ["Two-factor setup", "/screens/login/two-factor-setup"],
-  ].map(([sub, url]) => [PROVIDER, "Clinic Manager Onboarding", sub, `${url}?as=clinic-manager`]),
-  [PROVIDER, "Clinic Manager Portal", "Users: non-clinical users tab (list, add, view, edit panels)", "/screens/practice/users?tab=staff"],
-  // A provider's first sign-in, invited by the clinic manager.
-  ...[
-    ["Invitation email (desktop)", "/screens/login/invite-email"],
-    ["Invitation email (mobile)", "/screens/login/invite-email/mobile"],
-    ["Activate account", "/screens/login/activate"],
-    ["Set password", "/screens/login/set-password"],
-    ["Two-factor setup", "/screens/login/two-factor-setup"],
-  ].map(([sub, url]) => [PROVIDER, "Provider Onboarding", sub, `${url}?as=provider`]),
-  // A patient's invitation; the rest of their onboarding is in the mobile app.
-  ...[
-    ["Invitation email (desktop)", "/screens/login/invite-email"],
-    ["Invitation email (mobile)", "/screens/login/invite-email/mobile"],
-  ].map(([sub, url]) => [PATIENT, "Patient Onboarding", sub, `${url}?as=patient`]),
+  ]),
   // The app's signed-out screens, served from public/app. Set password and
   // home sit behind the app's session, so they have no link of their own.
-  [PATIENT, "Patient Onboarding", "Activate account (mobile app)", "/app/activate"],
-  [PATIENT, "Patient Onboarding", "Sign in (mobile app)", "/app/sign-in"],
+  [PATIENT, AUTH, "Activate account (mobile app)", "/app/activate", -1],
+  [PATIENT, AUTH, "Sign in (mobile app)", "/app/sign-in", -1],
   [PATIENT, "Patient Onboarding", "Consent", "/screens/app/consent"],
   [PATIENT, "Patient Onboarding", "Daily habits", "/screens/app/habits"],
   [PATIENT, "Patient Onboarding", "Medications", "/screens/app/medications"],
-  // The app's error states; errors/ is a review index that opens each one.
-  [PATIENT, "Error States (mobile app)", "All error states", "/app/errors"],
-  [PATIENT, "Error States (mobile app)", "Page not found", "/app/errors/this-page-does-not-exist"],
-  [PATIENT, "Error States (mobile app)", "Session expired", "/app/errors/session-expired"],
-  [PATIENT, "Error States (mobile app)", "No internet connection", "/app/errors/offline"],
-  [PATIENT, "Error States (mobile app)", "Something went wrong", "/app/errors/crash"],
 ]
 
 // ── Pages ────────────────────────────────────────────────────────────────
@@ -168,6 +184,7 @@ function guess(route, file) {
   const parts = route.split("/").filter(Boolean)
   const portal =
     parts[1] === "admin" ? ADMIN
+    : parts[1] === "practice" ? MANAGER
     : parts[1] === "patients" || parts[1] === "provider" ? PROVIDER
     : parts[1] === "patient-portal" || parts[0] === "portal" ? PATIENT
     : GLOBAL
@@ -191,8 +208,9 @@ function collectPages() {
     const index = entry ? order.indexOf(route) : order.length
     pages.push({ portal, feature, sub, url: BASE_URL + (opts.url ?? route), order: index })
   }
-  for (const [portal, feature, sub, url] of EXTRA) {
-    pages.push({ portal, feature, sub, url: BASE_URL + url, order: order.length })
+  for (const [portal, feature, sub, url, at] of EXTRA) {
+    const index = typeof at === "string" ? order.indexOf(at) + 0.5 : (at ?? order.length)
+    pages.push({ portal, feature, sub, url: BASE_URL + url, order: index })
   }
   return pages
 }
@@ -302,17 +320,17 @@ const csvCell = (c) => {
 }
 const toCsv = (rows) => rows.map((r) => r.map(csvCell).join(",")).join("\n") + "\n"
 
-/** A portal tab: a grey row per feature, then its numbered sub features. */
+/** A portal tab: a grey row per feature, then its sub features and links. */
 function portalRows(pages) {
   const byFeature = new Map()
   for (const p of [...pages].sort((a, b) => a.order - b.order)) {
     byFeature.set(p.feature, [...(byFeature.get(p.feature) ?? []), p])
   }
-  const rows = [["#", "Sub Feature", "Vercel URL"]]
-  if (!byFeature.size) rows.push(["", "No pages yet", ""])
+  const rows = [["Sub Feature", "Vercel URL"]]
+  if (!byFeature.size) rows.push(["No pages yet", ""])
   for (const [feature, list] of byFeature) {
-    rows.push([feature, "", ""])
-    list.forEach((p, i) => rows.push([i + 1, p.sub, p.url]))
+    rows.push([feature, ""])
+    list.forEach((p) => rows.push([p.sub, p.url]))
   }
   return rows
 }
