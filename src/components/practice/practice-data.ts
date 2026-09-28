@@ -33,8 +33,14 @@ export const PRACTICE = {
 
 export type PersonStatus = "Not invited" | "Invited" | "Active" | "Inactive"
 /* A patient's record can also be closed by the practice (discharged) or by
-   the patient (consent withdrawn); both come back only with fresh consent. */
-export type PatientStatus = PersonStatus | "Discharged" | "Consent withdrawn"
+   the patient (consent withdrawn); both come back only with fresh consent.
+   Declined is not closed: the patient got the invite and turned it down in
+   the app, so they stay eligible and can be invited again. */
+export type PatientStatus =
+  | PersonStatus
+  | "Declined"
+  | "Discharged"
+  | "Consent withdrawn"
 export const REACTIVATABLE: readonly PatientStatus[] = [
   "Inactive",
   "Discharged",
@@ -375,6 +381,8 @@ export type Patient = {
   emergencyContacts: EmergencyContact[]
   status: PatientStatus
   invitedAt: string
+  /** When the patient answered the invite (enrolled or declined). */
+  respondedAt?: string
   source: "Manual" | "Bulk import"
   /** Set when a closed record was reopened; fresh consent was requested. */
   reactivatedAt?: string
@@ -1419,7 +1427,9 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
           : enrollRoll(i) < (provider.id === LAGGING_PROVIDER ? 85 : 30)
             ? enrollRoll(i * 3 + 1) < 25
               ? "Not invited"
-              : "Invited"
+              : enrollRoll(i * 5 + 2) < 14
+                ? "Declined"
+                : "Invited"
             : "Active"
   const area = locationId === "LOC1003" ? "760" : "858"
   return {
@@ -1467,6 +1477,9 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
           ],
     status,
     invitedAt: status === "Not invited" ? "" : isoDaysAgo(Math.floor(i / 3)),
+    ...(status === "Declined" && {
+      respondedAt: isoDaysAgo(Math.max(0, Math.floor(i / 3) - 1 - (i % 4))),
+    }),
     source: i % 5 === 2 ? "Bulk import" : "Manual",
   }
 })
@@ -1496,7 +1509,7 @@ PATIENTS[0] = {
 /*  Stores                                                                     */
 /* -------------------------------------------------------------------------- */
 
-const VERSION = "v14"
+const VERSION = "v15"
 
 /** The sample patients, before any session edits: the duplicate queue seeds from them. */
 export const PATIENT_SEED = PATIENTS
@@ -1625,7 +1638,7 @@ export function mergePatient(id: string, incoming: PatientInput) {
 /** Emails the patient portal invite to patients added without one. */
 export function sendPatientInvites(ids: string[]) {
   for (const id of ids) {
-    patients.patch(id, { status: "Invited", invitedAt: today() })
+    patients.patch(id, { status: "Invited", invitedAt: today(), respondedAt: "" })
   }
 }
 

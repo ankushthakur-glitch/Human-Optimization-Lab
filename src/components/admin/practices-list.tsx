@@ -18,6 +18,7 @@ import { usePracticeActions } from "@/components/admin/practice-actions"
 import {
   type Practice,
   type PracticeStatus,
+  REGIONS,
   formatDate,
   managerName,
   usePractices,
@@ -93,6 +94,11 @@ const MANAGER_FILTER = [
   { label: "No manager yet", value: "none" },
 ]
 
+const REGION_FILTER = [
+  { label: "All regions", value: "all" },
+  ...REGIONS.map((region) => ({ label: region, value: region })),
+]
+
 const PAGE_SIZES = [
   { label: "10", value: "10" },
   { label: "15", value: "15" },
@@ -160,6 +166,7 @@ export function PracticesList() {
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState("all")
   const [managerFilter, setManagerFilter] = React.useState("all")
+  const [region, setRegion] = React.useState("all")
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(15)
 
@@ -174,6 +181,7 @@ export function PracticesList() {
     const q = query.trim().toLowerCase()
     return practices.filter((p) => {
       if (status !== "all" && p.status !== status) return false
+      if (region !== "all" && p.region !== region) return false
       if (managerFilter === "none" && p.manager) return false
       if (
         managerFilter !== "all" &&
@@ -188,13 +196,16 @@ export function PracticesList() {
         p.npi,
         p.tenant,
         p.locationName,
+        p.region,
         p.manager ? managerName(p.manager) : "",
       ].some((field) => field.toLowerCase().includes(q))
     })
-  }, [practices, query, status, managerFilter])
+  }, [practices, query, status, managerFilter, region])
 
   const activeFilters =
-    Number(status !== "all") + Number(managerFilter !== "all")
+    Number(status !== "all") +
+    Number(managerFilter !== "all") +
+    Number(region !== "all")
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -252,6 +263,31 @@ export function PracticesList() {
               <PopoverContent align="end" className="w-64">
                 <div className="flex flex-col gap-3">
                   <Select
+                    items={REGION_FILTER}
+                    value={region}
+                    onValueChange={(value: string | null) => {
+                      setRegion(value ?? "all")
+                      setPage(1)
+                    }}
+                  >
+                    <SelectTrigger
+                      size="sm"
+                      className="w-full rounded-md"
+                      aria-label="Region"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {REGION_FILTER.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <Select
                     items={STATUS_FILTER}
                     value={status}
                     onValueChange={(value: string | null) => {
@@ -308,6 +344,7 @@ export function PracticesList() {
                       onClick={() => {
                         setStatus("all")
                         setManagerFilter("all")
+                        setRegion("all")
                         setPage(1)
                       }}
                     >
@@ -367,6 +404,9 @@ export function PracticesList() {
                       Practice ID
                     </TableHead>
                     <TableHead>Practice</TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      Region
+                    </TableHead>
                     <TableHead className="hidden xl:table-cell">
                       Tenant
                     </TableHead>
@@ -412,6 +452,9 @@ export function PracticesList() {
                         <span className="block truncate text-xs text-muted-foreground">
                           {practice.locationName}
                         </span>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {practice.region}
                       </TableCell>
                       <TableCell className="hidden text-xs text-muted-foreground xl:table-cell">
                         {practice.tenant}

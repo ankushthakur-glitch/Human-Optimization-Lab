@@ -757,6 +757,7 @@ export function stateFor(p: Patient): RecordState {
   if (
     p.status === "Not invited" ||
     p.status === "Invited" ||
+    p.status === "Declined" ||
     p.status === "Consent withdrawn"
   )
     return "Awaiting consent"

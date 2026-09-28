@@ -15,6 +15,7 @@ import {
   type Practice,
   type PracticeInput,
   type PrimaryContact,
+  REGIONS,
   formatPhone,
   referralUrlFor,
   tenantFromName,
@@ -24,6 +25,7 @@ import {
   type Errors,
   VALIDATE,
   FormSection,
+  SelectField,
   SheetForm,
   TextField,
   digits,
@@ -51,6 +53,7 @@ const EMPTY: PracticeInput = {
   fax: "",
   website: "",
   primaryContact: EMPTY_CONTACT,
+  region: "",
 }
 
 function fromPractice(p: Practice): PracticeInput {
@@ -65,6 +68,7 @@ function fromPractice(p: Practice): PracticeInput {
     fax: p.fax,
     website: p.website,
     primaryContact: p.primaryContact,
+    region: p.region,
   }
 }
 
@@ -75,6 +79,7 @@ function validate(v: PracticeInput): Errors {
   if (!v.npi) errors.npi = "Enter the group NPI."
   else if (!/^\d{10}$/.test(v.npi))
     errors.npi = "A group NPI is exactly 10 digits."
+  if (!v.region) errors.region = "Select a region."
   const c = v.primaryContact
   if (!c.firstName.trim())
     errors["primaryContact.firstName"] = "Enter a first name."
@@ -200,7 +205,7 @@ function PracticeFormBody({
       <SheetHeader className="shrink-0 border-b">
         <SheetTitle>{editing ? "Edit practice" : "Add practice"}</SheetTitle>
         <SheetDescription className="sr-only">
-          Practice details, primary contact and location.
+          Practice details, region, primary contact and location.
         </SheetDescription>
       </SheetHeader>
 
@@ -229,6 +234,16 @@ function PracticeFormBody({
                 set("npi", event.target.value.replace(/\D/g, ""))
               }
               error={errors.npi}
+            />
+            <SelectField
+              id="practice-region"
+              label="Region"
+              required
+              placeholder="Select region"
+              options={REGIONS}
+              value={values.region}
+              onChange={(value) => set("region", value)}
+              error={errors.region}
             />
           </div>
         </FormSection>

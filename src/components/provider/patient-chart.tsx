@@ -439,6 +439,10 @@ function ChartHeader({
           collapsed ? "px-3 py-2" : "p-3"
         )}
       >
+        {/* The avatar is exactly as tall as the text beside it: the 24px name
+            row plus the details (one 19.5px row folded, two open) and the
+            gap between them. Fixed sizes, not a stretch, since a stretched
+            avatar widens, squeezes the text into more lines and grows again. */}
         <div
           className={cn(
             "flex min-w-0 items-center",
@@ -448,7 +452,7 @@ function ChartHeader({
           <Avatar
             className={cn(
               "shrink-0 [view-transition-name:chart-avatar] after:hidden",
-              collapsed ? "size-8" : "size-16"
+              collapsed ? "size-12" : "size-[77px]"
             )}
           >
             {p.photo && <AvatarImage src={p.photo} alt="" />}

@@ -36,6 +36,8 @@ export type AdoptionPatient = {
   name: string
   status: PatientStatus
   invitedAt: string
+  /** When the patient answered the invite; set for Declined. */
+  respondedAt: string
 }
 
 export type ProviderAdoption = {
@@ -45,10 +47,13 @@ export type ProviderAdoption = {
   status: PersonStatus
   photo: string
   patients: AdoptionPatient[]
-  /** Open records: closed ones (inactive, discharged, withdrawn) left out. */
+  /** Open records: closed ones (inactive, discharged, withdrawn) left out.
+      Declined stays in: those patients were eligible and said no. */
   open: number
   enrolled: number
+  /** Invited with no answer yet: the Pending tab. */
   invited: number
+  declined: number
   notInvited: number
   /** Enrolled over open records, 0 to 1; null with no open records. */
   rate: number | null
@@ -62,6 +67,8 @@ export type Adoption = {
   patientsTotal: number
   open: number
   enrolled: number
+  invited: number
+  declined: number
   closed: number
   rate: number | null
   providersOnboarded: number
@@ -79,7 +86,13 @@ type Roster = {
   users: AdoptionUser[]
   providers: Omit<
     ProviderAdoption,
-    "open" | "enrolled" | "invited" | "notInvited" | "rate" | "behind"
+    | "open"
+    | "enrolled"
+    | "invited"
+    | "declined"
+    | "notInvited"
+    | "rate"
+    | "behind"
   >[]
 }
 
@@ -88,12 +101,14 @@ function summarise(roster: Roster): Adoption {
     const openRecords = p.patients.filter((x) => !isClosed(x.status))
     const enrolled = openRecords.filter((x) => x.status === "Active").length
     const invited = openRecords.filter((x) => x.status === "Invited").length
+    const declined = openRecords.filter((x) => x.status === "Declined").length
     return {
       ...p,
       open: openRecords.length,
       enrolled,
       invited,
-      notInvited: openRecords.length - enrolled - invited,
+      declined,
+      notInvited: openRecords.length - enrolled - invited - declined,
       rate: openRecords.length ? enrolled / openRecords.length : null,
       behind: false,
     }
@@ -102,6 +117,8 @@ function summarise(roster: Roster): Adoption {
   const patientsTotal = counted.reduce((n, p) => n + p.patients.length, 0)
   const open = counted.reduce((n, p) => n + p.open, 0)
   const enrolled = counted.reduce((n, p) => n + p.enrolled, 0)
+  const invited = counted.reduce((n, p) => n + p.invited, 0)
+  const declined = counted.reduce((n, p) => n + p.declined, 0)
   const rate = open ? enrolled / open : null
 
   const providers = counted.map((p) => ({
@@ -120,6 +137,8 @@ function summarise(roster: Roster): Adoption {
     patientsTotal,
     open,
     enrolled,
+    invited,
+    declined,
     closed: patientsTotal - open,
     rate,
     providersOnboarded: providers.filter((p) => p.status === "Active").length,
@@ -169,6 +188,7 @@ function useHarborviewRoster(enabled: boolean): Roster | null {
           name: fullName(x),
           status: x.status,
           invitedAt: x.invitedAt,
+          respondedAt: x.respondedAt ?? "",
         })),
     }))
     return { users, providers }
@@ -251,7 +271,7 @@ function derivedRoster(practice: Practice): Roster {
   for (let i = 0; i < practice.patients; i++) {
     const at = Math.floor(rand() * pool.length)
     const r = rand()
-    const status: PatientStatus =
+    let status: PatientStatus =
       r < 0.06
         ? "Inactive"
         : r < 0.09
@@ -261,6 +281,10 @@ function derivedRoster(practice: Practice): Roster {
             : rand() < 0.7
               ? "Invited"
               : "Not invited"
+    /* About one in ten invited patients turned the invite down. */
+    if (status === "Invited" && rand() < 0.1) status = "Declined"
+    const invitedDaysAgo =
+      status === "Not invited" ? 0 : Math.floor(rand() * 30)
     pool[at].patients.push({
       id: `P${String(20_000 + ((seedOffset * 311 + i * 17) % 80_000)).padStart(5, "0")}`,
       name: name(i + 3, seedOffset + 5),
@@ -268,7 +292,14 @@ function derivedRoster(practice: Practice): Roster {
       invitedAt:
         status === "Not invited"
           ? ""
-          : isoDaysBefore("2026-09-24", Math.floor(rand() * 30)),
+          : isoDaysBefore("2026-09-24", invitedDaysAgo),
+      respondedAt:
+        status === "Declined"
+          ? isoDaysBefore(
+              "2026-09-24",
+              Math.floor(rand() * (invitedDaysAgo + 1))
+            )
+          : "",
     })
   }
 
@@ -330,4 +361,53 @@ export function usePracticeAdoption(practice: Practice): Adoption {
     portal stores: enough for HOL wide averages. */
 export function derivedAdoption(practice: Practice): Adoption {
   return summarise(derivedRoster(practice))
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Across practices: the dashboard's region and nationwide roll ups           */
+/* -------------------------------------------------------------------------- */
+
+/** Several practices' adoption summed into one, as if they were a single
+    practice. Providers keep the behind flag they earned in their own
+    practice. */
+export function combineAdoption(list: Adoption[]): Adoption {
+  const sum = (f: (a: Adoption) => number) => list.reduce((n, a) => n + f(a), 0)
+  const open = sum((a) => a.open)
+  const enrolled = sum((a) => a.enrolled)
+  return {
+    users: list.flatMap((a) => a.users),
+    providers: list.flatMap((a) => a.providers),
+    usersOnboarded: sum((a) => a.usersOnboarded),
+    patientsTotal: sum((a) => a.patientsTotal),
+    open,
+    enrolled,
+    invited: sum((a) => a.invited),
+    declined: sum((a) => a.declined),
+    closed: sum((a) => a.closed),
+    rate: open ? enrolled / open : null,
+    providersOnboarded: sum((a) => a.providersOnboarded),
+    behind: sum((a) => a.behind),
+  }
+}
+
+/** Adoption for every active practice, keyed by id: Harborview live from the
+    clinic manager portal, the rest from their derived rosters. */
+export function usePlatformAdoption(
+  practices: Practice[]
+): Map<string, Adoption> {
+  const harborview = useHarborviewRoster(true)
+  return React.useMemo(
+    () =>
+      new Map(
+        practices
+          .filter((p) => p.status === "Active")
+          .map((p) => [
+            p.id,
+            p.id === PRACTICE.id && harborview
+              ? summarise(harborview)
+              : derivedAdoption(p),
+          ])
+      ),
+    [practices, harborview]
+  )
 }

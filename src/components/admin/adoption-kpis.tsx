@@ -29,7 +29,7 @@ import { Card } from "@/design-system/ui/card"
 /* -------------------------------------------------------------------------- */
 
 export type Tone = "good" | "watch" | "alert" | "neutral"
-export type PartTone = "fill" | "soft" | "empty" | "warn"
+export type PartTone = "fill" | "soft" | "empty" | "warn" | "alert"
 
 export type Kpi = {
   label: string
@@ -78,7 +78,6 @@ export function practiceKpis(a: Adoption, hol: ReturnType<typeof holAverages>): 
   const count = <T extends { status: string }>(list: T[], s: string) =>
     list.filter((x) => x.status === s).length
   const judged = a.providers.filter((p) => p.open >= 3).length
-  const invited = a.providers.reduce((n, p) => n + p.invited, 0)
   const users = { value: a.usersOnboarded, total: a.users.length }
   const providers = { value: a.providersOnboarded, total: a.providers.length }
   const behindRate = share(a.behind, judged)
@@ -120,8 +119,13 @@ export function practiceKpis(a: Adoption, hol: ReturnType<typeof holAverages>): 
       rate: a.rate ?? 0,
       parts: [
         { label: "Enrolled", value: a.enrolled, tone: "fill" },
-        { label: "Invited", value: invited, tone: "soft" },
-        { label: "Not invited", value: a.open - a.enrolled - invited, tone: "empty" },
+        { label: "Pending", value: a.invited, tone: "soft" },
+        { label: "Declined", value: a.declined, tone: "alert" },
+        {
+          label: "Not invited",
+          value: a.open - a.enrolled - a.invited - a.declined,
+          tone: "empty",
+        },
       ],
       benchmark: { label: "HOL average", rate: hol.enrolled },
       tone: toneFor(a.rate ?? 0, hol.enrolled),
@@ -146,7 +150,7 @@ export function practiceKpis(a: Adoption, hol: ReturnType<typeof holAverages>): 
 
 export function providerKpis(a: Adoption, id: string): Kpi[] {
   const p = a.providers.find((x) => x.id === id)!
-  const practiceInvited = a.providers.reduce((n, x) => n + x.invited, 0)
+  const practiceInvited = a.invited
   const practiceNot = a.providers.reduce((n, x) => n + x.notInvited, 0)
   const withPatients = a.providers.filter((x) => x.patients.length).length
   const rate = p.rate ?? 0
@@ -162,14 +166,15 @@ export function providerKpis(a: Adoption, id: string): Kpi[] {
       rate,
       parts: [
         { label: "Enrolled", value: p.enrolled, tone: "fill" },
-        { label: "Invited", value: p.invited, tone: "soft" },
+        { label: "Pending", value: p.invited, tone: "soft" },
+        { label: "Declined", value: p.declined, tone: "alert" },
         { label: "Not invited", value: p.notInvited, tone: "empty" },
       ],
       benchmark: { label: "Practice", rate: a.rate ?? 0 },
       tone: toneFor(rate, a.rate ?? 0),
     },
     {
-      label: "Invited, not enrolled",
+      label: "Pending",
       icon: IconMail,
       value: p.invited,
       total: p.open,
@@ -221,6 +226,7 @@ export const PART_BG: Record<PartTone, string> = {
   soft: "bg-primary/35",
   empty: "bg-muted-foreground/15",
   warn: "bg-warning",
+  alert: "bg-destructive",
 }
 
 const RATE_TEXT: Record<Tone, string> = {
@@ -271,11 +277,11 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
           />
         ))}
       </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1">
+      <div className="flex min-w-0 flex-wrap gap-x-2.5 gap-y-1">
         {kpi.parts.map((p) => (
           <span
             key={p.label}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground"
+            className="flex shrink-0 items-center gap-1 text-xs whitespace-nowrap text-muted-foreground"
           >
             <span className={cn("size-2 rounded-full", PART_BG[p.tone])} />
             {p.label}

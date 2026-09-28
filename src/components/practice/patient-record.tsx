@@ -763,7 +763,7 @@ export function PatientActions({ patient: p }: { patient: Patient }) {
 
   return (
     <div className="flex items-center gap-2">
-      {p.status === "Not invited" && (
+      {(p.status === "Not invited" || p.status === "Declined") && (
         <Button
           variant="outline"
           onClick={() => {
@@ -955,11 +955,16 @@ export function PatientDetails({ patient: p }: { patient: Patient }) {
                     ? "Not sent"
                     : p.status === "Invited"
                       ? "Pending"
-                      : p.status === "Active"
-                        ? "Accepted"
-                        : "Inactive",
+                      : p.status === "Declined"
+                        ? "Declined"
+                        : p.status === "Active"
+                          ? "Accepted"
+                          : "Inactive",
               },
               { label: "Invited", value: shortDate(p.invitedAt) },
+              ...(p.status === "Declined" && p.respondedAt
+                ? [{ label: "Declined", value: shortDate(p.respondedAt) }]
+                : []),
             ]}
           />
         </RecordCard>

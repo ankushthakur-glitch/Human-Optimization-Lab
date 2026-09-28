@@ -40,6 +40,9 @@ export type Practice = {
   fax: string
   website: string
   primaryContact: PrimaryContact
+  /** The bucket HOL reports this practice under: a metro area, part of a
+      state or a whole state, whichever suits the market. */
+  region: string
   status: PracticeStatus
   createdAt: string
   clinicians: number
@@ -90,6 +93,47 @@ export function formatDate(iso: string) {
 
 export { formatPhone } from "@/components/form-kit"
 
+/* Regions are HOL's own reporting buckets, not a fixed list of states: a
+   busy market is split into metro areas, a quiet one is a whole state. */
+export const REGIONS = [
+  "Arizona",
+  "Detroit",
+  "Florida",
+  "Hawaii",
+  "Mid-Atlantic",
+  "Midwest",
+  "Minnesota",
+  "Mountain West",
+  "New England",
+  "New York",
+  "Northern California",
+  "Pacific Northwest",
+  "Southeast",
+  "Southeast Michigan",
+  "Southern California",
+  "Southwest Michigan",
+  "Texas",
+] as const
+
+/* The sample practices get their region from their area code. */
+const REGION_BY_AREA: Record<string, string> = {
+  "858": "Southern California", "310": "Southern California", "323": "Southern California",
+  "415": "Northern California", "650": "Northern California",
+  "206": "Pacific Northwest", "425": "Pacific Northwest", "503": "Pacific Northwest", "208": "Pacific Northwest",
+  "303": "Mountain West", "970": "Mountain West", "801": "Mountain West", "435": "Mountain West", "702": "Mountain West", "505": "Mountain West",
+  "480": "Arizona", "602": "Arizona",
+  "512": "Texas", "214": "Texas",
+  "312": "Midwest", "614": "Midwest", "314": "Midwest", "913": "Midwest",
+  "612": "Minnesota", "952": "Minnesota",
+  "734": "Southeast Michigan",
+  "617": "New England", "401": "New England", "860": "New England",
+  "212": "New York", "716": "New York",
+  "215": "Mid-Atlantic", "610": "Mid-Atlantic", "301": "Mid-Atlantic", "703": "Mid-Atlantic", "757": "Mid-Atlantic",
+  "404": "Southeast", "704": "Southeast", "843": "Southeast", "615": "Southeast", "504": "Southeast",
+  "305": "Florida", "904": "Florida", "727": "Florida",
+  "808": "Hawaii",
+}
+
 export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"]
 
 /* -------------------------------------------------------------------------- */
@@ -107,7 +151,7 @@ const CONTACTS: [firstName: string, lastName: string][] = [
 ]
 
 function practice(
-  p: Omit<Practice, "tenant" | "referralUrl" | "primaryContact">
+  p: Omit<Practice, "tenant" | "referralUrl" | "primaryContact" | "region">
 ): Practice {
   const tenant = tenantFromName(p.name)
   const seed = Number(p.id)
@@ -119,6 +163,7 @@ function practice(
     ...p,
     tenant,
     referralUrl: referralUrlFor(tenant),
+    region: REGION_BY_AREA[p.contactNumber.slice(1, 4)] ?? "",
     primaryContact: {
       firstName,
       lastName,
@@ -602,7 +647,7 @@ const SEED: Practice[] = [...HAND_WRITTEN, ...generatedPractices()]
 const STORAGE_KEY = "hol-admin-practices"
 /* Bump the schema tag whenever the Practice shape changes, so sessions saved
    before the change don't load rows missing the new fields. */
-const SEED_VERSION = `v6:${SEED.map((p) => p.id).join(",")}`
+const SEED_VERSION = `v7:${SEED.map((p) => p.id).join(",")}`
 
 let practices: Practice[] = SEED
 let hydrated = false

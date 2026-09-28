@@ -180,7 +180,13 @@ function ProviderBody({
 /*  Patients                                                                   */
 /* -------------------------------------------------------------------------- */
 
-type Segment = "all" | "enrolled" | "invited" | "not-invited" | "closed"
+type Segment =
+  | "all"
+  | "enrolled"
+  | "pending"
+  | "declined"
+  | "not-invited"
+  | "closed"
 
 const SEGMENTS: {
   id: Segment
@@ -189,7 +195,9 @@ const SEGMENTS: {
 }[] = [
   { id: "all", label: "All", test: () => true },
   { id: "enrolled", label: "Enrolled", test: (p) => p.status === "Active" },
-  { id: "invited", label: "Invited", test: (p) => p.status === "Invited" },
+  /* Pending is the Invited status: invited, no answer yet. */
+  { id: "pending", label: "Pending", test: (p) => p.status === "Invited" },
+  { id: "declined", label: "Declined", test: (p) => p.status === "Declined" },
   {
     id: "not-invited",
     label: "Not invited",
@@ -202,7 +210,18 @@ const SEGMENTS: {
   },
 ]
 
-const STATUS_ORDER = ["Active", "Invited", "Not invited"]
+const STATUS_ORDER = ["Active", "Invited", "Declined", "Not invited"]
+
+/* Whole days since an ISO date, for how long an invite has gone unanswered. */
+function daysSince(iso: string) {
+  const days = Math.floor(
+    (Date.now() - Date.parse(`${iso}T00:00:00Z`)) / 86_400_000
+  )
+  return Math.max(0, days)
+}
+
+const waitingLabel = (days: number) =>
+  days === 0 ? "Today" : days === 1 ? "1 day" : `${days} days`
 
 function PatientsTable({ provider }: { provider: ProviderAdoption }) {
   const [segment, setSegment] = React.useState<Segment>("all")
@@ -220,8 +239,10 @@ function PatientsTable({ provider }: { provider: ProviderAdoption }) {
       (p) =>
         !q || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)
     )
-    .sort(
-      (a, b) => rank(a.status) - rank(b.status) || a.name.localeCompare(b.name)
+    .sort((a, b) =>
+      segment === "pending"
+        ? a.invitedAt.localeCompare(b.invitedAt) || a.name.localeCompare(b.name)
+        : rank(a.status) - rank(b.status) || a.name.localeCompare(b.name)
     )
   const paged = usePaged(rows)
 
@@ -281,6 +302,8 @@ function PatientsTable({ provider }: { provider: ProviderAdoption }) {
                 <TableHead>Patient</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden sm:table-cell">Invited</TableHead>
+                {segment === "pending" && <TableHead>Waiting</TableHead>}
+                {segment === "declined" && <TableHead>Declined</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody className="[&_td]:px-4 [&_td]:py-2">
@@ -299,6 +322,16 @@ function PatientsTable({ provider }: { provider: ProviderAdoption }) {
                   <TableCell className="hidden text-muted-foreground tabular-nums sm:table-cell">
                     {p.invitedAt ? formatDate(p.invitedAt) : "Not yet"}
                   </TableCell>
+                  {segment === "pending" && (
+                    <TableCell className="tabular-nums">
+                      {p.invitedAt ? waitingLabel(daysSince(p.invitedAt)) : ""}
+                    </TableCell>
+                  )}
+                  {segment === "declined" && (
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {p.respondedAt ? formatDate(p.respondedAt) : ""}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

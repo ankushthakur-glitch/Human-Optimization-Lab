@@ -574,7 +574,7 @@ export function PatientsScreen() {
             <IconEdit />
             Edit
           </DropdownMenuItem>
-          {p.status === "Not invited" && (
+          {(p.status === "Not invited" || p.status === "Declined") && (
             <DropdownMenuItem onClick={() => sendInvite(p)}>
               <IconMail />
               Send invite
@@ -642,12 +642,13 @@ export function PatientsScreen() {
           options: [
             "Active",
             "Invited",
+            "Declined",
             "Not invited",
-            "Inactive",
             "Discharged",
             "Consent withdrawn",
           ],
-          value: (p) => p.status,
+          /* Inactive patients sit under Active, told apart by their badge. */
+          value: (p) => (p.status === "Inactive" ? "Active" : p.status),
         }}
         primaryAction={{
           label: "Add patient",

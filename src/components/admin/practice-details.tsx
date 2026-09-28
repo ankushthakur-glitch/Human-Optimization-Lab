@@ -294,6 +294,7 @@ function DetailsCards({
             { label: "Practice name", value: practice.name },
             { label: "Practice ID", value: practice.id },
             { label: "Group NPI", value: practice.npi },
+            { label: "Region", value: practice.region || "Not set" },
             {
               label: "Tenant name",
               value: <span>{practice.tenant}</span>,

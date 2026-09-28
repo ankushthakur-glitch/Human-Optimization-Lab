@@ -290,7 +290,10 @@ function ProvidersTable({
             />
             <TableHead className="text-center">Enrolled</TableHead>
             <TableHead className="hidden text-center sm:table-cell">
-              Invited
+              Pending
+            </TableHead>
+            <TableHead className="hidden text-center sm:table-cell">
+              Declined
             </TableHead>
             <TableHead className="hidden text-center sm:table-cell">
               Not invited
@@ -338,6 +341,9 @@ function ProvidersTable({
               </TableCell>
               <TableCell className="hidden text-center tabular-nums sm:table-cell">
                 {p.invited}
+              </TableCell>
+              <TableCell className="hidden text-center tabular-nums sm:table-cell">
+                {p.declined}
               </TableCell>
               <TableCell className="hidden text-center tabular-nums sm:table-cell">
                 {p.notInvited}
