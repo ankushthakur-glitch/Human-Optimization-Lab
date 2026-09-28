@@ -100,7 +100,7 @@ const PAGES = {
   "/screens/practice/locations/[id]/edit": [MANAGER, "Locations", "Edit location", { url: "/screens/practice/locations/LOC1001/edit" }],
   // A provider's portal, reached from the provider invite.
   "/screens/provider": [PROVIDER, "", "", { skip: true }],
-  "/screens/provider/patients": [PROVIDER, "Patients", "Patients (list, bulk import, send invites)"],
+  "/screens/provider/patients": [PROVIDER, "Patients", "Patients (list, health record sync status, bulk import, send invites)"],
   "/screens/provider/patients/new": [PROVIDER, "Patients", "Add patient and send invite"],
   "/screens/provider/patients/[id]": [PROVIDER, "Patient Chart", "Dashboard: face sheet", { url: "/screens/provider/patients/P10240" }],
   "/screens/provider/patients/[id]/edit": [PROVIDER, "Patients", "Edit patient", { url: "/screens/provider/patients/P10240/edit" }],
