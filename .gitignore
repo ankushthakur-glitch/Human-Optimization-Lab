@@ -66,4 +66,6 @@ scripts/.cache
 !/public/app/assets/node_modules/
 
 # Cloned Claude skill (its own git repo), not part of the app
-/product-ui-illustrations/
+
+# The product-ui-illustrations skill's own upstream git history, kept locally.
+/.skill-git-backup/
