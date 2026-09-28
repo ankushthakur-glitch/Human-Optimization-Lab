@@ -1,90 +1,56 @@
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
-import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, RadialGradient, Stop } from "react-native-svg"
+import { Image, StyleSheet, Text, View } from "react-native"
+import Svg, { Circle, Defs, G, LinearGradient, Rect, RadialGradient, Stop } from "react-native-svg"
 
 import { type BodySystem, SYSTEMS, systemWatch } from "@/lib/record"
 import { color, font } from "@/lib/theme"
 
-/* The home screen's art, drawn rather than photographed so it stays one
-   family with the app's soft pearl objects: the grey body with its systems
-   glowing, the lab tube, the plan book and the record sheet. */
+/* The home screen's art, kept to single soft objects so it stays one
+   family with the app's soft pearl objects (the body is a render): the grey
+   body with its systems glowing, the lab tube, the plan book and the record
+   sheet. */
 
 const TEAL_GLOW = "#2BB5AC"
 const AMBER_GLOW = "#F2A33A"
 
-/** Where each system glows on the body, in the body's 300 x 330 box. */
+/** Where each system glows on the body, in the image's 704 x 751 pixels. */
 const SPOTS: Record<BodySystem, { cx: number; cy: number; r: number }> = {
-  thyroid: { cx: 150, cy: 112, r: 22 },
-  heart: { cx: 160, cy: 172, r: 42 },
-  metabolism: { cx: 146, cy: 238, r: 40 },
+  thyroid: { cx: 352, cy: 262, r: 50 },
+  heart: { cx: 382, cy: 440, r: 120 },
+  metabolism: { cx: 346, cy: 616, r: 104 },
 }
 
-/** Head, neck, shoulders and arms, cut at the waist and fading into white. */
-const TORSO =
-  "M136 88 C136 104 134 114 130 120 C118 126 100 128 86 134 C72 140 64 154 62 172 " +
-  "C60 200 58 250 56 330 L82 330 C84 270 86 232 92 198 C94 232 98 272 100 330 " +
-  "L200 330 C202 272 206 232 208 198 C214 232 216 270 218 330 L244 330 " +
-  "C242 250 240 200 238 172 C236 154 228 140 214 134 C200 128 182 126 170 120 " +
-  "C166 114 164 104 164 88 Z"
-
-const ARMS = [
-  "M86 134 C72 140 64 154 62 172 C60 200 58 250 56 330 L82 330 C84 270 86 232 92 198 C92 172 90 150 86 134 Z",
-  "M214 134 C228 140 236 154 238 172 C240 200 242 250 244 330 L218 330 C216 270 214 232 208 198 C208 172 210 150 214 134 Z",
-]
+/** The soft grey body, greyed and faded into white at the waist, so the
+    glows come from the patient's results rather than the render. */
+const BODY = require("../../assets/images/body.png")
+const BODY_RATIO = 751 / 704
 
 export function BodyMap({ width = 300 }: { width?: number }) {
-  const height = (width * 330) / 300
+  const height = width * BODY_RATIO
   return (
     <View
       style={{ width, height }}
       accessibilityRole="image"
       accessibilityLabel={SYSTEMS.map((s) => `${s.name} ${systemWatch(s.id) ? "to watch" : "in range"}`).join(", ")}
     >
-      <Svg width={width} height={height} viewBox="0 0 300 330">
+      <Image source={BODY} style={{ position: "absolute", top: 0, left: 0, width, height }} resizeMode="contain" />
+      <Svg width={width} height={height} viewBox="0 0 704 751" style={StyleSheet.absoluteFill}>
         <Defs>
-          <RadialGradient id="skin" cx="50%" cy="38%" r="62%">
-            <Stop offset="0" stopColor="#F4F5F5" />
-            <Stop offset="0.55" stopColor="#E1E4E4" />
-            <Stop offset="1" stopColor="#C9CECE" />
-          </RadialGradient>
-          <RadialGradient id="face" cx="42%" cy="36%" r="70%">
-            <Stop offset="0" stopColor="#F6F7F7" />
-            <Stop offset="0.7" stopColor="#DDE1E1" />
-            <Stop offset="1" stopColor="#C8CDCD" />
-          </RadialGradient>
-          <LinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0.62" stopColor="#FFFFFF" stopOpacity={0} />
-            <Stop offset="0.95" stopColor="#FFFFFF" stopOpacity={1} />
-          </LinearGradient>
           <RadialGradient id="glowTeal" cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor={TEAL_GLOW} stopOpacity={0.75} />
-            <Stop offset="0.5" stopColor={TEAL_GLOW} stopOpacity={0.3} />
+            <Stop offset="0" stopColor={TEAL_GLOW} stopOpacity={0.7} />
+            <Stop offset="0.5" stopColor={TEAL_GLOW} stopOpacity={0.28} />
             <Stop offset="1" stopColor={TEAL_GLOW} stopOpacity={0} />
           </RadialGradient>
           <RadialGradient id="glowAmber" cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor={AMBER_GLOW} stopOpacity={0.75} />
-            <Stop offset="0.5" stopColor={AMBER_GLOW} stopOpacity={0.3} />
+            <Stop offset="0" stopColor={AMBER_GLOW} stopOpacity={0.7} />
+            <Stop offset="0.5" stopColor={AMBER_GLOW} stopOpacity={0.28} />
             <Stop offset="1" stopColor={AMBER_GLOW} stopOpacity={0} />
           </RadialGradient>
         </Defs>
-
-        <Path d={TORSO} fill="url(#skin)" />
-        {/* The arms a shade deeper than the chest, and faint lines at the
-            collarbones, down the sternum and under the chest, for form. */}
-        {ARMS.map((d) => (
-          <Path key={d} d={d} fill="#B9BFBF" fillOpacity={0.28} />
-        ))}
-        <Path d="M121 131 C131 136 141 137 147 134 M153 134 C159 137 169 136 179 131" stroke="#C3C8C8" strokeOpacity={0.6} strokeWidth={1.2} fill="none" />
-        <Path d="M150 140 L150 214" stroke="#C3C8C8" strokeOpacity={0.5} strokeWidth={1.2} />
-        <Path d="M112 196 C126 206 140 206 148 200 M152 200 C160 206 174 206 188 196" stroke="#C3C8C8" strokeOpacity={0.45} strokeWidth={1.2} fill="none" />
-        <Ellipse cx="150" cy="58" rx="27" ry="34" fill="url(#face)" />
-
         {SYSTEMS.map((s) => {
           const { cx, cy, r } = SPOTS[s.id]
           return <Circle key={s.id} cx={cx} cy={cy} r={r} fill={systemWatch(s.id) ? "url(#glowAmber)" : "url(#glowTeal)"} />
         })}
-
-        <Rect x="0" y="0" width="300" height="330" fill="url(#fade)" />
       </Svg>
     </View>
   )

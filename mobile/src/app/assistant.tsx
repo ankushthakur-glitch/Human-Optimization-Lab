@@ -14,25 +14,28 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { DarkStatusBar } from "@/components/error-state"
-import { SoftOrb } from "@/components/flow"
-import { IconChevronRight, IconClose, IconSend, IconSparkle } from "@/components/icons"
+import { Badge, SoftOrb } from "@/components/flow"
+import { IconCheck, IconChevronRight, IconClose, IconSend, IconSparkle } from "@/components/icons"
 import { Button, useTopInset } from "@/components/ui"
 import { QUESTIONS, STARTERS, suggest, type QuestionId, type Suggestion } from "@/lib/assistant"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
-import { programName } from "@/lib/plans"
+import { TIERS, programName, type Tier } from "@/lib/plans"
 import { color, font, gutter } from "@/lib/theme"
 
 /* The assistant, opened full screen from the round button beside the tab
    bar. It opens on a greeting and a few ways to start; the patient says
    what is bothering them, answers three short questions (tap an answer or
-   type one), and gets the programs that fit, which open the plans screen
-   with those programs chosen. */
+   type one), and gets the programs that fit and the membership they come
+   in, right in the thread, to start there or stay on the free record. */
 
 type Draft = { from: "patient" | "assistant"; text: string } | { from: "assistant"; suggestions: Suggestion[] }
 type Message = Draft & { id: number }
 
 const THINK_MS = 800
+
+/** "A, B and C" */
+const list = (items: string[]) => (items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`)
 
 export default function AssistantScreen() {
   const top = useTopInset()
@@ -48,6 +51,9 @@ export default function AssistantScreen() {
   const [concern, setConcern] = React.useState<string | null>(null)
   const [answers, setAnswers] = React.useState<Partial<Record<QuestionId, string>>>({})
   const asked = concern === null ? null : QUESTIONS[Object.keys(answers).length] ?? null
+
+  // The membership picked from the plan card in the thread, once picked.
+  const [chosen, setChosen] = React.useState<Tier | null>(null)
 
   const nextId = React.useRef(0)
   const scroll = React.useRef<ScrollView>(null)
@@ -89,11 +95,28 @@ export default function AssistantScreen() {
       reply([{ from: "assistant", text: following.text }])
     } else {
       reply([
-        { from: "assistant", text: "Based on what you told me and your health record, these programs fit you best." },
+        { from: "assistant", text: "Based on what you told me and your health record, this is the plan I recommend." },
         { from: "assistant", suggestions: suggest(concern, next, sex) },
-        { from: "assistant", text: "Your care team reviews every plan before it starts. Tell me anything else that's on your mind." },
       ])
     }
+  }
+
+  async function choose(tier: Tier, programs: Suggestion["program"][]) {
+    if (chosen || thinking) return
+    setChosen(tier)
+    const paid = TIERS.optimization
+    say([{ from: "patient", text: tier === "optimization" ? `Start ${paid.name}` : "Stay on the free record" }])
+    await onboarding.save({ membership: { tier, programs } })
+    reply(
+      tier === "optimization"
+        ? [
+            {
+              from: "assistant",
+              text: `You're on ${paid.name}. Your plan covers ${list(programs.map(programName))}. You'll find it on the Plan tab.`,
+            },
+          ]
+        : [{ from: "assistant", text: "No problem, your free record stays as it is. You can start a plan from here any time." }]
+    )
   }
 
   const empty = messages.length === 0
@@ -149,7 +172,13 @@ export default function AssistantScreen() {
           ) : (
             messages.map((m) =>
               "suggestions" in m ? (
-                <Suggestions key={m.id} list={m.suggestions} />
+                <Suggestions
+                  key={m.id}
+                  list={m.suggestions}
+                  chosen={chosen}
+                  member={onboarding.membership?.tier === "optimization"}
+                  onChoose={(tier) => choose(tier, m.suggestions.map((x) => x.program))}
+                />
               ) : (
                 <View key={m.id} style={[styles.bubble, m.from === "patient" ? styles.mine : styles.theirs]}>
                   <Text style={[styles.bubbleText, m.from === "patient" && styles.mineText]}>{m.text}</Text>
@@ -207,33 +236,84 @@ export default function AssistantScreen() {
   )
 }
 
-/** The programs that fit, each with why, and the way on to sign up. */
-function Suggestions({ list }: { list: Suggestion[] }) {
+/** The recommended plan, in the thread: the programs that fit, each with
+    why, merged into the one Optimization membership, with its price, what
+    it includes, and the choice to start it or stay on the free record. */
+function Suggestions({
+  list,
+  chosen,
+  member,
+  onChoose,
+}: {
+  list: Suggestion[]
+  chosen: Tier | null
+  member: boolean
+  onChoose: (tier: Tier) => void
+}) {
+  const paid = TIERS.optimization
+  const picked = chosen ?? (member ? "optimization" : null)
   return (
-    <View style={styles.plans}>
-      {list.map((s) => (
-        <View key={s.program} style={styles.plan}>
-          <View style={styles.planHead}>
-            <View style={styles.planIcon}>
-              <IconSparkle color={color.primary} size={16} />
-            </View>
-            <Text style={styles.planName}>{programName(s.program)}</Text>
-          </View>
-          <View style={styles.reasons}>
-            {s.reasons.map((r) => (
-              <View key={r} style={styles.reason}>
-                <View style={styles.reasonDot} />
-                <Text style={styles.reasonText}>{r}</Text>
-              </View>
-            ))}
-          </View>
+    <View style={styles.planCard}>
+      <View style={styles.planTop}>
+        <View style={styles.tierIcon}>
+          <IconSparkle color={color.onPrimary} size={16} />
         </View>
-      ))}
-      <Button
-        onPress={() => router.push({ pathname: "/plans", params: { programs: list.map((s) => s.program).join(",") } })}
-      >
-        See recommended plans
-      </Button>
+        <View style={styles.tierBody}>
+          <Text style={styles.tierName}>{paid.name}</Text>
+          <Text style={styles.tierPrice}>
+            {paid.price} {paid.per}
+          </Text>
+        </View>
+        <Badge>{picked === "optimization" ? "Your plan" : "Recommended"}</Badge>
+      </View>
+
+      <View style={styles.programs}>
+        {list.map((s) => (
+          <View key={s.program} style={styles.plan}>
+            <Text style={styles.planName}>{programName(s.program)}</Text>
+            <View style={styles.reasons}>
+              {s.reasons.map((r) => (
+                <View key={r} style={styles.reason}>
+                  <View style={styles.reasonDot} />
+                  <Text style={styles.reasonText}>{r}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.features}>
+        {paid.features.slice(1, 6).map((f) => (
+          <View key={f} style={styles.feature}>
+            <IconCheck size={14} color={color.primary} strokeWidth={2.4} />
+            <Text style={styles.featureText}>{f}</Text>
+          </View>
+        ))}
+      </View>
+
+      {picked ? (
+        <View style={styles.done}>
+          <IconCheck size={16} color={color.ok} strokeWidth={2.4} />
+          <Text style={styles.doneText}>{picked === "optimization" ? `${paid.name} started` : "Staying on the free record"}</Text>
+        </View>
+      ) : (
+        <View style={styles.planActions}>
+          <Button onPress={() => onChoose("optimization")}>{`Start ${paid.name} · ${paid.price} ${paid.per}`}</Button>
+          <Button variant="outline" onPress={() => onChoose("free")}>
+            Stay on the free record
+          </Button>
+          <Pressable
+            onPress={() => router.push({ pathname: "/plans", params: { programs: list.map((s) => s.program).join(",") } })}
+            hitSlop={8}
+            accessibilityRole="button"
+            style={styles.compare}
+          >
+            <Text style={styles.compareText}>Compare plans and add ons</Text>
+          </Pressable>
+        </View>
+      )}
+      <Text style={styles.review}>Your care team reviews every plan before it starts.</Text>
     </View>
   )
 }
@@ -305,22 +385,43 @@ const styles = StyleSheet.create({
   },
   replyText: { fontFamily: font.medium, fontSize: 14, color: color.primary },
 
-  plans: { gap: 10, marginVertical: 4 },
-  plan: { borderWidth: 1, borderColor: color.border, borderRadius: 18, padding: 14, gap: 10 },
-  planHead: { flexDirection: "row", alignItems: "center", gap: 10 },
-  planIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: color.primaryTint,
+  planCard: {
+    borderWidth: 1.5,
+    borderColor: color.primaryHalo,
+    borderRadius: 22,
+    padding: 16,
+    gap: 14,
+    marginVertical: 4,
+  },
+  planTop: { flexDirection: "row", alignItems: "center", gap: 12 },
+  tierIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: color.primary,
     alignItems: "center",
     justifyContent: "center",
   },
-  planName: { flex: 1, fontFamily: font.semibold, fontSize: 16, letterSpacing: -0.2, color: color.text },
-  reasons: { gap: 6, marginLeft: 42 },
+  tierBody: { flex: 1, gap: 1 },
+  tierName: { fontFamily: font.semibold, fontSize: 17, letterSpacing: -0.2, color: color.text },
+  tierPrice: { fontFamily: font.regular, fontSize: 13, color: color.muted },
+  programs: { gap: 8 },
+  plan: { backgroundColor: color.canvas, borderRadius: 14, padding: 12, gap: 6 },
+  planName: { fontFamily: font.semibold, fontSize: 15, color: color.text },
+  reasons: { gap: 4 },
   reason: { flexDirection: "row", alignItems: "center", gap: 8 },
   reasonDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: color.primary },
   reasonText: { flex: 1, fontFamily: font.regular, fontSize: 13, lineHeight: 18, color: color.muted },
+
+  features: { gap: 8 },
+  feature: { flexDirection: "row", alignItems: "center", gap: 8 },
+  featureText: { flex: 1, fontFamily: font.regular, fontSize: 13, lineHeight: 18, color: color.text },
+  planActions: { gap: 10 },
+  compare: { alignSelf: "center", paddingVertical: 4 },
+  compareText: { fontFamily: font.semibold, fontSize: 14, color: color.primary },
+  done: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: color.okTint, borderRadius: 12, padding: 12 },
+  doneText: { fontFamily: font.medium, fontSize: 14, color: color.ok },
+  review: { fontFamily: font.regular, fontSize: 12, color: color.muted, textAlign: "center" },
 
   composer: { borderTopWidth: 1, borderTopColor: color.border, backgroundColor: color.background, paddingTop: 10 },
   composerInner: { ...column, paddingHorizontal: gutter - 8, flexDirection: "row", alignItems: "center", gap: 8 },

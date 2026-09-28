@@ -26,6 +26,7 @@ import {
 } from "@/components/practice/health-record"
 import { usDate } from "@/components/practice/practice-data"
 import type { ChartSection } from "@/components/provider/patient-chart"
+import { ChartOverview } from "@/components/provider/chart-overview"
 import {
   Section,
   SectionBar,
@@ -42,14 +43,14 @@ import {
   SelectValue,
 } from "@/design-system/ui/select"
 
-/* The chart's Dashboard: the Face sheet (one card per kind of data Health
+/* The chart's Dashboard: the Overview (see chart-overview.tsx), the Face sheet (one card per kind of data Health
    Gorilla returns, newest first) and the Timeline (every dated event in one
    feed). Card names and fields follow the Solid EHR face sheet; the cards
    the feed has no data for (appointments, insurance, family history) are
    left out rather than shown empty. The doctor can drag the face sheet's
    cards into the order they work in; see useFaceSheetLayout. */
 
-export type DashboardTab = "face-sheet" | "timeline"
+export type DashboardTab = "overview" | "face-sheet" | "timeline"
 
 export function ChartDashboard({
   record,
@@ -68,6 +69,7 @@ export function ChartDashboard({
     <Section>
       <SectionBar
         tabs={[
+          { id: "overview", label: "Overview" },
           { id: "face-sheet", label: "Face sheet" },
           { id: "timeline", label: "Timeline" },
         ]}
@@ -79,13 +81,15 @@ export function ChartDashboard({
               <IconPrint />
               Print chart
             </Button>
-          ) : (
+          ) : tab === "timeline" ? (
             <EventFilter value={filter} onChange={setFilter} />
-          )
+          ) : null
         }
       />
       <SectionBody>
-        {tab === "face-sheet" ? (
+        {tab === "overview" ? (
+          <ChartOverview />
+        ) : tab === "face-sheet" ? (
           <FaceSheet record={record} onOpen={onOpen} layout={layout} />
         ) : (
           <Timeline record={record} filter={filter} />

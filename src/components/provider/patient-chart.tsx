@@ -302,8 +302,8 @@ export function PatientChart({ patient }: { patient: Patient }) {
           ) : section === "dashboard" ? (
             <ChartDashboard
               record={chart.record}
-              tab={(tab as DashboardTab) || "face-sheet"}
-              onTab={(t) => go({ tab: t === "face-sheet" ? "" : t })}
+              tab={(tab as DashboardTab) || "overview"}
+              onTab={(t) => go({ tab: t === "overview" ? "" : t })}
               onOpen={(s, i, t) => go({ section: s, item: i, tab: t })}
             />
           ) : section === "encounters" ? (
