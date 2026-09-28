@@ -644,6 +644,7 @@ svg path[stroke="currentColor"] {
   --font-body: var(--font-inter);
   --font-display: var(--font-inter);
   --font-mono: var(--font-inter);
+  --font-serif: var(--font-inter);
 }
 
 @theme inline {
@@ -817,6 +818,74 @@ svg path[stroke="currentColor"] {
     }
     100% {
       background-position: -200% 0;
+    }
+  }
+
+  /* Vitals trend. On a range or vital switch the old line retracts right to
+     left and its dots go out behind it (data-leaving, 0.7s, VITAL_EXIT_MS in
+     chart-records.tsx). Then the new dots appear one by one, left to right,
+     and the line draws after them a step behind. Both run linear over the
+     same 1s so the line keeps pace with the dots. --f is each dot's place
+     along the line, 0 to 1. The reveal is a clip, not a dash offset, so the
+     dashed diastolic line keeps its dashes while it draws. */
+  .vital-dot {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: vital-dot-in 0.22s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+    animation-delay: calc(var(--f, 0) * 1s);
+  }
+  .vital-line .recharts-line-curve {
+    animation: vital-line-draw 1s linear 0.2s both;
+  }
+  [data-leaving] .vital-line .recharts-line-curve {
+    animation: vital-line-retract 0.4s linear both;
+  }
+  [data-leaving] .vital-dot {
+    animation: vital-dot-out 0.16s ease-in both;
+    animation-delay: calc(0.12s + (1 - var(--f, 0)) * 0.4s);
+  }
+  @keyframes vital-dot-in {
+    from {
+      opacity: 0;
+      transform: scale(0.2);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes vital-dot-out {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.2);
+    }
+  }
+  @keyframes vital-line-draw {
+    from {
+      clip-path: inset(-8px 100% -8px 0);
+    }
+    to {
+      clip-path: inset(-8px 0 -8px 0);
+    }
+  }
+  @keyframes vital-line-retract {
+    from {
+      clip-path: inset(-8px 0 -8px 0);
+    }
+    to {
+      clip-path: inset(-8px 100% -8px 0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .vital-dot,
+    .vital-line .recharts-line-curve,
+    [data-leaving] .vital-dot,
+    [data-leaving] .vital-line .recharts-line-curve {
+      animation: none;
     }
   }
 }

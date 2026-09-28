@@ -152,7 +152,6 @@ function Monogram({ org, size = 44 }: { org: Org; size?: number }) {
         fontSize="15"
         fontWeight="700"
         fill="white"
-        fontFamily="ui-sans-serif, system-ui"
       >
         {org.mark}
       </text>

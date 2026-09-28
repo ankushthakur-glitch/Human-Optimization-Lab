@@ -633,18 +633,24 @@ type DotProps = {
   second?: boolean
 }
 
-/* A reading outside the normal range is drawn as a red dot. */
+/* A reading outside the normal range is drawn as a red dot. --f is the
+   dot's place along the line (0 to 1), which times its entrance and exit
+   against the line's draw (globals.css, .vital-dot). */
 function ReadingDot({
   cx,
   cy,
+  index = 0,
   payload,
   small,
+  count,
   second,
-}: DotProps & { small: boolean }) {
+}: DotProps & { small: boolean; count: number }) {
   const high = second ? payload?.high2 : payload?.high
   const color = second ? "var(--color-value2)" : "var(--color-value)"
   return (
     <circle
+      className="vital-dot"
+      style={{ "--f": index / Math.max(count - 1, 1) } as React.CSSProperties}
       cx={cx}
       cy={cy}
       r={small ? 2.5 : 3.5}
@@ -728,10 +734,17 @@ function VitalTrend({ vital: k, sets }: { vital: Vital; sets: VitalSet[] }) {
         <Line
           dataKey="value"
           type="linear"
+          className="vital-line"
+          isAnimationActive={false}
           stroke="var(--color-value)"
           strokeWidth={1.75}
           dot={(p: DotProps) => (
-            <ReadingDot key={p.index} {...p} small={small} />
+            <ReadingDot
+              key={p.index}
+              {...p}
+              small={small}
+              count={data.length}
+            />
           )}
           activeDot={{ r: 5 }}
         />
@@ -739,11 +752,19 @@ function VitalTrend({ vital: k, sets }: { vital: Vital; sets: VitalSet[] }) {
           <Line
             dataKey="value2"
             type="linear"
+            className="vital-line"
+            isAnimationActive={false}
             stroke="var(--color-value2)"
             strokeWidth={1.75}
             strokeDasharray="4 3"
             dot={(p: DotProps) => (
-              <ReadingDot key={p.index} {...p} small={small} second />
+              <ReadingDot
+                key={p.index}
+                {...p}
+                small={small}
+                count={data.length}
+                second
+              />
             )}
             activeDot={{ r: 5 }}
           />
@@ -752,6 +773,9 @@ function VitalTrend({ vital: k, sets }: { vital: Vital; sets: VitalSet[] }) {
     </ChartContainer>
   )
 }
+
+/* Matches the exit in globals.css: the line retracts, the dots follow. */
+const VITAL_EXIT_MS = 700
 
 function VitalTrends({
   sets: all,
@@ -765,8 +789,29 @@ function VitalTrends({
   const [range, setRange] = React.useState("30")
   const k = VITALS.find((x) => x.key === selected) ?? VITALS[0]
   const latest = all[0]
-  const since = isoDaysAgo(Number(range))
+  /* The chart on screen lags the tabs: on a switch the old line retracts
+     and its dots go first, then the new chart mounts and draws in. */
+  const [shown, setShown] = React.useState({ key: k.key, range })
+  const [leaving, setLeaving] = React.useState(false)
+  const view = VITALS.find((x) => x.key === shown.key) ?? VITALS[0]
+  const since = isoDaysAgo(Number(shown.range))
   const sets = all.filter((v) => v.date >= since)
+  const drawn = sets.length >= 2
+  React.useEffect(() => {
+    if (shown.key === k.key && shown.range === range) return
+    const next = { key: k.key, range }
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (!drawn || still) {
+      setShown(next)
+      return
+    }
+    setLeaving(true)
+    const t = window.setTimeout(() => {
+      setShown(next)
+      setLeaving(false)
+    }, VITAL_EXIT_MS)
+    return () => window.clearTimeout(t)
+  }, [k.key, range, shown, drawn])
   return (
     <div className="flex min-h-[420px] min-w-0 flex-1 flex-col rounded-md border bg-surface-sunken/60">
       <div
@@ -823,16 +868,16 @@ function VitalTrends({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-col gap-0.5">
             <h3 className="text-[15px] font-semibold">
-              {k.label}
-              {k.unit && (
+              {view.label}
+              {view.unit && (
                 <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                  ({k.unit})
+                  ({view.unit})
                 </span>
               )}
             </h3>
             <span className="text-xs text-muted-foreground tabular-nums">
               {sets.length} {sets.length === 1 ? "reading" : "readings"}
-              {k.normal && `, normal ${k.normal[0]} to ${k.normal[1]}`}
+              {view.normal && `, normal ${view.normal[0]} to ${view.normal[1]}`}
             </span>
           </div>
           <Tabs value={range} onValueChange={(v) => setRange(v as string)}>
@@ -845,14 +890,22 @@ function VitalTrends({
             </TabsList>
           </Tabs>
         </div>
-        {sets.length < 2 ? (
+        {!drawn ? (
           <p className="m-auto text-sm text-muted-foreground">
             {sets.length
               ? "One reading in this range"
               : "No readings in this range"}
           </p>
         ) : (
-          <VitalTrend vital={k} sets={sets} />
+          /* A new range or vital mounts a fresh chart, so it plays its
+             entrance instead of morphing out of the old one. */
+          <div
+            key={`${shown.key}-${shown.range}`}
+            data-leaving={leaving || undefined}
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            <VitalTrend vital={view} sets={sets} />
+          </div>
         )}
       </div>
     </div>

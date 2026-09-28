@@ -131,7 +131,12 @@ export function PageNotFoundState() {
   )
 }
 
-export function SessionExpiredState() {
+export function SessionExpiredState({
+  signInHref = SIGN_IN_HREF,
+}: {
+  /** The sign-in for the portal the session ended in. */
+  signInHref?: string
+}) {
   return (
     <ErrorState
       illustration="/illustrations/errors/session-expired.png"
@@ -140,7 +145,7 @@ export function SessionExpiredState() {
       actions={
         <>
           <GoBackButton />
-          <LinkButton href={SIGN_IN_HREF}>Sign In Again</LinkButton>
+          <LinkButton href={signInHref}>Sign In Again</LinkButton>
         </>
       }
     />

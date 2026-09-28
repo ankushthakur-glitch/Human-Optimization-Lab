@@ -10,7 +10,8 @@ export const SESSION_EXPIRED_HREF = "/screens/session-expired"
 
 const ACTIVITY = ["pointerdown", "keydown", "wheel", "touchstart"] as const
 
-/* Sends the user to the Session Expired screen after a stretch with no input.
+/* Sends the user to the Session Expired screen after a stretch with no input,
+   with `?from=` naming the page, so "Sign In Again" returns to that portal.
    Mounted by the signed-in app shell only, so the sign-in screens never time
    out. Add ?idle=<seconds> to any signed-in URL to see it fire quickly. */
 
@@ -26,7 +27,12 @@ export function SessionTimeout() {
 
     let timer = window.setTimeout(expire, ms)
     function expire() {
-      router.replace(SESSION_EXPIRED_HREF)
+      // Remember the page, less the test override, so signing in again
+      // returns to this portal and screen.
+      const url = new URL(window.location.href)
+      url.searchParams.delete("idle")
+      const from = url.pathname + url.search
+      router.replace(`${SESSION_EXPIRED_HREF}?from=${encodeURIComponent(from)}`)
     }
     function reset() {
       window.clearTimeout(timer)

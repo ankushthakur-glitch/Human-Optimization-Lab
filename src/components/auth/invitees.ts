@@ -114,3 +114,32 @@ export function inviteeFrom(as: string | string[] | undefined): Invitee {
 export function withInvitee(href: string, key: InviteeKey) {
   return key === "super-admin" ? href : `${href}?as=${key}`
 }
+
+/** Whose portal a signed-in path belongs to, so a sign-in that interrupts
+    it (an expired session) comes back to the same portal. */
+export function inviteeForPath(path: string): InviteeKey {
+  if (path.startsWith("/screens/practice")) return "clinic-manager"
+  if (path.startsWith("/screens/patients")) return "provider"
+  return "super-admin"
+}
+
+/** A `?next=` worth following: a screen in this app, never another site. */
+export function safeNext(next: string | string[] | undefined) {
+  return typeof next === "string" &&
+    next.startsWith("/screens/") &&
+    !next.startsWith("//")
+    ? next
+    : undefined
+}
+
+/** Sign in again after the session ran out on `from`: the sign-in screen for
+    that portal's person, which then returns to `from`. */
+export function signInAgainHref(from: string | undefined) {
+  const next = safeNext(from)
+  if (!next) return "/screens/login"
+  const query = new URLSearchParams()
+  const key = inviteeForPath(next)
+  if (key !== "super-admin") query.set("as", key)
+  query.set("next", next)
+  return `/screens/login?${query}`
+}
