@@ -78,8 +78,8 @@ const PAGES = {
   "/screens/admin/dashboard": [ADMIN, "Dashboard", "Dashboard (coming soon)"],
   "/screens/admin/settings": [ADMIN, "Settings", "Settings (coming soon)"],
 
-  "/screens/patients": [PROVIDER, "Patients", "Patient worklist"],
-  "/screens/patients/new": [PROVIDER, "Patients", "Register patient"],
+  "/screens/patients": [PROVIDER, "", "", { skip: true }],
+  "/screens/patients/new": [PROVIDER, "", "", { skip: true }],
 
   // The clinic manager's practice portal.
   "/screens/practice": [MANAGER, "", "", { skip: true }],
