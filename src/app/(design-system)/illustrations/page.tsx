@@ -21,8 +21,9 @@ import {
 
 /* Every spot illustration the portal ships, drawn with the
    product-ui-illustrations skill. They are inlined, so they follow the
-   primary colour and dark mode from the header toggles. Click one to copy the
-   JSX that renders it. */
+   primary colour and dark mode from the header toggles. Each plays its
+   animation while its card is hovered or focused; click one to copy the JSX
+   that renders it. */
 
 const NAMES = Object.keys(ILLUSTRATIONS) as IllustrationName[]
 
@@ -68,7 +69,7 @@ export default function IllustrationsPage() {
               )
               toast.success("Copied", { description: name })
             }}
-            className="flex flex-col items-center gap-3 rounded-lg border bg-card p-4 text-center transition-colors hover:bg-surface-hover"
+            className="ila-on-hover flex flex-col items-center gap-3 rounded-lg border bg-card p-4 text-center transition-colors hover:bg-surface-hover"
           >
             <Illustration name={name} className="size-32" />
             <span className="text-sm font-medium">

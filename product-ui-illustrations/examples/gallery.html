@@ -237,6 +237,17 @@
 .ila-dim { animation-name: ila-dim; animation-duration: var(--t, 5s); animation-timing-function: ease-in-out; }
 @keyframes ila-dim { 0%, 22% { opacity: 1 } 40%, 84% { opacity: .25 } 100% { opacity: 1 } }
 
+/* Play on hover: a gallery of many illustrations shows each one at rest and
+   plays it only while its card is hovered or focused. Put the class on the
+   card. Removing the animation (rather than pausing it) keeps the resting
+   frame, since several verbs start hidden; hovering plays from the start. */
+.ila-on-hover:not(:hover):not(:focus-visible):not(:focus-within) :where(svg) [class*="ila-"] {
+  animation: none;
+}
+.ila-on-hover:not(:hover):not(:focus-visible):not(:focus-within) :where(svg) .ila-pulse {
+  visibility: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :where(svg) [class*="ila-"] { animation: none !important; }
   /* A pulse is a copy of the mark it rings; at rest it would double it. */
@@ -253,7 +264,7 @@
   figure { margin:0; } .g svg { width:100%; display:block; }
   figcaption { margin-top:7px; font-size:10.5px; opacity:.75; text-align:center; }
 </style>
-<div class="pane light" data-theme="light"><h2>Light</h2><div class="g"><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Teams" class="il">
+<div class="pane light" data-theme="light"><h2>Light</h2><div class="g"><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Teams" class="il">
   <defs>
     <linearGradient id="fadeG-teamsl" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -277,7 +288,7 @@
   </g>
 <g><circle cx="80" cy="33" r="14" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(72.50 25.50) scale(0.05859)" fill="var(--il-stroke, #35322D)"><path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1-7.37-4.89,8,8,0,0,1,0-6.22A8,8,0,0,1,192,112a24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.84,8,57,57,0,0,0-98.16,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z"/></g><g class="ila-slide" style="--y:-7px"><g filter="url(#liftL-teamsl)"><rect x="13.0" y="56.0" width="134.0" height="21.0" rx="7.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(24.00 61.50) scale(0.04297)" fill="var(--il-stroke-soft, #9B948A)"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"/></g><rect x="41.0" y="64.7" width="62.0" height="4.6" rx="2.30" fill="var(--il-fill, #DCD6CE)"/><g transform="translate(129.00 61.50) scale(0.03906)" fill="var(--il-stroke-soft, #9B948A)"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64l24-24L216,84.68Z"/></g></g>
 </svg>
-<figcaption>Teams</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Categories" class="il">
+<figcaption>Teams</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Categories" class="il">
   <defs>
     <linearGradient id="fadeG-categoriesl" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -301,7 +312,7 @@
   </g>
 <g filter="url(#liftL-categoriesl)"><rect x="11.0" y="24.0" width="138.0" height="24.0" rx="8.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(21.00 29.50) scale(0.05078)" fill="var(--il-stroke-soft, #9B948A)"><path d="M243.31,136,144,36.69A15.86,15.86,0,0,0,132.69,32H40a8,8,0,0,0-8,8v92.69A15.86,15.86,0,0,0,36.69,144L136,243.31a16,16,0,0,0,22.63,0l84.68-84.68a16,16,0,0,0,0-22.63Zm-96,96L48,132.69V48h84.69L232,147.31ZM96,84A12,12,0,1,1,84,72,12,12,0,0,1,96,84Z"/></g><rect x="40.0" y="30.5" width="22.0" height="11" rx="5.5" fill="none" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/><rect x="45.0" y="34.6" width="12.0" height="2.8" rx="1.40" fill="var(--il-fill, #DCD6CE)"/><g class="ila-pop"><rect x="66.0" y="30.5" width="26.0" height="11" rx="5.5" fill="var(--il-fill-soft, #E9E4DC)"/></g><rect x="71.0" y="34.6" width="16.0" height="2.8" rx="1.40" fill="var(--il-stroke-soft, #9B948A)"/><rect x="96.0" y="30.5" width="20.0" height="11" rx="5.5" fill="none" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/><rect x="101.0" y="34.6" width="10.0" height="2.8" rx="1.40" fill="var(--il-fill, #DCD6CE)"/><rect x="120.0" y="30.5" width="18.0" height="11" rx="5.5" fill="none" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/><rect x="125.0" y="34.6" width="8.0" height="2.8" rx="1.40" fill="var(--il-fill, #DCD6CE)"/>
 </svg>
-<figcaption>Categories</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Workspace access" class="il">
+<figcaption>Categories</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Workspace access" class="il">
   <defs>
     <linearGradient id="fadeG-workspacel" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -325,7 +336,7 @@
   </g>
 <g filter="url(#liftL-workspacel)"><rect x="11.0" y="24.0" width="138.0" height="26.0" rx="9.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><rect x="26" y="31.5" width="12" height="12" rx="4" fill="#C25E3E"/><rect x="49" y="31.5" width="12" height="12" rx="4" fill="#2F9468"/><rect x="72" y="31.5" width="12" height="12" rx="4" fill="#5C82CE"/><rect x="95" y="31.5" width="12" height="12" rx="4" fill="#B08A3E"/><rect x="119" y="31" width="0.5" height="12" fill="var(--il-line, #B9B1A4)" opacity="0.8"/><g transform="translate(128.00 32.00) scale(0.03906)" fill="var(--il-stroke-soft, #9B948A)"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></g>
 </svg>
-<figcaption>Workspace access</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Documentation" class="il">
+<figcaption>Workspace access</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Documentation" class="il">
   <defs>
     <linearGradient id="fadeG-docsl" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -349,7 +360,7 @@
   </g>
 <g class="ila-float"><g filter="url(#lift-docsl)"><rect x="13.0" y="12.0" width="58.0" height="21.0" rx="8.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(22.00 17.00) scale(0.04688)" fill="var(--il-stroke, #35322D)"><path d="M232,48H160a40,40,0,0,0-32,16A40,40,0,0,0,96,48H24a8,8,0,0,0-8,8V200a8,8,0,0,0,8,8H96a24,24,0,0,1,24,24,8,8,0,0,0,16,0,24,24,0,0,1,24-24h72a8,8,0,0,0,8-8V56A8,8,0,0,0,232,48ZM96,192H32V64H96a24,24,0,0,1,24,24V200A39.81,39.81,0,0,0,96,192Zm128,0H160a39.81,39.81,0,0,0-24,8V88a24,24,0,0,1,24-24h64Z"/></g><rect x="39.0" y="20.4" width="24.0" height="4.6" rx="2.30" fill="var(--il-fill, #DCD6CE)"/></g><g class="ila-float" style="--d:2s"><g filter="url(#lift-docsl)"><rect x="91.0" y="94.0" width="58.0" height="21.0" rx="8.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(100.00 99.00) scale(0.04688)" fill="var(--il-stroke-soft, #9B948A)"><path d="M230.91,172A8,8,0,0,1,228,182.91l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,36,169.09l92,53.65,92-53.65A8,8,0,0,1,230.91,172ZM220,121.09l-92,53.65L36,121.09A8,8,0,0,0,28,134.91l96,56a8,8,0,0,0,8.06,0l96-56A8,8,0,1,0,220,121.09ZM24,80a8,8,0,0,1,4-6.91l96-56a8,8,0,0,1,8.06,0l96,56a8,8,0,0,1,0,13.82l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,24,80Zm23.88,0L128,126.74,208.12,80,128,33.26Z"/></g><rect x="117.0" y="102.4" width="24.0" height="4.6" rx="2.30" fill="var(--il-fill, #DCD6CE)"/></g>
 </svg>
-<figcaption>Documentation</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Connectors" class="il">
+<figcaption>Documentation</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Connectors" class="il">
   <defs>
     <linearGradient id="fadeG-connectorsl" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -373,7 +384,7 @@
   </g>
 
 </svg>
-<figcaption>Connectors</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Contributors" class="il">
+<figcaption>Connectors</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Contributors" class="il">
   <defs>
     <linearGradient id="fadeG-contributorsl" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -397,7 +408,7 @@
   </g>
 <g class="ila-float"><g filter="url(#liftL-contributorsl)"><rect x="55.0" y="32.0" width="50.0" height="60.0" rx="11.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><circle cx="80" cy="52" r="12" fill="var(--il-accent, #3E9077)" opacity="0.14"/><g transform="translate(72.50 44.50) scale(0.05859)" fill="var(--il-accent, #3E9077)"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"/></g><rect x="65.0" y="70.0" width="30.0" height="4.8" rx="2.40" fill="var(--il-fill, #DCD6CE)"/><rect x="61.0" y="78.5" width="38.0" height="4.8" rx="2.40" fill="var(--il-fill, #DCD6CE)"/></g>
 </svg>
-<figcaption>Contributors</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Notifications" class="il">
+<figcaption>Contributors</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Notifications" class="il">
   <defs>
     <linearGradient id="fadeG-notificationsl" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -421,7 +432,7 @@
   </g>
 <g class="ila-drop" style="--y:-10px"><g filter="url(#liftL-notificationsl)"><rect x="16.0" y="44.0" width="112.0" height="34.0" rx="10.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><circle cx="33" cy="61" r="10" fill="#C25E3E" opacity="0.8"/><rect x="50.0" y="53.0" width="40.0" height="5.0" rx="2.50" fill="var(--il-fill, #DCD6CE)"/><rect x="50.0" y="63.0" width="62.0" height="5.6" rx="2.80" fill="var(--il-fill, #DCD6CE)"/></g>
 </svg>
-<figcaption>Notifications</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="API gateway" class="il">
+<figcaption>Notifications</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="API gateway" class="il">
   <defs>
     <linearGradient id="fadeG-gatewayl" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -445,7 +456,7 @@
   </g>
 <g filter="url(#lift-gatewayl)"><rect x="63.0" y="46.0" width="34.0" height="34.0" rx="11.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(71.00 54.00) scale(0.07031)" fill="var(--il-stroke, #35322D)"><path d="M160,112h48a16,16,0,0,0,16-16V48a16,16,0,0,0-16-16H160a16,16,0,0,0-16,16V64H128a24,24,0,0,0-24,24v32H72v-8A16,16,0,0,0,56,96H24A16,16,0,0,0,8,112v32a16,16,0,0,0,16,16H56a16,16,0,0,0,16-16v-8h32v32a24,24,0,0,0,24,24h16v16a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V160a16,16,0,0,0-16-16H160a16,16,0,0,0-16,16v16H128a8,8,0,0,1-8-8V88a8,8,0,0,1,8-8h16V96A16,16,0,0,0,160,112ZM56,144H24V112H56v32Zm104,16h48v48H160Zm0-112h48V96H160Z"/></g>
 </svg>
-<figcaption>API gateway</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Roles &amp; access" class="il">
+<figcaption>API gateway</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Roles &amp; access" class="il">
   <defs>
     <linearGradient id="fadeG-rolesl" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -469,7 +480,7 @@
   </g>
 <g filter="url(#lift-rolesl)"><rect x="13.0" y="16.0" width="62.0" height="22.0" rx="8.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(22.00 21.00) scale(0.04688)" fill="var(--il-stroke, #35322D)"><path d="M128,112a28,28,0,0,0-8,54.83V184a8,8,0,0,0,16,0V166.83A28,28,0,0,0,128,112Zm0,40a12,12,0,1,1,12-12A12,12,0,0,1,128,152Zm80-72H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208V208Z"/></g><rect x="39.0" y="24.4" width="26.0" height="4.6" rx="2.30" fill="var(--il-fill, #DCD6CE)"/>
 </svg>
-<figcaption>Roles &amp; access</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Audit log" class="il">
+<figcaption>Roles &amp; access</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Audit log" class="il">
   <defs>
     <linearGradient id="fadeG-auditl" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -493,7 +504,7 @@
   </g>
 <g filter="url(#lift-auditl)"><rect x="18.0" y="14.0" width="74.0" height="22.0" rx="8.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(27.00 19.00) scale(0.04688)" fill="var(--il-stroke, #35322D)"><path d="M136,80v43.47l36.12,21.67a8,8,0,0,1-8.24,13.72l-40-24A8,8,0,0,1,120,128V80a8,8,0,0,1,16,0Zm-8-48A95.44,95.44,0,0,0,60.08,60.15C52.81,67.51,46.35,74.59,40,82V64a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H72a8,8,0,0,0,0-16H49c7.15-8.42,14.27-16.35,22.39-24.57a80,80,0,1,1,1.66,114.75,8,8,0,1,0-11,11.64A96,96,0,1,0,128,32Z"/></g><rect x="44.0" y="22.4" width="34.0" height="4.6" rx="2.30" fill="var(--il-fill, #DCD6CE)"/>
 </svg>
-<figcaption>Audit log</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="App approval" class="il">
+<figcaption>Audit log</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="App approval" class="il">
   <defs>
     <linearGradient id="fadeG-approvall" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -517,7 +528,7 @@
   </g>
 <g><circle cx="80" cy="37" r="17" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(72.50 29.50) scale(0.05859)" fill="var(--il-stroke, #35322D)"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-32-80a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,136Zm0,32a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,168Z"/></g>
 </svg>
-<figcaption>App approval</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Invoices" class="il">
+<figcaption>App approval</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Invoices" class="il">
   <defs>
     <linearGradient id="fadeG-billingl" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -542,7 +553,7 @@
 <g filter="url(#liftL-billingl)"><rect x="11.0" y="24.0" width="138.0" height="27.0" rx="8.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(27.00 29.50) scale(0.06250)" fill="var(--il-stroke, #35322D)"><path d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"/></g><rect x="52.0" y="28.0" width="29.0" height="4.8" rx="2.40" fill="var(--il-fill, #DCD6CE)"/><rect x="52.0" y="36.4" width="58.0" height="6.0" rx="3.00" fill="var(--il-fill, #DCD6CE)"/>
 </svg>
 <figcaption>Invoices</figcaption></figure></div></div>
-<div class="pane dark" data-theme="dark"><h2>Dark</h2><div class="g"><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Teams" class="il">
+<div class="pane dark" data-theme="dark"><h2>Dark</h2><div class="g"><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Teams" class="il">
   <defs>
     <linearGradient id="fadeG-teamsd" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -566,7 +577,7 @@
   </g>
 <g><circle cx="80" cy="33" r="14" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(72.50 25.50) scale(0.05859)" fill="var(--il-stroke, #35322D)"><path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1-7.37-4.89,8,8,0,0,1,0-6.22A8,8,0,0,1,192,112a24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.84,8,57,57,0,0,0-98.16,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z"/></g><g class="ila-slide" style="--y:-7px"><g filter="url(#liftL-teamsd)"><rect x="13.0" y="56.0" width="134.0" height="21.0" rx="7.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(24.00 61.50) scale(0.04297)" fill="var(--il-stroke-soft, #9B948A)"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"/></g><rect x="41.0" y="64.7" width="62.0" height="4.6" rx="2.30" fill="var(--il-fill, #DCD6CE)"/><g transform="translate(129.00 61.50) scale(0.03906)" fill="var(--il-stroke-soft, #9B948A)"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64l24-24L216,84.68Z"/></g></g>
 </svg>
-<figcaption>Teams</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Categories" class="il">
+<figcaption>Teams</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Categories" class="il">
   <defs>
     <linearGradient id="fadeG-categoriesd" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -590,7 +601,7 @@
   </g>
 <g filter="url(#liftL-categoriesd)"><rect x="11.0" y="24.0" width="138.0" height="24.0" rx="8.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(21.00 29.50) scale(0.05078)" fill="var(--il-stroke-soft, #9B948A)"><path d="M243.31,136,144,36.69A15.86,15.86,0,0,0,132.69,32H40a8,8,0,0,0-8,8v92.69A15.86,15.86,0,0,0,36.69,144L136,243.31a16,16,0,0,0,22.63,0l84.68-84.68a16,16,0,0,0,0-22.63Zm-96,96L48,132.69V48h84.69L232,147.31ZM96,84A12,12,0,1,1,84,72,12,12,0,0,1,96,84Z"/></g><rect x="40.0" y="30.5" width="22.0" height="11" rx="5.5" fill="none" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/><rect x="45.0" y="34.6" width="12.0" height="2.8" rx="1.40" fill="var(--il-fill, #DCD6CE)"/><g class="ila-pop"><rect x="66.0" y="30.5" width="26.0" height="11" rx="5.5" fill="var(--il-fill-soft, #E9E4DC)"/></g><rect x="71.0" y="34.6" width="16.0" height="2.8" rx="1.40" fill="var(--il-stroke-soft, #9B948A)"/><rect x="96.0" y="30.5" width="20.0" height="11" rx="5.5" fill="none" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/><rect x="101.0" y="34.6" width="10.0" height="2.8" rx="1.40" fill="var(--il-fill, #DCD6CE)"/><rect x="120.0" y="30.5" width="18.0" height="11" rx="5.5" fill="none" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/><rect x="125.0" y="34.6" width="8.0" height="2.8" rx="1.40" fill="var(--il-fill, #DCD6CE)"/>
 </svg>
-<figcaption>Categories</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Workspace access" class="il">
+<figcaption>Categories</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Workspace access" class="il">
   <defs>
     <linearGradient id="fadeG-workspaced" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -614,7 +625,7 @@
   </g>
 <g filter="url(#liftL-workspaced)"><rect x="11.0" y="24.0" width="138.0" height="26.0" rx="9.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><rect x="26" y="31.5" width="12" height="12" rx="4" fill="#C25E3E"/><rect x="49" y="31.5" width="12" height="12" rx="4" fill="#2F9468"/><rect x="72" y="31.5" width="12" height="12" rx="4" fill="#5C82CE"/><rect x="95" y="31.5" width="12" height="12" rx="4" fill="#B08A3E"/><rect x="119" y="31" width="0.5" height="12" fill="var(--il-line, #B9B1A4)" opacity="0.8"/><g transform="translate(128.00 32.00) scale(0.03906)" fill="var(--il-stroke-soft, #9B948A)"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></g>
 </svg>
-<figcaption>Workspace access</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Documentation" class="il">
+<figcaption>Workspace access</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Documentation" class="il">
   <defs>
     <linearGradient id="fadeG-docsd" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -638,7 +649,7 @@
   </g>
 <g class="ila-float"><g filter="url(#lift-docsd)"><rect x="13.0" y="12.0" width="58.0" height="21.0" rx="8.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(22.00 17.00) scale(0.04688)" fill="var(--il-stroke, #35322D)"><path d="M232,48H160a40,40,0,0,0-32,16A40,40,0,0,0,96,48H24a8,8,0,0,0-8,8V200a8,8,0,0,0,8,8H96a24,24,0,0,1,24,24,8,8,0,0,0,16,0,24,24,0,0,1,24-24h72a8,8,0,0,0,8-8V56A8,8,0,0,0,232,48ZM96,192H32V64H96a24,24,0,0,1,24,24V200A39.81,39.81,0,0,0,96,192Zm128,0H160a39.81,39.81,0,0,0-24,8V88a24,24,0,0,1,24-24h64Z"/></g><rect x="39.0" y="20.4" width="24.0" height="4.6" rx="2.30" fill="var(--il-fill, #DCD6CE)"/></g><g class="ila-float" style="--d:2s"><g filter="url(#lift-docsd)"><rect x="91.0" y="94.0" width="58.0" height="21.0" rx="8.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(100.00 99.00) scale(0.04688)" fill="var(--il-stroke-soft, #9B948A)"><path d="M230.91,172A8,8,0,0,1,228,182.91l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,36,169.09l92,53.65,92-53.65A8,8,0,0,1,230.91,172ZM220,121.09l-92,53.65L36,121.09A8,8,0,0,0,28,134.91l96,56a8,8,0,0,0,8.06,0l96-56A8,8,0,1,0,220,121.09ZM24,80a8,8,0,0,1,4-6.91l96-56a8,8,0,0,1,8.06,0l96,56a8,8,0,0,1,0,13.82l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,24,80Zm23.88,0L128,126.74,208.12,80,128,33.26Z"/></g><rect x="117.0" y="102.4" width="24.0" height="4.6" rx="2.30" fill="var(--il-fill, #DCD6CE)"/></g>
 </svg>
-<figcaption>Documentation</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Connectors" class="il">
+<figcaption>Documentation</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Connectors" class="il">
   <defs>
     <linearGradient id="fadeG-connectorsd" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -662,7 +673,7 @@
   </g>
 
 </svg>
-<figcaption>Connectors</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Contributors" class="il">
+<figcaption>Connectors</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Contributors" class="il">
   <defs>
     <linearGradient id="fadeG-contributorsd" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -686,7 +697,7 @@
   </g>
 <g class="ila-float"><g filter="url(#liftL-contributorsd)"><rect x="55.0" y="32.0" width="50.0" height="60.0" rx="11.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><circle cx="80" cy="52" r="12" fill="var(--il-accent, #3E9077)" opacity="0.14"/><g transform="translate(72.50 44.50) scale(0.05859)" fill="var(--il-accent, #3E9077)"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"/></g><rect x="65.0" y="70.0" width="30.0" height="4.8" rx="2.40" fill="var(--il-fill, #DCD6CE)"/><rect x="61.0" y="78.5" width="38.0" height="4.8" rx="2.40" fill="var(--il-fill, #DCD6CE)"/></g>
 </svg>
-<figcaption>Contributors</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Notifications" class="il">
+<figcaption>Contributors</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Notifications" class="il">
   <defs>
     <linearGradient id="fadeG-notificationsd" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -710,7 +721,7 @@
   </g>
 <g class="ila-drop" style="--y:-10px"><g filter="url(#liftL-notificationsd)"><rect x="16.0" y="44.0" width="112.0" height="34.0" rx="10.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><circle cx="33" cy="61" r="10" fill="#C25E3E" opacity="0.8"/><rect x="50.0" y="53.0" width="40.0" height="5.0" rx="2.50" fill="var(--il-fill, #DCD6CE)"/><rect x="50.0" y="63.0" width="62.0" height="5.6" rx="2.80" fill="var(--il-fill, #DCD6CE)"/></g>
 </svg>
-<figcaption>Notifications</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="API gateway" class="il">
+<figcaption>Notifications</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="API gateway" class="il">
   <defs>
     <linearGradient id="fadeG-gatewayd" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -734,7 +745,7 @@
   </g>
 <g filter="url(#lift-gatewayd)"><rect x="63.0" y="46.0" width="34.0" height="34.0" rx="11.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(71.00 54.00) scale(0.07031)" fill="var(--il-stroke, #35322D)"><path d="M160,112h48a16,16,0,0,0,16-16V48a16,16,0,0,0-16-16H160a16,16,0,0,0-16,16V64H128a24,24,0,0,0-24,24v32H72v-8A16,16,0,0,0,56,96H24A16,16,0,0,0,8,112v32a16,16,0,0,0,16,16H56a16,16,0,0,0,16-16v-8h32v32a24,24,0,0,0,24,24h16v16a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V160a16,16,0,0,0-16-16H160a16,16,0,0,0-16,16v16H128a8,8,0,0,1-8-8V88a8,8,0,0,1,8-8h16V96A16,16,0,0,0,160,112ZM56,144H24V112H56v32Zm104,16h48v48H160Zm0-112h48V96H160Z"/></g>
 </svg>
-<figcaption>API gateway</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Roles &amp; access" class="il">
+<figcaption>API gateway</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Roles &amp; access" class="il">
   <defs>
     <linearGradient id="fadeG-rolesd" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -758,7 +769,7 @@
   </g>
 <g filter="url(#lift-rolesd)"><rect x="13.0" y="16.0" width="62.0" height="22.0" rx="8.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(22.00 21.00) scale(0.04688)" fill="var(--il-stroke, #35322D)"><path d="M128,112a28,28,0,0,0-8,54.83V184a8,8,0,0,0,16,0V166.83A28,28,0,0,0,128,112Zm0,40a12,12,0,1,1,12-12A12,12,0,0,1,128,152Zm80-72H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208V208Z"/></g><rect x="39.0" y="24.4" width="26.0" height="4.6" rx="2.30" fill="var(--il-fill, #DCD6CE)"/>
 </svg>
-<figcaption>Roles &amp; access</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Audit log" class="il">
+<figcaption>Roles &amp; access</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Audit log" class="il">
   <defs>
     <linearGradient id="fadeG-auditd" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -782,7 +793,7 @@
   </g>
 <g filter="url(#lift-auditd)"><rect x="18.0" y="14.0" width="74.0" height="22.0" rx="8.0" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(27.00 19.00) scale(0.04688)" fill="var(--il-stroke, #35322D)"><path d="M136,80v43.47l36.12,21.67a8,8,0,0,1-8.24,13.72l-40-24A8,8,0,0,1,120,128V80a8,8,0,0,1,16,0Zm-8-48A95.44,95.44,0,0,0,60.08,60.15C52.81,67.51,46.35,74.59,40,82V64a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H72a8,8,0,0,0,0-16H49c7.15-8.42,14.27-16.35,22.39-24.57a80,80,0,1,1,1.66,114.75,8,8,0,1,0-11,11.64A96,96,0,1,0,128,32Z"/></g><rect x="44.0" y="22.4" width="34.0" height="4.6" rx="2.30" fill="var(--il-fill, #DCD6CE)"/>
 </svg>
-<figcaption>Audit log</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="App approval" class="il">
+<figcaption>Audit log</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="App approval" class="il">
   <defs>
     <linearGradient id="fadeG-approvald" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>
@@ -806,7 +817,7 @@
   </g>
 <g><circle cx="80" cy="37" r="17" fill="var(--il-surface, #FFFFFF)" stroke="var(--il-line, #B9B1A4)" stroke-width="0.5"/></g><g transform="translate(72.50 29.50) scale(0.05859)" fill="var(--il-stroke, #35322D)"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-32-80a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,136Zm0,32a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,168Z"/></g>
 </svg>
-<figcaption>App approval</figcaption></figure><figure><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Invoices" class="il">
+<figcaption>App approval</figcaption></figure><figure class="ila-on-hover" tabindex="0"><svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Invoices" class="il">
   <defs>
     <linearGradient id="fadeG-billingd" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.7" stop-color="#fff"/><stop offset="0.82" stop-color="#000"/>

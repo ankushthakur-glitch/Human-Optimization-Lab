@@ -135,3 +135,12 @@ Common failures:
 | Busy, restless screen | Too many moving parts, or a loop without a rest |
 | Reduced-motion frame is missing something | The static drawing relies on a mid-animation state |
 | The animation could be swapped onto another illustration | It isn't meaningful; go back to the verb |
+
+## Galleries: play on hover
+
+In a product screen an illustration plays on its own. In a gallery, library or
+contact sheet, dozens playing at once is noise, so put `ila-on-hover` on each
+card: the illustration shows its resting frame and plays from the start while
+the card is hovered or focused. Give non-interactive cards `tabindex="0"` so
+keyboard users can play them too.
+

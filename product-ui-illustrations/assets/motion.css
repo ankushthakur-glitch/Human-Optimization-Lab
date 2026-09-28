@@ -161,6 +161,17 @@
 .ila-dim { animation-name: ila-dim; animation-duration: var(--t, 5s); animation-timing-function: ease-in-out; }
 @keyframes ila-dim { 0%, 22% { opacity: 1 } 40%, 84% { opacity: .25 } 100% { opacity: 1 } }
 
+/* Play on hover: a gallery of many illustrations shows each one at rest and
+   plays it only while its card is hovered or focused. Put the class on the
+   card. Removing the animation (rather than pausing it) keeps the resting
+   frame, since several verbs start hidden; hovering plays from the start. */
+.ila-on-hover:not(:hover):not(:focus-visible):not(:focus-within) :where(svg) [class*="ila-"] {
+  animation: none;
+}
+.ila-on-hover:not(:hover):not(:focus-visible):not(:focus-within) :where(svg) .ila-pulse {
+  visibility: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :where(svg) [class*="ila-"] { animation: none !important; }
   /* A pulse is a copy of the mark it rings; at rest it would double it. */

@@ -515,7 +515,8 @@ if __name__ == '__main__':
             doc = re.sub(r'\s*<style>.*?</style>', '', doc, count=1, flags=re.S)
             d = doc.replace('-' + uid + '"', '-' + uid + t + '"')
             d = d.replace('-' + uid + ')', '-' + uid + t + ')')
-            out += '<figure>' + d + '<figcaption>' + label + '</figcaption></figure>'
+            # Galleries play each illustration only while its card is hovered.
+            out += '<figure class="ila-on-hover" tabindex="0">' + d + '<figcaption>' + label + '</figcaption></figure>'
         return out
 
     open('examples/gallery.html', 'w').write(f'''<!doctype html><meta charset="utf-8">
