@@ -75,7 +75,7 @@
     },
     {
       "file": "src/components/practice/patients.tsx",
-      "line": 677,
+      "line": 687,
       "routes": [
         "/screens/practice/patients",
         "/screens/patients"
@@ -132,7 +132,7 @@
   "duplicates-clear": [
     {
       "file": "src/components/practice/duplicates.tsx",
-      "line": 1006,
+      "line": 991,
       "routes": [
         "/screens/practice/patients/duplicates"
       ]
@@ -141,7 +141,7 @@
   "review-resolved": [
     {
       "file": "src/components/practice/duplicates.tsx",
-      "line": 1137,
+      "line": 1122,
       "routes": [
         "/screens/practice/patients/duplicates"
       ]
@@ -220,7 +220,7 @@
   "possible-duplicate": [
     {
       "file": "src/components/practice/duplicates.tsx",
-      "line": 686,
+      "line": 683,
       "routes": [
         "/screens/practice/patients/duplicates"
       ]
@@ -249,7 +249,7 @@
     },
     {
       "file": "src/components/practice/patients.tsx",
-      "line": 694,
+      "line": 704,
       "routes": [
         "/screens/practice/patients",
         "/screens/patients"

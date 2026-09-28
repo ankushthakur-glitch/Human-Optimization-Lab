@@ -198,7 +198,10 @@ function BulkSendInvite({
 function rowOutcome(
   value: PatientInput,
   existing: Patient[],
-  earlier: { row: number; value: PatientInput }[]
+  earlier: { row: number; value: PatientInput }[],
+  /** The review queue is the clinic manager's; a provider's import skips a
+      possible match, to be added by hand where the records are compared. */
+  canQueue: boolean
 ): RowOutcome | undefined {
   const check = checkDuplicate(value, existing)
   if (check.kind === "none") {
@@ -224,6 +227,13 @@ function rowOutcome(
   }
   const p = check.patient
   const who = `${fullName(p)} (${p.id})`
+  if (check.kind === "possible" && !canQueue)
+    return {
+      kind: "skip",
+      badge: "Possible duplicate",
+      note: `May be ${who}: ${matchedText(check.matched).toLowerCase()} match. Not imported; add by hand to compare the records.`,
+      ref: p.id,
+    }
   if (check.kind === "possible")
     return {
       kind: "review",
@@ -380,7 +390,7 @@ function usePatientImport(): ImportSpec<PatientInput> {
       const outcome =
         errors.length || !first || !dob
           ? undefined
-          : rowOutcome(value, items, batch.current)
+          : rowOutcome(value, items, batch.current, portal.key === "practice")
       if (!errors.length) batch.current.push({ row, value })
 
       return {

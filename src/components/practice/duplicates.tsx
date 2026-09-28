@@ -506,8 +506,8 @@ export type FoundDuplicate = Exclude<DuplicateCheck, { kind: "none" }>
 /**
  * What saving a new patient found. An exact match never creates a record:
  * it is reused, kept or reactivated. A possible match is compared side by
- * side; the clinic manager resolves it on the spot or queues it, a provider
- * sends it to the clinic manager.
+ * side and resolved on the spot: merged, or created as a new record. The
+ * clinic manager can also queue it; a provider needs no one's approval.
  */
 export function DuplicateDialog({
   found,
@@ -662,12 +662,9 @@ function PossibleBody({
       portalUser(portal.key)
     )
     toast.success("Sent for review", {
-      description:
-        portal.key === "provider"
-          ? "The clinic manager will compare the records before the patient is added."
-          : "Find it in Possible duplicates.",
+      description: "Find it in Possible duplicates.",
     })
-    router.push(portal.key === "provider" ? portal.patientsHref : QUEUE_HREF)
+    router.push(QUEUE_HREF)
   }
 
   function merge() {
@@ -688,8 +685,6 @@ function PossibleBody({
         <DialogDescription>
           Matches {fullName(existing)} ({existing.id}) on{" "}
           {matchedText(found.matched).toLowerCase()}.
-          {portal.key === "provider" &&
-            " The clinic manager confirms whether this is the same person."}
         </DialogDescription>
       </DialogHeader>
       <div className="min-h-0 overflow-y-auto">
@@ -700,30 +695,26 @@ function PossibleBody({
           source="Manual"
         />
       </div>
-      {portal.key === "provider" ? (
-        <DialogFooter>
+      <DialogFooter className="sm:justify-between">
+        {onBack ? (
           <DismissButton onBack={onBack} onCancel={onClose} />
-          <Button onClick={queue}>Send for review</Button>
-        </DialogFooter>
-      ) : (
-        <DialogFooter className="sm:justify-between">
-          {onBack ? (
-            <DismissButton onBack={onBack} onCancel={onClose} />
-          ) : (
-            <span />
-          )}
-          {/* Tertiary, secondary, primary, left to right. */}
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        ) : (
+          <span />
+        )}
+        {/* Tertiary, secondary, primary, left to right. The review queue is
+            the clinic manager's; a provider decides here. */}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          {portal.key === "practice" && (
             <Button variant="ghost" onClick={queue}>
               Review later
             </Button>
-            <Button variant="outline" onClick={onCreate}>
-              Create new record
-            </Button>
-            <Button onClick={merge}>Merge record</Button>
-          </div>
-        </DialogFooter>
-      )}
+          )}
+          <Button variant="outline" onClick={onCreate}>
+            Create new record
+          </Button>
+          <Button onClick={merge}>Merge record</Button>
+        </div>
+      </DialogFooter>
     </>
   )
 }
@@ -947,32 +938,26 @@ export function usePatientPrecheck() {
 export function DuplicateQueueBanner() {
   const portal = usePortal()
   const { items } = duplicateReviews.use()
-  const mine =
-    portal.key === "provider"
-      ? items.filter((r) => r.submittedBy === portalUser("provider"))
-      : items
-  if (mine.length === 0) return null
-  const count = mine.length
+  /* The queue is the clinic manager's; a provider resolves duplicates on the
+     spot, so their list has nothing waiting. */
+  if (portal.key === "provider" || items.length === 0) return null
+  const count = items.length
   return (
     <div className="shrink-0 bg-surface-sunken px-4 pt-3">
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/40 bg-warning-surface px-4 py-2.5 text-sm">
         <IconWarning className="size-4 shrink-0 text-warning" />
         <span className="min-w-0 flex-1 font-medium text-warning">
-          {portal.key === "provider"
-            ? `${count} ${count === 1 ? "patient" : "patients"} you added ${count === 1 ? "is" : "are"} waiting for the clinic manager to review a possible duplicate`
-            : `${count} possible ${count === 1 ? "duplicate needs" : "duplicates need"} review`}
+          {`${count} possible ${count === 1 ? "duplicate needs" : "duplicates need"} review`}
         </span>
-        {portal.key === "practice" && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="bg-card"
-            nativeButton={false}
-            render={<Link href={QUEUE_HREF} />}
-          >
-            Review
-          </Button>
-        )}
+        <Button
+          size="sm"
+          variant="outline"
+          className="bg-card"
+          nativeButton={false}
+          render={<Link href={QUEUE_HREF} />}
+        >
+          Review
+        </Button>
       </div>
     </div>
   )
