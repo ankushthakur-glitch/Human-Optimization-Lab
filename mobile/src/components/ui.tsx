@@ -197,12 +197,15 @@ export function Button({
   children,
   onPress,
   pending = false,
+  disabled = false,
   variant = "primary",
   icon: Icon,
 }: {
   children: string
   onPress: () => void
   pending?: boolean
+  /** Greyed and inert until the step can go on, e.g. an unsigned consent. */
+  disabled?: boolean
   variant?: "primary" | "outline"
   /** Drawn before the label, e.g. Face ID on the outline button. */
   icon?: React.ComponentType<{ color: string }>
@@ -211,14 +214,15 @@ export function Button({
   return (
     <Pressable
       onPress={onPress}
-      disabled={pending}
+      disabled={pending || disabled}
       accessibilityRole="button"
-      accessibilityState={{ disabled: pending, busy: pending }}
+      accessibilityState={{ disabled: pending || disabled, busy: pending }}
       style={({ pressed }) => [
         styles.button,
         primary ? styles.buttonPrimary : styles.buttonOutline,
         pressed && (primary ? styles.buttonPrimaryPressed : styles.buttonOutlinePressed),
         pending && styles.buttonPending,
+        disabled && styles.buttonDisabled,
       ]}
     >
       {pending && <ActivityIndicator color={primary ? color.onPrimary : color.primary} size="small" />}
@@ -351,6 +355,7 @@ const styles = StyleSheet.create({
   buttonOutline: { borderWidth: 1, borderColor: color.border, backgroundColor: color.background },
   buttonOutlinePressed: { backgroundColor: color.surface },
   buttonPending: { opacity: 0.7 },
+  buttonDisabled: { opacity: 0.4, boxShadow: "none" },
   buttonText: { fontFamily: font.semibold, fontSize: 16, color: color.onPrimary },
   buttonTextOutline: { fontFamily: font.medium, color: color.text },
 

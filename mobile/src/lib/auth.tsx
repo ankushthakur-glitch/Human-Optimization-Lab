@@ -1,9 +1,9 @@
 import * as Crypto from "expo-crypto"
-import * as SecureStore from "expo-secure-store"
 import * as React from "react"
-import { AppState, Platform } from "react-native"
+import { AppState } from "react-native"
 
 import { PATIENT } from "@/lib/patient"
+import { store } from "@/lib/storage"
 import { VALIDATE } from "@/lib/validate"
 
 /* Account state for the patient app.
@@ -48,20 +48,14 @@ type Auth = {
   setPassword: (password: string) => Promise<Result>
   signIn: (email: string, password: string) => Promise<Result>
   signOut: () => Promise<void>
+  /** Prototype reviews: forget the password so the next run starts at
+      activation with the one-time password, as a first-time patient would. */
+  forget: () => Promise<void>
   /** Marks the patient as active, holding off the idle sign-out. */
   touch: () => void
 }
 
 const AuthContext = React.createContext<Auth | null>(null)
-
-const store =
-  Platform.OS === "web"
-    ? {
-        getItemAsync: async (key: string) => localStorage.getItem(key),
-        setItemAsync: async (key: string, value: string) => localStorage.setItem(key, value),
-        deleteItemAsync: async (key: string) => localStorage.removeItem(key),
-      }
-    : SecureStore
 
 const sameEmail = (a: string) => a.trim().toLowerCase() === PATIENT.email
 const hash = (value: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, value)
@@ -156,6 +150,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       async signOut() {
         await store.deleteItemAsync(KEY_SIGNED_IN)
+        setStatus("signedOut")
+      },
+
+      async forget() {
+        await store.deleteItemAsync(KEY_HASH)
+        await store.deleteItemAsync(KEY_SIGNED_IN)
+        setActivated(false)
         setStatus("signedOut")
       },
 

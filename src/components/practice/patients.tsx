@@ -50,6 +50,11 @@ import {
   usDate,
 } from "@/components/practice/practice-data"
 import { PatientsFrame, usePortal } from "@/components/practice/portal"
+import {
+  type RecordState,
+  recordSyncs,
+  syncStatusFor,
+} from "@/components/practice/health-record"
 import { DeactivateDialog } from "@/components/practice/sheets"
 import {
   checkDuplicate,
@@ -62,7 +67,9 @@ import {
   usePatientPrecheck,
   portalUser,
 } from "@/components/practice/duplicates"
+import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/ui/button"
+import { Badge } from "@/design-system/ui/badge"
 import { DropdownMenuItem } from "@/design-system/ui/dropdown-menu"
 
 /* The patient list, in the clinic manager's portal and a provider's (see
@@ -80,6 +87,75 @@ function resend(p: Patient) {
   toast.success("Invite resent", {
     description: `A fresh link went to ${p.email}.`,
   })
+}
+
+/* The provider sees where each chart stands with Health Gorilla: the same
+   state and last sync the chart's banner shows. The clinic manager gets no
+   record data, so the column is the provider's only. */
+
+const SYNC_LABEL: Record<RecordState, string> = {
+  Active: "Synced",
+  Building: "Record building",
+  "Source exception": "Sync failed",
+  "Awaiting consent": "Consent not provided",
+}
+
+const SYNC_VARIANT: Record<
+  RecordState,
+  "success" | "warning" | "destructive" | "secondary"
+> = {
+  Active: "success",
+  Building: "warning",
+  "Source exception": "destructive",
+  "Awaiting consent": "secondary",
+}
+
+const SYNC_FILTER = [
+  "Synced",
+  "Record building",
+  "Sync failed",
+  "Consent not provided",
+  "Consent withdrawn",
+]
+
+/** "Today, 5:00 AM" from a local "2026-09-28T05:00"; older days by date. */
+function syncedAt(at: string) {
+  const [date, time = "00:00"] = at.split("T")
+  const [h, m] = time.split(":").map(Number)
+  const day = new Date(`${date}T12:00:00`)
+  const now = new Date()
+  now.setHours(12, 0, 0, 0)
+  const ago = Math.round((now.getTime() - day.getTime()) / 86_400_000)
+  const when =
+    ago === 0
+      ? "Today"
+      : ago === 1
+        ? "Yesterday"
+        : day.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  return `${when}, ${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`
+}
+
+function useSyncLookup() {
+  const { items } = recordSyncs.use()
+  return (p: Patient) => {
+    const s = syncStatusFor(
+      p,
+      items.find((r) => r.id === p.id)
+    )
+    const label =
+      p.status === "Consent withdrawn"
+        ? "Consent withdrawn"
+        : SYNC_LABEL[s.state]
+    return { ...s, label }
+  }
+}
+
+function SyncBadge({
+  status,
+}: {
+  status: ReturnType<ReturnType<typeof useSyncLookup>>
+}) {
+  return <Badge variant={SYNC_VARIANT[status.state]}>{status.label}</Badge>
 }
 
 /** The selection's bulk action for patients added without the portal invite. */
@@ -365,6 +441,8 @@ export function PatientsScreen() {
   const router = useRouter()
   const portal = usePortal()
   const { patientHref } = portal
+  const isProvider = portal.key === "provider"
+  const syncOf = useSyncLookup()
   const [importing, setImporting] = React.useState(false)
   const [deactivating, setDeactivating] = React.useState<Patient | null>(null)
   const [reactivating, setReactivating] = React.useState<Patient | null>(null)
@@ -407,13 +485,19 @@ export function PatientsScreen() {
     {
       id: "phone",
       header: "Mobile number",
-      className: "hidden tabular-nums xl:table-cell",
+      className: cn(
+        "hidden tabular-nums",
+        isProvider ? "min-[1800px]:table-cell" : "xl:table-cell"
+      ),
       cell: (p) => p.phone,
     },
     {
       id: "email",
       header: "Email",
-      className: "hidden max-w-[16rem] truncate 2xl:table-cell",
+      className: cn(
+        "hidden max-w-[16rem] truncate",
+        isProvider ? "min-[2100px]:table-cell" : "2xl:table-cell"
+      ),
       cell: (p) => p.email,
     },
     {
@@ -428,17 +512,42 @@ export function PatientsScreen() {
       className: "hidden lg:table-cell",
       cell: (p) => prov.name(p.providerId),
     },
-    {
-      id: "invited",
-      header: "Invited",
-      className: "hidden text-muted-foreground tabular-nums xl:table-cell",
-      cell: (p) => shortDate(p.invitedAt),
-    },
+    ...(isProvider
+      ? []
+      : [
+          {
+            id: "invited",
+            header: "Invited",
+            className:
+              "hidden text-muted-foreground tabular-nums xl:table-cell",
+            cell: (p: Patient) => shortDate(p.invitedAt),
+          },
+        ]),
     {
       id: "status",
       header: "Status",
       cell: (p) => <StatusBadge status={p.status} />,
     },
+    ...(isProvider
+      ? [
+          {
+            id: "record",
+            header: "Health record",
+            className: "hidden md:table-cell",
+            cell: (p: Patient) => <SyncBadge status={syncOf(p)} />,
+          },
+          {
+            id: "synced",
+            header: "Last sync",
+            className:
+              "hidden text-muted-foreground tabular-nums xl:table-cell",
+            cell: (p: Patient) => {
+              const { at } = syncOf(p)
+              return at ? syncedAt(at) : ""
+            },
+          },
+        ]
+      : []),
     {
       id: "actions",
       header: "Actions",
@@ -507,6 +616,17 @@ export function PatientsScreen() {
             options: prov.all.map(providerName),
             match: (p, v) => prov.name(p.providerId) === v,
           },
+          ...(isProvider
+            ? [
+                {
+                  id: "record",
+                  label: "Health record",
+                  all: "All records",
+                  options: SYNC_FILTER,
+                  match: (p: Patient, v: string) => syncOf(p).label === v,
+                },
+              ]
+            : []),
         ]}
         statusTabs={{
           options: [
@@ -549,6 +669,10 @@ export function PatientsScreen() {
           "Primary provider": prov.name(p.providerId),
           Invited: shortDate(p.invitedAt),
           Status: p.status,
+          ...(isProvider && {
+            "Health record": syncOf(p).label,
+            "Last sync": syncOf(p).at ? syncedAt(syncOf(p).at) : "",
+          }),
         })}
         emptyIllustration="patients-empty"
       />

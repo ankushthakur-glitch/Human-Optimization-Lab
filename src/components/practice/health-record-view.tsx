@@ -10,24 +10,19 @@ import {
   YAxis,
 } from "recharts"
 import { toast } from "@/design-system/ui/sonner"
-import { IconMail, IconRefresh, IconSparkles } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
 import { SelectField } from "@/components/form-kit"
 import { SUB_TAB, SUB_TABS_LIST } from "@/components/practice/directory"
 import {
   type Biomarker,
-  FREE_AI_LIMIT,
   type HealthRecord,
   PLANS,
   type Trend,
-  healthRecordFor,
   inRange,
   latest,
-  planName,
   rangeLabel,
   recommendPlan,
-  recommendations,
   sourceName,
   suggestedReason,
   trendOf,
@@ -35,7 +30,6 @@ import {
 import {
   type Patient,
   fullName,
-  sendPatientInvites,
   shortDate,
   usDate,
 } from "@/components/practice/practice-data"
@@ -59,7 +53,6 @@ import {
 } from "@/design-system/ui/dialog"
 import {
   Empty,
-  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -82,16 +75,9 @@ import {
   type IllustrationName,
 } from "@/components/illustrations/illustration"
 
-/* The provider's view of the patient's longitudinal record: one record per
-   patient, pulled after consent from the EHRs, labs and imaging centers the
-   interoperability vendor reaches. Values are read-only here; every one
-   carries where it came from, and a change adds to the history instead of
-   replacing it. Clinical data, so only the provider portal shows it: the
-   clinic manager and other non-clinical users see the profile only. */
-
-export function useHealthRecord(patient: Patient) {
-  return React.useMemo(() => healthRecordFor(patient), [patient])
-}
+/* Pieces of the patient chart's lab results (biomarker trends) and the plan
+   recommendation. Values are read-only; every one carries where it came
+   from, and a change adds to the history instead of replacing it. */
 
 /* -------------------------------------------------------------------------- */
 /*  Small pieces                                                               */
@@ -106,13 +92,6 @@ const TREND_VARIANT: Record<Trend, "success" | "secondary" | "destructive"> = {
 export function TrendBadge({ trend }: { trend: Trend }) {
   return <Badge variant={TREND_VARIANT[trend]}>{trend}</Badge>
 }
-
-const STATE_VARIANT = {
-  "Awaiting consent": "outline",
-  Building: "info",
-  Active: "success",
-  "Source exception": "destructive",
-} as const
 
 /** A tiny line of a marker's readings, drawn to the row's height. */
 function Sparkline({ b, className }: { b: Biomarker; className?: string }) {
@@ -165,293 +144,6 @@ function Value({ b }: { b: Biomarker }) {
   )
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Tab                                                                        */
-/* -------------------------------------------------------------------------- */
-
-export function HealthRecordTab({ patient }: { patient: Patient }) {
-  const record = useHealthRecord(patient)
-  const [recommending, setRecommending] = React.useState(false)
-
-  if (record.state === "Awaiting consent") {
-    return (
-      <RecordCard title="Health record">
-        <Empty className="py-10">
-          <EmptyHeader>
-            <EmptyMedia>
-              <Illustration name="consent-pending" />
-            </EmptyMedia>
-            <EmptyTitle>No record yet</EmptyTitle>
-            <EmptyDescription>
-              {patient.status === "Consent withdrawn"
-                ? `${patient.firstName} withdrew consent. Nothing new is pulled.`
-                : `Records are pulled once ${patient.firstName} accepts the invite and consents.`}
-            </EmptyDescription>
-          </EmptyHeader>
-          {patient.status === "Not invited" && (
-            <EmptyContent>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  sendPatientInvites([patient.id])
-                  toast.success("Invite sent", {
-                    description: `${fullName(patient)} will get an email to join the patient app.`,
-                  })
-                }}
-              >
-                <IconMail />
-                Send invite
-              </Button>
-            </EmptyContent>
-          )}
-        </Empty>
-      </RecordCard>
-    )
-  }
-
-  return (
-    <>
-      <RecordStatus
-        patient={patient}
-        record={record}
-        onRecommend={() => setRecommending(true)}
-      />
-
-      {record.state === "Source exception" && (
-        <RecordCard title="Health record">
-          <RecordEmpty illustration="sync-failed" title="Sync failed">
-            {record.exception}
-          </RecordEmpty>
-          <div className="flex justify-center pb-6">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                toast.success("Sync requested", {
-                  description:
-                    "HOL will try the source again and update the record.",
-                })
-              }
-            >
-              <IconRefresh />
-              Retry sync
-            </Button>
-          </div>
-        </RecordCard>
-      )}
-
-      {record.state === "Building" && <BuildingRecord />}
-
-      {record.state === "Active" && (
-        <>
-          <Recommendation patientId={patient.id} />
-          <BiomarkersCard record={record} />
-          <div className="grid gap-4 xl:grid-cols-2">
-            <RecordCard title="Conditions">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Condition</TableHead>
-                    <TableHead>ICD-10</TableHead>
-                    <TableHead>Onset</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden sm:table-cell">
-                      Source
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {record.conditions.length === 0 && (
-                    <EmptyRow
-                      cols={5}
-                      illustration="no-conditions"
-                      title="No conditions on record"
-                    />
-                  )}
-                  {record.conditions.map((c) => (
-                    <TableRow key={c.code}>
-                      <TableCell className="font-medium">{c.name}</TableCell>
-                      <TableCell className="tabular-nums">{c.code}</TableCell>
-                      <TableCell className="tabular-nums">
-                        {shortDate(c.onset)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            c.status === "Active" ? "warning" : "secondary"
-                          }
-                        >
-                          {c.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden text-muted-foreground sm:table-cell">
-                        {sourceName(c.sourceId)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </RecordCard>
-            <RecordCard title="Medications">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Medication</TableHead>
-                    <TableHead>Dose</TableHead>
-                    <TableHead>Started</TableHead>
-                    <TableHead className="hidden sm:table-cell">
-                      Source
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {record.medications.length === 0 && (
-                    <EmptyRow
-                      cols={4}
-                      illustration="no-medications"
-                      title="No medications on record"
-                    />
-                  )}
-                  {record.medications.map((m) => (
-                    <TableRow key={m.name}>
-                      <TableCell className="font-medium">{m.name}</TableCell>
-                      <TableCell>{m.dose}</TableCell>
-                      <TableCell className="tabular-nums">
-                        {shortDate(m.started)}
-                      </TableCell>
-                      <TableCell className="hidden text-muted-foreground sm:table-cell">
-                        {sourceName(m.sourceId)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </RecordCard>
-          </div>
-          <RecordCard title="Encounters">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Where</TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    Clinician
-                  </TableHead>
-                  <TableHead className="hidden sm:table-cell">Source</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {record.encounters.length === 0 && (
-                  <EmptyRow
-                    cols={5}
-                    illustration="no-encounters"
-                    title="No encounters on record"
-                  />
-                )}
-                {record.encounters.map((e) => (
-                  <TableRow key={`${e.date}-${e.type}`}>
-                    <TableCell className="tabular-nums">
-                      {usDate(e.date)}
-                    </TableCell>
-                    <TableCell className="font-medium">{e.type}</TableCell>
-                    <TableCell>{e.where}</TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {e.clinician || "Not recorded"}
-                    </TableCell>
-                    <TableCell className="hidden text-muted-foreground sm:table-cell">
-                      {sourceName(e.sourceId)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </RecordCard>
-        </>
-      )}
-
-      <RecommendPlanDialog
-        patient={patient}
-        record={record}
-        open={recommending}
-        onOpenChange={setRecommending}
-      />
-    </>
-  )
-}
-
-function RecordStatus({
-  patient,
-  record,
-  onRecommend,
-}: {
-  patient: Patient
-  record: HealthRecord
-  onRecommend: () => void
-}) {
-  const { items } = recommendations.use()
-  const subscribed = items.find(
-    (r) => r.patientId === patient.id && r.status === "Subscribed"
-  )
-  return (
-    <RecordCard
-      title="Longitudinal record"
-      action={
-        record.state === "Active" && (
-          <Button size="sm" onClick={onRecommend}>
-            <IconSparkles />
-            Recommend plan
-          </Button>
-        )
-      }
-    >
-      <DetailGrid
-        className="sm:grid-cols-2 lg:grid-cols-5"
-        items={[
-          {
-            label: "Record",
-            value: (
-              <Badge variant={STATE_VARIANT[record.state]}>
-                {record.state}
-              </Badge>
-            ),
-          },
-          {
-            label: "Plan",
-            value: subscribed ? planName(subscribed.planId) : "Free",
-          },
-          {
-            label: "Last sync",
-            value: record.lastSync ? usDate(record.lastSync) : "",
-          },
-          {
-            label: "Sources",
-            value: record.sourceIds.map(sourceName).join(", "),
-          },
-          {
-            label: "AI questions this month",
-            value: `${record.aiUsed} of ${FREE_AI_LIMIT}`,
-          },
-        ]}
-      />
-    </RecordCard>
-  )
-}
-
-function BuildingRecord() {
-  return (
-    <RecordCard
-      title="Biomarkers"
-      action={<Badge variant="info">Pulling records</Badge>}
-    >
-      <RecordEmpty illustration="record-syncing" title="Building the record">
-        Results appear here as each source reports in.
-      </RecordEmpty>
-    </RecordCard>
-  )
-}
-
 /* A record section with nothing in it: the art, one line, and at most a
    sentence. Sized for a card, smaller than a page's empty state. */
 function RecordEmpty({
@@ -489,47 +181,13 @@ function EmptyRow({
   )
 }
 
-function Recommendation({ patientId }: { patientId: string }) {
-  const { items } = recommendations.use()
-  const rec = items.find((r) => r.patientId === patientId)
-  if (!rec) return null
-  return (
-    <RecordCard
-      title="Plan recommendation"
-      action={
-        <Badge
-          variant={
-            rec.status === "Subscribed"
-              ? "success"
-              : rec.status === "Declined"
-                ? "secondary"
-                : "info"
-          }
-        >
-          {rec.status}
-        </Badge>
-      }
-    >
-      <DetailGrid
-        className="sm:grid-cols-3"
-        items={[
-          { label: "Plan", value: planName(rec.planId) },
-          { label: "Recommended by", value: rec.by },
-          { label: "Sent", value: usDate(rec.sentAt) },
-          { label: "Reason", value: rec.reason, wide: true },
-        ]}
-      />
-    </RecordCard>
-  )
-}
-
 /* -------------------------------------------------------------------------- */
 /*  Biomarkers                                                                 */
 /* -------------------------------------------------------------------------- */
 
 type MarkerFilter = "all" | "out" | "declining"
 
-function BiomarkersCard({ record }: { record: HealthRecord }) {
+export function BiomarkersCard({ record }: { record: HealthRecord }) {
   const [filter, setFilter] = React.useState<MarkerFilter>("all")
   const [open, setOpen] = React.useState<Biomarker | null>(null)
   const all = record.biomarkers

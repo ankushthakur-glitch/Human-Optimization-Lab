@@ -61,7 +61,7 @@ export function ErrorState({
 /* The app's status bar is light for the teal band; these screens are white.
    On the web build the phone frame draws the status bar, so it is told too. */
 let darkScreens = 0
-function DarkStatusBar() {
+export function DarkStatusBar() {
   React.useEffect(() => {
     if (Platform.OS !== "web") return
     const device = document.getElementById("device")

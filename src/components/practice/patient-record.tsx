@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { toast } from "@/design-system/ui/sonner"
 import {
   IconAdd,
@@ -25,13 +25,8 @@ import {
   focusFirstError,
   formatPhone,
 } from "@/components/form-kit"
-import {
-  StatusBadge,
-  SUB_TAB,
-  SUB_TABS_LIST,
-} from "@/components/practice/directory"
-import { HealthRecordTab } from "@/components/practice/health-record-view"
-import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
+import { StatusBadge } from "@/components/practice/directory"
+import { PatientChart } from "@/components/provider/patient-chart"
 import {
   CONTACT_METHODS,
   type EmergencyContact,
@@ -742,267 +737,86 @@ export function PatientProfile({ id }: { id: string }) {
   )
 }
 
-/* A provider sees the patient's clinical record beside the profile. The
-   clinic manager and other non-clinical users get the profile only: patient
-   details, never medical details (24 Sep call). The tab lives in the URL
-   (?tab=record) so a reload or a shared link keeps it. */
-type ProfileTab = "profile" | "record"
-
-const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
-  { id: "profile", label: "Profile" },
-  { id: "record", label: "Health record" },
-]
-
-function useProfileTab(clinical: boolean) {
-  const params = useSearchParams()
-  const router = useRouter()
-  const pathname = usePathname()
-  const asked = params.get("tab")
-  const tab: ProfileTab = clinical && asked === "record" ? "record" : "profile"
-  const setTab = (next: ProfileTab) =>
-    router.replace(next === "profile" ? pathname : `${pathname}?tab=${next}`, {
-      scroll: false,
-    })
-  return [tab, setTab] as const
+/* The clinic manager and other non-clinical users get the profile only:
+   patient details, never medical details (24 Sep call). A provider gets the
+   patient chart, with this profile as one of its sections. */
+function ProfileBody({ patient: p }: { patient: Patient }) {
+  const { patientsHref: LIST_HREF, key } = usePortal()
+  if (key === "provider") return <PatientChart patient={p} />
+  return (
+    <RecordPage
+      title={fullName(p)}
+      backHref={LIST_HREF}
+      action={<PatientActions patient={p} />}
+    >
+      <PatientDetails patient={p} />
+    </RecordPage>
+  )
 }
 
-function ProfileBody({ patient: p }: { patient: Patient }) {
-  const { patientsHref: LIST_HREF, patientHref, key } = usePortal()
-  const clinical = key === "provider"
-  const [tab, setTab] = useProfileTab(clinical)
-  const loc = useLocationLookup()
-  const prov = useProviderLookup()
+/** Send invite, Edit info and the overflow menu, with their dialogs. */
+export function PatientActions({ patient: p }: { patient: Patient }) {
+  const { patientHref } = usePortal()
   const [deactivating, setDeactivating] = React.useState(false)
   const [reactivating, setReactivating] = React.useState(false)
   const closed = REACTIVATABLE.includes(p.status)
 
   return (
-    <RecordPage
-      title={fullName(p)}
-      backHref={LIST_HREF}
-      action={
-        <div className="flex items-center gap-2">
-          {p.status === "Not invited" && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                sendPatientInvites([p.id])
-                toast.success("Invite sent", {
-                  description: `${fullName(p)} will get an email to join the patient portal.`,
-                })
-              }}
-            >
-              <IconMail />
-              Send invite
+    <div className="flex items-center gap-2">
+      {p.status === "Not invited" && (
+        <Button
+          variant="outline"
+          onClick={() => {
+            sendPatientInvites([p.id])
+            toast.success("Invite sent", {
+              description: `${fullName(p)} will get an email to join the patient portal.`,
+            })
+          }}
+        >
+          <IconMail />
+          Send invite
+        </Button>
+      )}
+      <Button
+        nativeButton={false}
+        render={<Link href={`${patientHref(p.id)}/edit`} />}
+      >
+        <IconEdit />
+        Edit info
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="outline" size="icon" aria-label="More actions">
+              <IconMoreVertical />
             </Button>
-          )}
-          <Button
-            nativeButton={false}
-            render={<Link href={`${patientHref(p.id)}/edit`} />}
-          >
-            <IconEdit />
-            Edit info
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="outline" size="icon" aria-label="More actions">
-                  <IconMoreVertical />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuGroup>
-                {p.status === "Invited" && (
-                  <DropdownMenuItem
-                    onClick={() =>
-                      toast.success("Invite resent", {
-                        description: `A fresh link went to ${p.email}.`,
-                      })
-                    }
-                  >
-                    <IconMail />
-                    Resend invite
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  onClick={() =>
-                    closed ? setReactivating(true) : setDeactivating(true)
-                  }
-                >
-                  {closed ? <IconLockOpen /> : <IconLock />}
-                  {closed ? "Reactivate" : "Deactivate"}
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      }
-    >
-      {clinical && (
-        <Tabs value={tab} onValueChange={(v) => setTab(v as ProfileTab)}>
-          <TabsList className={SUB_TABS_LIST}>
-            {PROFILE_TABS.map((t) => (
-              <TabsTrigger key={t.id} value={t.id} className={SUB_TAB}>
-                {t.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-      )}
-      {tab === "record" && <HealthRecordTab patient={p} />}
-      {tab === "profile" && (
-        <>
-          {(p.reactivatedAt || p.mergedAt) && (
-            <div className="flex flex-col gap-1 rounded-lg border border-info/30 bg-info-surface px-4 py-2.5 text-sm text-info">
-              {p.reactivatedAt && (
-                <p>
-                  Reactivated on {shortDate(p.reactivatedAt)}. Fresh consent
-                  requested.
-                </p>
-              )}
-              {p.mergedAt && (
-                <p>
-                  A duplicate record was merged into this one on{" "}
-                  {shortDate(p.mergedAt)}.
-                </p>
-              )}
-            </div>
-          )}
-          <RecordCard title="Patient basic details">
-            <div className="flex flex-col gap-5 md:flex-row">
-              <ProfileAvatar
-                name={fullName(p)}
-                photo={p.photo}
-                onChange={(photo) => patients.patch(p.id, { photo })}
-              />
-              <div className="min-w-0 flex-1">
-                <DetailGrid
-                  className="sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
-                  items={[
-                    { label: "ID", value: p.id },
-                    { label: "First name", value: p.firstName },
-                    { label: "Middle name", value: p.middleName },
-                    { label: "Last name", value: p.lastName },
-                    { label: "Preferred name", value: p.preferredName },
-                    {
-                      label: "Date of birth",
-                      value:
-                        p.dob && `${usDate(p.dob)} (${ageFrom(p.dob)} yrs)`,
-                    },
-                    { label: "Sex at birth", value: p.sex },
-                    {
-                      label: "Status",
-                      value: <StatusBadge status={p.status} />,
-                    },
-                  ]}
-                />
-              </div>
-            </div>
-          </RecordCard>
-
-          <RecordCard title="Patient contact details">
-            <DetailGrid
-              className="sm:grid-cols-2 lg:grid-cols-5"
-              items={[
-                { label: "Mobile number", value: p.phone },
-                { label: "Home phone number", value: p.homePhone },
-                { label: "Email", value: p.noEmail ? "No email" : p.email },
-                {
-                  label: "Preferred communication",
-                  value: p.preferredContacts.join(", "),
-                },
-                { label: "Time zone", value: p.timeZone },
-                { label: "Address", value: personAddress(p), wide: true },
-              ]}
-            />
-          </RecordCard>
-
-          <RecordCard title="Additional details">
-            <DetailGrid
-              className="sm:grid-cols-2 lg:grid-cols-4"
-              items={[
-                { label: "Language", value: p.languages.join(", ") },
-                { label: "Race", value: p.race },
-                { label: "Ethnicity", value: p.ethnicity },
-                { label: "Gender", value: p.genderIdentity },
-                { label: "Pronoun", value: p.pronoun },
-                { label: "Marital status", value: p.maritalStatus },
-                { label: "SSN", value: maskSsn(p.ssn) },
-                {
-                  label: "Portal access",
-                  value: p.portalAccess ? "Yes" : "No",
-                },
-              ]}
-            />
-          </RecordCard>
-
-          <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <RecordCard title="Care team">
-              <DetailGrid
-                className="sm:grid-cols-3"
-                items={[
-                  { label: "Location", value: loc.name(p.locationId) },
-                  { label: "Primary provider", value: prov.name(p.providerId) },
-                  {
-                    label: "Registration date",
-                    value: usDate(p.registrationDate),
-                  },
-                ]}
-              />
-            </RecordCard>
-
-            {/* Where the provider page keeps a signature, the patient page keeps
-            the invitation: whether they have joined yet is what staff ask. */}
-            <RecordCard title="Enrollment">
-              <DetailGrid
-                className="grid-cols-2"
-                items={[
-                  {
-                    label: "Invite",
-                    value:
-                      p.status === "Not invited"
-                        ? "Not sent"
-                        : p.status === "Invited"
-                          ? "Pending"
-                          : p.status === "Active"
-                            ? "Accepted"
-                            : "Inactive",
-                  },
-                  { label: "Invited", value: shortDate(p.invitedAt) },
-                ]}
-              />
-            </RecordCard>
-          </div>
-
-          <RecordCard title="Emergency contact details">
-            {p.emergencyContacts.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-4 text-sm text-muted-foreground">
-                <Illustration name="no-emergency-contact" className="size-28" />
-                No emergency contact on file
-              </div>
-            ) : (
-              <div className="flex flex-col gap-5">
-                {p.emergencyContacts.map((c, i) => (
-                  <DetailGrid
-                    key={i}
-                    className="sm:grid-cols-2 lg:grid-cols-4"
-                    items={[
-                      {
-                        label: "Relationship with patient",
-                        value: c.relationship,
-                      },
-                      { label: "Name", value: c.name },
-                      { label: "Phone number", value: c.phone },
-                      { label: "Email", value: c.email },
-                    ]}
-                  />
-                ))}
-              </div>
+          }
+        />
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuGroup>
+            {p.status === "Invited" && (
+              <DropdownMenuItem
+                onClick={() =>
+                  toast.success("Invite resent", {
+                    description: `A fresh link went to ${p.email}.`,
+                  })
+                }
+              >
+                <IconMail />
+                Resend invite
+              </DropdownMenuItem>
             )}
-          </RecordCard>
-        </>
-      )}
+            <DropdownMenuItem
+              onClick={() =>
+                closed ? setReactivating(true) : setDeactivating(true)
+              }
+            >
+              {closed ? <IconLockOpen /> : <IconLock />}
+              {closed ? "Reactivate" : "Deactivate"}
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <DeactivateDialog
         illustration="deactivate-person"
@@ -1019,7 +833,165 @@ function ProfileBody({ patient: p }: { patient: Patient }) {
         patient={reactivating ? p : null}
         onClose={() => setReactivating(false)}
       />
-    </RecordPage>
+    </div>
+  )
+}
+
+/** The profile's cards: demographics, contact, care team and enrollment. */
+export function PatientDetails({ patient: p }: { patient: Patient }) {
+  const loc = useLocationLookup()
+  const prov = useProviderLookup()
+  return (
+    <>
+      {(p.reactivatedAt || p.mergedAt) && (
+        <div className="flex flex-col gap-1 rounded-lg border border-info/30 bg-info-surface px-4 py-2.5 text-sm text-info">
+          {p.reactivatedAt && (
+            <p>
+              Reactivated on {shortDate(p.reactivatedAt)}. Fresh consent
+              requested.
+            </p>
+          )}
+          {p.mergedAt && (
+            <p>
+              A duplicate record was merged into this one on{" "}
+              {shortDate(p.mergedAt)}.
+            </p>
+          )}
+        </div>
+      )}
+      <RecordCard title="Patient basic details">
+        <div className="flex flex-col gap-5 md:flex-row">
+          <ProfileAvatar
+            name={fullName(p)}
+            photo={p.photo}
+            onChange={(photo) => patients.patch(p.id, { photo })}
+          />
+          <div className="min-w-0 flex-1">
+            <DetailGrid
+              className="sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+              items={[
+                { label: "ID", value: p.id },
+                { label: "First name", value: p.firstName },
+                { label: "Middle name", value: p.middleName },
+                { label: "Last name", value: p.lastName },
+                { label: "Preferred name", value: p.preferredName },
+                {
+                  label: "Date of birth",
+                  value:
+                    p.dob && `${usDate(p.dob)} (${ageFrom(p.dob)} yrs)`,
+                },
+                { label: "Sex at birth", value: p.sex },
+                {
+                  label: "Status",
+                  value: <StatusBadge status={p.status} />,
+                },
+              ]}
+            />
+          </div>
+        </div>
+      </RecordCard>
+
+      <RecordCard title="Patient contact details">
+        <DetailGrid
+          className="sm:grid-cols-2 lg:grid-cols-5"
+          items={[
+            { label: "Mobile number", value: p.phone },
+            { label: "Home phone number", value: p.homePhone },
+            { label: "Email", value: p.noEmail ? "No email" : p.email },
+            {
+              label: "Preferred communication",
+              value: p.preferredContacts.join(", "),
+            },
+            { label: "Time zone", value: p.timeZone },
+            { label: "Address", value: personAddress(p), wide: true },
+          ]}
+        />
+      </RecordCard>
+
+      <RecordCard title="Additional details">
+        <DetailGrid
+          className="sm:grid-cols-2 lg:grid-cols-4"
+          items={[
+            { label: "Language", value: p.languages.join(", ") },
+            { label: "Race", value: p.race },
+            { label: "Ethnicity", value: p.ethnicity },
+            { label: "Gender", value: p.genderIdentity },
+            { label: "Pronoun", value: p.pronoun },
+            { label: "Marital status", value: p.maritalStatus },
+            { label: "SSN", value: maskSsn(p.ssn) },
+            {
+              label: "Portal access",
+              value: p.portalAccess ? "Yes" : "No",
+            },
+          ]}
+        />
+      </RecordCard>
+
+      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <RecordCard title="Care team">
+          <DetailGrid
+            className="sm:grid-cols-3"
+            items={[
+              { label: "Location", value: loc.name(p.locationId) },
+              { label: "Primary provider", value: prov.name(p.providerId) },
+              {
+                label: "Registration date",
+                value: usDate(p.registrationDate),
+              },
+            ]}
+          />
+        </RecordCard>
+
+        {/* Where the provider page keeps a signature, the patient page keeps
+        the invitation: whether they have joined yet is what staff ask. */}
+        <RecordCard title="Enrollment">
+          <DetailGrid
+            className="grid-cols-2"
+            items={[
+              {
+                label: "Invite",
+                value:
+                  p.status === "Not invited"
+                    ? "Not sent"
+                    : p.status === "Invited"
+                      ? "Pending"
+                      : p.status === "Active"
+                        ? "Accepted"
+                        : "Inactive",
+              },
+              { label: "Invited", value: shortDate(p.invitedAt) },
+            ]}
+          />
+        </RecordCard>
+      </div>
+
+      <RecordCard title="Emergency contact details">
+        {p.emergencyContacts.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-4 text-sm text-muted-foreground">
+            <Illustration name="no-emergency-contact" className="size-28" />
+            No emergency contact on file
+          </div>
+        ) : (
+          <div className="flex flex-col gap-5">
+            {p.emergencyContacts.map((c, i) => (
+              <DetailGrid
+                key={i}
+                className="sm:grid-cols-2 lg:grid-cols-4"
+                items={[
+                  {
+                    label: "Relationship with patient",
+                    value: c.relationship,
+                  },
+                  { label: "Name", value: c.name },
+                  { label: "Phone number", value: c.phone },
+                  { label: "Email", value: c.email },
+                ]}
+              />
+            ))}
+          </div>
+        )}
+      </RecordCard>
+    </>
   )
 }
 

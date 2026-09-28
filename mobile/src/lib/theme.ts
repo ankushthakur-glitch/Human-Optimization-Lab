@@ -32,6 +32,17 @@ export const color = {
   error: "#B70000",
   errorHalo: "#F8D3CE",
   errorTint: "#FCE9E6",
+  /** The onboarding screens' soft grey ground for cards and tracks. */
+  canvas: "#F6F6F4",
+  /** The brand teal as a tint, for selected cards and chips. */
+  primaryTint: "#E8F4F3",
+  /** Result flags, tint plus text as the portal draws them. */
+  high: "#C72B32",
+  highTint: "#FDECEE",
+  low: "#B25A12",
+  lowTint: "#FEF4E5",
+  ok: "#2F7F4D",
+  okTint: "#E9FAEF",
 } as const
 
 export const font = {

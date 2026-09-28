@@ -853,3 +853,42 @@ svg path[stroke="currentColor"] {
   --il-shadow-c: #000;
   --il-shadow-o: 0.55;
 }
+
+/* Patient chart: the patient 360 banner folding and unfolding
+   (morph() in provider/patient-chart.tsx). */
+::view-transition-group(chart-banner),
+::view-transition-group(chart-body),
+::view-transition-group(chart-avatar),
+::view-transition-group(chart-name),
+::view-transition-group(chart-sync),
+::view-transition-group(chart-actions),
+::view-transition-group(chart-toggle) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+::view-transition-group(chart-banner),
+::view-transition-group(chart-body) {
+  overflow: clip;
+  border-radius: var(--radius-lg, 0.5rem);
+}
+::view-transition-old(chart-banner),
+::view-transition-new(chart-banner),
+::view-transition-old(chart-sync),
+::view-transition-new(chart-sync),
+::view-transition-old(chart-actions),
+::view-transition-new(chart-actions) {
+  animation-duration: 220ms;
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+}
+::view-transition-old(chart-body),
+::view-transition-new(chart-body) {
+  animation: none;
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+}
+::view-transition-old(chart-body) {
+  display: none;
+}

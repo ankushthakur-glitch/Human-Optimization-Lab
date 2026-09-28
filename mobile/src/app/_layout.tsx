@@ -5,9 +5,11 @@ import { StatusBar } from "expo-status-bar"
 import * as React from "react"
 import { View } from "react-native"
 
-import { SomethingWentWrongState } from "@/components/error-state"
+import { DarkStatusBar, SomethingWentWrongState } from "@/components/error-state"
+import { LaunchScreen } from "@/components/launch-screen"
 import { OfflineGate } from "@/components/offline-gate"
 import { AuthProvider, useAuth } from "@/lib/auth"
+import { OnboardingProvider, useOnboarding } from "@/lib/onboarding"
 import { color } from "@/lib/theme"
 
 SplashScreen.preventAutoHideAsync()
@@ -26,6 +28,7 @@ const FONTS = {
 /* Which screens exist depends on the account state:
    signed out            activate, sign-in
    one-time password in  set-password
+   signed in, new        onboarding/: about you, consent, record builds
    signed in             home (index)
    signed out for idling session-expired
    The error states (+not-found, and the review index under errors/) sit
@@ -34,14 +37,28 @@ const FONTS = {
    returns to a sign-in form after signing in. */
 function Routes() {
   const { status, activated, touch } = useAuth()
+  const onboarding = useOnboarding()
   const [fontsLoaded] = useFonts(FONTS)
-  const ready = fontsLoaded && status !== "loading"
+  const ready = fontsLoaded && status !== "loading" && onboarding.loaded
+  const onboarded = onboarding.step === "done"
+  const [launched, setLaunched] = React.useState(false)
+  const endLaunch = React.useCallback(() => setLaunched(true), [])
 
+  // The native splash hands over to the launch screen, which looks the same
+  // at first, as soon as its font is in; the launch screen covers the rest.
   React.useEffect(() => {
-    if (ready) SplashScreen.hideAsync()
-  }, [ready])
+    if (fontsLoaded) SplashScreen.hideAsync()
+  }, [fontsLoaded])
 
-  if (!ready) return null
+  if (!fontsLoaded) return null
+
+  const launch = !launched && (
+    <>
+      <DarkStatusBar />
+      <LaunchScreen ready={ready} onDone={endLaunch} />
+    </>
+  )
+  if (!ready) return <View style={{ flex: 1 }}>{launch}</View>
 
   return (
     // Any tap anywhere counts as activity for the idle timeout; the capture
@@ -68,13 +85,22 @@ function Routes() {
         <Stack.Protected guard={status === "mustSetPassword"}>
           <Stack.Screen name="set-password" options={{ gestureEnabled: false }} />
         </Stack.Protected>
-        <Stack.Protected guard={status === "signedIn"}>
+        <Stack.Protected guard={status === "signedIn" && !onboarded}>
+          {/* Opens on the step the patient left off on. */}
+          <Stack.Screen name="onboarding/index" />
+          <Stack.Screen name="onboarding/about-you" />
+          <Stack.Screen name="onboarding/consent" />
+          <Stack.Screen name="onboarding/syncing" options={{ gestureEnabled: false }} />
+        </Stack.Protected>
+        <Stack.Protected guard={status === "signedIn" && onboarded}>
           <Stack.Screen name="index" />
+          <Stack.Screen name="plans" />
         </Stack.Protected>
         <Stack.Protected guard={status === "expired"}>
           <Stack.Screen name="session-expired" options={{ gestureEnabled: false }} />
         </Stack.Protected>
       </Stack>
+      {launch}
     </View>
   )
 }
@@ -92,11 +118,13 @@ export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      {/* Light icons: every screen opens on the teal band. */}
-      <StatusBar style="light" />
-      <OfflineGate>
-        <Routes />
-      </OfflineGate>
+      <OnboardingProvider>
+        {/* Light icons: the sign-in screens open on the teal band. */}
+        <StatusBar style="light" />
+        <OfflineGate>
+          <Routes />
+        </OfflineGate>
+      </OnboardingProvider>
     </AuthProvider>
   )
 }

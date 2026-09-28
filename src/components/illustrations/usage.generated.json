@@ -122,7 +122,7 @@
     },
     {
       "file": "src/components/practice/patient-record.tsx",
-      "line": 1040,
+      "line": 1012,
       "routes": [
         "/screens/practice/patients/P10240"
       ]
@@ -135,15 +135,7 @@
       ]
     }
   ],
-  "consent-pending": [
-    {
-      "file": "src/components/practice/health-record-view.tsx",
-      "line": 182,
-      "routes": [
-        "/screens/provider/patients/P10240?tab=record"
-      ]
-    }
-  ],
+  "consent-pending": [],
   "duplicates-clear": [
     {
       "file": "src/components/practice/duplicates.tsx",
@@ -162,51 +154,19 @@
       ]
     }
   ],
-  "record-syncing": [
-    {
-      "file": "src/components/practice/health-record-view.tsx",
-      "line": 448,
-      "routes": [
-        "/screens/provider/patients/P10240?tab=record"
-      ]
-    }
-  ],
-  "sync-failed": [
-    {
-      "file": "src/components/practice/health-record-view.tsx",
-      "line": 223,
-      "routes": [
-        "/screens/provider/patients/P10240?tab=record"
-      ]
-    }
-  ],
+  "record-syncing": [],
+  "sync-failed": [],
   "biomarkers-in-range": [
     {
       "file": "src/components/practice/health-record-view.tsx",
-      "line": 580,
+      "line": 238,
       "routes": [
-        "/screens/provider/patients/P10240?tab=record"
+        "/screens/provider/patients/P10240?section=labs&tab=trends"
       ]
     }
   ],
-  "no-conditions": [
-    {
-      "file": "src/components/practice/health-record-view.tsx",
-      "line": 268,
-      "routes": [
-        "/screens/provider/patients/P10240?tab=record"
-      ]
-    }
-  ],
-  "no-medications": [
-    {
-      "file": "src/components/practice/health-record-view.tsx",
-      "line": 312,
-      "routes": [
-        "/screens/provider/patients/P10240?tab=record"
-      ]
-    }
-  ],
+  "no-conditions": [],
+  "no-medications": [],
   "no-encounters": [
     {
       "file": "src/app/(design-system)/patterns/data/page.tsx",
@@ -214,22 +174,15 @@
       "routes": [
         "/patterns/data"
       ]
-    },
-    {
-      "file": "src/components/practice/health-record-view.tsx",
-      "line": 349,
-      "routes": [
-        "/screens/provider/patients/P10240?tab=record"
-      ]
     }
   ],
   "plan-sent": [],
   "single-reading": [
     {
       "file": "src/components/practice/health-record-view.tsx",
-      "line": 675,
+      "line": 333,
       "routes": [
-        "/screens/provider/patients/P10240?tab=record"
+        "/screens/provider/patients/P10240?section=labs&tab=trends"
       ]
     }
   ],
@@ -246,14 +199,14 @@
   "no-emergency-contact": [
     {
       "file": "src/components/practice/patient-record.tsx",
-      "line": 660,
+      "line": 655,
       "routes": [
         "/screens/practice/patients/P10240"
       ]
     },
     {
       "file": "src/components/practice/patient-record.tsx",
-      "line": 981,
+      "line": 971,
       "routes": [
         "/screens/practice/patients/P10240"
       ]
@@ -296,7 +249,7 @@
   "deactivate-person": [
     {
       "file": "src/components/practice/patient-record.tsx",
-      "line": 1008,
+      "line": 822,
       "routes": [
         "/screens/practice/patients/P10240"
       ]

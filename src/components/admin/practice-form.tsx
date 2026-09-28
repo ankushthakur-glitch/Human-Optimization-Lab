@@ -24,7 +24,6 @@ import {
   type Errors,
   VALIDATE,
   FormSection,
-  READ_ONLY,
   SheetForm,
   TextField,
   digits,
@@ -106,9 +105,10 @@ function validate(v: PracticeInput): Errors {
 
 /**
  * Add or edit a practice. It opens from the right, as in the reference, so the
- * list stays in view behind it. Passing `practice` switches it to edit mode,
- * where the tenant name and referral URL are fixed: they key the practice's
- * data and the links already sent to patients.
+ * list stays in view behind it. Passing `practice` switches it to edit mode.
+ * The tenant name and referral URL are not shown: they are derived from the
+ * name on create and kept fixed on edit, since they key the practice's data
+ * and the links already sent to patients.
  */
 export function PracticeFormSheet({
   open,
@@ -229,25 +229,6 @@ function PracticeFormBody({
                 set("npi", event.target.value.replace(/\D/g, ""))
               }
               error={errors.npi}
-            />
-            <TextField
-              id="practice-tenant"
-              label="Tenant name"
-              required
-              readOnly
-              tabIndex={-1}
-              placeholder="tenant_name"
-              value={tenant}
-              className={READ_ONLY}
-            />
-            <TextField
-              id="practice-referral"
-              label="Referral URL"
-              required
-              readOnly
-              tabIndex={-1}
-              value={referralUrl}
-              className={READ_ONLY}
             />
           </div>
         </FormSection>

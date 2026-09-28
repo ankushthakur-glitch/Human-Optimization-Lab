@@ -122,3 +122,98 @@ export function IconChevronRight({ size = 18, color }: IconProps) {
     </Svg>
   )
 }
+
+/** Hugeicons ArrowLeft01, the back chevron. */
+export function IconChevronLeft({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M15 6C15 6 9 10.4189 9 12C9 13.5812 15 18 15 18"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
+/** Hugeicons Tick02: checkboxes, done rows and plan features. */
+export function IconCheck({ size = 16, color, strokeWidth = 2 }: IconProps & { strokeWidth?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M5 14L8.5 17.5L19 6.5" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  )
+}
+
+/** Hugeicons SparklesIcon: marks what the record recommends. */
+export function IconSparkle({ size = 16, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M10 4C10.5 8.5 11.5 9.5 16 10C11.5 10.5 10.5 11.5 10 16C9.5 11.5 8.5 10.5 4 10C8.5 9.5 9.5 8.5 10 4Z"
+        fill={color}
+      />
+      <Path d="M17.5 14C17.75 16.25 18.25 16.75 20.5 17C18.25 17.25 17.75 17.75 17.5 20C17.25 17.75 16.75 17.25 14.5 17C16.75 16.75 17.25 16.25 17.5 14Z" fill={color} />
+    </Svg>
+  )
+}
+
+/** Hugeicons SecurityCheck: the authorization. */
+export function IconShield({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M21 11.1833V8.28029C21 6.64029 21 5.82028 20.5959 5.28529C20.1918 4.75029 19.2781 4.49056 17.4507 3.9711C16.2022 3.61619 15.1016 3.18863 14.2223 2.79829C13.0234 2.2661 12.424 2 12 2C11.576 2 10.9766 2.2661 9.77771 2.79829C8.89839 3.18863 7.79784 3.61619 6.54933 3.9711C4.72193 4.49056 3.80822 4.75029 3.40411 5.28529C3 5.82028 3 6.64029 3 8.28029V11.1833C3 16.8085 8.06277 20.1835 10.594 21.5194C11.2011 21.8398 11.5046 22 12 22C12.4954 22 12.7989 21.8398 13.406 21.5194C15.9372 20.1835 21 16.8085 21 11.1833Z"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+      <Path d="M9 12.5L10.8 14.5L15 10" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  )
+}
+
+/* Detail row icons for the identity check (Hugeicons Calendar03, Call,
+   Location01), same 1.5 stroke. */
+
+export function IconCalendar({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M16 2V6M8 2V6M3 10H21" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path
+        d="M3 9C3 6.79 4.79 5 7 5H17C19.21 5 21 6.79 21 9V18C21 20.21 19.21 22 17 22H7C4.79 22 3 20.21 3 18V9Z"
+        stroke={color}
+        strokeWidth={1.5}
+      />
+    </Svg>
+  )
+}
+
+export function IconPhone({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M21 16.4V19.1C21 20.1 20.2 21 19.1 21C10.8 20.5 3.5 13.2 3 4.9C3 3.8 3.9 3 4.9 3H7.6C8.5 3 9.3 3.7 9.4 4.6C9.5 5.5 9.8 6.4 10.1 7.3C10.4 8 10.2 8.8 9.6 9.3L8.5 10.4C9.8 12.7 11.3 14.2 13.6 15.5L14.7 14.4C15.2 13.8 16 13.6 16.7 13.9C17.6 14.2 18.5 14.5 19.4 14.6C20.3 14.7 21 15.5 21 16.4Z"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
+export function IconPin({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 22C12 22 19.5 15.5 19.5 9.5C19.5 5.36 16.14 2 12 2C7.86 2 4.5 5.36 4.5 9.5C4.5 15.5 12 22 12 22Z"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+      <Path d="M14.5 9.5C14.5 10.88 13.38 12 12 12C10.62 12 9.5 10.88 9.5 9.5C9.5 8.12 10.62 7 12 7C13.38 7 14.5 8.12 14.5 9.5Z" stroke={color} strokeWidth={1.5} />
+    </Svg>
+  )
+}

@@ -102,7 +102,7 @@ const PAGES = {
   "/screens/provider": [PROVIDER, "", "", { skip: true }],
   "/screens/provider/patients": [PROVIDER, "Patients", "Patients (list, bulk import, send invites)"],
   "/screens/provider/patients/new": [PROVIDER, "Patients", "Add patient and send invite"],
-  "/screens/provider/patients/[id]": [PROVIDER, "Patients", "Patient profile", { url: "/screens/provider/patients/P10240" }],
+  "/screens/provider/patients/[id]": [PROVIDER, "Patient Chart", "Dashboard: face sheet", { url: "/screens/provider/patients/P10240" }],
   "/screens/provider/patients/[id]/edit": [PROVIDER, "Patients", "Edit patient", { url: "/screens/provider/patients/P10240/edit" }],
   // The patient app's onboarding prototype: listed in EXTRA after the app's
   // sign in, so the Patient Onboarding rows run in the order a patient sees.
@@ -140,6 +140,25 @@ const EXTRA = [
   [GLOBAL, "Error States (mobile app)", "Session expired", "/app/errors/session-expired", "/screens/session-expired"],
   [GLOBAL, "Error States (mobile app)", "No internet connection", "/app/errors/offline", "/screens/session-expired"],
   [GLOBAL, "Error States (mobile app)", "Something went wrong", "/app/errors/crash", "/screens/session-expired"],
+
+  // The provider's patient chart: sections of /screens/provider/patients/[id].
+  [PROVIDER, "Patient Chart", "Dashboard: timeline", "/screens/provider/patients/P10240?tab=timeline", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Encounters", "/screens/provider/patients/P10240?section=encounters", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Diagnoses", "/screens/provider/patients/P10240?section=diagnoses", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Medications: active", "/screens/provider/patients/P10240?section=medications", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Medications: past", "/screens/provider/patients/P10240?section=medications&tab=past", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Allergies", "/screens/provider/patients/P10240?section=allergies", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Vitals: card view", "/screens/provider/patients/P10240?section=vitals", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Vitals: table view", "/screens/provider/patients/P10240?section=vitals&tab=table", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Lab results: reports", "/screens/provider/patients/P10240?section=labs", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Lab results: biomarker trends", "/screens/provider/patients/P10240?section=labs&tab=trends", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Imaging reports", "/screens/provider/patients/P10240?section=imaging", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Vaccines", "/screens/provider/patients/P10240?section=vaccines", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Documents", "/screens/provider/patients/P10240?section=documents", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Profile", "/screens/provider/patients/P10240?section=profile", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Before consent", "/screens/provider/patients/P10257", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Record building (sync now)", "/screens/provider/patients/P10750", "/screens/provider/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Sync failed (retry sync)", "/screens/provider/patients/P10665", "/screens/provider/patients/[id]"],
 
   ...authFor(MANAGER, "clinic-manager", WEB_AUTH),
   [MANAGER, "Users", "Users: non-clinical users tab (list, add, view, edit panels)", "/screens/practice/users?tab=staff"],
