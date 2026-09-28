@@ -279,3 +279,7 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Removed: Patient Portal / Error States (mobile app) / Session expired
 - Removed: Patient Portal / Error States (mobile app) / No internet connection
 - Removed: Patient Portal / Error States (mobile app) / Something went wrong
+
+## 29-Sep-2026
+
+- Region on practices, dashboard by region, pending and declined invites
