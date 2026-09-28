@@ -149,9 +149,9 @@ function CalendarRangeMultipleMonths() {
     <Example
       title="Range Multiple Months"
       containerClassName="lg:col-span-full 2xl:col-span-full"
-      className="p-12"
+      className="p-4 sm:p-12"
     >
-      <Card className="mx-auto w-fit p-0">
+      <Card className="mx-auto w-fit max-w-full overflow-x-auto p-0">
         <CardContent className="p-0">
           <Calendar
             mode="range"

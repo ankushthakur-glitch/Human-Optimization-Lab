@@ -293,8 +293,8 @@ const CLINICAL_LINKS = [
 
 function MegaMenuDemo() {
   return (
-    <NavigationMenu>
-      <NavigationMenuList>
+    <NavigationMenu className="max-w-full">
+      <NavigationMenuList className="flex-wrap">
         <NavigationMenuItem>
           <NavigationMenuTrigger>Patients</NavigationMenuTrigger>
           <NavigationMenuContent>
@@ -532,7 +532,7 @@ function CommandPaletteDemo() {
         onClick={() => setOpen(true)}
       >
         <IconSearch />
-        Search patients, orders, and actions…
+        <span className="truncate">Search patients, orders, and actions…</span>
         <KbdGroup className="ml-auto">
           <Kbd>⌘</Kbd>
           <Kbd>K</Kbd>
@@ -622,7 +622,7 @@ function PaginationDemo() {
         <span className="font-mono text-foreground">{totalRows}</span> patients
       </p>
       <Pagination className="mx-0 w-auto justify-end">
-        <PaginationContent>
+        <PaginationContent className="flex-wrap">
           <PaginationItem>
             <PaginationPrevious
               href="#"

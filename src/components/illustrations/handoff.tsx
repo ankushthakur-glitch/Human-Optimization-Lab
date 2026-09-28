@@ -360,7 +360,7 @@ function Guide({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-5 text-sm leading-relaxed text-muted-foreground [&_b]:font-medium [&_b]:text-foreground [&_dd]:text-foreground">
+    <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-5 text-sm leading-relaxed text-muted-foreground [&_b]:font-medium [&_b]:text-foreground [&_dd]:text-foreground">
       <h2 className="font-heading text-base font-semibold text-foreground">
         {title}
       </h2>

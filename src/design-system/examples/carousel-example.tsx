@@ -24,7 +24,7 @@ export default function CarouselExample() {
 function CarouselBasic() {
   return (
     <Example title="Basic">
-      <Carousel className="mx-auto max-w-xs sm:max-w-sm">
+      <Carousel className="mx-auto w-full max-w-[min(20rem,calc(100%-6rem))] sm:max-w-[min(24rem,calc(100%-6rem))]">
         <CarouselContent>
           {Array.from({ length: 5 }).map((_, index) => (
             <CarouselItem key={index}>
@@ -49,7 +49,7 @@ function CarouselMultiple() {
   return (
     <Example title="Multiple">
       <Carousel
-        className="mx-auto max-w-xs sm:max-w-sm"
+        className="mx-auto w-full max-w-[min(20rem,calc(100%-6rem))] sm:max-w-[min(24rem,calc(100%-6rem))]"
         opts={{
           align: "start",
         }}
@@ -77,7 +77,7 @@ function CarouselMultiple() {
 function CarouselWithGap() {
   return (
     <Example title="With Gap">
-      <Carousel className="mx-auto max-w-xs sm:max-w-sm">
+      <Carousel className="mx-auto w-full max-w-[min(20rem,calc(100%-6rem))] sm:max-w-[min(24rem,calc(100%-6rem))]">
         <CarouselContent className="-ml-1">
           {Array.from({ length: 5 }).map((_, index) => (
             <CarouselItem key={index} className="pl-1 md:basis-1/2">

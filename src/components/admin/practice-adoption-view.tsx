@@ -168,7 +168,7 @@ export function NothingYet({
 }) {
   return (
     <TableCard>
-      <Empty className="py-12">
+      <Empty className="h-full py-12">
         <EmptyHeader>
           <EmptyMedia>
             <Illustration name={illustration} />

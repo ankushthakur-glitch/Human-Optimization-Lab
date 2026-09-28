@@ -98,6 +98,13 @@ const labels = Object.fromEntries(
   [...art.slice(labelsAt).matchAll(/^ {2}"([a-z0-9-]+)": (".*"),$/gm)].map((m) => [m[1], JSON.parse(m[2])])
 )
 
+/** The motion vocabulary, carried inside every exported file so it animates
+    on its own (in a browser, <img>, or another codebase). */
+const MOTION = readFileSync(join(SRC, "components/illustrations/motion.css"), "utf8")
+  .replace(/\/\*[\s\S]*?\*\//g, "")
+  .replace(/\s+/g, " ")
+  .trim()
+
 /** A standalone file: its own ids, a label, and an explicit size so it opens
     at a sensible scale in a browser, Figma or a design tool. */
 function standalone({ name, svg }) {
@@ -107,7 +114,8 @@ function standalone({ name, svg }) {
       .replace(
         ' aria-hidden="true" focusable="false"',
         ` width="320" height="320" role="img" aria-label="${labels[name] ?? name}"`
-      ) + "\n"
+      )
+      .replace(/<defs>/, `<style>${MOTION}</style><defs>`) + "\n"
   )
 }
 

@@ -354,7 +354,7 @@ export function EhrShell({
               grows later — a longer name, one more icon. The wrapper spans the
               bar and ignores the pointer so the bar stays clickable either side
               of the field; only the field itself takes events back. */}
-          <div className="pointer-events-none absolute inset-x-0 hidden justify-center px-3 sm:px-4 md:flex">
+          <div className="pointer-events-none absolute inset-x-0 hidden justify-center px-3 sm:px-4 lg:flex">
             <div className="pointer-events-auto w-full max-w-md">
               {/* A trigger, not a field: typing happens in the palette, which
                   opens centred over a backdrop so the page recedes while you
@@ -421,6 +421,17 @@ export function EhrShell({
 
           {/* The reference carries one bell and the account, nothing else. */}
           <div className="ml-auto flex shrink-0 items-center gap-1">
+            {/* Below lg the centred field would run under this cluster, so the
+                palette opens from an icon instead. */}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Open global search"
+              onClick={() => setSearchOpen(true)}
+              className="lg:hidden"
+            >
+              <IconSearch />
+            </Button>
             {/* Nothing sends notifications yet, so the panel is its empty
                 state and the bell carries no unread dot. */}
             <Popover>

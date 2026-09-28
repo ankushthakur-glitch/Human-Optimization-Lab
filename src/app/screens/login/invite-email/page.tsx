@@ -77,18 +77,18 @@ export default async function InviteEmailScreen({
 
       {/* top bar */}
       <header className="relative flex h-[60px] shrink-0 items-center pr-4">
-        <div className="flex w-[324px] shrink-0 items-center">
+        <div className="flex shrink-0 items-center pr-2 lg:w-[324px] lg:pr-0">
           <IconButton name="menu" label="Main menu" size={48} icon={24} className="ml-[10px]" />
-          <span className="ml-[22px] flex items-center gap-2 text-[22px] text-[#444746]">
+          <span className="ml-2 flex items-center gap-2 text-[22px] text-[#444746] sm:ml-[22px]">
             <span className="flex size-[30px] items-center justify-center rounded-md bg-[#444746] text-white">
               <Sym name="mail" size={20} fill />
             </span>
-            Mail
+            <span className="hidden sm:inline">Mail</span>
           </span>
         </div>
-        <div className="flex h-12 max-w-[720px] flex-1 items-center rounded-full bg-[#e9eef6] pr-1 pl-2 text-[#444746]">
+        <div className="flex h-12 max-w-[720px] min-w-0 flex-1 items-center rounded-full bg-[#e9eef6] pr-1 pl-2 text-[#444746]">
           <IconButton name="search" label="Search" size={40} icon={24} />
-          <span className="ml-2 flex-1 text-base">Search mail</span>
+          <span className="ml-2 min-w-0 flex-1 truncate text-base">Search mail</span>
           <IconButton name="tune" label="Search options" size={40} icon={24} />
         </div>
         <div className="ml-auto hidden items-center lg:flex">
@@ -144,7 +144,7 @@ export default async function InviteEmailScreen({
         </nav>
 
         {/* folders */}
-        <nav className="hidden w-[256px] shrink-0 flex-col pr-3 pl-3 md:flex">
+        <nav className="hidden w-[256px] shrink-0 flex-col pr-3 pl-3 lg:flex">
           <span
             role="button"
             className="mt-[11px] mb-4 flex h-12 w-[138px] items-center gap-[14px] rounded-2xl bg-[#c2e7ff] pl-[14px] text-sm font-medium text-[#001d35] hover:shadow-md"
@@ -196,7 +196,7 @@ export default async function InviteEmailScreen({
           <div className="flex h-12 shrink-0 items-center px-1.5">
             <IconButton name="arrow_back" label="Back to inbox" />
             {TOOLBAR.map((group, i) => (
-              <div key={i} className="hidden items-center sm:flex">
+              <div key={i} className="hidden items-center lg:flex">
                 <span className={cn("mr-[9px] ml-[5px] h-5 w-px bg-[#e0e0e0]", i === 0 && "invisible mr-[7px] ml-[8px]")} />
                 {group.map((name) => (
                   <IconButton key={name} name={name} className="mr-1" />
@@ -211,9 +211,9 @@ export default async function InviteEmailScreen({
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <div className="pr-8 pb-6 pl-4">
+            <div className="pr-4 pb-6 pl-4 sm:pr-8">
               {/* subject */}
-              <div className="flex items-start gap-2 pt-[22px] pl-[56px]">
+              <div className="flex items-start gap-2 pt-[22px] sm:pl-[56px]">
                 <h1 className="flex-1 text-[22px] leading-7 text-[#1f1f1f]">
                   Welcome to {BRAND_NAME}: Activate Your {invitee.role} Account
                   <Sym
@@ -264,7 +264,7 @@ export default async function InviteEmailScreen({
               </div>
 
               {/* body */}
-              <div className="mt-5 pl-[56px]">
+              <div className="mt-5 sm:pl-[56px]">
                 <InviteEmailTemplate invitee={invitee.key} />
                 <div className="mt-6 flex flex-wrap gap-2">
                   {REPLY_ACTIONS.map(({ icon, label }) => (

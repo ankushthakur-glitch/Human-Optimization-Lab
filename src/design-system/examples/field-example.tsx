@@ -940,7 +940,7 @@ function HorizontalFields() {
 
   return (
     <Example title="Horizontal Fields">
-      <FieldGroup className="**:data-[slot=field-content]:min-w-48">
+      <FieldGroup className="sm:**:data-[slot=field-content]:min-w-48">
         <Field orientation="horizontal">
           <FieldContent>
             <FieldLabel htmlFor="horizontal-input">Username</FieldLabel>

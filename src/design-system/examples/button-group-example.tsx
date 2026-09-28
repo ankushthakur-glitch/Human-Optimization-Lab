@@ -374,7 +374,7 @@ function ButtonGroupNested() {
 function ButtonGroupPagination() {
   return (
     <Example title="Pagination">
-      <ButtonGroup>
+      <ButtonGroup className="no-scrollbar max-w-full overflow-x-auto">
         <Button variant="outline" size="sm">
           <HugeiconsIcon icon={ArrowLeft02Icon} data-icon="inline-start" />
           Previous

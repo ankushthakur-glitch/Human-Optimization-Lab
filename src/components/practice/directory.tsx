@@ -200,7 +200,7 @@ export const SUB_TAB =
   "dark:data-active:bg-primary-surface dark:data-active:text-primary-tint"
 
 export const SUB_TABS_LIST =
-  "h-8! gap-0 overflow-hidden rounded-md border bg-card p-0"
+  "h-8! shrink-0 gap-0 overflow-x-auto overflow-y-hidden rounded-md border bg-card p-0"
 
 /* Subtle tints for initials avatars, picked from the name so a person keeps
    the same colour everywhere they appear. */

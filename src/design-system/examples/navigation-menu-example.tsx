@@ -68,8 +68,8 @@ export default function NavigationMenuExample() {
 function NavigationMenuBasic() {
   return (
     <Example title="Basic">
-      <NavigationMenu>
-        <NavigationMenuList>
+      <NavigationMenu className="max-w-full">
+        <NavigationMenuList className="flex-wrap">
           <NavigationMenuItem>
             <NavigationMenuTrigger>Getting started</NavigationMenuTrigger>
             <NavigationMenuContent>

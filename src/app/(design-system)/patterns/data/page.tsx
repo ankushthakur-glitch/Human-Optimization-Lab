@@ -334,7 +334,7 @@ function Specimen({
   className?: string
 }) {
   return (
-    <div className={`rounded-xl border bg-card p-6 ${className ?? ""}`}>
+    <div className={`min-w-0 rounded-xl border bg-card p-6 ${className ?? ""}`}>
       {children}
     </div>
   )

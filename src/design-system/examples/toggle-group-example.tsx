@@ -216,6 +216,7 @@ function ToggleGroupDateRange() {
   return (
     <Example title="Date Range">
       <ToggleGroup
+        className="flex-wrap"
         defaultValue={["today"]}
         variant="outline"
         size="sm"

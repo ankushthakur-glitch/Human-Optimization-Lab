@@ -89,8 +89,8 @@ function OptionButton({
   )
 }
 
-/* A product built on the library can offer its own accent list (the DME demo
-   does); without it the picker offers the library's. */
+/* A product built on the library can offer its own accent list; without it
+   the picker offers the library's. */
 export type CustomizerAccents = {
   options: readonly { name: string; label: string; swatch: string }[]
   value: string

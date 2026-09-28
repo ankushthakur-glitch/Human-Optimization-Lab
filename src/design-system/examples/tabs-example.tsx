@@ -297,13 +297,13 @@ function TabsWithInputAndButton() {
   return (
     <Example title="With Input and Button" containerClassName="col-span-full">
       <Tabs defaultValue="overview" className="mx-auto w-full max-w-lg">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
-          <div className="ml-auto flex items-center gap-2">
-            <Input placeholder="Search..." className="w-44" />
+          <div className="ml-auto flex min-w-0 items-center gap-2">
+            <Input placeholder="Search..." className="w-44 min-w-0" />
             <Button>Action</Button>
           </div>
         </div>

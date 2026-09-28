@@ -528,7 +528,7 @@ export function PatientsWorklist() {
               setPage(1)
             }}
           >
-            <TabsList className="h-8! gap-0 overflow-hidden rounded-md border bg-card p-0">
+            <TabsList className="h-8! shrink-0 gap-0 overflow-x-auto overflow-y-hidden rounded-md border bg-card p-0">
               <TabsTrigger value="all" className={SUB_TAB}>
                 All ({counts.all})
               </TabsTrigger>

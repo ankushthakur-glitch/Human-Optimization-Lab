@@ -914,8 +914,8 @@ export default function Page() {
         </ControlGroup>
       </div>
 
-      <div className="overflow-hidden rounded-xl border shadow-sm">
-        <div className="h-[36rem]">
+      <div className="overflow-x-auto overflow-y-hidden rounded-xl border shadow-sm">
+        <div className="h-[36rem] min-w-[60rem]">
           <ScreenPreview nav={nav} content={content} density={density} />
         </div>
       </div>
