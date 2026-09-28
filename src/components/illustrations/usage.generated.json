@@ -15,13 +15,6 @@
       ]
     },
     {
-      "file": "src/components/patients-worklist.tsx",
-      "line": 722,
-      "routes": [
-        "/screens/patients"
-      ]
-    },
-    {
       "file": "src/components/practice/directory.tsx",
       "line": 571,
       "routes": [
@@ -82,10 +75,10 @@
     },
     {
       "file": "src/components/practice/patients.tsx",
-      "line": 553,
+      "line": 677,
       "routes": [
         "/screens/practice/patients",
-        "/screens/provider/patients"
+        "/screens/patients"
       ]
     }
   ],
@@ -161,7 +154,7 @@
       "file": "src/components/practice/health-record-view.tsx",
       "line": 238,
       "routes": [
-        "/screens/provider/patients/P10240?section=labs&tab=trends"
+        "/screens/patients/P10240?section=labs&tab=trends"
       ]
     }
   ],
@@ -182,7 +175,7 @@
       "file": "src/components/practice/health-record-view.tsx",
       "line": 333,
       "routes": [
-        "/screens/provider/patients/P10240?section=labs&tab=trends"
+        "/screens/patients/P10240?section=labs&tab=trends"
       ]
     }
   ],
@@ -256,10 +249,10 @@
     },
     {
       "file": "src/components/practice/patients.tsx",
-      "line": 570,
+      "line": 694,
       "routes": [
         "/screens/practice/patients",
-        "/screens/provider/patients"
+        "/screens/patients"
       ]
     },
     {

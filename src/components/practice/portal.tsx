@@ -6,8 +6,8 @@ import { PracticeShell } from "@/components/practice/practice-shell"
 import { PROVIDER_ID, ProviderShell } from "@/components/provider/provider-shell"
 
 /* The patient screens serve two portals: the clinic manager's
-   (/screens/practice) and a provider's (/screens/provider). Each portal's
-   layout names itself; the screens read it for their frame and links. */
+   (/screens/practice/patients) and the provider's (/screens/patients). Each
+   portal's layout names itself; the screens read it for their frame and links. */
 
 export type PortalKey = "practice" | "provider"
 
@@ -25,7 +25,8 @@ export function PortalProvider({
 
 export function usePortal() {
   const key = React.useContext(PortalContext)
-  const list = `/screens/${key}/patients`
+  const list =
+    key === "provider" ? "/screens/patients" : "/screens/practice/patients"
   return {
     key,
     patientsHref: list,

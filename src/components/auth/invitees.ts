@@ -85,7 +85,7 @@ export const INVITEES: Record<InviteeKey, Invitee> = {
     role: "Provider",
     consoleName: "Provider Portal",
     consoleUrl: "portal.humanoptimizationlab.com/activate",
-    home: "/screens/provider/patients",
+    home: "/screens/patients",
     sender: CLINIC_MANAGER,
   },
   /* Signs in on the patient app (mobile/), not the web, so `consoleUrl` is

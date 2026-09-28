@@ -190,7 +190,6 @@ writeFileSync(join(OUT, "hol-illustrations.zip"), zip(files))
 /** Where to see a component's illustrations, for components rendered by more
     than one route. Files under src/app map to their own route. */
 const ROUTES = {
-  "components/patients-worklist.tsx": ["/screens/patients"],
   "components/ehr-shell.tsx": ["/screens/practice/patients"],
   "components/admin/practices-list.tsx": ["/screens/admin/practices"],
   "components/admin/practice-actions.tsx": ["/screens/admin/practices"],
@@ -200,13 +199,13 @@ const ROUTES = {
   "components/practice/directory.tsx": ["/screens/practice/users", "/screens/practice/patients", "/screens/practice/locations"],
   "components/practice/users.tsx": ["/screens/practice/users"],
   "components/practice/providers.tsx": ["/screens/practice/users"],
-  "components/practice/patients.tsx": ["/screens/practice/patients", "/screens/provider/patients"],
+  "components/practice/patients.tsx": ["/screens/practice/patients", "/screens/patients"],
   "components/practice/locations.tsx": ["/screens/practice/locations"],
   "components/practice/patient-record.tsx": ["/screens/practice/patients/P10240"],
   "components/practice/provider-record.tsx": ["/screens/practice/users/providers/PR3132"],
   "components/practice/location-record.tsx": ["/screens/practice/locations/LOC1001"],
-  "components/practice/health-record-view.tsx": ["/screens/provider/patients/P10240?section=labs&tab=trends"],
-  "components/provider/patient-chart.tsx": ["/screens/provider/patients/P10257", "/screens/provider/patients/P10750", "/screens/provider/patients/P10665"],
+  "components/practice/health-record-view.tsx": ["/screens/patients/P10240?section=labs&tab=trends"],
+  "components/provider/patient-chart.tsx": ["/screens/patients/P10257", "/screens/patients/P10750", "/screens/patients/P10665"],
   "components/practice/duplicates.tsx": ["/screens/practice/patients/duplicates"],
   "components/practice/bulk-import.tsx": ["/screens/practice/patients"],
 }

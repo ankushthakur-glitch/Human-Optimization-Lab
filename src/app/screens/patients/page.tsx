@@ -1,6 +1,23 @@
-import { PatientsWorklist } from "@/components/patients-worklist"
+import type { Metadata } from "next"
+import { Suspense } from "react"
 
-/** The worklist in the app shell. */
-export default function PatientsScreen() {
-  return <PatientsWorklist />
+import { PatientsScreen } from "@/components/practice/patients"
+import { LogoLoader } from "@/design-system/ui/logo-loader"
+
+export const metadata: Metadata = { title: "Patients" }
+
+/* The screen reads ?new=1 (the palette's shortcut), and a component that
+   reads search params needs a Suspense boundary to prerender. */
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <LogoLoader kind="ripple" label="Loading patients" />
+        </div>
+      }
+    >
+      <PatientsScreen />
+    </Suspense>
+  )
 }
