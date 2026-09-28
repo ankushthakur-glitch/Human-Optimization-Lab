@@ -44,6 +44,8 @@ export type Finding = {
   value: string
   range: string
   flag: Flag
+  /** A lab result or a vital taken at a visit. */
+  kind: "lab" | "vital"
   source: string
   date: string
 }
@@ -51,6 +53,7 @@ export type Finding = {
 export const FINDINGS: Finding[] = [
   {
     id: "bmi",
+    kind: "vital",
     name: "Body mass index",
     value: "32.4 kg/m²",
     range: "18.5 to 24.9",
@@ -60,6 +63,7 @@ export const FINDINGS: Finding[] = [
   },
   {
     id: "ldl",
+    kind: "lab",
     name: "LDL cholesterol",
     value: "162 mg/dL",
     range: "Below 100",
@@ -69,6 +73,7 @@ export const FINDINGS: Finding[] = [
   },
   {
     id: "a1c",
+    kind: "lab",
     name: "Hemoglobin A1c",
     value: "5.9 %",
     range: "Below 5.7",
@@ -78,6 +83,7 @@ export const FINDINGS: Finding[] = [
   },
   {
     id: "bp",
+    kind: "vital",
     name: "Blood pressure",
     value: "134/86 mmHg",
     range: "Below 120/80",
@@ -87,6 +93,7 @@ export const FINDINGS: Finding[] = [
   },
   {
     id: "tg",
+    kind: "lab",
     name: "Triglycerides",
     value: "188 mg/dL",
     range: "Below 150",
@@ -96,6 +103,7 @@ export const FINDINGS: Finding[] = [
   },
   {
     id: "vitd",
+    kind: "lab",
     name: "Vitamin D, 25 hydroxy",
     value: "21 ng/mL",
     range: "30 to 100",
@@ -113,3 +121,29 @@ export const CONDITIONS = [
   { name: "Elevated blood pressure", code: "R03.0" },
   { name: "Seasonal allergic rhinitis", code: "J30.2" },
 ] as const
+
+/** The latest lab panel in the record, the home screen's lead card. */
+export const LATEST_LABS = { source: "Quest Diagnostics", date: "Aug 14, 2026" } as const
+
+/** HOL's score for the record, out of 100. A stand in until HOL's clinical
+    team sets the formula. */
+export const HOL_SCORE = 71
+
+/** Lab results in range: every lab the record holds less the flagged ones. */
+export const LABS_IN_RANGE = {
+  inRange: DATA_TYPES.find((t) => t.key === "Observation.lab")!.count - FINDINGS.filter((f) => f.kind === "lab").length,
+  total: DATA_TYPES.find((t) => t.key === "Observation.lab")!.count,
+}
+
+export type BodySystem = "thyroid" | "heart" | "metabolism"
+
+/** The body map on home: each system glows teal when its results are in
+    range and amber when one of them is flagged. */
+export const SYSTEMS: { id: BodySystem; name: string; findings: string[] }[] = [
+  { id: "thyroid", name: "Thyroid", findings: [] },
+  { id: "heart", name: "Heart", findings: ["ldl", "tg", "bp"] },
+  { id: "metabolism", name: "Metabolism", findings: ["a1c", "bmi"] },
+]
+
+export const systemWatch = (id: BodySystem) =>
+  FINDINGS.some((f) => SYSTEMS.find((s) => s.id === id)!.findings.includes(f.id))

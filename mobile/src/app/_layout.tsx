@@ -29,7 +29,8 @@ const FONTS = {
    signed out            activate, sign-in
    one-time password in  set-password
    signed in, new        onboarding/: about you, consent, record builds
-   signed in             home (index)
+   signed in             tabs: home (index), results, plan, care-team;
+                         the assistant, plans
    signed out for idling session-expired
    The error states (+not-found, and the review index under errors/) sit
    outside every guard, so they open whatever the account state.
@@ -93,7 +94,12 @@ function Routes() {
           <Stack.Screen name="onboarding/syncing" options={{ gestureEnabled: false }} />
         </Stack.Protected>
         <Stack.Protected guard={status === "signedIn" && onboarded}>
-          <Stack.Screen name="index" />
+          {/* The four tabs swap in place; the assistant rises over them. */}
+          <Stack.Screen name="index" options={{ animation: "none" }} />
+          <Stack.Screen name="results" options={{ animation: "none" }} />
+          <Stack.Screen name="plan" options={{ animation: "none" }} />
+          <Stack.Screen name="care-team" options={{ animation: "none" }} />
+          <Stack.Screen name="assistant" options={{ animation: "slide_from_bottom" }} />
           <Stack.Screen name="plans" />
         </Stack.Protected>
         <Stack.Protected guard={status === "expired"}>

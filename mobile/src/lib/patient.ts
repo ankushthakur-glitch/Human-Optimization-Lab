@@ -26,3 +26,10 @@ export const DEMOGRAPHICS = {
   state: "CA",
   zip: "92014",
 } as const
+
+/** The practice's people the patient sees in the app. Sample names. */
+export const CARE_TEAM = [
+  { name: "Dr. Maya Patel", role: "Physician" },
+  { name: "Sam Ortiz", role: "Care coordinator" },
+  { name: "Priya Nair", role: "Health coach" },
+] as const

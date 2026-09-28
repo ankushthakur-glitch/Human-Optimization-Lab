@@ -2,7 +2,6 @@ import * as React from "react"
 import { ActivityIndicator, Animated, Easing, StyleSheet, Text, View } from "react-native"
 
 import { FlowScreen, Section, SoftOrb } from "@/components/flow"
-import { IconCheck } from "@/components/icons"
 import { RecordIcon, type RecordIconName } from "@/components/record-icons"
 import { Button } from "@/components/ui"
 import { useOnboarding } from "@/lib/onboarding"
@@ -11,9 +10,7 @@ import { color, font } from "@/lib/theme"
 
 /* Step 3, the last: the record builds, told the way a patient thinks about
    it rather than the way the networks work. One progress bar with the stage
-   in plain words; the places their records were found (clinic, hospital,
-   lab) appearing as they turn up; then each kind of record filling in with
-   its count. Timed for the prototype: the real Patient360 pull is
+   in plain words, then each kind of record filling in with its count. Timed for the prototype: the real Patient360 pull is
    asynchronous and can take minutes, so the patient may leave and is told
    when it's ready. */
 
@@ -83,27 +80,6 @@ export default function SyncingScreen() {
       ) : (
         <Progress percent={percent} label={STAGE_TEXT[stage]} />
       )}
-
-      <Section title="Found" gap={10}>
-        {SOURCES.slice(0, found).map((s) => (
-          <View key={s.name} style={styles.source}>
-            <Tile icon={s.kind} />
-            <View style={styles.sourceBody}>
-              <Text style={styles.sourceName}>{s.name}</Text>
-              <Text style={styles.sourceMeta}>{s.label}</Text>
-            </View>
-            <View style={styles.check}>
-              <IconCheck size={12} color={color.onPrimary} strokeWidth={2.6} />
-            </View>
-          </View>
-        ))}
-        {stage === "finding" && (
-          <View style={[styles.source, styles.searching]}>
-            <ActivityIndicator size="small" color={color.primary} />
-            <Text style={styles.searchingText}>Looking for more</Text>
-          </View>
-        )}
-      </Section>
 
       {stage !== "finding" && (
         <Section title="Your record">
@@ -189,28 +165,6 @@ const styles = StyleSheet.create({
   },
   summaryValue: { fontFamily: font.semibold, fontSize: 28, letterSpacing: -0.6, color: color.primary },
   summaryText: { fontFamily: font.medium, fontSize: 15, color: color.text },
-
-  source: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: color.canvas,
-    borderRadius: 16,
-    padding: 12,
-  },
-  sourceBody: { flex: 1, gap: 2 },
-  sourceName: { fontFamily: font.medium, fontSize: 15, color: color.text },
-  sourceMeta: { fontFamily: font.regular, fontSize: 13, color: color.muted },
-  check: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: color.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  searching: { backgroundColor: color.background, borderWidth: 1, borderColor: color.border, borderStyle: "dashed", height: 64 },
-  searchingText: { fontFamily: font.regular, fontSize: 14, color: color.muted },
 
   tile: {
     width: 38,

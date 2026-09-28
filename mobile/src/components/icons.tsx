@@ -217,3 +217,69 @@ export function IconPin({ size = 20, color }: IconProps) {
     </Svg>
   )
 }
+
+/* The tab bar's icons: filled, as Superpower draws its tabs, so the active
+   and resting tabs differ by colour alone. */
+
+export function IconHome({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3 10.6C3 9.98 3.29 9.4 3.78 9.02L10.78 3.62C11.5 3.07 12.5 3.07 13.22 3.62L20.22 9.02C20.71 9.4 21 9.98 21 10.6V19C21 20.1 20.1 21 19 21H15.5V15.5C15.5 14.95 15.05 14.5 14.5 14.5H9.5C8.95 14.5 8.5 14.95 8.5 15.5V21H5C3.9 21 3 20.1 3 19V10.6Z"
+        fill={color}
+      />
+    </Svg>
+  )
+}
+
+export function IconResults({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3 14.5C3 13.67 3.67 13 4.5 13H6.5C7.33 13 8 13.67 8 14.5V19.5C8 20.33 7.33 21 6.5 21H4.5C3.67 21 3 20.33 3 19.5V14.5ZM9.5 4.5C9.5 3.67 10.17 3 11 3H13C13.83 3 14.5 3.67 14.5 4.5V19.5C14.5 20.33 13.83 21 13 21H11C10.17 21 9.5 20.33 9.5 19.5V4.5ZM16 9.5C16 8.67 16.67 8 17.5 8H19.5C20.33 8 21 8.67 21 9.5V19.5C21 20.33 20.33 21 19.5 21H17.5C16.67 21 16 20.33 16 19.5V9.5Z"
+        fill={color}
+      />
+    </Svg>
+  )
+}
+
+export function IconPlan({ size = 20, color, cut = "#FFFFFF" }: IconProps & { cut?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9 2.5H15C15.55 2.5 16 2.95 16 3.5V4.5H17.5C18.88 4.5 20 5.62 20 7V19C20 20.38 18.88 21.5 17.5 21.5H6.5C5.12 21.5 4 20.38 4 19V7C4 5.62 5.12 4.5 6.5 4.5H8V3.5C8 2.95 8.45 2.5 9 2.5Z"
+        fill={color}
+      />
+      <Path d="M8.5 11H15.5M8.5 15H13" stroke={cut} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+export function IconCareTeam({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3C17.2 3 21 6.58 21 11C21 15.42 17.2 19 12 19C10.85 19 9.75 18.83 8.74 18.51L4.6 20.4C4.04 20.66 3.43 20.12 3.63 19.53L4.7 16.4C3.63 14.94 3 13.03 3 11C3 6.58 6.8 3 12 3Z"
+        fill={color}
+      />
+    </Svg>
+  )
+}
+
+/** Hugeicons Cancel01: closes a full screen view. */
+export function IconClose({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  )
+}
+
+/** Hugeicons ArrowUp02: sends a chat message. */
+export function IconSend({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 19V5M12 5L6 11M12 5L18 11" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  )
+}

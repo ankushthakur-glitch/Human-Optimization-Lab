@@ -1,4 +1,4 @@
-import { router } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -11,7 +11,7 @@ import { PATIENT } from "@/lib/patient"
 import { ADD_ONS, PROGRAMS, TIERS, programName, recommend, type ProgramId, type Tier } from "@/lib/plans"
 import { color, font, gutter } from "@/lib/theme"
 
-/* Suggested plans, opened from the dashboard: what the record suggests and
+/* Suggested plans, opened from the dashboard, the Plan tab or the assistant: what the record suggests and
    what to sign up for. The programs the
    clinic data points to come first, each with the results behind it, and
    start selected; the rest can be added. Then the free record against the
@@ -24,9 +24,13 @@ export default function PlansScreen() {
   const onboarding = useOnboarding()
   const sex = onboarding.profile?.sex ?? "female"
   const recommended = React.useMemo(recommend, [])
-  const [programs, setPrograms] = React.useState<ProgramId[]>(
-    onboarding.membership?.programs ?? recommended.map((r) => r.program)
-  )
+  // The assistant opens this screen with the programs it suggested.
+  const { programs: asked } = useLocalSearchParams<{ programs?: string }>()
+  const [programs, setPrograms] = React.useState<ProgramId[]>(() => {
+    const fromAssistant = asked?.split(",").filter((id): id is ProgramId => PROGRAMS.some((p) => p.id === id))
+    if (fromAssistant?.length) return fromAssistant
+    return onboarding.membership?.programs ?? recommended.map((r) => r.program)
+  })
   const [tier, setTier] = React.useState<Tier>(onboarding.membership?.tier ?? "optimization")
   const [allFeatures, setAllFeatures] = React.useState(false)
   const [confirming, setConfirming] = React.useState(false)
