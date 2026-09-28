@@ -121,3 +121,161 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Added: Patient Portal / Error States (mobile app) / Session expired
 - Added: Patient Portal / Error States (mobile app) / No internet connection
 - Added: Patient Portal / Error States (mobile app) / Something went wrong
+
+## 28-Sep-2026
+
+- HOL illustration set, admin dashboard and settings, illustration handoff; drop patient app v2
+- Meaningful motion for every spot illustration; remove DME demo
+- Play gallery illustrations only on hover
+- Patient chart, list sync status, patient app onboarding
+- Make /screens/patients the only provider portal
+- Resolve possible duplicates without clinic manager review
+- Patient app tabs: home, results, plan, care team, assistant
+- Chart dashboard overview from the biomarkers tracker
+- Animate vitals trend range switch; return to portal after session expiry
+- Added: Super Admin Portal / Dashboard / Dashboard (coming soon)
+- Added: Super Admin Portal / Practices / Provider adoption
+- Added: Super Admin Portal / Settings / Settings (coming soon)
+- Added: Global Pages / Error States (web) / No internet connection
+- Added: Global Pages / Error States (web) / All error states
+- Added: Global Pages / Error States (web) / Permission denied
+- Added: Global Pages / Illustrations / Handoff: usage and downloads
+- Added: Super Admin Portal / Login and Authentication / Activate account
+- Added: Super Admin Portal / Login and Authentication / Forgot password
+- Added: Super Admin Portal / Login and Authentication / Invitation email (mobile)
+- Added: Super Admin Portal / Login and Authentication / Invitation email (desktop)
+- Added: Super Admin Portal / Login and Authentication / Sign in
+- Added: Super Admin Portal / Login and Authentication / Reset code sent
+- Added: Super Admin Portal / Login and Authentication / Reset password
+- Added: Super Admin Portal / Login and Authentication / Set password
+- Added: Super Admin Portal / Login and Authentication / Two-factor setup
+- Added: Super Admin Portal / Login and Authentication / Two-factor verification
+- Added: Provider Portal / Patients / Edit patient
+- Added: Provider Portal / Patient Chart / Dashboard: face sheet
+- Added: Provider Portal / Patients / Add patient and send invite
+- Added: Provider Portal / Patients / Patients (list, health record sync status, bulk import, send invites)
+- Added: Clinic Manager Portal / Locations / Edit location
+- Added: Clinic Manager Portal / Locations / Location details
+- Added: Clinic Manager Portal / Locations / Add location
+- Added: Clinic Manager Portal / Locations / Locations (list)
+- Added: Clinic Manager Portal / Patients / Edit patient
+- Added: Clinic Manager Portal / Patients / Patient profile
+- Added: Clinic Manager Portal / Patients / Review possible duplicate
+- Added: Clinic Manager Portal / Patients / Possible duplicates queue
+- Added: Clinic Manager Portal / Patients / Patient onboarding form
+- Added: Clinic Manager Portal / Patients / Patients (list, bulk import)
+- Added: Clinic Manager Portal / Users / Users: providers tab (list, bulk import)
+- Added: Clinic Manager Portal / Users / Edit provider
+- Added: Clinic Manager Portal / Users / Provider profile
+- Added: Clinic Manager Portal / Users / Add provider
+- Added: Global Pages / Error States (web) / Session expired
+- Added: Global Pages / Design System / Illustration library
+- Added: Global Pages / Error States (web) / Page not found
+- Added: Global Pages / Error States (mobile app) / All error states
+- Added: Global Pages / Error States (mobile app) / Page not found
+- Added: Global Pages / Error States (mobile app) / Session expired
+- Added: Global Pages / Error States (mobile app) / No internet connection
+- Added: Global Pages / Error States (mobile app) / Something went wrong
+- Added: Provider Portal / Patient Chart / Dashboard: timeline
+- Added: Provider Portal / Patient Chart / Encounters
+- Added: Provider Portal / Patient Chart / Diagnoses
+- Added: Provider Portal / Patient Chart / Medications: active
+- Added: Provider Portal / Patient Chart / Medications: past
+- Added: Provider Portal / Patient Chart / Allergies
+- Added: Provider Portal / Patient Chart / Vitals: card view
+- Added: Provider Portal / Patient Chart / Vitals: table view
+- Added: Provider Portal / Patient Chart / Lab results: reports
+- Added: Provider Portal / Patient Chart / Lab results: biomarker trends
+- Added: Provider Portal / Patient Chart / Imaging reports
+- Added: Provider Portal / Patient Chart / Vaccines
+- Added: Provider Portal / Patient Chart / Documents
+- Added: Provider Portal / Patient Chart / Profile
+- Added: Provider Portal / Patient Chart / Before consent
+- Added: Provider Portal / Patient Chart / Record building (sync now)
+- Added: Provider Portal / Patient Chart / Sync failed (retry sync)
+- Added: Clinic Manager Portal / Login and Authentication / Invitation email (desktop)
+- Added: Clinic Manager Portal / Login and Authentication / Invitation email (mobile)
+- Added: Clinic Manager Portal / Login and Authentication / Activate account
+- Added: Clinic Manager Portal / Login and Authentication / Set password
+- Added: Clinic Manager Portal / Login and Authentication / Two-factor setup
+- Added: Clinic Manager Portal / Login and Authentication / Sign in
+- Added: Clinic Manager Portal / Login and Authentication / Two-factor verification
+- Added: Clinic Manager Portal / Login and Authentication / Forgot password
+- Added: Clinic Manager Portal / Login and Authentication / Reset code sent
+- Added: Clinic Manager Portal / Login and Authentication / Reset password
+- Added: Clinic Manager Portal / Users / Users: non-clinical users tab (list, add, view, edit panels)
+- Added: Provider Portal / Login and Authentication / Invitation email (desktop)
+- Added: Provider Portal / Login and Authentication / Invitation email (mobile)
+- Added: Provider Portal / Login and Authentication / Activate account
+- Added: Provider Portal / Login and Authentication / Set password
+- Added: Provider Portal / Login and Authentication / Two-factor setup
+- Added: Provider Portal / Login and Authentication / Sign in
+- Added: Provider Portal / Login and Authentication / Two-factor verification
+- Added: Provider Portal / Login and Authentication / Forgot password
+- Added: Provider Portal / Login and Authentication / Reset code sent
+- Added: Provider Portal / Login and Authentication / Reset password
+- Added: Patient Portal / Login and Authentication / Invitation email (desktop)
+- Added: Patient Portal / Login and Authentication / Invitation email (mobile)
+- Added: Patient Portal / Login and Authentication / Activate account (mobile app)
+- Added: Patient Portal / Login and Authentication / Sign in (mobile app)
+- Removed: Provider Portal / Patients / Patient worklist
+- Removed: Provider Portal / Patients / Register patient
+- Removed: Global Pages / Authentication / Sign in
+- Removed: Global Pages / Authentication / Two-factor verification
+- Removed: Global Pages / Authentication / Two-factor setup
+- Removed: Global Pages / Authentication / Forgot password
+- Removed: Global Pages / Authentication / Reset code sent
+- Removed: Global Pages / Authentication / Reset password
+- Removed: Global Pages / Authentication / Set password
+- Removed: Global Pages / Authentication / Activate account
+- Removed: Global Pages / Authentication / Invitation email (desktop)
+- Removed: Global Pages / Authentication / Invitation email (mobile)
+- Removed: Global Pages / Session / Session expired
+- Removed: Global Pages / Error States / All error states
+- Removed: Global Pages / Error States / Permission denied
+- Removed: Global Pages / Error States / No internet connection
+- Removed: Global Pages / Error States / Page not found
+- Removed: Global Pages / Dme / Foundations
+- Removed: Global Pages / Dme / Icons
+- Removed: Global Pages / Dme / Layouts
+- Removed: Global Pages / Dme / Dme
+- Removed: Global Pages / Dme Screens / Side Nav
+- Removed: Global Pages / Dme Screens / Top Nav
+- Removed: Provider Portal / Clinic Manager Portal / Edit location
+- Removed: Provider Portal / Clinic Manager Portal / Location details
+- Removed: Provider Portal / Clinic Manager Portal / Add location
+- Removed: Provider Portal / Clinic Manager Portal / Locations (list)
+- Removed: Provider Portal / Clinic Manager Portal / Edit patient
+- Removed: Provider Portal / Clinic Manager Portal / Patient profile
+- Removed: Provider Portal / Clinic Manager Portal / Review possible duplicate
+- Removed: Provider Portal / Clinic Manager Portal / Possible duplicates queue
+- Removed: Provider Portal / Clinic Manager Portal / Patient onboarding form
+- Removed: Provider Portal / Clinic Manager Portal / Patients (list, bulk import)
+- Removed: Provider Portal / Clinic Manager Portal / Users: providers tab (list, bulk import)
+- Removed: Provider Portal / Clinic Manager Portal / Edit provider
+- Removed: Provider Portal / Clinic Manager Portal / Provider profile
+- Removed: Provider Portal / Clinic Manager Portal / Add provider
+- Removed: Provider Portal / Provider Portal / Edit patient
+- Removed: Provider Portal / Provider Portal / Patient profile
+- Removed: Provider Portal / Provider Portal / Add patient and send invite
+- Removed: Provider Portal / Provider Portal / Patients (list, bulk import, send invites)
+- Removed: Provider Portal / Clinic Manager Onboarding / Invitation email (desktop)
+- Removed: Provider Portal / Clinic Manager Onboarding / Invitation email (mobile)
+- Removed: Provider Portal / Clinic Manager Onboarding / Activate account
+- Removed: Provider Portal / Clinic Manager Onboarding / Set password
+- Removed: Provider Portal / Clinic Manager Onboarding / Two-factor setup
+- Removed: Provider Portal / Clinic Manager Portal / Users: non-clinical users tab (list, add, view, edit panels)
+- Removed: Provider Portal / Provider Onboarding / Invitation email (desktop)
+- Removed: Provider Portal / Provider Onboarding / Invitation email (mobile)
+- Removed: Provider Portal / Provider Onboarding / Activate account
+- Removed: Provider Portal / Provider Onboarding / Set password
+- Removed: Provider Portal / Provider Onboarding / Two-factor setup
+- Removed: Patient Portal / Patient Onboarding / Invitation email (desktop)
+- Removed: Patient Portal / Patient Onboarding / Invitation email (mobile)
+- Removed: Patient Portal / Patient Onboarding / Activate account (mobile app)
+- Removed: Patient Portal / Patient Onboarding / Sign in (mobile app)
+- Removed: Patient Portal / Error States (mobile app) / All error states
+- Removed: Patient Portal / Error States (mobile app) / Page not found
+- Removed: Patient Portal / Error States (mobile app) / Session expired
+- Removed: Patient Portal / Error States (mobile app) / No internet connection
+- Removed: Patient Portal / Error States (mobile app) / Something went wrong
