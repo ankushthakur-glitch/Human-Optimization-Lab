@@ -639,16 +639,10 @@ export function PatientsScreen() {
             : []),
         ]}
         statusTabs={{
-          options: [
-            "Active",
-            "Invited",
-            "Declined",
-            "Not invited",
-            "Discharged",
-            "Consent withdrawn",
-          ],
-          /* Inactive patients sit under Active, told apart by their badge. */
-          value: (p) => (p.status === "Inactive" ? "Active" : p.status),
+          options: ["Active", "Inactive"],
+          /* Only Active patients count as active; every other status sits
+             under Inactive, told apart by its badge. */
+          value: (p) => (p.status === "Active" ? "Active" : "Inactive"),
         }}
         primaryAction={{
           label: "Add patient",

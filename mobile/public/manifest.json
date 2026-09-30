@@ -1,12 +1,12 @@
 {
   "id": "/app/",
-  "name": "Human Optimization",
-  "short_name": "Human Optimization",
+  "name": "Inlay Health",
+  "short_name": "Inlay Health",
   "start_url": "/app/",
   "scope": "/app/",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#FFFFFF",
+  "theme_color": "#417D88",
   "background_color": "#FFFFFF",
   "icons": [
     {

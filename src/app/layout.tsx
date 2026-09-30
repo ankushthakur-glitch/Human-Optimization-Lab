@@ -87,27 +87,17 @@ export const metadata = {
   title: `${BRAND_NAME} | Design System`,
   description: `Base design system and component library for the ${BRAND_NAME} product.`,
   /*
-   * The mark is duotone — a white figure knocked out of a black disc — so it
-   * cannot sit on transparency and stay legible against both light and dark
-   * browser chrome. Two variants are shipped and the browser picks by
-   * prefers-color-scheme; `favicon.ico` in src/app/ is the multi-resolution
-   * fallback for anything that ignores `media` (and for bookmarks).
-   *
-   * At 16px the fan of ~20 spokes aliases into a grey smudge. The H and the
-   * disc still read. Fixing it needs a reduced-detail glyph drawn for small
-   * sizes, not a rescale; most browsers reach for the 32px asset anyway.
+   * The Inlay Health app icon: the symbol on a petrol tile, so one set reads on
+   * light and dark browser chrome alike. `favicon.ico` in src/app/ is the
+   * multi-resolution fallback for anything that ignores these (and bookmarks).
    */
   icons: {
     icon: [
-      { url: "/brand/favicon/hol-v5-favicon-light-32.png", media: "(prefers-color-scheme: light)", sizes: "32x32", type: "image/png" },
-      { url: "/brand/favicon/hol-v5-favicon-light-16.png", media: "(prefers-color-scheme: light)", sizes: "16x16", type: "image/png" },
-      { url: "/brand/favicon/hol-v5-favicon-dark-32.png", media: "(prefers-color-scheme: dark)", sizes: "32x32", type: "image/png" },
-      { url: "/brand/favicon/hol-v5-favicon-dark-16.png", media: "(prefers-color-scheme: dark)", sizes: "16x16", type: "image/png" },
+      { url: "/brand/inlay/app-icon.svg", type: "image/svg+xml" },
+      { url: "/brand/inlay/favicon/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/inlay/favicon/icon-16.png", sizes: "16x16", type: "image/png" },
     ],
-    apple: [
-      { url: "/brand/favicon/hol-v5-favicon-light-180.png", media: "(prefers-color-scheme: light)", sizes: "180x180" },
-      { url: "/brand/favicon/hol-v5-favicon-dark-180.png", media: "(prefers-color-scheme: dark)", sizes: "180x180" },
-    ],
+    apple: [{ url: "/brand/inlay/favicon/apple-touch-icon.png", sizes: "180x180" }],
   },
 }
 
@@ -127,7 +117,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       data-base="neutral"
-      data-accent="brand-teal"
+      data-accent="inlay-p7"
       data-font="inter"
       data-heading="inherit"
       data-radius="small"

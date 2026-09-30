@@ -8,8 +8,9 @@ export const PATIENT = {
   email: "olivia.bennett@example.com",
   practice: "Harborview Longevity Clinic",
   practicePhone: "(858) 555-0100",
-  /** As printed in the invitation email. */
-  oneTimePassword: "Hx4-pR8t-Lm2",
+  /** The one-time activation code printed in the invitation email. Must
+      match INVITEES.patient.activationCode in the web prototype. */
+  activationCode: "731064",
 } as const
 
 /** The demographics the practice holds (from its EHR or the bulk import),

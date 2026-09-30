@@ -21,22 +21,22 @@ import { color, font, gutter } from "@/lib/theme"
 
 /* The first-run screens after the password: white, calm and roomy in the
    manner of Superpower, built from the app's own pieces (the teal Button,
-   the outlined TextField, Inter). A back button and a three part progress
-   line on top, one large title, the content, and the step's action pinned to
-   the foot in reach of a thumb. */
-
-export const FLOW_STEPS = 3
+   the outlined TextField, Inter). A back button on top, one title, the
+   content, and the step's action pinned to the foot in reach of a thumb. */
 
 export function FlowScreen({
-  step,
   title,
   art,
   children,
   footer,
   back = true,
+  onBack,
+  bar,
 }: {
-  /** 1 to FLOW_STEPS; leave out for a screen outside the count. */
-  step?: number
+  /** Replaces going back a screen, e.g. to the previous question. */
+  onBack?: () => void
+  /** Centred in the top bar, e.g. a review switcher. */
+  bar?: React.ReactNode
   title: string
   /** Sits above the title, centred. */
   art?: React.ReactNode
@@ -45,32 +45,12 @@ export function FlowScreen({
   footer?: React.ReactNode
   back?: boolean
 }) {
-  const top = useTopInset()
   const { bottom } = useSafeAreaInsets()
-  const canBack = back && router.canGoBack()
 
   return (
     <View style={styles.screen}>
       <DarkStatusBar />
-      <View style={[styles.bar, { paddingTop: top + 8 }]}>
-        <View style={styles.barInner}>
-          {canBack ? (
-            <Pressable
-              onPress={() => router.back()}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Back"
-              style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
-            >
-              <IconChevronLeft color={color.text} />
-            </Pressable>
-          ) : (
-            <View style={styles.backSpace} />
-          )}
-          {step !== undefined && <Progress step={step} />}
-          <View style={styles.backSpace} />
-        </View>
-      </View>
+      <FlowBar back={back} onBack={onBack} bar={bar} />
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -86,7 +66,7 @@ export function FlowScreen({
           </View>
         </ScrollView>
         {footer && (
-          <View style={[styles.footer, { paddingBottom: Math.max(bottom, 16) + 8 }]}>
+          <View style={[styles.footer, { paddingBottom: Math.max(bottom - 12, 16) }]}>
             <View style={styles.footerInner}>{footer}</View>
           </View>
         )}
@@ -95,17 +75,44 @@ export function FlowScreen({
   )
 }
 
-function Progress({ step }: { step: number }) {
+/** The top of every setup screen: back, when there is somewhere to go
+    back to. */
+export function FlowBar({
+  back = true,
+  onBack,
+  bar,
+}: {
+  back?: boolean
+  onBack?: () => void
+  bar?: React.ReactNode
+}) {
+  const top = useTopInset()
+  const canBack = back && (!!onBack || router.canGoBack())
+  // A screen that never goes back keeps only the safe area, not an empty row.
+  if (!back && !bar) return <View style={[styles.bar, { paddingTop: top + 8 }]} />
+  if (!back)
+    return (
+      <View style={[styles.bar, { paddingTop: top + 8 }]}>
+        <View style={[styles.barInner, styles.barCentred]}>{bar}</View>
+      </View>
+    )
   return (
-    <View
-      style={styles.progress}
-      accessibilityRole="progressbar"
-      accessibilityLabel={`Step ${step} of ${FLOW_STEPS}`}
-      accessibilityValue={{ min: 0, max: FLOW_STEPS, now: step }}
-    >
-      {Array.from({ length: FLOW_STEPS }, (_, i) => (
-        <View key={i} style={[styles.segment, i < step && styles.segmentOn]} />
-      ))}
+    <View style={[styles.bar, { paddingTop: top + 8 }]}>
+      <View style={styles.barInner}>
+        {canBack ? (
+          <Pressable
+            onPress={onBack ?? (() => router.back())}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
+          >
+            <IconChevronLeft color={color.text} />
+          </Pressable>
+        ) : (
+          <View style={styles.backSpace} />
+        )}
+      </View>
     </View>
   )
 }
@@ -115,7 +122,7 @@ export function Section({
   title,
   action,
   children,
-  gap = 14,
+  gap = 12,
 }: {
   title: string
   action?: React.ReactNode
@@ -361,9 +368,7 @@ const styles = StyleSheet.create({
   },
   backPressed: { backgroundColor: color.border },
   backSpace: { width: 40, height: 40 },
-  progress: { flex: 1, flexDirection: "row", gap: 6 },
-  segment: { flex: 1, height: 4, borderRadius: 2, backgroundColor: color.border },
-  segmentOn: { backgroundColor: color.primary },
+  barCentred: { justifyContent: "center" },
 
   scroll: { flexGrow: 1 },
   body: {
@@ -373,14 +378,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: gutter,
     paddingTop: 12,
     paddingBottom: 32,
-    gap: 28,
+    gap: 32,
   },
   art: { alignItems: "center", marginBottom: -12 },
   title: {
     fontFamily: font.semibold,
-    fontSize: 30,
-    lineHeight: 36,
-    letterSpacing: -0.9,
+    fontSize: 24,
+    lineHeight: 30,
+    letterSpacing: -0.6,
     color: color.text,
   },
   titleCentred: { textAlign: "center" },
@@ -394,15 +399,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
-  sectionHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-  },
-  sectionTitle: { fontFamily: font.semibold, fontSize: 16, lineHeight: 22, color: color.text },
+  // No rule under the heading: space and weight carry the hierarchy.
+  sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 24 },
+  sectionTitle: { fontFamily: font.semibold, fontSize: 17, lineHeight: 22, letterSpacing: -0.3, color: color.text },
 
   card: { backgroundColor: color.canvas, borderRadius: 20, padding: 16, borderWidth: 1.5, borderColor: color.canvas },
   cardSelected: { backgroundColor: color.background, borderColor: color.primary },
@@ -434,19 +433,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    height: 38,
-    paddingHorizontal: 14,
+    height: 34,
+    paddingHorizontal: 13,
     borderRadius: 19,
     borderWidth: 1,
     borderColor: color.border,
     backgroundColor: color.background,
   },
   chipOn: { borderColor: color.primary, backgroundColor: color.primaryTint },
-  chipText: { fontFamily: font.medium, fontSize: 14, color: color.text },
+  chipText: { fontFamily: font.medium, fontSize: 13.5, color: color.text },
   chipTextOn: { color: color.primary },
 
-  badge: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
-  badgeText: { fontFamily: font.medium, fontSize: 12, lineHeight: 16 },
+  badge: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  badgeText: { fontFamily: font.medium, fontSize: 11.5, lineHeight: 16 },
 
   row: { flexDirection: "row", justifyContent: "space-between", gap: 12, paddingVertical: 10 },
   rowRule: { borderBottomWidth: 1, borderBottomColor: color.border },

@@ -295,9 +295,6 @@ function ProvidersTable({
             <TableHead className="hidden text-center sm:table-cell">
               Declined
             </TableHead>
-            <TableHead className="hidden text-center sm:table-cell">
-              Not invited
-            </TableHead>
             <SortHead
               label="Enrollment rate"
               column="rate"
@@ -344,9 +341,6 @@ function ProvidersTable({
               </TableCell>
               <TableCell className="hidden text-center tabular-nums sm:table-cell">
                 {p.declined}
-              </TableCell>
-              <TableCell className="hidden text-center tabular-nums sm:table-cell">
-                {p.notInvited}
               </TableCell>
               <TableCell>
                 <RateCell rate={p.rate} behind={p.behind} />

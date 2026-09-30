@@ -328,10 +328,6 @@ export const EXAMPLE_GROUPS: ExampleGroup[] = [
         slug: "chat",
         title: "Chat",
       },
-      {
-        slug: "agent-screen",
-        title: "Agent Screen",
-      },
     ],
   },
   {

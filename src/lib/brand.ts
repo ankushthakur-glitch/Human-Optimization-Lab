@@ -6,7 +6,7 @@
  * title, reads it from here — change this line and the whole library follows.
  * Prose that happens to mention the product can stay prose.
  */
-export const BRAND_NAME = "Human Optimization"
+export const BRAND_NAME = "Inlay Health"
 
 /**
  * The machine-readable form of the name, for anything keyed rather than read:
@@ -19,10 +19,10 @@ export const BRAND_NAME = "Human Optimization"
  */
 export const BRAND_SLUG = "human-optimization"
 
-/** The suffix page titles carry, e.g. "Foundations | Human Optimization". */
+/** The suffix page titles carry, e.g. "Foundations | Inlay Health". */
 export const titleTemplate = `%s | ${BRAND_NAME}`
 
-/** "Foundations | Human Optimization" */
+/** "Foundations | Inlay Health" */
 export function brandedTitle(page: string) {
   return `${page} | ${BRAND_NAME}`
 }
@@ -30,32 +30,36 @@ export function brandedTitle(page: string) {
 /**
  * The lockup, in the two tones it has to come in.
  *
- * Concept Variation 5 in teal (the heart-figure mark and the two-line
- * wordmark), copied out of public/brand/concepts/v5 so the concept gallery can
- * change without moving the product's logo. `light` is the artwork as
- * supplied; `dark` is the same file with its gradient stops lifted to light
- * teal, since the supplied gradient runs to near-black and vanishes on a dark
- * page. Both are rendered and the wrong one hidden by CSS, so the swap costs no
- * JavaScript and cannot flash the wrong tone on first paint.
+ * The Inlay Health horizontal lockup (identity assets v2.1, Sep 2026), copied
+ * from inlay-identity-assets/logo/svg into public/brand/inlay. `light` is the
+ * full-colour artwork for light surfaces; `dark` is the reversed artwork with
+ * its petrol backing removed, for dark ones. The files' built-in clear space
+ * is trimmed from the viewBox so the art sits flush with the box it is given;
+ * the paths themselves are untouched, as the brand rules require. Both are
+ * rendered and the wrong one hidden by CSS, so the swap costs no JavaScript
+ * and cannot flash the wrong tone on first paint.
  */
 export const LOGO = {
-  light: "/brand/logo/hol-v5-lockup-light.svg",
-  dark: "/brand/logo/hol-v5-lockup-dark.svg",
-  width: 2219,
-  height: 556,
+  light: "/brand/inlay/lockup-light.svg",
+  dark: "/brand/inlay/lockup-dark.svg",
+  width: 406,
+  height: 84,
 } as const
 
 /**
- * The mark on its own — the H without the wordmark, centred on a transparent
- * square — for places too narrow for the lockup, chiefly the collapsed sidebar
- * rail. It is the same artwork the favicons are rendered from, so the rail and the
- * browser tab show one thing rather than two.
+ * The symbol on its own, for places too narrow for the lockup, chiefly the
+ * collapsed sidebar rail. Trimmed to its square like LOGO. The favicons are the
+ * app icon (the same symbol on a petrol tile), which reads on light and dark
+ * browser chrome alike.
  *
- * As with LOGO, `light`/`dark` name the scheme each file is drawn for:
- * `light` is the teal mark for light surfaces, `dark` its lifted tone.
+ * As with LOGO, `light`/`dark` name the scheme each file is drawn for. Brand
+ * minimum: 32px full colour.
  */
 export const MARK = {
-  light: "/brand/favicon/hol-v5-mark-light.svg",
-  dark: "/brand/favicon/hol-v5-mark-dark.svg",
-  size: 512,
+  light: "/brand/inlay/mark-light.svg",
+  dark: "/brand/inlay/mark-dark.svg",
+  size: 100,
 } as const
+
+/** The app icon: the symbol on a rounded petrol tile. */
+export const APP_ICON = "/brand/inlay/app-icon.svg"

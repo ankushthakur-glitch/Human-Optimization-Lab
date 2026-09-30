@@ -194,7 +194,6 @@ export function PracticesList() {
         p.id,
         p.name,
         p.npi,
-        p.tenant,
         p.locationName,
         p.region,
         p.manager ? managerName(p.manager) : "",
@@ -407,9 +406,6 @@ export function PracticesList() {
                     <TableHead className="hidden md:table-cell">
                       Region
                     </TableHead>
-                    <TableHead className="hidden xl:table-cell">
-                      Tenant
-                    </TableHead>
                     <TableHead className="hidden 2xl:table-cell">
                       Referral URL
                     </TableHead>
@@ -455,9 +451,6 @@ export function PracticesList() {
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         {practice.region}
-                      </TableCell>
-                      <TableCell className="hidden text-xs text-muted-foreground xl:table-cell">
-                        {practice.tenant}
                       </TableCell>
                       <TableCell className="hidden max-w-[16rem] 2xl:table-cell">
                         <div className="flex items-center gap-1">

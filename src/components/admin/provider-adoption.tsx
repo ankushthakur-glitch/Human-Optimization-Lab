@@ -185,7 +185,6 @@ type Segment =
   | "enrolled"
   | "pending"
   | "declined"
-  | "not-invited"
   | "closed"
 
 const SEGMENTS: {
@@ -199,18 +198,13 @@ const SEGMENTS: {
   { id: "pending", label: "Pending", test: (p) => p.status === "Invited" },
   { id: "declined", label: "Declined", test: (p) => p.status === "Declined" },
   {
-    id: "not-invited",
-    label: "Not invited",
-    test: (p) => p.status === "Not invited",
-  },
-  {
     id: "closed",
     label: "Closed",
     test: (p) => REACTIVATABLE.includes(p.status),
   },
 ]
 
-const STATUS_ORDER = ["Active", "Invited", "Declined", "Not invited"]
+const STATUS_ORDER = ["Active", "Invited", "Declined"]
 
 /* Whole days since an ISO date, for how long an invite has gone unanswered. */
 function daysSince(iso: string) {

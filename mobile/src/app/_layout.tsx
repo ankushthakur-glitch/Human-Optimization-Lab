@@ -27,10 +27,11 @@ const FONTS = {
 
 /* Which screens exist depends on the account state:
    signed out            activate, sign-in
-   one-time password in  set-password
-   signed in, new        onboarding/: about you, consent, record builds
+   code accepted         set-password
+   signed in, new        onboarding/: about you, consent, your why, record builds
    signed in             tabs: home (index), results, plan, care-team;
-                         the assistant, plans
+                         the assistant, plans, the record's pages, profile,
+                         connect later, and the paid plan's setup
    signed out for idling session-expired
    The error states (+not-found, and the review index under errors/) sit
    outside every guard, so they open whatever the account state.
@@ -91,6 +92,7 @@ function Routes() {
           <Stack.Screen name="onboarding/index" />
           <Stack.Screen name="onboarding/about-you" />
           <Stack.Screen name="onboarding/consent" />
+          <Stack.Screen name="onboarding/why" options={{ gestureEnabled: false }} />
           <Stack.Screen name="onboarding/syncing" options={{ gestureEnabled: false }} />
         </Stack.Protected>
         <Stack.Protected guard={status === "signedIn" && onboarded}>
@@ -101,6 +103,23 @@ function Routes() {
           <Stack.Screen name="care-team" options={{ animation: "none" }} />
           <Stack.Screen name="assistant" options={{ animation: "slide_from_bottom" }} />
           <Stack.Screen name="plans" />
+          {/* The record, opened from home and Results. */}
+          <Stack.Screen name="biomarker/[id]" />
+          <Stack.Screen name="record/[kind]" />
+          <Stack.Screen name="medications" />
+          <Stack.Screen name="add-report" />
+          <Stack.Screen name="tell-us" />
+          <Stack.Screen name="task/[id]" />
+          <Stack.Screen name="profile" />
+          {/* Connecting later, after "Not now" at setup. */}
+          <Stack.Screen name="connect" />
+          <Stack.Screen name="building" options={{ gestureEnabled: false }} />
+          {/* The paid plan's setup, straight after subscribing. */}
+          <Stack.Screen name="optimize/questionnaire" />
+          <Stack.Screen name="optimize/medicines" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="optimize/devices" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="optimize/tests" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="optimize/tour" options={{ gestureEnabled: false }} />
         </Stack.Protected>
         <Stack.Protected guard={status === "expired"}>
           <Stack.Screen name="session-expired" options={{ gestureEnabled: false }} />

@@ -3,7 +3,7 @@ import Image from "next/image"
 import Link from "next/link"
 
 import { cn } from "@/lib/utils"
-import { BRAND_NAME, LOGO } from "@/lib/brand"
+import { BRAND_NAME, LOGO, MARK } from "@/lib/brand"
 import {
   INVITEES,
   withInvitee,
@@ -20,10 +20,14 @@ import {
    its CSS variables — it looks the same in every inbox. It is set in Inter,
    the template's face, which the root layout already loads.
 
-   Per the product rules the email carries no health information. The
-   one-time password is sample text. */
+   Per the product rules the email carries no health information. It carries
+   no link text or sign-in details either: a one-time activation code and an
+   Activate account button, which opens the page that asks for the code and
+   then a new password. The code is sample text. */
 
-const TEAL = "#01837E"
+/* Inlay P7, the portal primary: P07 fills the button, P09 draws text in it. */
+const PRIMARY = "#417D88"
+const PRIMARY_TINT = "#24535B"
 
 /* A patient's app link, as the prototype follows it: the patient app's web
    build, served by this site at /app, opening on activation with the email
@@ -31,9 +35,9 @@ const TEAL = "#01837E"
 const appLink = (email: string) =>
   `/app/activate?email=${encodeURIComponent(email)}`
 
-/* Long values (the console link, the email address) drop to their own line as
-   a whole rather than leaving "https://" behind, and only wrap at a natural
-   point: after a slash or before the @, never mid-word. */
+/* Long values (an email address, a website) drop to their own line as a
+   whole, and only wrap at a natural point: after a slash or before the @,
+   never mid-word. */
 function Breakable({ text }: { text: string }) {
   return text.split(/(?<=\/)(?!\/)|(?=@)/).map((part, i) => (
     <Fragment key={i}>
@@ -43,25 +47,46 @@ function Breakable({ text }: { text: string }) {
   ))
 }
 
-function EmailLink({ invitee, text }: { invitee: InviteeKey; text: string }) {
+function Arrow() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" fill="none" aria-hidden>
+      <path
+        d="M3 8h10M9 4l4 4-4 4"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/* The button the letter is built around. Staff land on the portal's activate
+   page; a patient on the app's, with their email filled in. Drawn as a styled
+   link, which is how a button is made in an email. */
+function ActivateButton({ invitee }: { invitee: InviteeKey }) {
+  const className =
+    "inline-flex h-12 w-0 min-w-full items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-semibold text-white no-underline"
   if (invitee === "patient") {
     return (
       <a
         href={appLink(INVITEES.patient.email)}
-        className="inline-block max-w-full underline decoration-from-font underline-offset-2"
-        style={{ color: TEAL }}
+        className={className}
+        style={{ backgroundColor: PRIMARY }}
       >
-        <Breakable text={text} />
+        Activate account
+        <Arrow />
       </a>
     )
   }
   return (
     <Link
       href={withInvitee("/screens/login/activate", invitee)}
-      className="inline-block max-w-full underline decoration-from-font underline-offset-2"
-      style={{ color: TEAL }}
+      className={className}
+      style={{ backgroundColor: PRIMARY }}
     >
-      <Breakable text={text} />
+      Activate account
+      <Arrow />
     </Link>
   )
 }
@@ -86,13 +111,25 @@ const STORES = [
     caption: "GET IT ON",
     paths: [
       /* right, yellow */
-      { d: "M22.018 13.298l-3.919 2.218-3.515-3.493 3.543-3.521 3.891 2.202a1.49 1.49 0 0 1 0 2.594z", color: "#FBBC04" },
+      {
+        d: "M22.018 13.298l-3.919 2.218-3.515-3.493 3.543-3.521 3.891 2.202a1.49 1.49 0 0 1 0 2.594z",
+        color: "#FBBC04",
+      },
       /* left, blue */
-      { d: "M1.337.924a1.486 1.486 0 0 0-.112.568v21.017c0 .217.045.419.124.6l11.155-11.087L1.337.924z", color: "#4285F4" },
+      {
+        d: "M1.337.924a1.486 1.486 0 0 0-.112.568v21.017c0 .217.045.419.124.6l11.155-11.087L1.337.924z",
+        color: "#4285F4",
+      },
       /* top, green */
-      { d: "M13.544 10.989l3.258-3.238L3.45.195a1.466 1.466 0 0 0-.946-.179l11.04 10.973z", color: "#34A853" },
+      {
+        d: "M13.544 10.989l3.258-3.238L3.45.195a1.466 1.466 0 0 0-.946-.179l11.04 10.973z",
+        color: "#34A853",
+      },
       /* bottom, red */
-      { d: "M13.544 13.056l-11 10.933c.298.036.612-.016.906-.183l13.324-7.54-3.23-3.21z", color: "#EA4335" },
+      {
+        d: "M13.544 13.056l-11 10.933c.298.036.612-.016.906-.183l13.324-7.54-3.23-3.21z",
+        color: "#EA4335",
+      },
     ],
   },
 ]
@@ -107,14 +144,21 @@ function StoreButtons({ email }: { email: string }) {
           aria-label={`${caption} ${name}`}
           className="flex h-11 items-center gap-2 rounded-lg bg-black pr-3.5 pl-3 text-white"
         >
-          <svg viewBox="0 0 24 24" className="size-6 shrink-0" fill="currentColor" aria-hidden>
+          <svg
+            viewBox="0 0 24 24"
+            className="size-6 shrink-0"
+            fill="currentColor"
+            aria-hidden
+          >
             {paths.map(({ d, color }: { d: string; color?: string }) => (
               <path key={d} d={d} fill={color} />
             ))}
           </svg>
           <span className="flex flex-col leading-none">
             <span className="text-[10px]">{caption}</span>
-            <span className="mt-0.5 text-[17px] font-medium tracking-tight">{name}</span>
+            <span className="mt-0.5 text-[17px] font-medium tracking-tight">
+              {name}
+            </span>
           </span>
         </a>
       ))}
@@ -135,20 +179,15 @@ export function InviteEmailTemplate({
   const invitee = INVITEES[key]
   const manager = key === "clinic-manager"
   const provider = key === "provider"
-  /* Practice staff sign in with an Organization ID. */
+  /* Practice staff get help with the portal, not the admin console. */
   const staff = manager || provider
   const patient = key === "patient"
   const { sender } = invitee
-  const label = cn(web && "font-medium")
   const contacts = [
     { icon: "/email/envelope.svg", text: sender.email, link: true },
     { icon: "/email/globe.svg", text: sender.website, link: true },
     { icon: "/email/phone.svg", text: sender.phone },
     { icon: "/email/map-pin.svg", text: sender.address },
-  ]
-  const firstSignIn = [
-    "Create your own password",
-    "Set up two-factor authentication with an authenticator app",
   ]
 
   return (
@@ -178,21 +217,20 @@ export function InviteEmailTemplate({
               invited you to the {BRAND_NAME} app.
             </p>
             <p className="mb-[1.6em]">
-              Your account is ready. Download the app on your phone and sign in
-              to get started.
+              Your account is ready. Download the app on your phone and activate
+              your account to get started.
             </p>
           </>
         ) : provider ? (
           <>
             <p>
-              <span className="font-medium">{sender.name}</span>, clinic
-              manager at{" "}
-              <span className="font-medium">{invitee.practice}</span>, has
+              <span className="font-medium">{sender.name}</span>, clinic manager
+              at <span className="font-medium">{invitee.practice}</span>, has
               invited you to the {BRAND_NAME} provider portal.
             </p>
             <p className="mb-[1.6em]">
-              Your account is ready. Activate it to sign in, add your patients
-              and invite them to the {BRAND_NAME} app.
+              Your account is ready. Activate it to add your patients and invite
+              them to the {BRAND_NAME} app.
             </p>
           </>
         ) : manager ? (
@@ -204,8 +242,8 @@ export function InviteEmailTemplate({
               {BRAND_NAME} and invited you as its Clinic Manager.
             </p>
             <p className="mb-[1.6em]">
-              Your account is ready. Activate it to sign in and manage your
-              practice&rsquo;s clinicians, patients and settings in one place.
+              Your account is ready. Activate it to manage your practice&rsquo;s
+              clinicians, patients and settings in one place.
             </p>
           </>
         ) : (
@@ -216,109 +254,98 @@ export function InviteEmailTemplate({
               console as a Super Admin.
             </p>
             <p className="mb-[1.6em]">
-              Your account is ready. Activate it to sign in and manage
-              practices, users and platform settings in one place.
+              Your account is ready. Activate it to manage practices, users and
+              platform settings in one place.
             </p>
           </>
         )}
 
-        <p>Next Steps:</p>
-        <ol className="list-decimal">
-          {patient ? (
-            <>
-              <li className="ms-[21px] mb-[1.6em]">
-                Download the {BRAND_NAME} app on your phone:
-                {web ? (
-                  <>
-                    <br />
-                    <span className={label}>App Link :</span>{" "}
-                    <EmailLink
-                      invitee={key}
-                      text={`https://${invitee.consoleUrl}`}
-                    />
-                  </>
-                ) : (
-                  <StoreButtons email={invitee.email} />
-                )}
-              </li>
-              <li className="ms-[21px] mb-[1.6em]">
-                Open the app and sign in with:
-                <br />
-                <span className={label}>Email ID :</span>{" "}
-                <span className="inline-block max-w-full">
-                  <Breakable text={invitee.email} />
-                </span>
-                <br />
-                <span className={label}>One-Time Password :</span>{" "}
-                <span className="tracking-wide whitespace-nowrap tabular-nums">
-                  Hx4-pR8t-Lm2
-                </span>
-              </li>
-            </>
-          ) : (
-            <li className="ms-[21px] mb-[1.6em]">
-              Click the link below to activate your {invitee.role} account:
-              <br />
-              <span className={label}>{invitee.consoleName} Link :</span>{" "}
-              <EmailLink invitee={key} text={`https://${invitee.consoleUrl}`} />
-              {invitee.orgId && (
-                <>
-                  <br />
-                  <span className={label}>Organization ID :</span>{" "}
-                  <span className="tracking-wide tabular-nums">
-                    {invitee.orgId}
-                  </span>
-                </>
-              )}
-              <br />
-              <span className={label}>Email ID :</span>{" "}
-              <EmailLink invitee={key} text={invitee.email} />
-              <br />
-              <span className={label}>One-Time Password :</span>{" "}
-              <span className="tracking-wide whitespace-nowrap tabular-nums">
-                Kq7-mW2p-Xa9
-              </span>
-            </li>
-          )}
-          <li className="ms-[21px] mb-[1.6em]">
-            {/* A patient sets a password and is in; staff also set up two-factor. */}
-            {patient ? (
-              <>
-                The first time you sign in, you&rsquo;ll be asked to create your
-                own password.
-              </>
-            ) : (
-              <>
-                The first time you sign in, you&rsquo;ll be asked to:
-                <ul className="list-disc">
-                  {firstSignIn.map((step) => (
-                    <li key={step} className="ms-[21px]">
-                      {step}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </li>
-        </ol>
-
-        <p className={cn(staff && "mb-[1.6em]")}>
-          The one-time password works once. After you set your own password you
-          won&rsquo;t need it again.
-        </p>
-        {staff && (
-          <p>
-            Keep your Organization ID. You&rsquo;ll enter it with your email and
-            password each time you sign in.
-          </p>
+        {patient && (
+          <div className="mb-[1.6em]">
+            <p>First, get the {BRAND_NAME} app on your phone:</p>
+            <StoreButtons email={invitee.email} />
+          </div>
         )}
+
+        {/* The activation ticket: who it admits on the stub, then the code
+            and the button that uses it below the tear line. On the web it
+            keeps half the letter's width, on the left. */}
+        <div className="mb-[1.6em] flex">
+          <div
+            className={cn(
+              "w-full rounded-2xl border border-[#e8ecec] bg-white",
+              web && "max-w-[calc(50%-0.5rem)] min-w-0"
+            )}
+          >
+            <div
+              className={cn(
+                "flex items-center justify-between gap-4 pt-6 pb-7",
+                web ? "px-7" : "px-5"
+              )}
+            >
+              <div className="min-w-0 leading-[1.5]">
+                <p className="text-[13px] text-[#6b7280]">Admit one</p>
+                <p className="font-semibold text-[#171717]">{invitee.role}</p>
+                <p className="text-[13px] text-[#6b7280]">
+                  <Breakable text={invitee.email} />
+                </p>
+              </div>
+              <Image
+                src={MARK.light}
+                alt=""
+                width={48}
+                height={48}
+                className="size-10 shrink-0"
+              />
+            </div>
+            {/* the tear line, its notches cut in the letter's grey: half
+                circles laid over the ticket's edge, so each arc starts and
+                ends on the border line */}
+            <div className="flex items-center">
+              <span className="-ml-px h-6 w-3 shrink-0 rounded-r-full border border-l-0 border-[#e8ecec] bg-[#fafafa]" />
+              <span className="mx-3 flex-1 border-t-2 border-dashed border-[#d5e3e1]" />
+              <span className="-mr-px h-6 w-3 shrink-0 rounded-l-full border border-r-0 border-[#e8ecec] bg-[#fafafa]" />
+            </div>
+            <div
+              className={cn(
+                "flex flex-col items-center gap-4 pt-6 pb-7 text-center",
+                web ? "px-7" : "px-5"
+              )}
+            >
+              {/* The button takes the code's width, not the ticket's: w-0
+                  min-w-full keeps it out of the column's sizing. The code's
+                  trailing letter spacing is pulled back so the edges line up
+                  with the digits. */}
+              <div className="grid w-fit gap-4">
+                <p
+                  className={cn(
+                    "-mr-[0.35em] font-semibold tracking-[0.35em] tabular-nums",
+                    web ? "text-[34px]" : "text-[30px]"
+                  )}
+                  style={{ color: PRIMARY_TINT }}
+                >
+                  {invitee.activationCode}
+                </p>
+                <ActivateButton invitee={key} />
+              </div>
+              <p className="text-[13px] text-[#6b7280]">
+                Works once. Expires in 48 hours.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <p className="mb-[1.6em]">
+          If the code runs out, ask {patient ? invitee.practice : sender.name}{" "}
+          to send a new invitation.
+        </p>
         <p>
           If you have any questions or need help accessing{" "}
           {patient ? "the app" : staff ? "the portal" : "the admin console"},
           please contact {patient ? invitee.practice : sender.name} at{" "}
           <span
             className="underline underline-offset-2"
-            style={{ color: TEAL }}
+            style={{ color: PRIMARY_TINT }}
           >
             {sender.phone}
           </span>

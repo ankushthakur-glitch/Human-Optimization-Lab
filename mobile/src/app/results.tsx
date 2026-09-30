@@ -1,75 +1,171 @@
+import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
+import { Sparkline } from "@/components/charts"
 import { Badge, Section } from "@/components/flow"
-import { RecordIcon } from "@/components/record-icons"
+import { Count, IconTile, List, ListRow } from "@/components/list"
+import { RecordIcon, type RecordIconName } from "@/components/record-icons"
 import { TabScreen } from "@/components/tab-bar"
-import { DATA_TYPES, FINDINGS } from "@/lib/record"
+import { useOnboarding } from "@/lib/onboarding"
+import {
+  ALLERGIES,
+  BIOMARKERS,
+  DATA_TYPES,
+  DIRECTION_LABEL,
+  DOCUMENTS,
+  IMMUNIZATIONS,
+  MEDICATIONS,
+  ORDERS,
+  PROBLEMS,
+  PROCEDURES,
+  SOURCES,
+  VISITS,
+  direction,
+  inRange,
+  medDifference,
+} from "@/lib/record"
 import { color, font } from "@/lib/theme"
 
-/* Results: the flagged results first, then everything the record holds,
-   by kind, with its count. */
+/* Results: the patient's longitudinal record. Every biomarker with its
+   direction over time, then each part of the record (conditions, medicines,
+   allergies, visits, tests ordered and whether they were done, documents),
+   with any difference between two lists called out, and ways to add what
+   never reaches the doctor: a photographed report, or something the patient
+   tells us. */
+
+export type RecordKind = "conditions" | "allergies" | "visits" | "procedures" | "orders" | "documents" | "immunizations"
+
+const count = (key: string) => DATA_TYPES.find((t) => t.key === key)?.count
 
 export default function ResultsScreen() {
+  const { added = [], meds = {} } = useOnboarding()
+  const toConfirm = MEDICATIONS.filter((m) => !m.resolved && !meds[m.id]).length
+  const notDone = ORDERS.filter((o) => o.state !== "done" && o.state !== "planned").length
+
+  const parts: { kind: RecordKind | "medications"; icon: RecordIconName; label: string; n?: number; note?: string }[] = [
+    { kind: "conditions", icon: "conditions", label: "Conditions", n: PROBLEMS.length, note: "1 difference" },
+    { kind: "medications", icon: "medications", label: "Medicines", n: MEDICATIONS.length, note: toConfirm ? `${toConfirm} to confirm` : undefined },
+    { kind: "allergies", icon: "allergies", label: "Allergies", n: ALLERGIES.length, note: "1 difference" },
+    { kind: "visits", icon: "visits", label: "Visits", n: count("Encounter") ?? VISITS.length },
+    { kind: "procedures", icon: "procedures", label: "Procedures", n: PROCEDURES.length },
+    { kind: "orders", icon: "labs", label: "Tests ordered", n: ORDERS.length, note: notDone ? `${notDone} not done yet` : undefined },
+    { kind: "immunizations", icon: "immunizations", label: "Immunizations", n: count("Immunization") ?? IMMUNIZATIONS.length },
+    { kind: "documents", icon: "documents", label: "Documents", n: (count("DocumentReference") ?? DOCUMENTS.length) + added.filter((a) => a.id.startsWith("report")).length },
+  ]
+
   return (
-    <TabScreen tab="results" title="Results">
-      <Section title="Needs attention" action={<Badge tone="high">{`${FINDINGS.length} results`}</Badge>}>
-        <View style={styles.list}>
-          {FINDINGS.map((f, i) => (
-            <View key={f.id} style={[styles.finding, i < FINDINGS.length - 1 && styles.rule]}>
-              <View style={[styles.flag, { backgroundColor: f.flag === "high" ? color.high : color.low }]} />
-              <View style={styles.body}>
-                <Text style={styles.name}>{f.name}</Text>
-                <Text style={styles.meta}>
-                  Target {f.range}, {f.source}, {f.date}
-                </Text>
-              </View>
-              <View style={styles.right}>
-                <Text style={styles.value}>{f.value}</Text>
-                <Badge tone={f.flag}>{f.flag === "high" ? "High" : "Low"}</Badge>
-              </View>
-            </View>
-          ))}
-        </View>
+    <TabScreen tab="results" title="Record">
+      <Section title="Biomarkers" action={<Badge tone="high">{`${BIOMARKERS.filter((b) => !inRange(b, b.points.at(-1)!.value)).length} out of range`}</Badge>}>
+        <List>
+          {BIOMARKERS.map((b) => {
+            const last = b.points.at(-1)!
+            const out = !inRange(b, last.value)
+            const dir = direction(b)
+            return (
+              <ListRow
+                key={b.id}
+                title={b.name}
+                meta={DIRECTION_LABEL[dir]}
+                right={
+                  <View style={styles.marker}>
+                    <Sparkline marker={b} />
+                    <View style={styles.value}>
+                      <Text style={[styles.valueText, out && { color: color.high }]}>{last.shown ?? last.value}</Text>
+                      <Text style={styles.unit}>{b.unit}</Text>
+                    </View>
+                  </View>
+                }
+                onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: b.id } })}
+              />
+            )
+          })}
+        </List>
       </Section>
 
       <Section title="Your record">
-        <View style={styles.list}>
-          {DATA_TYPES.map((t, i) => (
-            <View key={t.key} style={[styles.row, i < DATA_TYPES.length - 1 && styles.rule]}>
-              <View style={styles.tile}>
-                <RecordIcon name={t.icon} size={18} color={color.primary} />
-              </View>
-              <Text style={styles.rowLabel}>{t.label}</Text>
-              <Text style={styles.count}>{t.count}</Text>
-            </View>
+        <List>
+          {parts.map((p) => (
+            <ListRow
+              key={p.kind}
+              icon={
+                <IconTile>
+                  <RecordIcon name={p.icon} size={18} color={color.primary} />
+                </IconTile>
+              }
+              title={p.label}
+              note={p.note ? { text: p.note } : undefined}
+              right={p.n !== undefined ? <Count>{p.n}</Count> : undefined}
+              onPress={() =>
+                p.kind === "medications"
+                  ? router.push("/medications")
+                  : router.push({ pathname: "/record/[kind]", params: { kind: p.kind } })
+              }
+            />
           ))}
-        </View>
+        </List>
+      </Section>
+
+      <Section title="Add to your record">
+        <List>
+          <ListRow
+            icon={
+              <IconTile tone="muted">
+                <RecordIcon name="documents" size={18} color={color.text} />
+              </IconTile>
+            }
+            title="Add a report"
+            meta="A scan or test from a private clinic"
+            onPress={() => router.push("/add-report")}
+          />
+          <ListRow
+            icon={
+              <IconTile tone="muted">
+                <RecordIcon name="visits" size={18} color={color.text} />
+              </IconTile>
+            }
+            title="Tell us something"
+            meta="A medicine, a visit or a test elsewhere"
+            onPress={() => router.push("/tell-us")}
+          />
+        </List>
+        {added.length > 0 && (
+          <List>
+            {added.map((a) => (
+              <ListRow
+                key={a.id}
+                title={a.title}
+                meta={`${a.detail}, ${a.at}`}
+                right={a.unclear ? <Badge tone="low">Being checked</Badge> : <Badge tone="ok">Added</Badge>}
+              />
+            ))}
+          </List>
+        )}
+      </Section>
+
+      <Section title="Where it comes from">
+        <List>
+          {SOURCES.map((s) => (
+            <ListRow
+              key={s.name}
+              icon={
+                <IconTile>
+                  <RecordIcon name={s.kind} size={18} color={color.primary} />
+                </IconTile>
+              }
+              title={s.name}
+              meta={`${s.label}, ${s.system}`}
+            />
+          ))}
+        </List>
       </Section>
     </TabScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  list: { borderWidth: 1, borderColor: color.border, borderRadius: 18, paddingHorizontal: 14 },
-  rule: { borderBottomWidth: 1, borderBottomColor: color.border },
-  finding: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
-  flag: { width: 4, alignSelf: "stretch", borderRadius: 2 },
-  body: { flex: 1, gap: 2 },
-  name: { fontFamily: font.medium, fontSize: 15, color: color.text },
-  meta: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: color.muted },
-  right: { alignItems: "flex-end", gap: 4 },
-  value: { fontFamily: font.semibold, fontSize: 15, color: color.text },
-
-  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 },
-  tile: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: color.primaryTint,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rowLabel: { flex: 1, fontFamily: font.medium, fontSize: 15, color: color.text },
-  count: { fontFamily: font.semibold, fontSize: 17, color: color.text },
+  marker: { flexDirection: "row", alignItems: "center", gap: 10 },
+  value: { alignItems: "flex-end", minWidth: 56 },
+  valueText: { fontFamily: font.semibold, fontSize: 15, color: color.text },
+  unit: { fontFamily: font.regular, fontSize: 11, color: color.muted },
 })

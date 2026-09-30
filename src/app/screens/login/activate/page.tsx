@@ -1,43 +1,47 @@
 import type { Metadata } from "next"
 
 import { AuthShell } from "@/components/auth/auth-shell"
-import { SignInForm } from "@/components/auth/sign-in-form"
+import { CodeForm } from "@/components/auth/code-form"
 import { inviteeFrom, withInvitee } from "@/components/auth/invitees"
 
 export const metadata: Metadata = { title: "Activate your account" }
 
-/** The link in the invitation email lands here, email (and a clinic
-    manager's Organization ID) already filled in. */
+/** The invitation's Activate account button lands here. Step one of the
+    first sign-in: the one-time code from the email, then a new password,
+    then (for staff) two-factor setup. The link names the account, so there
+    is no email or password to type. */
 export default async function ActivateScreen({
   searchParams,
 }: {
   searchParams: Promise<{ as?: string | string[] }>
 }) {
   const invitee = inviteeFrom((await searchParams).as)
-  const next = withInvitee("/screens/login/set-password", invitee.key)
 
   return (
     <AuthShell
       title="Activate your account"
       description={
-        invitee.key === "patient"
-          ? `You’ve been invited by ${invitee.practice}. Sign in with the details from your email.`
-          : invitee.key === "provider"
-            ? `You’ve been invited to ${invitee.practice} as a Provider. Sign in with the details from your email.`
-            : invitee.practice
-            ? `You’ve been invited to ${invitee.practice} as its Clinic Manager. Sign in with the details from your email.`
-            : "You’ve been invited to the admin console as a Super Admin. Sign in with the one-time password from your email."
+        <>
+          Enter the 6-digit code we sent to{" "}
+          <span className="font-medium text-foreground">{invitee.email}</span>.
+        </>
       }
     >
-      <SignInForm
-        next={next}
-        nextForPractice={next}
-        defaultOrgId={invitee.orgId}
-        defaultEmail={invitee.email}
-        showOrgId={!!invitee.orgId}
-        orgRequired
-        temporary
+      <CodeForm
+        next={withInvitee("/screens/login/set-password", invitee.key)}
+        label="Activation code"
+        submitLabel="Verify code"
       />
+      {/* Practice staff sign in with it from now on, and the email no
+          longer carries it, so it is shown once here. */}
+      {invitee.orgId && (
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Organization ID :{" "}
+          <span className="font-medium text-foreground tabular-nums">
+            {invitee.orgId}
+          </span>
+        </p>
+      )}
     </AuthShell>
   )
 }

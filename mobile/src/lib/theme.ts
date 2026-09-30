@@ -1,15 +1,15 @@
 /* The patient app's tokens: the web portal's design system (src/app/globals.css
-   with the brand-teal accent), resolved to the colours the portal renders so
+   with the Inlay P7 accent), resolved to the colours the portal renders so
    the app and the portal read as one product. The app is light only for now,
    like the invitation email. */
 
 export const color = {
-  /** --primary */
-  primary: "#01837E",
-  /** The brand teal at 25%: the focus halo. */
-  primaryHalo: "#C0E0DF",
-  /** --primary at 80%, the portal's button hover; used for pressed. */
-  primaryPressed: "#4F9B97",
+  /** --primary: Inlay P7, the portal primary */
+  primary: "#417D88",
+  /** P02 of the P7 ramp: the focus halo. */
+  primaryHalo: "#C0E0E6",
+  /** --primary-hover, the portal's button hover; used for pressed. */
+  primaryPressed: "#336771",
   onPrimary: "#FFFFFF",
   /** --foreground */
   text: "#0A0A0A",
@@ -34,8 +34,8 @@ export const color = {
   errorTint: "#FCE9E6",
   /** The onboarding screens' soft grey ground for cards and tracks. */
   canvas: "#F6F6F4",
-  /** The brand teal as a tint, for selected cards and chips. */
-  primaryTint: "#E8F4F3",
+  /** --primary-surface (P00), for selected cards and chips. */
+  primaryTint: "#EEF9FC",
   /** Result flags, tint plus text as the portal draws them. */
   high: "#C72B32",
   highTint: "#FDECEE",
@@ -55,5 +55,5 @@ export const font = {
     phone use the rounder, taller touch size. */
 export const radius = 7.2
 export const touchRadius = 12
-export const buttonRadius = 14
+export const buttonRadius = 999
 export const gutter = 24

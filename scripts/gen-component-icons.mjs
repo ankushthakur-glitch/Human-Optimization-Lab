@@ -102,7 +102,6 @@ const MAP = {
   "approval-card": ["CheckmarkBadge01Icon", "ShieldKeyIcon"],
   "prompt-bar": ["SentIcon", "PromptIcon"],
   chat: ["Chatting01Icon", "Chat01Icon"],
-  "agent-screen": ["RoboticIcon", "ComputerIcon"],
 
   // Agent data
   "recommendation-card": ["Idea01Icon", "Bulb01Icon"],

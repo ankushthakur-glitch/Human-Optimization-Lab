@@ -44,7 +44,6 @@ export default function AboutYouScreen() {
 
   return (
     <FlowScreen
-      step={1}
       title="Is this you?"
       back={false}
       footer={

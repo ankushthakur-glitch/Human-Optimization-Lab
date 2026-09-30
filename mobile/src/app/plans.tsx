@@ -42,10 +42,13 @@ export default function PlansScreen() {
 
   async function finish() {
     setPending(true)
-    await onboarding.save({ membership: { tier, programs } })
+    const starting = tier === "optimization" && onboarding.membership?.tier !== "optimization"
+    // A new subscription starts the paid setup from its first step.
+    await onboarding.save({ membership: { tier, programs }, ...(starting ? { setupDone: [], plan: undefined } : {}) })
     setPending(false)
     setConfirming(false)
-    router.back()
+    if (starting) router.replace("/optimize/questionnaire")
+    else router.back()
   }
 
   const paid = TIERS.optimization
@@ -204,7 +207,7 @@ function ConfirmSheet({
   return (
     <View style={StyleSheet.absoluteFill}>
       <Pressable style={styles.scrim} onPress={onCancel} accessibilityLabel="Close" />
-      <View style={[styles.sheet, { paddingBottom: Math.max(bottom, 16) + 8 }]} accessibilityViewIsModal>
+      <View style={[styles.sheet, { paddingBottom: Math.max(bottom - 12, 16) }]} accessibilityViewIsModal>
         <View style={styles.grabber} />
         <Text style={styles.sheetTitle} accessibilityRole="header">
           Confirm your membership

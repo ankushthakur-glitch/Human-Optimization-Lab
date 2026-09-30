@@ -83,7 +83,7 @@ export const TIERS: Record<Tier, { name: string; price: string; per?: string; fe
       "One tailored program from a detailed questionnaire",
       "Wearables through Terra",
       "Nutrition and exercise plan, with an exercise library",
-      "Daily dashboard, HOL score, check ins and logging",
+      "Daily dashboard, Inlay score, check ins and logging",
       "Full AI optimization copilot",
       "Goals, progress and a 90 day forecast",
       "Medication and supplement reconciliation",

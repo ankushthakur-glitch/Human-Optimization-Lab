@@ -61,7 +61,7 @@ export function LaunchScreen({ ready, onDone }: { ready: boolean; onDone: () => 
   return (
     <Animated.View
       style={[StyleSheet.absoluteFill, styles.screen, { opacity: exit }]}
-      accessibilityLabel="Human Optimization Lab is loading"
+      accessibilityLabel="Inlay Health is loading"
       accessibilityRole="progressbar"
     >
       <View style={styles.centre}>
@@ -81,7 +81,7 @@ export function LaunchScreen({ ready, onDone }: { ready: boolean; onDone: () => 
           <Image source={MARK} style={styles.mark} resizeMode="contain" />
         </Animated.View>
         <Animated.View style={[styles.words, { opacity: textIn, transform: [{ translateY: rise }] }]}>
-          <Text style={styles.name}>Human Optimization Lab</Text>
+          <Text style={styles.name}>Inlay Health</Text>
           <View style={styles.track}>
             <Animated.View style={[styles.bar, { width }]} />
           </View>

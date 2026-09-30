@@ -38,7 +38,7 @@ export function ErrorState({
     <View style={styles.screen}>
       <DarkStatusBar />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: top + 24, paddingBottom: bottom + 24 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: top + 24, paddingBottom: Math.max(bottom - 12, 16) + 8 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.body}>

@@ -54,7 +54,6 @@ export type ProviderAdoption = {
   /** Invited with no answer yet: the Pending tab. */
   invited: number
   declined: number
-  notInvited: number
   /** Enrolled over open records, 0 to 1; null with no open records. */
   rate: number | null
   behind: boolean
@@ -90,7 +89,6 @@ type Roster = {
     | "enrolled"
     | "invited"
     | "declined"
-    | "notInvited"
     | "rate"
     | "behind"
   >[]
@@ -108,7 +106,6 @@ function summarise(roster: Roster): Adoption {
       enrolled,
       invited,
       declined,
-      notInvited: openRecords.length - enrolled - invited - declined,
       rate: openRecords.length ? enrolled / openRecords.length : null,
       behind: false,
     }
@@ -278,21 +275,16 @@ function derivedRoster(practice: Practice): Roster {
           ? "Discharged"
           : rand() < tendency[at]
             ? "Active"
-            : rand() < 0.7
-              ? "Invited"
-              : "Not invited"
+            : "Invited"
     /* About one in ten invited patients turned the invite down. */
     if (status === "Invited" && rand() < 0.1) status = "Declined"
-    const invitedDaysAgo =
-      status === "Not invited" ? 0 : Math.floor(rand() * 30)
+    /* Every patient is invited as they are added. */
+    const invitedDaysAgo = Math.floor(rand() * 30)
     pool[at].patients.push({
       id: `P${String(20_000 + ((seedOffset * 311 + i * 17) % 80_000)).padStart(5, "0")}`,
       name: name(i + 3, seedOffset + 5),
       status,
-      invitedAt:
-        status === "Not invited"
-          ? ""
-          : isoDaysBefore("2026-09-24", invitedDaysAgo),
+      invitedAt: isoDaysBefore("2026-09-24", invitedDaysAgo),
       respondedAt:
         status === "Declined"
           ? isoDaysBefore(
@@ -410,4 +402,26 @@ export function usePlatformAdoption(
       ),
     [practices, harborview]
   )
+}
+
+/** Adoption counting only the patients invited within a period, inclusive
+    ISO days, null ends open. Patients never invited fall outside any
+    bounded period. Users and providers are not dated, so they stay. */
+export function adoptionInPeriod(
+  adoption: Adoption,
+  from: string | null,
+  to: string | null
+): Adoption {
+  if (!from && !to) return adoption
+  const inside = (x: AdoptionPatient) =>
+    !!x.invitedAt &&
+    (!from || x.invitedAt >= from) &&
+    (!to || x.invitedAt <= to)
+  return summarise({
+    users: adoption.users,
+    providers: adoption.providers.map((p) => ({
+      ...p,
+      patients: p.patients.filter(inside),
+    })),
+  })
 }

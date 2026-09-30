@@ -23,7 +23,7 @@ const ORG_ID = /^\d{6}$/
 
 const MESSAGES = {
   orgMissing: "Enter your Organization ID.",
-  orgInvalid: "Enter the 6-digit Organization ID from your invitation email.",
+  orgInvalid: "Enter your 6-digit Organization ID.",
   emailMissing: "Enter your email address.",
   emailInvalid: "Enter a valid email address, like name@practice.com.",
   secretMissing: "Enter your password.",
@@ -32,8 +32,8 @@ const MESSAGES = {
 type Errors = { orgId?: string; email?: string; secret?: string }
 
 /**
- * Organization ID, email and password. The same form serves a returning user
- * and someone arriving from their invite with a temporary password.
+ * Organization ID, email and password, for a returning user. A first sign-in
+ * starts from the invitation's activation code instead (see /login/activate).
  *
  * The Organization ID is the practice's Practice ID. Practice staff sign in
  * with it; the Super Admin leaves it blank, as the admin console belongs to no
@@ -49,7 +49,6 @@ export function SignInForm({
   defaultEmail = "",
   orgRequired = false,
   showOrgId = true,
-  temporary = false,
 }: {
   next: string
   nextForPractice?: string
@@ -60,8 +59,6 @@ export function SignInForm({
   orgRequired?: boolean
   /** The Super Admin's invite has no practice, so no ID to ask for. */
   showOrgId?: boolean
-  /** Invite path: the password is the one-time one from the email. */
-  temporary?: boolean
 }) {
   const router = useRouter()
   const [orgId, setOrgId] = React.useState(defaultOrgId)
@@ -139,40 +136,38 @@ export function SignInForm({
         </Field>
         <Field data-invalid={!!errors.secret || undefined}>
           <FieldLabel htmlFor="secret">
-            {temporary ? "One-time password" : "Password"}
+            Password
             <Required />
           </FieldLabel>
           <PasswordInput
             id="secret"
-            autoComplete={temporary ? "one-time-code" : "current-password"}
-            placeholder={temporary ? "From your invitation email" : "Password"}
+            autoComplete="current-password"
+            placeholder="Password"
             value={secret}
             onChange={(e) => setSecret(e.target.value)}
             invalid={!!errors.secret}
           />
           {errors.secret && <FieldError>{errors.secret}</FieldError>}
         </Field>
-        {!temporary && (
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Checkbox id="remember" />
-              <Label htmlFor="remember" className="font-normal">
-                Remember me
-              </Label>
-            </div>
-            <Button
-              variant="link"
-              className="h-auto p-0 font-normal"
-              nativeButton={false}
-              render={<Link href="/screens/login/forgot-password" />}
-            >
-              Forgot Password?
-            </Button>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Checkbox id="remember" />
+            <Label htmlFor="remember" className="font-normal">
+              Remember me
+            </Label>
           </div>
-        )}
+          <Button
+            variant="link"
+            className="h-auto p-0 font-normal"
+            nativeButton={false}
+            render={<Link href="/screens/login/forgot-password" />}
+          >
+            Forgot Password?
+          </Button>
+        </div>
         <Button type="submit" size="lg" className="w-full" disabled={pending}>
           {pending && <Spinner />}
-          {temporary ? "Continue" : "Sign In"}
+          Sign In
         </Button>
       </FieldGroup>
     </form>

@@ -36,6 +36,11 @@ const PLATFORM_ADMIN: Sender = {
   address: "123 Main Street, Anytown, CA 12345",
 }
 
+/** The 6-digit activation code a staff invitation carries, entered on the
+    page its Activate account button opens. Sample value: the prototype takes
+    any six digits except 000000. */
+export const ACTIVATION_CODE = "482915"
+
 export type Invitee = {
   key: InviteeKey
   firstName: string
@@ -49,6 +54,8 @@ export type Invitee = {
   consoleUrl: string
   /** Where the first sign-in ends up. */
   home: string
+  /** The one-time code in the invitation, in place of a password. */
+  activationCode: string
   sender: Sender
 }
 
@@ -61,6 +68,7 @@ export const INVITEES: Record<InviteeKey, Invitee> = {
     consoleName: "Admin Console",
     consoleUrl: "admin.humanoptimizationlab.com/activate",
     home: "/screens/admin/practices",
+    activationCode: ACTIVATION_CODE,
     sender: PLATFORM_ADMIN,
   },
   "clinic-manager": {
@@ -73,6 +81,7 @@ export const INVITEES: Record<InviteeKey, Invitee> = {
     consoleName: "Practice Portal",
     consoleUrl: "portal.humanoptimizationlab.com/activate",
     home: "/screens/practice/users",
+    activationCode: ACTIVATION_CODE,
     sender: PLATFORM_ADMIN,
   },
   /* Elise Harrington (PR3132 in the practice's sample data). */
@@ -85,7 +94,8 @@ export const INVITEES: Record<InviteeKey, Invitee> = {
     role: "Provider",
     consoleName: "Provider Portal",
     consoleUrl: "portal.humanoptimizationlab.com/activate",
-    home: "/screens/patients",
+    home: "/screens/patients/dashboard",
+    activationCode: ACTIVATION_CODE,
     sender: CLINIC_MANAGER,
   },
   /* Signs in on the patient app (mobile/), not the web, so `consoleUrl` is
@@ -99,6 +109,8 @@ export const INVITEES: Record<InviteeKey, Invitee> = {
     consoleName: "App",
     consoleUrl: "humanoptimizationlab.com/app",
     home: "",
+    /* Must match PATIENT.activationCode in mobile/src/lib/patient.ts. */
+    activationCode: "731064",
     sender: CLINIC_MANAGER,
   },
 }

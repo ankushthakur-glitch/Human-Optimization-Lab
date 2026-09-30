@@ -13,12 +13,11 @@ import {
   IconNotification,
   IconSearch,
   IconSettings,
-  IconStethoscope,
   IconUser,
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
-import { BRAND_NAME } from "@/lib/brand"
+import { BRAND_NAME, MARK } from "@/lib/brand"
 import { Avatar, AvatarFallback } from "@/design-system/ui/avatar"
 import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
@@ -257,6 +256,18 @@ function SidebarNav({
   )
 }
 
+/* The Inlay symbol, both tones shipped and CSS hiding one, as in the app shell. */
+function BrandSymbol() {
+  return (
+    <>
+      {/* eslint-disable @next/next/no-img-element -- brand SVG shown as-is */}
+      <img src={MARK.light} alt="" className="size-8 shrink-0 dark:hidden" />
+      <img src={MARK.dark} alt="" className="hidden size-8 shrink-0 dark:block" />
+      {/* eslint-enable @next/next/no-img-element */}
+    </>
+  )
+}
+
 function BrandMark({ collapsed }: { collapsed?: boolean }) {
   return (
     <div
@@ -265,9 +276,7 @@ function BrandMark({ collapsed }: { collapsed?: boolean }) {
         collapsed && "justify-center px-0"
       )}
     >
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-        <IconStethoscope className="size-3.5" />
-      </span>
+      <BrandSymbol />
       {!collapsed && (
         <span className="truncate text-sm font-semibold">{BRAND_NAME}</span>
       )}
@@ -287,9 +296,7 @@ function TopBar({
   return (
     <header className="flex h-12 shrink-0 items-center gap-4 border-b bg-card px-4">
       <div className="flex items-center gap-2">
-        <span className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-          <IconStethoscope className="size-3.5" />
-        </span>
+        <BrandSymbol />
         <span className="text-sm font-semibold">{BRAND_NAME}</span>
       </div>
 

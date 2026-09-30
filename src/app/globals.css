@@ -146,6 +146,9 @@
        --primary is already dark enough to paint with, this is just --primary.
        Full-strength --primary stays the fill: buttons, the nav bar, focus. */
   --primary-tint: var(--primary);
+  /* The fill a primary button or active pill takes on hover. Accents that
+     define a brand hover set it; the rest fade the fill, as shadcn does. */
+  --primary-hover: color-mix(in oklab, var(--primary) 80%, transparent);
   --primary-surface: color-mix(in oklab, var(--primary-tint) 10%, transparent);
 }
 
@@ -277,6 +280,28 @@
   --success-surface: color-mix(in oklab, var(--success) 12%, transparent);
   --warning-surface: color-mix(in oklab, var(--warning) 14%, transparent);
   --info-surface: color-mix(in oklab, var(--info) 12%, transparent);
+}
+
+/* Admin dashboard charts. Soft tints on purpose: the dashboard is read at a
+   glance, so fills stay light and the numbers carry the detail in text.
+   Enrolled and pending are one hue at two lightnesses (a stage, not a new
+   thing); declined is the only warm hue. Every chart pairs them with a
+   legend or label, and the table below repeats the numbers, so no reading
+   rests on colour alone. */
+:root {
+  --viz-enrolled: oklch(0.7 0.11 232);
+  --viz-pending: oklch(0.87 0.06 225);
+  --viz-declined: oklch(0.78 0.11 22);
+  --viz-behind: oklch(0.84 0.1 75);
+  --viz-track: oklch(0.955 0.004 250);
+}
+
+:root.dark {
+  --viz-enrolled: oklch(0.72 0.11 232);
+  --viz-pending: oklch(0.48 0.07 232);
+  --viz-declined: oklch(0.7 0.13 22);
+  --viz-behind: oklch(0.78 0.11 75);
+  --viz-track: oklch(0.28 0.01 250);
 }
 
 :root.dark {
@@ -701,6 +726,7 @@ svg path[stroke="currentColor"] {
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);

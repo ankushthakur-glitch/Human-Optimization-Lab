@@ -21,7 +21,7 @@ export type DesignSystemConfig = {
  */
 export const DEFAULT_CONFIG: DesignSystemConfig = {
   base: "neutral",
-  accent: "brand-teal",
+  accent: "inlay-p7",
   font: "inter",
   heading: "inherit",
   radius: "small",
@@ -48,9 +48,9 @@ const STORAGE_KEY = `${BRAND_SLUG}-design-system`
  * ever toggled dark mode still carries whatever accent was the default then.
  * An accent saved without the current stamp is dropped on read, which is how
  * the switch of default from blue to teal reaches browsers that saved before
- * it. Bump this when the default accent changes again.
+ * it. Bump this when the default accent changes again (3: teal to Inlay, 4: Inlay to Inlay P7).
  */
-const ACCENT_VERSION = 2
+const ACCENT_VERSION = 4
 
 type ContextValue = {
   config: DesignSystemConfig

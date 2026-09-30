@@ -6,7 +6,8 @@ import { IconLock } from "@/components/icons"
 import { useAuth } from "@/lib/auth"
 import { confirmError, newPasswordError } from "@/lib/validate"
 
-/** Replaces the one-time password. Same rules as the web portal. */
+/** Activation, step two: a new password and its confirmation. Same rules
+    as the web portal. */
 export default function SetPasswordScreen() {
   const { setPassword } = useAuth()
   const [password, setValue] = React.useState("")
@@ -25,7 +26,7 @@ export default function SetPasswordScreen() {
   }
 
   return (
-    <Screen title="Set your password">
+    <Screen title="Create your password">
       <Stack>
         <PasswordField
           label="New password"

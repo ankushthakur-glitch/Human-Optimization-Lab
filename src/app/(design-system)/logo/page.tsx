@@ -4,36 +4,16 @@ import * as React from "react"
 import { IconDownload } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
-import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
 
-/* The logo concepts under review, each supplied in the three brand
-   accents. Files live in public/brand/concepts/v{n}/: `lockup-{colour}.svg` is
-   the artwork as supplied, `mark-{colour}.svg` the same file re-cropped to a
-   square around the mark (viewBox only — no path is redrawn). */
-const CONCEPTS = [
-  { id: "v1", label: "Variation 1", note: "Figure mark · two-line wordmark" },
-  { id: "v2", label: "Variation 2", note: "Figure mark · three-line wordmark" },
-  { id: "v3", label: "Variation 3", note: "H mark · three-line wordmark" },
-  { id: "v4", label: "Variation 4", note: "H mark · two-line wordmark" },
-  { id: "v5", label: "Variation 5", note: "Heart-figure mark · two-line wordmark" },
-  { id: "v6", label: "Variation 6", note: "Heart-figure mark · three-line wordmark" },
-  { id: "v7", label: "Variation 7", note: "H-figure mark · two-line wordmark" },
-] as const
+import { APP_ICON, LOGO, MARK } from "@/lib/brand"
 
-const COLOURS = [
-  { id: "blue", label: "Blue", tile: "#2C71E5" },
-  { id: "cyan", label: "Cyan", tile: "#076D85" },
-  { id: "teal", label: "Teal", tile: "#01837E" },
-] as const
-
-type ConceptId = (typeof CONCEPTS)[number]["id"]
-type ColourId = (typeof COLOURS)[number]["id"]
-
-const lockupSrc = (c: ConceptId, k: ColourId) => `/brand/concepts/${c}/lockup-${k}.svg`
-const markSrc = (c: ConceptId, k: ColourId) => `/brand/concepts/${c}/mark-${k}.svg`
-
-/* Knocks any artwork out to solid white, for the reversed versions. */
-const REVERSE = "brightness(0) invert(1)"
+/* The Inlay Health identity (v2.1, Sep 2026). Every file is the supplied
+   outlined artwork from inlay-identity-assets, in public/brand/inlay; reversed
+   versions are the brand's own reversed files, never a CSS filter, since the
+   pieces keep their own colours on petrol. */
+const PETROL = "#173E45"
+const PORCELAIN = "#F7F4EE"
+const APP_ICON_LIGHT = "/brand/inlay/app-icon-light.svg"
 
 function Panel({
   title,
@@ -113,9 +93,8 @@ function BrowserTab({ src, dark }: { src: string; dark?: boolean }) {
         src={src}
         alt=""
         className="size-4 shrink-0"
-        style={dark ? { filter: REVERSE } : undefined}
-      />
-      <span className="truncate">Patients | Human Optimization Lab</span>
+        />
+      <span className="truncate">Patients | Inlay Health</span>
     </div>
   )
 }
@@ -202,46 +181,15 @@ function InlineMark({ src, stroke }: { src: string; stroke: string }) {
 }
 
 export default function LogoPage() {
-  const [concept, setConcept] = React.useState<ConceptId>("v1")
-  const [colour, setColour] = React.useState<ColourId>("teal")
-  const tile = COLOURS.find((c) => c.id === colour)!.tile
-  const current = CONCEPTS.find((c) => c.id === concept)!
-  const lockup = lockupSrc(concept, colour)
-  const mark = markSrc(concept, colour)
+  const tile = PETROL
+  const lockup = LOGO.light
+  const mark = MARK.light
 
   return (
     <div>
       <header className="mb-6">
         <h1 className="font-heading text-3xl font-semibold tracking-tight">Logo</h1>
       </header>
-
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <Tabs value={concept} onValueChange={(v) => setConcept(v as ConceptId)}>
-          <TabsList>
-            {CONCEPTS.map((c) => (
-              <TabsTrigger key={c.id} value={c.id}>
-                {c.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-
-        <Tabs value={colour} onValueChange={(v) => setColour(v as ColourId)}>
-          <TabsList>
-            {COLOURS.map((c) => (
-              <TabsTrigger key={c.id} value={c.id} className="gap-1.5">
-                <span
-                  className="size-2.5 rounded-full"
-                  style={{ background: c.tile }}
-                />
-                {c.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-      </div>
-
-      <p className="mb-4 text-sm text-muted-foreground">{current.note}</p>
 
       {/* eslint-disable @next/next/no-img-element -- SVG artwork shown as-is */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -251,7 +199,7 @@ export default function LogoPage() {
             detail="Primary lockup: headers, documents, sign-in"
             download={lockup}
           >
-            <div className="flex h-full w-full items-center justify-center rounded-lg bg-white">
+            <div className="flex h-full w-full items-center justify-center rounded-lg" style={{ background: PORCELAIN }}>
               <img src={lockup} alt="Logo with name" className="h-24 w-auto max-w-[80%]" />
             </div>
           </Panel>
@@ -259,10 +207,10 @@ export default function LogoPage() {
 
         <Panel
           title="Logo with name (reversed)"
-          detail="On the brand colour"
+          detail="On petrol"
         >
           <Tile bg={tile}>
-            <img src={lockup} alt="" className="h-14 w-auto max-w-[80%]" style={{ filter: REVERSE }} />
+            <img src={LOGO.dark} alt="" className="h-14 w-auto max-w-[80%]" />
           </Tile>
         </Panel>
 
@@ -271,87 +219,64 @@ export default function LogoPage() {
           detail="Dark mode and dark imagery"
         >
           <Tile bg="#0a0a0a">
-            <img src={lockup} alt="" className="h-14 w-auto max-w-[80%]" style={{ filter: REVERSE }} />
+            <img src={LOGO.dark} alt="" className="h-14 w-auto max-w-[80%]" />
           </Tile>
         </Panel>
 
         <Panel title="Logo" detail="Mark only: collapsed nav, avatars, small spaces" download={mark}>
-          <Tile bg="#ffffff">
+          <Tile bg={PORCELAIN}>
             <img src={mark} alt="Logo mark" className="size-28" />
           </Tile>
         </Panel>
 
-        <Panel title="Logo (reversed)" detail="Mark on the brand colour and on dark">
+        <Panel title="Logo (reversed)" detail="Mark on petrol and on dark">
           <Tile bg={tile}>
-            <img src={mark} alt="" className="size-24" style={{ filter: REVERSE }} />
+            <img src={MARK.dark} alt="" className="size-24" />
           </Tile>
           <Tile bg="#0a0a0a">
-            <img src={mark} alt="" className="size-24" style={{ filter: REVERSE }} />
+            <img src={MARK.dark} alt="" className="size-24" />
           </Tile>
         </Panel>
 
-        <Panel title="Favicon" detail="Browser tab at 16px, in light and dark chrome" className="flex-col gap-6">
+        <Panel title="Favicon" detail="The app icon, in light and dark chrome; 24px minimum" className="flex-col gap-6">
           <div className="flex flex-col gap-2">
-            <BrowserTab src={mark} />
-            <BrowserTab src={mark} dark />
+            <BrowserTab src={APP_ICON} />
+            <BrowserTab src={APP_ICON} dark />
           </div>
           {/* Bottom-aligned on one baseline, labels on a shared line under it. */}
           <div className="flex items-end gap-10">
-            {[16, 32, 48].map((s) => (
+            {[24, 32, 48].map((s) => (
               <div key={s} className="flex flex-col items-center gap-2">
-                <img src={mark} alt="" style={{ width: s, height: s }} />
+                <img src={APP_ICON} alt="" style={{ width: s, height: s }} />
                 <span className="text-xs text-muted-foreground tabular-nums">{s}px</span>
               </div>
             ))}
           </div>
         </Panel>
 
-        <Panel title="App icon" detail="Home screen and PWA: brand, white and dark tiles">
-          {[
-            { size: 96, bg: tile, reversed: true },
-            { size: 96, bg: "#ffffff", reversed: false },
-            { size: 96, bg: "#0a0a0a", reversed: true },
-          ].map((icon, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-center shadow-md ring-1 ring-black/5"
-              style={{
-                width: icon.size,
-                height: icon.size,
-                background: icon.bg,
-                borderRadius: icon.size * 0.225,
-              }}
-            >
-              <img
-                src={mark}
-                alt=""
-                style={{
-                  width: icon.size * 0.6,
-                  height: icon.size * 0.6,
-                  filter: icon.reversed ? REVERSE : undefined,
-                }}
-              />
-            </div>
+        <Panel title="App icon" detail="Home screen and PWA: petrol and porcelain" download={APP_ICON}>
+          {[APP_ICON, APP_ICON_LIGHT].map((src) => (
+            <img key={src} src={src} alt="" className="size-24 shadow-md" style={{ borderRadius: "22%" }} />
           ))}
         </Panel>
 
         <Panel title="Social avatar" detail="Profile images, cropped to a circle">
           <div className="flex size-24 items-center justify-center rounded-full" style={{ background: tile }}>
-            <img src={mark} alt="" className="size-14" style={{ filter: REVERSE }} />
+            <img src={MARK.dark} alt="" className="size-12" />
           </div>
-          <div className="flex size-24 items-center justify-center rounded-full bg-white ring-1 ring-black/5">
-            <img src={mark} alt="" className="size-14" />
+          <div className="flex size-24 items-center justify-center rounded-full ring-1 ring-black/5" style={{ background: PORCELAIN }}>
+            <img src={mark} alt="" className="size-12" />
           </div>
           <div className="flex size-24 items-center justify-center rounded-full bg-[#0a0a0a]">
-            <img src={mark} alt="" className="size-14" style={{ filter: REVERSE }} />
+            <img src={MARK.dark} alt="" className="size-12" />
           </div>
         </Panel>
 
-        <Panel title="Minimum size" detail="Smallest the lockup should appear">
+        <Panel title="Minimum size" detail="Smallest the lockup should appear: 160px wide">
           {/* A label column and a logo column, so every size starts on the same
               left edge and the rows sit on an even rhythm. */}
           <div className="grid grid-cols-[3rem_auto] items-center gap-x-6 gap-y-6">
-            {[40, 28, 20].map((h) => (
+            {[48, 40, 33].map((h) => (
               <React.Fragment key={h}>
                 <span className="text-right text-xs text-muted-foreground tabular-nums">
                   {h}px

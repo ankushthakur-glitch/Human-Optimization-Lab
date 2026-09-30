@@ -1,163 +1,86 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { Pressable, StyleSheet, Text, View } from "react-native"
 
-import { Card, Checkbox, FlowScreen, Section, SoftOrb } from "@/components/flow"
-import { IconChevronRight, IconShield } from "@/components/icons"
+import { ConsentLink, ConsentShell, MissingTick, Shield, useConsentDraft } from "@/components/consent-kit"
+import { Checkbox } from "@/components/flow"
+import { IconCalendar, IconLock } from "@/components/icons"
+import { IconTile, List, ListRow } from "@/components/list"
 import { RecordIcon } from "@/components/record-icons"
 import { Button } from "@/components/ui"
+import { monthsLabel } from "@/lib/consent"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
-import { DATA_TYPES } from "@/lib/record"
-import { color, font } from "@/lib/theme"
+import { color } from "@/lib/theme"
 
-/* Step 2: the one consent. What HOL collects and from where, in plain words,
-   the full authorization a tap away, and a tick that signs it as the
-   signed-in patient. Nothing
-   medical is read before this is signed. Sample wording until HOL's lawyer
-   returns the final form (same text as the web prototype's consent). */
+/* Step 2: the one consent as three rows: who sees the records, what is
+   collected (See all opens the list) and how long (Change opens the
+   periods). The full authorization is a tap away and the tick signs it as
+   the signed-in patient. Nothing medical is read before this is signed.
+   The wording lives in lib/consent.ts. */
 
-const LEGAL = [
-  `I authorize Human Optimization Lab (HOL) to request, receive and store my health records from my healthcare providers, hospitals, laboratories and imaging centers, through national health information networks, and to share them with ${PATIENT.practice} for my care.`,
-  "This includes visit notes, lab results, medications, conditions, allergies, procedures, immunizations and reports. It may include sensitive information such as mental health or substance use records where the law allows.",
-  "HOL protects this information as required by HIPAA. Information shared under this authorization may no longer be protected by federal privacy law if it is disclosed again by the recipient.",
-  "This authorization stays in effect until I withdraw it. I can withdraw it at any time in the app, which stops future collection but does not undo information already shared.",
-  "My treatment by my practice does not depend on signing this authorization.",
-]
-
+/** Setup's step 2. Signing starts the record and moves on to the why. */
 export default function ConsentScreen() {
   const onboarding = useOnboarding()
-  const [agreed, setAgreed] = React.useState(false)
-  const [full, setFull] = React.useState(false)
-  // Tapped Sign without ticking the box: say so beside it.
-  const [missing, setMissing] = React.useState(false)
-  const [pending, setPending] = React.useState(false)
-  const legalName = `${onboarding.profile?.firstName ?? PATIENT.firstName} ${onboarding.profile?.lastName ?? PATIENT.lastName}`
-
-  async function onSign() {
-    if (!agreed) {
-      setMissing(true)
-      return
-    }
-    setPending(true)
-    await onboarding.save({ signedAs: legalName, step: "records" })
-    // No way back to an unsigned form: the record starts building.
-    router.replace("/onboarding/syncing")
-  }
-
   return (
-    <FlowScreen
-      step={2}
+    <ConsentForm
+      onSigned={async (signedAs, consentMonths) => {
+        await onboarding.save({ signedAs, consent: "signed", consentAt: new Date().toISOString(), consentMonths, step: "why" })
+        // No way back to an unsigned form: the record starts building while
+        // the patient talks through their why.
+        router.replace("/onboarding/why")
+      }}
+    />
+  )
+}
+
+/** The consent itself, shared by setup and by Connect your records on the
+    dashboard. */
+export function ConsentForm({ onSigned }: { onSigned: (signedAs: string, months: number) => Promise<void> }) {
+  const d = useConsentDraft(onSigned)
+  return (
+    <ConsentShell
+      draft={d}
       title="Connect your health records"
-      art={<SoftOrb size={140} />}
+      art={<Shield />}
       footer={
         <>
           {/* In the pinned footer, so signing never needs a scroll. */}
-          <Checkbox
-            checked={agreed}
-            onChange={(v) => {
-              setAgreed(v)
-              setMissing(false)
-            }}
-          >
+          <Checkbox checked={d.agreed} onChange={d.setAgreed}>
             I agree to share my health records with my care team
           </Checkbox>
-          {missing && (
-            <Text style={styles.missing} accessibilityRole="alert">
-              Tick the box to agree first.
-            </Text>
-          )}
-          <Button onPress={onSign} pending={pending}>
+          <MissingTick show={d.missing} />
+          <Button onPress={() => d.sign()} pending={d.pending}>
             Agree and connect
           </Button>
         </>
       }
     >
-      <Card>
-        <View style={styles.promise}>
-          <IconShield color={color.primary} size={22} />
-          <Text style={styles.promiseText}>
-            Only you and your care team at {PATIENT.practice} see your records. HOL never sells your data, and you can
-            withdraw at any time.
-          </Text>
-        </View>
-      </Card>
-
-      <Section title="What we collect">
-        <View style={styles.grid}>
-          {DATA_TYPES.map((t) => (
-            <View key={t.key} style={styles.gridItem}>
-              <View style={styles.tick}>
-                <RecordIcon name={t.icon} size={16} color={color.primary} />
-              </View>
-              <Text style={styles.gridText}>{t.label}</Text>
-            </View>
-          ))}
-        </View>
-      </Section>
-
-      {/* The full text, one tap away. Ticking the box below is the signature,
-          made as the signed-in patient. */}
-      <View style={styles.doc}>
-        <Pressable
-          onPress={() => setFull((v) => !v)}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: full }}
-          style={({ pressed }) => [styles.docRow, pressed && { opacity: 0.7 }]}
-        >
-          <View style={styles.docIcon}>
-            <RecordIcon name="documents" size={18} color={color.primary} />
-          </View>
-          <View style={styles.docBody}>
-            <Text style={styles.docTitle}>HIPAA authorization</Text>
-            <Text style={styles.docMeta}>{full ? "Hide" : "Read in full"}</Text>
-          </View>
-          <View style={{ transform: [{ rotate: full ? "90deg" : "0deg" }] }}>
-            <IconChevronRight color={color.muted} />
-          </View>
-        </Pressable>
-        {full && (
-          <View style={styles.legal}>
-            {LEGAL.map((p) => (
-              <Text key={p} style={styles.legalText}>
-                {p}
-              </Text>
-            ))}
-          </View>
-        )}
-      </View>
-    </FlowScreen>
+      <List>
+        <ListRow
+          icon={<IconTile size={40}><IconLock size={18} color={color.primary} /></IconTile>}
+          label="Who sees them"
+          title={`You and ${PATIENT.practice}`}
+        />
+        <ListRow
+          icon={<IconTile size={40}><RecordIcon name="labs" size={18} color={color.primary} /></IconTile>}
+          label="What we collect"
+          title="Visits, labs and 7 more"
+          onPress={() => d.setSheet("types")}
+          action="See all"
+          accessibilityLabel="What we collect: see all"
+        />
+        <ListRow
+          icon={<IconTile size={40}><IconCalendar size={18} color={color.primary} /></IconTile>}
+          label="How long"
+          title={monthsLabel(d.months)}
+          onPress={() => d.setSheet("period")}
+          action="Change"
+          accessibilityLabel={`How long: ${monthsLabel(d.months)}. Change`}
+        />
+      </List>
+      <ConsentLink onPress={() => d.setSheet("legal")} centred>
+        Read the HIPAA authorization
+      </ConsentLink>
+    </ConsentShell>
   )
 }
-
-const styles = StyleSheet.create({
-  promise: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
-  promiseText: { flex: 1, fontFamily: font.regular, fontSize: 15, lineHeight: 22, color: color.text },
-  grid: { flexDirection: "row", flexWrap: "wrap", rowGap: 12 },
-  gridItem: { width: "50%", flexDirection: "row", alignItems: "center", gap: 10 },
-  tick: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: color.primaryTint,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  gridText: { fontFamily: font.regular, fontSize: 15, color: color.text },
-  missing: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.error, marginTop: -4 },
-  doc: { borderWidth: 1, borderColor: color.border, borderRadius: 18, overflow: "hidden" },
-  docRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
-  docIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: color.primaryTint,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  docBody: { flex: 1, gap: 2 },
-  docTitle: { fontFamily: font.medium, fontSize: 15, color: color.text },
-  docMeta: { fontFamily: font.medium, fontSize: 13, color: color.primary },
-  legal: { borderTopWidth: 1, borderTopColor: color.border, backgroundColor: color.canvas, padding: 16, gap: 10 },
-  legalText: { fontFamily: font.regular, fontSize: 13, lineHeight: 20, color: color.muted },
-})

@@ -2,11 +2,11 @@
 
 import * as React from "react"
 import {
-  IconEye,
   IconMail,
   IconStethoscope,
   IconTeam,
   IconUserCircle,
+  IconUserMinus,
   IconUsersGroup,
   IconWarning,
 } from "@/design-system/icons"
@@ -21,7 +21,7 @@ import { Card } from "@/design-system/ui/card"
 
 /* The adoption KPIs the admin console shows for a practice and for one of
    its providers. Each is a count out of a total, split into its states, and
-   read against a benchmark: the HOL average for a practice, the practice for
+   read against a benchmark: the Inlay average for a practice, the practice for
    a provider. */
 
 /* -------------------------------------------------------------------------- */
@@ -39,7 +39,7 @@ export type Kpi = {
   /** The word after the count: "onboarded", "enrolled". */
   unit: string
   rate: number
-  /** Lower is better (providers behind, patients not invited). */
+  /** Lower is better (providers behind, patients who declined). */
   invert?: boolean
   parts: { label: string; value: number; tone: PartTone }[]
   benchmark: { label: string; rate: number }
@@ -93,7 +93,7 @@ export function practiceKpis(a: Adoption, hol: ReturnType<typeof holAverages>): 
         { label: "Invited", value: count(a.users, "Invited"), tone: "soft" },
         { label: "Inactive", value: count(a.users, "Inactive"), tone: "empty" },
       ],
-      benchmark: { label: "HOL average", rate: hol.users },
+      benchmark: { label: "Inlay average", rate: hol.users },
       tone: toneFor(share(users.value, users.total), hol.users),
     },
     {
@@ -107,7 +107,7 @@ export function practiceKpis(a: Adoption, hol: ReturnType<typeof holAverages>): 
         { label: "Invited", value: count(a.providers, "Invited"), tone: "soft" },
         { label: "Inactive", value: count(a.providers, "Inactive"), tone: "empty" },
       ],
-      benchmark: { label: "HOL average", rate: hol.providers },
+      benchmark: { label: "Inlay average", rate: hol.providers },
       tone: toneFor(share(providers.value, providers.total), hol.providers),
     },
     {
@@ -121,13 +121,8 @@ export function practiceKpis(a: Adoption, hol: ReturnType<typeof holAverages>): 
         { label: "Enrolled", value: a.enrolled, tone: "fill" },
         { label: "Pending", value: a.invited, tone: "soft" },
         { label: "Declined", value: a.declined, tone: "alert" },
-        {
-          label: "Not invited",
-          value: a.open - a.enrolled - a.invited - a.declined,
-          tone: "empty",
-        },
       ],
-      benchmark: { label: "HOL average", rate: hol.enrolled },
+      benchmark: { label: "Inlay average", rate: hol.enrolled },
       tone: toneFor(a.rate ?? 0, hol.enrolled),
     },
     {
@@ -142,7 +137,7 @@ export function practiceKpis(a: Adoption, hol: ReturnType<typeof holAverages>): 
         { label: "Behind", value: a.behind, tone: "warn" },
         { label: "On track", value: judged - a.behind, tone: "fill" },
       ],
-      benchmark: { label: "HOL average", rate: hol.behind },
+      benchmark: { label: "Inlay average", rate: hol.behind },
       tone: a.behind ? "alert" : "good",
     },
   ]
@@ -151,11 +146,10 @@ export function practiceKpis(a: Adoption, hol: ReturnType<typeof holAverages>): 
 export function providerKpis(a: Adoption, id: string): Kpi[] {
   const p = a.providers.find((x) => x.id === id)!
   const practiceInvited = a.invited
-  const practiceNot = a.providers.reduce((n, x) => n + x.notInvited, 0)
   const withPatients = a.providers.filter((x) => x.patients.length).length
   const rate = p.rate ?? 0
   const invitedRate = share(p.invited, p.open)
-  const notRate = share(p.notInvited, p.open)
+  const declinedRate = share(p.declined, p.open)
   return [
     {
       label: "Patients enrolled",
@@ -168,7 +162,6 @@ export function providerKpis(a: Adoption, id: string): Kpi[] {
         { label: "Enrolled", value: p.enrolled, tone: "fill" },
         { label: "Pending", value: p.invited, tone: "soft" },
         { label: "Declined", value: p.declined, tone: "alert" },
-        { label: "Not invited", value: p.notInvited, tone: "empty" },
       ],
       benchmark: { label: "Practice", rate: a.rate ?? 0 },
       tone: toneFor(rate, a.rate ?? 0),
@@ -189,19 +182,19 @@ export function providerKpis(a: Adoption, id: string): Kpi[] {
       tone: toneFor(invitedRate, share(practiceInvited, a.open), true),
     },
     {
-      label: "Not invited",
-      icon: IconEye,
-      value: p.notInvited,
+      label: "Declined",
+      icon: IconUserMinus,
+      value: p.declined,
       total: p.open,
-      unit: "not invited",
-      rate: notRate,
+      unit: "declined",
+      rate: declinedRate,
       invert: true,
       parts: [
-        { label: "Not invited", value: p.notInvited, tone: "warn" },
-        { label: "Other", value: p.open - p.notInvited, tone: "empty" },
+        { label: "Declined", value: p.declined, tone: "alert" },
+        { label: "Other", value: p.open - p.declined, tone: "empty" },
       ],
-      benchmark: { label: "Practice", rate: share(practiceNot, a.open) },
-      tone: toneFor(notRate, share(practiceNot, a.open), true),
+      benchmark: { label: "Practice", rate: share(a.declined, a.open) },
+      tone: toneFor(declinedRate, share(a.declined, a.open), true),
     },
     {
       label: "Share of practice patients",

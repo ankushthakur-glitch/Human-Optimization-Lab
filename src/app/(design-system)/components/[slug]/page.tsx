@@ -71,7 +71,6 @@ const REGISTRY: Record<string, React.ComponentType> = {
   tooltip: dynamic(() => import("@/design-system/examples/tooltip-example")),
   "voice-beam": dynamic(() => import("@/design-system/examples/voice-beam-example")),
 
-  "agent-screen": dynamic(() => import("@/design-system/examples/agent-screen-example")),
   "approval-card": dynamic(() => import("@/design-system/examples/approval-card-example")),
   "chat": dynamic(() => import("@/design-system/examples/chat-example")),
   "code-block": dynamic(() => import("@/design-system/examples/code-block-example")),

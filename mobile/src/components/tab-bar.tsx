@@ -1,31 +1,32 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { DarkStatusBar } from "@/components/error-state"
-import { IconCareTeam, IconHome, IconPlan, IconResults } from "@/components/icons"
+import { IconCareTeam, IconHome, IconPlan, IconResults, type TabIconProps } from "@/components/icons"
 import { useTopInset } from "@/components/ui"
+import { SiriSheet } from "@/components/voiceorbs/siri-sheet"
 import { color, font, gutter } from "@/lib/theme"
 
 /* The signed-in app's bottom navigation, after Superpower: a floating white
-   pill with four filled tabs, and beside it a white circle holding only the
-   brand mark, which opens the assistant full screen. Each tab is its own
+   pill with four Hugeicons tabs, outline at rest and filled when selected,
+   and beside it a white circle holding the assistant's orb (Siri Sheet), which
+   opens the assistant full screen. Each tab is its own
    stack screen (switched without animation), so the bar is drawn by the
    screen rather than by a tab navigator. */
 
-const MARK = require("../../assets/splash-icon.png")
-
 export type TabName = "home" | "results" | "plan" | "care-team"
 
-const TABS: { name: TabName; label: string; href: "/" | "/results" | "/plan" | "/care-team"; Icon: React.ComponentType<{ color: string; size?: number }> }[] = [
+const TABS: { name: TabName; label: string; href: "/" | "/results" | "/plan" | "/care-team"; Icon: React.ComponentType<TabIconProps> }[] = [
   { name: "home", label: "Home", href: "/", Icon: IconHome },
-  { name: "results", label: "Results", href: "/results", Icon: IconResults },
+  { name: "results", label: "Record", href: "/results", Icon: IconResults },
   { name: "plan", label: "Plan", href: "/plan", Icon: IconPlan },
-  { name: "care-team", label: "Care team", href: "/care-team", Icon: IconCareTeam },
+  { name: "care-team", label: "Care", href: "/care-team", Icon: IconCareTeam },
 ]
 
-const BAR = 62
+const BAR = 60
 const INK = "#18181A"
 const REST = "#9A9EA6"
 
@@ -33,7 +34,9 @@ const REST = "#9A9EA6"
 export function TabScreen({ tab, title, children }: { tab: TabName; title?: string; children: React.ReactNode }) {
   const top = useTopInset()
   const { bottom } = useSafeAreaInsets()
-  const barBottom = Math.max(bottom, 12) + 4
+  // Sits in the home indicator's area, as iOS's own floating bars do,
+  // rather than stacked above it.
+  const barBottom = Math.max(bottom - 12, 14)
   return (
     <View style={styles.screen}>
       <DarkStatusBar />
@@ -48,6 +51,20 @@ export function TabScreen({ tab, title, children }: { tab: TabName; title?: stri
         )}
         {children}
       </ScrollView>
+      {/* Content fades out under the bar instead of showing through
+          beneath it. */}
+      <View style={[styles.fade, { height: barBottom + BAR + 28 }]} pointerEvents="none">
+        <Svg width="100%" height="100%">
+          <Defs>
+            <LinearGradient id="tabFade" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={color.background} stopOpacity={0} />
+              <Stop offset="0.45" stopColor={color.background} stopOpacity={0.92} />
+              <Stop offset="1" stopColor={color.background} stopOpacity={1} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#tabFade)" />
+        </Svg>
+      </View>
       <TabBar active={tab} bottom={barBottom} />
     </View>
   )
@@ -68,7 +85,7 @@ function TabBar({ active, bottom }: { active: TabName; bottom: number }) {
               accessibilityLabel={label}
               style={({ pressed }) => [styles.tab, pressed && styles.pressed]}
             >
-              <Icon size={20} color={on ? INK : REST} />
+              <Icon size={21} color={on ? INK : REST} active={on} cut={color.background} />
               <Text style={[styles.tabLabel, { color: on ? INK : REST }]} numberOfLines={1}>
                 {label}
               </Text>
@@ -82,7 +99,7 @@ function TabBar({ active, bottom }: { active: TabName; bottom: number }) {
         accessibilityLabel="Ask the assistant"
         style={({ pressed }) => [styles.assistant, pressed && styles.pressed]}
       >
-        <Image source={MARK} style={styles.mark} resizeMode="contain" />
+        <SiriSheet size={BAR - 12} background={color.background} />
       </Pressable>
     </View>
   )
@@ -92,8 +109,9 @@ const lift = { borderWidth: 1, borderColor: "#EDEEEF", boxShadow: "0 8px 24px rg
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.background },
+  fade: { position: "absolute", left: 0, right: 0, bottom: 0 },
   body: { width: "100%", maxWidth: 420 + gutter * 2, alignSelf: "center", paddingHorizontal: gutter, gap: 28 },
-  title: { fontFamily: font.semibold, fontSize: 30, lineHeight: 36, letterSpacing: -0.9, color: color.text },
+  title: { fontFamily: font.semibold, fontSize: 28, lineHeight: 34, letterSpacing: -0.8, color: color.text },
   pressed: { opacity: 0.7 },
 
   bar: {
@@ -118,7 +136,7 @@ const styles = StyleSheet.create({
     ...lift,
   },
   tab: { flex: 1, height: "100%", alignItems: "center", justifyContent: "center", gap: 3 },
-  tabLabel: { fontFamily: font.medium, fontSize: 11, lineHeight: 14 },
+  tabLabel: { fontFamily: font.medium, fontSize: 10.5, lineHeight: 13 },
   assistant: {
     width: BAR,
     height: BAR,
@@ -128,5 +146,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     ...lift,
   },
-  mark: { width: 30, height: 30 },
 })

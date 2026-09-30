@@ -93,3 +93,148 @@
   --primary-tint: oklch(0.482 0.083 190);
   --primary-surface: oklch(0.976 0.019 190);
 }
+
+/* ---------- Inlay Health ---------- */
+/* The Inlay Health brand colour (inlay-identity-assets/tokens, v2.1), set as
+   the primary and its hover only; surfaces, text, status and charts stay as
+   they were.
+
+     Deep petrol  #173E45  brand and action  → --primary
+     Hover        #3A6670  petrol lifted     → --primary-hover
+
+   Petrol vanishes on a dark page, so dark mode keeps --primary-tint and
+   --primary-surface on the light end of the ramp (globals.css points them at
+   --chart-1 there). */
+
+:root[data-accent="inlay"],
+:root[data-accent="inlay"].dark {
+  --primary: #173e45;
+  --primary-foreground: oklch(1 0 0);
+  --primary-hover: #3a6670;
+  --accent: #173e45;
+  --accent-foreground: oklch(1 0 0);
+  /* Charts keep the teal ramp they had before the rebrand. */
+  --chart-1: oklch(0.85 0.105 190);
+  --chart-2: oklch(0.72 0.124 190);
+  --chart-3: oklch(0.551 0.095 190);
+  --chart-4: oklch(0.482 0.083 190);
+  --chart-5: oklch(0.36 0.062 190);
+  --sidebar-primary: #173e45;
+  --sidebar-primary-foreground: oklch(1 0 0);
+}
+
+:root[data-accent="inlay"] {
+  --primary-tint: #173e45;
+  --primary-surface: color-mix(in oklab, #173e45 8%, transparent);
+  /* Petrol is far darker than the teal these washes were tuned on, so at the
+     same strength hover and selected read as a grey slab. About half the
+     strength gives the same light touch. Dark mode keeps globals.css's own. */
+  --surface-hover: color-mix(in oklab, #173e45 7%, transparent);
+  --surface-row-hover: color-mix(in oklab, #173e45 4%, transparent);
+  --surface-selected: color-mix(in oklab, #173e45 11%, transparent);
+}
+
+/* ---------- Inlay P7 (the default) ---------- */
+/* The Inlay petrol taken as step 10 of a ramp and walked lighter at the same
+   hue (oklch 211), to the step brand blue's contract picks for a fill: the
+   lightest one that still carries white ink at AA.
+
+     P00 #eef9fc  P01 #dbf0f4  P02 #c0e0e6  P03 #a2cdd5  P04 #84b8c2
+     P05 #6aa3ae  P06 #548f9b  P07 #417d88  P08 #336771  P09 #24535b
+     P10 #173e45 (the Inlay petrol)
+
+     P07  fill     white ink 4.67:1  → --primary
+     P08  hover    darker on press   → --primary-hover
+     P09  tint     8.6:1 as text     → --primary-tint
+     P00  surface                    → --primary-surface */
+
+:root[data-accent="inlay-p7"],
+:root[data-accent="inlay-p7"].dark {
+  --primary: #417d88;
+  --primary-foreground: oklch(1 0 0);
+  --primary-hover: #336771;
+  --accent: #417d88;
+  --accent-foreground: oklch(1 0 0);
+  --chart-1: oklch(0.85 0.105 190);
+  --chart-2: oklch(0.72 0.124 190);
+  --chart-3: oklch(0.551 0.095 190);
+  --chart-4: oklch(0.482 0.083 190);
+  --chart-5: oklch(0.36 0.062 190);
+  --sidebar-primary: #417d88;
+  --sidebar-primary-foreground: oklch(1 0 0);
+}
+
+:root[data-accent="inlay-p7"] {
+  --primary-tint: #24535b;
+  --primary-surface: #eef9fc;
+  --surface-hover: color-mix(in oklab, #24535b 10%, transparent);
+  --surface-row-hover: color-mix(in oklab, #24535b 6%, transparent);
+  --surface-selected: color-mix(in oklab, #24535b 16%, transparent);
+}
+
+/* ---------- Inlay palette (option for the client) ---------- */
+/* The whole Inlay Health palette (inlay-identity-assets/tokens, v2.1), each
+   colour on the job the identity gives it, rather than petrol alone:
+
+     Deep petrol     #173E45  brand / action   → --primary, the nav bar
+     Warm porcelain  #F7F4EE  reading surface  → --background, sidebar
+     Mineral mist    #DDE8E5  quiet panels     → --muted, --secondary
+     Soft jade       #8DADA5  small graphics   → --ring, chart accents
+     Warm stone      #D8D2C8  secondary fields → --border, --input
+     Graphite        #252D2E  dense text       → --foreground
+     Muted           #556963  secondary text   → --muted-foreground
+
+   Status colours come from the same token file. Every text colour clears
+   AA on porcelain, mist and the card: muted is the lowest at 4.67:1 on
+   mist. The palette is a light one, so dark mode keeps the stock dark
+   surfaces and takes the petrol primary only, like "inlay". */
+
+:root[data-accent="inlay-palette"],
+:root[data-accent="inlay-palette"].dark {
+  --primary: #173e45;
+  --primary-foreground: oklch(1 0 0);
+  --primary-hover: #3a6670;
+  --accent: #173e45;
+  --accent-foreground: oklch(1 0 0);
+  --chart-1: #dde8e5;
+  --chart-2: #8dada5;
+  --chart-3: #728681;
+  --chart-4: #3a6670;
+  --chart-5: #173e45;
+  --sidebar-primary: #173e45;
+  --sidebar-primary-foreground: oklch(1 0 0);
+}
+
+/* :not(.dark) matches the specificity of themes.css's `[data-base].dark`
+   rules, so the base preset cannot win the surfaces back. */
+:root[data-accent="inlay-palette"]:not(.dark) {
+  --background: #f7f4ee;
+  --foreground: #252d2e;
+  --card: #fffdf9;
+  --card-foreground: #252d2e;
+  --popover: #fffdf9;
+  --popover-foreground: #252d2e;
+  --secondary: #dde8e5;
+  --secondary-foreground: #173e45;
+  --muted: #dde8e5;
+  --muted-foreground: #556963;
+  --border: #d8d2c8;
+  --input: #d8d2c8;
+  --ring: #8dada5;
+  --destructive: #a02d33;
+  --success: #2b654c;
+  --warning: #7d510e;
+  --info: #245a78;
+  --success-surface: #eaf1ea;
+  --warning-surface: #fbf1dc;
+  --info-surface: #eaf1f5;
+  --sidebar: #f7f4ee;
+  --sidebar-foreground: #252d2e;
+  --sidebar-border: #d8d2c8;
+  --sidebar-ring: #8dada5;
+  --primary-tint: #173e45;
+  --primary-surface: #dde8e5;
+  --surface-hover: color-mix(in oklab, #173e45 7%, transparent);
+  --surface-row-hover: color-mix(in oklab, #173e45 4%, transparent);
+  --surface-selected: color-mix(in oklab, #173e45 11%, transparent);
+}

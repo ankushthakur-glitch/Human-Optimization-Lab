@@ -8,8 +8,9 @@ import { VALIDATE } from "@/lib/validate"
 
 /* Account state for the patient app.
 
-   The flow: the patient signs in once with the email and one-time password
-   from their invitation, sets their own password, and uses that from then
+   The flow: the invitation's Activate account button opens activation,
+   where the patient enters the one-time code from the email, then sets their
+   own password, and uses that from then
    on. No two-factor step.
 
    This is a prototype with no backend yet, so the device plays the server:
@@ -32,7 +33,7 @@ export type Status =
   | "loading"
   /** No session. */
   | "signedOut"
-  /** Signed in with the one-time password; must set a password before going on. */
+  /** Activation code accepted; must set a password before going on. */
   | "mustSetPassword"
   | "signedIn"
   /** Signed out for inactivity; the patient sees why before signing in again. */
@@ -42,14 +43,14 @@ type Result = { ok: true } | { ok: false; message: string }
 
 type Auth = {
   status: Status
-  /** A password has been set on this device, so the one-time password is spent. */
+  /** A password has been set on this device, so the activation code is spent. */
   activated: boolean
-  activate: (email: string, oneTimePassword: string) => Promise<Result>
+  activate: (email: string, code: string) => Promise<Result>
   setPassword: (password: string) => Promise<Result>
   signIn: (email: string, password: string) => Promise<Result>
   signOut: () => Promise<void>
   /** Prototype reviews: forget the password so the next run starts at
-      activation with the one-time password, as a first-time patient would. */
+      activation with the code, as a first-time patient would. */
   forget: () => Promise<void>
   /** Marks the patient as active, holding off the idle sign-out. */
   touch: () => void
@@ -101,19 +102,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       status,
       activated,
 
-      async activate(email, oneTimePassword) {
+      async activate(email, code) {
         await settle()
-        if (VALIDATE && (!sameEmail(email) || oneTimePassword.trim() !== PATIENT.oneTimePassword)) {
-          return { ok: false, message: "That email and one-time password don’t match our records." }
+        if (VALIDATE && (!sameEmail(email) || code.trim() !== PATIENT.activationCode)) {
+          return { ok: false, message: "That code doesn’t match the one in your invitation email." }
         }
         if (VALIDATE && activated) {
           return {
             ok: false,
-            message: "This one-time password has already been used. Sign in with your password.",
+            message: "This code has already been used. Sign in with your password.",
           }
         }
         // Held in memory only: closing the app before a password is set
-        // means signing in with the one-time password again.
+        // means entering the activation code again.
         setStatus("mustSetPassword")
         return { ok: true }
       },
@@ -133,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (VALIDATE && !saved) {
           return {
             ok: false,
-            message: "Activate your account with the one-time password from your invitation email first.",
+            message: "Activate your account with the code from your invitation email first.",
           }
         }
         if (VALIDATE && (!sameEmail(email) || (await hash(password)) !== saved)) {

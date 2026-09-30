@@ -40,8 +40,17 @@ export function useTopInset() {
 
 /** A scrolling form screen that keeps its fields above the keyboard: the
     white mark and the screen's title on a teal band, the form on a white
-    sheet rising over it. */
-export function Screen({ title, children }: { title: string; children: React.ReactNode }) {
+    sheet rising over it. A `description` line may sit under the title, as
+    the portal's sign-in pages do. */
+export function Screen({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description?: React.ReactNode
+  children: React.ReactNode
+}) {
   const top = useTopInset()
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
@@ -59,11 +68,12 @@ export function Screen({ title, children }: { title: string; children: React.Rea
                 style={styles.mark}
                 resizeMode="contain"
                 accessibilityRole="image"
-                accessibilityLabel="Human Optimization Lab"
+                accessibilityLabel="Inlay Health"
               />
               <Text style={styles.title} accessibilityRole="header">
                 {title}
               </Text>
+              {description && <Text style={styles.description}>{description}</Text>}
             </View>
           </View>
           <View style={styles.sheet}>
@@ -106,6 +116,65 @@ export function Divider() {
   )
 }
 
+/** The portal's one-time code input: six boxes over one hidden field, so
+    paste and the keyboard's code suggestion fill all six at once. Calls
+    `onComplete` on the sixth digit. */
+export function CodeField({
+  label,
+  value,
+  onChange,
+  onComplete,
+  error,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  onComplete?: (value: string) => void
+  error?: string
+}) {
+  const input = React.useRef<TextInput>(null)
+  const [focused, setFocused] = React.useState(false)
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      <Pressable onPress={() => input.current?.focus()} style={styles.codeRow} accessible={false}>
+        {Array.from({ length: 6 }, (_, i) => {
+          const active = focused && (i === value.length || (i === 5 && value.length === 6))
+          return (
+            <View
+              key={i}
+              style={[styles.codeBox, active && styles.inputBoxFocused, !!error && styles.inputBoxInvalid]}
+            >
+              <Text style={styles.codeDigit}>{value[i] ?? ""}</Text>
+            </View>
+          )
+        })}
+        <TextInput
+          ref={input}
+          value={value}
+          onChangeText={(text) => {
+            const digits = text.replace(/\D/g, "").slice(0, 6)
+            onChange(digits)
+            if (digits.length === 6) onComplete?.(digits)
+          }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          autoFocus
+          keyboardType="number-pad"
+          maxLength={6}
+          autoComplete="one-time-code"
+          textContentType="oneTimeCode"
+          caretHidden
+          accessibilityLabel={label}
+          accessibilityHint={error}
+          style={styles.codeInput}
+        />
+      </Pressable>
+      {!!error && <Text style={styles.error}>{error}</Text>}
+    </View>
+  )
+}
+
 /** A form-level message, e.g. credentials that don't match. */
 export function FormError({ message }: { message?: string }) {
   if (!message) return null
@@ -127,7 +196,7 @@ type FieldProps = TextInputProps & {
 }
 
 export const TextField = React.forwardRef<TextInput, FieldProps>(function TextField(
-  { label, required, error, icon: Icon, trailing, style, onFocus, onBlur, ...input },
+  { label, required, error, icon: Icon, trailing, style, onFocus, onBlur, multiline, ...input },
   ref
 ) {
   const [focused, setFocused] = React.useState(false)
@@ -137,7 +206,14 @@ export const TextField = React.forwardRef<TextInput, FieldProps>(function TextFi
         {label}
         {required && <Text style={styles.required}> *</Text>}
       </Text>
-      <View style={[styles.inputBox, focused && styles.inputBoxFocused, !!error && styles.inputBoxInvalid]}>
+      <View
+        style={[
+          styles.inputBox,
+          multiline && styles.inputBoxMultiline,
+          focused && styles.inputBoxFocused,
+          !!error && styles.inputBoxInvalid,
+        ]}
+      >
         {Icon && (
           <View style={styles.leading}>
             <Icon color={error ? color.error : focused ? color.primary : color.muted} />
@@ -145,7 +221,8 @@ export const TextField = React.forwardRef<TextInput, FieldProps>(function TextFi
         )}
         <TextInput
           ref={ref}
-          style={[styles.input, !!Icon && styles.inputWithIcon, style]}
+          style={[styles.input, !!Icon && styles.inputWithIcon, multiline && styles.inputMultiline, style]}
+          multiline={multiline}
           placeholderTextColor={color.placeholder}
           accessibilityLabel={label}
           accessibilityHint={error}
@@ -289,7 +366,24 @@ const styles = StyleSheet.create({
     color: color.onPrimary,
   },
 
+  description: { fontFamily: font.regular, fontSize: 16, lineHeight: 23, color: color.onPrimary, opacity: 0.85, marginTop: -12 },
+
   field: { gap: 6 },
+  codeRow: { flexDirection: "row", gap: 8 },
+  codeBox: {
+    flex: 1,
+    aspectRatio: 1,
+    maxHeight: 60,
+    borderWidth: 1,
+    borderColor: color.inputBorder,
+    borderRadius: touchRadius,
+    backgroundColor: color.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  codeDigit: { fontFamily: font.medium, fontSize: 22, color: color.text },
+  // Covers the boxes, invisible, so a tap anywhere lands in it.
+  codeInput: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0.01, color: "transparent" },
   label: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: color.text },
   required: { color: color.error },
   inputBox: {
@@ -301,6 +395,9 @@ const styles = StyleSheet.create({
     borderRadius: touchRadius,
     backgroundColor: color.background,
   },
+  // A few lines of free text: grows from three lines, text from the top.
+  inputBoxMultiline: { height: undefined, minHeight: 112, alignItems: "stretch" },
+  inputMultiline: { height: undefined, minHeight: 110, paddingTop: 13, paddingBottom: 13, lineHeight: 22, textAlignVertical: "top" },
   inputBoxFocused: {
     borderColor: color.primary,
     backgroundColor: color.background,
@@ -341,8 +438,9 @@ const styles = StyleSheet.create({
   },
   formErrorText: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.error },
 
+  // Superpower's pill: full round ends, a touch shorter than a form field.
   button: {
-    height: 54,
+    height: 50,
     borderRadius: buttonRadius,
     flexDirection: "row",
     alignItems: "center",
@@ -350,13 +448,13 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
   },
-  buttonPrimary: { backgroundColor: color.primary, boxShadow: "0 8px 18px rgba(1, 131, 126, 0.28)" },
+  buttonPrimary: { backgroundColor: color.primary },
   buttonPrimaryPressed: { backgroundColor: color.primaryPressed },
   buttonOutline: { borderWidth: 1, borderColor: color.border, backgroundColor: color.background },
   buttonOutlinePressed: { backgroundColor: color.surface },
   buttonPending: { opacity: 0.7 },
-  buttonDisabled: { opacity: 0.4, boxShadow: "none" },
-  buttonText: { fontFamily: font.semibold, fontSize: 16, color: color.onPrimary },
+  buttonDisabled: { opacity: 0.4 },
+  buttonText: { fontFamily: font.semibold, fontSize: 15, letterSpacing: -0.1, color: color.onPrimary },
   buttonTextOutline: { fontFamily: font.medium, color: color.text },
 
   textLink: { alignSelf: "flex-end", marginTop: -4 },

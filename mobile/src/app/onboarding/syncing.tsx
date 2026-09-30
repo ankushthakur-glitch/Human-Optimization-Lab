@@ -1,18 +1,36 @@
 import * as React from "react"
-import { ActivityIndicator, Animated, Easing, StyleSheet, Text, View } from "react-native"
+import { ActivityIndicator, Animated, Easing, Image, StyleSheet, Text, View } from "react-native"
 
-import { FlowScreen, Section, SoftOrb } from "@/components/flow"
+import { FlowScreen, Section } from "@/components/flow"
+import { RecordBlocks } from "@/components/record-blocks"
 import { RecordIcon, type RecordIconName } from "@/components/record-icons"
 import { Button } from "@/components/ui"
 import { useOnboarding } from "@/lib/onboarding"
 import { DATA_TYPES, SOURCES } from "@/lib/record"
 import { color, font } from "@/lib/theme"
 
-/* Step 3, the last: the record builds, told the way a patient thinks about
+/* Step 4, the last: the record builds, told the way a patient thinks about
    it rather than the way the networks work. One progress bar with the stage
    in plain words, then each kind of record filling in with its count. Timed for the prototype: the real Patient360 pull is
    asynchronous and can take minutes, so the patient may leave and is told
    when it's ready. */
+
+const FOLDER = require("../../../assets/images/record-folder.png")
+
+const count = (key: (typeof DATA_TYPES)[number]["key"]) => DATA_TYPES.find((t) => t.key === key)!.count
+const TOTAL = DATA_TYPES.reduce((sum, t) => sum + t.count, 0)
+
+/** The finished record by share: the three biggest kinds, then the rest. */
+const SHARE = [
+  { label: "Lab results", count: count("Observation.lab"), tone: color.primary },
+  { label: "Vitals", count: count("Observation.vital"), tone: "#7FB3BC" },
+  { label: "Visits", count: count("Encounter"), tone: color.primaryHalo },
+  {
+    label: "Everything else",
+    count: TOTAL - count("Observation.lab") - count("Observation.vital") - count("Encounter"),
+    tone: "#DCE3E2",
+  },
+]
 
 const SOURCE_MS = 900
 const TYPE_MS = 240
@@ -28,6 +46,13 @@ const STAGE_TEXT: Record<Exclude<Stage, "done">, string> = {
 
 export default function SyncingScreen() {
   const onboarding = useOnboarding()
+  // Setup is done: the route guard opens the dashboard.
+  return <BuildRecord onDone={() => onboarding.save({ step: "done" })} />
+}
+
+/** The record building, shared by setup and by connecting later from the
+    dashboard. */
+export function BuildRecord({ onDone }: { onDone: () => void }) {
   // How many providers have turned up, then how many kinds of record are in.
   const [found, setFound] = React.useState(0)
   const [landed, setLanded] = React.useState(0)
@@ -45,7 +70,6 @@ export default function SyncingScreen() {
           ? 94
           : 100
   )
-  const total = DATA_TYPES.reduce((sum, t) => sum + t.count, 0)
 
   React.useEffect(() => {
     if (done) return
@@ -61,27 +85,24 @@ export default function SyncingScreen() {
 
   return (
     <FlowScreen
-      step={3}
       back={false}
       title={done ? "Your record is ready" : "Building your record"}
-      art={<SoftOrb size={130} orbit={!done} />}
+      art={
+        done ? (
+          <Image source={FOLDER} style={styles.art} resizeMode="contain" accessibilityIgnoresInvertColors />
+        ) : (
+          <RecordBlocks size={130} />
+        )
+      }
       footer={
-        // Setup is done: the route guard opens the dashboard.
-        <Button onPress={() => onboarding.save({ step: "done" })} disabled={!done}>
+        <Button onPress={onDone} disabled={!done}>
           Go to my dashboard
         </Button>
       }
     >
-      {done ? (
-        <View style={styles.summary}>
-          <Text style={styles.summaryValue}>{total}</Text>
-          <Text style={styles.summaryText}>records from {SOURCES.length} providers</Text>
-        </View>
-      ) : (
-        <Progress percent={percent} label={STAGE_TEXT[stage]} />
-      )}
+      {done ? <RecordShare /> : <Progress percent={percent} label={STAGE_TEXT[stage]} />}
 
-      {stage !== "finding" && (
+      {stage !== "finding" && !done && (
         <Section title="Your record">
           <View style={styles.list}>
             {DATA_TYPES.map((t, i) => {
@@ -105,6 +126,34 @@ export default function SyncingScreen() {
         </Section>
       )}
     </FlowScreen>
+  )
+}
+
+/** The finished record in one panel: the total, one bar split by share, and
+    a dot legend with each part's share and count. */
+function RecordShare() {
+  return (
+    <View style={styles.share}>
+      <View style={styles.shareHead}>
+        <Text style={styles.shareValue}>{TOTAL}</Text>
+        <Text style={styles.shareText}>records from {SOURCES.length} providers</Text>
+      </View>
+      <View style={styles.shareBar}>
+        {SHARE.map((x) => (
+          <View key={x.label} style={{ flex: x.count, backgroundColor: x.tone }} />
+        ))}
+      </View>
+      <View style={styles.legend}>
+        {SHARE.map((x) => (
+          <View key={x.label} style={styles.legendRow}>
+            <View style={[styles.dot, { backgroundColor: x.tone }]} />
+            <Text style={styles.rowLabel}>{x.label}</Text>
+            <Text style={styles.sharePercent}>{Math.round((x.count / TOTAL) * 100)}%</Text>
+            <Text style={styles.legendCount}>{x.count}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
   )
 }
 
@@ -147,6 +196,8 @@ function Progress({ percent, label }: { percent: number; label: string }) {
 }
 
 const styles = StyleSheet.create({
+  art: { width: 112, height: 112 },
+
   progress: { gap: 10 },
   progressHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
   progressLabel: { fontFamily: font.medium, fontSize: 15, color: color.text },
@@ -154,17 +205,16 @@ const styles = StyleSheet.create({
   track: { height: 8, borderRadius: 4, backgroundColor: color.canvas, overflow: "hidden" },
   bar: { height: "100%", borderRadius: 4, backgroundColor: color.primary },
 
-  summary: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: color.primaryTint,
-    borderRadius: 18,
-    paddingVertical: 16,
-  },
-  summaryValue: { fontFamily: font.semibold, fontSize: 28, letterSpacing: -0.6, color: color.primary },
-  summaryText: { fontFamily: font.medium, fontSize: 15, color: color.text },
+  share: { backgroundColor: color.canvas, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 4 },
+  shareHead: { flexDirection: "row", alignItems: "baseline", gap: 8, paddingTop: 12 },
+  shareValue: { fontFamily: font.semibold, fontSize: 28, letterSpacing: -0.6, color: color.text },
+  shareText: { fontFamily: font.regular, fontSize: 13, color: color.muted },
+  shareBar: { flexDirection: "row", height: 12, borderRadius: 6, overflow: "hidden", gap: 2, marginTop: 12 },
+  legend: { paddingVertical: 8 },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  sharePercent: { fontFamily: font.regular, fontSize: 13, color: color.muted },
+  legendCount: { fontFamily: font.semibold, fontSize: 15, color: color.text, minWidth: 28, textAlign: "right" },
 
   tile: {
     width: 38,

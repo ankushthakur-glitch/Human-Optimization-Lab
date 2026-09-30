@@ -12,10 +12,13 @@ const SCREEN = "/screens/patients"
 const FRAME_W = 1440
 const FRAME_H = 900
 
-/* What each colour says about Human Optimization as a care brand — the
+/* What each colour says about Inlay Health as a care brand — the
    clinical side and the optimization side — for the conversation about which
    one to pick. */
 const QUALITIES: Record<string, string[]> = {
+  inlay: ["Integration", "Clarity", "Support", "Calm"],
+  "inlay-p7": ["Approachable", "Clarity", "Support", "Fresh"],
+  "inlay-palette": ["Warmth", "Calm", "Craft", "Clinical clarity"],
   "brand-blue": ["Trust", "Expertise", "Precision", "Reliability"],
   "brand-cyan": ["Clarity", "Innovation", "Prevention", "Vitality"],
   "brand-teal": ["Healing", "Longevity", "Balance", "Wellbeing"],

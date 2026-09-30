@@ -1,6 +1,9 @@
 import * as React from "react"
 
+import type { Answers } from "@/lib/conversation"
 import type { ProgramId, Sex, Tier } from "@/lib/plans"
+import type { Intake, SetupStep } from "@/lib/program"
+import type { MedAnswer } from "@/lib/record"
 import { store } from "@/lib/storage"
 
 /* Where a signed-in patient is in first-run setup, kept on the device so a
@@ -8,13 +11,20 @@ import { store } from "@/lib/storage"
 
    about     basic demographics, needed to match them in the national networks
    consent   the one HIPAA authorization
+   why       the "your why" conversation and the flourishing index
    records   the record builds
    done      the dashboard, where suggested plans are offered
+
+   A patient who says no to the consent skips the rest and lands on the
+   dashboard with nothing collected; they can connect from there later.
+   After setup the same store keeps what the patient does in the app: the
+   medicines they confirmed, reports they added, care gaps they booked, and
+   the paid plan's setup, approval and daily log.
 
    A prototype with no backend: when the API exists, `save` posts each step
    and the server holds the state. */
 
-export type Step = "about" | "consent" | "records" | "done"
+export type Step = "about" | "consent" | "why" | "records" | "done"
 
 export type Profile = {
   firstName: string
@@ -29,9 +39,55 @@ export type Profile = {
   zip: string
 }
 
-export type Membership = { tier: Tier; programs: ProgramId[] }
+export type Membership = {
+  tier: Tier
+  programs: ProgramId[]
+  /** A paused plan keeps its history; the free record carries on. */
+  paused?: boolean
+}
 
-type State = { step: Step; profile?: Profile; signedAs?: string; membership?: Membership }
+/** The plan is a draft until the doctor approves it; each approved
+    version replaces the last, which is kept. */
+export type Plan = {
+  status: "review" | "live"
+  version: number
+  versions: { version: number; approved: string; why: string }[]
+}
+
+export type Added = { id: string; title: string; detail: string; at: string; unclear?: number }
+
+type State = {
+  step: Step
+  profile?: Profile
+  signedAs?: string
+  /** The conversation's answers so far, and the turn the patient is on. */
+  why?: Partial<Answers>
+  whyAt?: number
+  membership?: Membership
+  /** The one authorization: signed, or not now. */
+  consent?: "signed" | "declined"
+  consentAt?: string
+  /** How long the permission lasts before the patient is asked again. */
+  consentMonths?: number
+  /** What the patient says about each medicine on their lists. */
+  meds?: Record<string, MedAnswer>
+  /** Reports photographed and things the patient told Inlay. */
+  added?: Added[]
+  /** Care gaps the patient says they booked, with when they said so. */
+  booked?: Record<string, string>
+  /** Paid setup, step by step. */
+  setupDone?: SetupStep[]
+  intake?: Intake
+  devices?: string[]
+  foodLogging?: string
+  tests?: Record<string, string>
+  plan?: Plan
+  /** Today's ticked actions and check in, by day. */
+  log?: Record<string, string[]>
+  checkIn?: Record<string, string>
+  /** Free AI questions asked this month. */
+  asked?: { month: string; count: number }
+}
 
 type Onboarding = State & {
   loaded: boolean
@@ -96,5 +152,6 @@ export function useOnboarding() {
 export const STEP_ROUTE = {
   about: "/onboarding/about-you",
   consent: "/onboarding/consent",
+  why: "/onboarding/why",
   records: "/onboarding/syncing",
 } as const
