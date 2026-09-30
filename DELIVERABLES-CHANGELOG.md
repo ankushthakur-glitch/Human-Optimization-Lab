@@ -286,3 +286,8 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 
 ## 30-Sep-2026
 
+
+## 01-Oct-2026
+
+- Added: Global Pages / Login / Invitation email variations
+- Added: Provider Portal / Dashboard / Dashboard
