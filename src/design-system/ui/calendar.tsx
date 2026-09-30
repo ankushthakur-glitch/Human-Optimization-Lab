@@ -6,10 +6,18 @@ import {
   DayPicker,
   getDefaultClassNames,
   type DayButton,
+  type DropdownProps,
   type Locale,
 } from "react-day-picker"
 
 import { Button, buttonVariants } from "@/design-system/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/design-system/ui/select"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowLeftIcon, ArrowRightIcon, ArrowDownIcon } from "@hugeicons/core-free-icons"
 
@@ -52,7 +60,7 @@ function Calendar({
         ),
         month: cn("flex w-full flex-col gap-4", defaultClassNames.month),
         nav: cn(
-          "absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1",
+          "pointer-events-none absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1 *:pointer-events-auto",
           defaultClassNames.nav
         ),
         button_previous: cn(
@@ -70,7 +78,7 @@ function Calendar({
           defaultClassNames.month_caption
         ),
         dropdowns: cn(
-          "flex h-(--cell-size) w-full items-center justify-center gap-1.5 text-sm font-medium",
+          "flex h-(--cell-size) w-full items-center justify-center gap-1 text-sm font-medium",
           defaultClassNames.dropdowns
         ),
         dropdown_root: cn(
@@ -165,6 +173,7 @@ function Calendar({
         DayButton: ({ ...props }) => (
           <CalendarDayButton locale={locale} {...props} />
         ),
+        Dropdown: CalendarDropdown,
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>
@@ -178,6 +187,46 @@ function Calendar({
       }}
       {...props}
     />
+  )
+}
+
+/* The month and year pickers are the library Select, not the browser's own
+   list. DayPicker reads the choice from a change event's target value. */
+function CalendarDropdown({
+  options = [],
+  value,
+  onChange,
+  disabled,
+  "aria-label": ariaLabel,
+}: DropdownProps) {
+  const items = options.map((o) => ({ label: o.label, value: o.value }))
+  return (
+    <Select
+      items={items}
+      value={value === undefined ? null : Number(value)}
+      disabled={disabled}
+      onValueChange={(next: number | null) => {
+        if (next === null) return
+        onChange?.({
+          target: { value: String(next) },
+        } as React.ChangeEvent<HTMLSelectElement>)
+      }}
+    >
+      <SelectTrigger
+        size="sm"
+        aria-label={ariaLabel}
+        className="h-7! gap-1 bg-transparent px-2 font-medium hover:bg-surface-hover"
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="max-h-72">
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value} disabled={o.disabled}>
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
 

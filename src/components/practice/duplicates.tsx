@@ -12,7 +12,7 @@ import {
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
-import { SelectField, TextField, formatPhone } from "@/components/form-kit"
+import { DateField, SelectField, TextField, formatPhone } from "@/components/form-kit"
 import {
   StatusBadge,
   avatarTone,
@@ -855,14 +855,13 @@ export function PatientPrecheck({
               onChange={(e) => set("lastName")(e.target.value)}
               error={errors.lastName}
             />
-            <TextField
+            <DateField
               id="precheck-dob"
               label="Date of birth"
               required
-              type="date"
               max={new Date().toISOString().slice(0, 10)}
               value={values.dob}
-              onChange={(e) => set("dob")(e.target.value)}
+              onChange={set("dob")}
               error={errors.dob}
             />
             <SelectField

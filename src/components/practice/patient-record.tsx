@@ -17,6 +17,7 @@ import {
   EMAIL,
   type Errors,
   VALIDATE,
+  DateField,
   MultiSelectField,
   Required,
   SelectField,
@@ -348,14 +349,13 @@ function PatientForm({ patient }: { patient?: Patient }) {
                 value={values.preferredName}
                 onChange={text("preferredName")}
               />
-              <TextField
+              <DateField
                 id="patient-dob"
                 label="Date of birth"
                 required
-                type="date"
                 max={new Date().toISOString().slice(0, 10)}
                 value={values.dob}
-                onChange={text("dob")}
+                onChange={set("dob")}
                 error={errors.dob}
               />
               <SelectField

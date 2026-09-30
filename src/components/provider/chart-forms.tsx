@@ -14,7 +14,7 @@ import {
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
-import { SelectField, TextField } from "@/components/form-kit"
+import { DateField, SelectField, TextField } from "@/components/form-kit"
 import { today } from "@/components/practice/collection-store"
 import {
   type Allergy,
@@ -2003,6 +2003,21 @@ function FormField({
           placeholder={f.placeholder ?? "From height and weight"}
           readOnly
           className="[&_input]:bg-muted [&_input]:text-muted-foreground"
+        />
+      )
+    case "date":
+      return (
+        <DateField
+          id={id}
+          label={f.label}
+          required={f.required && !f.hideLabel}
+          error={error}
+          placeholder={f.placeholder}
+          value={values[f.key] ?? ""}
+          onChange={(v) => set(f.key, v)}
+          className={cn(
+            f.hideLabel && "[&>label]:invisible max-sm:[&>label]:hidden"
+          )}
         />
       )
     default:

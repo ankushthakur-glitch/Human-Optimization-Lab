@@ -18,6 +18,7 @@ import {
   EMAIL,
   type Errors,
   VALIDATE,
+  DateField,
   MultiSelectField,
   SelectField,
   TextField,
@@ -293,14 +294,13 @@ function ProviderForm({ provider }: { provider?: Provider }) {
               onChange={text("lastName")}
               error={errors.lastName}
             />
-            <TextField
+            <DateField
               id="provider-dob"
               label="Date of birth"
               required
-              type="date"
               max={new Date().toISOString().slice(0, 10)}
               value={values.dob}
-              onChange={text("dob")}
+              onChange={set("dob")}
               error={errors.dob}
             />
             <SelectField
@@ -475,12 +475,11 @@ function ProviderForm({ provider }: { provider?: Provider }) {
               value={values.taxIdType}
               onChange={set("taxIdType")}
             />
-            <TextField
+            <DateField
               id="provider-registrationDate"
               label="Registration date"
-              type="date"
               value={values.registrationDate}
-              onChange={text("registrationDate")}
+              onChange={set("registrationDate")}
             />
             <MultiSelectField
               id="provider-locationIds"
@@ -591,12 +590,11 @@ function ProviderForm({ provider }: { provider?: Provider }) {
                     onChange={(e) => setLicense(i, { number: e.target.value })}
                     error={errors[`licenseNumber.${i}`]}
                   />
-                  <TextField
+                  <DateField
                     id={`provider-licenseExpiry-${i}`}
                     label="Expiry date"
-                    type="date"
                     value={l.expiry}
-                    onChange={(e) => setLicense(i, { expiry: e.target.value })}
+                    onChange={(expiry) => setLicense(i, { expiry })}
                   />
                   <RowRemoveButton
                     label={`Remove license ${i + 1}`}

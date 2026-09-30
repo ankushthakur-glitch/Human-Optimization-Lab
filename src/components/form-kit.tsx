@@ -15,6 +15,7 @@ import {
   ComboboxValue,
   useComboboxAnchor,
 } from "@/design-system/ui/combobox"
+import { DatePicker } from "@/design-system/ui/date-picker"
 import { Field, FieldError, FieldLabel } from "@/design-system/ui/field"
 import { Input } from "@/design-system/ui/input"
 import {
@@ -160,6 +161,51 @@ export function SelectField({
           </SelectGroup>
         </SelectContent>
       </Select>
+      {error && <FieldError>{error}</FieldError>}
+    </Field>
+  )
+}
+
+/** A day picked on the library calendar; the value is an ISO day. */
+export function DateField({
+  id,
+  label,
+  required,
+  error,
+  value,
+  onChange,
+  min,
+  max,
+  placeholder,
+  className,
+}: {
+  id: string
+  label: string
+  required?: boolean
+  error?: string
+  value: string
+  onChange: (value: string) => void
+  min?: string
+  max?: string
+  placeholder?: string
+  className?: string
+}) {
+  return (
+    <Field data-invalid={error ? true : undefined} className={className}>
+      <FieldLabel htmlFor={id}>
+        {label}
+        {required && <Required />}
+      </FieldLabel>
+      <DatePicker
+        id={id}
+        value={value}
+        onChange={onChange}
+        min={min}
+        max={max}
+        placeholder={placeholder}
+        aria-invalid={error ? true : undefined}
+        aria-required={required || undefined}
+      />
       {error && <FieldError>{error}</FieldError>}
     </Field>
   )
