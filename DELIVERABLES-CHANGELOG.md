@@ -291,3 +291,6 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 
 - Added: Global Pages / Login / Invitation email variations
 - Added: Provider Portal / Dashboard / Dashboard
+
+## 02-Oct-2026
+
