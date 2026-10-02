@@ -1,17 +1,17 @@
 import * as React from "react"
 import { ActivityIndicator, Animated, Easing, Image, StyleSheet, Text, View } from "react-native"
 
-import { FlowScreen, Section } from "@/components/flow"
+import { FlowScreen } from "@/components/flow"
 import { RecordBlocks } from "@/components/record-blocks"
-import { RecordIcon, type RecordIconName } from "@/components/record-icons"
 import { Button } from "@/components/ui"
 import { useOnboarding } from "@/lib/onboarding"
 import { DATA_TYPES, SOURCES } from "@/lib/record"
 import { color, font } from "@/lib/theme"
 
 /* Step 4, the last: the record builds, told the way a patient thinks about
-   it rather than the way the networks work. One progress bar with the stage
-   in plain words, then each kind of record filling in with its count. Timed for the prototype: the real Patient360 pull is
+   it rather than the way the networks work. The same panel as the finished
+   record: a running total with the stage in plain words, one bar filling,
+   then each kind of record landing with its count. Timed for the prototype: the real Patient360 pull is
    asynchronous and can take minutes, so the patient may leave and is told
    when it's ready. */
 
@@ -51,7 +51,7 @@ export default function SyncingScreen() {
 }
 
 /** The record building, shared by setup and by connecting later from the
-    dashboard. */
+    dashboard. The swipe back leaves it, and it starts over on return. */
 export function BuildRecord({ onDone }: { onDone: () => void }) {
   // How many providers have turned up, then how many kinds of record are in.
   const [found, setFound] = React.useState(0)
@@ -91,7 +91,7 @@ export function BuildRecord({ onDone }: { onDone: () => void }) {
         done ? (
           <Image source={FOLDER} style={styles.art} resizeMode="contain" accessibilityIgnoresInvertColors />
         ) : (
-          <RecordBlocks size={130} />
+          <RecordBlocks size={112} />
         )
       }
       footer={
@@ -100,31 +100,7 @@ export function BuildRecord({ onDone }: { onDone: () => void }) {
         </Button>
       }
     >
-      {done ? <RecordShare /> : <Progress percent={percent} label={STAGE_TEXT[stage]} />}
-
-      {stage !== "finding" && !done && (
-        <Section title="Your record">
-          <View style={styles.list}>
-            {DATA_TYPES.map((t, i) => {
-              const inNow = i < landed
-              const loading = i === landed && stage === "collecting"
-              return (
-                <View key={t.key} style={[styles.row, i < DATA_TYPES.length - 1 && styles.rule]}>
-                  <Tile icon={t.icon} muted={!inNow} />
-                  <Text style={[styles.rowLabel, !inNow && styles.dim]}>{t.label}</Text>
-                  {inNow ? (
-                    <Text style={styles.count}>{t.count}</Text>
-                  ) : loading ? (
-                    <ActivityIndicator size="small" color={color.primary} />
-                  ) : (
-                    <View style={styles.placeholder} />
-                  )}
-                </View>
-              )
-            })}
-          </View>
-        </Section>
-      )}
+      {done ? <RecordShare /> : <Building stage={stage} percent={percent} landed={landed} />}
     </FlowScreen>
   )
 }
@@ -157,10 +133,38 @@ function RecordShare() {
   )
 }
 
-function Tile({ icon, muted }: { icon: RecordIconName; muted?: boolean }) {
+/** The record while it builds, in the same panel as the finished one: the
+    running total and stage, one bar filling, then each kind of record with
+    its count as it lands. */
+function Building({ stage, percent, landed }: { stage: Exclude<Stage, "done">; percent: number; landed: number }) {
+  const total = DATA_TYPES.slice(0, landed).reduce((sum, t) => sum + t.count, 0)
   return (
-    <View style={[styles.tile, muted && styles.tileMuted]}>
-      <RecordIcon name={icon} size={18} color={muted ? color.muted : color.primary} />
+    <View style={styles.share}>
+      <View style={styles.shareHead}>
+        <Text style={styles.shareValue}>{total}</Text>
+        <Text style={[styles.shareText, styles.grow]}>{STAGE_TEXT[stage]}</Text>
+        <Text style={styles.progressPercent}>{percent}%</Text>
+      </View>
+      <Progress percent={percent} label={STAGE_TEXT[stage]} />
+      <View style={styles.legend}>
+        {DATA_TYPES.map((t, i) => {
+          const inNow = i < landed
+          const loading = i === landed && stage === "collecting"
+          return (
+            <View key={t.key} style={styles.legendRow}>
+              <View style={[styles.dot, { backgroundColor: inNow ? color.primary : color.border }]} />
+              <Text style={[styles.rowLabel, !inNow && styles.dim]}>{t.label}</Text>
+              {inNow ? (
+                <Text style={styles.legendCount}>{t.count}</Text>
+              ) : loading ? (
+                <ActivityIndicator size="small" color={color.primary} />
+              ) : (
+                <View style={styles.placeholder} />
+              )}
+            </View>
+          )
+        })}
+      </View>
     </View>
   )
 }
@@ -179,18 +183,12 @@ function Progress({ percent, label }: { percent: number; label: string }) {
   const width = value.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] })
   return (
     <View
-      style={styles.progress}
+      style={styles.track}
       accessibilityRole="progressbar"
       accessibilityLabel={label}
       accessibilityValue={{ min: 0, max: 100, now: percent }}
     >
-      <View style={styles.progressHead}>
-        <Text style={styles.progressLabel}>{label}</Text>
-        <Text style={styles.progressPercent}>{percent}%</Text>
-      </View>
-      <View style={styles.track}>
-        <Animated.View style={[styles.bar, { width }]} />
-      </View>
+      <Animated.View style={[styles.bar, { width }]} />
     </View>
   )
 }
@@ -198,12 +196,10 @@ function Progress({ percent, label }: { percent: number; label: string }) {
 const styles = StyleSheet.create({
   art: { width: 112, height: 112 },
 
-  progress: { gap: 10 },
-  progressHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
-  progressLabel: { fontFamily: font.medium, fontSize: 15, color: color.text },
   progressPercent: { fontFamily: font.semibold, fontSize: 15, color: color.primary },
-  track: { height: 8, borderRadius: 4, backgroundColor: color.canvas, overflow: "hidden" },
-  bar: { height: "100%", borderRadius: 4, backgroundColor: color.primary },
+  track: { height: 12, borderRadius: 6, backgroundColor: color.border, overflow: "hidden", marginTop: 12 },
+  bar: { height: "100%", borderRadius: 6, backgroundColor: color.primary },
+  grow: { flex: 1 },
 
   share: { backgroundColor: color.canvas, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 4 },
   shareHead: { flexDirection: "row", alignItems: "baseline", gap: 8, paddingTop: 12 },
@@ -216,21 +212,7 @@ const styles = StyleSheet.create({
   sharePercent: { fontFamily: font.regular, fontSize: 13, color: color.muted },
   legendCount: { fontFamily: font.semibold, fontSize: 15, color: color.text, minWidth: 28, textAlign: "right" },
 
-  tile: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: color.primaryTint,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tileMuted: { backgroundColor: color.canvas },
-
-  list: { borderWidth: 1, borderColor: color.border, borderRadius: 18, paddingHorizontal: 14 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 },
-  rule: { borderBottomWidth: 1, borderBottomColor: color.border },
   rowLabel: { flex: 1, fontFamily: font.medium, fontSize: 15, color: color.text },
   dim: { color: color.muted },
-  count: { fontFamily: font.semibold, fontSize: 17, color: color.text, minWidth: 24, textAlign: "right" },
-  placeholder: { width: 24, height: 8, borderRadius: 4, backgroundColor: color.canvas },
+  placeholder: { width: 24, height: 8, borderRadius: 4, backgroundColor: color.border },
 })

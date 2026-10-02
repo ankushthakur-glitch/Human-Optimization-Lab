@@ -17,7 +17,7 @@ import Svg, { Circle, Defs, Ellipse, RadialGradient, Stop } from "react-native-s
 import { DarkStatusBar } from "@/components/error-state"
 import { IconCheck, IconChevronLeft } from "@/components/icons"
 import { useTopInset } from "@/components/ui"
-import { color, font, gutter } from "@/lib/theme"
+import { color, font, gutter, space, type } from "@/lib/theme"
 
 /* The first-run screens after the password: white, calm and roomy in the
    manner of Superpower, built from the app's own pieces (the teal Button,
@@ -32,7 +32,11 @@ export function FlowScreen({
   back = true,
   onBack,
   bar,
+  page = false,
 }: {
+  /** The signed-in record's look: the cool page, with a white back button
+      floating over it. Setup screens leave it off. */
+  page?: boolean
   /** Replaces going back a screen, e.g. to the previous question. */
   onBack?: () => void
   /** Centred in the top bar, e.g. a review switcher. */
@@ -48,20 +52,22 @@ export function FlowScreen({
   const { bottom } = useSafeAreaInsets()
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, page && styles.screenPage]}>
       <DarkStatusBar />
-      <FlowBar back={back} onBack={onBack} bar={bar} />
+      <FlowBar back={back} onBack={onBack} bar={bar} floating={page} title={page ? title : undefined} />
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.body}>
+          <View style={[styles.body, page && styles.bodyPage]}>
             {art && <View style={styles.art}>{art}</View>}
-            <Text style={[styles.title, !!art && styles.titleCentred]} accessibilityRole="header">
-              {title}
-            </Text>
+            {!page && (
+              <Text style={[styles.title, !!art && styles.titleCentred]} accessibilityRole="header">
+                {title}
+              </Text>
+            )}
             {children}
           </View>
         </ScrollView>
@@ -81,10 +87,16 @@ export function FlowBar({
   back = true,
   onBack,
   bar,
+  floating = false,
+  title,
 }: {
+  /** The record's screens name themselves beside the back button. */
+  title?: string
   back?: boolean
   onBack?: () => void
   bar?: React.ReactNode
+  /** The record's screens: no bar, a white back button over the page. */
+  floating?: boolean
 }) {
   const top = useTopInset()
   const canBack = back && (!!onBack || router.canGoBack())
@@ -97,20 +109,25 @@ export function FlowBar({
       </View>
     )
   return (
-    <View style={[styles.bar, { paddingTop: top + 8 }]}>
-      <View style={styles.barInner}>
+    <View style={[styles.bar, floating && styles.barFloating, { paddingTop: top + 8 }]}>
+      <View style={[styles.barInner, floating && styles.barInnerFloating]}>
         {canBack ? (
           <Pressable
             onPress={onBack ?? (() => router.back())}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Back"
-            style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
+            style={({ pressed }) => [styles.back, floating && styles.backFloating, pressed && styles.backPressed]}
           >
             <IconChevronLeft color={color.text} />
           </Pressable>
         ) : (
           <View style={styles.backSpace} />
+        )}
+        {!!title && (
+          <Text style={styles.barTitle} numberOfLines={1} accessibilityRole="header">
+            {title}
+          </Text>
         )}
       </View>
     </View>
@@ -346,6 +363,9 @@ export function SoftOrb({ size = 168, orbit = false }: { size?: number; orbit?: 
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.background },
+  screenPage: { backgroundColor: color.page },
+  barFloating: { backgroundColor: "transparent" },
+  backFloating: { backgroundColor: color.background, boxShadow: "0 4px 12px rgba(16, 24, 40, 0.08)" },
   fill: { flex: 1 },
   bar: { backgroundColor: color.background },
   barInner: {
@@ -368,6 +388,10 @@ const styles = StyleSheet.create({
   },
   backPressed: { backgroundColor: color.border },
   backSpace: { width: 40, height: 40 },
+  // The record's pages: the signed-in gutter (Frontline 16), the back
+  // button a tile's lead from the screen title (Frontline H2).
+  barInnerFloating: { maxWidth: 420 + space.gutter * 2, paddingHorizontal: space.gutter - 4, gap: space.lead },
+  barTitle: { flex: 1, ...type.tabTitle },
   barCentred: { justifyContent: "center" },
 
   scroll: { flexGrow: 1 },
@@ -380,6 +404,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 32,
   },
+  bodyPage: { maxWidth: 420 + space.gutter * 2, paddingHorizontal: space.gutter },
   art: { alignItems: "center", marginBottom: -12 },
   title: {
     fontFamily: font.semibold,

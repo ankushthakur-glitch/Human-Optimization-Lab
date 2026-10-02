@@ -1,12 +1,15 @@
+import { showDate } from "@/lib/dates"
 import { PATIENT } from "@/lib/patient"
 
 /* The consent's terms, shared by the consent screen and its
    sheets. Sample wording until Inlay Health's lawyer returns the final
    form (same text as the web prototype's consent). */
 
-/** How long collection runs, in months: one permission for a set period,
-    rather than one for every pull. */
-export const PERIODS = ["1", "3", "6", "9"]
+/** How long collection runs: one permission for a set period, rather than
+    one for every pull. */
+export const PERIODS = ["1m", "3m", "6m"]
+
+export const DEFAULT_PERIOD = "3m"
 
 export const LEGAL = [
   `I authorize Inlay Health to request, receive and store my health records from my healthcare providers, hospitals, laboratories and imaging centers, through national health information networks, and to share them with ${PATIENT.practice} for my care.`,
@@ -16,11 +19,59 @@ export const LEGAL = [
   "My treatment by my practice does not depend on signing this authorization.",
 ]
 
-export const monthsLabel = (m: string) => (m === "1" ? "1 month" : `${m} months`)
+/** The documents the consent's statements link to, each opened in a
+    sheet. Reading them is never required to tick a box. */
+export type Doc = "authorization" | "privacy" | "terms" | "lab" | "texts"
+
+export const DOCS: Record<Doc, { title: string; text: string[] }> = {
+  authorization: { title: "HIPAA authorization", text: LEGAL },
+  privacy: {
+    title: "Privacy policy",
+    text: [
+      "Inlay Health collects the health records you authorize, the answers you give in the app and how you use it, to build your record and support your care.",
+      `We share your information with ${PATIENT.practice}, the labs you choose and the services that run Inlay for us, under agreements that protect it. We never sell it.`,
+      "You can see your information, ask us to correct it and turn sharing off at any time in the app.",
+    ],
+  },
+  terms: {
+    title: "Terms of service",
+    text: [
+      "Inlay Health gives you a copy of your health record, tools to understand it and a way to work on it with your practice. It does not replace your doctor or emergency care. In an emergency, call 911.",
+      "You agree to give accurate information, keep your password private and use the app for your own care.",
+      "Your free record stays free. Paid plans are billed as shown before you join, and you can cancel at any time.",
+      "We will tell you in the app before these terms change.",
+    ],
+  },
+  lab: {
+    title: "Lab request terms",
+    text: [
+      "When you book a test through Inlay, a licensed physician reviews the request and orders it, and a partner lab collects your sample and runs the test.",
+      "Your results go to your record and to your practice, whose doctors review anything that needs follow up.",
+      "Tests paid through Inlay are billed at the price shown when you book, not to your insurance.",
+    ],
+  },
+  texts: {
+    title: "Messaging terms",
+    text: [
+      "Inlay Health will text and message you about your care, such as new results, reminders and notes from your care team. How often depends on your care.",
+      "Message and data rates may apply. Reply “Stop” at any time to stop texts, or “Help” for help. You can also turn texts off in Profile.",
+      "Agreeing to texts is not required to use Inlay.",
+    ],
+  },
+}
+
+const LABELS: Record<string, string> = { "1m": "1 month", "3m": "3 months", "6m": "6 months" }
+const MONTHS: Record<string, number> = { "1m": 1, "3m": 3, "6m": 6 }
+
+export const periodLabel = (p: string) => LABELS[p] ?? LABELS[DEFAULT_PERIOD]
+
+/** The day a period started on `from` runs out. A period this build no
+    longer offers reads as the default, as its label does. */
+export function periodEnd(p: string, from: Date = new Date()) {
+  const d = new Date(from)
+  d.setMonth(d.getMonth() + (MONTHS[p] ?? MONTHS[DEFAULT_PERIOD]))
+  return d
+}
 
 /** The day collection stops if signed today. */
-export function endDate(months: string) {
-  const d = new Date()
-  d.setMonth(d.getMonth() + Number(months))
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-}
+export const endDate = (p: string) => showDate(periodEnd(p))

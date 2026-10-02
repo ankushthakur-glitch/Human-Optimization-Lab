@@ -16,6 +16,7 @@ import {
   patients,
   time12,
 } from "@/components/practice/practice-data"
+import { RECORD_CARD } from "@/components/practice/record-page"
 import { SideSheet, SideSheetHeader } from "@/components/practice/sheets"
 import { ProviderShell } from "@/components/provider/provider-shell"
 import {
@@ -81,10 +82,10 @@ import {
    medication changes with their source, orders the patient never completed
    after three reminders, care gaps, and care the doctor was not told about.
 
-   Laid out in the product's quiet language: soft grey panels on white, no
-   borders or rules, big numbers, status as a dot and a word. Every row opens
-   the chart at the section it concerns; a queue opens in a side sheet kept
-   in ?queue= so it survives a reload. */
+   Laid out like the clinic manager's pages: white bordered cards on the grey
+   canvas, big numbers, status as a dot and a word. Every row opens the chart
+   at the section it concerns; a queue opens in a side sheet kept in ?queue=
+   so it survives a reload. */
 
 const BASE = "/screens/patients"
 
@@ -129,10 +130,7 @@ const isQueue = (value: string | null): value is QueueKey =>
 
 /* ---------------------------------------------------------- building -- */
 
-const PANEL =
-  "gap-4 rounded-2xl bg-surface-sunken py-5 shadow-none ring-0 [--card-spacing:--spacing(5)]"
-
-/** A soft, borderless panel: a title with its count, then the content. */
+/** A white section card: a title with its count, then the content. */
 function Panel({
   title,
   count,
@@ -147,7 +145,7 @@ function Panel({
   children: React.ReactNode
 }) {
   return (
-    <Card className={cn(PANEL, className)}>
+    <Card className={cn(RECORD_CARD, "gap-4", className)}>
       <CardHeader className="items-center">
         <CardTitle className="flex items-baseline gap-2 text-[15px] font-semibold">
           {title}
@@ -348,26 +346,13 @@ export function ProviderDashboard() {
   const openFor = (patientId: string) =>
     allOpen.filter((r) => r.patientId === patientId).length
 
-  const hour = new Date().getHours()
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"
-
   return (
     <ProviderShell active="dashboard">
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 pt-6 pb-10 sm:px-8">
-          <header className="flex flex-wrap items-baseline justify-between gap-2">
-            <h1 className="font-heading text-2xl font-semibold tracking-tight">
-              {greeting}
-            </h1>
-            <span className="text-sm text-muted-foreground">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
-            </span>
-          </header>
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface-sunken">
+        <div className="flex w-full flex-col gap-4 px-4 pt-3 pb-6">
+          <h1 className="flex min-h-8 items-center text-lg font-semibold tracking-tight">
+            Dashboard
+          </h1>
 
           <QueueTiles
             count={patientsIn}
@@ -450,9 +435,9 @@ function QueueTiles({
             key={q.key}
             type="button"
             onClick={() => onPick(q.key)}
-            className="rounded-2xl text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="rounded-lg text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
-            <InsightCard className="h-full gap-1 rounded-2xl border-0 bg-surface-sunken p-4 transition-colors hover:bg-surface-hover">
+            <InsightCard className="h-full gap-1 rounded-lg shadow-[0_0_5px_rgb(0_0_0/0.06)] transition-colors hover:bg-surface-row-hover">
               <InsightCardLabel className="flex items-center gap-1.5 text-[13px] font-normal">
                 {q.key === "escalated" && now > 0 && (
                   <span className="size-1.5 rounded-full bg-destructive" />

@@ -35,6 +35,12 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Inlay Health uses Face ID to unlock the app."
+        }
+      ],
       "expo-font",
       [
         "expo-splash-screen",

@@ -2,7 +2,7 @@ import * as Crypto from "expo-crypto"
 import * as React from "react"
 import { AppState } from "react-native"
 
-import { PATIENT } from "@/lib/patient"
+import { DEMOGRAPHICS, PATIENT } from "@/lib/patient"
 import { store } from "@/lib/storage"
 import { VALIDATE } from "@/lib/validate"
 
@@ -10,7 +10,7 @@ import { VALIDATE } from "@/lib/validate"
 
    The flow: the invitation's Activate account button opens activation,
    where the patient enters the one-time code from the email, then sets their
-   own password, and uses that from then
+   own password, signs in with it once straight away, and uses it from then
    on. No two-factor step.
 
    This is a prototype with no backend yet, so the device plays the server:
@@ -45,7 +45,9 @@ type Auth = {
   status: Status
   /** A password has been set on this device, so the activation code is spent. */
   activated: boolean
-  activate: (email: string, code: string) => Promise<Result>
+  activate: (email: string, dateOfBirth: string, code: string) => Promise<Result>
+  /** Keeps the new password and activates the account, still signed out:
+      sign in with it comes next. */
   setPassword: (password: string) => Promise<Result>
   signIn: (email: string, password: string) => Promise<Result>
   signOut: () => Promise<void>
@@ -102,10 +104,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       status,
       activated,
 
-      async activate(email, code) {
+      async activate(email, dateOfBirth, code) {
         await settle()
         if (VALIDATE && (!sameEmail(email) || code.trim() !== PATIENT.activationCode)) {
           return { ok: false, message: "That code doesn’t match the one in your invitation email." }
+        }
+        if (VALIDATE && dateOfBirth !== DEMOGRAPHICS.dateOfBirth) {
+          return { ok: false, message: "That date of birth doesn’t match your clinic’s records." }
         }
         if (VALIDATE && activated) {
           return {
@@ -119,12 +124,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { ok: true }
       },
 
+      // Activates the account without signing in: the patient then signs
+      // in once with the new password (agreed on the 30 Sep call), and only
+      // then gives consent and starts onboarding.
       async setPassword(password) {
         await settle()
         await store.setItemAsync(KEY_HASH, await hash(password))
-        await store.setItemAsync(KEY_SIGNED_IN, "1")
+        await store.deleteItemAsync(KEY_SIGNED_IN)
         setActivated(true)
-        setStatus("signedIn")
+        setStatus("signedOut")
         return { ok: true }
       },
 

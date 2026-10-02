@@ -1,17 +1,19 @@
 import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 
-import { Chip, FlowScreen } from "@/components/flow"
+import { FlowScreen } from "@/components/flow"
+import { Block, Card, Group, toast } from "@/components/record-kit"
 import { Button, TextField } from "@/components/ui"
 import { showDate } from "@/lib/dates"
 import { useOnboarding } from "@/lib/onboarding"
-import { color, font } from "@/lib/theme"
+import { color, space, type } from "@/lib/theme"
 
-/* What the patient tells Inlay: a medicine or supplement they take (or
-   stopped), a doctor they saw, a test done elsewhere. It goes into the
-   record marked as told by the patient, and the doctor sees it alongside
-   everyone else's lists. */
+/* What the patient tells Inlay (F-93): a medicine or supplement she takes
+   (or stopped), a doctor she saw, a test done elsewhere. It joins her
+   record as told by her, "Being checked" under "Added by you", and Dr.
+   Patel sees it beside every other list. Reached from the Record tab's "Add
+   to your record", and from "Tell us" when a place had no records. */
 
 type About = "medicine" | "stopped" | "visit" | "test"
 
@@ -48,18 +50,29 @@ export default function TellUsScreen() {
         },
       ],
     })
+    toast("Added to your record")
     router.back()
   }
 
   return (
-    <FlowScreen title="Tell us something" footer={<Button onPress={save} disabled={!topic}>Add to my record</Button>}>
-      <View style={styles.topics}>
-        {TOPICS.map((t) => (
-          <Chip key={t.id} label={t.label} selected={about === t.id} onPress={() => setAbout(t.id)} />
-        ))}
-      </View>
+    <FlowScreen
+      page
+      title="Tell us something"
+      footer={
+        <Button onPress={save} disabled={!topic}>
+          Add to my record
+        </Button>
+      }
+    >
+      <Block title="What is it about?">
+        <Group>
+          {TOPICS.map((t) => (
+            <Topic key={t.id} label={t.label} selected={about === t.id} onPress={() => setAbout(t.id)} />
+          ))}
+        </Group>
+      </Block>
       {topic && (
-        <View style={styles.fields}>
+        <Card style={styles.fields}>
           <TextField
             label={topic.what}
             required
@@ -72,15 +85,34 @@ export default function TellUsScreen() {
             error={error}
           />
           <TextField label="When" value={when} onChangeText={setWhen} placeholder="Last month" />
-          <Text style={styles.small}>Marked as told by you, and shown to Dr. Patel with your other lists.</Text>
-        </View>
+        </Card>
       )}
     </FlowScreen>
   )
 }
 
+/** One topic as a radio row: the words, and a ring filled teal once chosen. */
+function Topic({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      style={({ pressed }) => [styles.topic, pressed && styles.pressed]}
+    >
+      <Text style={[type.title, styles.topicText]}>{label}</Text>
+      <View style={[styles.radio, selected && styles.radioOn]}>{selected && <View style={styles.radioDot} />}</View>
+    </Pressable>
+  )
+}
+
 const styles = StyleSheet.create({
-  topics: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  fields: { gap: 18 },
-  small: { fontFamily: font.regular, fontSize: 13, lineHeight: 19, color: color.muted },
+  topic: { flexDirection: "row", alignItems: "center", gap: space.item, minHeight: 56, paddingVertical: space.rowY },
+  pressed: { opacity: 0.6 },
+  topicText: { flex: 1 },
+  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: "#A3ACB9", alignItems: "center", justifyContent: "center" },
+  radioOn: { borderColor: color.primary },
+  radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: color.primary },
+  // Frontline's form card: 16 inside and 16 between its fields.
+  fields: { gap: space.card, padding: space.card },
 })

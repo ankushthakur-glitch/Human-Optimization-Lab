@@ -11,7 +11,7 @@ import { Button, TextField } from "@/components/ui"
 import { WHY_LABELS, WhyCard, whyValue, withWhy, type WhyKey } from "@/components/why-card"
 import { Appear, AssistantGroup, ChatBar, MyBubble, Options, StreamedText, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
 import { IconCheck, IconFace } from "@/components/icons"
-import { EMPTY, TURNS, needsHelp, nextTurn, spoken, typedScale, type Answers, type Input, type Line, type Value } from "@/lib/conversation"
+import { EMPTY, FLOURISH, TURNS, needsHelp, nextTurn, spoken, typedScale, type Answers, type Input, type Line, type Value } from "@/lib/conversation"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { color, font, gutter } from "@/lib/theme"
@@ -30,6 +30,8 @@ import { color, font, gutter } from "@/lib/theme"
 const THINK_MS = 900
 const ARRIVE_MS = 450
 const BETWEEN_MS = 550
+/** Flourishing ratings the secret skip fills in, 1 to 5. */
+const SAMPLE_FLOURISH = [4, 4, 3, 4, 4, 3]
 
 export default function WhyScreen() {
   const { bottom } = useSafeAreaInsets()
@@ -81,7 +83,7 @@ export default function WhyScreen() {
 
     if (last) {
       await onboarding.save({ why: next, whyAt: at, step: "records" })
-      router.replace("/onboarding/syncing")
+      router.push("/onboarding/syncing")
       return
     }
 
@@ -96,6 +98,33 @@ export default function WhyScreen() {
     if (flagged) {
       setHelp(true)
     }
+  }
+
+  /* Secret shortcut for demos: tapping the heading skips ahead, first to
+     the why card, then to the Human Flourishing Index. Anything the cards
+     need that is still empty gets a sample answer. */
+  function skipAhead() {
+    const whyAt = TURNS.findIndex((t) => t.id === "whyCard")
+    const to = at < whyAt ? whyAt : TURNS.findIndex((t) => t.id === "result")
+    if (to === at) return
+    const next: Answers = {
+      ...a,
+      values: a.values.trim() || "My family, my health",
+      reason: a.reason.trim() || "To be there for my family and keep doing what I love",
+      focus: a.focus || "Movement",
+      step: a.step.trim() || "Walk 15 minutes after dinner",
+      flourish: to === whyAt ? a.flourish : FLOURISH.map((_, i) => a.flourish[i] ?? SAMPLE_FLOURISH[i % SAMPLE_FLOURISH.length]),
+      said: { whyImportant: "I want to be there for them", obstacle: "Getting home tired", solution: "Do a shorter version", success: "More energy", ...a.said },
+    }
+    justAnswered.current = null
+    arrived.current = true
+    setHelp(false)
+    setDraft("")
+    setPicked([])
+    setReady(false)
+    setAnswers(next)
+    setAt(to)
+    onboarding.save({ why: next, whyAt: to })
   }
 
   function send() {
@@ -181,9 +210,11 @@ export default function WhyScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.heading} accessibilityRole="header">
-            Your why
-          </Text>
+          <Pressable onPress={skipAhead} style={styles.headingTap}>
+            <Text style={styles.heading} accessibilityRole="header">
+              Your why
+            </Text>
+          </Pressable>
           {past.map((t) => (
             <React.Fragment key={t.id}>
               <AssistantGroup>
@@ -471,6 +502,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
 
   thread: { ...column, paddingTop: 4, paddingBottom: 20, gap: 10 },
+  headingTap: { alignSelf: "flex-start" },
   heading: { fontFamily: font.semibold, fontSize: 24, lineHeight: 30, letterSpacing: -0.6, color: color.text, marginBottom: 10 },
 
   card: { alignSelf: "stretch" },

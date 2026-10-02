@@ -1,75 +1,76 @@
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { Badge, Card, Chip, FlowScreen, Section } from "@/components/flow"
+import { Art } from "@/components/art"
+import { keepTogether } from "@/components/care-gap"
+import { FlowScreen, Section } from "@/components/flow"
+import { List, ListRow } from "@/components/list"
+import { SetupStepLabel } from "@/components/plan-account-pieces"
+import { ChipRow, Tag } from "@/components/record-kit"
 import { Button } from "@/components/ui"
+import { DEVICE_STATUS } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { DEVICES, FOOD_LOGGING } from "@/lib/program"
+import { FOOD_LOGGING } from "@/lib/program"
 import { useSetupStep } from "@/lib/setup"
-import { color, font } from "@/lib/theme"
+import { ink, space, type } from "@/lib/theme"
 
-/* Paid setup, step 3: a watch, ring or scale, for how the patient actually
-   lives between visits, and how they would like to log food (no food
-   diary). Connecting is simulated in the prototype; the real app goes
-   through Terra. */
+/* Paid setup, step 3 (FINAL-SPEC C.27, M-70): a watch, ring or scale, and
+   how she would like to log food. Devices connect through Terra in a later
+   update, so each is shown as coming, never as connected (A-33), and the
+   plan runs on what she enters and logs meanwhile. Logging food by photo
+   is chosen for her; she can pick another way. Nothing here holds her up. */
+
+type FoodLogging = (typeof FOOD_LOGGING)[number]
+
+/** The ways to log food, one to pick: the kit's single choice chips, read
+    out as radio buttons in a group (C.0.9). */
+const FOOD_CHOICES = FOOD_LOGGING.map((f) => ({ value: f, label: f }))
 
 export default function DevicesScreen() {
   const onboarding = useOnboarding()
-  const { finish } = useSetupStep("devices")
-  const [connected, setConnected] = React.useState<string[]>(onboarding.devices ?? [])
-  const [food, setFood] = React.useState<string | undefined>(onboarding.foodLogging)
-  const toggle = (id: string) => setConnected((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]))
-  const save = () => finish({ devices: connected, foodLogging: food })
+  const { label, finish } = useSetupStep("devices")
+  // Her earlier choice while it is still offered, otherwise photo.
+  const [food, setFood] = React.useState<FoodLogging>(() => FOOD_LOGGING.find((f) => f === onboarding.foodLogging) ?? FOOD_LOGGING[0])
 
   return (
     <FlowScreen
       back={false}
       title="Connect a device"
-      footer={
-        <>
-          <Button onPress={save} disabled={!connected.length}>
-            Continue
-          </Button>
-          <Button variant="outline" onPress={save}>
-            I don't have one
-          </Button>
-        </>
-      }
+      art={<Art name="watch" size={96} />}
+      footer={<Button onPress={() => finish({ devices: [], foodLogging: food })}>Continue</Button>}
     >
-      <View style={styles.devices}>
-        {DEVICES.map((d) => {
-          const on = connected.includes(d.id)
-          return (
-            <Card key={d.id} selected={on} onPress={() => toggle(d.id)}>
-              <View style={styles.device}>
-                <View style={styles.body}>
-                  <Text style={styles.name}>{d.name}</Text>
-                  <Text style={styles.meta}>{d.kind}</Text>
-                </View>
-                {on ? <Badge tone="ok">Connected</Badge> : <Text style={styles.connect}>Connect</Text>}
-              </View>
-            </Card>
-          )
-        })}
+      <View style={styles.intro}>
+        <SetupStepLabel centred>{label}</SetupStepLabel>
+        <Text style={styles.line}>{keepTogether("Devices arrive in a later update. Your plan works without one.")}</Text>
       </View>
 
+      <List>
+        {DEVICE_STATUS.map((d) => (
+          <ListRow
+            key={d.id}
+            title={d.name}
+            meta={d.kind}
+            right={
+              <View style={styles.soon}>
+                <Tag tone="muted">{d.label}</Tag>
+              </View>
+            }
+          />
+        ))}
+      </List>
+
       <Section title="Log food by">
-        <View style={styles.chips}>
-          {FOOD_LOGGING.map((f) => (
-            <Chip key={f} label={f} selected={food === f} onPress={() => setFood(f)} />
-          ))}
-        </View>
+        <ChipRow options={FOOD_CHOICES} value={food} onChange={setFood} />
       </Section>
     </FlowScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  devices: { gap: 10 },
-  device: { flexDirection: "row", alignItems: "center", gap: 12 },
-  body: { flex: 1, gap: 2 },
-  name: { fontFamily: font.semibold, fontSize: 16, color: color.text },
-  meta: { fontFamily: font.regular, fontSize: 13, color: color.muted },
-  connect: { fontFamily: font.semibold, fontSize: 14, color: color.primary },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  // The count and the line read with the centred title above them.
+  intro: { gap: space.item },
+  // The line under a centred title, as the kit's empty state sets it.
+  line: { ...type.body, color: ink.secondary, textAlign: "center" },
+  // The tag sits level with the row's two lines, not on the first.
+  soon: { alignSelf: "center" },
 })

@@ -1,38 +1,61 @@
-import { router, useLocalSearchParams } from "expo-router"
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { Text } from "react-native"
 
-import { Button, CodeField, FooterLink, FormError, Screen, Stack } from "@/components/ui"
+import { IconCalendar } from "@/components/icons"
+import { Button, CodeField, FooterLink, FormError, Screen, Stack, TextField } from "@/components/ui"
 import { InstallApp } from "@/components/install-app"
+import { OnboardingBrand } from "@/components/onboarding-brand"
 import { useAuth } from "@/lib/auth"
 import { PATIENT } from "@/lib/patient"
 import { VALIDATE } from "@/lib/validate"
 import { font } from "@/lib/theme"
 
-/** First sign-in, step one, as on the web portal: only the 6-digit
-    activation code from the invitation. The email's Activate account button
+/** First sign-in, step one: date of birth, then the 6-digit activation
+    code from the invitation. The email's Activate account button
     (hol://activate?email=...) names the account, so there is no email to
-    type; the prototype falls back to the sample patient. Set password
-    follows. */
+    type; the prototype falls back to the sample patient. Under the fields,
+    the Inlay Health lockup and what Inlay offers. Set password follows,
+    over this screen: going back from it cancels the code, so it has to be
+    entered again. */
 export default function ActivateScreen() {
-  const { activate } = useAuth()
+  const { activate, status, signOut } = useAuth()
   const params = useLocalSearchParams<{ email?: string }>()
   const email = params.email ?? PATIENT.email
+  const [dob, setDob] = React.useState("")
   const [code, setCode] = React.useState("")
-  const [errors, setErrors] = React.useState<{ code?: string; form?: string }>({})
+  const [errors, setErrors] = React.useState<{ dob?: string; code?: string; form?: string }>({})
   const [pending, setPending] = React.useState(false)
+
+  // The code accepted: set password opens over this screen, carrying the
+  // email on to the sign in that follows it.
+  React.useEffect(() => {
+    if (status === "mustSetPassword") router.push({ pathname: "/set-password", params: { email } })
+  }, [status, email])
+
+  // Back from set password: the accepted code no longer counts. Read
+  // through a ref so this runs on focus only, not when the code is accepted.
+  const latest = React.useRef({ status, signOut })
+  latest.current = { status, signOut }
+  useFocusEffect(
+    React.useCallback(() => {
+      if (latest.current.status === "mustSetPassword") latest.current.signOut()
+    }, [])
+  )
 
   async function onSubmit(value = code) {
     if (pending) return
-    if (VALIDATE && value.length < 6) {
-      setErrors({ code: "Enter all six digits." })
+    if (VALIDATE && (dob.length < 10 || value.length < 6)) {
+      setErrors({
+        dob: dob.length < 10 ? "Enter your date of birth." : undefined,
+        code: value.length < 6 ? "Enter all six digits." : undefined,
+      })
       return
     }
     setErrors({})
     setPending(true)
-    const result = await activate(email, value)
+    const result = await activate(email, dob, value)
     setPending(false)
-    // On success the route guard moves the patient on to set a password.
     if (!result.ok) {
       setErrors({ form: result.message })
       setCode("")
@@ -50,6 +73,20 @@ export default function ActivateScreen() {
     >
       <Stack>
         <FormError message={errors.form} />
+        <TextField
+          label="Date of birth"
+          icon={IconCalendar}
+          value={dob}
+          onChangeText={(text) => {
+            setDob(asDate(text))
+            if (errors.dob || errors.form) setErrors({})
+          }}
+          placeholder="MM/DD/YYYY"
+          keyboardType="number-pad"
+          maxLength={10}
+          autoComplete="birthdate-full"
+          error={errors.dob}
+        />
         <CodeField
           label="Activation code"
           value={code}
@@ -64,8 +101,15 @@ export default function ActivateScreen() {
           Verify code
         </Button>
       </Stack>
-      <FooterLink prompt="Already set a password?" action="Sign in" onPress={() => router.replace("/sign-in")} />
+      <OnboardingBrand />
+      <FooterLink prompt="Already set a password?" action="Sign in" onPress={() => router.push("/sign-in")} />
       <InstallApp />
     </Screen>
   )
+}
+
+/** Digits typed into MM/DD/YYYY, slashes added as they go. */
+function asDate(text: string) {
+  const d = text.replace(/\D/g, "").slice(0, 8)
+  return [d.slice(0, 2), d.slice(2, 4), d.slice(4)].filter(Boolean).join("/")
 }

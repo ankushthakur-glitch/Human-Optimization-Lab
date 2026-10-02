@@ -1,19 +1,21 @@
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
+import { keepTogether } from "@/components/care-gap"
 import { FlowScreen, SoftOrb } from "@/components/flow"
+import { SetupStepLabel } from "@/components/plan-account-pieces"
 import { Button } from "@/components/ui"
-import { TOUR } from "@/lib/program"
-import { useSetupStep } from "@/lib/setup"
-import { color, font } from "@/lib/theme"
+import { TOUR_CARDS, useSetupStep } from "@/lib/setup"
+import { color, space, type } from "@/lib/theme"
 
-/** Paid setup, the last step: a short tour of how the plan works, then
-    the plan goes to the doctor as a draft. */
+/** Paid setup, the last step (FINAL-SPEC C.27): a short tour of how the
+    plan works, then the plan goes to the doctor as a draft (version 1, or
+    the next number after a rejoin) and she lands on the Plan tab. */
 export default function TourScreen() {
-  const { finish } = useSetupStep("tour")
+  const { label, finish } = useSetupStep("tour")
   const [at, setAt] = React.useState(0)
-  const card = TOUR[at]
-  const last = at === TOUR.length - 1
+  const card = TOUR_CARDS[at]
+  const last = at === TOUR_CARDS.length - 1
 
   return (
     <FlowScreen
@@ -23,9 +25,12 @@ export default function TourScreen() {
       art={<SoftOrb size={150} orbit={last} />}
       footer={<Button onPress={() => (last ? finish() : setAt((a) => a + 1))}>{last ? "Build my plan" : "Next"}</Button>}
     >
-      <Text style={styles.body}>{card.body}</Text>
-      <View style={styles.dots} accessibilityLabel={`${at + 1} of ${TOUR.length}`}>
-        {TOUR.map((_, i) => (
+      <View style={styles.words}>
+        <SetupStepLabel centred>{label}</SetupStepLabel>
+        <Text style={styles.body}>{keepTogether(card.body)}</Text>
+      </View>
+      <View style={styles.dots} accessibilityLabel={`${at + 1} of ${TOUR_CARDS.length}`}>
+        {TOUR_CARDS.map((_, i) => (
           <View key={i} style={[styles.dot, i === at && styles.dotOn]} />
         ))}
       </View>
@@ -34,8 +39,9 @@ export default function TourScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { fontFamily: font.regular, fontSize: 17, lineHeight: 25, color: color.text, textAlign: "center", marginTop: -12 },
-  dots: { flexDirection: "row", justifyContent: "center", gap: 6 },
+  words: { gap: space.item },
+  body: { ...type.body, textAlign: "center" },
+  dots: { flexDirection: "row", justifyContent: "center", gap: space.mark },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: color.border },
   dotOn: { width: 18, backgroundColor: color.primary },
 })

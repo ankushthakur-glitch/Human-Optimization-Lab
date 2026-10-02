@@ -106,10 +106,13 @@ export const DEVICES = [
   { id: "fitbit", name: "Fitbit", kind: "Watch" },
 ] as const
 
-export const FOOD_LOGGING = ["Photo", "Voice", "Type it"] as const
+/** How she logs food, each a noun after "Log food by". */
+export const FOOD_LOGGING = ["Photo", "Voice", "Typing"] as const
 
 /** What the plan needs measured before it starts: some are already in the
-    record, the rest Inlay books. */
+    record, the rest Inlay books. Openings for the missing tests are worked
+    out from the device date (lib/setup.ts startingTests, E.13), so they are
+    never in the past. */
 export const BASELINE = {
   have: [
     { name: "Lipid panel", date: "Aug 14, 2026" },
@@ -122,23 +125,21 @@ export const BASELINE = {
       name: "Comprehensive blood panel",
       detail: "ApoB, fasting insulin, liver and kidney markers",
       where: "Harborview Longevity Clinic",
-      slots: ["Mon, Oct 5, 8:00 AM", "Tue, Oct 6, 7:30 AM", "Thu, Oct 8, 8:15 AM"],
     },
     {
       id: "dexa",
       name: "DEXA body scan",
       detail: "Body fat, muscle and bone density",
       where: "Coastal Imaging, Del Mar",
-      slots: ["Wed, Oct 7, 10:00 AM", "Fri, Oct 9, 2:30 PM", "Mon, Oct 12, 9:00 AM"],
     },
   ],
 }
 
 export const TOUR = [
   { title: "One thing to do today", body: "Your plan turns into a short list each morning: food, movement and anything to check." },
-  { title: "Log what you actually did", body: "Tick it off, or tell us what happened instead. Missed days are part of it." },
+  { title: "Log what you actually did", body: "Tick it off, or tell us what you did instead. Busy days are part of it." },
   { title: "See it move", body: "Progress is measured against where you started, from your own results." },
-  { title: "Your doctor stays in the loop", body: "Every version of your plan is approved by Dr. Maya Patel before it reaches you." },
+  { title: "Your doctor stays in the loop", body: "Every version of your plan is approved by Dr. Patel before it reaches you." },
 ]
 
 /* ----------------------------------------------------------- building -- */
@@ -152,94 +153,3 @@ export const BUILD = [
   { title: "Safety checks", detail: "No diagnosis, no medicine changes, nothing against your conditions" },
   { title: "Dr. Maya Patel approves it", detail: "It stays a draft until then" },
 ]
-
-/* -------------------------------------------------------------- today -- */
-
-export type ActionKind = "food" | "move" | "steps" | "check"
-
-export type PlanAction = {
-  id: string
-  kind: ActionKind
-  title: string
-  detail: string
-  /** How to do it, step by step. */
-  how: string[]
-  /** For goals counted by a device. */
-  target?: number
-  sofar?: number
-}
-
-export const TODAY: PlanAction[] = [
-  {
-    id: "breakfast",
-    kind: "food",
-    title: "Protein at breakfast",
-    detail: "About 30 g",
-    how: ["Two eggs and a cup of Greek yogurt", "Or a protein smoothie with oats", "Keep juice and pastries for weekends"],
-  },
-  {
-    id: "walk",
-    kind: "move",
-    title: "Brisk walk after dinner",
-    detail: "20 minutes",
-    how: ["A pace where you can talk, not sing", "Within an hour of eating, to help blood sugar", "Rain plan: 20 minutes on stairs or a video"],
-  },
-  {
-    id: "steps",
-    kind: "steps",
-    title: "Steps",
-    detail: "7,500 today",
-    target: 7500,
-    sofar: 4210,
-    how: ["Counted by your Apple Watch", "Take calls on your feet", "Park at the far end of the lot"],
-  },
-  {
-    id: "strength",
-    kind: "move",
-    title: "Strength, 3 moves",
-    detail: "15 minutes, video",
-    how: ["Chair squats, 3 sets of 10", "Wall push ups, 3 sets of 8", "Glute bridges, 3 sets of 12"],
-  },
-  {
-    id: "bp",
-    kind: "check",
-    title: "Check your blood pressure",
-    detail: "Tonight, seated, after 5 minutes rest",
-    how: ["Feet flat, arm resting at heart height", "Two readings, a minute apart", "Your cuff sends the reading to your record"],
-  },
-]
-
-/* ----------------------------------------------------------- progress -- */
-
-/** Against where the patient started. The forecast is marked as one. */
-export const PROGRESS = [
-  {
-    id: "weight",
-    name: "Weight",
-    unit: "lb",
-    start: 189,
-    now: 186.4,
-    goal: 175,
-    points: [189, 188.6, 187.9, 187.2, 186.4],
-    forecast: [186.4, 183.5, 180.8, 178.2],
-    better: "down" as const,
-  },
-  {
-    id: "steps",
-    name: "Daily steps",
-    unit: "a day",
-    start: 4100,
-    now: 6350,
-    goal: 7500,
-    points: [4100, 4800, 5400, 5900, 6350],
-    forecast: [6350, 6900, 7300, 7500],
-    better: "up" as const,
-  },
-]
-
-export const REPEAT_TESTS = [
-  { name: "Repeat lipid panel and A1c", when: "Dec 14, 2026", where: "Harborview Longevity Clinic" },
-  { name: "Repeat DEXA body scan", when: "Jan 11, 2027", where: "Coastal Imaging, Del Mar" },
-]
-
-export const MILESTONE = { title: "7 days in a row", body: "A full week of walks after dinner." }

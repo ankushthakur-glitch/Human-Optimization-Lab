@@ -6,8 +6,10 @@ import * as React from "react"
 import { View } from "react-native"
 
 import { DarkStatusBar, SomethingWentWrongState } from "@/components/error-state"
+import { FaceIdLock } from "@/components/face-id-lock"
 import { LaunchScreen } from "@/components/launch-screen"
 import { OfflineGate } from "@/components/offline-gate"
+import { ToastHost } from "@/components/toast"
 import { AuthProvider, useAuth } from "@/lib/auth"
 import { OnboardingProvider, useOnboarding } from "@/lib/onboarding"
 import { color } from "@/lib/theme"
@@ -27,16 +29,27 @@ const FONTS = {
 
 /* Which screens exist depends on the account state:
    signed out            activate, sign-in
-   code accepted         set-password
+   code accepted         set-password, over activate so Back returns to it
    signed in, new        onboarding/: about you, consent, your why, record builds
-   signed in             tabs: home (index), results, plan, care-team;
-                         the assistant, plans, the record's pages, profile,
-                         connect later, and the paid plan's setup
+   signed in             tabs: home (index), results, to do (gaps), plan;
+                         the assistant, plans, the record's pages (score,
+                         timeline, what's open, a test to book,
+                         notifications), care (booking a test with a
+                         partner, an appointment), the member's day
+                         (today's exercise and one move, the diet plan,
+                         logging a meal, one day, progress, history),
+                         membership, profile, connect later, and the paid
+                         plan's setup
    signed out for idling session-expired
-   The error states (+not-found, and the review index under errors/) sit
-   outside every guard, so they open whatever the account state.
+   The error states (+not-found, and the review index under errors/) and
+   the review pages under demo/ (the review controls, a sample patient, the
+   kit gallery) sit outside every guard, so they open whatever the account
+   state.
    A screen whose guard turns false drops out of history, so Back never
-   returns to a sign-in form after signing in. */
+   returns to a sign-in form after signing in. Every other screen can go
+   back: the swipe and the back button both work, except on the first
+   screen of each stage (activation or sign in, Is this you, home, and
+   session expired), which has nothing behind it. */
 function Routes() {
   const { status, activated, touch } = useAuth()
   const onboarding = useOnboarding()
@@ -78,29 +91,31 @@ function Routes() {
         // Go back still works.
         unstable_screenErrorBoundary={ScreenErrorBoundary}
       >
-        <Stack.Protected guard={status === "signedOut"}>
+        <Stack.Protected guard={status === "signedOut" || status === "mustSetPassword"}>
           {/* The first screen listed is where a signed-out patient lands: a new
               install starts at activation, a returning patient at sign in. */}
           {activated ? <Stack.Screen name="sign-in" /> : <Stack.Screen name="activate" />}
           {activated ? <Stack.Screen name="activate" /> : <Stack.Screen name="sign-in" />}
         </Stack.Protected>
         <Stack.Protected guard={status === "mustSetPassword"}>
-          <Stack.Screen name="set-password" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="set-password" />
         </Stack.Protected>
         <Stack.Protected guard={status === "signedIn" && !onboarded}>
           {/* Opens on the step the patient left off on. */}
           <Stack.Screen name="onboarding/index" />
           <Stack.Screen name="onboarding/about-you" />
           <Stack.Screen name="onboarding/consent" />
-          <Stack.Screen name="onboarding/why" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="onboarding/syncing" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="onboarding/consent-terms" />
+          <Stack.Screen name="onboarding/consent-texts" />
+          <Stack.Screen name="onboarding/why" />
+          <Stack.Screen name="onboarding/syncing" />
         </Stack.Protected>
         <Stack.Protected guard={status === "signedIn" && onboarded}>
           {/* The four tabs swap in place; the assistant rises over them. */}
           <Stack.Screen name="index" options={{ animation: "none" }} />
           <Stack.Screen name="results" options={{ animation: "none" }} />
           <Stack.Screen name="plan" options={{ animation: "none" }} />
-          <Stack.Screen name="care-team" options={{ animation: "none" }} />
+          <Stack.Screen name="gaps" options={{ animation: "none" }} />
           <Stack.Screen name="assistant" options={{ animation: "slide_from_bottom" }} />
           <Stack.Screen name="plans" />
           {/* The record, opened from home and Results. */}
@@ -110,21 +125,45 @@ function Routes() {
           <Stack.Screen name="add-report" />
           <Stack.Screen name="tell-us" />
           <Stack.Screen name="task/[id]" />
+          <Stack.Screen name="order/[id]" />
+          <Stack.Screen name="book/[id]" />
+          <Stack.Screen name="visit/[id]" />
+          <Stack.Screen name="score" />
+          <Stack.Screen name="timeline" />
+          <Stack.Screen name="notifications" />
+          {/* The member's day, opened from the member home's doors and
+              cards: today's exercise and each move, the diet plan, logging
+              a meal, one day, progress since the start, and history. */}
+          <Stack.Screen name="exercise/index" />
+          <Stack.Screen name="exercise/[id]" />
+          <Stack.Screen name="diet" />
+          <Stack.Screen name="log-meal" />
+          <Stack.Screen name="day/[date]" />
+          <Stack.Screen name="progress" />
+          <Stack.Screen name="history" />
+          {/* The member's own billing page: pause, resume and cancel. */}
+          <Stack.Screen name="membership" />
           <Stack.Screen name="profile" />
           {/* Connecting later, after "Not now" at setup. */}
           <Stack.Screen name="connect" />
-          <Stack.Screen name="building" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="connect-terms" />
+          <Stack.Screen name="connect-texts" />
+          <Stack.Screen name="building" />
           {/* The paid plan's setup, straight after subscribing. */}
           <Stack.Screen name="optimize/questionnaire" />
-          <Stack.Screen name="optimize/medicines" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="optimize/devices" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="optimize/tests" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="optimize/tour" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="optimize/medicines" />
+          <Stack.Screen name="optimize/devices" />
+          <Stack.Screen name="optimize/tests" />
+          <Stack.Screen name="optimize/tour" />
         </Stack.Protected>
         <Stack.Protected guard={status === "expired"}>
           <Stack.Screen name="session-expired" options={{ gestureEnabled: false }} />
         </Stack.Protected>
       </Stack>
+      {/* One toast at a time ("Lunch saved") over every screen and sheet,
+          under the Face ID lock and the launch screen. */}
+      <ToastHost />
+      <FaceIdLock ready={launched} />
       {launch}
     </View>
   )

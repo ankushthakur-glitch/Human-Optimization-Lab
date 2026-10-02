@@ -130,6 +130,11 @@ export function RowRemoveButton({
   )
 }
 
+/* The white section card on the grey canvas, shared by every portal page
+   that groups content into cards (records here, the provider dashboard). */
+export const RECORD_CARD =
+  "min-w-0 gap-3 rounded-lg border shadow-[0_0_5px_rgb(0_0_0/0.06)] ring-0 [--card-spacing:--spacing(5)]"
+
 export function RecordCard({
   title,
   action,
@@ -142,12 +147,7 @@ export function RecordCard({
   children?: React.ReactNode
 }) {
   return (
-    <Card
-      className={cn(
-        "min-w-0 gap-3 rounded-lg border shadow-[0_0_5px_rgb(0_0_0/0.06)] ring-0 [--card-spacing:--spacing(5)]",
-        className
-      )}
-    >
+    <Card className={cn(RECORD_CARD, className)}>
       <CardHeader className="min-h-7 items-center">
         <CardTitle
           role="heading"

@@ -1,6 +1,6 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { Pressable, StyleSheet, Text, View } from "react-native"
+import { StyleSheet, Text, View } from "react-native"
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { FlowScreen } from "@/components/flow"
@@ -14,8 +14,7 @@ import { color, font } from "@/lib/theme"
 /* Step 1: "Is this you?" The demographics the practice holds, view only,
    laid out as the patient would recognise themselves: who they are first,
    then how to reach them and where they live. They are what the national
-   networks match the patient on, so they come from the practice's records;
-   a patient who spots a mistake is pointed to the clinic to fix it. */
+   networks match the patient on, so they come from the practice's records. */
 
 const SEX = { female: "Female", male: "Male" } as const
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -31,7 +30,6 @@ function birth(mmddyyyy: string) {
 export default function AboutYouScreen() {
   const onboarding = useOnboarding()
   const [pending, setPending] = React.useState(false)
-  const [wrong, setWrong] = React.useState(false)
   const d = DEMOGRAPHICS
   const born = birth(d.dateOfBirth)
 
@@ -47,27 +45,9 @@ export default function AboutYouScreen() {
       title="Is this you?"
       back={false}
       footer={
-        <>
-          {wrong && (
-            <View style={styles.notice} accessibilityRole="alert">
-              <Text style={styles.noticeText}>
-                Call {PATIENT.practice} at <Text style={styles.noticeStrong}>{PATIENT.practicePhone.replace("-", "\u2011")}</Text> and
-                they'll update your details.
-              </Text>
-            </View>
-          )}
-          <Button onPress={onConfirm} pending={pending}>
-            Yes, this is me
-          </Button>
-          <Pressable
-            onPress={() => setWrong((v) => !v)}
-            hitSlop={6}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
-          >
-            <Text style={styles.secondaryText}>Something's not right</Text>
-          </Pressable>
-        </>
+        <Button onPress={onConfirm} pending={pending}>
+          Continue
+        </Button>
       }
     >
       {/* Who they are. */}
@@ -146,8 +126,6 @@ function Detail({ icon, label, value, last }: { icon: React.ReactNode; label: st
 }
 
 const styles = StyleSheet.create({
-  pressed: { opacity: 0.6 },
-
   profile: {
     alignItems: "center",
     backgroundColor: color.canvas,
@@ -218,9 +196,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  notice: { backgroundColor: color.canvas, borderRadius: 14, padding: 12 },
-  noticeText: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.text, textAlign: "center" },
-  noticeStrong: { fontFamily: font.semibold, color: color.primary },
-  secondary: { alignItems: "center", paddingVertical: 8 },
-  secondaryText: { fontFamily: font.semibold, fontSize: 15, color: color.primary },
 })

@@ -1,0 +1,844 @@
+import { router } from "expo-router"
+import * as React from "react"
+import { StyleSheet, Text, View } from "react-native"
+
+import { keepTogether } from "@/components/care-gap"
+import { CompositionBar, TrendGrid } from "@/components/charts"
+import { FlowScreen } from "@/components/flow"
+import { IconCheck } from "@/components/icons"
+import { RecordIcon } from "@/components/record-icons"
+import { Block, Card, ChipRow, EmptyState, Group, HUE, Nudge, ResultRow, Status, TextAction, Tile, toast, type Hue } from "@/components/record-kit"
+import { AddToRecordSheet, ItemRow, ItemSheet, SearchField, type ItemDetail, type RowStatus } from "@/components/record-rows"
+import { Button } from "@/components/ui"
+import { showDate } from "@/lib/dates"
+import { useExperience, useMarkers } from "@/lib/experience"
+import { dateOfAt, shortDay, sinceStart } from "@/lib/member"
+import { useShown, useOffer } from "@/lib/offers"
+import { useOnboarding, type Batch } from "@/lib/onboarding"
+import {
+  ACCESS_LOG,
+  ALLERGIES,
+  APPOINTMENTS,
+  DATA_TYPES,
+  DOCUMENTS,
+  IMMUNIZATIONS,
+  MEDICATIONS,
+  ORDERS,
+  PROBLEMS,
+  PROCEDURES,
+  PROVENANCE_OF,
+  SOURCES,
+  VISITS,
+  timeline,
+  type Biomarker,
+  type Order,
+  type Origin,
+  type Provenance,
+  type TimelineEntry,
+  type TimelineKind,
+} from "@/lib/record"
+import { color, space, type } from "@/lib/theme"
+import { orderHref, orderStatus, todo, type TodoItem } from "@/lib/todo"
+import { byBodySystem, chartInput, classify, directionWords, needsReview, pointStatus, timeOf, trendCounts, watchList, type Trend } from "@/lib/trends"
+
+/* The record's own pages (FINAL-SPEC C.6), each a FlowScreen page:
+
+   results        every result: the composition, a filter (All, To watch, In
+                  range), search, and rows by body system; "To watch" is
+                  the trend tiles; one batch of new results on its own
+   allergies      both lists, and the one they differ on, with a quick answer
+   conditions     the problem list, and where the hospital's differs
+   visits         coming up and past; outside visits say so; each opens its page
+   tests          open and done; each order with its three dates, opening its page
+   documents, immunizations, procedures
+   added          what she added, each "Being checked" until confirmed
+   access         who has looked at her record
+
+   Every other row opens the approved sheet with the item's details, where
+   it comes from and one provenance label (S-13). Differences between
+   lists stay visible until Dr. Patel settles them (S-12); her answers are
+   added to the record as told by her, never written over a list. */
+
+export type RecordKind = "results" | "allergies" | "conditions" | "visits" | "tests" | "documents" | "immunizations" | "procedures" | "added" | "access"
+
+export const RECORD_TITLES: Record<RecordKind, string> = {
+  results: "Results",
+  allergies: "Allergies",
+  conditions: "Conditions",
+  visits: "Visits",
+  tests: "Tests and orders",
+  documents: "Documents",
+  immunizations: "Immunizations",
+  procedures: "Procedures",
+  added: "Added by you",
+  access: "Who has looked at your record",
+}
+
+/** Own keys only, so a name such as "toString" is never a list. */
+export const isRecordKind = (kind: string | undefined): kind is RecordKind => !!kind && Object.prototype.hasOwnProperty.call(RECORD_TITLES, kind)
+
+/* ------------------------------------------------------------ words -- */
+
+const THIS_YEAR = new Date().getFullYear()
+
+/** "Aug 12, 2026" reads "Aug 12" this year; other years and "Oct 2025" stay. */
+const shortDate = (date: string) => date.replace(new RegExp(`,\\s*${THIS_YEAR}$`), "")
+
+
+/** "Pacific Heart, La Jolla" as "Pacific Heart". */
+const placeShort = (where: string) => where.split(",")[0].trim()
+
+/** A member's result row line, "Down 0.1 since you started": the short
+    form, which keeps to one line in a row's text column (the marker page
+    and the assistant say "... in May"). */
+export const sinceLine = (marker: Biomarker) => sinceStart(marker)?.short
+
+/* The places records come from, with the system each runs and when it last
+   sent something, so every item can say where it comes from. */
+const SOURCE_OF = (kind: "clinic" | "hospital" | "lab") => SOURCES.find((s) => s.kind === kind)!
+const PLACE: Record<Origin, { name: string; system: string; updated?: string }> = {
+  doctor: { name: SOURCE_OF("clinic").name, system: SOURCE_OF("clinic").system, updated: "Aug 12, 2026" },
+  hospital: { name: SOURCE_OF("hospital").name, system: SOURCE_OF("hospital").system, updated: "Jun 3, 2026" },
+  lab: { name: SOURCE_OF("lab").name, system: SOURCE_OF("lab").system, updated: "Aug 14, 2026" },
+  you: { name: "Told by you", system: "Inlay app" },
+  report: { name: "Your report", system: "Inlay app" },
+}
+
+/** A document's place as the record names it ("Harborview") to its origin. */
+const ORIGIN_OF_PLACE: Record<string, Origin> = { Harborview: "doctor", Quest: "lab", "Scripps Memorial": "hospital" }
+
+/** What each sample document is (sample copy). */
+const DOCUMENT_KIND: Record<string, string> = {
+  physical: "Visit note",
+  labs: "Lab report",
+  discharge: "Discharge summary",
+  ecg: "Test report",
+  "physical-25": "Visit note",
+}
+
+/** "Source", "System", "Last updated" for one or more origins. */
+function sourceRows(origins: Origin[], updated?: string): [string, string][] {
+  const places = origins.map((o) => PLACE[o])
+  return [
+    ["Source", places.map((p) => p.name).join(", ")],
+    ["System", [...new Set(places.map((p) => p.system))].join(", ")],
+    ["Last updated", updated ?? places.find((p) => p.updated)?.updated ?? "Not known"],
+  ]
+}
+
+/** Once Dr. Patel has checked the record, what her own list holds reads as
+    confirmed by her; otherwise as the record's own provenance. */
+function useProvenance() {
+  const checked = useOnboarding().review?.status === "checked"
+  return (origin: Origin): Provenance => (checked && origin === "doctor" ? "confirmed" : PROVENANCE_OF[origin])
+}
+
+type ProvenanceOf = ReturnType<typeof useProvenance>
+
+/** A document's sheet: what kind it is and where it comes from. Its own
+    list and the Timeline open the same one. */
+function documentDetail(d: (typeof DOCUMENTS)[number], provenance: ProvenanceOf): ItemDetail {
+  const origin = ORIGIN_OF_PLACE[d.where] ?? "doctor"
+  return {
+    title: d.name,
+    provenance: provenance(origin),
+    details: [
+      ["Date", d.date],
+      ["Kind", DOCUMENT_KIND[d.id] ?? "Document"],
+    ],
+    source: sourceRows([origin], d.date),
+  }
+}
+
+/** A procedure's sheet: when and where it was done. Its own list and the
+    Timeline open the same one. */
+function procedureDetail(p: (typeof PROCEDURES)[number], provenance: ProvenanceOf): ItemDetail {
+  return {
+    title: p.name,
+    provenance: provenance(p.origin),
+    details: [
+      ["Date", p.date],
+      ["Where", p.where],
+    ],
+    source: sourceRows([p.origin], p.date),
+  }
+}
+
+/* ------------------------------------------------------- allergies -- */
+
+const ALLERGY_ANSWERS = ["Yes, I'm allergic", "No", "Not sure"] as const
+type AllergyAnswer = (typeof ALLERGY_ANSWERS)[number]
+
+/** Her answer about an allergy the lists differ on, kept in the record as
+    something she told us ("Added by you"). */
+const answerKey = (id: string) => `told-allergy-${id}`
+
+/** Allergies the lists differ on: the Record tab's "Records differ on 1". */
+export const allergiesToCheck = () => ALLERGIES.filter((a) => a.difference).length
+
+/* ---------------------------------------------------------- screens -- */
+
+/** One of the record's lists on its own page, with its item sheet. */
+export function RecordListScreen({ kind }: { kind: Exclude<RecordKind, "results"> }) {
+  const [item, setItem] = React.useState<ItemDetail>()
+  const [adding, setAdding] = React.useState(false)
+  return (
+    <View style={styles.fill}>
+      <FlowScreen page title={RECORD_TITLES[kind]}>
+        <KindList kind={kind} onOpen={setItem} onAdd={() => setAdding(true)} />
+      </FlowScreen>
+      {item && <ItemSheet item={item} onClose={() => setItem(undefined)} />}
+      {adding && <AddToRecordSheet onClose={() => setAdding(false)} />}
+    </View>
+  )
+}
+
+function KindList({ kind, onOpen, onAdd }: { kind: Exclude<RecordKind, "results">; onOpen: (item: ItemDetail) => void; onAdd: () => void }) {
+  switch (kind) {
+    case "allergies":
+      return <Allergies onOpen={onOpen} />
+    case "conditions":
+      return <Conditions onOpen={onOpen} />
+    case "visits":
+      return <Visits />
+    case "tests":
+      return <Tests />
+    case "documents":
+      return <Documents onOpen={onOpen} />
+    case "immunizations":
+      return <Immunizations onOpen={onOpen} />
+    case "procedures":
+      return <Procedures onOpen={onOpen} />
+    case "added":
+      return <Added onOpen={onOpen} onAdd={onAdd} />
+    case "access":
+      return <Access />
+  }
+}
+
+type Opens = { onOpen: (item: ItemDetail) => void }
+
+function Allergies({ onOpen }: Opens) {
+  const onboarding = useOnboarding()
+  const provenance = useProvenance()
+  const differ = ALLERGIES.filter((a) => a.difference)
+  const answer = (id: string) => onboarding.added?.find((a) => a.id === answerKey(id))?.detail as AllergyAnswer | undefined
+
+  const choose = (a: (typeof ALLERGIES)[number], value: AllergyAnswer) => {
+    const key = answerKey(a.id)
+    const others = (onboarding.added ?? []).filter((x) => x.id !== key)
+    onboarding.save({ added: [...others, { id: key, title: `${a.name} allergy`, detail: value, at: showDate() }] }).catch(() => {})
+    toast("Saved")
+  }
+
+  return (
+    <>
+      {differ.map((a) => {
+        const said = answer(a.id)
+        return (
+          <Block key={a.id} title="To check">
+            <Card style={styles.check}>
+              <View style={styles.checkHead}>
+                <Text style={[type.section, styles.flex]}>{a.name}</Text>
+                <Status level="borderline" bare>
+                  Records differ
+                </Status>
+              </View>
+              {/* The short second sentence held whole, so it starts its own
+                  line rather than splitting "Dr. Patel's / list". */}
+              <Text style={type.body}>
+                {keepTogether(`${PLACE[a.lists[0]].name.replace(/ Hospital$/, "")} lists a ${a.name.split(" ")[0].toLowerCase()} allergy.`)}{" "}
+                {"Dr. Patel's list doesn't.".replace(/ /g, " ")}
+              </Text>
+              {/* Inside the card the answers wrap rather than run past its
+                  edge on a narrow phone. */}
+              <ChipRow
+                wrap
+                label={`Are you allergic to ${a.name.toLowerCase()}?`}
+                options={ALLERGY_ANSWERS.map((v) => ({ value: v, label: v }))}
+                value={said ?? ("" as AllergyAnswer)}
+                onChange={(v) => choose(a, v)}
+              />
+              {said && (
+                <View style={styles.review}>
+                  <IconCheck size={14} color={color.primary} strokeWidth={2.4} />
+                  <Text style={type.label}>Dr. Patel will review.</Text>
+                </View>
+              )}
+            </Card>
+          </Block>
+        )
+      })}
+      <Block title="Your allergies" meta={String(ALLERGIES.length)}>
+        <Group>
+          {ALLERGIES.map((a) => {
+            const both = a.lists.length > 1
+            return (
+              <ItemRow
+                key={a.id}
+                title={a.name}
+                meta={both ? `${a.reaction}, on both lists` : `${a.reaction}, ${PLACE[a.lists[0]].name.replace(/ Hospital$/, "")} only`}
+                status={a.difference ? { level: "borderline", word: "Records differ" } : undefined}
+                onPress={() =>
+                  onOpen({
+                    title: a.name,
+                    provenance: provenance(a.lists[0]),
+                    details: [
+                      ["Reaction", a.reaction],
+                      ["Type", "Drug allergy"],
+                      ["On Dr. Patel's list", a.lists.includes("doctor") ? "Yes" : "No"],
+                    ],
+                    source: sourceRows(a.lists),
+                  })
+                }
+              />
+            )
+          })}
+        </Group>
+      </Block>
+    </>
+  )
+}
+
+function Conditions({ onOpen }: Opens) {
+  const provenance = useProvenance()
+  return (
+    <Group>
+      {PROBLEMS.map((p) => (
+        <ItemRow
+          key={p.id}
+          title={p.name}
+          meta={`Since ${p.since}`}
+          status={p.difference ? { level: "borderline", word: "Records differ" } : undefined}
+          note={p.difference ? keepTogether(`${p.difference}. Dr. Patel will review.`) : undefined}
+          onPress={() =>
+            onOpen({
+              title: p.name,
+              provenance: provenance(p.origin),
+              details: [
+                ["Since", p.since],
+                ["Status", "Active"],
+                ...(p.difference ? [["Scripps Memorial", "High blood pressure"] as [string, string]] : []),
+              ],
+              source: sourceRows([p.origin]),
+            })
+          }
+        />
+      ))}
+    </Group>
+  )
+}
+
+type When = "coming" | "past"
+
+function Visits() {
+  const onboarding = useOnboarding()
+  const t = todo(onboarding)
+  const coming = t.coming.filter((i) => i.kind === "appointment" || i.kind === "review")
+  const past = [...VISITS].sort((a, b) => timeOf(b.date) - timeOf(a.date))
+  const [when, setWhen] = React.useState<When>(coming.length ? "coming" : "past")
+  const outside = (id: string) => {
+    const a = APPOINTMENTS.find((x) => x.id === id.replace(/^appointment:/, ""))
+    return !!a && a.origin !== "doctor"
+  }
+  const tag = { tone: "muted" as const, label: "Outside your clinic" }
+
+  return (
+    <View style={styles.stack}>
+      <ChipRow
+        options={[
+          { value: "coming", label: "Coming up" },
+          { value: "past", label: "Past" },
+        ]}
+        value={when}
+        onChange={setWhen}
+      />
+      {when === "coming" ? (
+        coming.length ? (
+          <Group>
+            {coming.map((v) => (
+              <ItemRow
+                key={v.id}
+                date={v.date}
+                title={v.title}
+                tag={outside(v.id) ? tag : undefined}
+                meta={v.meta}
+                note={v.note}
+                onPress={() => router.push(v.href)}
+              />
+            ))}
+          </Group>
+        ) : (
+          <EmptyState title="Nothing coming up" />
+        )
+      ) : (
+        <Group>
+          {past.map((v) => (
+            <ItemRow
+              key={v.id}
+              icon="visits"
+              title={v.name}
+              tag={v.outside ? tag : undefined}
+              meta={v.where}
+              when={shortDate(v.date)}
+              onPress={() => router.push({ pathname: "/visit/[id]", params: { id: v.id } })}
+            />
+          ))}
+        </Group>
+      )}
+    </View>
+  )
+}
+
+/** An order's state as a mark and its word ("Not booked yet", "Booked for
+    Tue, Oct 6", "Results in"), from the one rule in lib/todo.ts, marked as
+    the order page marks it (C.0.4). */
+function orderMark(s: ReturnType<typeof orderStatus>): RowStatus {
+  if (s.tone === "done") return { tone: "ok", mark: "check", word: s.word }
+  if (s.tone === "booked") return { tone: "primary", word: s.word }
+  if (s.tone === "waiting") return { tone: "primary", mark: "ring", word: s.word }
+  if (s.tone === "attention") return { tone: "low", mark: "dot", word: s.word }
+  return { tone: "muted", word: s.word }
+}
+
+type Open = "open" | "done"
+
+function Tests() {
+  const onboarding = useOnboarding()
+  const t = todo(onboarding)
+  // Every order the record holds; the to do lists say which are booked
+  // and when.
+  const listed = [...t.needs, ...t.coming, ...t.booked, ...t.done]
+  const itemOf = (o: Order) => listed.find((i) => i.id === `order:${o.id}`)
+  const done = ORDERS.filter((o) => o.state === "done" || !!o.completed)
+  const open = ORDERS.filter((o) => !done.includes(o))
+  const [view, setView] = React.useState<Open>(open.length ? "open" : "done")
+  const shown = view === "open" ? open : done
+
+  return (
+    <View style={styles.stack}>
+      <ChipRow
+        options={[
+          { value: "open", label: "Open" },
+          { value: "done", label: "Done" },
+        ]}
+        value={view}
+        onChange={setView}
+      />
+      {shown.length ? (
+        <Group>
+          {shown.map((o) => (
+            <OrderRow key={o.id} order={o} item={itemOf(o)} />
+          ))}
+        </Group>
+      ) : (
+        <EmptyState title={view === "open" ? "No open tests" : "Nothing done yet"} />
+      )}
+    </View>
+  )
+}
+
+/** An order's tile by where it stands, as To do and Home draw the same
+    test: the calm grey of an open test (C.0.3), teal once it is booked,
+    green once its results are in. */
+const ORDER_HUE: Record<ReturnType<typeof orderStatus>["tone"], Hue> = {
+  neutral: "neutral",
+  attention: "neutral",
+  booked: "teal",
+  waiting: "teal",
+  done: "green",
+}
+
+/** One order: its name, where it stands, when it is due or where it was
+    done, and its three dates (F-40). */
+function OrderRow({ order: o, item }: { order: Order; item?: TodoItem }) {
+  const onboarding = useOnboarding()
+  const status = orderStatus(o, onboarding)
+  const booked = item?.group === "booked"
+  // Booked: where (the status line already says when). Open: when it is due.
+  const meta = o.completed
+    ? (o.at ?? undefined)
+    : booked && item
+      ? item.meta.replace(/^\d{1,2}:\d{2}\s(AM|PM), /, "")
+      : `Due by ${shortDate(o.due.replace(/^By /, ""))}${o.at ? `, ${placeShort(o.at)}` : ""}`
+  const scheduled = booked && item?.date ? shortDay(dateOfAt(item.date)) : o.scheduled ? shortDate(o.scheduled) : undefined
+  const hue = ORDER_HUE[status.tone]
+  return (
+    <ItemRow
+      icon={
+        <Tile hue={hue}>
+          <RecordIcon name="labs" size={18} color={HUE[hue].ink} />
+        </Tile>
+      }
+      title={o.name}
+      status={orderMark(status)}
+      meta={meta}
+      track={{
+        dates: [
+          { label: "Ordered", date: shortDate(o.ordered) },
+          { label: "Scheduled", date: scheduled },
+          { label: "Done", date: o.completed ? shortDate(o.completed) : undefined },
+        ],
+        late: status.tone === "attention",
+      }}
+      onPress={() => router.push(item?.href ?? orderHref(o.id))}
+    />
+  )
+}
+
+function Documents({ onOpen }: Opens) {
+  const provenance = useProvenance()
+  return (
+    <Group>
+      {DOCUMENTS.map((d) => (
+        <ItemRow key={d.id} icon="documents" title={d.name} meta={d.where} when={shortDate(d.date)} onPress={() => onOpen(documentDetail(d, provenance))} />
+      ))}
+    </Group>
+  )
+}
+
+function Immunizations({ onOpen }: Opens) {
+  const provenance = useProvenance()
+  return (
+    <Group>
+      {IMMUNIZATIONS.map((i) => (
+        <ItemRow
+          key={i.id}
+          title={i.name}
+          when={i.date}
+          onPress={() =>
+            onOpen({
+              title: i.name,
+              provenance: provenance("doctor"),
+              details: [
+                ["Given", i.date],
+                ["Status", "Complete"],
+              ],
+              source: sourceRows(["doctor"]),
+            })
+          }
+        />
+      ))}
+    </Group>
+  )
+}
+
+function Procedures({ onOpen }: Opens) {
+  const provenance = useProvenance()
+  return (
+    <Group>
+      {PROCEDURES.map((p) => (
+        <ItemRow key={p.id} title={p.name} meta={p.where} when={shortDate(p.date)} onPress={() => onOpen(procedureDetail(p, provenance))} />
+      ))}
+    </Group>
+  )
+}
+
+function Added({ onOpen, onAdd }: Opens & { onAdd: () => void }) {
+  const added = [...(useOnboarding().added ?? [])].sort((a, b) => timeOf(b.at) - timeOf(a.at))
+  if (!added.length) return <EmptyState title="Nothing added yet" action="Add to your record" onAction={onAdd} />
+  return (
+    <Group>
+      {added.map((a) => (
+        <ItemRow
+          key={a.id}
+          title={a.title}
+          tag={{ tone: "muted", label: "Being checked" }}
+          meta={`Added by you, ${shortDate(a.at)}`}
+          onPress={() =>
+            onOpen({
+              title: a.title,
+              provenance: "patient",
+              details: [
+                [a.id.startsWith("told-allergy-") ? "Your answer" : "What it holds", a.detail],
+                ["Added", a.at],
+                ["Status", "Being checked"],
+              ],
+              source: [
+                ["Source", "Added by you"],
+                ["System", "Inlay app"],
+                ["Last updated", a.at],
+              ],
+            })
+          }
+        />
+      ))}
+    </Group>
+  )
+}
+
+function Access() {
+  return (
+    <Group>
+      {ACCESS_LOG.map((a, i) => (
+        <ItemRow key={i} title={a.what} meta={`${a.who}, ${a.role}`} when={a.when.replace(/^Today, /, "")} accessibilityLabel={`${a.what}, ${a.who}, ${a.role}, ${a.when}`} />
+      ))}
+    </Group>
+  )
+}
+
+/* ---------------------------------------------------------- results -- */
+
+type Filter = "all" | "watch" | "in"
+
+/** Every result (F-37), or one batch of new results when `batch` names one
+    that has arrived. */
+export function ResultsScreen({ filter, batch }: { filter?: string; batch?: string }) {
+  const onboarding = useOnboarding()
+  const arrived = batch ? onboarding.batches?.find((b) => b.id === batch) : undefined
+  if (arrived) return <BatchScreen batch={arrived} />
+  return <AllResults initial={filter === "watch" ? "watch" : filter === "in" ? "in" : "all"} />
+}
+
+/** "Hemoglobin A1c" or "A1c" both find it. */
+const matches = (t: Trend, q: string) => !q || t.marker.name.toLowerCase().includes(q) || (t.marker.short ?? "").toLowerCase().includes(q)
+
+function AllResults({ initial }: { initial: Filter }) {
+  const onboarding = useOnboarding()
+  const markers = useMarkers()
+  const { experience } = useExperience()
+  const member = experience === "member" || experience === "paused"
+  const [filter, setFilter] = React.useState<Filter>(initial)
+  const [query, setQuery] = React.useState("")
+  const q = query.trim().toLowerCase()
+
+  const counts = trendCounts(markers)
+  const watched = watchList(markers, { improve: onboarding.why?.improve })
+  const labs = DATA_TYPES.find((d) => d.key === "Observation.lab")!.count + (onboarding.batches ?? []).reduce((n, b) => n + b.count, 0)
+  const vitals = DATA_TYPES.find((d) => d.key === "Observation.vital")!.count
+  const open = (id: string) => router.push({ pathname: "/biomarker/[id]", params: { id } })
+
+  const groups = byBodySystem(markers)
+    .map((g) => ({ group: g.group, trends: g.markers.map(classify).filter((t) => (filter !== "in" || t.status === "in") && matches(t, q)) }))
+    .filter((g) => g.trends.length)
+  const tiles = watched.filter((t) => matches(t, q))
+  const none = filter === "watch" ? !tiles.length : !groups.length
+
+  return (
+    <FlowScreen page title="Results">
+      <Card style={styles.summary}>
+        <Text style={type.section}>{`${counts.inRange} of ${counts.total} in range`}</Text>
+        <CompositionBar inRange={counts.inRange} borderline={counts.borderline} out={counts.out} playKey="results:composition" />
+        <Text style={type.meta}>{`From ${labs} lab results and ${vitals} visit readings`}</Text>
+      </Card>
+
+      <View style={styles.controls}>
+        <ChipRow
+          options={[
+            { value: "all", label: `All ${counts.total}` },
+            { value: "watch", label: `To watch ${counts.toWatch}` },
+            { value: "in", label: `In range ${counts.inRange}` },
+          ]}
+          value={filter}
+          onChange={setFilter}
+        />
+        <SearchField value={query} onChange={setQuery} placeholder="Search results" />
+      </View>
+
+      {none && q ? (
+        <EmptyState title={`No results match “${query.trim()}”`}>
+          <TextAction onPress={() => setQuery("")}>Clear search</TextAction>
+        </EmptyState>
+      ) : none && filter === "watch" ? (
+        <EmptyState art="magnifier" artSize={80} title="Nothing to watch right now" />
+      ) : none ? (
+        <EmptyState title="No results yet" />
+      ) : filter === "watch" ? (
+        <TrendGrid
+          max={tiles.length}
+          tiles={tiles.map((t, i) => ({
+            id: t.id,
+            ...chartInput(t),
+            direction: directionWords(t),
+            index: i,
+            playKey: `results:tile:${t.id}`,
+            onPress: () => open(t.id),
+          }))}
+        />
+      ) : (
+        <View style={styles.groups}>
+          {groups.map((g) => (
+            <Block key={g.group} title={g.group}>
+              <Group>
+                {g.trends.map((t) => (
+                  <ResultRow key={t.id} trend={t} since={member ? sinceLine(t.marker) : undefined} onPress={() => open(t.id)} />
+                ))}
+              </Group>
+            </Block>
+          ))}
+        </View>
+      )}
+    </FlowScreen>
+  )
+}
+
+/** A new result's words: how it is moving, or "In range" when it has just
+    come back into the range. */
+function batchWords(t: Trend) {
+  const before = t.previous ? pointStatus(t.marker, t.previous) : undefined
+  return t.status === "in" && before && before !== "in" ? "In range" : directionWords(t)
+}
+
+/** One batch of new results: what arrived, the free explanation, and last,
+    only when a result in it is moving away from its range and none needs
+    the doctor first, one quiet line about the plan (touchpoint new-results). */
+function BatchScreen({ batch }: { batch: Batch }) {
+  const onboarding = useOnboarding()
+  const markers = useMarkers()
+  const trends = markers.filter((m) => m.points.some((p) => p.batch === batch.id)).map(classify)
+  const eligible = trends.some((t) => t.meaning === "away") && !trends.some((t) => needsReview(t.marker, t.latest))
+  const offer = useOffer("new-results", { eligible, key: batch.id })
+  useShown(offer)
+
+  // Opening the batch reads it: the home's "New results are in" goes.
+  const { save, batches } = onboarding
+  React.useEffect(() => {
+    if (batch.opened) return
+    save({ batches: (batches ?? []).map((b) => (b.id === batch.id ? { ...b, opened: true } : b)) }).catch(() => {})
+  }, [batch.id, batch.opened, batches, save])
+
+  return (
+    <FlowScreen page title="New results">
+      <Group>
+        <View style={styles.batchHead}>
+          <Text style={type.section}>{`${batch.count} ${batch.count === 1 ? "result" : "results"} from ${batch.source}, ${shortDay(new Date(batch.at))}`}</Text>
+        </View>
+        {trends.map((t) => (
+          <ResultRow key={t.id} trend={t} since={batchWords(t)} onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: t.id } })} />
+        ))}
+      </Group>
+      <View style={styles.batchActions}>
+        <Button onPress={() => router.push({ pathname: "/assistant", params: { batch: batch.id } })}>Explain my new results</Button>
+        {offer.show && (
+          <Nudge
+            variant="link"
+            title="Want to change course?"
+            action="See what a plan would do."
+            onAction={() => {
+              offer.markOpened()
+              router.push({ pathname: "/plans", params: { from: "results" } })
+            }}
+          />
+        )}
+      </View>
+    </FlowScreen>
+  )
+}
+
+/* --------------------------------------------------------- timeline -- */
+
+type TimeFilter = TimelineKind | "all"
+
+const TIME_FILTERS: { value: TimeFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "results", label: "Results" },
+  { value: "visits", label: "Visits" },
+  { value: "medicines", label: "Medicines" },
+  { value: "procedures", label: "Procedures" },
+  { value: "documents", label: "Documents" },
+]
+
+/** "Atorvastatin, 20 mg once a day" as the name and the dose. */
+function splitMedicine(title: string): [string, string | undefined] {
+  const at = title.indexOf(", ")
+  return at < 0 ? [title, undefined] : [title.slice(0, at), title.slice(at + 2)]
+}
+
+/** An entry's place in a row: her own doctor's list is "Dr. Patel". After
+    a medicine's dose the place is held whole, so a wrapped line never
+    splits it ("10 mg once a day," then "Scripps Memorial"). */
+function placeLine(where: string, dose?: string) {
+  const place = where === "Your doctor" ? "Dr. Patel" : where
+  return dose ? `${dose}, ${place.replace(/ /g, "\u00A0")}` : keepTogether(place)
+}
+
+const TIME_ICON = { results: "labs", visits: "visits", medicines: "medications", procedures: "procedures", documents: "documents" } as const
+
+/** What an entry opens: a visit or a test on its own page, a medicine
+    brought into view on the medicines page, or a document or a procedure
+    in the sheet its own list opens. The entry is found in the record by
+    its kind, name and day, as timeline() builds it from these lists. */
+function timelineOpen(e: TimelineEntry, onOpen: (item: ItemDetail) => void, provenance: ProvenanceOf): (() => void) | undefined {
+  const same = (name: string, date?: string) => name === e.title && date === e.date
+  switch (e.kind) {
+    case "visits": {
+      const v = VISITS.find((x) => same(x.name, x.date))
+      return v && (() => router.push({ pathname: "/visit/[id]", params: { id: v.id } }))
+    }
+    case "results": {
+      const o = ORDERS.find((x) => same(x.name, x.completed))
+      return o && (() => router.push(orderHref(o.id)))
+    }
+    case "medicines": {
+      const m = MEDICATIONS.find((x) => x.name === splitMedicine(e.title)[0])
+      return () => router.push(m ? { pathname: "/medications", params: { id: m.id } } : "/medications")
+    }
+    case "documents": {
+      const d = DOCUMENTS.find((x) => same(x.name, x.date))
+      return d && (() => onOpen(documentDetail(d, provenance)))
+    }
+    case "procedures": {
+      const p = PROCEDURES.find((x) => same(x.name, x.date))
+      return p && (() => onOpen(procedureDetail(p, provenance)))
+    }
+  }
+}
+
+/** The whole record by date, newest first, across every kind of entry,
+    with a filter for one kind at a time (S-15). Visits outside her clinic
+    say so. Every entry opens, as it does from its own list. */
+export function TimelineList({ onOpen }: Opens) {
+  const provenance = useProvenance()
+  const [filter, setFilter] = React.useState<TimeFilter>("all")
+  const entries = timeline().filter((e) => filter === "all" || e.kind === filter)
+  const years = [...new Set(entries.map((e) => e.year))]
+  return (
+    <View style={styles.stack}>
+      <ChipRow options={TIME_FILTERS} value={filter} onChange={setFilter} />
+      <View style={styles.groups}>
+        {years.map((year) => (
+          <Block key={year} title={year}>
+            <Group>
+              {entries
+                .filter((e) => e.year === year)
+                .map((e, i) => {
+                  const [name, dose] = e.kind === "medicines" ? splitMedicine(e.title) : [e.title, undefined]
+                  return (
+                    <ItemRow
+                      key={`${e.kind}-${e.title}-${i}`}
+                      icon={TIME_ICON[e.kind]}
+                      title={name}
+                      tag={e.outside ? { tone: "muted", label: "Outside your clinic" } : undefined}
+                      meta={placeLine(e.where, dose) || undefined}
+                      when={shortDate(e.date).replace(/,?\s*\d{4}$/, "")}
+                      onPress={timelineOpen(e, onOpen, provenance)}
+                    />
+                  )
+                })}
+            </Group>
+          </Block>
+        ))}
+      </View>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  flex: { flex: 1 },
+  // Controls and lists inside a page sit closer than the page's own 32.
+  stack: { gap: space.item },
+  groups: { gap: space.section },
+  controls: { gap: space.item },
+
+  summary: { padding: space.card, gap: space.item },
+
+  check: { padding: space.card, gap: space.item },
+  checkHead: { flexDirection: "row", alignItems: "center", gap: space.item },
+  review: { flexDirection: "row", alignItems: "center", gap: space.mark },
+
+  // The batch's title on its card: the card's 16 above, a row's 12 to the
+  // rule under it.
+  batchHead: { paddingTop: space.card, paddingBottom: space.rowY },
+  batchActions: { gap: space.card },
+})

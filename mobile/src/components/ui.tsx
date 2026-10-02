@@ -116,9 +116,9 @@ export function Divider() {
   )
 }
 
-/** The portal's one-time code input: six boxes over one hidden field, so
-    paste and the keyboard's code suggestion fill all six at once. Calls
-    `onComplete` on the sixth digit. */
+/** The one-time code input: one plain field, digits only, so paste and the
+    keyboard's code suggestion fill it. Calls `onComplete` on the sixth
+    digit. */
 export function CodeField({
   label,
   value,
@@ -132,46 +132,22 @@ export function CodeField({
   onComplete?: (value: string) => void
   error?: string
 }) {
-  const input = React.useRef<TextInput>(null)
-  const [focused, setFocused] = React.useState(false)
   return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <Pressable onPress={() => input.current?.focus()} style={styles.codeRow} accessible={false}>
-        {Array.from({ length: 6 }, (_, i) => {
-          const active = focused && (i === value.length || (i === 5 && value.length === 6))
-          return (
-            <View
-              key={i}
-              style={[styles.codeBox, active && styles.inputBoxFocused, !!error && styles.inputBoxInvalid]}
-            >
-              <Text style={styles.codeDigit}>{value[i] ?? ""}</Text>
-            </View>
-          )
-        })}
-        <TextInput
-          ref={input}
-          value={value}
-          onChangeText={(text) => {
-            const digits = text.replace(/\D/g, "").slice(0, 6)
-            onChange(digits)
-            if (digits.length === 6) onComplete?.(digits)
-          }}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          autoFocus
-          keyboardType="number-pad"
-          maxLength={6}
-          autoComplete="one-time-code"
-          textContentType="oneTimeCode"
-          caretHidden
-          accessibilityLabel={label}
-          accessibilityHint={error}
-          style={styles.codeInput}
-        />
-      </Pressable>
-      {!!error && <Text style={styles.error}>{error}</Text>}
-    </View>
+    <TextField
+      label={label}
+      value={value}
+      onChangeText={(text) => {
+        const digits = text.replace(/\D/g, "").slice(0, 6)
+        onChange(digits)
+        if (digits.length === 6) onComplete?.(digits)
+      }}
+      error={error}
+      placeholder="6-digit code"
+      keyboardType="number-pad"
+      maxLength={6}
+      autoComplete="one-time-code"
+      textContentType="oneTimeCode"
+    />
   )
 }
 
@@ -283,11 +259,13 @@ export function Button({
   pending?: boolean
   /** Greyed and inert until the step can go on, e.g. an unsigned consent. */
   disabled?: boolean
-  variant?: "primary" | "outline"
+  /** destructive: the outline shape in red, for secondary actions like Sign out. */
+  variant?: "primary" | "outline" | "destructive"
   /** Drawn before the label, e.g. Face ID on the outline button. */
   icon?: React.ComponentType<{ color: string }>
 }) {
   const primary = variant === "primary"
+  const destructive = variant === "destructive"
   return (
     <Pressable
       onPress={onPress}
@@ -297,14 +275,18 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         primary ? styles.buttonPrimary : styles.buttonOutline,
-        pressed && (primary ? styles.buttonPrimaryPressed : styles.buttonOutlinePressed),
+        destructive && styles.buttonDestructive,
+        pressed &&
+          (primary ? styles.buttonPrimaryPressed : destructive ? styles.buttonDestructivePressed : styles.buttonOutlinePressed),
         pending && styles.buttonPending,
         disabled && styles.buttonDisabled,
       ]}
     >
-      {pending && <ActivityIndicator color={primary ? color.onPrimary : color.primary} size="small" />}
+      {pending && <ActivityIndicator color={primary ? color.onPrimary : destructive ? color.error : color.primary} size="small" />}
       {!pending && Icon && <Icon color={color.text} />}
-      <Text style={[styles.buttonText, !primary && styles.buttonTextOutline]}>{children}</Text>
+      <Text style={[styles.buttonText, !primary && styles.buttonTextOutline, destructive && styles.buttonTextDestructive]}>
+        {children}
+      </Text>
     </Pressable>
   )
 }
@@ -369,21 +351,6 @@ const styles = StyleSheet.create({
   description: { fontFamily: font.regular, fontSize: 16, lineHeight: 23, color: color.onPrimary, opacity: 0.85, marginTop: -12 },
 
   field: { gap: 6 },
-  codeRow: { flexDirection: "row", gap: 8 },
-  codeBox: {
-    flex: 1,
-    aspectRatio: 1,
-    maxHeight: 60,
-    borderWidth: 1,
-    borderColor: color.inputBorder,
-    borderRadius: touchRadius,
-    backgroundColor: color.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  codeDigit: { fontFamily: font.medium, fontSize: 22, color: color.text },
-  // Covers the boxes, invisible, so a tap anywhere lands in it.
-  codeInput: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0.01, color: "transparent" },
   label: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: color.text },
   required: { color: color.error },
   inputBox: {
@@ -452,10 +419,13 @@ const styles = StyleSheet.create({
   buttonPrimaryPressed: { backgroundColor: color.primaryPressed },
   buttonOutline: { borderWidth: 1, borderColor: color.border, backgroundColor: color.background },
   buttonOutlinePressed: { backgroundColor: color.surface },
+  buttonDestructive: { borderColor: color.errorTint, backgroundColor: color.errorTint },
+  buttonDestructivePressed: { borderColor: color.errorHalo, backgroundColor: color.errorHalo },
   buttonPending: { opacity: 0.7 },
   buttonDisabled: { opacity: 0.4 },
   buttonText: { fontFamily: font.semibold, fontSize: 15, letterSpacing: -0.1, color: color.onPrimary },
   buttonTextOutline: { fontFamily: font.medium, color: color.text },
+  buttonTextDestructive: { color: color.error },
 
   textLink: { alignSelf: "flex-end", marginTop: -4 },
   divider: { flexDirection: "row", alignItems: "center", gap: 12 },

@@ -76,8 +76,8 @@ export default async function InviteEmailMobileScreen({
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           {/* subject */}
-          <div className="flex min-h-11 items-start gap-2 px-4 pt-2 sm:h-11 sm:items-center sm:pt-0">
-            <h1 className="min-w-0 flex-1 text-[22px] leading-7 sm:truncate">
+          <div className="flex h-11 items-center gap-2 px-4">
+            <h1 className="min-w-0 flex-1 truncate text-[22px] leading-7">
               Welcome to {BRAND_NAME}: Activate Your {invitee.role} Account
             </h1>
             <span className="flex h-7 shrink-0 items-center gap-2">

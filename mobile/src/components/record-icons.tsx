@@ -1,6 +1,7 @@
 import Alert02Icon from "@hugeicons/core-free-icons/Alert02Icon"
 import Appointment01Icon from "@hugeicons/core-free-icons/Appointment01Icon"
 import BandageIcon from "@hugeicons/core-free-icons/BandageIcon"
+import ChartLineData01Icon from "@hugeicons/core-free-icons/ChartLineData01Icon"
 import ClinicIcon from "@hugeicons/core-free-icons/ClinicIcon"
 import HealthIcon from "@hugeicons/core-free-icons/HealthIcon"
 import Hospital02Icon from "@hugeicons/core-free-icons/Hospital02Icon"
@@ -29,6 +30,8 @@ export type RecordIconName =
   | "clinic"
   | "hospital"
   | "lab"
+  /** History: every day, weigh in and reading (the member home's record rows). */
+  | "chart"
 
 const ICONS: Record<RecordIconName, IconSvgObject> = {
   visits: Appointment01Icon,
@@ -43,6 +46,7 @@ const ICONS: Record<RecordIconName, IconSvgObject> = {
   clinic: ClinicIcon,
   hospital: Hospital02Icon,
   lab: MicroscopeIcon,
+  chart: ChartLineData01Icon,
 }
 
 export function RecordIcon({ name, size = 20, color }: { name: RecordIconName; size?: number; color: string }) {
