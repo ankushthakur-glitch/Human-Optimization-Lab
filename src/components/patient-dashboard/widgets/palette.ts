@@ -1,10 +1,8 @@
-import type { CSSProperties } from "react"
-
 /* Version 4's colour system, taken from the reference image: each band has
    one hue (red, orange, violet, green) used as a soft tint for its card, a
-   solid disc for its icon and a strong text for its number, and blue is
-   the action colour (tabs, links, buttons). Every class lives here so the
-   components only name a tone. */
+   solid disc for its icon and a strong text for its number. Actions use
+   the brand primary. Every class lives here so the components only name a
+   tone. */
 
 export type ToneKey = "red" | "orange" | "violet" | "green" | "blue"
 
@@ -69,16 +67,3 @@ export const TONE: Record<
   },
 }
 
-/** Blue as the action colour inside version 4: the kit's tabs, links and
-    default buttons read --primary, so the scope swaps it. */
-export const ACTION_SCOPE = {
-  "--primary": "#2563eb",
-  "--primary-tint": "#1d4ed8",
-  "--primary-foreground": "#ffffff",
-  "--primary-surface": "color-mix(in oklab, #2563eb 10%, transparent)",
-  "--ring": "#2563eb",
-} as CSSProperties
-
-export const BUTTON_SOLID = "bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
-export const BUTTON_OUTLINE =
-  "border-blue-600 text-blue-700 hover:bg-blue-50 dark:border-blue-500 dark:text-blue-300 dark:hover:bg-blue-500/10"

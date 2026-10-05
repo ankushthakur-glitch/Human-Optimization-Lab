@@ -7,17 +7,7 @@ import { Area, AreaChart, LabelList, ReferenceLine, XAxis, YAxis } from "rechart
 import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/ui/button"
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/design-system/ui/chart"
-import {
-  AXIS_PROPS,
-  DIVIDER,
-  FOCUS,
-  Grid,
-  KitIcon,
-  SidePanel,
-  Sparkline,
-  UnderlineTabs,
-  useReducedMotion,
-} from "@/components/dashboard-kit-v2"
+import { AXIS_PROPS, Grid, KitIcon, SidePanel, useReducedMotion } from "@/components/dashboard-kit-v2"
 import { usDay } from "@/components/provider/mock-clock"
 import { fmt, shown } from "@/components/patient-dashboard/optimization/rules"
 import {
@@ -25,13 +15,7 @@ import {
   type HealthMetric,
   unitText,
 } from "@/components/patient-dashboard/widgets/metrics"
-import {
-  ACTION_SCOPE,
-  BUTTON_OUTLINE,
-  BUTTON_SOLID,
-  TONE,
-  type ToneKey,
-} from "@/components/patient-dashboard/widgets/palette"
+import { TONE, type ToneKey } from "@/components/patient-dashboard/widgets/palette"
 import { Pill, STATUS, StatusIcon, StatusWord } from "@/components/patient-dashboard/widgets/status"
 
 /** "↓ 4.7 % (-16.8%)": the arrow follows the value, the colour whether
@@ -55,13 +39,8 @@ function ChangeLine({ m, since = true }: { m: HealthMetric; since?: boolean }) {
 
 /* The drill-down. Any card, row or priority opens the marker here, on the
    kit's right-hand panel (full screen on a phone), with the dashboard kept
-   behind it. Overview: summary, trend against target, and what the value
-   means. Related: the markers read with it. Recommendations: the next step,
-   the plan in force and the priorities that rest on it. The footer walks
-   the list the drawer was opened from and holds the actions this marker's
-   state calls for. */
-
-type Tab = "overview" | "related" | "actions"
+   behind it: summary, trend against target, and what the value means. The
+   footer holds the actions this marker's state calls for. */
 
 const withUnit = (v: string | number | undefined, unit: string) => {
   if (v === undefined || v === "") return "None"
@@ -295,129 +274,6 @@ export function MetricInsight({ m }: { m: HealthMetric }) {
   )
 }
 
-/* ------------------------------------------------------------- related -- */
-
-export function RelatedBiomarkers({
-  list,
-  onSelect,
-}: {
-  list: HealthMetric[]
-  onSelect: (m: HealthMetric) => void
-}) {
-  if (list.length === 0) return <p className="text-[13px] text-muted-foreground">No related markers in the tracker</p>
-  return (
-    <ul className="flex flex-col">
-      {list.map((r) => (
-        <li key={r.id} className={cn("border-b last:border-0", DIVIDER)}>
-          <button
-            type="button"
-            onClick={() => onSelect(r)}
-            className={cn("flex w-full items-center gap-3 rounded-sm py-2.5 text-left hover:bg-surface-row-hover", FOCUS)}
-          >
-            <span aria-hidden className={cn("size-2 shrink-0 rounded-full", TONE[STATUS[r.status].tone].solid)} />
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-sm font-medium">{r.name}</span>
-              <span className="truncate text-xs text-muted-foreground tabular-nums">
-                {r.status === "untested" ? "Not resulted" : withUnit(r.repeat?.value ?? r.value, r.unit)}
-                {r.target && ` · target ${r.target}`}
-              </span>
-            </span>
-            {r.history.length > 1 && (
-              <Sparkline
-                values={r.history.map((p) => p.value)}
-                low={r.targetLow}
-                high={r.targetHigh}
-                latest={r.status === "out" ? "out" : r.trend === "improving" ? "better" : "neutral"}
-                label={`${r.name} trend`}
-              />
-            )}
-            <StatusWord m={r} />
-            <KitIcon icon={ArrowRight01Icon} size={14} className="text-muted-foreground" />
-          </button>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-/* ------------------------------------------------------------- actions -- */
-
-const PLAN_TONE = { Active: "green", Completed: "blue", Verify: "orange", "High priority": "red" } as const
-
-export function RecommendedActions({ m }: { m: HealthMetric }) {
-  const steps = [m.action, m.nextStep !== m.action ? m.nextStep : undefined].filter((s): s is string => Boolean(s))
-  return (
-    <div className="flex flex-col gap-5">
-      {steps.length > 0 && (
-        <Block title="Next step">
-          <ul className="flex flex-col gap-1.5">
-            {steps.map((s) => (
-              <li key={s} className="flex gap-2 text-[13px]">
-                <span aria-hidden className="mt-1.5 size-1.5 shrink-0 rounded-full bg-blue-600" />
-                {s}
-              </li>
-            ))}
-          </ul>
-        </Block>
-      )}
-      {m.plan.length > 0 && (
-        <Block title="Plan in force">
-          <ul className="flex flex-col">
-            {m.plan.map((i) => (
-              <li key={i.name} className={cn("flex flex-col gap-0.5 border-b py-2.5 first:pt-0 last:border-0", DIVIDER)}>
-                <span className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium">{i.name}</span>
-                  <Pill tone={PLAN_TONE[i.status]}>{i.status}</Pill>
-                </span>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {i.doseOrTarget} · {i.frequency} · {i.owner}
-                </span>
-                <span className="text-xs tabular-nums">
-                  <span className="text-muted-foreground">Observed </span>
-                  {i.observed}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Block>
-      )}
-      {m.priorities.length > 0 && (
-        <Block title="Visit priorities">
-          <ul className="flex flex-col gap-1.5">
-            {m.priorities.map((p) => (
-              <li key={p.text} className="flex items-center justify-between gap-3 text-[13px]">
-                <span>
-                  {p.text}
-                  <span className="block text-xs text-muted-foreground tabular-nums">{p.milestone}</span>
-                </span>
-                <Pill tone={p.met ? "green" : "blue"}>{p.met ? "Completed" : "In progress"}</Pill>
-              </li>
-            ))}
-          </ul>
-        </Block>
-      )}
-      {(m.nextTest || m.test) && (
-        <Block title="Next test">
-          <p className="text-[13px] tabular-nums">
-            {m.test?.name ?? m.nextTest}
-            {m.frequency && <span className="text-muted-foreground"> · every {m.frequency}</span>}
-            {m.test?.ordered && <span className="text-muted-foreground"> · ordered</span>}
-          </p>
-        </Block>
-      )}
-    </div>
-  )
-}
-
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      {children}
-    </section>
-  )
-}
-
 /* -------------------------------------------------------------- drawer -- */
 
 export type DrawerState = { id: string; list: string[]; from: React.RefObject<HTMLElement | null> }
@@ -425,7 +281,6 @@ export type DrawerState = { id: string; list: string[]; from: React.RefObject<HT
 export function MetricDetailDrawer({
   data,
   state,
-  onState,
   onClose,
   onOrder,
   onPlan,
@@ -433,35 +288,27 @@ export function MetricDetailDrawer({
 }: {
   data: Analytics
   state: DrawerState | null
-  onState: (next: DrawerState) => void
+  /** Kept for callers; the drawer no longer walks the list. */
+  onState?: (next: DrawerState) => void
   onClose: () => void
   onOrder: (test: string) => void
   onPlan: () => void
   /** The detailed report: the DEXA documents or the lab results. */
   onReport: (m: HealthMetric) => void
 }) {
-  const [tab, setTab] = React.useState<Tab>("overview")
   const m = state ? data.metric(state.id) : undefined
-  const [shownId, setShownId] = React.useState(state?.id)
-  if (state?.id !== shownId) {
-    setShownId(state?.id)
-    setTab("overview")
-  }
-  const index = state && m ? state.list.indexOf(m.id) : -1
-  const go = (to: number) => state && onState({ ...state, id: state.list[to] })
-  const related = m ? m.relatedMarkers.map(data.metric).filter((r): r is HealthMetric => Boolean(r)) : []
 
   const actions = m && (
     <>
-      <Button variant="outline" className={BUTTON_OUTLINE} onClick={() => onReport(m)}>
+      <Button variant="outline" onClick={() => onReport(m)}>
         {m.category === "Body Composition" ? "View DEXA report" : "View lab results"}
       </Button>
       {m.test && !m.test.ordered && m.test.orderable ? (
-        <Button className={BUTTON_SOLID} onClick={() => onOrder(m.test!.name)}>
+        <Button onClick={() => onOrder(m.test!.name)}>
           Order {m.test.name}
         </Button>
       ) : m.plan.length > 0 || m.priorities.length > 0 ? (
-        <Button className={BUTTON_SOLID} onClick={onPlan}>
+        <Button onClick={onPlan}>
           View personalized plan
           <KitIcon icon={ArrowRight01Icon} />
         </Button>
@@ -486,43 +333,13 @@ export function MetricDetailDrawer({
           </>
         )
       }
-      index={index >= 0 ? index : undefined}
-      total={state?.list.length}
-      onPrevious={index > 0 ? () => go(index - 1) : undefined}
-      onNext={index >= 0 && state && index < state.list.length - 1 ? () => go(index + 1) : undefined}
       actions={actions}
     >
       {m && (
-        <div className="-mx-6 -mt-5 flex flex-col" style={ACTION_SCOPE}>
-          <UnderlineTabs
-            label="Marker detail"
-            value={tab}
-            onChange={setTab}
-            className="[&_[role=tablist]]:px-6"
-            items={[
-              { value: "overview", label: "Overview" },
-              { value: "related", label: "Related", count: related.length },
-              { value: "actions", label: "Recommendations" },
-            ]}
-          />
-          <div className="flex flex-col gap-5 px-6 py-5">
-            {tab === "overview" && (
-              <>
-                <MetricSummary m={m} />
-                <MetricTrendChart m={m} />
-                <MetricInsight m={m} />
-              </>
-            )}
-            {tab === "related" && (
-              <RelatedBiomarkers
-                list={related}
-                onSelect={(r) =>
-                  state && onState({ ...state, id: r.id, list: state.list.includes(r.id) ? state.list : [r.id] })
-                }
-              />
-            )}
-            {tab === "actions" && <RecommendedActions m={m} />}
-          </div>
+        <div className="flex flex-col gap-5">
+          <MetricSummary m={m} />
+          <MetricTrendChart m={m} />
+          <MetricInsight m={m} />
         </div>
       )}
     </SidePanel>

@@ -11,8 +11,8 @@ import { KitIcon } from "@/components/dashboard-kit-v2/icon"
 /* The right-hand drawer a list opens into: 560px, full height, on the
    build's Sheet, which traps focus, closes on Esc and returns focus to the
    row that opened it. The header names the item and its place in the list,
-   the footer walks the list (Previous, Next, and Arrow Up and Down) and
-   holds the actions. */
+   the footer walks the list (Previous, Next, and Arrow Up and Down) when
+   the caller gives it one, and holds the actions. */
 
 export function SidePanel({
   open,
@@ -90,14 +90,18 @@ export function SidePanel({
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
         <footer className="flex flex-wrap items-center gap-2 border-t border-border px-6 py-3.5">
-          <Button variant="outline" disabled={!onPrevious} onClick={onPrevious}>
-            <KitIcon icon={ArrowLeft01Icon} />
-            Previous
-          </Button>
-          <Button variant="outline" disabled={!onNext} onClick={onNext}>
-            Next
-            <KitIcon icon={ArrowRight01Icon} />
-          </Button>
+          {(total !== undefined || onPrevious || onNext) && (
+            <>
+              <Button variant="outline" disabled={!onPrevious} onClick={onPrevious}>
+                <KitIcon icon={ArrowLeft01Icon} />
+                Previous
+              </Button>
+              <Button variant="outline" disabled={!onNext} onClick={onNext}>
+                Next
+                <KitIcon icon={ArrowRight01Icon} />
+              </Button>
+            </>
+          )}
           <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>
         </footer>
       </SheetContent>

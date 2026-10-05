@@ -68,6 +68,7 @@ export type DemoId =
   | "onboarding-activate"
   | "onboarding-signin"
   | "onboarding-consent"
+  | "returning"
 
 /** Her answers from the "your why" conversation, on the app's own scales:
     importance 5, confidence 3, readiness 4 ("Quite"). */
@@ -151,10 +152,13 @@ const firstRun = (): Patch => ({ ...BLANK, step: "about", chats: pastChats(), ch
 
 /** Where an onboarding seed leaves the account; every other seed is signed
     in. "activate": signed out with no password, as a new install.
-    "sign-in": the password just created, not yet signed in with it. */
-export const DEMO_ACCOUNT: Partial<Record<DemoId, "activate" | "sign-in">> = {
+    "sign-in": the password just created, not yet signed in with it.
+    "returning": set up long ago and signed out, back at sign in with Face
+    ID offered. */
+export const DEMO_ACCOUNT: Partial<Record<DemoId, "activate" | "sign-in" | "returning">> = {
   "onboarding-activate": "activate",
   "onboarding-signin": "sign-in",
+  returning: "returning",
 }
 
 /** A day T plus n days, at a time of day. */
@@ -365,6 +369,8 @@ export const DEMOS: Record<DemoId, () => Patch> = {
   },
   "onboarding-activate": firstRun,
   "onboarding-signin": firstRun,
+  // The free patient, signed out: sign in with her password or Face ID.
+  returning: free,
   // Is this you already answered, as that step saves it.
   "onboarding-consent": () => ({ ...firstRun(), step: "consent", profile: { ...DEMOGRAPHICS } }),
 }

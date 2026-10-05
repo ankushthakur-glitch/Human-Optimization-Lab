@@ -67,7 +67,7 @@ function Arrow() {
    link, which is how a button is made in an email. */
 function ActivateButton({ invitee }: { invitee: InviteeKey }) {
   const className =
-    "inline-flex h-12 w-0 min-w-full items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-semibold text-white no-underline"
+    "inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-[15px] font-semibold text-white no-underline"
   if (invitee === "patient") {
     return (
       <a
@@ -313,10 +313,10 @@ export function InviteEmailTemplate({
                 web ? "px-7" : "px-5"
               )}
             >
-              {/* The button takes the code's width, not the ticket's: w-0
-                  min-w-full keeps it out of the column's sizing. The code's
-                  trailing letter spacing is pulled back so the edges line up
-                  with the digits. */}
+              {/* The button and the code share one width: the wider of the
+                  two, so the label stays on one line. The code's trailing
+                  letter spacing is pulled back so the edges line up with the
+                  digits. */}
               <div className="grid w-fit gap-4">
                 <p
                   className={cn(

@@ -47,6 +47,10 @@ export default function DemoScreen() {
         // follows with her email filled in.
         await auth.setPassword("demo")
         setLanding({ href: { pathname: "/sign-in", params: { created: "1", email: PATIENT.email } }, status: "signedOut" })
+      } else if (account === "returning") {
+        // A returning patient: her password set, the device signed out.
+        await auth.setPassword("demo")
+        setLanding({ href: "/sign-in", status: "signedOut" })
       } else {
         // Any password will do in the demo build; this signs the device in.
         if (auth.status !== "signedIn") {
