@@ -1626,7 +1626,7 @@ PATIENTS.forEach((p, i) => {
 /*  Stores                                                                     */
 /* -------------------------------------------------------------------------- */
 
-const VERSION = "v16"
+const VERSION = "v17"
 
 /** The sample patients, before any session edits: the duplicate queue seeds from them. */
 export const PATIENT_SEED = PATIENTS
@@ -1642,9 +1642,15 @@ export const providers = createCollection(
   VERSION
 )
 export const users = createCollection("hol-practice-users", USERS, VERSION)
+/* Marcus Hale, the provider dashboard's lead sample patient, heads the
+   patient list. Only the store is reordered: the seed keeps its indices. */
+const LIST_FIRST = "P10318"
 export const patients = createCollection(
   "hol-practice-patients",
-  PATIENTS,
+  [
+    ...PATIENTS.filter((p) => p.id === LIST_FIRST),
+    ...PATIENTS.filter((p) => p.id !== LIST_FIRST),
+  ],
   VERSION
 )
 

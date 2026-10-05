@@ -94,3 +94,4 @@ export { ArrowUpRightIcon as ArrowUpRight } from "phosphor-react-native/src/icon
 export { ArrowDownRightIcon as ArrowDownRight } from "phosphor-react-native/src/icons/ArrowDownRight"
 export { DotsThreeIcon as DotsThree } from "phosphor-react-native/src/icons/DotsThree"
 export { ListIcon as List } from "phosphor-react-native/src/icons/List"
+export { ImageSquareIcon as ImageSquare } from "phosphor-react-native/src/icons/ImageSquare"

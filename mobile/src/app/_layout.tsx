@@ -120,8 +120,9 @@ function Routes() {
           {/* The record, opened from home and Results. */}
           <Stack.Screen name="biomarker/[id]" />
           <Stack.Screen name="record/[kind]" />
+          <Stack.Screen name="record/item" />
+          <Stack.Screen name="record/add" />
           <Stack.Screen name="medications" />
-          <Stack.Screen name="add-report" />
           <Stack.Screen name="tell-us" />
           <Stack.Screen name="task/[id]" />
           <Stack.Screen name="order/[id]" />

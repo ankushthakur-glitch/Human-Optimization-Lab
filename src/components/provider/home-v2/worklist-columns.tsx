@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 
 import { Alert02Icon } from "@hugeicons/core-free-icons"
 
-import { AreaSpark, Badge, PALETTE } from "@/components/dashboard-kit-v2"
+import { Badge } from "@/components/dashboard-kit-v2"
 import { daysSince, fmtDate, fmtInt } from "@/components/provider/home-v2/clock"
 import {
   DayBadge,
@@ -121,29 +121,6 @@ const RESULTS: Column[] = [
     head: "Result",
     width: 140,
     cell: (i) => <ResultStatus r={as<"abnormal_result">(i).payload} />,
-  },
-  {
-    key: "trend",
-    head: "Trend",
-    width: 130,
-    cell: (i) => {
-      const r = as<"abnormal_result">(i).payload
-      const values = (r.history ?? []).slice(-5).map((h) => h.value)
-      /* The KPI cards' area chart, scaled to the values' own spread so a
-         small lab change still reads; red when the latest is out of range. */
-      const lo = Math.min(...values)
-      const span = Math.max(...values) - lo || 1
-      return values.length > 1 ? (
-        <AreaSpark
-          values={values}
-          color={outOfRange(values[values.length - 1]!, r) ? PALETTE.clinical : PALETTE.primary}
-          domain={[lo - span * 0.6, lo + span * 1.15]}
-          label={`${r.name}, last ${values.length} results: ${values.join(", ")}`}
-        />
-      ) : (
-        <Muted>None</Muted>
-      )
-    },
   },
   { key: "source", head: "Source", width: 260, cell: (i) => <Source item={i} /> },
   {

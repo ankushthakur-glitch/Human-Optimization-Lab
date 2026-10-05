@@ -7,9 +7,9 @@ import { PATIENT } from "@/lib/patient"
 
 /** How long collection runs: one permission for a set period, rather than
     one for every pull. */
-export const PERIODS = ["1m", "3m", "6m"]
+export const PERIODS = ["15d", "1m", "3m"]
 
-export const DEFAULT_PERIOD = "3m"
+export const DEFAULT_PERIOD = "1m"
 
 export const LEGAL = [
   `I authorize Inlay Health to request, receive and store my health records from my healthcare providers, hospitals, laboratories and imaging centers, through national health information networks, and to share them with ${PATIENT.practice} for my care.`,
@@ -60,8 +60,9 @@ export const DOCS: Record<Doc, { title: string; text: string[] }> = {
   },
 }
 
-const LABELS: Record<string, string> = { "1m": "1 month", "3m": "3 months", "6m": "6 months" }
-const MONTHS: Record<string, number> = { "1m": 1, "3m": 3, "6m": 6 }
+const LABELS: Record<string, string> = { "15d": "15 days", "1m": "1 month", "3m": "3 months" }
+const MONTHS: Record<string, number> = { "1m": 1, "3m": 3 }
+const DAYS: Record<string, number> = { "15d": 15 }
 
 export const periodLabel = (p: string) => LABELS[p] ?? LABELS[DEFAULT_PERIOD]
 
@@ -69,7 +70,8 @@ export const periodLabel = (p: string) => LABELS[p] ?? LABELS[DEFAULT_PERIOD]
     longer offers reads as the default, as its label does. */
 export function periodEnd(p: string, from: Date = new Date()) {
   const d = new Date(from)
-  d.setMonth(d.getMonth() + (MONTHS[p] ?? MONTHS[DEFAULT_PERIOD]))
+  if (DAYS[p]) d.setDate(d.getDate() + DAYS[p])
+  else d.setMonth(d.getMonth() + (MONTHS[p] ?? MONTHS[DEFAULT_PERIOD]))
   return d
 }
 

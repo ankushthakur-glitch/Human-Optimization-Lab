@@ -3,19 +3,17 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { GAP_ICON, keepTogether, reminderLine, reminderSteps } from "@/components/care-gap"
-import { BookedSheet, BookIt, BookSheet, CLINIC, withTold } from "@/components/care-orders-book"
+import { BookedSheet, BookIt, BookSheet, withTold } from "@/components/care-orders-book"
 import { HeadCard, KindLine, Reminders } from "@/components/care-orders-rows"
 import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
-import { AskButton, PrimaryButton } from "@/components/hol"
+import { AskButton } from "@/components/hol"
 import { CalendarCheck } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
 import { Block, Card, Group, HUE, NeedsRow, SaveQuestion, Status } from "@/components/record-kit"
 import { toast } from "@/components/toast"
-import { call } from "@/lib/links"
 import { dateOfAt, dayLabel, localDay, shortDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { PATIENT } from "@/lib/patient"
 import { CARE_GAPS, GAP_LABEL, MARKER_CARE, PROVENANCE_LABEL, order as findOrder } from "@/lib/record"
 import { font, ink, space, type } from "@/lib/theme"
 import { bookingOf } from "@/lib/todo"
@@ -25,7 +23,7 @@ import { bookingOf } from "@/lib/todo"
    one way forward that fits it (F-60, A-26):
 
    book   the test's own ways to book (the order's "Book it")
-   call   call the clinic, or say it is booked
+   call   say it is booked
    talk   save the question for the next visit, or ask about it
 
    It closes when the record shows it happened, not when she says so.
@@ -33,8 +31,7 @@ import { bookingOf } from "@/lib/todo"
    Figma "Hol" (5 Oct 2026, "Follow up after urgent care", "Colorectal
    cancer screening", "Talk with Dr. Patel about your A1c"): the tinted
    head card with the kind, the why and the reminder line; the way
-   forward; the reminders; "Ask to Health Agent" in the footer, with
-   "Call Harborview" under it for a gap to call about. */
+   forward; the reminders; "Ask to Health Agent" alone in the footer. */
 
 export default function CareGapScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -72,7 +69,6 @@ export default function CareGapScreen() {
 
   // The assistant opens on this gap: its question, or what it is.
   const ask = gap.question ?? `What should I do about my ${gap.title.charAt(0).toLowerCase()}${gap.title.slice(1)}?`
-  const calls = !doneAt && gap.action === "call" && !booked
 
   return (
     <View style={styles.screen}>
@@ -80,10 +76,7 @@ export default function CareGapScreen() {
         page
         title={gap.title}
         footer={
-          <>
-            <AskButton params={{ ask }} />
-            {calls && <PrimaryButton onPress={() => call(PATIENT.practicePhone)}>{`Call ${CLINIC}`}</PrimaryButton>}
-          </>
+          <AskButton params={{ ask }} />
         }
       >
         <HeadCard>

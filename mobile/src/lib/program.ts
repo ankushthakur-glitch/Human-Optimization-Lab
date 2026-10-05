@@ -9,12 +9,11 @@
 
 export type SetupStep = "questionnaire" | "medicines" | "devices" | "tests" | "tour"
 
+/** The setup's steps in order. Only "Tell us more about you" for now (user,
+    5 Oct 2026); finishing it hands the plan to the doctor. The other steps'
+    pages stay built for when they come back. */
 export const SETUP: { id: SetupStep; title: string; href: `/optimize/${SetupStep}` }[] = [
   { id: "questionnaire", title: "Tell us more about you", href: "/optimize/questionnaire" },
-  { id: "medicines", title: "Confirm your medicines", href: "/optimize/medicines" },
-  { id: "devices", title: "Connect a device", href: "/optimize/devices" },
-  { id: "tests", title: "Book your starting tests", href: "/optimize/tests" },
-  { id: "tour", title: "A quick tour", href: "/optimize/tour" },
 ]
 
 export const nextSetup = (done: SetupStep[]) => SETUP.find((s) => !done.includes(s.id))

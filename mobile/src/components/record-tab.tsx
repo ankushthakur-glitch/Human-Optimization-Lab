@@ -3,17 +3,17 @@ import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { StatusBanner } from "@/components/home-header"
-import { Clock, Eye, Monitor, Plus, UploadSimple } from "@/components/ph"
+import { Clock, Plus, UploadSimple } from "@/components/ph"
 import { Block, Card, EmptyState, Group, ResultRow, Tile } from "@/components/record-kit"
 import { sinceLine } from "@/components/record-lists"
 import { AddToRecordSheet, ItemRow, RangeSummary } from "@/components/record-rows"
 import { TabScreen } from "@/components/tab-bar"
 import { Button } from "@/components/ui"
 import { relativeDay } from "@/lib/dates"
-import { useExperience, useInlayScore, useMarkers } from "@/lib/experience"
+import { useExperience, useMarkers } from "@/lib/experience"
 import { sinceStart } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { ALLERGIES, DOCUMENTS, IMMUNIZATIONS, ORDERS, PROBLEMS, PROCEDURES, VISITS } from "@/lib/record"
+import { ALLERGIES, IMMUNIZATIONS, ORDERS, PROBLEMS, PROCEDURES, VISITS } from "@/lib/record"
 import { color, hairline, space, type } from "@/lib/theme"
 import { homeBanner, todo, yourMedicines } from "@/lib/todo"
 import { trendCounts, watchList } from "@/lib/trends"
@@ -167,7 +167,6 @@ function InYourRecord() {
   const upcoming = t.coming.filter((i) => i.kind === "appointment" || i.kind === "review").length
   // The same score as Home and the score page: her answers and her own
   // record (a steady record keeps its whole record half).
-  const score = useInlayScore()
   const added = onboarding.added ?? []
   const list = (kind: string) => () => router.push({ pathname: "/record/[kind]", params: { kind } })
   const glyph = (Icon: typeof Clock) => (
@@ -184,13 +183,9 @@ function InYourRecord() {
         <ItemRow icon="conditions" title="Conditions" count={PROBLEMS.length} onPress={list("conditions")} />
         <ItemRow icon="visits" title="Visits" count={VISITS.length + upcoming} onPress={list("visits")} />
         <ItemRow icon="labs" title="Tests and orders" count={ORDERS.length} onPress={list("tests")} />
-        <ItemRow icon="documents" title="Documents" count={DOCUMENTS.length} onPress={list("documents")} />
         <ItemRow icon="immunizations" title="Immunizations" count={IMMUNIZATIONS.length} onPress={list("immunizations")} />
         <ItemRow icon="procedures" title="Procedures" count={PROCEDURES.length} onPress={list("procedures")} />
-        <ItemRow icon={glyph(Clock)} title="Timeline" onPress={() => router.push("/timeline")} />
-        <ItemRow icon={glyph(Monitor)} title="Inlay score" count={score} onPress={() => router.push("/score")} />
         {added.length > 0 && <ItemRow icon={glyph(UploadSimple)} title="Added by you" count={added.length} onPress={list("added")} />}
-        <ItemRow icon={glyph(Eye)} title="Who has looked at your record" onPress={list("access")} />
       </Group>
     </Block>
   )

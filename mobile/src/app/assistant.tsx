@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router"
+import { useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -14,14 +14,14 @@ import {
   UrgentBubble,
   VisitBubble,
   keepTogether,
-  sentenceLines,
 } from "@/components/assistant-thread"
 import { ChatBar, MyBubble, Options, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
-import { ChatHistory } from "@/components/chat-history"
+import { CategoryPicker } from "@/components/chat-categories"
+import { ChatHistory, type ChatGroup } from "@/components/chat-history"
 import { useDragBack } from "@/components/drag-back"
 import { DarkStatusBar } from "@/components/error-state"
 import { PageGround } from "@/components/hol"
-import { CaretLeft, List } from "@/components/ph"
+import { ChatText, List } from "@/components/ph"
 import { useTopInset } from "@/components/ui"
 import { costOf, questionKind, useAllowance, type QuestionKind } from "@/lib/allowance"
 import {
@@ -34,7 +34,6 @@ import {
   PLAN_ASKS,
   PROMPTS,
   REVIEW_PLAN_ASKS,
-  SAFETY_LINE,
   TOPICS,
   TOPIC_PARAM,
   URGENT,
@@ -74,7 +73,7 @@ import { changeCourse } from "@/lib/offers"
 import { useOnboarding, type Chat, type ChatTopic, type PastChat } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { MEDICATIONS } from "@/lib/record"
-import { color, font, hairline, ink, space, type } from "@/lib/theme"
+import { color, ink, space, type } from "@/lib/theme"
 import { classify, type Trend } from "@/lib/trends"
 
 /* The assistant (FINAL-SPEC C.4), opened full screen from the round button
@@ -96,12 +95,14 @@ import { classify, type Trend } from "@/lib/trends"
    and seeing suggestions cost nothing; safety and plan questions never
    count. At the limit the question waits in the composer beside a calm card.
    The thread is kept for 30 minutes after its last message, so closing and
-   opening carries on; an older one ends with "Start a new chat". */
+   opening carries on; an older one ends with "Start a new chat".
+
+   Opened from the nav bar (or "New chat"), she first picks a category, or
+   makes one, and the chat starts in it (call, 5 Oct 2026); opened about a
+   result, a batch or a topic, that is its category. */
 
 /** The typing bubble's pause before a reply (C.0.8). */
 const THINK_MS = 800
-/** A thread carries on this long after its last message. */
-const OPEN_MINUTES = 30
 /** After an answer: back to every topic, or away from one result. */
 const ELSE = "Anything else I can help with?"
 const MORE = "Ask about something else"
@@ -141,7 +142,6 @@ type AskMsg = Extract<Msg, { kind: "ask" }>
 type Thread = { id: string; scope?: string; startedAt: string; lastAt: string; messages: Msg[]; topic?: ChatTopic; title?: string }
 
 const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
-const minutesSince = (iso: string) => (Date.now() - Date.parse(iso)) / 60000
 
 /** Messages as the thread keeps them: an id and the time each was said. */
 function stamp(drafts: Draft[]): Msg[] {
@@ -161,7 +161,7 @@ function fresh(drafts: Draft[], scope?: string, topic?: ChatTopic): Thread {
 /* ------------------------------------------------------ chat history -- */
 
 /** A starter's group in the history: "Something is bothering me" is filed
-    under something else. */
+    under general health questions. */
 const GROUP_OF: Record<Topic, ChatTopic> = { result: "result", medicine: "medicine", visit: "visit", plan: "plan", concern: "other" }
 /** The starters she can tap, which never make a title on their own. */
 const STARTERS = new Set<string>([...Object.values(TOPICS), MORE])
@@ -204,6 +204,9 @@ function inferTopic(t: Thread, planLive: boolean): ChatTopic {
 
 /** The lists a tap can still answer: only the newest one is live. */
 const CHOOSERS = new Set<Msg["kind"]>(["ask", "results", "medicines", "urgent"])
+
+/** The built in categories that open as a starter does. */
+const STARTER_CATEGORIES = new Set<ChatTopic>(["result", "medicine", "visit", "plan"])
 
 export default function AssistantScreen() {
   // It rises from the bottom; the left edge swipe still drags it away.
@@ -306,17 +309,23 @@ export default function AssistantScreen() {
     return [greetingAsk()]
   }
 
-  // The thread: the one in the store while it is under 30 minutes old;
-  // otherwise an older one as it was, ending with "Start a new chat"; a
-  // chat opened about something new starts fresh.
-  const [thread, setThread] = React.useState<Thread>(() => {
-    const stored = onboarding.chat as unknown as Thread | undefined
-    const scoped = Boolean(params.marker || params.topic || params.batch)
-    const ended = stored?.messages.at(-1)?.kind === "ended"
-    if (stored?.messages?.length && !ended && minutesSince(stored.lastAt) < OPEN_MINUTES) return scoped ? append(stored, stamp(opening())) : stored
-    if (stored?.messages?.length && !scoped) return ended ? stored : { ...stored, messages: [...stored.messages, ...stamp([{ kind: "ended" }])] }
-    return fresh(opening(), params.marker ?? params.topic ?? params.batch, paramTopic)
-  })
+  /** A chosen category's opening: a built in one opens as its starter
+      does; general health questions and her own categories wait for her
+      words. */
+  function categoryOpening(g: ChatGroup): Draft[] {
+    if (declined) return [notConnected()]
+    if (STARTER_CATEGORIES.has(g.topic)) return topicOpening(g.topic as Topic)
+    const text = g.topic === "other" ? `Hi ${name}. Ask me any health question.` : `Hi ${name}. What would you like to ask about ${g.name}?`
+    return [{ kind: "text", from: "assistant", text }]
+  }
+
+  // Every open of the assistant starts a fresh chat (user, 5 Oct 2026);
+  // the last one is filed in the history (the drawer) to carry on from.
+  // With nothing to open it about, it waits for a category first.
+  const previous = React.useRef(onboarding.chat as unknown as Thread | undefined)
+  const [thread, setThread] = React.useState<Thread>(() => (paramTopic ? fresh(opening(), params.marker ?? params.topic ?? params.batch, paramTopic) : fresh([])))
+  /** No category yet: the picker shows in place of the thread. */
+  const choosing = !thread.topic && !thread.messages.length
   // A question it was opened with waits in the composer, unsent (A-42).
   const [draft, setDraft] = React.useState(params.ask ?? "")
   const [thinking, setThinking] = React.useState(false)
@@ -331,7 +340,12 @@ export default function AssistantScreen() {
   React.useEffect(() => {
     const chat: Chat = { ...thread, messages: thread.messages.filter((m) => m.kind !== "limit") }
     const over = thread.messages.at(-1)?.kind === "ended" && hasQuestion(thread)
-    onboarding.save(over ? { chat, chats: filed(onboarding.chats ?? [], thread) } : { chat }).catch(() => {})
+    // On opening, the chat left in the store goes into the history first.
+    const before = previous.current
+    previous.current = undefined
+    const base = before?.messages?.length && hasQuestion(before) ? filed(onboarding.chats ?? [], before) : onboarding.chats ?? []
+    const chats = over ? filed(base, thread) : base
+    onboarding.save(over || before ? { chat, chats } : { chat }).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thread])
 
@@ -360,6 +374,21 @@ export default function AssistantScreen() {
     const y = anchor.current ? tops.current.get(anchor.current) : undefined
     if (y !== undefined && h - y > viewport.current) scroll.current?.scrollTo({ y: Math.max(0, y - space.item), animated: true })
     else scroll.current?.scrollToEnd({ animated: true })
+  }
+
+  /* ------------------------------------------------------- categories -- */
+
+  /** The chosen category's chat starts. */
+  function startIn(g: ChatGroup) {
+    follow.current = Date.now()
+    setThread(fresh(categoryOpening(g), undefined, g.topic))
+  }
+
+  /** A category she named: kept, then a chat starts in it. */
+  function createCategory(categoryName: string): ChatGroup {
+    const id = `cat-${newId()}`
+    onboarding.save({ chatCategories: [...(onboarding.chatCategories ?? []), { id, name: categoryName }] }).catch(() => {})
+    return { topic: id, name: categoryName, Icon: ChatText }
   }
 
   /* ---------------------------------------------------------- writing -- */
@@ -649,6 +678,7 @@ export default function AssistantScreen() {
     say([{ kind: "ended" }])
   }
 
+  /** "Start a new chat" under an ended thread: a category first. */
   function startOver() {
     clearTimeout(timer.current)
     setThinking(false)
@@ -656,7 +686,7 @@ export default function AssistantScreen() {
     setDraft("")
     anchor.current = undefined
     follow.current = Date.now()
-    setThread(fresh([greetingAsk()]))
+    setThread(fresh([]))
   }
 
   /** Back to an empty composer and a still thread, before another one. */
@@ -672,12 +702,12 @@ export default function AssistantScreen() {
   }
 
   /** "New chat" in the drawer: the thread on screen is filed, then a
-      fresh one starts. */
+      category is chosen for the next. */
   function newChat() {
     setMenu(false)
     if (!ended && hasQuestion(thread)) onboarding.save({ chats: filed(onboarding.chats ?? [], thread) }).catch(() => {})
     settle()
-    setThread(fresh([greetingAsk()]))
+    setThread(fresh([]))
   }
 
   /** A past chat from the drawer opens as it was, to carry on; the one on
@@ -778,83 +808,78 @@ export default function AssistantScreen() {
 
   return (
     <View style={styles.screen}>
+      {/* One soft ground from the status bar to the home indicator: no
+          white bars over or under the thread (user, 5 Oct 2026). */}
+      <PageGround />
       <DarkStatusBar />
       <View style={[styles.head, { paddingTop: top + 16 }]}>
-        {/* The page's white header bar, as every page's: the back caret
-            and the title, and the quiet "End chat" on the right. The AI is
-            metered in tokens now (5 Oct 2026), shown by the orb's ring, so
-            no question counter here. */}
+        {/* Only the chats menu here (user, 5 Oct 2026): no back caret,
+            title or "End chat". Swipe back still leaves the page. */}
         <View style={styles.headRow}>
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            style={({ pressed }) => pressed && styles.closePressed}
-          >
-            <CaretLeft size={24} color={ink.detail} />
-          </Pressable>
           <Pressable
             onPress={() => setMenu(true)}
             hitSlop={10}
             accessibilityRole="button"
             accessibilityLabel="Chats"
-            style={({ pressed }) => pressed && styles.closePressed}
+            style={({ pressed }) => [styles.menu, pressed && styles.closePressed]}
           >
-            <List size={24} color={ink.detail} />
+            <List size={20} color={ink.detail} />
           </Pressable>
-          <Text style={styles.headTitle} numberOfLines={1} accessibilityRole="header">
-            Assistant
-          </Text>
-          {!ended && (
-            <Pressable onPress={endChat} hitSlop={10} accessibilityRole="button" style={({ pressed }) => pressed && styles.closePressed}>
-              <Text style={styles.endChat}>End chat</Text>
-            </Pressable>
-          )}
         </View>
       </View>
 
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={styles.fill}>
-        <PageGround />
-        <ScrollView
-          ref={scroll}
-          onLayout={(e) => (viewport.current = e.nativeEvent.layout.height)}
-          onContentSizeChange={onContentSize}
-          contentContainerStyle={styles.thread}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.top}>
-            <Text style={styles.day}>{relativeDay(thread.startedAt)}</Text>
-            <Text style={styles.safety}>{sentenceLines(SAFETY_LINE)}</Text>
-          </View>
-          {thread.messages.map((m) => (
-            <View key={m.id} onLayout={(e) => tops.current.set(m.id, e.nativeEvent.layout.y)}>
-              {render(m)}
+      {choosing ? (
+        <CategoryPicker chats={onboarding.chats ?? []} categories={onboarding.chatCategories} planLive={planLive} onStart={startIn} onCreate={createCategory} />
+      ) : (
+        <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={styles.fill}>
+          <ScrollView
+            ref={scroll}
+            onLayout={(e) => (viewport.current = e.nativeEvent.layout.height)}
+            onContentSizeChange={onContentSize}
+            contentContainerStyle={styles.thread}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.top}>
+              <Text style={styles.day}>{relativeDay(thread.startedAt)}</Text>
             </View>
-          ))}
-          {thinking && <TypingBubble />}
-        </ScrollView>
-        </View>
-
-        {!ended && (
-          <View>
-            <ChatBar
-              value={draft}
-              onChange={setDraft}
-              onSend={send}
-              canSend={!thinking}
-              placeholder={awaiting ? "Describe what's bothering you" : "Ask a question"}
-              bottom={bottom}
-            />
+            {thread.messages.map((m) => (
+              <View key={m.id} onLayout={(e) => tops.current.set(m.id, e.nativeEvent.layout.y)}>
+                {render(m)}
+              </View>
+            ))}
+            {thinking && <TypingBubble />}
+          </ScrollView>
           </View>
-        )}
-        {ended && <View style={[styles.endedFoot, { height: Math.max(bottom, space.gutter) }]} />}
-      </KeyboardAvoidingView>
+
+          {!ended && (
+            <View>
+              <ChatBar
+                value={draft}
+                onChange={setDraft}
+                onSend={send}
+                canSend={!thinking}
+                placeholder={awaiting ? "Describe what's bothering you" : "Ask a question"}
+                bottom={bottom}
+                bare
+              />
+            </View>
+          )}
+          {ended && <View style={[styles.endedFoot, { height: Math.max(bottom, space.gutter) }]} />}
+        </KeyboardAvoidingView>
+      )}
 
       {facts && <FactsSheet facts={facts} onClose={() => setFacts(undefined)} />}
-      <ChatHistory open={menu} chats={history} currentId={hasQuestion(thread) ? thread.id : undefined} onClose={() => setMenu(false)} onOpen={openPast} onNew={newChat} />
+      <ChatHistory
+        open={menu}
+        chats={history}
+        categories={onboarding.chatCategories}
+        currentId={hasQuestion(thread) ? thread.id : undefined}
+        onClose={() => setMenu(false)}
+        onOpen={openPast}
+        onNew={newChat}
+      />
     </View>
   )
 }
@@ -864,17 +889,16 @@ export default function AssistantScreen() {
 const column = { width: "100%", maxWidth: 420 + space.gutter * 2, alignSelf: "center", paddingHorizontal: space.gutter } as const
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: color.background },
+  screen: { flex: 1, backgroundColor: color.page },
   fill: { flex: 1 },
 
-  // The Figma "Hol" header bar: white, 16 inside, a 1 pt #F2F2F7 hairline
-  // under it; the back caret 8 from the title, 18 medium.
-  head: { backgroundColor: color.background, borderBottomWidth: 1, borderBottomColor: hairline.rule },
-  headRow: { ...column, paddingBottom: 16, flexDirection: "row", alignItems: "center", gap: space.inline },
-  headTitle: { ...type.tabTitle, flex: 1 },
-  endChat: { fontFamily: font.medium, fontSize: 14, lineHeight: 18, color: ink.secondary },
+  // No bar: the chats button floats on the page's ground, the consent
+  // page's round back button (32, #EBEBEB, a 20 icon).
+  head: {},
+  headRow: { ...column, paddingBottom: 4, flexDirection: "row", alignItems: "center", gap: space.inline },
+  menu: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#EBEBEB", alignItems: "center", justifyContent: "center" },
   closePressed: { opacity: 0.7 },
-  endedFoot: { backgroundColor: color.background },
+  endedFoot: {},
 
   // Under the header the page's own margin, as at its sides (Frontline
   // 16); messages a list's 12 apart.
@@ -882,5 +906,4 @@ const styles = StyleSheet.create({
   top: { alignItems: "center", gap: space.stack, marginBottom: space.stack },
   // The day over the thread, as Frontline labels a day's group.
   day: { ...type.metaStrong, color: ink.tertiary },
-  safety: { ...type.meta, textAlign: "center", maxWidth: 320 },
 })

@@ -6,7 +6,7 @@ import { pickBanner, type BannerFacts, type BannerState, type Hue, type Tone } f
 import { DEFAULT_PERIOD, periodEnd } from "@/lib/consent"
 import { dayOfWords } from "@/lib/dates"
 import { experience, sharingOff } from "@/lib/experience"
-import { NEXT_REVIEW, addDays, clock, dateOfAt, dayFrom, dayLabel, daysBetween, markersFor, shortDay, thisWeek, weekdayOf, type SavedQuestion } from "@/lib/member"
+import { NEXT_REVIEW, addDays, clock, dateOfAt, dayFrom, dayLabel, daysBetween, shortDay, thisWeek, weekdayOf, type SavedQuestion } from "@/lib/member"
 import type { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { BASELINE } from "@/lib/program"
@@ -26,7 +26,7 @@ import {
   type Notice,
   type Order,
 } from "@/lib/record"
-import { timeOf, trendOf, valueText } from "@/lib/trends"
+import { timeOf, valueText } from "@/lib/trends"
 
 /* Everything open for the patient, worked out in one place so Home, the To
    do tab and the Record tab count the same things the same way (A-48,
@@ -472,7 +472,7 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
       })
       continue
     }
-    const why = copy.why ?? gapWhy(g, s)
+    const why = copy.why ?? gapWhy(g)
     const reminder = g.reminders ? `Reminder ${g.reminders} of 3` : undefined
     if (g.action !== "talk" && g.reminders > 0) {
       needs.push({
@@ -612,11 +612,7 @@ function lastReminder(g: CareGap, now: Date) {
 }
 
 /** Why a care gap is open, in a few words, from the record. */
-function gapWhy(g: CareGap, s: Snapshot): string | undefined {
-  if (g.id === "a1c-trend") {
-    const t = trendOf("a1c", markersFor(s))
-    if (t?.first && t.count > 1) return `Your A1c has risen at each result since ${new Date(t.first.t).getFullYear()}`
-  }
+function gapWhy(g: CareGap): string | undefined {
   return g.why.split(". ")[0].replace(/\.$/, "")
 }
 

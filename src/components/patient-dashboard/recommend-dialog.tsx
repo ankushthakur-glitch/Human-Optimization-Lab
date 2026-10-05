@@ -7,14 +7,28 @@ import { Checkbox } from "@/design-system/ui/checkbox"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/design-system/ui/dialog"
 import { Label } from "@/design-system/ui/label"
 import { Textarea } from "@/design-system/ui/textarea"
+import { Badge, FlagText } from "@/components/dashboard-kit-v2"
 import type { DashboardModel } from "@/components/patient-dashboard/model"
-import { ResultFlag } from "@/components/patient-dashboard/results"
-import { latestOf } from "@/components/patient-dashboard/rules"
+import { isUrgentResult, latestOf, statusOf } from "@/components/patient-dashboard/rules"
+import type { LabResult } from "@/components/patient-dashboard/types"
 
 /* Recommends the optimization program to a free member, with the results
    behind it. Sending keeps the recommendation and says so in the footer;
    nothing else notifies. The caller remounts it (by key) for each opening,
    so it always starts with every reason checked. */
+
+/** The flag beside a value: "↑ High", "↓ Low", a Critical badge, or nothing. */
+function ResultFlag({ lab, className }: { lab: LabResult; className?: string }) {
+  const s = statusOf(lab)
+  if (s === "In range") return null
+  if (s === "Critical")
+    return (
+      <Badge tone="error" className={className}>
+        Critical
+      </Badge>
+    )
+  return <FlagText flag={s} urgent={isUrgentResult(lab)} className={className} />
+}
 
 export function RecommendDialog({
   model,

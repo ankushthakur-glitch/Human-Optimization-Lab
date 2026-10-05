@@ -76,6 +76,8 @@ export interface Intervention {
   outcomeMetric: string
   observed: string
   nextReview: string
+  /** How far along the intervention is toward its target, 0 to 100. */
+  progress?: number
 }
 
 export interface VisitPriority {
@@ -150,6 +152,15 @@ export interface EnergyDay {
   lowConfidence?: boolean
 }
 
+/** One night's wearable sync (Terra, at midnight): the day before. */
+export interface WearableDay {
+  date: string
+  steps: number
+  restingHr: number
+  hrv: number
+  sleepHours: number
+}
+
 /* ------------------------------------------------- HOLv.9 snapshot -- */
 
 export type SnapshotBand = "Out of target" | "On watch" | "Not yet tested" | "In range" | "Optimal"
@@ -160,8 +171,8 @@ export type SnapshotMarker = {
   unit: string
   /** As the sheet prints it: "≤ 20", "75-95", "Clinical". */
   target: string
-  status: "High" | "Low" | "Watch" | "Not yet tested"
-  tier: "Tier 1" | "Tier 2" | "Monitor"
+  status: "High" | "Low" | "Watch" | "Not yet tested" | "Optimal" | "In range"
+  tier: "Tier 1" | "Tier 2" | "Monitor" | "Maintain"
   whatToDo: string
 }
 
@@ -184,6 +195,11 @@ export type SnapshotMedication = {
   name: string
   dose: string
   prescriber: string
+  /** As the chart's Medications tab lists it. */
+  sig?: string
+  quantity?: string
+  recorded?: string
+  rxnorm?: string
   /** None, or another source's dose with who changed it and when. */
   change?: { from: string; to: string; by: string; date: string }
 }
@@ -232,6 +248,8 @@ export type OptimizationData = {
   planDraft?: PlanDraft
   commitment?: Commitment
   energy: EnergyDay[]
+  /** The wearable's nightly syncs, oldest first. */
+  wearable?: { device: string; days: WearableDay[] }
   rmr: number
   categories: CategoryScore[]
   snapshot: Holv9DashboardSnapshot

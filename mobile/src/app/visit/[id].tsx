@@ -9,14 +9,14 @@ import { FlowScreen } from "@/components/flow"
 import { AskButton } from "@/components/hol"
 import { CalendarBlank, Check, Clock, MapPin, Phone, Sparkle } from "@/components/ph"
 import { RecordIcon, type RecordIconName } from "@/components/record-icons"
-import { Block, Card, Group, HUE, KeyValue, NeedsRow, SmallAction, Tag, toast } from "@/components/record-kit"
+import { Block, Card, Group, HUE, KeyValue, NeedsRow, Tag, toast } from "@/components/record-kit"
 import { relativeDay, showDate } from "@/lib/dates"
 import { addToCalendar, call, directions } from "@/lib/links"
 import { clock, dateOfAt, questionsFor, withQuestion } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { APPOINTMENTS, DOCUMENTS, ORDERS, PROCEDURES, PROVENANCE_LABEL, PROVENANCE_OF, REVIEW, VISITS, type Appointment, type Visit } from "@/lib/record"
 import { card, color, font, ink, space, type } from "@/lib/theme"
-import { NEW_IN_RECORD_NOTE, markSeen, removeQuestion, todo, type TodoItem } from "@/lib/todo"
+import { NEW_IN_RECORD_NOTE, markSeen, removeQuestion, todo } from "@/lib/todo"
 
 /* One appointment or one visit (FINAL-SPEC C.11), opened from Coming up,
    New in your record, To do and the Record tab's visits:
@@ -77,10 +77,6 @@ function Fact({ icon, children }: { icon: React.ReactNode; children: string }) {
 /** The same question whatever its case or spacing, as lib/member.ts
     withQuestion compares them before saving. */
 const sameQuestion = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
-
-/** The step a past visit asked for that is a care gap, by its id on To do's
-    list; a test ordered at the visit is found from the record. */
-const NEXT_STEP: Record<string, string> = { urgent: "gap:follow-up" }
 
 /** Tests ordered at a visit: that day, by the clinician seen there (her own
     clinic's doctor, for a visit at her clinic). */
@@ -247,10 +243,7 @@ function RecordReview({ a }: { a: Appointment }) {
 
 function PastVisit({ visit }: { visit: Visit }) {
   const s = useOnboarding()
-  const t = todo(s)
   const ordered = ordersAt(visit)
-  const step = NEXT_STEP[visit.id] ?? (ordered[0] && `order:${ordered[0].id}`)
-  const next = step ? [...t.needs, ...t.coming, ...t.booked, ...t.done].find((i) => i.id === step) : undefined
   const records = recordsFrom(visit)
   const askedFor = visit.askedFor ?? (ordered.length ? ordered.map((o) => `${o.name} by ${dueDay(o.due)}`).join(", ") : undefined)
   const details = [
@@ -305,14 +298,6 @@ function PastVisit({ visit }: { visit: Visit }) {
         )}
       </Block>
 
-      {next && (
-        <Block title="Next step">
-          <Group>
-            <StepRow item={next} />
-          </Group>
-        </Block>
-      )}
-
       {records.length > 0 && (
         <Block title="From this visit">
           <Group>
@@ -329,27 +314,6 @@ function PastVisit({ visit }: { visit: Visit }) {
         </Block>
       )}
     </FlowScreen>
-  )
-}
-
-/** The step a visit asked for, as To do lists it, opening the same page. */
-function StepRow({ item }: { item: TodoItem }) {
-  const act = item.action
-  return (
-    <NeedsRow
-      icon={<RecordIcon name={item.icon} size={16} color={HUE.teal.ink} />}
-      title={item.title}
-      meta={item.meta}
-      tag={item.tag}
-      right={
-        act?.tel ? (
-          <SmallAction onPress={() => call(act.tel!)}>{act.label}</SmallAction>
-        ) : act?.href ? (
-          <SmallAction onPress={() => router.push(act.href as Href)}>{act.label}</SmallAction>
-        ) : undefined
-      }
-      onPress={() => router.push(item.href as Href)}
-    />
   )
 }
 

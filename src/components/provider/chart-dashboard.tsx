@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useSearchParams } from "next/navigation"
 import { DragDropVerticalIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -29,21 +28,14 @@ import { type Patient, usDate } from "@/components/practice/practice-data"
 import type { ChartSection } from "@/components/provider/patient-chart"
 import {
   DashboardToolbar,
-  PatientDashboard,
   useDashboard,
 } from "@/components/patient-dashboard/patient-dashboard"
-import { ChartAISummary } from "@/components/patient-dashboard/ai-summary"
-import { FreeDashboardV2 } from "@/components/patient-dashboard/free-v2/free-dashboard-v2"
 import { useOptimization } from "@/components/patient-dashboard/optimization/model"
+import { FreeWidgetDashboard } from "@/components/patient-dashboard/widgets/free-dashboard"
 import {
-  OptimizationDashboard,
+  MemberWidgetDashboard,
   OptimizationToolbar,
-} from "@/components/patient-dashboard/optimization-v2/optimization-dashboard"
-import { OptimizationDashboardV2 } from "@/components/patient-dashboard/optimization-computed/optimization-dashboard-v2"
-import {
-  DashboardVersionSwitch,
-  dashboardVersion,
-} from "@/components/provider/dashboard-version"
+} from "@/components/patient-dashboard/widgets/member-dashboard"
 import {
   Section,
   SectionBar,
@@ -81,54 +73,27 @@ export function ChartDashboard({
 }) {
   const dash = useDashboard(patient, record)
   const opt = useOptimization(patient.id, dash.model)
-  /* An active optimization member with tracker data gets the optimization
-     view; everyone else the free view. There is no toggle between those
-     two. Each view has two builds the doctor can compare through ?v=. Free:
-     version 1 is patient-dashboard/, version 2 the HOLv.9 dashboard layout
-     in patient-dashboard/free-v2/. Optimization: version 1 is the v5
-     build in patient-dashboard/optimization-v2/, version 2 the earlier
-     computed, category-grouped build in patient-dashboard/optimization-computed/. */
+  /* One dashboard for everyone, widget based: the result summary donut
+     beside the picked band's table, then widgets. An active optimization
+     member with tracker data gets it from the HOLv.9 sheet with their
+     enrolled plans, everyone else from their own record with their active
+     problems in the plans' place (patient-dashboard/widgets/). */
   const optimized =
     patient.membership === "optimization" &&
     (patient.recordState ?? "active") === "active" &&
     Boolean(opt.model)
-  const version = dashboardVersion(useSearchParams())
   return (
     <Section>
       <SectionBar
         title="Dashboard"
-        actions={
-          optimized ? (
-            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
-              <DashboardVersionSwitch />
-              <OptimizationToolbar dash={dash} opt={opt} />
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
-              <DashboardVersionSwitch />
-              <DashboardToolbar dash={dash} />
-            </div>
-          )
-        }
+        actions={optimized ? <OptimizationToolbar dash={dash} opt={opt} /> : <DashboardToolbar dash={dash} />}
       />
       <SectionBody>
-        <div className="flex flex-col gap-5">
-          {dash.ready && <ChartAISummary model={dash.model} />}
-          {optimized && version === "2" ? (
-            <OptimizationDashboardV2 dash={dash} opt={opt} onOpen={onOpen} />
-          ) : optimized ? (
-            <OptimizationDashboard
-              dash={dash}
-              opt={opt}
-              patient={patient}
-              onOpen={onOpen}
-            />
-          ) : version === "2" ? (
-            <FreeDashboardV2 dash={dash} patient={patient} onOpen={onOpen} />
-          ) : (
-            <PatientDashboard dash={dash} patient={patient} onOpen={onOpen} />
-          )}
-        </div>
+        {optimized && opt.model ? (
+          <MemberWidgetDashboard opt={opt} onOpen={onOpen} />
+        ) : (
+          <FreeWidgetDashboard dash={dash} onOpen={onOpen} />
+        )}
       </SectionBody>
     </Section>
   )

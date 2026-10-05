@@ -12,11 +12,8 @@ import { Block, Card, CheckLines, Group, KeyValue, NeedsRow, SeeAllRow, SmallAct
 import { Sheet, SheetText } from "@/components/sheet"
 import { Button } from "@/components/ui"
 import { dayKey, rowDate, showDate } from "@/lib/dates"
-import { useExperience } from "@/lib/experience"
-import { MEMBER } from "@/lib/member"
 import { useOnboarding, type Membership } from "@/lib/onboarding"
-import { TIERS, livePlan, priceLabel } from "@/lib/plans"
-import { SETUP, nextSetup } from "@/lib/program"
+import { TIERS, priceLabel } from "@/lib/plans"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* The member's own membership and billing page (FINAL-SPEC C.17, S-67 to
@@ -168,9 +165,9 @@ export default function MembershipScreen() {
                     Pause membership
                   </Button>
                 )}
-                <TextAction tone="destructive" onPress={() => setSheet("cancel")}>
+                <Button variant="destructive" onPress={() => setSheet("cancel")}>
                   Cancel membership
-                </TextAction>
+                </Button>
               </View>
             )}
           </>
@@ -283,13 +280,11 @@ const STATE_TAG: Record<Billing["state"], { tone: "ok" | "muted"; label: (b: Bil
   ended: { tone: "muted", label: () => "Ended" },
 }
 
-/** What she has: the membership, since when, the next payment (or why
-    there is none), and the card. */
+/** What she has: the membership, the next payment (or why there is
+    none), and the card. */
 function Summary({ bill, card, onCard, onAddCard }: { bill: Billing; card?: string; onCard: () => void; onAddCard: () => void }) {
   const price = TIERS.optimization.price
   const tag = STATE_TAG[bill.state]
-  const since =
-    bill.state === "ended" ? (bill.ends ? `Ended ${rowDate(bill.ends)}` : undefined) : bill.started ? `Started ${rowDate(bill.started)}` : undefined
   const rows: { label: string; value: string }[] =
     bill.state === "active"
       ? [{ label: "Next payment", value: bill.next ? `${price} on ${rowDate(bill.next)}` : "None" }]
@@ -314,7 +309,6 @@ function Summary({ bill, card, onCard, onAddCard }: { bill: Billing; card?: stri
           </Text>
           <Tag tone={tag.tone}>{tag.label(bill)}</Tag>
         </View>
-        {!!since && <Text style={headText.meta}>{since}</Text>}
       </HeadCard>
       <Block title="Billing">
         <Card style={styles.summary}>
@@ -333,28 +327,12 @@ function Summary({ bill, card, onCard, onAddCard }: { bill: Billing; card?: stri
   )
 }
 
-/** Her plan, a tap from her billing: the version she follows and who
-    approved it, or where setup is. Opens the Plan tab. */
+/** Her plan, a tap from her billing. Opens the Plan tab. */
 function YourPlanRow({ ended }: { ended: boolean }) {
-  const onboarding = useOnboarding()
-  const { experience } = useExperience()
-  const live = livePlan(onboarding)
-  const next = nextSetup(onboarding.setupDone ?? [])
-  const step = next ? SETUP.findIndex((s) => s.id === next.id) + 1 : SETUP.length
-  const meta = ended
-    ? "Every version is kept"
-    : experience === "member-setup"
-      ? `Setting up, step ${step} of ${SETUP.length}`
-      : experience === "member-review"
-        ? `Version ${onboarding.plan?.version ?? 1} is with ${MEMBER.doctorShort}`
-        : live
-          ? `Version ${live.version}, ${experience === "paused" ? "paused" : `approved ${live.on}`}`
-          : undefined
   return (
     <NeedsRow
       icon={<ClipboardText size={16} color={color.primary} />}
       title={ended ? "Your past plans" : "Your plan"}
-      meta={meta}
       onPress={() => {
         // The Plan tab, as the tab bar opens it: over Home, so its swipe
         // back returns Home.
@@ -392,9 +370,9 @@ function YearCard({ renews, now, onCancel }: { renews: Date; now: Date; onCancel
       <Text style={styles.body}>{YEAR_WORDS}</Text>
       <Text style={styles.label}>{`Renews ${rowDate(renews)} for ${priceLabel()}`}</Text>
       <View style={styles.yearAction}>
-        <TextAction tone="muted" onPress={onCancel}>
+        <Button variant="destructive" onPress={onCancel}>
           Cancel membership
-        </TextAction>
+        </Button>
       </View>
     </Card>
   )
@@ -472,5 +450,5 @@ const styles = StyleSheet.create({
   cardLink: { borderTopWidth: 1, borderTopColor: hairline.rule },
 
   year: { gap: space.stack },
-  yearAction: { alignItems: "flex-start" },
+  yearAction: { alignSelf: "stretch" },
 })

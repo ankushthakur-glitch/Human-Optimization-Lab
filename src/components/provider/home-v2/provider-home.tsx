@@ -308,7 +308,6 @@ export function ProviderHomeV2() {
               </>
             )}
           </div>
-
         </div>
       </div>
 

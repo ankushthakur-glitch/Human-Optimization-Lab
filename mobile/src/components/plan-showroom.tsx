@@ -2,7 +2,8 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { Barbell, Bone, BowlFood, Camera, Check, Flask, Heartbeat } from "@/components/ph"
-import { Block, Card, Tag, TextAction } from "@/components/record-kit"
+import { AskButton } from "@/components/hol"
+import { Block, Card, Tag } from "@/components/record-kit"
 import { Button } from "@/components/ui"
 import { useMarkers } from "@/lib/experience"
 import { FOCUS_NAME, logEvent, planFocus, useOffer, useShown } from "@/lib/offers"
@@ -246,12 +247,10 @@ export function PlanShowroom(props: ShowroomProps) {
   )
 }
 
-/** The showroom's actions (C.14.3 h): "Start my plan" with a quiet "Not for
-    me" under it. They close the showroom on the tab; on /plans they are the
-    pinned footer, so the no is in reach whenever the yes is (D.1.5). "Not
-    for me" is a real answer: offers stop for 90 days and the actions say
-    so, with a way back. Once said, the button alone stays (a place she
-    opens herself is never closed to her). Logged on the same offer as the
+/** The showroom's actions (C.14.3 h): "Start my plan" as the primary
+    button and under it the "Ask to Health Agent" button as the
+    secondary one, with its orb and sparkle (user, 5 Oct 2026: no "Not for me"). On the tab they close the showroom; on
+    /plans they are the pinned footer. Logged on the same offer as the
     showroom's view, keyed by where she came from. */
 export function ShowroomActions({
   mode,
@@ -265,24 +264,6 @@ export function ShowroomActions({
 }) {
   const onboarding = useOnboarding()
   const offer = useOffer("plan-tab", { key: from ?? mode })
-  const [declined, setDeclined] = React.useState(false)
-  const saidNo = Boolean(onboarding.offers?.notForMe)
-
-  if (declined)
-    return (
-      <View style={styles.declined} accessibilityLiveRegion="polite">
-        <Text style={styles.declinedText}>Got it. The plan is always here when you want it.</Text>
-        <TextAction
-          onPress={() => {
-            offer.undoNotForMe()
-            setDeclined(false)
-          }}
-        >
-          Undo
-        </TextAction>
-      </View>
-    )
-
   return (
     <View style={styles.actions}>
       <Button
@@ -294,19 +275,7 @@ export function ShowroomActions({
       >
         {startLabelOf(onboarding)}
       </Button>
-      {!saidNo && (
-        <View style={styles.quiet}>
-          <TextAction
-            tone="muted"
-            onPress={() => {
-              offer.notForMe()
-              setDeclined(true)
-            }}
-          >
-            Not for me
-          </TextAction>
-        </View>
-      )}
+      <AskButton params={{ topic: "plan" }} secondary />
     </View>
   )
 }
@@ -387,8 +356,5 @@ const styles = StyleSheet.create({
   freeLine: { ...type.label },
 
   // The quiet answer sits right under the button; its own height spaces it.
-  actions: { gap: space.stack },
-  quiet: { alignItems: "center" },
-  declined: { alignItems: "center", gap: space.line },
-  declinedText: { ...type.body, textAlign: "center", color: ink.detail },
+  actions: { gap: space.inline },
 })

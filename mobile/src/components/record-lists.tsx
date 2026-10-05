@@ -4,13 +4,13 @@ import { StyleSheet, Text, View } from "react-native"
 
 import { keepTogether } from "@/components/care-gap"
 import { FlowScreen } from "@/components/flow"
-import { Check, Eye, UploadSimple } from "@/components/ph"
-import { Block, Card, ChipRow, EmptyState, Group, Nudge, ResultRow, Status, TextAction, Tile, toast } from "@/components/record-kit"
-import { AddToRecordSheet, FilterChips, ItemRow, ItemSheet, RangeSummary, SearchField, type ItemDetail, type RowStatus } from "@/components/record-rows"
+import { Eye, Plus, UploadSimple } from "@/components/ph"
+import { Block, Card, EmptyState, Group, Nudge, ResultRow, TextAction, Tile } from "@/components/record-kit"
+import { AddToRecordSheet, AddedOfKind, FilterChips, ItemRow, addedDetail, openItem, RangeSummary, SearchField, type ItemDetail, type RowStatus } from "@/components/record-rows"
 import { Button } from "@/components/ui"
-import { showDate } from "@/lib/dates"
+import { addKindOf } from "@/lib/add-record"
 import { useExperience, useMarkers } from "@/lib/experience"
-import { dateOfAt, shortDay, sinceStart } from "@/lib/member"
+import { clockOf, dateOfAt, dayLabel, shortDay, sinceStart } from "@/lib/member"
 import { useShown, useOffer } from "@/lib/offers"
 import { useOnboarding, type Batch } from "@/lib/onboarding"
 import {
@@ -163,29 +163,29 @@ function procedureDetail(p: (typeof PROCEDURES)[number], provenance: ProvenanceO
 
 /* ------------------------------------------------------- allergies -- */
 
-const ALLERGY_ANSWERS = ["Yes, I'm allergic", "No", "Not sure"] as const
-type AllergyAnswer = (typeof ALLERGY_ANSWERS)[number]
-
-/** Her answer about an allergy the lists differ on, kept in the record as
-    something she told us ("Added by you"). */
-const answerKey = (id: string) => `told-allergy-${id}`
-
 /** Allergies the lists differ on: the Record tab's "Records differ on 1". */
 export const allergiesToCheck = () => ALLERGIES.filter((a) => a.difference).length
 
 /* ---------------------------------------------------------- screens -- */
 
-/** One of the record's lists on its own page, with its item sheet. */
+/** One of the record's lists on its own page: rows only, each opening its
+    details page. */
 export function RecordListScreen({ kind }: { kind: Exclude<RecordKind, "results"> }) {
-  const [item, setItem] = React.useState<ItemDetail>()
   const [adding, setAdding] = React.useState(false)
+  // A list she can add to has its own "Add ..." in the header, which opens
+  // the add sheet on its kind (user, 5 Oct 2026).
+  const addable = addKindOf(kind)
   return (
     <View style={styles.fill}>
-      <FlowScreen page title={RECORD_TITLES[kind]}>
-        <KindList kind={kind} onOpen={setItem} onAdd={() => setAdding(true)} />
+      <FlowScreen
+        page
+        title={RECORD_TITLES[kind]}
+        action={addable ? { label: addable.action, icon: <Plus size={16} color={color.primary} />, onPress: () => setAdding(true) } : undefined}
+      >
+        {addable && <AddedOfKind kind={addable.kind} />}
+        <KindList kind={kind} onOpen={openItem} onAdd={() => setAdding(true)} />
       </FlowScreen>
-      {item && <ItemSheet item={item} onClose={() => setItem(undefined)} />}
-      {adding && <AddToRecordSheet onClose={() => setAdding(false)} />}
+      {adding && <AddToRecordSheet kind={addable?.kind} onClose={() => setAdding(false)} />}
     </View>
   )
 }
@@ -197,9 +197,9 @@ function KindList({ kind, onOpen, onAdd }: { kind: Exclude<RecordKind, "results"
     case "conditions":
       return <Conditions onOpen={onOpen} />
     case "visits":
-      return <Visits />
+      return <Visits onOpen={onOpen} />
     case "tests":
-      return <Tests />
+      return <Tests onOpen={onOpen} />
     case "documents":
       return <Documents onOpen={onOpen} />
     case "immunizations":
@@ -224,85 +224,34 @@ const Glyph = ({ Icon }: { Icon: typeof Eye }) => (
 )
 
 function Allergies({ onOpen }: Opens) {
-  const onboarding = useOnboarding()
   const provenance = useProvenance()
-  const differ = ALLERGIES.filter((a) => a.difference)
-  const answer = (id: string) => onboarding.added?.find((a) => a.id === answerKey(id))?.detail as AllergyAnswer | undefined
-
-  const choose = (a: (typeof ALLERGIES)[number], value: AllergyAnswer) => {
-    const key = answerKey(a.id)
-    const others = (onboarding.added ?? []).filter((x) => x.id !== key)
-    onboarding.save({ added: [...others, { id: key, title: `${a.name} allergy`, detail: value, at: showDate() }] }).catch(() => {})
-    toast("Saved")
-  }
-
   return (
-    <>
-      {differ.map((a) => {
-        const said = answer(a.id)
+    <Group>
+      {ALLERGIES.map((a) => {
+        const both = a.lists.length > 1
         return (
-          <Block key={a.id} title="To check">
-            <Card style={styles.check}>
-              <View style={styles.checkHead}>
-                <Text style={[type.section, styles.flex]}>{a.name}</Text>
-                <Status level="borderline" bare>
-                  Records differ
-                </Status>
-              </View>
-              {/* The short second sentence held whole, so it starts its own
-                  line rather than splitting "Dr. Patel's / list". */}
-              <Text style={type.body}>
-                {keepTogether(`${PLACE[a.lists[0]].name.replace(/ Hospital$/, "")} lists a ${a.name.split(" ")[0].toLowerCase()} allergy.`)}{" "}
-                {"Dr. Patel's list doesn't.".replace(/ /g, " ")}
-              </Text>
-              {/* Inside the card the answers wrap rather than run past its
-                  edge on a narrow phone. */}
-              <ChipRow
-                wrap
-                label={`Are you allergic to ${a.name.toLowerCase()}?`}
-                options={ALLERGY_ANSWERS.map((v) => ({ value: v, label: v }))}
-                value={said ?? ("" as AllergyAnswer)}
-                onChange={(v) => choose(a, v)}
-              />
-              {said && (
-                <View style={styles.review}>
-                  <Check size={14} color={color.primary} weight="bold" />
-                  <Text style={type.label}>Dr. Patel will review.</Text>
-                </View>
-              )}
-            </Card>
-          </Block>
+          <ItemRow
+            key={a.id}
+            icon="allergies"
+            title={a.name}
+            meta={both ? `${a.reaction}, on both lists` : `${a.reaction}, ${PLACE[a.lists[0]].name.replace(/ Hospital$/, "")} only`}
+            status={a.difference ? { level: "borderline", word: "Records differ" } : undefined}
+            onPress={() =>
+              onOpen({
+                title: a.name,
+                provenance: provenance(a.lists[0]),
+                details: [
+                  ["Reaction", a.reaction],
+                  ["Type", "Drug allergy"],
+                  ["On Dr. Patel's list", a.lists.includes("doctor") ? "Yes" : "No"],
+                ],
+                source: sourceRows(a.lists),
+              })
+            }
+          />
         )
       })}
-      <Block title="Your allergies" meta={String(ALLERGIES.length)}>
-        <Group>
-          {ALLERGIES.map((a) => {
-            const both = a.lists.length > 1
-            return (
-              <ItemRow
-                key={a.id}
-                icon="allergies"
-                title={a.name}
-                meta={both ? `${a.reaction}, on both lists` : `${a.reaction}, ${PLACE[a.lists[0]].name.replace(/ Hospital$/, "")} only`}
-                status={a.difference ? { level: "borderline", word: "Records differ" } : undefined}
-                onPress={() =>
-                  onOpen({
-                    title: a.name,
-                    provenance: provenance(a.lists[0]),
-                    details: [
-                      ["Reaction", a.reaction],
-                      ["Type", "Drug allergy"],
-                      ["On Dr. Patel's list", a.lists.includes("doctor") ? "Yes" : "No"],
-                    ],
-                    source: sourceRows(a.lists),
-                  })
-                }
-              />
-            )
-          })}
-        </Group>
-      </Block>
-    </>
+    </Group>
   )
 }
 
@@ -317,7 +266,6 @@ function Conditions({ onOpen }: Opens) {
           title={p.name}
           meta={`Since ${p.since}`}
           status={p.difference ? { level: "borderline", word: "Records differ" } : undefined}
-          note={p.difference ? keepTogether(`${p.difference}. Dr. Patel will review.`) : undefined}
           onPress={() =>
             onOpen({
               title: p.name,
@@ -338,8 +286,45 @@ function Conditions({ onOpen }: Opens) {
 
 type When = "coming" | "past"
 
-function Visits() {
+/** A past visit's details: when, where, and what it was for. */
+function visitDetail(v: (typeof VISITS)[number], provenance: ProvenanceOf): ItemDetail {
+  return {
+    title: v.name,
+    provenance: provenance(v.origin),
+    details: [
+      ["Date", v.date],
+      ["Where", v.where],
+      ...(v.reason ? [["Reason", v.reason] as [string, string]] : []),
+      ...(v.seenBy ? [["Seen by", v.seenBy] as [string, string]] : []),
+      ...(v.askedFor ? [["Asked for", v.askedFor] as [string, string]] : []),
+    ],
+    source: sourceRows([v.origin], v.date),
+  }
+}
+
+/** A coming visit's details, from its appointment when the record has one. */
+function comingDetail(item: TodoItem, provenance: ProvenanceOf): ItemDetail {
+  const a = APPOINTMENTS.find((x) => `appointment:${x.id}` === item.id)
+  if (!a) return { title: item.title, details: [["When", item.meta]] }
+  const at = dateOfAt(a.at)
+  return {
+    title: a.name,
+    provenance: provenance(a.origin),
+    details: [
+      ["Date", dayLabel(at)],
+      ["Time", clockOf(at)],
+      ["With", a.with],
+      ["Place", a.place],
+      ...(a.address ? [["Address", a.address] as [string, string]] : []),
+      ...(a.phone ? [["Phone", a.phone] as [string, string]] : []),
+    ],
+    source: sourceRows([a.origin]),
+  }
+}
+
+function Visits({ onOpen }: Opens) {
   const onboarding = useOnboarding()
+  const provenance = useProvenance()
   const t = todo(onboarding)
   const coming = t.coming.filter((i) => i.kind === "appointment" || i.kind === "review")
   const past = [...VISITS].sort((a, b) => timeOf(b.date) - timeOf(a.date))
@@ -371,7 +356,7 @@ function Visits() {
                 tag={outside(v.id) ? tag : undefined}
                 meta={v.meta}
                 note={v.note}
-                onPress={() => router.push(v.href)}
+                onPress={() => onOpen(comingDetail(v, provenance))}
               />
             ))}
           </Group>
@@ -388,7 +373,7 @@ function Visits() {
               tag={v.outside ? tag : undefined}
               meta={v.where}
               when={shortDate(v.date)}
-              onPress={() => router.push({ pathname: "/visit/[id]", params: { id: v.id } })}
+              onPress={() => onOpen(visitDetail(v, provenance))}
             />
           ))}
         </Group>
@@ -410,7 +395,7 @@ function orderMark(s: ReturnType<typeof orderStatus>): RowStatus {
 
 type Open = "open" | "done"
 
-function Tests() {
+function Tests({ onOpen }: Opens) {
   const onboarding = useOnboarding()
   const t = todo(onboarding)
   // Every order the record holds; the to do lists say which are booked
@@ -435,7 +420,7 @@ function Tests() {
       {shown.length ? (
         <Group>
           {shown.map((o) => (
-            <OrderRow key={o.id} order={o} item={itemOf(o)} />
+            <OrderRow key={o.id} order={o} item={itemOf(o)} onOpen={onOpen} />
           ))}
         </Group>
       ) : (
@@ -445,9 +430,9 @@ function Tests() {
   )
 }
 
-/** One order: its name, where it stands, when it is due or where it was
-    done, and its three dates (F-40). */
-function OrderRow({ order: o, item }: { order: Order; item?: TodoItem }) {
+/** One order: its name, where it stands, and when it is due or where it
+    was done. Its dates are on its details page. */
+function OrderRow({ order: o, item, onOpen }: { order: Order; item?: TodoItem } & Opens) {
   const onboarding = useOnboarding()
   const status = orderStatus(o, onboarding)
   const booked = item?.group === "booked"
@@ -464,15 +449,25 @@ function OrderRow({ order: o, item }: { order: Order; item?: TodoItem }) {
       title={o.name}
       status={orderMark(status)}
       meta={meta}
-      track={{
-        dates: [
-          { label: "Ordered", date: shortDate(o.ordered) },
-          { label: "Scheduled", date: scheduled },
-          { label: "Done", date: o.completed ? shortDate(o.completed) : undefined },
-        ],
-        late: status.tone === "attention",
-      }}
-      onPress={() => router.push(item?.href ?? orderHref(o.id))}
+      onPress={() =>
+        onOpen({
+          title: o.name,
+          details: [
+            // Booked: the word alone, its day and time under Scheduled.
+            ["Status", status.tone === "booked" ? "Booked" : status.word],
+            ["Ordered by", o.by],
+            ["Ordered", o.ordered],
+            ["Due", o.due.replace(/^By /, "")],
+            ...(status.tone === "booked" && /^Booked for /.test(status.word)
+              ? [["Scheduled", status.word.replace(/^Booked for /, "")] as [string, string]]
+              : scheduled
+                ? [["Scheduled", scheduled] as [string, string]]
+                : []),
+            ...(o.completed ? [["Done", o.completed] as [string, string]] : []),
+            ...(o.at ? [["Where", o.at] as [string, string]] : []),
+          ],
+        })
+      }
     />
   )
 }
@@ -538,22 +533,7 @@ function Added({ onOpen, onAdd }: Opens & { onAdd: () => void }) {
           title={a.title}
           tag={{ tone: "muted", label: "Being checked" }}
           meta={`Added by you, ${shortDate(a.at)}`}
-          onPress={() =>
-            onOpen({
-              title: a.title,
-              provenance: "patient",
-              details: [
-                [a.id.startsWith("told-allergy-") ? "Your answer" : "What it holds", a.detail],
-                ["Added", a.at],
-                ["Status", "Being checked"],
-              ],
-              source: [
-                ["Source", "Added by you"],
-                ["System", "Inlay app"],
-                ["Last updated", a.at],
-              ],
-            })
-          }
+          onPress={() => onOpen(addedDetail(a))}
         />
       ))}
     </Group>
@@ -810,9 +790,6 @@ const styles = StyleSheet.create({
 
   summary: { gap: space.item },
 
-  check: { padding: space.card, gap: space.item },
-  checkHead: { flexDirection: "row", alignItems: "center", gap: space.item },
-  review: { flexDirection: "row", alignItems: "center", gap: space.mark },
 
   // The batch's title on its card: the card's 16 above, a row's 12 to the
   // rule under it.

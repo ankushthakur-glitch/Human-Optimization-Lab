@@ -95,6 +95,7 @@ export function HeroRow({
   title,
   line,
   onPress,
+  muted,
 }: {
   icon: React.ReactNode
   /** The tile's fill: Primary/01, or the Ask banner's grey teal. */
@@ -102,9 +103,11 @@ export function HeroRow({
   title: string
   line?: string
   onPress: () => void
+  /** The Hero's softer grey teal, for the Ask banner. */
+  muted?: boolean
 }) {
   return (
-    <Hero onPress={onPress}>
+    <Hero onPress={onPress} muted={muted}>
       <View style={styles.row}>
         <View style={[styles.tile, { backgroundColor: tile }]}>{icon}</View>
         <View style={styles.words}>

@@ -3,32 +3,39 @@ import { Animated, Easing, PanResponder, Platform, Pressable, ScrollView, StyleS
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { PrimaryButton } from "@/components/hol"
-import { CalendarBlank, CaretLeft, CaretRight, ChatText, ClipboardText, Flask, Pill } from "@/components/ph"
+import { CalendarBlank, CaretLeft, CaretRight, ChatText, ClipboardText, Flask, Heartbeat, Pill } from "@/components/ph"
 import { relativeDay, rowDate } from "@/lib/dates"
-import type { ChatTopic, PastChat } from "@/lib/onboarding"
+import type { ChatCategory, ChatTopic, PastChat } from "@/lib/onboarding"
 import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* The assistant's chat history, as a drawer from the left (the ChatGPT
    app's pattern, in the Hol language): white, 82% of the screen over a
-   30% black scrim. Recent: the three newest conversations. Topics: every
-   conversation grouped by what it was about; a group opens its chats in
-   place, with a back caret to the topics. "New chat" at the foot starts a
-   fresh conversation. */
+   30% black scrim. Recent: the three newest conversations. Categories:
+   every conversation grouped by the category chosen before it started; a
+   group opens its chats in place, with a back caret to the categories.
+   "New chat" at the foot goes back to choosing a category. */
 
-/** The groups, in order, with their names and icons. */
-export const CHAT_GROUPS: { topic: ChatTopic; name: string; Icon: typeof Pill }[] = [
-  { topic: "medicine", name: "Medicines", Icon: Pill },
+export type ChatGroup = { topic: ChatTopic; name: string; Icon: typeof Pill }
+
+/** The built in categories, in order, with their names and icons. General
+    health questions take anything ad hoc ("Which hospital is best for
+    thyroid cancer?"). */
+export const CHAT_GROUPS: ChatGroup[] = [
+  { topic: "other", name: "General health questions", Icon: Heartbeat },
   { topic: "result", name: "Lab results", Icon: Flask },
+  { topic: "medicine", name: "Medicines", Icon: Pill },
   { topic: "visit", name: "Visits", Icon: CalendarBlank },
   { topic: "plan", name: "Your plan", Icon: ClipboardText },
-  { topic: "other", name: "Something else", Icon: ChatText },
 ]
+
+/** Every category: the built in ones, then the ones she made. */
+export const chatGroups = (custom: ChatCategory[] = []): ChatGroup[] => [...CHAT_GROUPS, ...custom.map((c) => ({ topic: c.id, name: c.name, Icon: ChatText }))]
 
 const SLIDE_MS = 260
 const native = Platform.OS !== "web"
 
 /** The day a chat was last used: "Today", "Yesterday", or "Sep 18". */
-function dayOf(c: PastChat) {
+export function dayOf(c: PastChat) {
   const d = new Date(c.lastAt ?? c.startedAt)
   const rel = relativeDay(d)
   return rel === "Today" || rel === "Yesterday" ? rel : rowDate(d)
@@ -37,6 +44,7 @@ function dayOf(c: PastChat) {
 export function ChatHistory({
   open,
   chats,
+  categories,
   currentId,
   onClose,
   onOpen,
@@ -45,6 +53,8 @@ export function ChatHistory({
   open: boolean
   /** Every conversation, the current one too; sorted here, newest first. */
   chats: PastChat[]
+  /** The categories she made. */
+  categories?: ChatCategory[]
   /** The conversation on screen: tapping it just closes the drawer. */
   currentId?: string
   onClose: () => void
@@ -88,7 +98,9 @@ export function ChatHistory({
     () => [...chats].sort((a, b) => Date.parse(b.lastAt ?? b.startedAt) - Date.parse(a.lastAt ?? a.startedAt)),
     [chats]
   )
-  const groups = CHAT_GROUPS.map((g) => ({ ...g, chats: sorted.filter((c) => c.topic === g.topic) })).filter((g) => g.chats.length)
+  const groups = chatGroups(categories)
+    .map((g) => ({ ...g, chats: sorted.filter((c) => c.topic === g.topic) }))
+    .filter((g) => g.chats.length)
   const opened = group ? groups.find((g) => g.topic === group) : undefined
 
   if (!shown) return null
@@ -108,7 +120,7 @@ export function ChatHistory({
       >
         <View style={styles.head}>
           {opened && (
-            <Pressable onPress={() => setGroup(undefined)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back to topics" style={({ pressed }) => pressed && styles.pressed}>
+            <Pressable onPress={() => setGroup(undefined)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back to categories" style={({ pressed }) => pressed && styles.pressed}>
               <CaretLeft size={24} color={ink.detail} />
             </Pressable>
           )}
@@ -127,7 +139,7 @@ export function ChatHistory({
                 <ChatList chats={sorted.slice(0, 3)} currentId={currentId} onPick={pick} />
               </View>
               <View style={styles.section}>
-                <Text style={styles.label}>Topics</Text>
+                <Text style={styles.label}>Categories</Text>
                 <View>
                   {groups.map((g, i) => (
                     <Pressable
@@ -201,15 +213,18 @@ const styles = StyleSheet.create({
     borderRightColor: hairline.edge,
   },
   head: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingHorizontal: space.gutter, paddingBottom: 16 },
-  title: { fontFamily: font.medium, fontSize: 18, lineHeight: 26, color: ink.content, flex: 1 },
-  body: { paddingHorizontal: space.gutter, paddingBottom: space.section, gap: space.section },
-  section: { gap: space.stack },
-  label: { ...type.sectionLabel },
+  // Four levels (text hierarchy): the drawer's title 20 semibold, a
+  // section label 12 medium grey, a chat's title 14 medium dark, its day
+  // 12 regular quiet.
+  title: { ...type.hero, flex: 1 },
+  body: { paddingHorizontal: space.gutter, paddingBottom: space.section, gap: space.section + 4 },
+  section: { gap: space.mark },
+  label: { ...type.label, fontFamily: font.medium },
   chat: { paddingVertical: space.rowY, gap: space.line },
   row: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
   rule: { borderTopWidth: 1, borderTopColor: hairline.rule },
-  rowTitle: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: ink.content },
-  date: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: ink.secondary },
+  rowTitle: { ...type.title, color: ink.strong },
+  date: { ...type.meta },
   tile: { width: 28, height: 28, borderRadius: 14, backgroundColor: color.primaryTint, alignItems: "center", justifyContent: "center" },
   count: { minWidth: 20, height: 20, paddingHorizontal: 6, borderRadius: 10, backgroundColor: hairline.rule, alignItems: "center", justifyContent: "center" },
   countText: { ...type.captionStrong, color: ink.secondary },

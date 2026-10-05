@@ -4,9 +4,12 @@ import { StyleSheet, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
 import { MedicineConfirm, MedicineSheet, type MedicineView } from "@/components/medicines"
+import { Plus } from "@/components/ph"
 import { EmptyState } from "@/components/record-kit"
+import { AddToRecordSheet, AddedOfKind } from "@/components/record-rows"
 import { useExperience } from "@/lib/experience"
 import type { Medication } from "@/lib/record"
+import { color } from "@/lib/theme"
 
 /** Your medicines (FINAL-SPEC C.10): every list in one place, the ones that
     differ with a question each, answered in place and saved at once. Once
@@ -22,10 +25,12 @@ export default function MedicationsScreen() {
   const { experience } = useExperience()
   const [view, setView] = React.useState<MedicineView>()
   const [open, setOpen] = React.useState<Medication | null>(null)
+  const [adding, setAdding] = React.useState(false)
   const onOpen = React.useCallback((m: Medication) => setOpen(m), [])
   return (
     <View style={styles.fill}>
-      <FlowScreen page title="Your medicines">
+      <FlowScreen page title="Your medicines" action={{ label: "Add medicine", icon: <Plus size={16} color={color.primary} />, onPress: () => setAdding(true) }}>
+        <AddedOfKind kind="medicines" />
         {experience === "declined" ? (
           <EmptyState title="Your medicines appear once your records are connected." action="Connect my records" onAction={() => router.push("/connect")} />
         ) : experience === "building" ? (
@@ -44,6 +49,7 @@ export default function MedicationsScreen() {
           }}
         />
       )}
+      {adding && <AddToRecordSheet kind="medicines" onClose={() => setAdding(false)} />}
     </View>
   )
 }

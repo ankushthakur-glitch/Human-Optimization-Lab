@@ -117,59 +117,39 @@ export function PageFooter({ children, style }: { children: React.ReactNode; sty
 }
 
 /** The page's assistant button, the one way to the health agent on a
-    page. Made to stand out (user, 5 Oct 2026): the home banners' teal
-    gradient with their soft circles, the orb in a glowing ring, the words
-    in white and a sparkle at the end. Opens the assistant, with `params`
-    when given. */
+    page: flat brand teal, the orb, the words in white and a sparkle at the
+    end. Opens the assistant, with `params` when given. `secondary` draws
+    it as the secondary button (teal tint, teal words) under a page's
+    primary one, the orb and sparkle kept. */
 export function AskButton({
   label = "Ask to Health Agent",
   onPress,
   params,
+  secondary,
 }: {
   label?: string
+  secondary?: boolean
   onPress?: () => void
   /** What to open the assistant about: a marker, a topic, or a question. */
   params?: { marker?: string; topic?: string; ask?: string }
 }) {
   const open = onPress ?? (() => router.push(params ? { pathname: "/assistant", params } : "/assistant"))
-  const [w, setW] = React.useState(0)
-  const id = `ask${React.useId().replace(/[^a-zA-Z0-9]/g, "")}`
   return (
     <Pressable
       onPress={open}
-      onLayout={(e) => {
-        const width = Math.round(e.nativeEvent.layout.width)
-        setW((old) => (old === width ? old : width))
-      }}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.ask, pressed && styles.askPressed]}
+      style={({ pressed }) => [styles.ask, secondary && styles.askSecondary, pressed && (secondary ? styles.askSecondaryPressed : styles.askPressed)]}
     >
-      {w > 0 && (
-        <Svg style={StyleSheet.absoluteFill} width={w} height={ASK_H}>
-          <Defs>
-            <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor="#2D6F7B" />
-              <Stop offset="1" stopColor="#4FA3A5" />
-            </LinearGradient>
-          </Defs>
-          <Rect width={w} height={ASK_H} fill={`url(#${id})`} />
-          <Circle cx={w * 0.18} cy={ASK_H * 1.1} r={34} fill="#000" fillOpacity={0.08} />
-          <Circle cx={w * 0.78} cy={-6} r={40} fill="#FFF" fillOpacity={0.1} />
-          <Circle cx={w * 0.95} cy={ASK_H} r={26} fill="#000" fillOpacity={0.08} />
-        </Svg>
-      )}
-      <View style={styles.askGlow}>
-        <Image source={ORB} style={styles.askOrb} accessibilityIgnoresInvertColors />
-      </View>
-      <Text style={styles.askText}>{label}</Text>
-      <Sparkle size={16} color="#FFFFFF" weight="fill" />
+      <Image source={ORB} style={styles.askOrb} accessibilityIgnoresInvertColors />
+      <Text style={[styles.askText, secondary && styles.askTextSecondary]}>{label}</Text>
+      <Sparkle size={14} color={secondary ? ASK_SECONDARY_INK : "#FFFFFF"} weight="fill" />
     </Pressable>
   )
 }
 
-/** The ask button's height. */
-const ASK_H = 48
+/** The secondary ask button's words and sparkle. */
+const ASK_SECONDARY_INK = "#015D59"
 
 /** The page's one primary button, Figma's 16 medium on the brand teal at
     radius 8. */
@@ -182,7 +162,7 @@ export function PrimaryButton({ children, onPress, disabled, tone = "primary" }:
       accessibilityState={{ disabled }}
       style={({ pressed }) => [styles.primary, tone === "danger" && styles.danger, pressed && styles.primaryPressed, disabled && styles.disabled]}
     >
-      <Text style={styles.primaryText}>{children}</Text>
+      <Text style={[styles.primaryText, tone === "danger" && { color: color.error }]}>{children}</Text>
     </Pressable>
   )
 }
@@ -192,7 +172,10 @@ export function PrimaryButton({ children, onPress, disabled, tone = "primary" }:
     used (Figma's four variants): green up to 60%, orange above 60%, red
     above 90%. A member has no count, so no arc. */
 export function OrbButton({ used = 0, onPress }: { used?: number; onPress: () => void }) {
-  const r = 24.7
+  // Thicker than the ring's edge so the usage reads at a glance, on a
+  // faint track of its own colour for the part still left (user, 5 Oct).
+  const sw = 3.5
+  const r = 26 - sw / 2
   const c = 2 * Math.PI * r
   const s = Math.min(Math.max(used, 0), 1)
   const arc = s > 0.9 ? ORB_ARC.high : s > 0.6 ? ORB_ARC.mid : ORB_ARC.low
@@ -203,24 +186,27 @@ export function OrbButton({ used = 0, onPress }: { used?: number; onPress: () =>
       accessibilityLabel={s > 0 ? `Ask the assistant, ${Math.round(s * 100)}% of this month's questions used` : "Ask the assistant"}
       style={({ pressed }) => [styles.orb, pressed && styles.pressed]}
     >
-      <Svg width={52} height={52} style={StyleSheet.absoluteFill}>
-        {s > 0 && (
+      <View style={styles.orbInner}>
+        <SiriSheet size={44} background={ORB_GROUND} />
+      </View>
+      {/* Drawn last, on the ring's outer edge: the arc and the circle share
+          one centre (26, 26). */}
+      {s > 0 && (
+        <Svg width={52} height={52} style={styles.orbArc} pointerEvents="none">
+          <Circle cx={26} cy={26} r={r} stroke={arc} strokeOpacity={0.2} strokeWidth={sw} fill="none" />
           <Circle
             cx={26}
             cy={26}
             r={r}
             stroke={arc}
-            strokeWidth={2.6}
+            strokeWidth={sw}
             strokeLinecap="round"
             fill="none"
             strokeDasharray={`${c * s} ${c}`}
             transform="rotate(-90 26 26)"
           />
-        )}
-      </Svg>
-      <View style={styles.orbInner}>
-        <SiriSheet size={44} background={ORB_GROUND} />
-      </View>
+        </Svg>
+      )}
     </Pressable>
   )
 }
@@ -257,22 +243,22 @@ const styles = StyleSheet.create({
   footerInner: { gap: space.inline, width: "100%", maxWidth: 420, alignSelf: "center" },
 
   ask: {
-    height: ASK_H,
+    height: 48,
     borderRadius: 12,
-    overflow: "hidden",
-    backgroundColor: "#3B8790",
+    backgroundColor: color.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
+    gap: 8,
     paddingHorizontal: 14,
-    boxShadow: "0 6px 16px rgba(45, 111, 123, 0.28)",
   },
-  askPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
-  // The orb in a soft white ring, as if lit.
-  askGlow: { width: 32, height: 32, borderRadius: 16, padding: 2, backgroundColor: "rgba(255, 255, 255, 0.28)", boxShadow: "0 0 10px rgba(194, 255, 240, 0.55)" },
-  askOrb: { width: 28, height: 28, borderRadius: 14 },
-  askText: { fontFamily: font.semibold, fontSize: 15, lineHeight: 20, color: "#FFFFFF" },
+  askPressed: { opacity: 0.85 },
+  // The kit's secondary button colours (ui Button "outline").
+  askSecondary: { borderWidth: 1, borderColor: "#C2E1E0", backgroundColor: "#F2F7F7" },
+  askSecondaryPressed: { backgroundColor: "#E6F3F2" },
+  askTextSecondary: { color: ASK_SECONDARY_INK },
+  askOrb: { width: 24, height: 24, borderRadius: 12 },
+  askText: { fontFamily: font.semibold, fontSize: 15, lineHeight: 20, color: color.onPrimary },
 
   primary: {
     minHeight: 42,
@@ -286,11 +272,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     boxShadow: card.shadowXs,
   },
-  danger: { backgroundColor: "#C72B32", borderColor: "#C72B32" },
+  danger: { backgroundColor: color.errorTint, borderColor: color.errorTint },
   primaryPressed: { opacity: 0.85 },
   disabled: { opacity: 0.4 },
   primaryText: { fontFamily: font.medium, fontSize: 16, lineHeight: 20, color: color.onPrimary },
 
+  // The ring's 1 pt edge is drawn by the button itself; the orb and the
+  // arc are placed against its outer box so all three share a centre.
   orb: {
     width: 52,
     height: 52,
@@ -299,13 +287,13 @@ const styles = StyleSheet.create({
     borderColor: "rgba(230, 243, 242, 0.9)",
     // See-through over the page's blur (the tab bar draws it behind).
     backgroundColor: "rgba(242, 247, 247, 0.55)",
-    overflow: "hidden",
   },
-  // The orb sits 3 in from the ring's outer edge, inside a 1 pt teal edge.
+  // The orb 4 in from the ring's outer edge all round (inside a 1 pt
+  // border, so 3 from the padding box).
   orbInner: {
     position: "absolute",
-    left: 3 - 1,
-    top: 3 - 1,
+    left: 3,
+    top: 3,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -315,4 +303,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  // Out of the 1 pt border, to the button's outer corner.
+  orbArc: { position: "absolute", left: -1, top: -1 },
 })

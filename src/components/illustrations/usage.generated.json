@@ -2,21 +2,21 @@
   "no-results": [
     {
       "file": "src/components/admin/practices-list.tsx",
-      "line": 338,
+      "line": 374,
       "routes": [
         "/screens/admin/practices"
       ]
     },
     {
       "file": "src/components/admin/provider-adoption.tsx",
-      "line": 272,
+      "line": 287,
       "routes": [
         "/screens/admin/practices/593892/providers/PR4775"
       ]
     },
     {
       "file": "src/components/practice/directory.tsx",
-      "line": 571,
+      "line": 577,
       "routes": [
         "/screens/practice/users",
         "/screens/practice/patients",
@@ -26,8 +26,13 @@
   ],
   "practices-empty": [
     {
+      "file": "src/components/admin/admin-dashboard.tsx",
+      "line": 265,
+      "routes": []
+    },
+    {
       "file": "src/components/admin/practices-list.tsx",
-      "line": 337,
+      "line": 373,
       "routes": [
         "/screens/admin/practices"
       ]
@@ -68,14 +73,14 @@
   "patients-empty": [
     {
       "file": "src/components/admin/provider-adoption.tsx",
-      "line": 232,
+      "line": 247,
       "routes": [
         "/screens/admin/practices/593892/providers/PR4775"
       ]
     },
     {
       "file": "src/components/practice/patients.tsx",
-      "line": 687,
+      "line": 691,
       "routes": [
         "/screens/practice/patients",
         "/screens/patients"
@@ -115,14 +120,14 @@
     },
     {
       "file": "src/components/practice/patient-record.tsx",
-      "line": 1012,
+      "line": 1017,
       "routes": [
         "/screens/practice/patients/P10240"
       ]
     },
     {
       "file": "src/components/practice/provider-record.tsx",
-      "line": 907,
+      "line": 905,
       "routes": [
         "/screens/practice/users/providers/PR3132"
       ]
@@ -132,7 +137,7 @@
   "duplicates-clear": [
     {
       "file": "src/components/practice/duplicates.tsx",
-      "line": 991,
+      "line": 990,
       "routes": [
         "/screens/practice/patients/duplicates"
       ]
@@ -141,7 +146,7 @@
   "review-resolved": [
     {
       "file": "src/components/practice/duplicates.tsx",
-      "line": 1122,
+      "line": 1121,
       "routes": [
         "/screens/practice/patients/duplicates"
       ]
@@ -199,7 +204,7 @@
     },
     {
       "file": "src/components/practice/patient-record.tsx",
-      "line": 971,
+      "line": 976,
       "routes": [
         "/screens/practice/patients/P10240"
       ]
@@ -249,7 +254,7 @@
     },
     {
       "file": "src/components/practice/patients.tsx",
-      "line": 704,
+      "line": 713,
       "routes": [
         "/screens/practice/patients",
         "/screens/patients"
@@ -266,7 +271,7 @@
   "deactivate-provider": [
     {
       "file": "src/components/practice/provider-record.tsx",
-      "line": 878,
+      "line": 876,
       "routes": [
         "/screens/practice/users/providers/PR3132"
       ]
@@ -317,7 +322,7 @@
   "no-manager": [
     {
       "file": "src/components/admin/practice-details.tsx",
-      "line": 449,
+      "line": 450,
       "routes": [
         "/screens/admin/practices/232276"
       ]
@@ -347,7 +352,7 @@
   "signature-empty": [
     {
       "file": "src/components/practice/provider-record.tsx",
-      "line": 825,
+      "line": 823,
       "routes": [
         "/screens/practice/users/providers/PR3132"
       ]
@@ -356,14 +361,14 @@
   "no-licenses": [
     {
       "file": "src/components/practice/provider-record.tsx",
-      "line": 562,
+      "line": 561,
       "routes": [
         "/screens/practice/users/providers/PR3132"
       ]
     },
     {
       "file": "src/components/practice/provider-record.tsx",
-      "line": 847,
+      "line": 845,
       "routes": [
         "/screens/practice/users/providers/PR3132"
       ]
@@ -394,15 +399,7 @@
       ]
     }
   ],
-  "dashboard-soon": [
-    {
-      "file": "src/app/screens/admin/dashboard/page.tsx",
-      "line": 11,
-      "routes": [
-        "/screens/admin/dashboard"
-      ]
-    }
-  ],
+  "dashboard-soon": [],
   "settings-empty": [
     {
       "file": "src/app/screens/admin/settings/page.tsx",

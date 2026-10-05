@@ -3,10 +3,14 @@ import * as React from "react"
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextStyle } from "react-native"
 
 import { keepTogether } from "@/components/care-gap"
-import { Camera, CaretRight, MagnifyingGlass, Notepad, X } from "@/components/ph"
+import { Art } from "@/components/art"
+import { Camera, CaretRight, ImageSquare, MagnifyingGlass, PencilSimple, UploadSimple, X } from "@/components/ph"
 import { RecordIcon, type RecordIconName } from "@/components/record-icons"
-import { Card, DateBlock, DateTrack, Dot, KeyValue, Tag, Tile, spokenDate, type DateLike, type Level, type Mark, type Tone, type TrackDate } from "@/components/record-kit"
+import { Card, DateBlock, DateTrack, Dot, Group, KeyValue, LiveDot, Tag, Tile, spokenDate, type DateLike, type Level, type Mark, type Tone, type TrackDate } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
+import { ADD_KINDS, addKindOf, type AddKind } from "@/lib/add-record"
+import { showDate } from "@/lib/dates"
+import { useOnboarding, type Added } from "@/lib/onboarding"
 import { PROVENANCE_LABEL, type Provenance } from "@/lib/record"
 import { card, chart, color, font, hairline, ink, outOfRangeColor, space, surface, type } from "@/lib/theme"
 
@@ -240,54 +244,197 @@ const PROVENANCE_TONE: Record<Provenance, Tone> = {
   ai: "muted",
 }
 
-/** One item's details over the screen, as the Figma's detail sheet: the
-    name with its badge in the header, then one card of label and value
-    rows, the item's facts first and where it comes from after. */
-export function ItemSheet({ item, onClose }: { item: ItemDetail; onClose: () => void }) {
-  const rows = [...item.details, ...(item.source ?? [])]
+/** Opens one item's details on their own page (record/item): only the
+    item's own facts and where they come from, nothing else (user, 5 Oct
+    2026). Every list in the record opens its items this way. */
+export function openItem(item: ItemDetail) {
+  router.push({ pathname: "/record/item", params: { d: JSON.stringify(item) } })
+}
+
+/** One item's details: the name with its badge, one card of label and
+    value rows, then where it comes from in a card of its own. */
+export function ItemDetails({ item }: { item: ItemDetail }) {
   return (
-    <Sheet title={item.title} titleRight={item.provenance && <Tag tone={PROVENANCE_TONE[item.provenance]}>{PROVENANCE_LABEL[item.provenance]}</Tag>} onClose={onClose}>
+    <>
+      {item.provenance && (
+        <View style={styles.detailBadge}>
+          <Tag tone={PROVENANCE_TONE[item.provenance]}>{PROVENANCE_LABEL[item.provenance]}</Tag>
+        </View>
+      )}
       <Card style={styles.detail}>
-        {rows.map(([label, value], i) => (
-          <KeyValue key={`${label}${i}`} label={label} value={value} last={i === rows.length - 1} />
+        {item.details.map(([label, value], i) => (
+          <KeyValue key={`${label}${i}`} label={label} value={value} last={i === item.details.length - 1} />
         ))}
       </Card>
+      {!!item.source?.length && (
+        <View style={styles.sourceBlock}>
+          <Text style={styles.sourceLabel}>Source</Text>
+          <Card style={styles.detail}>
+            {item.source.map(([label, value], i) => (
+              <KeyValue key={`${label}${i}`} label={label} value={value} last={i === item.source!.length - 1} />
+            ))}
+          </Card>
+        </View>
+      )}
+    </>
+  )
+}
+
+/** How long reading a photo takes. */
+const READ_MS = 2200
+
+/** Something she added, as its details page shows it: a record's fields
+    (typed in or read from a photo), a report's values, or what she told us. */
+export function addedDetail(a: Added): ItemDetail {
+  const source: [string, string][] = [
+    ["Source", a.via === "photo" ? "Photo you added" : "Added by you"],
+    ["Added", a.at],
+    ["Status", "Being checked"],
+  ]
+  if (a.fields) return { title: a.title, provenance: "patient", details: a.fields.length ? a.fields : [["Kind", addKindOf(a.kind)?.name ?? "Record"]], source }
+  if (a.report) return { title: a.title, provenance: "patient", details: [["Date", a.report.date], ["Where", a.report.where], ...a.report.values], source }
+  return {
+    title: a.title,
+    provenance: "patient",
+    details: [[a.id.startsWith("told-allergy-") ? "Your answer" : "What it holds", a.detail]],
+    source,
+  }
+}
+
+/** The page for one added record. */
+export const addedHref = (a: Added) => ({ pathname: "/record/item" as const, params: { d: JSON.stringify(addedDetail(a)) } })
+
+type AddStage = "kind" | "how" | "photo" | "reading"
+
+/** "Add to your record": which kind of record (unless the list it was
+    opened from says), then by photo or typed in (user, 5 Oct 2026). A
+    photo asks how (take one, choose one, upload a file), a centred card
+    reads it, and the record opens on its own page, added. Typed in opens
+    the kind's form. The prototype reads a sample of the kind. */
+export function AddToRecordSheet({ kind: fixed, onClose }: { kind?: AddKind; onClose: () => void }) {
+  const onboarding = useOnboarding()
+  const [kind, setKind] = React.useState<AddKind | undefined>(fixed)
+  const [stage, setStage] = React.useState<AddStage>(fixed ? "how" : "kind")
+  const info = addKindOf(kind)
+
+  React.useEffect(() => {
+    if (stage !== "reading" || !info) return
+    const t = setTimeout(async () => {
+      const added: Added = {
+        id: `added-${Date.now()}`,
+        title: info.sample.title,
+        detail: info.name,
+        at: showDate(),
+        kind: info.kind,
+        fields: info.sample.fields,
+        via: "photo",
+      }
+      await onboarding.save({ added: [...(onboarding.added ?? []), added] }).catch(() => {})
+      onClose()
+      router.push(addedHref(added))
+    }, READ_MS)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage])
+
+  if (stage === "reading")
+    return (
+      <View style={StyleSheet.absoluteFill}>
+        <View style={styles.modalScrim} />
+        <View style={styles.modalWrap} pointerEvents="box-none">
+          <View style={styles.modal} accessibilityViewIsModal accessible accessibilityRole="progressbar" accessibilityLabel="Reading your photo">
+            <Art name="document" size={88} />
+            <View style={styles.modalLine}>
+              <LiveDot />
+              <Text style={type.section}>Reading your photo</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    )
+
+  type Option = { key: string; title: string; icon: React.ReactNode; onPress: () => void }
+  const glyph = (Icon: typeof Camera) => (
+    <Tile>
+      <Icon size={16} color={color.primary} />
+    </Tile>
+  )
+  const options: Option[] =
+    stage === "kind"
+      ? ADD_KINDS.map((k) => ({
+          key: k.kind,
+          title: k.name,
+          icon: (
+            <Tile>
+              <RecordIcon name={k.icon} size={16} color={color.primary} />
+            </Tile>
+          ),
+          onPress: () => {
+            setKind(k.kind)
+            setStage("how")
+          },
+        }))
+      : stage === "how"
+        ? [
+            { key: "photo", title: "Add a photo", icon: glyph(Camera), onPress: () => setStage("photo") },
+            {
+              key: "typed",
+              title: "Type it in",
+              icon: glyph(PencilSimple),
+              onPress: () => {
+                onClose()
+                router.push({ pathname: "/record/add", params: { kind } })
+              },
+            },
+          ]
+        : [
+            { key: "camera", title: "Take a photo", icon: glyph(Camera), onPress: () => setStage("reading") },
+            { key: "library", title: "Choose from photos", icon: glyph(ImageSquare), onPress: () => setStage("reading") },
+            { key: "file", title: "Upload a file", icon: glyph(UploadSimple), onPress: () => setStage("reading") },
+          ]
+  const title = stage === "kind" ? "Add to your record" : info ? info.action : "Add to your record"
+  return (
+    <Sheet title={title} onClose={onClose}>
+      <ScrollView style={styles.sheetList} showsVerticalScrollIndicator={false}>
+        {options.map(({ key, title: words, icon, onPress }, i) => (
+          <Pressable
+            key={key}
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={words}
+            style={({ pressed }) => [styles.option, i > 0 && styles.optionRule, pressed && styles.pressed]}
+          >
+            {icon}
+            <Text style={styles.optionTitle}>{words}</Text>
+            <CaretRight size={16} color={card.chevron} />
+          </Pressable>
+        ))}
+      </ScrollView>
     </Sheet>
   )
 }
 
-/** "Add to your record" (Figma 40024625:205653): a photo of a record, or
-    something she tells us (F-95). The Record tab opens it, and "Added by
-    you" when nothing is there yet. */
-export function AddToRecordSheet({ onClose }: { onClose: () => void }) {
-  const go = (path: "/add-report" | "/tell-us") => {
-    onClose()
-    router.push(path)
-  }
-  const options = [
-    { title: "Photo of a record", Icon: Camera, path: "/add-report" as const },
-    { title: "Tell us something", Icon: Notepad, path: "/tell-us" as const },
-  ]
+/** What she added to one list, under its own label, each opening its
+    details page. Nothing added, nothing shown. */
+export function AddedOfKind({ kind }: { kind: AddKind }) {
+  const added = (useOnboarding().added ?? []).filter((a) => a.kind === kind)
+  if (!added.length) return null
   return (
-    <Sheet title="Add to your record" onClose={onClose}>
-      <View>
-        {options.map(({ title, Icon, path }, i) => (
-          <Pressable
-            key={path}
-            onPress={() => go(path)}
-            accessibilityRole="button"
-            accessibilityLabel={title}
-            style={({ pressed }) => [styles.option, i > 0 && styles.optionRule, pressed && styles.pressed]}
-          >
-            <Tile>
-              <Icon size={16} color={color.primary} />
-            </Tile>
-            <Text style={styles.optionTitle}>{title}</Text>
-            <CaretRight size={16} color={card.chevron} />
-          </Pressable>
+    <View style={styles.sourceBlock}>
+      <Text style={styles.sourceLabel}>Added by you</Text>
+      <Group>
+        {[...added].reverse().map((a) => (
+          <ItemRow
+            key={a.id}
+            icon={addKindOf(a.kind)?.icon}
+            title={a.title}
+            tag={{ tone: "muted", label: "Being checked" }}
+            meta={a.via === "photo" ? `From a photo, ${a.at}` : `Added ${a.at}`}
+            onPress={() => router.push(addedHref(a))}
+          />
         ))}
-      </View>
-    </Sheet>
+      </Group>
+    </View>
   )
 }
 
@@ -395,7 +542,18 @@ const styles = StyleSheet.create({
   // The sheet's one card of label and value rows; each row brings its own
   // 12 above and below.
   detail: { paddingVertical: 0 },
+  detailBadge: { flexDirection: "row" },
+  sourceBlock: { gap: space.item },
+  sourceLabel: { ...type.sectionLabel },
 
+  // The reading card, centred over a dimmed screen.
+  modalScrim: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0, 0, 0, 0.3)" },
+  modalWrap: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center", padding: space.gutter },
+  modal: { width: "100%", maxWidth: 320, alignItems: "center", gap: space.card, paddingVertical: 24, paddingHorizontal: space.card, borderRadius: 20, backgroundColor: color.background },
+  modalLine: { flexDirection: "row", alignItems: "center", gap: space.mark },
+
+  // The kind list can run past a short phone: it scrolls inside the sheet.
+  sheetList: { maxHeight: 460 },
   option: { flexDirection: "row", alignItems: "center", gap: space.lead },
   // Rows 16 apart across a rule, as the Figma's sheet sets them.
   optionRule: { marginTop: space.gutter, paddingTop: space.gutter, borderTopWidth: 1, borderTopColor: hairline.rule },

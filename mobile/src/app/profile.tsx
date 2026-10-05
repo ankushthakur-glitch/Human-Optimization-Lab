@@ -7,18 +7,14 @@ import { PageGround, PrimaryButton } from "@/components/hol"
 import { billingOf } from "@/components/plan-account-pieces"
 import { DevicesSheet } from "@/components/plan-tab-devices"
 import {
-  Bell,
+  ArrowsClockwise,
   CaretRight,
-  ChatText,
   CreditCard,
   DownloadSimple,
-  EnvelopeSimple,
   Hospital,
-  Megaphone,
   ScanSmiley,
   ShieldCheck,
   SignOut,
-  Phone,
   Stethoscope,
   Watch,
 } from "@/components/ph"
@@ -31,7 +27,7 @@ import { rowDate } from "@/lib/dates"
 import { sharingOff } from "@/lib/experience"
 import { checkFaceId, faceIdAvailable } from "@/lib/face-id"
 import { call } from "@/lib/links"
-import { useOnboarding, type Channel } from "@/lib/onboarding"
+import { useOnboarding } from "@/lib/onboarding"
 import { CARE_TEAM, PATIENT } from "@/lib/patient"
 import { TIERS } from "@/lib/plans"
 import { card, cardRadius, color, font, hairline, ink, space, type } from "@/lib/theme"
@@ -51,19 +47,6 @@ import { card, cardRadius, color, font, hairline, ink, space, type } from "@/lib
    "Renew"). */
 
 type Confirm = "withdraw" | "renew"
-
-/** Each choice's icon, Phosphor at 16 in the row's tile. */
-const TOPICS: { id: Channel; label: string; icon: React.ReactNode }[] = [
-  { id: "push", label: "In the app", icon: <Bell size={16} color={color.primary} /> },
-  { id: "sms", label: "Texts about my care", icon: <ChatText size={16} color={color.primary} /> },
-  { id: "call", label: "Calls about my care", icon: <Phone size={16} color={color.primary} /> },
-  { id: "news", label: "News and offers", icon: <Megaphone size={16} color={color.primary} /> },
-  { id: "email", label: "Email", icon: <EnvelopeSimple size={16} color={color.primary} /> },
-]
-
-/** Texts about her care, the app and email are on until she turns them
-    off; news and offers stay off until she turns them on (Q-11). */
-const TOPIC_DEFAULT: Record<Channel, boolean> = { push: true, sms: true, call: true, email: true, news: false }
 
 const DOCTOR = CARE_TEAM[0]
 
@@ -181,7 +164,8 @@ export default function ProfileScreen() {
   const onboarding = useOnboarding()
   const { sheet } = useLocalSearchParams<{ sheet?: string }>()
   const { membership, consent, consentAt, profile } = onboarding
-  const notify: Record<Channel, boolean> = { ...TOPIC_DEFAULT, ...onboarding.notify }
+  const bill = billingOf(membership)
+  const paid = bill.state !== "none" && bill.state !== "ended"
   const [confirm, setConfirm] = React.useState<Confirm | null>(sheet === "renew" && consent === "signed" ? "renew" : null)
   const [devices, setDevices] = React.useState(false)
   const [noFaceId, setNoFaceId] = React.useState(false)
@@ -197,10 +181,6 @@ export default function ProfileScreen() {
     if (what === "renew") await onboarding.save({ consentAt: new Date().toISOString() })
     setConfirm(null)
     toast(what === "withdraw" ? "Sharing turned off" : "Sharing renewed")
-  }
-
-  function setTopic(id: Channel, on: boolean) {
-    onboarding.save({ notify: { ...notify, [id]: on } })
   }
 
   /* Turning it on checks her face once, so it's known to work before the
@@ -269,38 +249,33 @@ export default function ProfileScreen() {
           )}
         </Block>
 
-        <Block title="Messages and notifications">
-          <Rows space={14}>
-            {TOPICS.map((t) => (
-              <SwitchRow key={t.id} icon={t.icon} title={t.label} value={notify[t.id]} onChange={(on) => setTopic(t.id, on)} />
-            ))}
-          </Rows>
-        </Block>
-
         <Block title="Membership">
           <MembershipCard membership={membership} period={period} />
         </Block>
 
-        <Block title="Devices">
-          <Rows>
-            <Row
-              icon={<Watch size={16} color={color.primary} />}
-              title="Watch, ring or scale"
-              onPress={() => setDevices(true)}
-              accessibilityLabel="Watch, ring or scale, coming soon"
-              right={
-                <>
-                  <View style={styles.soonWrap}>
-                    <View style={styles.soon}>
-                      <Text style={styles.soonText}>Coming soon</Text>
+        {/* Devices are part of the paid plan (user, 5 Oct 2026). */}
+        {paid && (
+          <Block title="Devices">
+            <Rows>
+              <Row
+                icon={<Watch size={16} color={color.primary} />}
+                title="Watch, ring or scale"
+                onPress={() => setDevices(true)}
+                accessibilityLabel="Watch, ring or scale, coming soon"
+                right={
+                  <>
+                    <View style={styles.soonWrap}>
+                      <View style={styles.soon}>
+                        <Text style={styles.soonText}>Coming soon</Text>
+                      </View>
                     </View>
-                  </View>
-                  <Chevron />
-                </>
-              }
-            />
-          </Rows>
-        </Block>
+                    <Chevron />
+                  </>
+                }
+              />
+            </Rows>
+          </Block>
+        )}
 
         <Block title="Security">
           <Rows>
@@ -317,6 +292,26 @@ export default function ProfileScreen() {
               onPress={() => router.push({ pathname: "/record/[kind]", params: { kind: "access" } })}
             />
             <Row icon={<DownloadSimple size={16} color={color.primary} />} title="Download my record" right={<Chevron />} onPress={() => toast("We'll email you a copy.")} />
+          </Rows>
+        </Block>
+
+        {/* For showing the app to the client (user, 5 Oct 2026): undoes
+            everything done on this device, a checkout and its card and
+            the plan setup too, and opens the sample patient again. */}
+        <Block title="Demo">
+          <Rows>
+            <Row
+              icon={<ArrowsClockwise size={16} color={color.primary} />}
+              title="Reset to the free record"
+              right={<Chevron />}
+              onPress={() => router.replace({ pathname: "/demo/[variant]", params: { variant: "free" } })}
+            />
+            <Row
+              icon={<ArrowsClockwise size={16} color={color.primary} />}
+              title="Reset to a member"
+              right={<Chevron />}
+              onPress={() => router.replace({ pathname: "/demo/[variant]", params: { variant: "member" } })}
+            />
           </Rows>
         </Block>
 

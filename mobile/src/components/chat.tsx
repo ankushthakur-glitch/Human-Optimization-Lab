@@ -259,6 +259,7 @@ export function ChatBar({
   multiline = true,
   keyboardType,
   inputRef,
+  bare,
 }: {
   value: string
   onChange: (text: string) => void
@@ -270,6 +271,9 @@ export function ChatBar({
   multiline?: boolean
   keyboardType?: KeyboardTypeOptions
   inputRef?: React.Ref<TextInput>
+  /** No white bar or rule behind it: the field and button sit on the
+      page's own ground (the assistant). */
+  bare?: boolean
 }) {
   const typed = value.trim().length > 0
   const own = React.useRef<TextInput | null>(null)
@@ -296,7 +300,7 @@ export function ChatBar({
     grow(h)
   }, [value, multiline])
   return (
-    <View style={[styles.bar, { paddingBottom: Math.max(bottom, 16) }]}>
+    <View style={[styles.bar, bare && styles.barBare, { paddingBottom: Math.max(bottom, 16) }]}>
       <View style={styles.barRow}>
         <TextInput
           ref={ref}
@@ -485,6 +489,7 @@ const styles = StyleSheet.create({
 
   // The page's white footer: a 1 pt edge on top, 16 inside.
   bar: { backgroundColor: color.background, borderTopWidth: 1, borderTopColor: hairline.edge, paddingHorizontal: 16, paddingTop: 12 },
+  barBare: { backgroundColor: "transparent", borderTopWidth: 0 },
   barRow: { ...column, flexDirection: "row", alignItems: "flex-end", gap: 8 },
   // A Figma field: white inside its #DFDFE4 edge at radius 8.
   input: {

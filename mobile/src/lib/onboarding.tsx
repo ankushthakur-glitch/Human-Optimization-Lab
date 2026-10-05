@@ -114,9 +114,14 @@ export type Correction = { id: string; text: string; about?: string; at: string 
     so closing and opening the chat carries on (A-34). */
 export type Chat = { id: string; scope?: string; startedAt: string; lastAt: string; messages: unknown[]; topic?: ChatTopic; title?: string }
 
-/** The group a past conversation is filed under in the chat history:
-    medicines, lab results, visits, her plan, or something else. */
-export type ChatTopic = "medicine" | "result" | "visit" | "plan" | "other"
+/** The category a conversation is filed under, chosen before it starts:
+    medicines, lab results, visits, her plan, general health questions
+    ("other"), or the id of a category she made (ChatCategory). */
+export type ChatTopic = "medicine" | "result" | "visit" | "plan" | "other" | (string & {})
+
+/** A chat category the patient made herself, e.g. "Thyroid" or "Foot
+    surgery". */
+export type ChatCategory = { id: string; name: string }
 
 /** A conversation filed in the history when it ends or a new one starts:
     its first question as the title, its topic, and its messages so it can
@@ -141,7 +146,22 @@ export type Batch = { id: string; at: string; source: string; count: number; ope
     she turns it on (S-57, Q-11). */
 export type Channel = "push" | "sms" | "call" | "email" | "news"
 
-export type Added = { id: string; title: string; detail: string; at: string; unclear?: number }
+export type Added = {
+  id: string
+  title: string
+  detail: string
+  at: string
+  unclear?: number
+  /** A photographed report: where and when it was done, and what was read
+      from it, label and value ("Being checked" when unsure). */
+  report?: { where: string; date: string; values: [string, string][] }
+  /** A record she added to one of her lists (a medicine, an allergy...),
+      typed in or read from a photo, and its label and value fields. */
+  kind?: string
+  fields?: [string, string][]
+  /** How it was added. */
+  via?: "photo" | "typed"
+}
 
 type State = {
   step: Step
@@ -203,6 +223,8 @@ type State = {
   chat?: Chat
   /** Past conversations with the assistant, newest first. */
   chats?: PastChat[]
+  /** The chat categories she made, oldest first. */
+  chatCategories?: ChatCategory[]
   /** Membership offers: sessions, impressions and the patient's "Not now"
       and "Not for me" (lib/offers.ts). */
   offers?: OfferLog

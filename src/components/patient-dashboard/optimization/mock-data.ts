@@ -70,8 +70,8 @@ export const MARCUS_CORE: DashboardData = {
 
 const BIOMARKERS_CSV = `category,name,unit,baselineDate,baselineValue,latestDate,latestValue,labLow,labHigh,targetLow,targetHigh,betterDirection,status,tier,nextStep,nextTest,frequency,note
 Autoimmunity,Rheumatoid Factor,IU/mL,,,2026-08-05,29,,,,,Lower,High,Tier 2,Review joint symptoms and need for confirmatory testing,RF ± anti-CCP/ESR/CRP,As indicated,
-Body Composition,Body Fat Total,%,2026-03-31,28,2026-08-04,23.3,,,18,20,Lower,High,Tier 1,Repeat after maintenance phase,DEXA,6-12 mo,
-Body Composition,VAT Area,cm²,2026-03-31,191,2026-08-04,142,,,,100,Lower,High,Tier 1,Target <100 cm²,DEXA,6-12 mo,
+Body Composition,Body Fat Total,%,2026-03-31,28,2026-08-04,24,,,18,20,Lower,High,Tier 1,Repeat after maintenance phase,DEXA,6-12 mo,
+Body Composition,VAT Area,cm²,2026-03-31,191,2026-08-04,145.5,,,,100,Lower,High,Tier 1,Target <100 cm²,DEXA,6-12 mo,
 Body Composition,VAT Volume,cm³,2026-03-31,996,2026-08-04,738,,,,600,Lower,High,Tier 1,Continue same VAT-reduction strategy,DEXA,6-12 mo,
 Heart,LDL Medium,nmol/L,,,2026-05-29,219,,,,150,Lower,High,Tier 1,Improve metabolic health and review therapy,Advanced lipid panel,6-12 mo,
 Heart,LDL Particle Number,nmol/L,,,2026-05-29,1215,,,,1000,Lower,High,Tier 1,Target <1000; review therapy,Advanced lipid panel,6-12 mo,
@@ -85,8 +85,8 @@ Blood,RBC,x10^12/L,2026-03-01,6.18,2026-08-05,5.47,4.5,5.5,,5.5,Lower,Watch,Tier
 Body Composition,Fat Mass,lb,2026-03-31,49.8,2026-08-04,38.1,,,30,33,Lower,Watch,Tier 1,Continue gradual reduction,DEXA,6-12 mo,
 Body Composition,Lean Mass,lb,2026-03-31,121.9,2026-08-04,119.3,,,121.9,,Maintain,Watch,Tier 1,"Protein, resistance training, recovery",DEXA + strength measures,6-12 mo,
 Body Composition,Total BMD,g/cm²,2026-03-31,1.25,2026-08-04,1.218,,,,,Maintain,Watch,Tier 2,Review regional results with physician,DEXA / regional T-scores,12-24 mo,
-Body Composition,Waist,in,2026-03-01,38,2026-08-08,34.25,,,32,33,Lower,Watch,Tier 1,Continue resistance training and modest calorie deficit,Waist measurement,Weekly,
-Body Composition,Weight,lb,2026-03-01,183,2026-08-08,161,,,160,165,Lower,Watch,Tier 1,Continue gradual loss to 160 lb; avoid rapid deficit,Weight + waist,Weekly,
+Body Composition,Waist,in,2026-03-01,38,2026-08-08,35.5,,,32,33,Lower,Watch,Tier 1,Continue resistance training and modest calorie deficit,Waist measurement,Weekly,
+Body Composition,Weight,lb,2026-03-01,183,2026-08-08,171.5,,,160,165,Lower,Watch,Tier 1,Continue gradual loss to 160 lb; avoid rapid deficit,Weight + waist,Weekly,
 Kidney,Cystatin C,mg/L,,,2026-08-05,1.05,,,,,Range,Watch,Tier 1,Interpret with creatinine eGFR; repeat annually,Cystatin C with eGFR,Annual,
 Male Health,Estradiol (E2),pg/mL,2026-03-01,72.1,2026-08-05,13,25,40,25,40,Range,Watch,Monitor,Avoid over-suppression; review symptoms,Sensitive Estradiol LC/MS-MS,3-6 mo,
 Metabolic,Fasting Glucose,mg/dL,,,2026-08-05,103,70,99,75,95,Lower,Watch,Tier 1,Obtain after true overnight fast,Fasting glucose + insulin,3-6 mo,
@@ -137,7 +137,7 @@ Male Health,PSA Total,ng/mL,,,2026-05-29,<0.1,,1,,0.1,Lower,Optimal,Tier 1,Maint
 Male Health,Prolactin,ng/mL,,,2026-05-29,6.5,5,12,5,12,Range,Optimal,Monitor,Repeat only if clinically indicated,Prolactin,As indicated,
 Metabolic,Fasting Insulin,mcU/mL,,,2026-08-05,5.4,,,,6,Lower,Optimal,Tier 1,Maintain; recalculate HOMA-IR with each draw,Fasting glucose + insulin,3-6 mo,
 Metabolic,HOMA-IR (calculated),index,,,2026-08-05,1.37,,,,1.5,Lower,Optimal,Tier 1,Recalculates with each fasting glucose + insulin,,,
-Metabolic,Hemoglobin A1c,%,2026-03-01,5.6,2026-08-05,5.3,4,5.6,5.2,5.4,Lower,Optimal,Tier 1,Continue visceral-fat reduction and resistance training,HbA1c,3-6 mo,
+Metabolic,Hemoglobin A1c,%,2026-03-01,5.6,2026-08-05,5.5,4,5.6,5.2,5.4,Lower,Watch,Tier 1,Continue visceral-fat reduction and resistance training,HbA1c,3-6 mo,
 Metabolic,Triglyceride:HDL Ratio (calculated),ratio,,,2026-05-29,1.78,,,,2,Lower,Optimal,Monitor,Interpret together with fasting insulin once available,Auto-calculated from the standard lipid panel,With every lipid panel,Calculated
 Metabolism,Resting Metabolic Rate,kcal/day,2026-03-31,1754,2026-08-04,1902,,,1750,,Maintain,Optimal,Maintain,Use measured RMR; avoid excessive deficit,RMR,6-12 mo,
 Nutrients,Ferritin,ng/mL,,,2026-08-05,110,75,150,75,150,Range,Optimal,Maintain,Avoid donating solely by schedule without labs,Ferritin + iron/TIBC,6-12 mo,
@@ -152,9 +152,10 @@ Urine,"Creatinine, Urine",mg/dL,,,2026-08-14,14.1,,,,,Informational,Informationa
 
 /** `date value [source]`; no source means an uploaded report. */
 const SERIES = `
-Hemoglobin A1c: 2022-11-14 5.7 [Corewell Health (Epic)]; 2024-12-17 5.5 [Corewell Health (Epic)]; 2025-12-09 5.6; 2026-03-01 5.6; 2026-05-21 5.7; 2026-05-31 5.7 [Function Health (Quest)]; 2026-08-05 5.3
-Fasting Glucose: 2024-12-17 103 [Corewell Health (Epic)]; 2025-12-09 101; 2026-03-01 114; 2026-05-31 93 [Function Health (Quest)]; 2026-08-05 103
-Fasting Insulin: 2026-05-29 6.6; 2026-08-05 5.4
+Hemoglobin A1c: 2022-11-14 5.7 [Corewell Health (Epic)]; 2023-06-12 5.6 [Corewell Health (Epic)]; 2024-06-10 5.6 [Corewell Health (Epic)]; 2024-12-17 5.5 [Corewell Health (Epic)]; 2025-06-16 5.5 [Corewell Health (Epic)]; 2025-12-09 5.6; 2026-03-01 5.6; 2026-05-21 5.7; 2026-05-31 5.7 [Function Health (Quest)]; 2026-08-05 5.5
+Fasting Glucose: 2024-12-17 103 [Corewell Health (Epic)]; 2025-12-09 101; 2026-03-01 114; 2026-03-15 111 [Home glucometer device]; 2026-03-29 109 [Home glucometer device]; 2026-04-12 107 [Home glucometer device]; 2026-04-26 104 [Home glucometer device]; 2026-05-10 101 [Home glucometer device]; 2026-05-24 97 [Home glucometer device]; 2026-05-31 93 [Function Health (Quest)]; 2026-06-14 96 [Home glucometer device]; 2026-06-28 99 [Home glucometer device]; 2026-07-12 100 [Home glucometer device]; 2026-07-26 102 [Home glucometer device]; 2026-08-05 103
+Fasting Insulin: 2024-12-17 8.4 [Corewell Health (Epic)]; 2025-06-16 8.3 [Corewell Health (Epic)]; 2025-12-09 8.1; 2026-03-01 7.4; 2026-04-14 7.1; 2026-05-29 6.6; 2026-06-15 6.2; 2026-07-01 6; 2026-08-05 5.4
+HOMA-IR (calculated): 2024-12-17 2.14 [Corewell Health (Epic)]; 2025-06-16 2.05 [Corewell Health (Epic)]; 2025-12-09 2.02; 2026-03-01 2.08; 2026-04-14 1.86; 2026-05-31 1.52 [Function Health (Quest)]; 2026-06-15 1.47; 2026-07-01 1.47; 2026-08-05 1.37
 Potassium: 2021-12-21 4.4 [Corewell Health (Epic)]; 2022-11-14 4.3 [Corewell Health (Epic)]; 2024-12-17 4.5 [Corewell Health (Epic)]; 2025-12-09 4.7; 2026-05-31 4.4 [Function Health (Quest)]; 2026-08-05 5.6; 2026-08-14 4.5 [Corewell Health (Epic)]
 eGFR: 2020-02-14 58; 2021-12-21 59 [Corewell Health (Epic)]; 2022-11-14 67 [Corewell Health (Epic)]; 2024-12-17 72 [Corewell Health (Epic)]; 2025-12-09 67; 2026-05-29 61; 2026-08-05 58; 2026-08-14 62 [Corewell Health (Epic)]
 Creatinine: 2021-12-21 1.21 [Corewell Health (Epic)]; 2022-11-14 1.16 [Corewell Health (Epic)]; 2024-12-17 1.07 [Corewell Health (Epic)]; 2025-12-09 1.13; 2026-05-29 1.22; 2026-08-05 1.27; 2026-08-14 1.2 [Corewell Health (Epic)]
@@ -169,15 +170,15 @@ Vitamin D: 2022-11-14 30 [Corewell Health (Epic)]; 2024-12-17 46 [Corewell Healt
 TSH: 2021-12-21 2.61 [Corewell Health (Epic)]; 2022-11-14 3.36 [Corewell Health (Epic)]; 2024-12-17 1.22 [Corewell Health (Epic)]; 2025-12-09 1.39; 2026-05-29 1.26; 2026-08-05 0.64
 Total Testosterone: 2022-11-14 194 [Corewell Health (Epic)]; 2024-12-17 333 [Corewell Health (Epic)]; 2025-12-09 140; 2026-03-01 1139; 2026-04-01 350; 2026-05-31 447 [Function Health (Quest)]; 2026-08-05 619
 Estradiol (E2): 2026-03-01 72.1; 2026-05-29 37; 2026-08-05 13
-Weight: 2026-03-01 183; 2026-04-06 174; 2026-04-25 175.5; 2026-05-08 173; 2026-05-21 170; 2026-06-06 168; 2026-06-17 166; 2026-07-10 165; 2026-07-14 163.5; 2026-07-30 164; 2026-08-04 163.3 [DEXA]; 2026-08-08 161
-Waist: 2026-03-01 38; 2026-04-06 36; 2026-05-08 36; 2026-05-28 35; 2026-06-17 35; 2026-07-14 34.25; 2026-07-30 34.5; 2026-08-08 34.25
-Body Fat Total: 2026-03-31 28 [DEXA]; 2026-08-04 23.3 [DEXA]
-VAT Area: 2026-03-31 191 [DEXA]; 2026-08-04 142 [DEXA]
-Lean Mass: 2026-03-31 121.9 [DEXA]; 2026-08-04 119.3 [DEXA]
-Fat Mass: 2026-03-31 49.8 [DEXA]; 2026-08-04 38.1 [DEXA]
-VAT Volume: 2026-03-31 996 [DEXA]; 2026-08-04 738 [DEXA]
+Weight: 2026-03-01 183; 2026-04-06 179.5; 2026-04-25 180; 2026-05-08 178; 2026-05-21 176.5; 2026-06-06 175.5; 2026-06-17 174.5; 2026-07-10 173.5; 2026-07-14 172.5; 2026-07-30 173; 2026-08-04 172.4 [DEXA]; 2026-08-08 171.5
+Waist: 2026-03-01 38; 2026-03-15 37.75; 2026-04-06 37.25; 2026-04-20 37; 2026-05-08 36.75; 2026-05-28 36.5; 2026-06-17 36; 2026-06-30 35.9; 2026-07-14 35.75; 2026-07-22 35.6; 2026-07-30 35.75; 2026-08-08 35.5
+Body Fat Total: 2026-03-31 28 [DEXA]; 2026-04-14 27.7 [InBody 570 device]; 2026-04-28 27.0 [InBody 570 device]; 2026-05-12 26.8 [InBody 570 device]; 2026-05-26 26.1 [InBody 570 device]; 2026-06-09 25.9 [InBody 570 device]; 2026-06-23 25.2 [InBody 570 device]; 2026-07-07 25.0 [InBody 570 device]; 2026-07-21 24.4 [InBody 570 device]; 2026-08-04 24 [DEXA]
+VAT Area: 2026-03-31 191 [DEXA]; 2026-04-14 187.0 [InBody 570 device]; 2026-04-28 180.1 [InBody 570 device]; 2026-05-12 176.7 [InBody 570 device]; 2026-05-26 170.2 [InBody 570 device]; 2026-06-09 166.5 [InBody 570 device]; 2026-06-23 159.8 [InBody 570 device]; 2026-07-07 156.2 [InBody 570 device]; 2026-07-21 150.1 [InBody 570 device]; 2026-08-04 145.5 [DEXA]
+Lean Mass: 2026-03-31 121.9 [DEXA]; 2026-04-14 121.7 [InBody 570 device]; 2026-04-28 121.2 [InBody 570 device]; 2026-05-12 121.1 [InBody 570 device]; 2026-05-26 120.7 [InBody 570 device]; 2026-06-09 120.5 [InBody 570 device]; 2026-06-23 120.1 [InBody 570 device]; 2026-07-07 119.9 [InBody 570 device]; 2026-07-21 119.5 [InBody 570 device]; 2026-08-04 119.3 [DEXA]
+Fat Mass: 2026-03-31 49.8 [DEXA]; 2026-04-14 48.7 [InBody 570 device]; 2026-04-28 47.0 [InBody 570 device]; 2026-05-12 46.1 [InBody 570 device]; 2026-05-26 44.5 [InBody 570 device]; 2026-06-09 43.4 [InBody 570 device]; 2026-06-23 41.8 [InBody 570 device]; 2026-07-07 40.8 [InBody 570 device]; 2026-07-21 39.3 [InBody 570 device]; 2026-08-04 38.1 [DEXA]
+VAT Volume: 2026-03-31 996 [DEXA]; 2026-04-14 972 [InBody 570 device]; 2026-04-28 935 [InBody 570 device]; 2026-05-12 914 [InBody 570 device]; 2026-05-26 879 [InBody 570 device]; 2026-06-09 856 [InBody 570 device]; 2026-06-23 820 [InBody 570 device]; 2026-07-07 798 [InBody 570 device]; 2026-07-21 765 [InBody 570 device]; 2026-08-04 738 [DEXA]
 Total BMD: 2026-03-31 1.25 [DEXA]; 2026-08-04 1.218 [DEXA]
-Resting Metabolic Rate: 2026-03-31 1754; 2026-08-04 1902
+Resting Metabolic Rate: 2026-03-31 1754; 2026-04-21 1772 [Metabolic breath device]; 2026-05-12 1801 [Metabolic breath device]; 2026-06-02 1818 [Metabolic breath device]; 2026-06-23 1846 [Metabolic breath device]; 2026-07-14 1871 [Metabolic breath device]; 2026-08-04 1902
 `
 
 /** One CSV line into fields; a quoted field may hold commas. */
@@ -275,24 +276,52 @@ export const MARCUS: OptimizationData = {
   biomarkers: parseBiomarkers(BIOMARKERS_CSV),
   goals: [
     {
-      metric: "Weight", unit: "lb", baseline: 183, current: 161, goal: 160, goalLabel: "160 lb", betterDirection: "Lower",
-      projection: "160-162 lb", goalDate: "2026-10-31", confidence: "High", status: "Near goal", seriesMarkerName: "Weight",
+      metric: "Weight", unit: "lb", baseline: 183, current: 171.5, goal: 160, goalLabel: "160 lb", betterDirection: "Lower",
+      projection: "165-168 lb", goalDate: "2026-10-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Weight",
     },
     {
-      metric: "Waist", unit: "in", baseline: 38, current: 34.25, goal: 33, goalLabel: "32-33 in", betterDirection: "Lower",
-      projection: "33.5-34 in", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Waist",
+      metric: "Waist", unit: "in", baseline: 38, current: 35.5, goal: 33, goalLabel: "32-33 in", betterDirection: "Lower",
+      projection: "34-34.5 in", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Waist",
     },
     {
-      metric: "Body fat", unit: "%", baseline: 28, current: 23.3, goal: 20, goalLabel: "18-20%", betterDirection: "Lower",
-      projection: "21.5-22.5%", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Body Fat Total",
+      metric: "Body fat", unit: "%", baseline: 28, current: 24, goal: 20, goalLabel: "18-20%", betterDirection: "Lower",
+      projection: "22-23%", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Body Fat Total",
     },
     {
-      metric: "VAT area", unit: "cm²", baseline: 191, current: 142, goal: 100, goalLabel: "< 100 cm²", betterDirection: "Lower",
+      metric: "VAT area", unit: "cm²", baseline: 191, current: 145.5, goal: 100, goalLabel: "< 100 cm²", betterDirection: "Lower",
       projection: "125-135 cm²", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "VAT Area",
     },
     {
-      metric: "HbA1c", unit: "%", baseline: 5.6, current: 5.3, goal: 5.4, goalLabel: "5.2-5.4%", betterDirection: "Lower",
-      projection: "5.5%", goalDate: "2026-11-30", confidence: "Moderate", status: "Controlled", seriesMarkerName: "Hemoglobin A1c",
+      metric: "HbA1c", unit: "%", baseline: 5.6, current: 5.5, goal: 5.4, goalLabel: "5.2-5.4%", betterDirection: "Lower",
+      projection: "5.4%", goalDate: "2026-11-30", confidence: "Moderate", status: "Improving", seriesMarkerName: "Hemoglobin A1c",
+    },
+    {
+      metric: "Fat mass", unit: "lb", baseline: 49.8, current: 38.1, goal: 26.4, goalLabel: "26.4 lb", betterDirection: "Lower",
+      projection: "33-35 lb", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Fat Mass",
+    },
+    {
+      metric: "Lean mass", unit: "lb", baseline: 121.9, current: 119.3, goal: 124.5, goalLabel: "124.5 lb", betterDirection: "Higher",
+      projection: "120-121 lb", goalDate: "2027-03-31", confidence: "Low", status: "Needs improvement", seriesMarkerName: "Lean Mass",
+    },
+    {
+      metric: "VAT volume", unit: "cm³", baseline: 996, current: 738, goal: 480, goalLabel: "< 480 cm³", betterDirection: "Lower",
+      projection: "600-650 cm³", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "VAT Volume",
+    },
+    {
+      metric: "RMR", unit: "kcal/day", baseline: 1754, current: 1902, goal: 2050, goalLabel: "2,050 kcal/day", betterDirection: "Higher",
+      projection: "1,950-2,000 kcal/day", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Resting Metabolic Rate",
+    },
+    {
+      metric: "Fasting glucose", unit: "mg/dL", baseline: 114, current: 103, goal: 92, goalLabel: "≤ 92 mg/dL", betterDirection: "Lower",
+      projection: "95-98 mg/dL", goalDate: "2026-12-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Fasting Glucose",
+    },
+    {
+      metric: "Fasting insulin", unit: "mcU/mL", baseline: 7.4, current: 5.4, goal: 3.4, goalLabel: "≤ 3.4 mcU/mL", betterDirection: "Lower",
+      projection: "4-4.5 mcU/mL", goalDate: "2026-12-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Fasting Insulin",
+    },
+    {
+      metric: "HOMA-IR", unit: "index", baseline: 2.08, current: 1.37, goal: 0.66, goalLabel: "≤ 0.66", betterDirection: "Lower",
+      projection: "1.0-1.1", goalDate: "2026-12-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "HOMA-IR (calculated)",
     },
     {
       metric: "Omega-3 index", unit: "%", baseline: 4.6, current: 4.6, goal: 8, goalLabel: "8-12%", betterDirection: "Higher",
@@ -308,24 +337,24 @@ export const MARCUS: OptimizationData = {
     },
   ],
   scans: [
-    { metric: "Weight", short: "Weight", unit: "lb", first: 177.6, latest: 163.3, status: "Improved" },
-    { metric: "Body fat", short: "Body fat", unit: "%", first: 28, latest: 23.3, status: "Improved" },
+    { metric: "Weight", short: "Weight", unit: "lb", first: 177.6, latest: 172.4, status: "Improved" },
+    { metric: "Body fat", short: "Body fat", unit: "%", first: 28, latest: 24, status: "Improved" },
     { metric: "Fat mass", short: "Fat mass", unit: "lb", first: 49.8, latest: 38.1, status: "Improved" },
     { metric: "Lean mass", short: "Lean mass", unit: "lb", first: 121.9, latest: 119.3, status: "Watch" },
-    { metric: "VAT area", short: "VAT area", unit: "cm²", first: 191, latest: 142, status: "Improved" },
+    { metric: "VAT area", short: "VAT area", unit: "cm²", first: 191, latest: 145.5, status: "Improved" },
     { metric: "VAT volume", short: "VAT volume", unit: "cm³", first: 996, latest: 738, status: "Improved" },
     { metric: "RMR", short: "RMR", unit: "kcal/day", first: 1754, latest: 1902, status: "Optimal" },
   ],
   interventions: [
-    { start: "2026-03-01", category: "Nutrition", name: "Calorie-controlled fat-loss plan", doseOrTarget: "~1,500-1,600 kcal/day", frequency: "Daily", owner: "Patient", status: "Active", outcomeMetric: "Weight / waist", observed: "Weight -19.7 lb; waist -3.5 in", nextReview: "2026-08-31" },
-    { start: "2026-03-01", category: "Exercise", name: "Resistance training split", doseOrTarget: "6 days/week", frequency: "Weekly", owner: "Patient", status: "Active", outcomeMetric: "Lean mass / strength", observed: "Strength maintained", nextReview: "2026-08-31" },
-    { start: "2026-04-01", category: "Activity", name: "Walking and treadmill", doseOrTarget: "10,000-12,000 steps + 30-45 min", frequency: "Daily", owner: "Patient", status: "Active", outcomeMetric: "Weight / A1C / VAT", observed: "VAT -25.7%", nextReview: "2026-08-31" },
-    { start: "2026-03-26", category: "TRT safety", name: "Power Red blood donation", doseOrTarget: "1 session", frequency: "Once", owner: "Clinician", status: "Completed", outcomeMetric: "Hematocrit", observed: "54.2% → 48.8%", nextReview: "2026-03-27" },
-    { start: "2026-04-01", category: "TRT", name: "Split testosterone dosing", doseOrTarget: "Physician-directed", frequency: "3x weekly", owner: "Physician", status: "Active", outcomeMetric: "T / E2 / Hct", observed: "E2 and hematocrit improved", nextReview: "Next TRT panel" },
-    { start: "2026-05-29", category: "Supplement", name: "Omega-3 EPA+DHA", doseOrTarget: "Clinician-approved dose", frequency: "Daily", owner: "Patient/Physician", status: "Verify", outcomeMetric: "Omega-3 Index", observed: "Baseline 4.6%; retest needed", nextReview: "2026-11-30" },
-    { start: "2026-05-29", category: "Supplement", name: "Psyllium / soluble fiber", doseOrTarget: "5-10 g/day", frequency: "Daily", owner: "Patient", status: "Active", outcomeMetric: "LDL-P / glucose", observed: "Pending repeat labs", nextReview: "2026-11-30" },
-    { start: "2026-06-04", category: "Sleep", name: "Treat mild obstructive sleep apnea", doseOrTarget: "AHI 5.3; O₂ nadir 85%", frequency: "Nightly", owner: "Patient/Physician", status: "High priority", outcomeMetric: "AHI / O₂ nadir", observed: "Mild OSA with desaturation", nextReview: "Now" },
-    { start: "2026-08-04", category: "Body recomposition", name: "Protect lean mass", doseOrTarget: "Protein + progressive resistance", frequency: "Daily/weekly", owner: "Patient", status: "Active", outcomeMetric: "Lean mass", observed: "Lean mass 119.3 lb", nextReview: "Next DEXA" },
+    { start: "2026-03-01", category: "Nutrition", name: "Calorie-controlled fat-loss plan", doseOrTarget: "~1,500-1,600 kcal/day", frequency: "Daily", owner: "Patient", status: "Active", outcomeMetric: "Weight / waist", observed: "Weight -11.5 lb; waist -2.5 in", nextReview: "2026-08-31", progress: 50 },
+    { start: "2026-03-01", category: "Exercise", name: "Resistance training split", doseOrTarget: "6 days/week", frequency: "Weekly", owner: "Patient", status: "Active", outcomeMetric: "Lean mass / strength", observed: "Strength maintained", nextReview: "2026-08-31", progress: 50 },
+    { start: "2026-04-01", category: "Activity", name: "Walking and treadmill", doseOrTarget: "10,000-12,000 steps + 30-45 min", frequency: "Daily", owner: "Patient", status: "Active", outcomeMetric: "Weight / A1C / VAT", observed: "VAT -23.8%", nextReview: "2026-08-31", progress: 50 },
+    { start: "2026-03-26", category: "TRT safety", name: "Power Red blood donation", doseOrTarget: "1 session", frequency: "Once", owner: "Clinician", status: "Completed", outcomeMetric: "Hematocrit", observed: "54.2% → 48.8%", nextReview: "2026-03-27", progress: 100 },
+    { start: "2026-04-01", category: "TRT", name: "Split testosterone dosing", doseOrTarget: "Physician-directed", frequency: "3x weekly", owner: "Physician", status: "Active", outcomeMetric: "T / E2 / Hct", observed: "E2 and hematocrit improved", nextReview: "Next TRT panel", progress: 50 },
+    { start: "2026-05-29", category: "Supplement", name: "Omega-3 EPA+DHA", doseOrTarget: "Clinician-approved dose", frequency: "Daily", owner: "Patient/Physician", status: "Verify", outcomeMetric: "Omega-3 Index", observed: "Baseline 4.6%; retest needed", nextReview: "2026-11-30", progress: 25 },
+    { start: "2026-05-29", category: "Supplement", name: "Psyllium / soluble fiber", doseOrTarget: "5-10 g/day", frequency: "Daily", owner: "Patient", status: "Active", outcomeMetric: "LDL-P / glucose", observed: "Pending repeat labs", nextReview: "2026-11-30", progress: 25 },
+    { start: "2026-06-04", category: "Sleep", name: "Treat mild obstructive sleep apnea", doseOrTarget: "AHI 5.3; O₂ nadir 85%", frequency: "Nightly", owner: "Patient/Physician", status: "High priority", outcomeMetric: "AHI / O₂ nadir", observed: "Mild OSA with desaturation", nextReview: "Now", progress: 10 },
+    { start: "2026-08-04", category: "Body recomposition", name: "Protect lean mass", doseOrTarget: "Protein + progressive resistance", frequency: "Daily/weekly", owner: "Patient", status: "Active", outcomeMetric: "Lean mass", observed: "Lean mass 119.3 lb", nextReview: "Next DEXA", progress: 0 },
   ],
   tests: [
     { tier: "Tier 1", category: "Kidney", test: "Urine albumin/creatinine ratio", why: "Order annual kidney screen", previous: "Not resulted", target: "≤ 30 mg/g", timing: "Next visit", status: "Discuss" },
@@ -375,6 +404,19 @@ export const MARCUS: OptimizationData = {
     { date: "2026-08-25", intake: 1520, burn: 2045 },
     { date: "2026-08-26", intake: 1355, burn: 1910 },
   ],
+  /* Sample nightly syncs: the HOLv.9 tracker carries no wearable rows. */
+  wearable: {
+    device: "Apple Watch via Terra",
+    days: [
+      { date: "2026-09-26", steps: 11240, restingHr: 58, hrv: 41, sleepHours: 6.4 },
+      { date: "2026-09-27", steps: 9810, restingHr: 59, hrv: 38, sleepHours: 5.9 },
+      { date: "2026-09-28", steps: 12430, restingHr: 57, hrv: 44, sleepHours: 7.1 },
+      { date: "2026-09-29", steps: 10620, restingHr: 58, hrv: 42, sleepHours: 6.8 },
+      { date: "2026-09-30", steps: 8150, restingHr: 61, hrv: 35, sleepHours: 5.6 },
+      { date: "2026-10-01", steps: 11980, restingHr: 58, hrv: 43, sleepHours: 6.9 },
+      { date: "2026-10-02", steps: 10470, restingHr: 57, hrv: 45, sleepHours: 7.2 },
+    ],
+  },
   rmr: 1902,
   categories: [
     { category: "Immune regulation", score: 0 },
@@ -401,18 +443,18 @@ export const MARCUS: OptimizationData = {
     latestDraw: "2026-08-14",
     bulk: { count: 141, source: "Function Health", date: "2026-05-31" },
     headline: [
-      { label: "Weight", unit: "lb", baseline: 183, latest: 161, seriesMarkerName: "Weight", better: "Lower", verdict: "Near goal", verdictTone: "primary", decimals: 0 },
-      { label: "Waist", unit: "in", baseline: 38, latest: 34.25, seriesMarkerName: "Waist", better: "Lower", verdict: "Improving", verdictTone: "success", decimals: 2 },
-      { label: "Body fat", unit: "%", baseline: 28, latest: 23.3, seriesMarkerName: "Body Fat Total", better: "Lower", verdict: "Strong improvement", verdictTone: "success", decimals: 1 },
-      { label: "VAT area", unit: "cm²", baseline: 191, latest: 142, seriesMarkerName: "VAT Area", better: "Lower", verdict: "Strong improvement", verdictTone: "success", decimals: 0 },
+      { label: "Weight", unit: "lb", baseline: 183, latest: 171.5, seriesMarkerName: "Weight", better: "Lower", verdict: "Halfway to goal", verdictTone: "primary", decimals: 0 },
+      { label: "Waist", unit: "in", baseline: 38, latest: 35.5, seriesMarkerName: "Waist", better: "Lower", verdict: "Improving", verdictTone: "success", decimals: 2 },
+      { label: "Body fat", unit: "%", baseline: 28, latest: 24, seriesMarkerName: "Body Fat Total", better: "Lower", verdict: "Improving", verdictTone: "success", decimals: 1 },
+      { label: "VAT area", unit: "cm²", baseline: 191, latest: 145.5, seriesMarkerName: "VAT Area", better: "Lower", verdict: "Improving", verdictTone: "success", decimals: 0 },
       { label: "Fat mass", unit: "lb", baseline: 49.8, latest: 38.1, seriesMarkerName: "Fat Mass", better: "Lower", verdict: "Down 11.7 lb", verdictTone: "success", decimals: 1 },
       { label: "RMR", unit: "kcal/day", baseline: 1754, latest: 1902, seriesMarkerName: "Resting Metabolic Rate", better: "Higher", verdict: "Improved", verdictTone: "success", decimals: 0 },
       { label: "Lean mass", unit: "lb", baseline: 121.9, latest: 119.3, seriesMarkerName: "Lean Mass", better: "Higher", verdict: "Watch / protect", verdictTone: "warning", decimals: 1 },
     ],
     bands: {
       "Out of target": [
-        { name: "Body Fat Total", latest: "23.3", unit: "%", target: "≤ 20", status: "High", tier: "Tier 1", whatToDo: "Reduce fat while preserving lean tissue" },
-        { name: "VAT Area", latest: "142", unit: "cm²", target: "≤ 100", status: "High", tier: "Tier 1", whatToDo: "Continue visceral-fat reduction" },
+        { name: "Body Fat Total", latest: "24", unit: "%", target: "≤ 20", status: "High", tier: "Tier 1", whatToDo: "Reduce fat while preserving lean tissue" },
+        { name: "VAT Area", latest: "145.5", unit: "cm²", target: "≤ 100", status: "High", tier: "Tier 1", whatToDo: "Continue visceral-fat reduction" },
         { name: "VAT Volume", latest: "738", unit: "cm³", target: "≤ 600", status: "High", tier: "Tier 1", whatToDo: "Continue visceral-fat reduction" },
         { name: "LDL Particle Number", latest: "1215", unit: "nmol/L", target: "≤ 1000", status: "High", tier: "Tier 1", whatToDo: "Repeat advanced lipids" },
         { name: "LDL Small", latest: "227", unit: "nmol/L", target: "≤ 150", status: "High", tier: "Tier 1", whatToDo: "Improve particle profile" },
@@ -427,22 +469,22 @@ export const MARCUS: OptimizationData = {
         { name: "Rheumatoid Factor", latest: "29", unit: "IU/mL", target: "Clinical", status: "High", tier: "Tier 2", whatToDo: "Consider anti-CCP / ESR / CRP" },
       ],
       "On watch": [
-        { name: "Weight", latest: "161", unit: "lb", target: "160-165", status: "Watch", tier: "Tier 1", whatToDo: "Continue gradual loss to 160 lb" },
-        { name: "Waist", latest: "34.25", unit: "in", target: "32-33", status: "Watch", tier: "Tier 1", whatToDo: "Continue training and modest deficit" },
+        { name: "Weight", latest: "171.5", unit: "lb", target: "160-165", status: "Watch", tier: "Tier 1", whatToDo: "Continue gradual loss" },
+        { name: "Waist", latest: "35.5", unit: "in", target: "32-33", status: "Watch", tier: "Tier 1", whatToDo: "Continue recomposition" },
         { name: "Fat Mass", latest: "38.1", unit: "lb", target: "30-33", status: "Watch", tier: "Tier 1", whatToDo: "Continue gradual reduction" },
-        { name: "Lean Mass", latest: "119.3", unit: "lb", target: "≥ 121.9", status: "Watch", tier: "Tier 1", whatToDo: "Protein, resistance training, recovery" },
-        { name: "Total BMD", latest: "1.218", unit: "g/cm²", target: "Maintain", status: "Watch", tier: "Tier 2", whatToDo: "Review regional results" },
-        { name: "RBC", latest: "5.47", unit: "x10^12/L", target: "≤ 5.5", status: "Watch", tier: "Tier 2", whatToDo: "Monitor trend" },
-        { name: "Hematocrit", latest: "49.3", unit: "%", target: "≤ 50", status: "Watch", tier: "Tier 1", whatToDo: "Review action threshold" },
-        { name: "Hemoglobin", latest: "15.6", unit: "g/dL", target: "≤ 16", status: "Watch", tier: "Tier 2", whatToDo: "Keep within approved range" },
-        { name: "Cystatin C", latest: "1.05", unit: "mg/L", target: "Range", status: "Watch", tier: "Tier 1", whatToDo: "Interpret with eGFR; repeat annually" },
-        { name: "Estradiol (E2)", latest: "13", unit: "pg/mL", target: "25-40", status: "Watch", tier: "Monitor", whatToDo: "Avoid over-suppression" },
-        { name: "Homocysteine", latest: "9.5", unit: "umol/L", target: "≤ 8", status: "Watch", tier: "Tier 2", whatToDo: "Review B-vitamin status" },
-        { name: "Vitamin D", latest: "63", unit: "ng/mL", target: "40-60", status: "Watch", tier: "Monitor", whatToDo: "Maintain within approved range" },
+        { name: "Lean Mass", latest: "119.3", unit: "lb", target: "≥ 121.9", status: "Watch", tier: "Tier 1", whatToDo: "Protect lean mass" },
+        { name: "Total BMD", latest: "1.218", unit: "g/cm²", target: "Maintain", status: "Watch", tier: "Tier 2", whatToDo: "Review DEXA" },
+        { name: "Hemoglobin A1c", latest: "5.5", unit: "%", target: "5.2-5.4", status: "Watch", tier: "Tier 1", whatToDo: "Continue toward 5.4%" },
+        { name: "Total Testosterone", latest: "619", unit: "ng/dL", target: "Physiologic", status: "In range", tier: "Tier 2", whatToDo: "Maintain conservative range" },
+        { name: "Free Testosterone", latest: "10.4", unit: "ng/dL", target: "3.1-11.3", status: "In range", tier: "Tier 2", whatToDo: "Monitor symptoms" },
+        { name: "RBC", latest: "5.47", unit: "x10^12/L", target: "≤ 5.5", status: "Watch", tier: "Tier 2", whatToDo: "Monitor TRT" },
+        { name: "eGFR", latest: "58", unit: "mL/min/1.73m²", target: "≥ 60", status: "Low", tier: "Tier 1", whatToDo: "Repeat + cystatin C" },
+        { name: "Homocysteine", latest: "9.5", unit: "umol/L", target: "≤ 8", status: "Watch", tier: "Tier 2", whatToDo: "Review B vitamins" },
+        { name: "Sleep Apnea (home study)", latest: "AHI 5.3; O₂ nadir 85%", unit: "", target: "Treat / minimize hypoxemia", status: "High", tier: "Tier 1", whatToDo: "Sleep-medicine follow-up; positional or oral-appliance options" },
       ],
       "Not yet tested": [
-        { name: "Urine Albumin/Creatinine Ratio", latest: "", unit: "mg/g", target: "≤ 30", status: "Not yet tested", tier: "Tier 1", whatToDo: "Obtain spot urine sample" },
-        { name: "Sensitive estradiol LC/MS-MS", latest: "", unit: "pg/mL", target: "25-40", status: "Not yet tested", tier: "Tier 2", whatToDo: "Confirm if low libido persists" },
+        { name: "Urine Albumin/Creatinine Ratio", latest: "", unit: "mg/g", target: "< 30 mg/g", status: "Not yet tested", tier: "Tier 1", whatToDo: "Order annual kidney screen" },
+        { name: "Sensitive Estradiol LC/MS-MS", latest: "", unit: "pg/mL", target: "Symptom-guided", status: "Not yet tested", tier: "Tier 2", whatToDo: "Confirm if low libido persists" },
         { name: "Anti-CCP / ESR", latest: "", unit: "", target: "Clinical", status: "Not yet tested", tier: "Tier 2", whatToDo: "Consider if indicated" },
         { name: "Advanced lipid panel", latest: "", unit: "", target: "≤ 1000", status: "Not yet tested", tier: "Tier 1", whatToDo: "Repeat advanced lipids" },
       ],
@@ -452,14 +494,19 @@ export const MARCUS: OptimizationData = {
       { order: 2, text: "Continue visceral-fat reduction", milestone: "VAT under 100 cm²", met: false, basedOn: ["VAT Area", "VAT Volume"] },
       { order: 3, text: "Protect lean mass", milestone: "Protein + resistance training", met: false, basedOn: ["Lean Mass"] },
       { order: 4, text: "Maintain TRT safety and balance", milestone: "CBC + sensitive estradiol", met: false, basedOn: ["Hematocrit", "Estradiol (E2)"] },
+      { order: 7, text: "Reach 165 lb by the end of October", milestone: "171.5 lb on 08/08/2026 · 6.5 lb to go", met: false, basedOn: ["Weight"] },
+      { order: 8, text: "Bring waist under 34 in", milestone: "35.5 in on 08/08/2026", met: false, basedOn: ["Waist"] },
       { order: 5, text: "Potassium normalized on repeat", milestone: "08/14/2026 · 4.5 mmol/L", met: true, basedOn: ["Potassium"] },
       { order: 6, text: "Kidney trend improved", milestone: "08/14/2026 · eGFR 62 · creatinine 1.20", met: true, basedOn: ["eGFR", "Creatinine"] },
     ],
     scanDates: { first: "2026-03-31", latest: "2026-08-04" },
-    scale: { weight: 161, date: "2026-08-08" },
+    scale: { weight: 171.5, date: "2026-08-08" },
     medications: [
-      { name: "Synthroid", dose: "1 mg", prescriber: "Dr. Blanchard" },
-      { name: "Atorvastatin", dose: "10 mg", prescriber: "Dr. Blanchard", change: { from: "10 mg", to: "15 mg", by: "Dr. Jones", date: "2025-10-25" } },
+      { name: "Synthroid", dose: "1 mg", prescriber: "Dr. Blanchard", sig: "Take 1 tablet by mouth every morning", quantity: "90 tablets", recorded: "2015-08-01", rxnorm: "966247" },
+      { name: "Atorvastatin", dose: "10 mg", prescriber: "Dr. Blanchard", sig: "Take 1 tablet by mouth at bedtime", quantity: "30 tablets", recorded: "2022-11-14", rxnorm: "617312", change: { from: "10 mg", to: "15 mg", by: "Dr. Jones", date: "2025-10-25" } },
+      { name: "Testosterone cypionate", dose: "100 mg/mL", prescriber: "Dr. Reyes", sig: "Inject 0.4 mL intramuscularly twice weekly", quantity: "10 mL vial", recorded: "2026-04-01", rxnorm: "835829" },
+      { name: "Omega-3 EPA+DHA", dose: "2 g", prescriber: "Dr. Reyes", sig: "Take 2 capsules by mouth daily with food", quantity: "120 capsules", recorded: "2026-05-29", rxnorm: "1047795" },
+      { name: "Psyllium husk", dose: "5 g", prescriber: "Dr. Reyes", sig: "Mix 1 scoop in water and take daily", quantity: "1 canister", recorded: "2026-05-29", rxnorm: "8928" },
     ],
     changes: [
       { date: "2026-05-29", text: "Started Omega-3 EPA+DHA", sub: "Plan · baseline index 4.6%", status: "Verify" },

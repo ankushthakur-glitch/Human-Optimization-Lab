@@ -139,10 +139,15 @@ const BLANK: Patch = {
   scores: undefined,
   gapsDone: undefined,
   demo: undefined,
+  chatCategories: undefined,
+  corrections: undefined,
+  testAnswers: undefined,
 }
 
-/** A first run from the top: nothing saved, setup at Is this you. */
-const firstRun = (): Patch => ({ ...BLANK, step: "about" })
+/** A first run from the top: nothing saved, setup at Is this you. The
+    chat history is filled all the same, so the assistant's drawer shows
+    past chats and categories at the end of the walkthrough. */
+const firstRun = (): Patch => ({ ...BLANK, step: "about", chats: pastChats(), chatCategories: CHAT_CATEGORIES })
 
 /** Where an onboarding seed leaves the account; every other seed is signed
     in. "activate": signed out with no password, as a new install.
@@ -197,6 +202,7 @@ function free(): Patch {
     oneStep: [dayKey(on(-1))],
     added: [{ id: "added-scan", title: "Body composition scan", detail: "8 values read, 1 being checked", at: "Jul 18, 2026", unclear: 1 }],
     chats: pastChats(),
+    chatCategories: CHAT_CATEGORIES,
     questions: [],
     scores: [],
     seen: [],
@@ -260,7 +266,7 @@ function memberSetup(): Patch {
   return {
     ...free(),
     membership: { tier: "optimization", programs: ["metabolic", "weight", "heart"], startedAt: on(-2, 18, 10).toISOString() },
-    setupDone: ["questionnaire", "medicines"],
+    setupDone: [],
   }
 }
 
@@ -409,10 +415,19 @@ function pastChats(member = false): PastChat[] {
       "What does my vitamin D result mean?",
       "Your vitamin D was 21 ng/mL, below the range of 30 to 100. Low vitamin D is common and can leave you tired. The 2,000 IU you added is a usual dose, and a repeat test shows if it is enough.",
     ]),
+    pastChat("past-hospital", "other", "Best hospital for foot surgery", 4, 18, 45, [
+      "Which hospital near me is best for foot surgery?",
+      "For foot surgery, look for a hospital with a dedicated foot and ankle team and a high yearly volume of the procedure you need. Ask Dr. Patel for a referral: the clinic can point you to orthopedic surgeons your plan covers.",
+    ]),
     pastChat("past-tired", "other", "Feeling tired in the afternoons", 18, 15, 30, [
       "I feel tired most afternoons. Should I worry?",
       "Many things cause it, and two in your record can: low vitamin D and blood sugar in the prediabetes range. If it is new or getting worse, bring it up with Dr. Patel.",
     ]),
+    pastChat("past-thyroid-hospital", "other", "Best hospital for thyroid cancer", 21, 11, 5, [
+      "Which hospital is best for thyroid cancer?",
+      "Look for a center with a dedicated endocrine surgery team that treats many thyroid cancers each year, often an NCI designated cancer center. Dr. Patel can refer you to one your plan covers.",
+    ]),
+    ...categoryChats(),
   ]
   if (!member) return chats
   return [
@@ -425,6 +440,53 @@ function pastChats(member = false): PastChat[] {
       "Is a 20 minute walk after dinner enough?",
       "For now, yes. Your plan builds to 30 minutes over the next two weeks. A walk after dinner also helps your blood sugar after the meal.",
     ]),
-    ...chats.slice(4, 6),
+    ...chats.slice(4),
+  ]
+}
+
+/** The categories Olivia made herself, oldest first: each holds a few
+    chats, so the chat history shows them filed beside the built in ones. */
+export const CHAT_CATEGORIES = [
+  { id: "cat-thyroid", name: "Thyroid" },
+  { id: "cat-foot", name: "Foot surgery" },
+  { id: "cat-sleep", name: "Sleep" },
+  { id: "cat-family", name: "Family history" },
+]
+
+/** Her chats in the categories she made. */
+function categoryChats(): PastChat[] {
+  return [
+    pastChat("past-thyroid-tsh", "cat-thyroid", "What does a TSH test check?", 2, 9, 30, [
+      "What does a TSH test check?",
+      "TSH is a hormone from the pituitary gland that tells the thyroid how hard to work. A high TSH usually means an underactive thyroid, a low one an overactive thyroid. It is the usual first thyroid test.",
+    ]),
+    pastChat("past-thyroid-nodule", "cat-thyroid", "Should a thyroid nodule worry me?", 10, 20, 10, [
+      "My sister has a thyroid nodule. Should I get checked?",
+      "Most thyroid nodules are harmless. A family history is worth mentioning to Dr. Patel, who can feel your neck at your next visit and order an ultrasound if anything is found.",
+    ]),
+    pastChat("past-thyroid-symptoms", "cat-thyroid", "Signs of an underactive thyroid", 24, 8, 15, [
+      "What are the signs of an underactive thyroid?",
+      "Common ones are tiredness, feeling cold, weight gain, dry skin and constipation. They overlap with many other things, so a TSH test is the way to know.",
+    ]),
+    pastChat("past-foot-recovery", "cat-foot", "Recovery time after bunion surgery", 3, 18, 0, [
+      "How long is recovery after bunion surgery?",
+      "Most people wear a surgical shoe for about six weeks and are back in normal shoes by three months. Full recovery can take up to a year. Your surgeon will give you a plan for your own procedure.",
+    ]),
+    pastChat("past-foot-questions", "cat-foot", "Questions for my foot surgeon", 7, 12, 40, [
+      "What should I ask the foot surgeon before deciding?",
+      "Ask which procedure they recommend and why, how many they do each year, the recovery time, when you can drive and work, and what happens if you wait. I saved these to your next visit.",
+    ]),
+    pastChat("past-sleep-waking", "cat-sleep", "Waking up at 3 AM", 4, 7, 10, [
+      "Why do I keep waking up at 3 AM?",
+      "Common causes are stress, alcohol in the evening, a late meal, a warm room and blood sugar dipping overnight. A steady bedtime and no screens in the last hour help. If it lasts weeks, tell Dr. Patel.",
+    ]),
+    pastChat("past-sleep-magnesium", "cat-sleep", "Does magnesium help sleep?", 15, 22, 0, [
+      "Does magnesium help with sleep?",
+      "Some small studies show a modest benefit, mostly for people low in magnesium. It is generally safe at usual doses, but check with Dr. Patel first because it can interact with some medicines.",
+    ]),
+    pastChat("past-family-heart", "cat-family", "My father's heart attack at 55", 12, 19, 25, [
+      "My father had a heart attack at 55. What does that mean for me?",
+      "A heart attack in a father before 55 raises your own risk, which makes your LDL of 162 and blood pressure more important to keep in range. Tell Dr. Patel so it counts in your heart risk score.",
+    ]),
   ]
 }

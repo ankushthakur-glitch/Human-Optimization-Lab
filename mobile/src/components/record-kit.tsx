@@ -660,8 +660,9 @@ export function ReviewBanner({ state, onPress }: { state: BannerState | null | u
 /** The one strong block on a screen: Frontline's gradient task card, in
     teal. The gradient fills whatever the block holds (rows on a white inset
     panel, count tiles); the two soft circles keep their size in the top and
-    bottom right corners. */
-export function Hero({ children, onPress }: { children: React.ReactNode; onPress?: () => void }) {
+    bottom right corners. `muted` is the Ask banner's softer grey teal. */
+export function Hero({ children, onPress, muted }: { children: React.ReactNode; onPress?: () => void; muted?: boolean }) {
+  const [from, to] = muted ? HERO_MUTED : HERO_TEAL
   // On a phone, react-native-svg sizes a percentage Svg once, so a block
   // that grew after its first layout (fonts loading, rows arriving) kept a
   // smaller gradient and its panel spilled past it. The gradient is drawn
@@ -679,8 +680,8 @@ export function Hero({ children, onPress }: { children: React.ReactNode; onPress
         <Svg style={StyleSheet.absoluteFill} width={size.w} height={size.h}>
           <Defs>
             <LinearGradient id={gradient} x1="0.41" y1="0" x2="0.59" y2="1">
-              <Stop offset="0" stopColor="#2D6F7B" />
-              <Stop offset="1" stopColor="#4FA3A5" />
+              <Stop offset="0" stopColor={from} />
+              <Stop offset="1" stopColor={to} />
             </LinearGradient>
           </Defs>
           <Rect width={size.w} height={size.h} fill={`url(#${gradient})`} />
@@ -710,6 +711,11 @@ export function Hero({ children, onPress }: { children: React.ReactNode; onPress
     </Pressable>
   )
 }
+
+/** The Hero's gradient, top to bottom: the brand teal, or the Ask
+    banner's grey teal (user, 5 Oct 2026). */
+const HERO_TEAL = ["#2D6F7B", "#4FA3A5"] as const
+const HERO_MUTED = ["#3E6B72", "#6A9EA0"] as const
 
 /** Words on the Hero's gradient: the title ("3 things need you", "Today"),
     a line under it (the focus line, "Step 3 of 5: Connect a device") and

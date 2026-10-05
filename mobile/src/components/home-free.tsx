@@ -6,9 +6,10 @@ import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, dotted } from "@/components/home-parts"
 import { CheckCircle, Pill, Warning } from "@/components/ph"
 import { Block, Card, Group, NeedsRow, NotConnected, Nudge, ROW_LIMIT, Rise, SmallAction, Status } from "@/components/record-kit"
-import { TabScreen, openTab } from "@/components/tab-bar"
+import { DEMO_USED, TabScreen, openTab } from "@/components/tab-bar"
 import { toast } from "@/components/toast"
 import { TrendTiles } from "@/components/trend-tile"
+import { useAllowance } from "@/lib/allowance"
 import { canOffer, useExperience, useMarkers } from "@/lib/experience"
 import { planFocus, useOffer } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
@@ -287,15 +288,18 @@ function Medicines() {
 /* ----------------------------------------------- ask about your results -- */
 
 /** The way into the assistant about her results (C.1.2, 9), the Figma's
-    teal banner with this month's free questions; a member's are never
-    counted, so no line. */
+    grey teal banner with the free credits left, as the orb's ring shows
+    them; a member's are never counted, so no line. */
 function AskRow() {
+  const { member } = useAllowance()
   return (
     <Rise at={7} id="home:ask">
       <HeroRow
         icon={<SparkleGlyph />}
         tile={ASK_TILE}
+        muted
         title="Ask about your results"
+        line={member ? undefined : `${Math.round((1 - DEMO_USED) * 100)}% of the free credits left`}
         onPress={() => router.push({ pathname: "/assistant", params: { topic: "results" } })}
       />
     </Rise>
@@ -324,12 +328,7 @@ function PlanCard() {
     router.push({ pathname: "/plans", params: { from: "home" } })
   }
 
-  if (offer.soft)
-    return (
-      <Rise at={9} id="home:plan">
-        <Nudge variant="link" title="A plan can build your days around your results." action={`See${NBSP}how${NBSP}it${NBSP}works`} onAction={see} onShow={offer.markShown} />
-      </Rise>
-    )
+  if (offer.soft) return null
 
   return (
     <Rise at={9} id="home:plan">

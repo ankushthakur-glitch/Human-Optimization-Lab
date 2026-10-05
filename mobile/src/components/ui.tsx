@@ -267,7 +267,7 @@ export function Button({
   /** Greyed and inert until the step can go on, e.g. an unsigned consent. */
   disabled?: boolean
   /** outline: the teal tinted secondary button (classic: white with a grey
-      edge). destructive: filled red, for Log out and other ways out
+      edge). destructive: soft red (tint fill, red words), for Log out and other ways out
       (classic: the red tint). */
   variant?: "primary" | "outline" | "destructive"
   /** Drawn before the label, e.g. Face ID on the outline button. */
@@ -315,8 +315,8 @@ export function Button({
         disabled && styles.buttonDisabled,
       ]}
     >
-      {pending && <ActivityIndicator color={primary || destructive ? color.onPrimary : color.primary} size="small" />}
-      {!pending && Icon && <Icon color={primary || destructive ? color.onPrimary : "#015D59"} />}
+      {pending && <ActivityIndicator color={primary ? color.onPrimary : destructive ? color.error : color.primary} size="small" />}
+      {!pending && Icon && <Icon color={primary ? color.onPrimary : destructive ? color.error : "#015D59"} />}
       <Text style={[styles.holText, !primary && styles.holTextOutline, destructive && styles.holTextDestructive]}>{children}</Text>
     </Pressable>
   )
@@ -477,11 +477,12 @@ const styles = StyleSheet.create({
   // The secondary button: the teal tint with its edge, as the ask button.
   holOutline: { borderColor: "#C2E1E0", backgroundColor: "#F2F7F7" },
   holOutlinePressed: { backgroundColor: "#E6F3F2" },
-  holDestructive: { borderColor: "#C72B32", backgroundColor: "#C72B32" },
-  holDestructivePressed: { borderColor: "#A9232A", backgroundColor: "#A9232A" },
+  // Soft red, as the portal's destructive button: tint fill, red words.
+  holDestructive: { borderColor: color.errorTint, backgroundColor: color.errorTint },
+  holDestructivePressed: { borderColor: color.errorHalo, backgroundColor: color.errorHalo },
   holText: { fontFamily: font.medium, fontSize: 16, lineHeight: 20, color: color.onPrimary },
   holTextOutline: { color: "#015D59" },
-  holTextDestructive: { color: color.onPrimary },
+  holTextDestructive: { color: color.error },
 
   textLink: { alignSelf: "flex-end", marginTop: -4 },
   divider: { flexDirection: "row", alignItems: "center", gap: 12 },

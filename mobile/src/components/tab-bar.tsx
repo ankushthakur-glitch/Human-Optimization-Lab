@@ -8,7 +8,6 @@ import { useDragBack } from "@/components/drag-back"
 import { DarkStatusBar } from "@/components/error-state"
 import { IconHome, IconPlan, IconResults, IconToDo, type TabIconProps } from "@/components/icons"
 import { OrbButton, PageGround, PageHeader } from "@/components/hol"
-import { useAllowance } from "@/lib/allowance"
 import { color, font, space } from "@/lib/theme"
 
 /* The signed-in app's bottom navigation, from the Figma "Hol" file: a
@@ -66,7 +65,6 @@ export function TabScreen({
   pinned?: React.ReactNode
   children: React.ReactNode
 }) {
-  const allowance = useAllowance()
   const { bottom } = useSafeAreaInsets()
   // Record, To do and Plan open over home with no animation; the left edge
   // swipe still drags them back to it.
@@ -84,13 +82,16 @@ export function TabScreen({
       <View style={styles.fill}>
         <PageGround />
         {pinned && <View style={[styles.body, styles.pinned]}>{pinned}</View>}
+        {/* The list stops above the bar: nothing scrolls beneath the pill
+            or the orb, the strip under them is the page's own ground. */}
         <ScrollView
-          contentContainerStyle={[styles.body, styles.content, !!pinned && styles.contentPinned, { paddingBottom: barSpace + space.gutter }]}
+          style={{ marginBottom: barSpace + space.inline }}
+          contentContainerStyle={[styles.body, styles.content, !!pinned && styles.contentPinned]}
           showsVerticalScrollIndicator={false}
         >
           {children}
         </ScrollView>
-        <TabBar active={tab} bottom={barBottom} used={allowance.member || !allowance.total ? 0 : allowance.used / allowance.total} />
+        <TabBar active={tab} bottom={barBottom} used={DEMO_USED} />
       </View>
       {overlay}
     </View>
@@ -130,6 +131,11 @@ function TabBar({ active, used, bottom }: { active: TabName; used: number; botto
     </View>
   )
 }
+
+/** The AI usage the orb's arc shows: fixed at 80% for now (user, 5 Oct
+    2026), in place of the allowance; the home's Ask banner says what is
+    left. */
+export const DEMO_USED = 0.8
 
 /** The bar's height, and how strongly it blurs what scrolls beneath it. */
 const BAR = 54

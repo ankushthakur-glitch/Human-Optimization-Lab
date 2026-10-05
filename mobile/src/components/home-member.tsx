@@ -15,7 +15,6 @@ import {
   Chip,
   ChipRow,
   Group,
-  Hero,
   NeedsRow,
   PlanLine,
   ProgressBar,
@@ -26,7 +25,6 @@ import {
   Tag,
   TextAction,
   TickCircle,
-  heroText,
   toast,
 } from "@/components/record-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
@@ -67,7 +65,7 @@ import {
 import { useOnboarding } from "@/lib/onboarding"
 import { livePlan } from "@/lib/plans"
 import { SETUP, nextSetup } from "@/lib/program"
-import { color, font, hairline, ink, space, type } from "@/lib/theme"
+import { color, hairline, ink, space, type } from "@/lib/theme"
 import { opensPage, orderHref, weekItems, yourMedicines } from "@/lib/todo"
 import { trendCounts } from "@/lib/trends"
 import { keepEnd } from "@/lib/words"
@@ -208,14 +206,13 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
   // Ed's three doors side by side while each keeps its words whole on one
   // line; on a narrower phone, or with larger text, Log a meal takes the
   // full width under the other two. The row is measured; until then, the
-  // phone's width less the page's and the hero's padding.
+  // phone's width less the page's gutter.
   const screen = useWindowDimensions()
-  const [doorRow, setDoorRow] = React.useState(() => screen.width - 2 * (space.gutter + space.card))
+  const [doorRow, setDoorRow] = React.useState(() => screen.width - 2 * space.gutter)
   const across = threeAcross(doorRow, screen.fontScale)
   const doors = [
     <StatTile
       key="exercise"
-      onHero
       icon={<Barbell size={16} color={iconInk} />}
       value={t.session ? t.session.minutes : "Rest"}
       unit={t.session ? "min" : undefined}
@@ -226,7 +223,6 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
     />,
     <StatTile
       key="diet"
-      onHero
       icon={<BowlFood size={16} color={iconInk} />}
       value={calories?.target ?? 0}
       unit="kcal"
@@ -240,7 +236,6 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
     // line across the row.
     <StatTile
       key="meal"
-      onHero
       icon={<Camera size={16} color={iconInk} />}
       value={allMeals && meal?.progress ? `${meal.progress.done} of ${meal.progress.of}` : SLOT_WORD[slot]}
       label="Log a meal"
@@ -250,18 +245,17 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
     />,
   ]
 
+  // The free home's language (user, 5 Oct 2026): a section label over
+  // white cards on the page's ground, no teal panel.
   return (
-    <Hero>
-      <View style={styles.heroHead}>
-        <View style={styles.heroTitleRow}>
-          <Text style={styles.heroTitle} accessibilityRole="header">
-            Today
-          </Text>
-          <CountUp value={t.done} format={(v) => `${Math.round(v)} of ${t.of} done`} style={heroText.meta} playKey="member:today-done" />
-        </View>
-        <ProgressBar onHero done={Math.round(t.share * 100)} total={100} />
-        <Text style={heroText.line}>{t.focus}</Text>
-      </View>
+    <Block
+      title="Today"
+      action={<CountUp value={t.done} format={(v) => `${Math.round(v)} of ${t.of} done`} style={styles.meta} playKey="member:today-done" />}
+    >
+      <Card style={styles.cardBody}>
+        <ProgressBar done={Math.round(t.share * 100)} total={100} />
+        <Text style={styles.body}>{t.focus}</Text>
+      </Card>
 
       <View style={styles.doors} onLayout={(e) => setDoorRow(e.nativeEvent.layout.width)}>
         {across ? (
@@ -275,7 +269,7 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
       </View>
 
       {(rows.length > 0 || !!prepTitle) && (
-        <Group inset>
+        <Group>
           {rows.map((a) => {
             if (a.id === "walk")
               return (
@@ -315,7 +309,7 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
           )}
         </Group>
       )}
-    </Hero>
+    </Block>
   )
 }
 
@@ -691,23 +685,19 @@ function SetupStage() {
       <Rise at={0} id="member:setup">
         <View style={styles.top}>
           <StatusBanner variant="member" tab="home" />
-          <Hero>
+          <Card style={styles.cardBody}>
             <View style={styles.stageTop}>
               <View style={styles.stageWords}>
-                <Text style={styles.heroTitle} accessibilityRole="header">
+                <Text style={styles.stageTitle} accessibilityRole="header">
                   Finish setting up your plan
                 </Text>
-                {next && <Text style={heroText.line}>{`Step ${step} of ${SETUP.length}: ${next.title}`}</Text>}
+                {next && <Text style={styles.meta}>{`Step ${step} of ${SETUP.length}: ${next.title}`}</Text>}
               </View>
               <Art name="key" size={64} />
             </View>
-            <ProgressBar onHero done={done.length} total={SETUP.length} />
-            {next && (
-              <SmallAction tone="onHero" onPress={() => router.push(next.href)}>
-                Continue
-              </SmallAction>
-            )}
-          </Hero>
+            <ProgressBar done={SETUP.filter((x) => done.includes(x.id)).length} total={SETUP.length} />
+            {next && <SmallAction onPress={() => router.push(next.href)}>Continue</SmallAction>}
+          </Card>
         </View>
       </Rise>
       <RecordSections needsAsCard />
@@ -740,18 +730,19 @@ function ReviewStage() {
       <Rise at={0} id="member:review">
         <View style={styles.top}>
           <StatusBanner variant="member" tab="home" />
-          <Hero>
+          <Card>
             <View style={styles.stageTop}>
               <View style={styles.stageWords}>
-                <Text style={styles.heroTitle} accessibilityRole="header">
+                <Text style={styles.stageTitle} accessibilityRole="header">
                   Your plan is with Dr. Patel
                 </Text>
-                <Text style={heroText.line}>{bySentence("It starts once it's approved. Billing starts then too.")}</Text>
+                <Text style={styles.meta}>{bySentence("It starts once it's approved. Billing starts then too.")}</Text>
               </View>
               <Art name="document" size={64} />
             </View>
-            <Text style={styles.heroLabel}>While you wait</Text>
-            <Group inset>
+          </Card>
+          <Block title="While you wait">
+            <Group>
               <NeedsRow
                 icon={<RecordGlyph name="labs" />}
                 title="Your starting tests"
@@ -771,7 +762,7 @@ function ReviewStage() {
                 onPress={() => router.push({ pathname: "/assistant", params: { topic: "plan" } } as Href)}
               />
             </Group>
-          </Hero>
+          </Block>
         </View>
       </Rise>
       <RecordSections needsAsCard />
@@ -793,17 +784,8 @@ const styles = StyleSheet.create({
   body: { ...type.body },
   cardTitle: { ...type.title, flexShrink: 1 },
 
-  // Today: the title row, the bar and the focus line, each a label's
-  // distance from the next.
-  heroHead: { gap: space.inline },
-  // The Figma banner's title: 14 medium in white.
-  heroTitle: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: ink.onColor },
   // Two rows of doors sit as far apart as the doors in a row.
   doors: { gap: space.inline },
-  heroTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },
-  // "While you wait" sits a label's distance over its panel, inside the
-  // hero's own item gap.
-  heroLabel: { ...heroText.meta, marginBottom: space.inline - space.item },
 
   // Yesterday: the ring leads its words the way a tile leads a row.
   dayTop: { flexDirection: "row", alignItems: "center", gap: space.lead },
@@ -840,4 +822,6 @@ const styles = StyleSheet.create({
   // Setup and review: the words, then their object.
   stageTop: { flexDirection: "row", alignItems: "center", gap: space.lead },
   stageWords: { flex: 1, gap: space.stack },
+  // A white card's title, as the free home's plan card.
+  stageTitle: { ...type.section },
 })

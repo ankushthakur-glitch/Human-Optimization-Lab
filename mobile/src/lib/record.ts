@@ -959,7 +959,7 @@ for (const b of BIOMARKERS) b.aboutSource ??= "From MedlinePlus"
     page shows above anything else. While one of them is overdue or being
     reminded about, the marker never leads to an offer. */
 export const MARKER_CARE: Record<string, { gaps?: string[]; orders?: string[] }> = {
-  a1c: { gaps: ["a1c-trend"], orders: ["labs-nov"] },
+  a1c: { orders: ["labs-nov"] },
   ldl: { orders: ["labs-nov"] },
   hdl: { orders: ["labs-nov"] },
   tg: { orders: ["labs-nov"] },
@@ -1334,16 +1334,6 @@ export const CARE_GAPS: CareGap[] = [
     sent: ["Sep 29"],
     action: "talk",
     question: "Which colorectal screening is right for me, and when?",
-  },
-  {
-    id: "a1c-trend",
-    kind: "condition",
-    title: "Talk with Dr. Patel about your A1c",
-    why: "Your A1c has risen at each result since 2022, from 5.3 to 5.9.",
-    reminders: 0,
-    sent: [],
-    action: "talk",
-    question: "My A1c went from 5.3 to 5.9 since 2022. What would you like me to focus on?",
   },
 ]
 
