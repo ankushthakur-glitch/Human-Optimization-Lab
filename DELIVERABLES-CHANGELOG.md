@@ -294,13 +294,35 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 
 ## 02-Oct-2026
 
+
 ## 03-Oct-2026
+
 
 ## 04-Oct-2026
 
 - Optimization member Overview rebuilt to the v5 four-tier spec (Needs you now, Summary, Work, Progress, Context) from prompt 03 and its UI reference; Version 1 and the computed Version 2 scrapped, no version toggle
 - Shared dashboard kit v2 gained zone labels, needs-you rows, the AI brief with source chips, trend text, stacked and diverging bars, the category grid, the radial score, the Gantt and the person card
 - AI brief composed by rules from the mock store (src/lib/brief), tested for the home, free and optimization scopes
-- Added: Provider Portal / Patients / Patient chart Overview (optimization member)
 - Free member Overview rebuilt to the v5 four-tier spec (Needs you now, Summary, Work, Context) from prompt 02 and its UI reference; Version 1 removed and the free Version toggle dropped, one build in patient-dashboard/ (build note: inlay-patient-dashboard-free-v5.md)
+- Added: Provider Portal / Patients / Patient chart Overview (optimization member)
 - Added: Provider Portal / Patients / Patient chart Overview (free member)
+
+## 06-Oct-2026
+
+- Figma Hol restyle, two dashboard versions, Inlay brand assets, portal updates
+- Merge remote-tracking branch 'origin/main'
+- Provider chart row, care gaps widget, diabetes program charts
+- Make the chart hover line more visible
+- Stronger grid lines, vertical grid on record trend charts
+- Lighten grid lines a step
+- Colour goal progress rings by how far along they are
+- Keep the Activate account label on one line
+- Added: Provider Portal / Patient Chart / Dashboard: free member
+- Added: Provider Portal / Patient Chart / Dashboard: optimization member
+- Added: Provider Portal / Patient Chart / Overview: face sheet
+- Added: Provider Portal / Patient Chart / Overview: timeline
+- Removed: Provider Portal / Patient Chart / Dashboard: face sheet
+- Removed: Provider Portal / Patient Chart / Dashboard: timeline
+- Removed: Global Pages / Login / Invitation email variations
+- Removed: Provider Portal / Patients / Patient chart Overview (optimization member)
+- Removed: Provider Portal / Patients / Patient chart Overview (free member)
