@@ -241,7 +241,7 @@ async function readFile<T>(
 
 const HEAD_CELL = {
   fontWeight: "bold" as const,
-  backgroundColor: "#E6F4F1",
+  backgroundColor: "#EAFCFA",
 }
 
 /** The blank template: the header row alone, required columns marked *. */

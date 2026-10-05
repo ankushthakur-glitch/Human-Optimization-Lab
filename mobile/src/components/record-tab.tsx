@@ -1,53 +1,38 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 
-import { Art } from "@/components/art"
-import { keepTogether } from "@/components/care-gap"
-import { CompositionBar } from "@/components/charts"
 import { StatusBanner } from "@/components/home-header"
-import { IconClock, IconEye, IconUpload } from "@/components/icons"
-import { Block, Card, EmptyState, Group, ResultRow, SmallAction, TextAction, Tile, toast } from "@/components/record-kit"
-import { allergiesToCheck, sinceLine } from "@/components/record-lists"
-import { AddToRecordSheet, ItemRow } from "@/components/record-rows"
-import { Sheet } from "@/components/sheet"
+import { Clock, Eye, Monitor, Plus, UploadSimple } from "@/components/ph"
+import { Block, Card, EmptyState, Group, ResultRow, Tile } from "@/components/record-kit"
+import { sinceLine } from "@/components/record-lists"
+import { AddToRecordSheet, ItemRow, RangeSummary } from "@/components/record-rows"
 import { TabScreen } from "@/components/tab-bar"
-import { Button, TextField } from "@/components/ui"
+import { Button } from "@/components/ui"
 import { relativeDay } from "@/lib/dates"
 import { useExperience, useInlayScore, useMarkers } from "@/lib/experience"
 import { sinceStart } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { ALLERGIES, DATA_TYPES, DOCUMENTS, IMMUNIZATIONS, ORDERS, PROBLEMS, PROCEDURES, SOURCES, UPDATED, VISITS } from "@/lib/record"
-import { color, space, type } from "@/lib/theme"
+import { ALLERGIES, DOCUMENTS, IMMUNIZATIONS, ORDERS, PROBLEMS, PROCEDURES, VISITS } from "@/lib/record"
+import { color, hairline, space, type } from "@/lib/theme"
 import { homeBanner, todo, yourMedicines } from "@/lib/todo"
 import { trendCounts, watchList } from "@/lib/trends"
 
-/* The Record tab (FINAL-SPEC C.5): one place for everything collected,
-   every item reachable, with where it came from (F-37, S-10, S-17).
+/* The Record tab (FINAL-SPEC C.5; Figma "Hol" Record, extended frame
+   40024634:2803): one place for everything collected, every item
+   reachable.
 
-   1. What the record holds: "168 records from 3 places", the places, when
-      it last updated, and "Add to your record" (a photo of a report, or
-      something she tells us), with the record folder beside it.
-   2. Results: the record at a glance as one bar (in range, borderline, out
-      of range) and the three results most worth watching; "See all 27"
-      opens every result. A member's rows say how far each has moved since
-      she started.
-   3. In your record: every category as a row with its count, and a mark
-      only where something needs her ("2 to check", "Records differ on 1").
-   4. A quiet "Ask for a correction" at the end (S-16).
+   1. The header names the tab and holds "+ Add to your record" (a photo of
+      a record, or something she tells us).
+   2. Results: "20 of 27 in range" as one bar with its legend, and the one
+      result most worth watching; "See all" opens every result. A member's
+      row says how far it has moved since she started. New results that
+      arrived in the last two weeks sit under it until they are old.
+   3. In your record: every category as a row with its count badge.
 
    Before anything was collected it shows the not connected state, and
    while the record is still arriving, that; with sharing turned off, the
    same banner as every tab, over what was collected before. */
-
-/** Every place a record came from, by the short names the patient knows,
-    each held whole so a wrapped line never splits "Scripps Memorial". */
-const PLACES = SOURCES.map((s) => s.name.replace(/ Hospital$/, "").replace(/ /g, "\u00A0")).join(", ")
-
-/** Every record the pull brought back (the FHIR resources it read). */
-const RECORD_COUNT = DATA_TYPES.reduce((n, t) => n + t.count, 0)
-
-const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 
 /** New results stay on the tab this long after they arrive. */
 const NEW_DAYS = 14
@@ -58,8 +43,7 @@ const daysAgo = (at: string) => Math.floor((Date.now() - Date.parse(at.length > 
 export function RecordTab() {
   const onboarding = useOnboarding()
   const info = useExperience()
-  const [sheet, setSheet] = React.useState<"add" | "correct">()
-  const close = () => setSheet(undefined)
+  const [adding, setAdding] = React.useState(false)
 
   if (info.experience === "declined")
     return (
@@ -69,7 +53,7 @@ export function RecordTab() {
           artSize={112}
           title="Your records aren't connected"
           // The last two words held together, so the line never ends on one.
-          line={"Nothing has been collected. Connect when you're ready and we'll bring your history\u00A0together."}
+          line={"Nothing has been collected. Connect when you're ready and we'll bring your history together."}
         >
           <View style={styles.emptyButton}>
             <Button onPress={() => router.push("/connect")}>Connect my records</Button>
@@ -93,20 +77,24 @@ export function RecordTab() {
     <TabScreen
       tab="results"
       title="Record"
-      overlay={sheet === "add" ? <AddToRecordSheet onClose={close} /> : sheet === "correct" ? <CorrectionSheet onClose={close} /> : undefined}
+      headerRight={<AddAction onPress={() => setAdding(true)} />}
+      overlay={adding ? <AddToRecordSheet onClose={() => setAdding(false)} /> : undefined}
     >
-      <View style={styles.page}>
-        <RecordBanner />
-        <Summary asOf={info.sharingOff?.on} onAdd={() => setSheet("add")} />
-        <Results member={member} />
-        <InYourRecord />
-        <View style={styles.correction}>
-          <TextAction tone="muted" onPress={() => setSheet("correct")}>
-            Ask for a correction
-          </TextAction>
-        </View>
-      </View>
+      <RecordBanner />
+      <Results member={member} />
+      <InYourRecord />
     </TabScreen>
+  )
+}
+
+/** The header's "+ Add to your record": the Plus 18 in Primary/07 and the
+    words 14 medium in Primary/08, 8 apart. */
+function AddAction({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} hitSlop={10} accessibilityRole="button" style={({ pressed }) => [styles.add, pressed && styles.pressed]}>
+      <Plus size={18} color={color.primaryText} />
+      <Text style={styles.addText}>Add to your record</Text>
+    </Pressable>
   )
 }
 
@@ -120,24 +108,6 @@ function RecordBanner() {
   return <StatusBanner tab="results" />
 }
 
-/* --------------------------------------------------------- summary -- */
-
-function Summary({ asOf, onAdd }: { asOf?: string; onAdd: () => void }) {
-  return (
-    <Card style={styles.summary}>
-      <View style={styles.summaryWords}>
-        <Text style={type.section}>{keepTogether(`${RECORD_COUNT} records from ${SOURCES.length} places`)}</Text>
-        <Text style={type.label}>{PLACES}</Text>
-        <Text style={type.meta}>{asOf ? `As of ${asOf}` : `Updated ${lowerFirst(UPDATED)}`}</Text>
-        <SmallAction onPress={onAdd} style={styles.summaryAction}>
-          Add to your record
-        </SmallAction>
-      </View>
-      <Art name="folder" size={56} />
-    </Card>
-  )
-}
-
 /* --------------------------------------------------------- results -- */
 
 function Results({ member }: { member: boolean }) {
@@ -147,33 +117,43 @@ function Results({ member }: { member: boolean }) {
   const watched = watchList(markers, { improve: onboarding.why?.improve })
   // A member's plan markers lead, each with its change since she started.
   const ordered = member ? [...watched].sort((a, b) => Number(!!sinceStart(b.marker)) - Number(!!sinceStart(a.marker))) : watched
-  const rows = ordered.slice(0, 3)
+  const top = ordered[0]
   // Results that arrived in the last two weeks open on their own page.
   const fresh = (onboarding.batches ?? []).filter((b) => daysAgo(b.at) <= NEW_DAYS).sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
   return (
-    <Block title="Results" variant="title" onSeeAll={() => router.push("/record/results")} count={counts.total}>
-      <Group>
+    <Block title="Results" onSeeAll={() => router.push("/record/results")}>
+      <Card style={styles.results}>
+        <RangeSummary inRange={counts.inRange} borderline={counts.borderline} out={counts.out} total={counts.total} />
+        {top && (
+          <View style={styles.rule}>
+            <ResultRow
+              trend={top}
+              since={member ? sinceLine(top.marker) : undefined}
+              onPress={() =>
+                router.push({
+                  pathname: "/biomarker/[id]",
+                  params: { id: top.id },
+                })
+              }
+            />
+          </View>
+        )}
         {fresh.map((b) => (
-          <ItemRow
-            key={b.id}
-            icon="labs"
-            title={`${b.count} new ${b.count === 1 ? "result" : "results"} from ${b.source}`}
-            meta={relativeDay(b.at)}
-            onPress={() => router.push({ pathname: "/record/[kind]", params: { kind: "results", batch: b.id } })}
-          />
+          <View key={b.id} style={styles.rule}>
+            <ItemRow
+              icon="labs"
+              title={`${b.count} new ${b.count === 1 ? "result" : "results"} from ${b.source}`}
+              meta={relativeDay(b.at)}
+              onPress={() =>
+                router.push({
+                  pathname: "/record/[kind]",
+                  params: { kind: "results", batch: b.id },
+                })
+              }
+            />
+          </View>
         ))}
-        <View style={styles.composition}>
-          <CompositionBar inRange={counts.inRange} borderline={counts.borderline} out={counts.out} playKey="record:composition" />
-        </View>
-        {rows.map((t) => (
-          <ResultRow
-            key={t.id}
-            trend={t}
-            since={member ? sinceLine(t.marker) : undefined}
-            onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: t.id } })}
-          />
-        ))}
-      </Group>
+      </Card>
     </Block>
   )
 }
@@ -184,97 +164,52 @@ function InYourRecord() {
   const onboarding = useOnboarding()
   const t = todo(onboarding)
   const meds = yourMedicines(onboarding)
-  const differ = allergiesToCheck()
   const upcoming = t.coming.filter((i) => i.kind === "appointment" || i.kind === "review").length
-  const notBooked = [...t.needs, ...t.coming].filter((i) => i.kind === "order").length
   // The same score as Home and the score page: her answers and her own
   // record (a steady record keeps its whole record half).
   const score = useInlayScore()
   const added = onboarding.added ?? []
   const list = (kind: string) => () => router.push({ pathname: "/record/[kind]", params: { kind } })
-  // The app's icons in the record icons' teal, on the same tile.
-  const teal = color.primary
+  const glyph = (Icon: typeof Clock) => (
+    <Tile>
+      <Icon size={16} color={color.primary} />
+    </Tile>
+  )
 
   return (
-    <Block title="In your record" variant="title">
-      <Group>
-        <ItemRow
-          icon="medications"
-          title="Medicines"
-          status={meds.toCheck ? { tone: "low", word: `${meds.toCheck} to check` } : undefined}
-          count={meds.total}
-          onPress={() => router.push("/medications")}
-        />
-        <ItemRow
-          icon="allergies"
-          title="Allergies"
-          status={differ ? { tone: "low", word: `Records differ on ${differ}` } : undefined}
-          count={ALLERGIES.length}
-          onPress={list("allergies")}
-        />
+    <Block title="In your record" variant="label">
+      <Group style={styles.list}>
+        <ItemRow icon="medications" title="Medicines" count={meds.total} onPress={() => router.push("/medications")} />
+        <ItemRow icon="allergies" title="Allergies" count={ALLERGIES.length} onPress={list("allergies")} />
         <ItemRow icon="conditions" title="Conditions" count={PROBLEMS.length} onPress={list("conditions")} />
-        <ItemRow icon="visits" title="Visits" meta={upcoming ? `${upcoming} coming up` : undefined} count={VISITS.length + upcoming} onPress={list("visits")} />
-        <ItemRow
-          icon="labs"
-          title="Tests and orders"
-          meta={notBooked ? `${notBooked} not booked yet` : undefined}
-          count={ORDERS.length}
-          onPress={list("tests")}
-        />
+        <ItemRow icon="visits" title="Visits" count={VISITS.length + upcoming} onPress={list("visits")} />
+        <ItemRow icon="labs" title="Tests and orders" count={ORDERS.length} onPress={list("tests")} />
         <ItemRow icon="documents" title="Documents" count={DOCUMENTS.length} onPress={list("documents")} />
         <ItemRow icon="immunizations" title="Immunizations" count={IMMUNIZATIONS.length} onPress={list("immunizations")} />
         <ItemRow icon="procedures" title="Procedures" count={PROCEDURES.length} onPress={list("procedures")} />
-        <ItemRow icon={<Glyph>{<IconClock size={18} color={teal} />}</Glyph>} title="Timeline" onPress={() => router.push("/timeline")} />
-        <ItemRow icon="vitals" title="Inlay score" count={score} onPress={() => router.push("/score")} />
-        {added.length > 0 && (
-          <ItemRow icon={<Glyph>{<IconUpload size={18} color={teal} />}</Glyph>} title="Added by you" meta="Being checked" count={added.length} onPress={list("added")} />
-        )}
-        <ItemRow icon={<Glyph>{<IconEye size={18} color={teal} />}</Glyph>} title="Who has looked at your record" onPress={list("access")} />
+        <ItemRow icon={glyph(Clock)} title="Timeline" onPress={() => router.push("/timeline")} />
+        <ItemRow icon={glyph(Monitor)} title="Inlay score" count={score} onPress={() => router.push("/score")} />
+        {added.length > 0 && <ItemRow icon={glyph(UploadSimple)} title="Added by you" count={added.length} onPress={list("added")} />}
+        <ItemRow icon={glyph(Eye)} title="Who has looked at your record" onPress={list("access")} />
       </Group>
     </Block>
   )
 }
 
-/** An icon from the app's set on the same teal tile as the record icons. */
-const Glyph = ({ children }: { children: React.ReactNode }) => <Tile>{children}</Tile>
-
-/* ----------------------------------------------------------- sheets -- */
-
-/** "Ask for a correction" (S-16): what should change goes to Dr. Patel's
-    team, who keep the original, the request and their decision. */
-function CorrectionSheet({ onClose }: { onClose: () => void }) {
-  const [text, setText] = React.useState("")
-  const send = () => {
-    onClose()
-    toast("Sent. Dr. Patel's team will review it.")
-  }
-  return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <Sheet title="What should we correct?" onClose={onClose}>
-        <TextField label="Your note" value={text} onChangeText={setText} multiline placeholder="Which item, and what it should say" />
-        <Button onPress={send} disabled={!text.trim()}>
-          Send to Dr. Patel's team
-        </Button>
-      </Sheet>
-    </KeyboardAvoidingView>
-  )
-}
-
 const styles = StyleSheet.create({
-  // Sections sit a section apart on a tab (Frontline 20).
-  page: { gap: space.section },
-  // The empty state's 8, and 8 more before its button: 16, as Frontline
-  // sets a card's action under its words.
+  pressed: { opacity: 0.7 },
+  // The empty state's 8, and 8 more before its button: 16.
   emptyButton: { alignSelf: "stretch", marginTop: space.inline },
 
-  summary: { flexDirection: "row", alignItems: "flex-start", gap: space.lead, padding: space.card },
-  // A 16 pt title over its lines: 4 apart (Frontline).
-  summaryWords: { flex: 1, gap: space.stack },
-  // 16 under the words: the stack's 4 and 12.
-  summaryAction: { marginTop: space.item },
+  add: { flexDirection: "row", alignItems: "center", gap: space.inline },
+  addText: { ...type.link },
 
-  composition: { paddingTop: space.card, paddingBottom: space.card },
+  // The summary, then each row 12 under a rule (the row brings its own
+  // 12 below the rule, so the card keeps 12 at its foot).
+  results: { paddingBottom: 0 },
+  rule: { marginTop: space.item, borderTopWidth: 1, borderTopColor: hairline.rule },
 
-  // The quiet link sits closer to the list it is about than a section.
-  correction: { alignItems: "center", marginTop: space.item - space.section },
+  // "In your record" sits 16 under its label in the Figma, 4 more than a
+  // section's 12.
+  list: { marginTop: space.stack },
 })

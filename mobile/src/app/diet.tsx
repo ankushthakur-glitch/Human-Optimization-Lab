@@ -2,14 +2,14 @@ import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { Art } from "@/components/art"
 import { GoalRows, type GoalRow } from "@/components/charts"
 import { FlowScreen } from "@/components/flow"
-import { IconSparkle } from "@/components/icons"
+import { AskButton, PrimaryButton } from "@/components/hol"
+import { BowlFood, Lightbulb, Sparkle } from "@/components/ph"
+import { HeadCard, headText } from "@/components/plan-tab-pieces"
 import { Block, Card, EmptyState, Group, HUE, NeedsRow, SmallAction, Tile } from "@/components/record-kit"
 import { LoggedCheck, MealRow, MealSheet, logLabel, minutesOf, slotName, unbroken } from "@/components/today-food-meals"
 import { toast } from "@/components/toast"
-import { Button } from "@/components/ui"
 import {
   MEAL_SLOTS,
   MEMBER,
@@ -101,19 +101,19 @@ export default function DietScreen() {
 
   return (
     <View style={styles.fill}>
-      <FlowScreen page title="Diet plan" footer={<Button onPress={() => (nextSlot ? logSlot(nextSlot) : router.push("/log-meal"))}>Log a meal</Button>}>
-        <Card>
-          <View style={styles.head}>
-            <View style={styles.headWords}>
-              <Text style={styles.headTitle} accessibilityRole="header">
-                {profile.diet.title}
-              </Text>
-              <Text style={styles.body}>{unbroken(profile.diet.summary)}</Text>
-              {version !== undefined && <Text style={[styles.meta, styles.headMeta]}>{keepEnd(`Version ${version}, approved by ${MEMBER.doctorShort}`)}</Text>}
-            </View>
-            <Art name="bowl" size={64} />
-          </View>
-        </Card>
+      <FlowScreen page title="Diet plan" footer={
+          <>
+            <AskButton params={{ topic: "plan" }} />
+            <PrimaryButton onPress={() => (nextSlot ? logSlot(nextSlot) : router.push("/log-meal"))}>Log a meal</PrimaryButton>
+          </>
+        }>
+        <HeadCard>
+          <Text style={headText.title} accessibilityRole="header">
+            {profile.diet.title}
+          </Text>
+          <Text style={headText.line}>{unbroken(profile.diet.summary)}</Text>
+          {version !== undefined && <Text style={[headText.meta, styles.headMeta]}>{keepEnd(`Version ${version}, approved by ${MEMBER.doctorShort}`)}</Text>}
+        </HeadCard>
 
         <View style={styles.section}>
           <Block title="So far today" meta={updated ? `Updated ${updated}` : undefined}>
@@ -139,7 +139,7 @@ export default function DietScreen() {
 
           <Card style={styles.focus}>
             <Tile hue="teal">
-              <IconSparkle size={18} color={HUE.teal.ink} />
+              <Sparkle size={16} color={HUE.teal.ink} />
             </Tile>
             <View style={styles.focusWords}>
               <Text style={styles.title}>{keepEnd(focus)}</Text>
@@ -163,6 +163,7 @@ export default function DietScreen() {
               return [
                 <NeedsRow
                   key={slot.id}
+                  icon={<BowlFood size={16} color={HUE.teal.ink} />}
                   title={slot.name}
                   meta={line && keepEnd(line)}
                   action={{ label: logLabel(slot.id), onPress: log }}
@@ -178,7 +179,7 @@ export default function DietScreen() {
           <Block title="Ideas that fit your targets">
             <Group>
               {profile.diet.ideas.map((idea) => (
-                <NeedsRow key={idea.name} title={idea.name} meta={unbroken(idea.line)} />
+                <NeedsRow key={idea.name} icon={<Lightbulb size={16} color={HUE.teal.ink} />} title={idea.name} meta={unbroken(idea.line)} />
               ))}
             </Group>
           </Block>
@@ -223,10 +224,6 @@ function NoPlanYet({ stage }: { stage: ReturnType<typeof memberStage> }) {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   section: { gap: space.item },
-  // The bowl sits beside the words as a tile would.
-  head: { flexDirection: "row", alignItems: "flex-start", gap: space.lead },
-  headWords: { flex: 1, gap: space.stack },
-  headTitle: { ...type.section },
   // The approval sits a little apart from the targets it approves.
   headMeta: { marginTop: space.stack },
   title: { ...type.title },
@@ -237,5 +234,5 @@ const styles = StyleSheet.create({
   rows: { gap: space.card },
   nothing: { gap: space.item, alignItems: "flex-start" },
   focus: { flexDirection: "row", alignItems: "center", gap: space.lead },
-  focusWords: { flex: 1, gap: space.line },
+  focusWords: { flex: 1, gap: space.stack },
 })

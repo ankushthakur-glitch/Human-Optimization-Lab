@@ -25,9 +25,10 @@ import {
    Activate account button, which opens the page that asks for the code and
    then a new password. The code is sample text. */
 
-/* Inlay P7, the portal primary: P07 fills the button, P09 draws text in it. */
-const PRIMARY = "#417D88"
-const PRIMARY_TINT = "#24535B"
+/* The brand teal, the portal primary: the fill for the button, the deeper
+   step for text drawn in it. */
+const PRIMARY = "#01837E"
+const PRIMARY_TINT = "#005350"
 
 /* A patient's app link, as the prototype follows it: the patient app's web
    build, served by this site at /app, opening on activation with the email

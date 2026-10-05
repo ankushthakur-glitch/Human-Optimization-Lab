@@ -2,11 +2,11 @@ import { StyleSheet, Text, View } from "react-native"
 import Svg, { Path } from "react-native-svg"
 
 import { DOMAINS, flourishScore } from "@/lib/conversation"
-import { color, font } from "@/lib/theme"
+import { card, chart, color, font, ink, space, type } from "@/lib/theme"
 
 /* The Human Flourishing Index as a gauge: the overall score on a half dial,
-   then each domain as a bar. The first reading of what becomes the Inlay
-   score. */
+   then each domain as a bar, on the Figma "Hol" card. The first reading of
+   what becomes the Inlay score. */
 
 const R = 80
 const STROKE = 14
@@ -35,7 +35,7 @@ export function FlourishCard({ answers }: { answers: number[] }) {
         accessibilityLabel={`Flourishing ${overall.toFixed(1)} out of 5`}
       >
         <Svg width={W} height={H}>
-          <Path d={arc(1)} stroke={color.canvas} strokeWidth={STROKE} strokeLinecap="round" fill="none" />
+          <Path d={arc(1)} stroke={chart.track} strokeWidth={STROKE} strokeLinecap="round" fill="none" />
           <Path d={arc(overall / 5)} stroke={color.primary} strokeWidth={STROKE} strokeLinecap="round" fill="none" />
         </Svg>
         <View style={styles.score}>
@@ -61,24 +61,25 @@ export function FlourishCard({ answers }: { answers: number[] }) {
 }
 
 const styles = StyleSheet.create({
+  // The Figma "Hol" card: white at 60%, radius 8, 12 inside, the softest lift.
   card: {
-    borderRadius: 22,
-    padding: 16,
-    gap: 14,
-    marginVertical: 4,
-    backgroundColor: color.background,
-    boxShadow: "0 1px 3px rgba(16, 24, 40, 0.08), 0 10px 28px rgba(16, 24, 40, 0.10)",
+    borderRadius: 8,
+    padding: space.card,
+    gap: space.item,
+    marginVertical: space.stack,
+    backgroundColor: card.fill,
+    boxShadow: card.shadow,
   },
-  title: { fontFamily: font.semibold, fontSize: 16, color: color.text },
+  title: { ...type.section, color: ink.content },
   dial: { alignItems: "center" },
   score: { position: "absolute", bottom: 0, alignItems: "center" },
-  scoreValue: { fontFamily: font.semibold, fontSize: 34, lineHeight: 38, letterSpacing: -1, color: color.text },
-  scoreOf: { fontFamily: font.regular, fontSize: 13, color: color.muted },
-  domains: { gap: 12 },
-  domain: { gap: 6 },
-  domainHead: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
-  domainName: { flex: 1, fontFamily: font.regular, fontSize: 14, color: color.text },
-  domainValue: { fontFamily: font.semibold, fontSize: 14, color: color.text },
-  track: { height: 6, borderRadius: 3, backgroundColor: color.canvas, overflow: "hidden" },
+  scoreValue: { ...type.display, color: ink.content },
+  scoreOf: { ...type.label },
+  domains: { gap: space.item },
+  domain: { gap: space.mark },
+  domainHead: { flexDirection: "row", justifyContent: "space-between", gap: space.item },
+  domainName: { flex: 1, fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: ink.detail },
+  domainValue: { ...type.value, color: ink.content },
+  track: { height: 6, borderRadius: 3, backgroundColor: chart.track, overflow: "hidden" },
   bar: { height: "100%", borderRadius: 3, backgroundColor: color.primary },
 })

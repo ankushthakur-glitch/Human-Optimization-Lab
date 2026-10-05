@@ -808,7 +808,9 @@ export function homeBanner(s: Snapshot, opts: { member?: boolean } = {}, now: Da
   if (off) return { kind: "sharing-off", since: off.on ?? "" }
   if (experience(s) === "declined") return null
   const state = pickBanner(bannerFacts(s, now))
-  if (!state) return null
+  // "Dr. Patel is checking your new record" only informs, and the user took
+  // it off the home (5 Oct 2026); the review still shows in the record.
+  if (!state || state.kind === "checking") return null
   if (opts.member && state.kind !== "sharing-ended" && state.kind !== "sharing-ends" && state.kind !== "new-results") return null
   return state
 }

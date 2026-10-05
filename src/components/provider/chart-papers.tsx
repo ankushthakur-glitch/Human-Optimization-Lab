@@ -85,6 +85,23 @@ const ORGS: Record<string, Org> = {
     mark: "CI",
     tone: "#9a3412",
   },
+  "SRC-UCSD": {
+    name: "UC San Diego Health",
+    unit: "Hillcrest Medical Center, Emergency Department",
+    address: "200 W Arbor Drive, San Diego, CA 92103",
+    phone: "(619) 555-0130",
+    fax: "(619) 555-0131",
+    mark: "UC",
+    tone: "#1d4ed8",
+  },
+  "SRC-HFH": {
+    name: "Henry Ford Health",
+    unit: "Henry Ford Hospital",
+    address: "2799 W Grand Boulevard, Detroit, MI 48202",
+    phone: "(313) 555-0110",
+    mark: "HF",
+    tone: "#0c4a6e",
+  },
 }
 
 const LAB_SITE: Record<
@@ -389,7 +406,7 @@ function PatientBox({
 
 const footerFor = (sourceId: string, id: string) => {
   const s = SOURCES.find((x) => x.id === sourceId)
-  return `${id}  |  Received from ${s?.name ?? sourceId} through Health Gorilla${s ? `, ${s.network}` : ""}`
+  return `${id}  |  Received from ${s?.name ?? ORGS[sourceId]?.name ?? sourceId} through Health Gorilla${s ? `, ${s.network}` : ""}`
 }
 
 /* -------------------------------------------------------------------------- */
@@ -629,6 +646,70 @@ export function LabReportPaper({
           director {site.director}. CLIA {site.clia}.
         </p>
       )}
+    </Paper>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Any other report                                                           */
+/* -------------------------------------------------------------------------- */
+
+/** A source's report that has no layout of its own (an ECG, a sleep study,
+    an order requisition, a medication history): the letterhead, the patient
+    and one facts box, an optional table, the report's sections and its
+    signature. */
+export function ReportPaper({
+  patient: p,
+  sourceId,
+  title,
+  id,
+  date,
+  box,
+  table,
+  sections,
+  signer,
+}: {
+  patient: Patient
+  sourceId: string
+  title: string
+  id: string
+  date: string
+  box: { title: string; rows: [string, string][] }
+  table?: { title: string; head: string[]; rows: string[][] }
+  sections: { heading: string; text: string }[]
+  signer?: { name: string; credential: string }
+}) {
+  return (
+    <Paper footer={footerFor(sourceId, id)}>
+      <Letterhead
+        org={orgOf(sourceId)}
+        title={title}
+        meta={
+          <>
+            <Barcode value={id} />
+            <span className="text-[11px] text-neutral-600">
+              {id}  |  {usDate(date)}
+            </span>
+          </>
+        }
+      />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <PatientBox p={p} />
+        <Box title={box.title}>
+          <KV rows={box.rows} />
+        </Box>
+      </div>
+      {table && (
+        <Part title={table.title}>
+          <Grid head={table.head} rows={table.rows} />
+        </Part>
+      )}
+      {sections.map((s) => (
+        <Part key={s.heading} title={s.heading}>
+          {s.text}
+        </Part>
+      ))}
+      {signer && <Signature name={signer.name} credential={signer.credential} when={usDate(date)} />}
     </Paper>
   )
 }
@@ -1212,7 +1293,7 @@ function imagingSpec(
   }
 }
 
-function ImagingPaper({
+export function ImagingPaper({
   patient: p,
   d,
 }: {
@@ -1225,6 +1306,11 @@ function ImagingPaper({
     d.sections.find((s) => s.heading === "Impression")?.text ?? ""
   )
   const examDate = addDays(d.date, -1)
+  /* A document that carries its own findings (the provider home's sample
+     results) is read as written, not from the study's normal template. */
+  const own = (heading: string) => d.sections.find((s) => s.heading === heading)?.text
+  const findings = own("Findings")
+  const recommendation = own("Recommendation")
   return (
     <Paper footer={footerFor(d.sourceId, d.id)}>
       <Letterhead
@@ -1254,7 +1340,7 @@ function ImagingPaper({
           />
         </Box>
       </div>
-      <Part title="Clinical history">{spec.history}</Part>
+      <Part title="Clinical history">{own("Clinical history") ?? spec.history}</Part>
       <Part title="Technique">
         {spec.technique}
         {spec.dose && (
@@ -1275,11 +1361,12 @@ function ImagingPaper({
           ))}
         </div>
       </section>
-      <Part title="Findings">{spec.findings}</Part>
-      {spec.extra}
+      <Part title="Findings">{findings ?? spec.findings}</Part>
+      {!findings && spec.extra}
       <Part title="Impression">
-        <p className="font-bold">{spec.impression}</p>
+        <p className="font-bold">{findings ? own("Impression") : spec.impression}</p>
       </Part>
+      {recommendation && <Part title="Recommendation">{recommendation}</Part>}
       <Signature
         name={d.author}
         credential="MD, Radiology"

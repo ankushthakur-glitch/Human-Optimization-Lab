@@ -5,7 +5,6 @@ import { Text } from "react-native"
 import { IconCalendar } from "@/components/icons"
 import { Button, CodeField, FooterLink, FormError, Screen, Stack, TextField } from "@/components/ui"
 import { InstallApp } from "@/components/install-app"
-import { OnboardingBrand } from "@/components/onboarding-brand"
 import { useAuth } from "@/lib/auth"
 import { PATIENT } from "@/lib/patient"
 import { VALIDATE } from "@/lib/validate"
@@ -101,7 +100,6 @@ export default function ActivateScreen() {
           Verify code
         </Button>
       </Stack>
-      <OnboardingBrand />
       <FooterLink prompt="Already set a password?" action="Sign in" onPress={() => router.push("/sign-in")} />
       <InstallApp />
     </Screen>

@@ -11,6 +11,7 @@ import {
   IconUserAdd,
 } from "@/design-system/icons"
 
+import { REYES_ID } from "@/components/practice/practice-data"
 import {
   EhrShell,
   type ModuleId,
@@ -20,8 +21,8 @@ import {
 
 const BASE = "/screens/patients"
 
-/** The provider the invite flow introduces (see /screens/login?as=provider). */
-export const PROVIDER_ID = "PR3132"
+/** The signed-in provider, Dr. Daniel Reyes (the header's chip). */
+export const PROVIDER_ID = REYES_ID
 
 /* The EHR's module list with the provider's Dashboard wired to its page. */
 const PROVIDER_NAV: NavItem[] = [

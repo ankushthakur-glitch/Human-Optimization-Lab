@@ -2,17 +2,15 @@ import { router } from "expo-router"
 import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
-import { Art } from "@/components/art"
-import { IconBloodPressure, IconCard, IconDumbbell, IconScale, IconScan, IconSparkle, IconTape, IconWalk, IconWatch } from "@/components/icons"
+import { Barbell, CreditCard, Heartbeat, PersonSimpleWalk, Ruler, Scales, Scan, Sparkle, Watch } from "@/components/ph"
 import { DevicesSheet } from "@/components/plan-tab-devices"
-import { FocusIcon } from "@/components/plan-tab-pieces"
+import { FocusIcon, HeadCard, headText } from "@/components/plan-tab-pieces"
 import { RecordIcon } from "@/components/record-icons"
 import {
   Banner,
   Block,
   Card,
   CheckLines,
-  EmptyState,
   Group,
   HUE,
   KeyValue,
@@ -25,7 +23,7 @@ import {
   type Step,
 } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
-import { Button } from "@/components/ui"
+import { PrimaryButton } from "@/components/hol"
 import { relativeDay } from "@/lib/dates"
 import { useExperience, useMarkers } from "@/lib/experience"
 import { MEMBER, NEXT_REVIEW, PLAN_DRAFT, WALK, profileOf, progress, shortDay, thisWeek, weekPlan, type WeekItem } from "@/lib/member"
@@ -128,24 +126,16 @@ function LivePlan({ onDevices }: { onDevices: () => void }) {
 
   return (
     <>
-      <Card style={styles.header}>
-        <View style={styles.headerWords}>
-          <Text style={styles.cardTitle} accessibilityRole="header">
-            Your plan
+      <HeadCard>
+        <View style={styles.versionLine}>
+          <Text style={[headText.title, styles.flex]} accessibilityRole="header">
+            {live ? `Your plan, version ${live.version}` : "Your plan"}
           </Text>
-          {live && (
-            <View style={styles.versionLine}>
-              <Text style={styles.version}>{`Version ${live.version}`}</Text>
-              <Tag tone="ok">Active</Tag>
-            </View>
-          )}
-          <View style={styles.headerMeta}>
-            {live && <Text style={styles.meta}>{`Approved by ${MEMBER.doctor}, ${live.on}`}</Text>}
-            <Text style={styles.meta}>{NEXT_REVIEW.words}</Text>
-          </View>
+          {live && <Tag tone="ok">Active</Tag>}
         </View>
-        <Art name="target" size={64} />
-      </Card>
+        {live && <Text style={headText.line}>{`Approved by ${MEMBER.doctor}, ${live.on}`}</Text>}
+        <Text style={headText.meta}>{NEXT_REVIEW.words}</Text>
+      </HeadCard>
 
       {reviewing !== undefined && live && (
         <View style={styles.redraft}>
@@ -170,7 +160,7 @@ function LivePlan({ onDevices }: { onDevices: () => void }) {
         </View>
       )}
 
-      <Block title="What it focuses on" variant="title">
+      <Block title="What it focuses on">
         <Group>
           {profile.areas.map((area) => (
             <NeedsRow key={area} icon={<FocusIcon area={area} />} hue="teal" title={FOCUS_NAME[area]} meta={focusLine(area, onboarding, markers, week, now)} />
@@ -178,7 +168,7 @@ function LivePlan({ onDevices }: { onDevices: () => void }) {
         </Group>
       </Block>
 
-      <Block title="Daily targets" variant="title">
+      <Block title="Daily targets">
         <Card style={styles.targets}>
           <View>
             {profile.goals.map((g, i) => (
@@ -194,19 +184,19 @@ function LivePlan({ onDevices }: { onDevices: () => void }) {
 
       <YourWeek />
 
-      <Block title="Check ins" variant="title">
+      <Block title="Check ins">
         <Group>
-          <NeedsRow icon={<IconScale size={18} color={color.primary} />} hue="teal" title="Weigh in" meta="Thursday mornings" />
+          <NeedsRow icon={<Scales size={16} color={color.primary} />} hue="teal" title="Weigh in" meta="Thursday mornings" />
           {bone ? (
-            <NeedsRow icon={<IconDumbbell size={18} color={color.primary} />} hue="teal" title="Chair stands" meta="Once a month" />
+            <NeedsRow icon={<Barbell size={16} color={color.primary} />} hue="teal" title="Chair stands" meta="Once a month" />
           ) : (
-            <NeedsRow icon={<IconBloodPressure size={18} color={color.primary} />} hue="teal" title="Blood pressure" meta="Every evening" />
+            <NeedsRow icon={<Heartbeat size={16} color={color.primary} />} hue="teal" title="Blood pressure" meta="Every evening" />
           )}
-          {!bone && <NeedsRow icon={<IconTape size={18} color={color.primary} />} hue="teal" title="Waist" meta="Once a month" />}
+          {!bone && <NeedsRow icon={<Ruler size={16} color={color.primary} />} hue="teal" title="Waist" meta="Once a month" />}
         </Group>
       </Block>
 
-      <Block title="Tests in your plan" variant="title">
+      <Block title="Tests in your plan">
         <Group>
           {labs && (
             <NeedsRow
@@ -218,13 +208,13 @@ function LivePlan({ onDevices }: { onDevices: () => void }) {
               onPress={() => router.push({ pathname: "/order/[id]", params: { id: labs.orders?.[0] ?? "labs-nov" } })}
             />
           )}
-          <NeedsRow icon={<IconScan size={18} color={color.primary} />} hue="teal" title="DEXA scan" meta={bone ? "May 2027" : "January"} />
+          <NeedsRow icon={<Scan size={16} color={color.primary} />} hue="teal" title="DEXA scan" meta={bone ? "May 2027" : "January"} />
           {!bone && <NeedsRow icon={<RecordIcon name="labs" size={18} color={color.primary} />} hue="teal" title="Next labs" meta="January" />}
         </Group>
       </Block>
 
       {live && (
-        <Block title="Why your plan changed" variant="title">
+        <Block title="Why your plan changed">
           <Card style={styles.card}>
             <Text style={styles.cardSubtitle}>{`Version ${live.version}, ${live.on}`}</Text>
             <Text style={styles.body}>{details?.why ?? `${live.why}.`}</Text>
@@ -237,14 +227,14 @@ function LivePlan({ onDevices }: { onDevices: () => void }) {
 
       <Group>
         <NeedsRow
-          icon={<IconWatch size={18} color={color.primary} />}
+          icon={<Watch size={16} color={color.primary} />}
           hue="teal"
           title="Watch, ring or scale"
           tag={{ tone: "muted", label: "Coming soon" }}
           onPress={onDevices}
         />
-        <NeedsRow icon={<IconSparkle size={18} color={color.primary} />} hue="teal" title="Ask about your plan" onPress={() => router.push("/assistant?topic=plan")} />
-        <NeedsRow icon={<IconCard size={18} color={color.primary} />} hue="teal" title="Membership and billing" onPress={() => router.push("/membership")} />
+        <NeedsRow icon={<Sparkle size={16} color={color.primary} />} hue="teal" title="Ask about your plan" onPress={() => router.push("/assistant?topic=plan")} />
+        <NeedsRow icon={<CreditCard size={16} color={color.primary} />} hue="teal" title="Membership and billing" onPress={() => router.push("/membership")} />
       </Group>
     </>
   )
@@ -270,13 +260,13 @@ function YourWeek() {
     : `${WALK.title}, ${WALK.minutes} minutes`
 
   return (
-    <Block title="Your week" variant="title">
+    <Block title="Your week">
       <Card style={styles.card}>
         <View style={styles.week} accessibilityRole="radiogroup">
           {week.map((d, i) => {
             const done = d.session ? d.sessionDone : d.walked
             const on = i === selected
-            const Glyph = d.session ? IconDumbbell : IconWalk
+            const Glyph = d.session ? Barbell : PersonSimpleWalk
             return (
               <Pressable
                 key={d.day}
@@ -315,7 +305,7 @@ function Versions({ versions }: { versions: Version[] }) {
   const sorted = [...versions].sort((a, b) => b.version - a.version)
   if (!sorted.length) return null
   return (
-    <Block title="Plan versions" variant="title">
+    <Block title="Plan versions">
       <Group>
         {sorted.map((v, i) => (
           <NeedsRow
@@ -344,19 +334,19 @@ function SetupStage() {
   }))
   return (
     <>
-      <Card style={styles.titled}>
+      <HeadCard>
         <View style={styles.versionLine}>
-          <Text style={[styles.cardTitle, styles.flex]}>Optimization membership</Text>
+          <Text style={[headText.title, styles.flex]}>Optimization membership</Text>
           <Tag tone="ok">Active</Tag>
         </View>
-        {started && !Number.isNaN(started.getTime()) && <Text style={styles.meta}>{`Started ${shortDay(started)}`}</Text>}
-      </Card>
-      <Block title="Set up your plan" variant="title" meta={`Step ${at + 1} of ${SETUP.length}`}>
+        {started && !Number.isNaN(started.getTime()) && <Text style={headText.meta}>{`Started ${shortDay(started)}`}</Text>}
+      </HeadCard>
+      <Block title="Set up your plan" meta={`Step ${at + 1} of ${SETUP.length}`}>
         <Card style={styles.steps}>
           <Steps steps={steps} />
         </Card>
       </Block>
-      {next && <Button onPress={() => router.push(next.href)}>Continue setup</Button>}
+      {next && <PrimaryButton onPress={() => router.push(next.href)}>Continue setup</PrimaryButton>}
     </>
   )
 }
@@ -369,14 +359,11 @@ function ReviewStage() {
   ]
   return (
     <>
-      {/* The kit's centred state card: the object, a title and its line. */}
-      <EmptyState
-        art="document"
-        artSize={96}
-        title={`Your plan is with ${MEMBER.doctorShort}`}
-        line={`It stays a draft until ${MEMBER.doctorShort} approves it. We'll let you know.`}
-      />
-      <Block title="How it was built" variant="title">
+      <HeadCard>
+        <Text style={headText.title} accessibilityRole="header">{`Your plan is with ${MEMBER.doctorShort}`}</Text>
+        <Text style={headText.line}>{`It stays a draft until ${MEMBER.doctorShort} approves it. We'll let you know.`}</Text>
+      </HeadCard>
+      <Block title="How it was built">
         <Card style={styles.steps}>
           <Steps steps={steps} />
         </Card>
@@ -391,16 +378,13 @@ function PausedStage() {
   const { plan, planHistory } = useOnboarding()
   return (
     <>
-      <Card style={styles.card}>
-        <View style={styles.header}>
-          <View style={styles.headerWords}>
-            <Text style={styles.cardTitle}>Your plan is paused</Text>
-            <Text style={styles.body}>Your daily plan and billing are stopped. Your record, trends and reminders carry on.</Text>
-          </View>
-          <Art name="target" size={64} />
+      <HeadCard style={styles.card}>
+        <View style={styles.headerWords}>
+          <Text style={headText.title}>Your plan is paused</Text>
+          <Text style={headText.line}>Your daily plan and billing are stopped. Your record, trends and reminders carry on.</Text>
         </View>
-        <Button onPress={() => router.push("/membership?sheet=resume")}>Resume my plan</Button>
-      </Card>
+        <PrimaryButton onPress={() => router.push("/membership?sheet=resume")}>Resume my plan</PrimaryButton>
+      </HeadCard>
       <Versions versions={plan?.versions?.length ? plan.versions : (planHistory ?? [])} />
     </>
   )
@@ -413,20 +397,14 @@ const BULLET = 6
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   pressed: { opacity: 0.8 },
-  cardTitle: { ...type.section },
   cardSubtitle: { ...type.title },
   body: { ...type.body },
   meta: { ...type.meta },
   // A card's heading and what it holds.
   card: { gap: space.item },
-  // A card whose title has only its lines under it.
-  titled: { gap: space.stack },
 
-  header: { flexDirection: "row", alignItems: "flex-start", gap: space.lead },
   headerWords: { flex: 1, gap: space.stack },
-  headerMeta: { gap: space.line },
   versionLine: { flexDirection: "row", alignItems: "center", gap: space.inline },
-  version: { ...type.title },
 
   // The version with the doctor and what it changes read as one group.
   redraft: { gap: space.item },

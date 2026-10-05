@@ -3,14 +3,14 @@ import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { ScoreRing, formatNumber } from "@/components/charts"
-import { IconChevronRight } from "@/components/icons"
+import { CaretRight } from "@/components/ph"
 import { Block, EmptyState, Group, NeedsRow, ResultRow } from "@/components/record-kit"
 import { useMarkers } from "@/lib/experience"
 import { BASELINE, PLAN_START_RESULTS, clockOf, dateOfAt, dayOfAt, daysBetween, shortDay, sinceStart, thisWeek, type DayScore, type Measure } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { ORDERS } from "@/lib/record"
 import { classify } from "@/lib/trends"
-import { font, ink, space, type } from "@/lib/theme"
+import { card, font, ink, space, type } from "@/lib/theme"
 
 /* The pieces Progress and History share: a card's readout (the number,
    then what it means), the rows of a history (a day with its score ring,
@@ -105,7 +105,7 @@ export function DayRow({ day, onPress }: { day: DayScore; onPress: () => void })
         <Text style={styles.rowTitle}>{day.label}</Text>
         <Text style={styles.rowMeta}>{words}</Text>
       </View>
-      <IconChevronRight size={16} color={ink.tertiary} />
+      <CaretRight size={16} color={card.chevron} />
     </Pressable>
   )
 }

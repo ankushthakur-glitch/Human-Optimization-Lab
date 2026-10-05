@@ -6,7 +6,7 @@ import { RecordBlocks } from "@/components/record-blocks"
 import { Button } from "@/components/ui"
 import { useOnboarding } from "@/lib/onboarding"
 import { DATA_TYPES, SOURCES } from "@/lib/record"
-import { color, font } from "@/lib/theme"
+import { card, chart, color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* Step 4, the last: the record builds, told the way a patient thinks about
    it rather than the way the networks work. The same panel as the finished
@@ -23,7 +23,7 @@ const TOTAL = DATA_TYPES.reduce((sum, t) => sum + t.count, 0)
 /** The finished record by share: the three biggest kinds, then the rest. */
 const SHARE = [
   { label: "Lab results", count: count("Observation.lab"), tone: color.primary },
-  { label: "Vitals", count: count("Observation.vital"), tone: "#7FB3BC" },
+  { label: "Vitals", count: count("Observation.vital"), tone: "#39BAB4" },
   { label: "Visits", count: count("Encounter"), tone: color.primaryHalo },
   {
     label: "Everything else",
@@ -85,7 +85,7 @@ export function BuildRecord({ onDone }: { onDone: () => void }) {
 
   return (
     <FlowScreen
-      back={false}
+      hol
       title={done ? "Your record is ready" : "Building your record"}
       art={
         done ? (
@@ -152,7 +152,7 @@ function Building({ stage, percent, landed }: { stage: Exclude<Stage, "done">; p
           const loading = i === landed && stage === "collecting"
           return (
             <View key={t.key} style={styles.legendRow}>
-              <View style={[styles.dot, { backgroundColor: inNow ? color.primary : color.border }]} />
+              <View style={[styles.dot, { backgroundColor: inNow ? color.primary : chart.track }]} />
               <Text style={[styles.rowLabel, !inNow && styles.dim]}>{t.label}</Text>
               {inNow ? (
                 <Text style={styles.legendCount}>{t.count}</Text>
@@ -196,23 +196,25 @@ function Progress({ percent, label }: { percent: number; label: string }) {
 const styles = StyleSheet.create({
   art: { width: 112, height: 112 },
 
-  progressPercent: { fontFamily: font.semibold, fontSize: 15, color: color.primary },
-  track: { height: 12, borderRadius: 6, backgroundColor: color.border, overflow: "hidden", marginTop: 12 },
-  bar: { height: "100%", borderRadius: 6, backgroundColor: color.primary },
+  progressPercent: { ...type.value, color: ink.primary },
+  track: { height: 8, borderRadius: 4, backgroundColor: chart.track, overflow: "hidden", marginTop: space.item },
+  bar: { height: "100%", borderRadius: 4, backgroundColor: color.primary },
   grow: { flex: 1 },
 
-  share: { backgroundColor: color.canvas, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 4 },
-  shareHead: { flexDirection: "row", alignItems: "baseline", gap: 8, paddingTop: 12 },
-  shareValue: { fontFamily: font.semibold, fontSize: 28, letterSpacing: -0.6, color: color.text },
-  shareText: { fontFamily: font.regular, fontSize: 13, color: color.muted },
-  shareBar: { flexDirection: "row", height: 12, borderRadius: 6, overflow: "hidden", gap: 2, marginTop: 12 },
-  legend: { paddingVertical: 8 },
-  legendRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
+  // The Figma "Hol" card: white at 60% on the page, radius 8, 12 inside.
+  share: { backgroundColor: card.fill, borderRadius: 8, padding: space.card, boxShadow: card.shadow },
+  shareHead: { flexDirection: "row", alignItems: "baseline", gap: space.inline },
+  shareValue: { ...type.hero, color: ink.content },
+  shareText: { ...type.label },
+  shareBar: { flexDirection: "row", height: 8, borderRadius: 4, overflow: "hidden", gap: 2, marginTop: space.item },
+  // Rows split by the Figma's 0.8 rule, 12 either side of it.
+  legend: { marginTop: space.stack },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingVertical: space.rowY - 2, borderTopWidth: 0.8, borderTopColor: hairline.rule },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  sharePercent: { fontFamily: font.regular, fontSize: 13, color: color.muted },
-  legendCount: { fontFamily: font.semibold, fontSize: 15, color: color.text, minWidth: 28, textAlign: "right" },
+  sharePercent: { ...type.label },
+  legendCount: { ...type.value, color: ink.content, minWidth: 28, textAlign: "right" },
 
-  rowLabel: { flex: 1, fontFamily: font.medium, fontSize: 15, color: color.text },
-  dim: { color: color.muted },
-  placeholder: { width: 24, height: 8, borderRadius: 4, backgroundColor: color.border },
+  rowLabel: { flex: 1, fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: ink.detail },
+  dim: { color: card.chevron },
+  placeholder: { width: 24, height: 8, borderRadius: 4, backgroundColor: chart.track },
 })

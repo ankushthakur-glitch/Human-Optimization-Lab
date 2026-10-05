@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 import { keepTogether as holdTogether } from "@/components/care-gap"
 import { DotGraph } from "@/components/charts"
 import { Appear, OptionRow, Options, TheirBubble, bubbleText, optionTextStyle } from "@/components/chat"
-import { IconCall, IconCheck, IconChevronRight } from "@/components/icons"
+import { CaretRight, Check, Phone } from "@/components/ph"
 import { DateBlock, Dot, Group, Nudge, SaveQuestion, SmallAction, Status, TextAction, toast } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { Button } from "@/components/ui"
@@ -14,7 +14,7 @@ import { call } from "@/lib/links"
 import { withQuestion } from "@/lib/member"
 import { useOffer, useShown, type Offer } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
-import { cardRadius, color, font, hairline, ink, space, type } from "@/lib/theme"
+import { card, cardRadius, color, font, hairline, ink, space, type } from "@/lib/theme"
 import { chartInput, pointDate, type Trend } from "@/lib/trends"
 
 /* The assistant thread's own pieces (FINAL-SPEC C.4), composed from the
@@ -88,7 +88,7 @@ function Fold({ title, open, onToggle, children }: { title: string; open: boolea
       >
         <Text style={styles.foldTitle}>{title}</Text>
         <View style={{ transform: [{ rotate: open ? "-90deg" : "90deg" }] }}>
-          <IconChevronRight size={16} color={ink.tertiary} />
+          <CaretRight size={16} color={card.chevron} />
         </View>
       </Pressable>
       {open && <Appear lift={4} style={styles.foldBody}>{children}</Appear>}
@@ -115,7 +115,7 @@ const quoted = (text: string) => `“${keepTogether(text)}”`
 function Tick() {
   return (
     <View style={styles.tick}>
-      <IconCheck size={14} color={color.primary} strokeWidth={2.4} />
+      <Check size={14} color={color.primary} weight="bold" />
     </View>
   )
 }
@@ -311,7 +311,7 @@ export function ResultChooser({
           <Pressable onPress={() => setMore(true)} accessibilityRole="button" hitSlop={4} style={({ pressed }) => [styles.more, pressed && styles.pressed]}>
             <Text style={styles.moreText}>{`Show ${rest.length} steady results`}</Text>
             <View style={{ transform: [{ rotate: "90deg" }] }}>
-              <IconChevronRight size={14} color={color.primary} />
+              <CaretRight size={14} color={color.primary} />
             </View>
           </Pressable>
         )}
@@ -324,7 +324,7 @@ export function ResultChooser({
         {live && (
           <Pressable onPress={() => router.push({ pathname: "/record/[kind]", params: { kind: "results" } })} accessibilityRole="link" hitSlop={4} style={({ pressed }) => [styles.more, pressed && styles.pressed]}>
             <Text style={styles.moreText}>See all results</Text>
-            <IconChevronRight size={14} color={color.primary} />
+            <CaretRight size={14} color={color.primary} />
           </Pressable>
         )}
       </View>
@@ -391,7 +391,7 @@ export function VisitBubble({ intro, at, visit, saved, suggestions }: { intro: s
               <Text style={styles.visitTitle}>{visit.title}</Text>
               <Text style={styles.visitMeta}>{[visit.time, ...visit.where.split(", ").map((part) => part.replace(/ /g, "\u00A0"))].filter(Boolean).join(", ")}</Text>
             </View>
-            <IconChevronRight size={16} color={ink.tertiary} />
+            <CaretRight size={16} color={card.chevron} />
           </Pressable>
         </Group>
       )}
@@ -464,7 +464,7 @@ export function UrgentBubble({ at, live, picked, onPick }: { at?: string; live: 
             accessibilityLabel={c.spoken ?? c.label}
             style={({ pressed }) => [styles.callRow, pressed && styles.pressed]}
           >
-            <IconCall size={16} color={color.primary} />
+            <Phone size={16} color={color.primary} />
             <View style={styles.callBody}>
               <Text style={[optionTextStyle(false), styles.callLabel]}>{c.label}</Text>
               {!!c.detail && <Text style={styles.optionDetailText}>{c.detail}</Text>}
@@ -511,7 +511,7 @@ export function LimitCard({
   // Saved: the kit's "Saved" (SaveQuestion), with the whole phrase.
   const savedRow = (
     <View style={styles.savedLine} accessible accessibilityRole="text">
-      <IconCheck size={14} color={color.primary} strokeWidth={2.4} />
+      <Check size={14} color={color.primary} weight="bold" />
       <Text style={styles.savedLineText}>Saved for your next visit</Text>
     </View>
   )
@@ -612,17 +612,17 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { alignSelf: "center" },
   pressed: { opacity: 0.7 },
-  strong: { fontFamily: font.semibold },
-  call: { fontFamily: font.semibold, color: color.primary },
+  strong: { fontFamily: font.medium, color: ink.strong },
+  call: { fontFamily: font.medium, color: ink.primary },
 
   // A card, not a message: radius 20 on every corner (C.4.3), over the
   // bubble's tail; the kit's edge, and a trend tile's compact padding
   // around the same name, value and dot graph (charts.tsx). Each side is
   // set on its own, so the bubble's padding never wins over it.
   context: {
-    backgroundColor: color.background,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: hairline.edge,
+    backgroundColor: card.fill,
+    borderWidth: 0,
+    boxShadow: card.shadow,
     borderBottomLeftRadius: cardRadius,
     paddingHorizontal: space.compact,
     paddingTop: space.compact,
@@ -668,7 +668,7 @@ const styles = StyleSheet.create({
   // and 10 inside, radius 14), led by the phone and worded in teal like the
   // numbers in the message; her replies sit a little apart, under the
   // calls (with the list's own 6, 12 under them).
-  callRow: { minHeight: 46, flexDirection: "row", alignItems: "center", gap: space.mark, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, backgroundColor: color.background },
+  callRow: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: space.mark, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: hairline.outline, backgroundColor: color.background },
   callBody: { flex: 1, gap: space.line },
   callLabel: { color: color.primary },
   replies: { marginTop: 6 },

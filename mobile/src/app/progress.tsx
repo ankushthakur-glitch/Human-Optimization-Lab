@@ -2,14 +2,15 @@ import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { Art } from "@/components/art"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { CountUp, PressureChart, ProgressChart, RangeBar, ScoreHistory, WeekBars, formatNumber } from "@/components/charts"
 import { FlowScreen } from "@/components/flow"
-import { IconAward, IconChevronRight, IconScan, IconSparkle } from "@/components/icons"
+import { AskButton } from "@/components/hol"
+import { CaretRight, Scan, Trophy } from "@/components/ph"
+import { HeadCard } from "@/components/plan-tab-pieces"
 import { NothingYet, Readout, SinceStartRows, changeSince, entryDay, lastDays } from "@/components/progress-parts"
 import { RecordIcon } from "@/components/record-icons"
-import { Block, Card, Group, HUE, NeedsRow, SmallAction, StatRow, StatTile, Status, TREND_WORD, Tabs, Tag, TextAction, Tile, TrendPill, type Trend } from "@/components/record-kit"
+import { Block, Card, Group, HUE, NeedsRow, SmallAction, StatRow, StatTile, Status, TREND_WORD, Tabs, Tag, TextAction, TrendPill, type Trend } from "@/components/record-kit"
 import { useExperience, useInlayScore, useMarkers } from "@/lib/experience"
 import {
   BODY_GOALS,
@@ -34,7 +35,7 @@ import {
 import { useOnboarding } from "@/lib/onboarding"
 import { scoreOverTime } from "@/lib/record"
 import { meaningOf, pointStatus, type Movement } from "@/lib/trends"
-import { ink, space, type } from "@/lib/theme"
+import { card, space, type } from "@/lib/theme"
 
 /* Progress since the member started (FINAL-SPEC C.25), Ed's progress layer:
    "I started my weight loss program on May 2026. I'm now September 2026.
@@ -73,7 +74,7 @@ export default function ProgressScreen() {
 
   return (
     <View style={styles.fill}>
-      <FlowScreen page title="Progress">
+      <FlowScreen page title="Progress" footer={started ? <AskButton params={{ ask: ASK }} /> : <AskButton params={{ topic: "plan" }} />}>
         {!started ? (
           <NothingYet />
         ) : bone ? (
@@ -82,7 +83,7 @@ export default function ProgressScreen() {
             <StrengthCard p={p} onAdd={() => setSheet("stands")} />
             <CalciumCard s={s} />
             <Group>
-              <NeedsRow icon={<IconScan size={18} color={HUE.teal.ink} />} title="Bone density" meta={NEXT_BONE_SCAN.words} />
+              <NeedsRow icon={<Scan size={16} color={HUE.teal.ink} />} title="Bone density" meta={NEXT_BONE_SCAN.words} />
             </Group>
             <WeightCard p={p} onAdd={() => setSheet("weight")} />
             <LastThirtyDays s={s} />
@@ -100,10 +101,7 @@ export default function ProgressScreen() {
             <LastThirtyDays s={s} />
             <Milestones s={s} />
             <ScoreCard s={s} />
-            <View style={styles.close}>
-              <AskCard />
-              <HistoryLink />
-            </View>
+            <HistoryLink />
           </>
         )}
       </FlowScreen>
@@ -118,9 +116,9 @@ export default function ProgressScreen() {
     the plan she is in above it, and where the number came from under it. */
 function Headline({ value, format, unit, words, meta, week }: { value: number; format: (v: number) => string; unit?: string; words: string; meta: string; week: number }) {
   return (
-    <Card style={styles.headline}>
+    <HeadCard style={styles.headline}>
       <View style={styles.headWords}>
-        <Tag tone="muted">{`Week ${week}`}</Tag>
+        <Tag tone="primary">{`Week ${week}`}</Tag>
         <View style={styles.headStack}>
           <View style={styles.heroLine}>
             <CountUp value={value} format={format} style={styles.hero} playKey="progress:headline" />
@@ -130,8 +128,7 @@ function Headline({ value, format, unit, words, meta, week }: { value: number; f
           <Text style={styles.headMeta}>{meta}</Text>
         </View>
       </View>
-      <Art name="chart-block" size={64} />
-    </Card>
+    </HeadCard>
   )
 }
 
@@ -352,8 +349,7 @@ function Milestones({ s }: { s: Store }) {
         {list.map((m) => (
           <NeedsRow
             key={m.id}
-            icon={<IconAward size={18} color={HUE.green.ink} />}
-            hue="green"
+            icon={<Trophy size={16} color={HUE.teal.ink} />}
             title={m.title}
             meta={m.meta ? `${m.label}, ${lowerFirst(m.meta)}` : m.label}
           />
@@ -382,30 +378,13 @@ function ScoreCard({ s }: { s: Store }) {
           right={
             <View style={styles.scoreRight}>
               {tag && <Tag tone={tag.tone}>{tag.label}</Tag>}
-              <IconChevronRight size={16} color={ink.tertiary} />
+              <CaretRight size={16} color={card.chevron} />
             </View>
           }
         />
         <ScoreHistory checkIns={checkIns} playKey="progress:score" />
       </Card>
     </Block>
-  )
-}
-
-/** One question for the assistant, cause and effect in her own plan. When
-    it wraps, its last two words keep together, so "A1c?" never sits alone
-    on the second line. */
-function AskCard() {
-  return (
-    <Card style={styles.ask}>
-      <Tile hue="teal">
-        <IconSparkle size={18} color={HUE.teal.ink} />
-      </Tile>
-      <Text style={styles.askText}>{ASK.replace(/ (\S+)$/, "\u00A0$1")}</Text>
-      <SmallAction onPress={() => router.push({ pathname: "/assistant", params: { ask: ASK } })} accessibilityLabel={`Ask: ${ASK}`}>
-        Ask
-      </SmallAction>
-    </Card>
   )
 }
 
@@ -474,9 +453,9 @@ function CalciumCard({ s }: { s: Store }) {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
 
-  // The object sits a lead from the words. The week's tag heads the
-  // stack under it: the number, the sentence, then where it came from.
-  headline: { flexDirection: "row", alignItems: "center", gap: space.lead },
+  // The week's tag heads the stack under it: the number, the sentence,
+  // then where it came from.
+  headline: { gap: 0 },
   headWords: { flex: 1, alignItems: "flex-start", gap: space.item },
   headStack: { alignSelf: "stretch", gap: space.line },
   heroLine: { flexDirection: "row", alignItems: "baseline", gap: space.stack },
@@ -502,7 +481,4 @@ const styles = StyleSheet.create({
   // On the value's line: the meta's box ends where the stat's does.
   trailing: { ...type.meta, alignSelf: "flex-start", marginTop: type.stat.lineHeight - type.meta.lineHeight },
 
-  close: { gap: space.item },
-  ask: { flexDirection: "row", alignItems: "center", gap: space.lead },
-  askText: { ...type.title, flex: 1 },
 })

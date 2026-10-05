@@ -1,19 +1,19 @@
+import { BlurView } from "expo-blur"
 import { router } from "expo-router"
 import * as React from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { DarkStatusBar } from "@/components/error-state"
 import { IconHome, IconPlan, IconResults, IconToDo, type TabIconProps } from "@/components/icons"
-import { useTopInset } from "@/components/ui"
-import { SiriSheet } from "@/components/voiceorbs/siri-sheet"
-import { color, font, space, type } from "@/lib/theme"
+import { OrbButton, PageGround, PageHeader } from "@/components/hol"
+import { useAllowance } from "@/lib/allowance"
+import { color, font, space } from "@/lib/theme"
 
-/* The signed-in app's bottom navigation, after Superpower: a floating white
-   pill with four Hugeicons tabs, outline at rest and filled when selected,
-   and beside it a white circle holding the assistant's orb (Siri Sheet), which
-   opens the assistant full screen. Each tab is its own
+/* The signed-in app's bottom navigation, from the Figma "Hol" file: a
+   floating, see-through teal tinted pill (it blurs the page under it) with four Hugeicons tabs, outline at
+   rest and filled when selected, and beside it the assistant's orb in a
+   ring (OrbButton), which opens the assistant full screen. Each tab is its own
    stack screen (switched without animation), so the bar is drawn by the
    screen rather than by a tab navigator. Home stays at the bottom of the
    stack, so Back (the swipe) from any other tab returns home. */
@@ -35,17 +35,19 @@ export function openTab(href: (typeof TABS)[number]["href"], from: TabName) {
   else router.replace(href)
 }
 
-const BAR = 60
 const INK = "#18181A"
-const REST = "#9A9EA6"
+const REST = "#818181"
 
-/** A tab's page on the cool ground: the title (or a header of its own,
-    like home's greeting) and anything pinned beside it stay at the top
-    while the content scrolls beneath, clear of the floating bar. */
+/** A tab's page (Figma "Hol", 5 Oct 2026): the white header bar with the
+    tab's title (or a header of its own, like home's greeting), anything
+    pinned under it, and the content scrolling on the page gradient right
+    down under the tab bar, which floats with no background of its own:
+    the pill and the orb blur what passes beneath them (user, 5 Oct). */
 export function TabScreen({
   tab,
   title,
   header,
+  headerRight,
   pinned,
   overlay,
   children,
@@ -54,132 +56,110 @@ export function TabScreen({
   overlay?: React.ReactNode
   tab: TabName
   title?: string
+  /** Replaces the title row inside the header bar, e.g. home's greeting. */
   header?: React.ReactNode
-  /** Stays at the top with the title while the page scrolls, e.g. the
+  /** On the right of the title, e.g. "Add to your record". */
+  headerRight?: React.ReactNode
+  /** Stays at the top under the header while the page scrolls, e.g. the
       Record tab's section tabs. */
   pinned?: React.ReactNode
   children: React.ReactNode
 }) {
-  const top = useTopInset()
+  const allowance = useAllowance()
   const { bottom } = useSafeAreaInsets()
-  // Sits in the home indicator's area, as iOS's own floating bars do,
-  // rather than stacked above it.
-  const barBottom = Math.max(bottom - 12, 14)
+  // The bar sits in the home indicator's area, as iOS's own floating bars
+  // do; the content keeps clear of it when scrolled to the end.
+  const barBottom = Math.max(bottom - 8, 12)
+  const barSpace = barBottom + BAR
   return (
     <View style={styles.screen}>
       <DarkStatusBar />
-      <View style={[styles.body, styles.pinned, { paddingTop: top + 12 }]}>
-        {header ?? (
-          <Text style={styles.title} accessibilityRole="header">
-            {title}
-          </Text>
-        )}
-        {pinned}
+      <PageHeader back={false} title={title} right={headerRight} compact={!!header}>
+        {header}
+      </PageHeader>
+      <View style={styles.fill}>
+        <PageGround />
+        {pinned && <View style={[styles.body, styles.pinned]}>{pinned}</View>}
+        <ScrollView
+          contentContainerStyle={[styles.body, styles.content, !!pinned && styles.contentPinned, { paddingBottom: barSpace + space.gutter }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
+        <TabBar active={tab} bottom={barBottom} used={allowance.member || !allowance.total ? 0 : allowance.used / allowance.total} />
       </View>
-      <ScrollView
-        contentContainerStyle={[styles.body, { paddingTop: 8, paddingBottom: barBottom + BAR + 32 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </ScrollView>
-      {/* Content fades out under the bar instead of showing through
-          beneath it. */}
-      <View style={[styles.fade, { height: barBottom + BAR + 28 }]} pointerEvents="none">
-        <Svg width="100%" height="100%">
-          <Defs>
-            <LinearGradient id="tabFade" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={color.page} stopOpacity={0} />
-              <Stop offset="0.45" stopColor={color.page} stopOpacity={0.92} />
-              <Stop offset="1" stopColor={color.page} stopOpacity={1} />
-            </LinearGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#tabFade)" />
-        </Svg>
-      </View>
-      <TabBar active={tab} bottom={barBottom} />
       {overlay}
     </View>
   )
 }
 
-function TabBar({ active, bottom }: { active: TabName; bottom: number }) {
+function TabBar({ active, used, bottom }: { active: TabName; used: number; bottom: number }) {
   return (
     <View style={[styles.bar, { bottom }]} pointerEvents="box-none">
-      <View style={styles.pill} accessibilityRole="tablist">
-        {TABS.map(({ name, label, href, Icon }) => {
-          const on = name === active
-          return (
-            <Pressable
-              key={name}
-              onPress={() => !on && openTab(href, active)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: on }}
-              accessibilityLabel={label}
-              style={({ pressed }) => [styles.tab, pressed && styles.pressed]}
-            >
-              <Icon size={21} color={on ? INK : REST} active={on} cut={color.background} />
-              <Text style={[styles.tabLabel, { color: on ? INK : REST }]} numberOfLines={1}>
-                {label}
-              </Text>
-            </Pressable>
-          )
-        })}
+      <View style={styles.barInner} pointerEvents="box-none">
+        <View style={styles.pill} accessibilityRole="tablist">
+          <BlurView intensity={BLUR} tint="light" style={StyleSheet.absoluteFill} />
+          {TABS.map(({ name, label, href, Icon }) => {
+            const on = name === active
+            return (
+              <Pressable
+                key={name}
+                onPress={() => !on && openTab(href, active)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={label}
+                style={({ pressed }) => [styles.tab, pressed && styles.pressed]}
+              >
+                <Icon size={18} color={on ? INK : REST} active={on} cut={color.primaryTint} />
+                <Text style={[styles.tabLabel, { color: on ? INK : REST }]} numberOfLines={1}>
+                  {label}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </View>
+        <View style={styles.orbWrap}>
+          <BlurView intensity={BLUR} tint="light" style={StyleSheet.absoluteFill} />
+          <OrbButton used={used} onPress={() => router.push("/assistant")} />
+        </View>
       </View>
-      <Pressable
-        onPress={() => router.push("/assistant")}
-        accessibilityRole="button"
-        accessibilityLabel="Ask the assistant"
-        style={({ pressed }) => [styles.assistant, pressed && styles.pressed]}
-      >
-        <SiriSheet size={BAR - 12} background={color.background} />
-      </Pressable>
     </View>
   )
 }
 
-const lift = { borderWidth: 1, borderColor: "#EDEEEF", boxShadow: "0 8px 24px rgba(16, 24, 40, 0.08)" } as const
+/** The bar's height, and how strongly it blurs what scrolls beneath it. */
+const BAR = 54
+const BLUR = 40
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: color.page },
-  fade: { position: "absolute", left: 0, right: 0, bottom: 0 },
-  // The signed-in page gutter (Frontline 16); the column stays 420 wide on
-  // a large screen.
-  body: { width: "100%", maxWidth: 420 + space.gutter * 2, alignSelf: "center", paddingHorizontal: space.gutter, gap: 20 },
-  pinned: { gap: 12, paddingBottom: 12, backgroundColor: color.page },
-  // The screen title (Frontline H2).
-  title: { ...type.tabTitle },
+  screen: { flex: 1, backgroundColor: color.background },
+  fill: { flex: 1 },
+  // The signed-in page gutter (16); the column stays 420 wide on a large
+  // screen.
+  body: { width: "100%", maxWidth: 420 + space.gutter * 2, alignSelf: "center", paddingHorizontal: space.gutter, gap: space.section },
+  pinned: { paddingTop: space.gutter, gap: space.item },
+  content: { paddingTop: space.gutter, paddingBottom: space.gutter * 2 },
+  contentPinned: { paddingTop: space.item },
   pressed: { opacity: 0.7 },
 
-  bar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    gap: 10,
-    width: "100%",
-    maxWidth: 420 + 21 * 2,
-    alignSelf: "center",
-    paddingHorizontal: 21,
-  },
+  // No footer of its own: the pill and the orb float over the page, 16 in
+  // from its sides, each blurring what is under it.
+  bar: { position: "absolute", left: 0, right: 0, paddingHorizontal: space.gutter },
+  barInner: { flexDirection: "row", alignItems: "center", gap: 6, width: "100%", maxWidth: 420, alignSelf: "center" },
   pill: {
     flex: 1,
-    height: BAR,
-    borderRadius: BAR / 2,
-    backgroundColor: color.background,
+    height: 54,
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: "rgba(230, 243, 242, 0.9)",
+    // The tint at about half, so the blur shows through it.
+    backgroundColor: "rgba(242, 247, 247, 0.55)",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 6,
-    ...lift,
+    overflow: "hidden",
+    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
   },
-  tab: { flex: 1, height: "100%", alignItems: "center", justifyContent: "center", gap: 3 },
+  orbWrap: { width: 52, height: 52, borderRadius: 26, overflow: "hidden", boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)" },
+  tab: { flex: 1, height: 52, alignItems: "center", justifyContent: "center", gap: 3 },
   tabLabel: { fontFamily: font.medium, fontSize: 10.5, lineHeight: 13 },
-  assistant: {
-    width: BAR,
-    height: BAR,
-    borderRadius: BAR / 2,
-    backgroundColor: color.background,
-    alignItems: "center",
-    justifyContent: "center",
-    ...lift,
-  },
 })

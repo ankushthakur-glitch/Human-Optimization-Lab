@@ -3,7 +3,7 @@ import { StyleSheet, Text } from "react-native"
 import { dayKey } from "@/lib/dates"
 import { membershipEnded } from "@/lib/member"
 import type { Membership } from "@/lib/onboarding"
-import { space, type } from "@/lib/theme"
+import { font, ink } from "@/lib/theme"
 
 /* Pieces the member's account screens share (Membership, Profile and the
    paid setup, FINAL-SPEC C.17, C.18, C.27): the billing calendar worked
@@ -82,19 +82,12 @@ export function billingOf(m: Membership | undefined, now: Date = new Date()): Bi
   return { state: "active", started, charges, next, renews }
 }
 
-/** "Step 2 of 5" under a setup step's title (C.27), in meta; centred under
-    a centred title. */
-export function SetupStepLabel({ children, centred }: { children: string; centred?: boolean }) {
-  return <Text style={[styles.step, centred && styles.centred]}>{children}</Text>
+/** "Step 2 of 5" on the right of a setup step's header bar (C.27), where
+    the Figma "Hol" page puts its text action, in the label grey. */
+export function SetupStepLabel({ children }: { children: string }) {
+  return <Text style={styles.step}>{children}</Text>
 }
 
-/** FlowScreen's space between its children (flow.tsx, unchanged for the
-    setup). */
-const FLOW_GAP = 32
-
 const styles = StyleSheet.create({
-  // Pulled up under the step's title, so the count reads with the title,
-  // not with what follows.
-  step: { ...type.meta, marginTop: space.item - FLOW_GAP },
-  centred: { textAlign: "center" },
+  step: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: ink.secondary },
 })

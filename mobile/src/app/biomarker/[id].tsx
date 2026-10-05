@@ -1,38 +1,19 @@
-import { router, useLocalSearchParams, type Href } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { Animated, Linking, StyleSheet, Text, View } from "react-native"
 
 import { BiomarkerTrend, PressureChart, RangeBar, rangeDomain, useEntrance, type PressureReading } from "@/components/charts"
 import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
-import { IconInfo, IconPlan } from "@/components/icons"
-import { RecordIcon } from "@/components/record-icons"
-import {
-  AllowanceLine,
-  Banner,
-  Block,
-  Card,
-  Dot,
-  Group,
-  HUE,
-  NeedsRow,
-  Nudge,
-  SaveQuestion,
-  SeeAllRow,
-  SmallAction,
-  Status,
-  TrendPill,
-  type Hue,
-  type Level,
-} from "@/components/record-kit"
-import { Button } from "@/components/ui"
+import { AskButton } from "@/components/hol"
+import { ArrowRight, Info, TrendDown, TrendUp } from "@/components/ph"
+import { Banner, Block, Card, Dot, Group, HUE, NeedsRow, SeeAllRow, SmallAction, Status, type Level } from "@/components/record-kit"
 import { experience, useMarkers } from "@/lib/experience"
-import { MEMBER, PLAN_START_RESULTS, clockOf, dateOfAt, dayLabel, planLineFor, pressureReadingsOf, pressures, sinceStart, type Measure } from "@/lib/member"
+import { MEMBER, PLAN_START_RESULTS, pressureReadingsOf, pressures, sinceStart, type Measure } from "@/lib/member"
 import { useChangeCourse } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
-import { MARKER_CARE, PLACE_NAME, type Biomarker, type Point } from "@/lib/record"
-import { orderHref, todo, type TodoItem } from "@/lib/todo"
+import { PLACE_NAME, type Biomarker, type Point } from "@/lib/record"
 import {
   STATUS_WORD,
   chartSeries,
@@ -44,22 +25,21 @@ import {
   pointStatus,
   pointTime,
   precisionOf,
-  questionsOf,
   spokenValue,
   valueText,
   type Trend,
 } from "@/lib/trends"
-import { hairline, space, type } from "@/lib/theme"
+import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
-/* One marker's page: it finishes the thought its tile starts (FINAL-SPEC
-   C.3). Top to bottom: where the latest result sits, in words and on the
-   range, with the clinical next step inside the same card so it is in the
-   first view and always above any offer; how it has moved, to scale in
-   time; every result with where it came from; what the marker measures;
-   questions to save for Dr. Patel; and last, only for a free patient whose
-   results are moving away from her range and only when the cap service
-   allows it, "Want to change course?". "Ask about this result" stays
-   pinned, with the free questions left above it.
+/* One marker's page (FINAL-SPEC C.3; Figma "Hol" marker page, extended
+   frame 40024634:2166). Top to bottom: where the latest result sits (its
+   status and direction badges, the value, when and where it was taken,
+   the change in words and the range bar); how it has moved, to scale in
+   time ("Over time"); the clinical next step; every result with where it
+   came from; and last, only for a free patient whose results are moving
+   away from her range and only when the cap service allows it, "Want to
+   change course?". "Ask to Health Agent" stays pinned in the footer,
+   opening the assistant about this marker.
 
    The words are facts from lib/trends.ts (status, direction, the change
    since the first result); what they mean clinically is the doctor's. A
@@ -114,15 +94,12 @@ function takeawayLine(t: Trend) {
   return plain ? `${line}, across ${counted(t.count, t.noun)}.` : `${line}.`
 }
 
-/** A booked day and time as a local date: the to do list's "2026-10-06T07:30". */
-const dayOf = (at: string | Date) => (typeof at === "string" ? dateOfAt(at) : at)
+/** The offer's action, from its one line ("Want to change course? See how
+    a plan works"), so the words live with the offer. */
+const courseAction = (c: { title: string; link: string }) => (c.link.startsWith(c.title) ? c.link.slice(c.title.length).trim() : c.link)
 
-/** The quiet variant's action, from the offer's one line ("Want to change
-    course? See how a plan works"), so the words live with the offer. */
-const quietAction = (c: { title: string; link: string }) => (c.link.startsWith(c.title) ? c.link.slice(c.title.length).trim() : c.link)
-
-/** The arrow on the direction pill: a fact, never coloured. */
-const ARROW: Partial<Record<Trend["movement"], "up" | "down" | "steady">> = { rising: "up", falling: "down", steady: "steady" }
+/** The arrow on the direction badge: a fact, never a status colour. */
+const ARROW: Partial<Record<Trend["movement"], typeof TrendUp>> = { rising: TrendUp, falling: TrendDown, steady: ArrowRight }
 
 /** Blood pressure from the record as the pressure chart reads it. */
 function clinicReadings(b: Biomarker): PressureReading[] {
@@ -142,59 +119,28 @@ export default function MarkerScreen() {
   if (!b) return <PageNotFoundState />
 
   const t = classify(b)
-  const exp = experience(onboarding)
-  const member = exp === "member"
+  const member = experience(onboarding) === "member"
   const review = needsReview(b, t.latest)
-  const steps = nextSteps(b, onboarding, member)
   const course = offer.copy
-  // A member's own evening readings: a chart of their own, and the average
-  // her question quotes.
+  // A member's own evening readings: a chart of their own.
   const homeList = member && b.id === "bp" ? pressures(onboarding).slice(-30) : []
   const home = homeAverage(homeList)
-  const questions = pageQuestions(t, { booked: steps.some((s) => s.booked), home })
 
   return (
-    <FlowScreen
-      page
-      title={b.name}
-      footer={
-        <>
-          <AllowanceLine align="center" />
-          <Button variant="outline" onPress={() => router.push({ pathname: "/assistant", params: { marker: b.id } })}>
-            Ask about this result
-          </Button>
-        </>
-      }
-    >
-      <Readout b={b} t={t} member={member} review={review} steps={steps} />
+    <FlowScreen page title={b.name} footer={<AskButton params={{ marker: b.id }} />}>
+      <Readout b={b} t={t} member={member} review={review} />
       {b.points.length > 0 && <OverTime b={b} t={t} />}
       {!!home && <HomeReadings list={homeList} average={home} />}
       <EveryResult b={b} t={t} />
-      {!!b.about && (
-        <Block title="What this measures" variant="title">
-          <Card style={styles.about}>
-            <Text style={type.body}>{b.about}</Text>
-            <Text style={type.meta}>{b.aboutSource ?? "From MedlinePlus"}</Text>
-          </Card>
-        </Block>
-      )}
-      <Questions b={b} list={questions} />
       {!review && offer.show && course && (
-        <Nudge
-          variant={offer.soft ? "link" : "card"}
-          art="compass"
+        <ChangeCourse
           title={course.title}
-          body={course.body}
-          note={course.meta}
-          action={offer.soft ? quietAction(course) : course.action}
-          onAction={() => {
+          action={courseAction(course)}
+          onShow={offer.markShown}
+          onPress={() => {
             offer.markOpened()
             router.push({ pathname: "/plans", params: { from: b.id } })
           }}
-          dismissLabel={course.dismiss}
-          onDismiss={offer.notNow}
-          onDecline={offer.notForMe}
-          onShow={offer.markShown}
         />
       )}
     </FlowScreen>
@@ -203,107 +149,42 @@ export default function MarkerScreen() {
 
 /* ---------------------------------------------------------- readout -- */
 
-type Step = {
-  key: string
-  icon: React.ReactNode
-  hue: Hue
-  title: string
-  meta: string
-  /** A test of this marker that is booked: its next result is on the way. */
-  booked?: boolean
-  onPress?: () => void
-}
 
-/** The clinical step for this marker, from the To do list so Home, To do
-    and this page say the same thing: the plan's work on it (members), the
-    test that measures it, and the care gap tied to it. Steps already done
-    drop out. */
-function nextSteps(b: Biomarker, s: ReturnType<typeof useOnboarding>, member: boolean): Step[] {
-  const care = MARKER_CARE[b.id]
-  const list = todo(s)
-  const open = [...list.needs, ...list.coming, ...list.visit, ...list.booked]
-  const tile = (item: TodoItem) => <RecordIcon name={item.icon} size={18} color={HUE[item.hue].ink} />
-  const steps: Step[] = []
-
-  const hrefs = [...new Set((care?.orders ?? []).map(orderHref))]
-  for (const href of hrefs) {
-    const item = open.find((i) => i.kind === "order" && i.href === href)
-    if (!item) continue
-    const booked = item.group === "booked" && item.date ? dayOf(item.date) : undefined
-    steps.push({
-      key: item.id,
-      icon: tile(item),
-      hue: item.hue,
-      title: item.title,
-      meta: booked ? `Booked for ${dayLabel(booked)}, ${clockOf(booked)}` : item.meta,
-      booked: item.group === "booked",
-      onPress: () => router.push(item.href as Href),
-    })
-  }
-
-  // A member's plan works on the marker with Dr. Patel, so it stands in for
-  // a care gap that is only something to talk about; one still to book or
-  // call about stays.
-  const plan = member ? planLineFor(b.id, s) : undefined
-  for (const gap of care?.gaps ?? []) {
-    const item = open.find((i) => i.id === `gap:${gap}`)
-    const talk = item?.group === "visit"
-    if (!item || (talk && plan)) continue
-    steps.push({
-      key: item.id,
-      icon: tile(item),
-      hue: item.hue,
-      title: item.title,
-      meta: talk ? "On your list for your next visit" : item.meta,
-      onPress: () => router.push(item.href as Href),
-    })
-  }
-
-  // What the plan does about it comes first, with the next test that
-  // measures it when one is booked this week.
-  if (plan)
-    steps.unshift({
-      key: "plan",
-      icon: <IconPlan size={18} color={HUE.teal.ink} />,
-      hue: "teal",
-      title: "In your plan",
-      meta: plan,
-      onPress: () => router.push("/plan"),
-    })
-  return steps
-}
-
-/** Where the latest result sits: the status and direction, the value, when
-    and where it was taken, the change in words, the range bar, and the
-    next clinical step. */
-function Readout({ b, t, member, review, steps }: { b: Biomarker; t: Trend; member: boolean; review: boolean; steps: Step[] }) {
+/** Where the latest result sits: the status and direction badges, the
+    value, when and where it was taken, the change in words and the range
+    bar, as the Figma's status card sets them (8 between the badges and the
+    value, 16 to the words over the bar). */
+function Readout({ b, t, member, review }: { b: Biomarker; t: Trend; member: boolean; review: boolean }) {
   const fade = useEntrance(`marker:${b.id}`, { duration: 280 })
   const latest = t.latest
   const since = member ? sinceStart(b) : undefined
   const start = since ? PLAN_START_RESULTS[b.id]?.value : undefined
   const takeaway = takeawayLine(t)
-  const arrow = ARROW[t.movement]
+  const Arrow = ARROW[t.movement]
 
   return (
     <Animated.View style={{ opacity: fade }}>
       <Card style={styles.readout}>
         {latest ? (
           <View style={styles.head}>
-            <View style={styles.pills}>
+            <View style={styles.badges}>
               <Status level={t.status} />
-              <TrendPill trend={arrow}>{directionWords(t)}</TrendPill>
+              <View style={styles.trend}>
+                {Arrow && <Arrow size={12} color={color.primaryText} />}
+                <Text style={styles.trendText}>{directionWords(t)}</Text>
+              </View>
             </View>
             <View
               style={styles.figure}
               accessible
               accessibilityLabel={`Latest result, ${spokenValue(b, latest)}, ${lowerFirst(STATUS_WORD[t.status])}. ${spokenDay(latest)}, ${PLACE_NAME[latest.origin]}.`}
             >
-              <View style={[styles.value, b.unit === "%" && styles.valueTight]}>
-                <Text style={type.hero}>{t.value}</Text>
-                <Text style={type.unitLarge}>{b.unit}</Text>
+              <View style={styles.value}>
+                <Text style={styles.valueText}>{t.value}</Text>
+                <Text style={type.unit}>{b.unit}</Text>
               </View>
-              <Text style={type.meta}>{`Latest, ${pointDate(latest)}, ${PLACE_NAME[latest.origin]}`}</Text>
-              {!!since && <Text style={type.meta}>{since.words}</Text>}
+              <Text style={type.label}>{`Latest, ${pointDate(latest)}, ${PLACE_NAME[latest.origin]}`}</Text>
+              {!!since && <Text style={type.label}>{since.words}</Text>}
             </View>
           </View>
         ) : (
@@ -315,7 +196,7 @@ function Readout({ b, t, member, review, steps }: { b: Biomarker; t: Trend; memb
 
         {!!latest && (
           <View style={styles.range}>
-            {!!takeaway && <Text style={type.body}>{takeaway}</Text>}
+            {!!takeaway && <Text style={styles.takeaway}>{takeaway}</Text>}
             {b.id === "bp" && latest.value2 !== undefined ? (
               <PressureBars b={b} latest={latest} />
             ) : (
@@ -338,19 +219,6 @@ function Readout({ b, t, member, review, steps }: { b: Biomarker; t: Trend; memb
           <View style={styles.review}>
             <Text style={[type.body, styles.reviewText]}>{`${DOCTOR} will review this result.`}</Text>
             <SmallAction onPress={() => Linking.openURL(`tel:${PATIENT.practicePhone}`)}>{`Call ${PRACTICE}`}</SmallAction>
-          </View>
-        )}
-
-        {steps.length > 0 && (
-          <View style={styles.next}>
-            <Text style={type.metaStrong}>Next step</Text>
-            <View>
-              {steps.map((step, i) => (
-                <View key={step.key} style={i > 0 && styles.rule}>
-                  <NeedsRow icon={step.icon} hue={step.hue} title={step.title} meta={step.meta} onPress={step.onPress} />
-                </View>
-              ))}
-            </View>
           </View>
         )}
       </Card>
@@ -396,22 +264,22 @@ function PressureBars({ b, latest }: { b: Biomarker; latest: Point }) {
 /* -------------------------------------------------------- over time -- */
 
 /** How it has moved, to scale in time: the marker trend, or both numbers
-    of blood pressure. Scrubbing the plot moves the readout above it. */
+    of blood pressure, on the Figma's white chart card. Scrubbing the plot
+    moves the readout above it. */
 function OverTime({ b, t }: { b: Biomarker; t: Trend }) {
-  const all = b.points.length
   const bp = b.id === "bp"
   return (
     <View style={styles.overTime}>
-      <Card style={styles.chartCard}>
+      <View style={styles.chartCard}>
         <View style={styles.cardHead}>
-          <Text style={type.section} accessibilityRole="header">
+          <Text style={styles.cardTitle} accessibilityRole="header">
             Over time
           </Text>
-          <Text style={type.meta}>{counted(all, t.noun)}</Text>
+          <Text style={type.label}>{counted(b.points.length, t.noun)}</Text>
         </View>
         {bp ? <PressureChart readings={clinicReadings(b)} playKey={`marker-chart:${b.id}`} /> : <BiomarkerTrend {...chartSeries(t)} playKey={`marker-chart:${b.id}`} />}
-      </Card>
-      {!!b.methodNote && <Banner hue="teal" icon={<IconInfo size={18} color={HUE.teal.ink} />} title={b.methodNote} />}
+      </View>
+      {!!b.methodNote && <Banner hue="teal" icon={<Info size={16} color={HUE.teal.ink} />} title={b.methodNote} />}
     </View>
   )
 }
@@ -431,15 +299,15 @@ function homeAverage(list: Measure[]): HomeAverage | undefined {
     chart of their own, never joined to the clinic's. */
 function HomeReadings({ list, average }: { list: Measure[]; average: HomeAverage }) {
   return (
-    <Card style={styles.chartCard}>
-      <View style={styles.cardTitle}>
-        <Text style={type.section} accessibilityRole="header">
+    <View style={styles.chartCard}>
+      <View style={styles.cardHead}>
+        <Text style={styles.cardTitle} accessibilityRole="header">
           Your home readings
         </Text>
-        <Text style={type.label}>{`Average of the last ${average.evenings} evenings: ${average.text}`}</Text>
       </View>
+      <Text style={type.label}>{`Average of the last ${average.evenings} evenings: ${average.text}`}</Text>
       <PressureChart readings={pressureReadingsOf(list)} playKey="marker-chart:bp-home" />
-    </Card>
+    </View>
   )
 }
 
@@ -453,7 +321,7 @@ function EveryResult({ b, t }: { b: Biomarker; t: Trend }) {
   if (!rows.length) return null
   const shown = all ? rows : rows.slice(0, ROWS)
   return (
-    <Block title="Every result" variant="title">
+    <Block title="Every result">
       <Group>
         {shown.map((p) => {
           const level: Level = pointStatus(b, p)
@@ -468,9 +336,9 @@ function EveryResult({ b, t }: { b: Biomarker; t: Trend }) {
               right={
                 <View style={styles.result}>
                   {level !== "in" && <Dot level={level} />}
-                  <Text style={[type.value, styles.number]}>
+                  <Text style={styles.resultValue}>
                     {valueText(b, p)}
-                    <Text style={type.unit}>{`${b.unit === "%" ? "" : " "}${b.unit}`}</Text>
+                    <Text style={type.unit}>{` ${b.unit}`}</Text>
                   </Text>
                 </View>
               }
@@ -483,80 +351,69 @@ function EveryResult({ b, t }: { b: Biomarker; t: Trend }) {
   )
 }
 
-/* -------------------------------------------------------- questions -- */
+/* ---------------------------------------------------- change course -- */
 
-/** A question that asks when the marker is tested next. */
-const NEXT_TEST = /^When should I have my next\b/
-
-/** The marker's questions as this page sees her, values as they stand
-    (lib/trends.ts questionsOf, which the assistant reads too). A question
-    the page already answers gives way: with the next test of this marker
-    booked, "When should I have my next A1c?" goes; a member who checks her
-    blood pressure every evening gets the record's question about which
-    numbers to go by, quoting the same average as "Your home readings". */
-function pageQuestions(t: Trend, { booked, home }: { booked: boolean; home?: HomeAverage }): string[] {
-  const at = t.latest ? new Date(t.latest.t) : undefined
-  const month = at ? `${MONTHS_LONG[at.getMonth()]}${at.getFullYear() === new Date().getFullYear() ? "" : ` ${at.getFullYear()}`}` : undefined
-  const fill = home && month ? { home: home.text, month } : undefined
-  return questionsOf(t, { member: !!home, fill }).filter((q) => !(booked && NEXT_TEST.test(q)))
-}
-
-/** Questions she can save for her next visit with Dr. Patel (pageQuestions). */
-function Questions({ b, list }: { b: Biomarker; list: string[] }) {
-  if (!list.length) return null
+/** "Want to change course?" as the Figma's last card: the question on the
+    left and "See how a plan works" as a small action on the right. */
+function ChangeCourse({ title, action, onShow, onPress }: { title: string; action: string; onShow: () => void; onPress: () => void }) {
+  React.useEffect(() => {
+    onShow()
+    // Counted once, when it first shows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   return (
-    <Block title={`Questions for ${DOCTOR}`} variant="title">
-      <Group>
-        {list.map((q) => (
-          <View key={q} style={styles.question}>
-            <Text style={[type.body, styles.questionText]}>{q}</Text>
-            <SaveQuestion text={q} about={b.id} />
-          </View>
-        ))}
-      </Group>
-    </Block>
+    <Card style={styles.course}>
+      <Text style={styles.courseTitle}>{title}</Text>
+      <SmallAction onPress={onPress}>{action}</SmallAction>
+    </Card>
   )
 }
 
 const styles = StyleSheet.create({
-  readout: { gap: space.card },
-  head: { gap: space.item },
+  readout: { gap: space.gutter },
+  head: { gap: space.inline },
   // No results: a block title and the line under it.
   empty: { gap: space.stack },
-  pills: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
+  badges: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.inline },
+  // Figma's direction badge: the teal arrow and word on HOL Primary/bg.
+  trend: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.stack,
+    paddingLeft: 6,
+    paddingRight: 8,
+    paddingVertical: 2,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(33, 80, 89, 0.04)",
+    backgroundColor: "#F9FBFB",
+  },
+  trendText: { ...type.captionStrong, color: ink.primary },
   figure: { gap: space.stack },
-  // A unit follows its value; a share takes no space ("5.9%"), as in the
-  // chart's readout and the rows below.
+  // The value 16 medium, its unit 4 after it.
   value: { flexDirection: "row", alignItems: "baseline", gap: space.stack },
-  valueTight: { gap: 0 },
-  // The takeaway over its bar, as the chart kit sets a takeaway over a chart.
+  valueText: { fontFamily: font.medium, fontSize: 16, lineHeight: 26, color: ink.content },
+  // The words over their bar, 12 apart.
   range: { gap: space.item },
+  takeaway: { ...type.body, lineHeight: 20, color: ink.content },
   // Two bars are two rows with no rule between them, as GoalRows stacks its bars.
   bars: { gap: space.card },
   // Level with the value over the marker: the bar sets it on a 14 pt
   // baseline, which a 12/16 label meets 2 from its top.
   barName: { position: "absolute", top: 2, left: 0 },
-  review: { flexDirection: "row", alignItems: "center", gap: space.item },
+  review: { flexDirection: "row", alignItems: "center", gap: space.item, paddingTop: space.item, borderTopWidth: 1, borderTopColor: hairline.rule },
   reviewText: { flex: 1 },
-  // The steps sit below a rule as a Group's rows do: the label 12 from the
-  // rule, and each row's own padding sets it a heading's distance (12) from
-  // the label. The last row's padding stands in for that much of the
-  // card's, so its words end a card's padding from the edge.
-  next: { paddingTop: space.rowY, marginBottom: -space.rowY, borderTopWidth: 1, borderTopColor: hairline.rule },
-  rule: { borderTopWidth: 1, borderTopColor: hairline.rule },
 
   overTime: { gap: space.item },
-  chartCard: { gap: space.item },
-  cardHead: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space.item },
-  cardTitle: { gap: space.stack },
+  // Figma's chart card: white with a hairline, 16 inside, 16 between parts.
+  chartCard: { gap: space.gutter, padding: space.gutter, borderRadius: 8, borderWidth: 1, borderColor: hairline.outline, backgroundColor: color.background },
+  cardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },
+  cardTitle: { ...type.title, color: ink.detail },
 
-  // A status dot to its value, as in a table row.
-  result: { flexDirection: "row", alignItems: "center", gap: space.mark },
-  number: { fontVariant: ["tabular-nums"] },
+  // A status dot 8 from its value, as in a table row.
+  result: { flexDirection: "row", alignItems: "center", gap: space.inline },
+  resultValue: { ...type.title, fontVariant: ["tabular-nums"] },
 
-  // The sentence and its source, as the kit's Quote sets them.
-  about: { gap: space.stack },
-
-  question: { flexDirection: "row", alignItems: "center", gap: space.item, paddingVertical: space.rowY },
-  questionText: { flex: 1 },
+  course: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item, paddingVertical: space.inline },
+  courseTitle: { flexShrink: 1, ...type.title, color: ink.detail },
 })

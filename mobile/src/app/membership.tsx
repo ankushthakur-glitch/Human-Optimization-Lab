@@ -4,8 +4,10 @@ import { StyleSheet, Text, View } from "react-native"
 
 import { keepTogether } from "@/components/care-gap"
 import { FlowScreen } from "@/components/flow"
-import { IconCard, IconCheck, IconPlan } from "@/components/icons"
+import { PrimaryButton } from "@/components/hol"
+import { Check, CheckCircle, ClipboardText, CreditCard, Receipt } from "@/components/ph"
 import { billingOf, type Billing } from "@/components/plan-account-pieces"
+import { HeadCard, headText } from "@/components/plan-tab-pieces"
 import { Block, Card, CheckLines, Group, KeyValue, NeedsRow, SeeAllRow, SmallAction, Tag, TextAction, toast } from "@/components/record-kit"
 import { Sheet, SheetText } from "@/components/sheet"
 import { Button } from "@/components/ui"
@@ -15,7 +17,7 @@ import { MEMBER } from "@/lib/member"
 import { useOnboarding, type Membership } from "@/lib/onboarding"
 import { TIERS, livePlan, priceLabel } from "@/lib/plans"
 import { SETUP, nextSetup } from "@/lib/program"
-import { color, hairline, space, type } from "@/lib/theme"
+import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* The member's own membership and billing page (FINAL-SPEC C.17, S-67 to
    S-70): one honest page. What she has and since when, the next payment
@@ -124,7 +126,7 @@ export default function MembershipScreen() {
 
   return (
     <View style={styles.fill}>
-      <FlowScreen page title="Membership">
+      <FlowScreen page title="Membership" footer={bill.state === "paused" ? <PrimaryButton onPress={() => setSheet("resume")}>Resume my membership</PrimaryButton> : undefined}>
         {bill.state === "none" ? (
           <FreeRecord />
         ) : (
@@ -133,7 +135,6 @@ export default function MembershipScreen() {
 
             <Summary bill={bill} card={m?.card} onCard={() => setSheet("card")} onAddCard={() => chooseCard(CARDS[0])} />
 
-            {bill.state === "paused" && <Button onPress={() => setSheet("resume")}>Resume my membership</Button>}
             {bill.state === "ending" && (
               <View style={styles.block}>
                 <Text style={styles.body}>
@@ -141,7 +142,7 @@ export default function MembershipScreen() {
                     `Your membership stays ${bill.paused ? "paused" : "active"} until ${bill.ends ? rowDate(bill.ends) : "this billing month ends"}. After that you go back to the free record, and you keep your record and every version of your plan.`,
                   )}
                 </Text>
-                <Button onPress={() => setSheet("resume")}>Resume my membership</Button>
+                <PrimaryButton onPress={() => setSheet("resume")}>Resume my membership</PrimaryButton>
               </View>
             )}
 
@@ -149,14 +150,14 @@ export default function MembershipScreen() {
               <Block title="Receipts">
                 <Group>
                   {bill.charges.map((d) => (
-                    <NeedsRow key={d.toISOString()} title={`${price}, ${rowDate(d)}`} onPress={() => setSheet({ receipt: d })} />
+                    <NeedsRow key={d.toISOString()} icon={<Receipt size={16} color={color.primary} />} title={`${price}, ${rowDate(d)}`} onPress={() => setSheet({ receipt: d })} />
                   ))}
                 </Group>
               </Block>
             )}
 
             <Group>
-              <NeedsRow icon={<IconCheck size={18} color={color.primary} />} title="What's included" onPress={() => setSheet("included")} />
+              <NeedsRow icon={<CheckCircle size={16} color={color.primary} />} title="What's included" onPress={() => setSheet("included")} />
               <YourPlanRow ended={bill.state === "ended"} />
             </Group>
 
@@ -305,28 +306,30 @@ function Summary({ bill, card, onCard, onAddCard }: { bill: Billing; card?: stri
   const showCard = bill.state !== "ended"
 
   return (
-    <Card style={styles.summary}>
-      <View style={styles.summaryTop}>
+    <>
+      <HeadCard>
         <View style={styles.titleLine}>
-          <Text style={[styles.title, styles.flex]} accessibilityRole="header">
+          <Text style={[headText.title, styles.flex]} accessibilityRole="header">
             {TIERS.optimization.name}
           </Text>
           <Tag tone={tag.tone}>{tag.label(bill)}</Tag>
         </View>
-        {!!since && <Text style={styles.meta}>{since}</Text>}
-      </View>
-      <View>
-        {rows.map((r, i) => (
-          <KeyValue key={r.label} label={r.label} value={r.value} last={!showCard && i === rows.length - 1} />
-        ))}
-        {showCard &&
-          (card ? (
-            <KeyValue label="Card" value={keepTogether(card)} action={<TextAction onPress={onCard}>Change</TextAction>} last />
-          ) : (
-            <KeyValue label="Card" action={<SmallAction onPress={onAddCard}>Add a card</SmallAction>} last />
+        {!!since && <Text style={headText.meta}>{since}</Text>}
+      </HeadCard>
+      <Block title="Billing">
+        <Card style={styles.summary}>
+          {rows.map((r, i) => (
+            <KeyValue key={r.label} label={r.label} value={r.value} last={!showCard && i === rows.length - 1} />
           ))}
-      </View>
-    </Card>
+          {showCard &&
+            (card ? (
+              <KeyValue label="Card" value={keepTogether(card)} action={<SmallAction onPress={onCard}>Change</SmallAction>} last />
+            ) : (
+              <KeyValue label="Card" action={<SmallAction onPress={onAddCard}>Add a card</SmallAction>} last />
+            ))}
+        </Card>
+      </Block>
+    </>
   )
 }
 
@@ -349,7 +352,7 @@ function YourPlanRow({ ended }: { ended: boolean }) {
           : undefined
   return (
     <NeedsRow
-      icon={<IconPlan size={18} color={color.primary} />}
+      icon={<ClipboardText size={16} color={color.primary} />}
       title={ended ? "Your past plans" : "Your plan"}
       meta={meta}
       onPress={() => {
@@ -411,10 +414,10 @@ function CardSheet({ current, onUse, onClose }: { current?: string; onUse: (card
           return (
             <NeedsRow
               key={c}
-              icon={<IconCard size={18} color={color.primary} />}
+              icon={<CreditCard size={16} color={color.primary} />}
               title={c}
               meta={c === current ? "In use" : undefined}
-              right={on ? <IconCheck size={18} color={color.primary} strokeWidth={2.2} /> : undefined}
+              right={on ? <Check size={18} color={color.primary} weight="bold" /> : undefined}
               chevron={false}
               onPress={() => setChosen(c)}
               accessibilityLabel={`${c}${on ? ", selected" : ""}`}
@@ -439,7 +442,7 @@ function CardSheet({ current, onUse, onClose }: { current?: string; onUse: (card
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   flex: { flex: 1 },
-  title: { ...type.section },
+  title: { fontFamily: font.medium, fontSize: 16, lineHeight: 24, color: ink.content },
   body: { ...type.body },
   label: { ...type.label },
   meta: { ...type.meta },
@@ -448,8 +451,7 @@ const styles = StyleSheet.create({
   // The rows' own room above and below makes up the card's padding, and
   // the head sits a row's room above its rule, so the rule reads like the
   // ones between the rows.
-  summary: { paddingBottom: space.card - space.rowY },
-  summaryTop: { gap: space.stack, paddingBottom: space.rowY, borderBottomWidth: 1, borderBottomColor: hairline.rule },
+  summary: { paddingVertical: space.card - space.rowY },
   titleLine: { flexDirection: "row", alignItems: "center", gap: space.inline },
 
   leave: { gap: space.item },

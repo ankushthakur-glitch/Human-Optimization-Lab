@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from "expo-router"
 import { ConsentTexts, periodParam } from "@/components/consent-steps"
 import { useOnboarding } from "@/lib/onboarding"
 
-/** Setup's consent, page 3: texts. Signing starts the record and moves on
+/** Setup's consent, page 2: texts. Signing starts the record and moves on
     to the why. */
 export default function ConsentTextsScreen() {
   const onboarding = useOnboarding()

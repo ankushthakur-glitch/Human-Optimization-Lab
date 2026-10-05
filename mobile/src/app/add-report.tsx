@@ -4,9 +4,9 @@ import { StyleSheet, Text, View } from "react-native"
 
 import { Art } from "@/components/art"
 import { FlowScreen } from "@/components/flow"
-import { IconCamera, IconUpload } from "@/components/icons"
+import { Camera, UploadSimple } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
-import { Block, Card, Group, LiveDot, Tile, toast } from "@/components/record-kit"
+import { Block, Card, Group, KeyValue, LiveDot, Tile, toast } from "@/components/record-kit"
 import { ItemRow } from "@/components/record-rows"
 import { Button } from "@/components/ui"
 import { showDate } from "@/lib/dates"
@@ -94,8 +94,8 @@ export default function AddReportScreen() {
         }
       >
         <Card style={styles.doc}>
-          <Tile size={44}>
-            <RecordIcon name="documents" size={20} color={color.primary} />
+          <Tile>
+            <RecordIcon name="documents" size={16} color={color.primary} />
           </Tile>
           <View style={styles.docBody}>
             <Text style={type.section}>{SAMPLE.title}</Text>
@@ -104,15 +104,18 @@ export default function AddReportScreen() {
           </View>
         </Card>
         <Block title="Values" meta={`${SAMPLE.values.length - unclear} of ${SAMPLE.values.length} read`}>
-          <Group>
-            {SAMPLE.values.map((v) =>
-              v.clear ? (
-                <ItemRow key={v.name} title={v.name} count={v.value} />
-              ) : (
-                <ItemRow key={v.name} title={v.name} tag={{ tone: "muted", label: "Being checked" }} />
-              )
-            )}
-          </Group>
+          {/* Label and value rows, as the Figma's detail sheet sets them. */}
+          <Card style={styles.values}>
+            {SAMPLE.values.map((v, i) => (
+              <KeyValue
+                key={v.name}
+                label={v.name}
+                value={v.clear ? v.value : undefined}
+                tag={v.clear ? undefined : { tone: "muted", label: "Being checked" }}
+                last={i === SAMPLE.values.length - 1}
+              />
+            ))}
+          </Card>
         </Block>
       </FlowScreen>
     )
@@ -123,7 +126,7 @@ export default function AddReportScreen() {
         <ItemRow
           icon={
             <Tile>
-              <IconCamera size={18} color={color.primary} />
+              <Camera size={16} color={color.primary} />
             </Tile>
           }
           title="Take a photo"
@@ -132,7 +135,7 @@ export default function AddReportScreen() {
         <ItemRow
           icon={
             <Tile>
-              <IconUpload size={18} color={color.primary} />
+              <UploadSimple size={16} color={color.primary} />
             </Tile>
           }
           title="Choose a file"
@@ -154,7 +157,9 @@ const styles = StyleSheet.create({
   // 24 above and below (Frontline's largest step), as the kit's empty state.
   reading: { alignItems: "center", gap: space.card, paddingVertical: 24, paddingHorizontal: space.card },
   readingLine: { flexDirection: "row", alignItems: "center", gap: space.mark },
-  doc: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.card },
+  doc: { flexDirection: "row", alignItems: "center", gap: space.lead },
+  // Each row brings its own 12 above and below.
+  values: { paddingVertical: 0 },
   // A 16 pt title over its lines: 4 apart (Frontline).
   docBody: { flex: 1, gap: space.stack },
 })

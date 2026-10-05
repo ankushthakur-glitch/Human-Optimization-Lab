@@ -284,21 +284,21 @@
 
 /* Admin dashboard charts. Soft tints on purpose: the dashboard is read at a
    glance, so fills stay light and the numbers carry the detail in text.
-   Enrolled and pending are one hue at two lightnesses (a stage, not a new
-   thing); declined is the only warm hue. Every chart pairs them with a
+   Enrolled and pending are the brand teal at two lightnesses (a stage, not
+   a new thing); declined is the only warm hue. Every chart pairs them with a
    legend or label, and the table below repeats the numbers, so no reading
    rests on colour alone. */
 :root {
-  --viz-enrolled: oklch(0.7 0.11 232);
-  --viz-pending: oklch(0.87 0.06 225);
+  --viz-enrolled: oklch(0.7 0.11 190);
+  --viz-pending: oklch(0.87 0.06 190);
   --viz-declined: oklch(0.78 0.11 22);
   --viz-behind: oklch(0.84 0.1 75);
   --viz-track: oklch(0.955 0.004 250);
 }
 
 :root.dark {
-  --viz-enrolled: oklch(0.72 0.11 232);
-  --viz-pending: oklch(0.48 0.07 232);
+  --viz-enrolled: oklch(0.72 0.11 190);
+  --viz-pending: oklch(0.48 0.07 190);
   --viz-declined: oklch(0.7 0.13 22);
   --viz-behind: oklch(0.78 0.11 75);
   --viz-track: oklch(0.28 0.01 250);

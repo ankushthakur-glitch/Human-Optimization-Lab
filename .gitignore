@@ -69,3 +69,6 @@ scripts/.cache
 
 # The product-ui-illustrations skill's own upstream git history, kept locally.
 /.skill-git-backup/
+
+# JetBrains editor settings
+/.idea/

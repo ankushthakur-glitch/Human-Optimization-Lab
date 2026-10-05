@@ -1,15 +1,15 @@
 /* The patient app's tokens: the web portal's design system (src/app/globals.css
-   with the Inlay P7 accent), resolved to the colours the portal renders so
+   with the brand teal accent), resolved to the colours the portal renders so
    the app and the portal read as one product. The app is light only for now,
    like the invitation email. */
 
 export const color = {
-  /** --primary: Inlay P7, the portal primary */
-  primary: "#417D88",
-  /** P02 of the P7 ramp: the focus halo. */
-  primaryHalo: "#C0E0E6",
+  /** --primary: the brand teal, the portal primary */
+  primary: "#01837E",
+  /** The teal ramp two steps from white: the focus halo. */
+  primaryHalo: "#94E6E0",
   /** --primary-hover, the portal's button hover; used for pressed. */
-  primaryPressed: "#336771",
+  primaryPressed: "#016D69",
   onPrimary: "#FFFFFF",
   /** --foreground */
   text: "#0A0A0A",
@@ -21,7 +21,7 @@ export const color = {
   /** --input at 50%: the portal's filled inputs */
   inputFill: "#F2F2F2",
   /** The outlined inputs' resting border, a grey tinted toward the brand. */
-  inputBorder: "#D5E2E1",
+  inputBorder: "#D0E3E1",
   /** --ring and --ring at 30%: the focus border and its halo */
   ring: "#A1A1A1",
   ringHalo: "#E2E2E2",
@@ -34,8 +34,18 @@ export const color = {
   errorTint: "#FCE9E6",
   /** The onboarding screens' soft grey ground for cards and tracks. */
   canvas: "#F6F6F4",
-  /** --primary-surface (P00), for selected cards and chips. */
-  primaryTint: "#EEF9FC",
+  /** HOL Primary/00 (Figma "Hol", 5 Oct): the tint behind an icon, a date
+      block, a small action, a chosen segment, the ask button. */
+  primaryTint: "#F2F7F7",
+  /** HOL Primary/01: the tile on a teal tinted card, the tab bar's edge. */
+  primarySoft: "#E6F3F2",
+  /** HOL Primary/02: the edge of a small action, the ask button and a
+      teal tinted card. */
+  primaryEdge: "#C2E1E0",
+  /** HOL Primary/03: a trend line, the orb's ring. */
+  primaryLine: "#92CAC8",
+  /** HOL Primary/07: "See all". */
+  primaryText: "#016F6B",
   /** Result flags, tint plus text as the portal draws them. */
   high: "#C72B32",
   highTint: "#FDECEE",
@@ -43,8 +53,10 @@ export const color = {
   lowTint: "#FEF4E5",
   ok: "#2F7F4D",
   okTint: "#E9FAEF",
-  /** The signed-in record's cool ground, under white cards. */
+  /** The signed-in record's cool ground, under white cards: the far end of
+      the page gradient (Figma: 158deg, #F8F8F8 to #F1F5F9). */
   page: "#F1F5F9",
+  pageFrom: "#F8F8F8",
   /** Section labels and card meta on the record screens. */
   label: "#505050",
   /** Category hues for icon tiles, each an ink on its tint. */
@@ -64,21 +76,21 @@ export const color = {
     tick). Contrast figures are against white. */
 export const chart = {
   /** Lines, dots, rings, progress: the patient's data (4.65:1). */
-  data: "#417D88",
+  data: "#01837E",
   /** The selected or today's bar, a ring's second lap (8.52:1). */
-  dataStrong: "#24535B",
+  dataStrong: "#005350",
   /** Past days in weekly bars (3.63:1). */
-  dataPast: "#548F9B",
+  dataPast: "#2A9F9A",
   /** Ring and gauge tracks. */
-  dataTrack: "#DBF0F4",
+  dataTrack: "#CEF4F1",
   /** Earlier score columns: teal at 35% on white. */
-  dataSoft: "#BCD2D5",
+  dataSoft: "#A6D4D2",
   /** The body of a blood pressure capsule: teal at 22% on white. */
-  dataWash: "#D5E2E5",
+  dataWash: "#C7E4E3",
   /** Earlier dots in a trend tile. */
-  history: "#9FBEC4",
+  history: "#81C6C1",
   /** The faint join between a trend tile's dots. */
-  connector: "#C9D6D9",
+  connector: "#B8D9D6",
   /** The patient's range behind trends and tiles. */
   band: "#E9FAEF",
   /** The 1 pt edge on a closed side of the band. */
@@ -131,7 +143,7 @@ export const gutter = 24
 
 /** Every card after onboarding: the white card, a trend tile, the hero, a
     banner (catalog V-10). The record kit's CARD_RADIUS is this. */
-export const cardRadius = 20
+export const cardRadius = 8
 
 /* ------------------------------------------- after onboarding (Figma) -- */
 
@@ -161,10 +173,11 @@ export const ink = {
   /** Teal at text size, where Frontline uses its darker Primary/08: the
       word on a small pill action, a chosen chip, a teal badge, and teal
       words at 12 pt (a note in a row, a link inside a line of meta). The
-      portal ramp's step 7 (6.9:1 on white, 6.3 on the page, 6.4 on the
-      teal tint). Links and text buttons at 14 pt, the primary button,
-      icons, edges and focus stay color.primary (4.65:1 on white). */
-  primary: "#356169",
+      brand teal walked darker at the same hue (7.2:1 on white, 6.6 on the
+      page, 6.7 on the teal tint). Links and text buttons at 14 pt, the
+      primary button, icons, edges and focus stay color.primary (4.6:1 on
+      white). */
+  primary: "#015D59",
   /** Green words on the green tint ("Done", "Met"): Frontline's Success/08
       (6.8:1 on white, 6.3 on the tint). Green marks stay chart.inRange. */
   good: "#24673D",
@@ -175,6 +188,17 @@ export const ink = {
 /** Frontline's hairlines: a card's edge (chart.edge), the rule between rows
     inside a card, and the edge of an outlined pill, chip or field. */
 export const hairline = { edge: "#EAECF0", rule: "#F2F2F7", outline: "#DFDFE4" } as const
+
+/** Figma "Hol" (5 Oct 2026): every card is white at 60% on the page
+    gradient, radius 8, 12 inside, lifted by the softest shadow; small
+    controls take the xs shadow. Chevrons and resting tab icons are
+    Grey/06. */
+export const card = {
+  fill: "rgba(255, 255, 255, 0.6)",
+  shadow: "0 4px 20px rgba(0, 0, 0, 0.03)",
+  shadowXs: "0 1px 2px rgba(16, 24, 40, 0.05)",
+  chevron: "#818181",
+} as const
 
 /** Frontline's quiet surfaces: an inset panel inside a white card, and the
     dark confirmation pill. */
@@ -196,7 +220,7 @@ export const space = {
   item: 12,
   /** Inside a card, and between rows that have no rule (Frontline 12 at
       radius 8, 16 in its form cards and its radius 20 home sheet). */
-  card: 16,
+  card: 12,
   /** Inside a compact block: a banner, a trend tile, an inset panel
       (Frontline's flat card, 12). */
   compact: 12,
@@ -204,7 +228,7 @@ export const space = {
       edge and the rule, as in Frontline's grouped lists. */
   rowY: 12,
   /** A Group's sides: the card's padding. */
-  rowX: 16,
+  rowX: 12,
   /** A tile, a date block or an avatar to the words beside it. */
   lead: 12,
   /** An 18 to 24 pt icon, or a label, to what it labels; chips in a row
@@ -239,7 +263,7 @@ export const type = {
   hero: { fontFamily: font.semibold, fontSize: 20, lineHeight: 28, letterSpacing: 0, color: ink.strong },
   /** The screen title: a tab's pinned title and a page's beside its back
       button (Frontline H2, 18/26 medium). */
-  tabTitle: { fontFamily: font.medium, fontSize: 18, lineHeight: 26, letterSpacing: 0, color: ink.strong },
+  tabTitle: { fontFamily: font.medium, fontSize: 18, lineHeight: 26, letterSpacing: 0, color: ink.content },
   /** A number on a card or a tile: tile values, the doors, a chart's
       readout, a price (Frontline's reading on a card, 16 semibold). */
   stat: { fontFamily: font.semibold, fontSize: 16, lineHeight: 20, letterSpacing: 0, color: ink.strong },
@@ -258,7 +282,7 @@ export const type = {
   title: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, letterSpacing: 0, color: ink.content },
   /** Sentences: takeaways, explanations, a quoted why (Frontline
       Body/14, 14/22). */
-  body: { fontFamily: font.regular, fontSize: 14, lineHeight: 22, letterSpacing: 0, color: ink.content },
+  body: { fontFamily: font.regular, fontSize: 14, lineHeight: 21, letterSpacing: 0, color: ink.detail },
   /** The line under a title, a key's label, a legend (Frontline's second
       line, 12/16 in Grey/07). */
   label: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, letterSpacing: 0, color: ink.secondary },
@@ -278,7 +302,10 @@ export const type = {
   unitLarge: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, letterSpacing: 0, color: ink.secondary },
   /** A link or a text button: "See all", "Not now" (Frontline Button/14,
       no underline, no container). Teal for the one action. */
-  link: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, letterSpacing: 0, color: color.primary },
+  link: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, letterSpacing: 0, color: ink.primary },
+  /** "See all" beside a section label, with a caret (Figma Button/12 in
+      Primary/07). */
+  seeAll: { fontFamily: font.medium, fontSize: 12, lineHeight: 16, letterSpacing: 0, color: color.primaryText },
   /** The word on a small pill action: "Book", "Save", "Renew" (Frontline's
       small actions, 12 medium in the text teal). */
   action: { fontFamily: font.medium, fontSize: 12, lineHeight: 16, letterSpacing: 0, color: ink.primary },
@@ -287,7 +314,7 @@ export const type = {
   chip: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, letterSpacing: 0, color: ink.content },
   /** A badge's word, in its tone's ink: "Overdue", "Booked", "New"
       (Frontline Badge sm, 12/14 medium). */
-  tag: { fontFamily: font.medium, fontSize: 12, lineHeight: 14, letterSpacing: 0, color: ink.secondary },
+  tag: { fontFamily: font.medium, fontSize: 10, lineHeight: 14, letterSpacing: 0, color: ink.secondary },
   /** The smallest words: a ring's caption, a mini track's dates
       (Frontline Captions/10). */
   caption: { fontFamily: font.regular, fontSize: 10, lineHeight: 14, letterSpacing: 0, color: ink.secondary },

@@ -1,58 +1,79 @@
 import { router, type Href } from "expo-router"
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
-import { Block, Card, EmptyState, HUE, TextAction } from "@/components/record-kit"
+import { EmptyState } from "@/components/record-kit"
 import { clockOf, dateOfAt, shortDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { color, space, type } from "@/lib/theme"
+import { card, cardRadius, color, ink, space, type } from "@/lib/theme"
 import { noticesFor, type Notice } from "@/lib/todo"
 
-/* What Inlay has told her, by day (FINAL-SPEC C.13): her record coming
-   together, Dr. Patel's review, new results, care reminders and, for a
-   member, her plan and her booked tests. A card she has not opened is
-   tinted, with a teal dot before its title; once opened it turns white.
-   Every card opens what it is about and marks it read; "Mark all as read"
-   clears the bell at once and turns into "All read" in its place. Reading
-   never moves anything: the heading keeps its height and a card keeps its
-   size. In the app only: a push, a text or an email never carries a
-   health detail or an offer (F-106, F-109). */
+/* What Inlay has told her, by day (FINAL-SPEC C.13), drawn as the Figma
+   "Hol" Notifications (5 Oct 2026): her record coming together, Dr.
+   Patel's review, new results, care reminders and, for a member, her plan
+   and her booked tests. A card she has not opened sits on the faint teal
+   ground with a teal edge along its foot; once opened it turns into the
+   page's white card. Every card opens what it is about and marks it read;
+   "Mark all read" in the header clears the bell at once and leaves the
+   header once nothing is unread. Reading never moves anything: a card
+   keeps its size. In the app only: a push, a text or an email never
+   carries a health detail or an offer (F-106, F-109). */
 
 const DAYS: Notice["day"][] = ["Today", "Yesterday", "Earlier"]
 
-/** When it arrived: the time inside today and yesterday, the day before
-    that ("Sep 29"), with the year when it was another year. */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+/** A day group's label: "Today, 5 Oct 2026", "Yesterday, 4 Oct 2026",
+    then "Earlier". */
+function dayLabel(day: Notice["day"], now: Date) {
+  if (day === "Earlier") return day
+  const d = new Date(now)
+  if (day === "Yesterday") d.setDate(d.getDate() - 1)
+  return `${day}, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+}
+
+/** When it arrived: how long ago today ("21 min ago", "2 hr ago"), the
+    time yesterday, the day before that ("Sep 29"), with the year when it
+    was another year. */
 function whenOf(n: Notice, now: Date) {
-  if (n.day !== "Earlier") return clockOf(n.at)
   const d = dateOfAt(n.at)
+  if (n.day === "Today") {
+    const minutes = Math.max(0, Math.round((now.getTime() - d.getTime()) / 60000))
+    if (minutes < 1) return "Just now"
+    if (minutes < 60) return `${minutes} min ago`
+    return `${Math.floor(minutes / 60)} hr ago`
+  }
+  if (n.day === "Yesterday") return clockOf(n.at)
   return d.getFullYear() === now.getFullYear() ? shortDay(d) : `${shortDay(d)}, ${d.getFullYear()}`
 }
 
 /** The last two words held together, so a wrapped title or line never
     leaves one word alone ("your record", "age 45." move down as a pair). */
-const keepLastPair = (text: string) => text.replace(/ (\S+)$/, (_, last: string) => `\u00A0${last}`)
+const keepLastPair = (text: string) => text.replace(/ (\S+)$/, (_, last: string) => ` ${last}`)
 
-/** One notification: tinted with a dot while unread, white once opened.
-    The dot keeps its own column, so titles line up whether read or not. */
+/** One notification: the faint teal card with its teal foot while unread,
+    the page's white card once opened. */
 function NoticeCard({ n, read, when, onPress }: { n: Notice; read: boolean; when: string; onPress: () => void }) {
   return (
-    <Card onPress={onPress} style={[styles.card, !read && styles.unread]}>
-      <View style={styles.mark}>{!read && <View style={styles.dot} accessibilityLabel="Unread" />}</View>
-      <View style={styles.body}>
-        <View style={styles.head}>
-          <Text style={read ? styles.titleRead : styles.title} numberOfLines={2}>
-            {keepLastPair(n.title)}
-          </Text>
-          <Text style={styles.when} maxFontSizeMultiplier={1.3}>
-            {when}
-          </Text>
-        </View>
-        <Text style={styles.text} numberOfLines={3}>
-          {keepLastPair(n.body)}
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${read ? "" : "Unread. "}${n.title}. ${n.body}. ${when}`}
+      style={({ pressed }) => [styles.card, read ? styles.read : styles.unread, pressed && styles.pressed]}
+    >
+      <View style={styles.head}>
+        <Text style={styles.title} numberOfLines={2}>
+          {keepLastPair(n.title)}
+        </Text>
+        <Text style={read ? styles.whenRead : styles.when} maxFontSizeMultiplier={1.3}>
+          {when}
         </Text>
       </View>
-    </Card>
+      <Text style={styles.text} numberOfLines={3}>
+        {keepLastPair(n.body)}
+      </Text>
+    </Pressable>
   )
 }
 
@@ -80,60 +101,47 @@ export default function NotificationsScreen() {
       </FlowScreen>
     )
 
-  // The first heading's right side: the action while anything is unread,
-  // then "All read" in the same place and height, so nothing under it moves.
-  const readAll = (
-    <View style={styles.readAll}>
-      {unread > 0 ? <TextAction onPress={markAll}>Mark all as read</TextAction> : <Text style={styles.allRead}>All read</Text>}
-    </View>
-  )
-
   return (
-    <FlowScreen page title="Notifications">
-      {groups.map((g, i) => (
-        <Block key={g.day} title={g.day} action={i === 0 ? readAll : undefined}>
-          <View style={styles.list}>
-            {g.list.map((n) => (
-              <NoticeCard key={n.id} n={n} read={seen.has(n.id)} when={whenOf(n, now)} onPress={() => open(n)} />
-            ))}
+    <FlowScreen page title="Notifications" action={unread > 0 ? { label: "Mark all read", onPress: markAll } : undefined}>
+      {/* The groups sit 12 apart, closer than a page's sections. */}
+      <View style={styles.groups}>
+        {groups.map((g) => (
+          <View key={g.day} style={styles.group}>
+            <Text style={styles.day} accessibilityRole="header">
+              {dayLabel(g.day, now)}
+            </Text>
+            <View style={styles.list}>
+              {g.list.map((n) => (
+                <NoticeCard key={n.id} n={n} read={seen.has(n.id)} when={whenOf(n, now)} onPress={() => open(n)} />
+              ))}
+            </View>
           </View>
-        </Block>
-      ))}
+        ))}
+      </View>
     </FlowScreen>
   )
 }
 
-/** The unread dot (FINAL-SPEC C.13: 6 pt, teal). */
-const DOT = 6
-
-/** The kit's TextAction is a 32 pt target; "All read" keeps its height. */
-const TEXT_ACTION = 32
-
-/** How far down a line of `size` sits to centre on the first line of a
-    title set in `title`. */
-const firstLine = (title: { lineHeight: number }, size: number) => (title.lineHeight - size) / 2
+/** Figma's HOL Primary/bg: the unread card's faint teal ground. */
+const UNREAD_GROUND = "#F9FBFB"
 
 const styles = StyleSheet.create({
-  list: { gap: space.item },
-  // "Mark all as read", or "All read" once nothing is unread, at the same
-  // height and the same right edge.
-  readAll: { minHeight: TEXT_ACTION, justifyContent: "center", alignItems: "flex-end" },
-  allRead: { ...type.meta },
-  // The kit's card, with a column for the unread dot on the left, a flat
-  // card's padding in from the edge (Frontline 12).
-  card: { flexDirection: "row", gap: space.inline, paddingLeft: space.compact },
-  unread: { backgroundColor: color.primaryTint, borderColor: HUE.teal.edge },
-  // The dot centres on the title's first line.
-  mark: { width: DOT, paddingTop: firstLine(type.title, DOT) },
-  dot: { width: DOT, height: DOT, borderRadius: DOT / 2, backgroundColor: color.primary },
-  // Frontline's notification card: 4 between the title and its lines.
-  body: { flex: 1, gap: space.stack },
-  head: { flexDirection: "row", alignItems: "flex-start", gap: space.item },
-  title: { ...type.title, flex: 1 },
-  // Read, the title drops to the body's weight but keeps the title's line,
-  // so a card keeps its height when it is read.
-  titleRead: { ...type.body, lineHeight: type.title.lineHeight, flex: 1 },
-  // The time centres on the title's first line, read or not.
-  when: { ...type.meta, marginTop: firstLine(type.title, type.meta.lineHeight), fontVariant: ["tabular-nums"] },
+  pressed: { opacity: 0.8 },
+  groups: { gap: space.item },
+  group: { gap: space.item },
+  // The day: 12 medium in Grey/06.
+  day: { ...type.metaStrong, color: card.chevron },
+  list: { gap: space.inline },
+
+  card: { padding: space.card, borderRadius: cardRadius, gap: space.line },
+  unread: { backgroundColor: UNREAD_GROUND, borderBottomWidth: 1, borderBottomColor: color.primaryEdge },
+  // Read, the page's card; the 1 pt foot stays as padding so the card keeps
+  // its height.
+  read: { backgroundColor: card.fill, boxShadow: card.shadow, paddingBottom: space.card + 1 },
+
+  head: { flexDirection: "row", alignItems: "center", gap: space.line },
+  title: { flex: 1, ...type.title },
+  when: { ...type.label, color: ink.detail, fontVariant: ["tabular-nums"] },
+  whenRead: { ...type.caption, color: card.chevron, fontVariant: ["tabular-nums"] },
   text: { ...type.label },
 })

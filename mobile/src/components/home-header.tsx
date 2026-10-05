@@ -2,12 +2,12 @@ import { router } from "expo-router"
 import * as React from "react"
 import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 
-import { IconBell } from "@/components/icons"
+import { BellSimple } from "@/components/ph"
 import { ReviewBanner, type BannerState } from "@/components/record-kit"
 import { openTab, type TabName } from "@/components/tab-bar"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
-import { chart, color, ink, space, type } from "@/lib/theme"
+import { chart, color, hairline, ink, space, type } from "@/lib/theme"
 import { bannerTarget, homeBanner, unreadCount, type HomeBanner } from "@/lib/todo"
 
 /* The top of both homes, pinned while the page scrolls (FINAL-SPEC C.1.2,
@@ -51,7 +51,7 @@ export function HomeHeader(_: { variant?: "free" | "member" } = {}) {
       </Pressable>
       <View style={styles.names}>
         <Text style={styles.greeting} maxFontSizeMultiplier={1.3}>
-          {greetingFor()}
+          {`${greetingFor()}!`}
         </Text>
         <Text style={styles.name} accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={1.3}>
           {name}
@@ -64,7 +64,7 @@ export function HomeHeader(_: { variant?: "free" | "member" } = {}) {
         hitSlop={2}
         style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
       >
-        <IconBell size={20} color={color.label} />
+        <BellSimple size={24} color={ink.detail} />
         {unread > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText} maxFontSizeMultiplier={1.2}>
@@ -108,39 +108,28 @@ export function StatusBanner({ variant = "free", tab = "home" }: { variant?: "fr
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: space.lead },
+  // Figma "Hol" home header: the photo 8 from the greeting, the bell on the
+  // right.
+  row: { flexDirection: "row", alignItems: "center", gap: space.inline },
   pressed: { opacity: 0.8 },
-  avatar: { width: 44, height: 44, borderRadius: 22, overflow: "hidden", backgroundColor: color.primaryTint },
-  photo: { width: 44, height: 44, borderRadius: 22 },
-  // Frontline's home header: the greeting in the second line's grey, 2
-  // over the name as a block title.
+  avatar: { width: 40, height: 40, borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: hairline.rule, backgroundColor: color.primaryTint },
+  photo: { width: "100%", height: "100%" },
   names: { flex: 1, gap: space.line },
   greeting: { ...type.label },
-  name: { ...type.section },
-  // White, a 1 pt edge, no shadow (FINAL-SPEC C.0.1).
-  bell: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1,
-    borderColor: "#E4E7EC",
-    backgroundColor: color.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  name: { ...type.section, color: ink.content },
+  bell: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
   // The one red besides an out of range mark: the unread count.
   badge: {
     position: "absolute",
-    top: 4,
-    right: 3,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    paddingHorizontal: 4,
+    top: 0,
+    right: 0,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    paddingHorizontal: 3,
     backgroundColor: chart.outside,
     alignItems: "center",
     justifyContent: "center",
   },
-  // Frontline's count badge: 10 medium, white.
-  badgeText: { ...type.captionStrong, lineHeight: 12, color: ink.onColor, fontVariant: ["tabular-nums"] },
+  badgeText: { ...type.captionStrong, lineHeight: 14, color: ink.onColor, fontVariant: ["tabular-nums"] },
 })

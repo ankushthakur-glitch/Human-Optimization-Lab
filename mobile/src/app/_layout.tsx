@@ -105,7 +105,6 @@ function Routes() {
           <Stack.Screen name="onboarding/index" />
           <Stack.Screen name="onboarding/about-you" />
           <Stack.Screen name="onboarding/consent" />
-          <Stack.Screen name="onboarding/consent-terms" />
           <Stack.Screen name="onboarding/consent-texts" />
           <Stack.Screen name="onboarding/why" />
           <Stack.Screen name="onboarding/syncing" />
@@ -146,7 +145,6 @@ function Routes() {
           <Stack.Screen name="profile" />
           {/* Connecting later, after "Not now" at setup. */}
           <Stack.Screen name="connect" />
-          <Stack.Screen name="connect-terms" />
           <Stack.Screen name="connect-texts" />
           <Stack.Screen name="building" />
           {/* The paid plan's setup, straight after subscribing. */}

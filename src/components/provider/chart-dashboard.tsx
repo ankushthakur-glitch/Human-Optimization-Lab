@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useSearchParams } from "next/navigation"
 import { DragDropVerticalIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -24,9 +25,25 @@ import {
   heightLabel,
   kgOf,
 } from "@/components/practice/health-record"
-import { usDate } from "@/components/practice/practice-data"
+import { type Patient, usDate } from "@/components/practice/practice-data"
 import type { ChartSection } from "@/components/provider/patient-chart"
-import { ChartOverview } from "@/components/provider/chart-overview"
+import {
+  DashboardToolbar,
+  PatientDashboard,
+  useDashboard,
+} from "@/components/patient-dashboard/patient-dashboard"
+import { ChartAISummary } from "@/components/patient-dashboard/ai-summary"
+import { FreeDashboardV2 } from "@/components/patient-dashboard/free-v2/free-dashboard-v2"
+import { useOptimization } from "@/components/patient-dashboard/optimization/model"
+import {
+  OptimizationDashboard,
+  OptimizationToolbar,
+} from "@/components/patient-dashboard/optimization-v2/optimization-dashboard"
+import { OptimizationDashboardV2 } from "@/components/patient-dashboard/optimization-computed/optimization-dashboard-v2"
+import {
+  DashboardVersionSwitch,
+  dashboardVersion,
+} from "@/components/provider/dashboard-version"
 import {
   Section,
   SectionBar,
@@ -43,24 +60,89 @@ import {
   SelectValue,
 } from "@/design-system/ui/select"
 
-/* The chart's Dashboard: the Overview (see chart-overview.tsx), the Face sheet (one card per kind of data Health
-   Gorilla returns, newest first) and the Timeline (every dated event in one
-   feed). Card names and fields follow the Solid EHR face sheet; the cards
-   the feed has no data for (appointments, insurance, family history) are
-   left out rather than shown empty. The doctor can drag the face sheet's
-   cards into the order they work in; see useFaceSheetLayout. */
+/* The chart's Dashboard is the patient dashboard (see patient-dashboard/).
+   The chart's Overview holds the Face sheet (one card per kind of data
+   Health Gorilla returns, newest first) and the Timeline (every dated event
+   in one feed). Card names and fields follow the Solid EHR face sheet; the
+   cards the feed has no data for (appointments, insurance, family history)
+   are left out rather than shown empty. The doctor can drag the face
+   sheet's cards into the order they work in; see useFaceSheetLayout. */
 
-export type DashboardTab = "overview" | "face-sheet" | "timeline"
+export type OverviewTab = "face-sheet" | "timeline"
 
 export function ChartDashboard({
+  patient,
+  record,
+  onOpen,
+}: {
+  patient: Patient
+  record: HealthRecord
+  onOpen: (section: ChartSection, item?: string, tab?: string) => void
+}) {
+  const dash = useDashboard(patient, record)
+  const opt = useOptimization(patient.id, dash.model)
+  /* An active optimization member with tracker data gets the optimization
+     view; everyone else the free view. There is no toggle between those
+     two. Each view has two builds the doctor can compare through ?v=. Free:
+     version 1 is patient-dashboard/, version 2 the HOLv.9 dashboard layout
+     in patient-dashboard/free-v2/. Optimization: version 1 is the v5
+     build in patient-dashboard/optimization-v2/, version 2 the earlier
+     computed, category-grouped build in patient-dashboard/optimization-computed/. */
+  const optimized =
+    patient.membership === "optimization" &&
+    (patient.recordState ?? "active") === "active" &&
+    Boolean(opt.model)
+  const version = dashboardVersion(useSearchParams())
+  return (
+    <Section>
+      <SectionBar
+        title="Dashboard"
+        actions={
+          optimized ? (
+            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+              <DashboardVersionSwitch />
+              <OptimizationToolbar dash={dash} opt={opt} />
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+              <DashboardVersionSwitch />
+              <DashboardToolbar dash={dash} />
+            </div>
+          )
+        }
+      />
+      <SectionBody>
+        <div className="flex flex-col gap-5">
+          {dash.ready && <ChartAISummary model={dash.model} />}
+          {optimized && version === "2" ? (
+            <OptimizationDashboardV2 dash={dash} opt={opt} onOpen={onOpen} />
+          ) : optimized ? (
+            <OptimizationDashboard
+              dash={dash}
+              opt={opt}
+              patient={patient}
+              onOpen={onOpen}
+            />
+          ) : version === "2" ? (
+            <FreeDashboardV2 dash={dash} patient={patient} onOpen={onOpen} />
+          ) : (
+            <PatientDashboard dash={dash} patient={patient} onOpen={onOpen} />
+          )}
+        </div>
+      </SectionBody>
+    </Section>
+  )
+}
+
+export function ChartOverview({
   record,
   tab,
   onTab,
   onOpen,
 }: {
   record: HealthRecord
-  tab: DashboardTab
-  onTab: (tab: DashboardTab) => void
+  tab: OverviewTab
+  onTab: (tab: OverviewTab) => void
   onOpen: (section: ChartSection, item?: string, tab?: string) => void
 }) {
   const [filter, setFilter] = React.useState<EventKind | "all">("all")
@@ -69,30 +151,27 @@ export function ChartDashboard({
     <Section>
       <SectionBar
         tabs={[
-          { id: "overview", label: "Overview" },
           { id: "face-sheet", label: "Face sheet" },
           { id: "timeline", label: "Timeline" },
         ]}
         value={tab}
-        onTab={(t) => onTab(t as DashboardTab)}
+        onTab={(t) => onTab(t as OverviewTab)}
         actions={
-          tab === "face-sheet" ? (
+          tab === "timeline" ? (
+            <EventFilter value={filter} onChange={setFilter} />
+          ) : (
             <Button variant="outline" size="sm" onClick={() => window.print()}>
               <IconPrint />
               Print chart
             </Button>
-          ) : tab === "timeline" ? (
-            <EventFilter value={filter} onChange={setFilter} />
-          ) : null
+          )
         }
       />
       <SectionBody>
-        {tab === "overview" ? (
-          <ChartOverview />
-        ) : tab === "face-sheet" ? (
-          <FaceSheet record={record} onOpen={onOpen} layout={layout} />
-        ) : (
+        {tab === "timeline" ? (
           <Timeline record={record} filter={filter} />
+        ) : (
+          <FaceSheet record={record} onOpen={onOpen} layout={layout} />
         )}
       </SectionBody>
     </Section>

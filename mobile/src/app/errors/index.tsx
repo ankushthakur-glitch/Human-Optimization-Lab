@@ -1,10 +1,8 @@
 import { router, type Href } from "expo-router"
 import * as React from "react"
-import { Pressable, StyleSheet, Text, View } from "react-native"
 
-import { IconChevronRight } from "@/components/icons"
-import { Screen, Stack } from "@/components/ui"
-import { color, font, radius } from "@/lib/theme"
+import { FlowScreen } from "@/components/flow"
+import { Group, NeedsRow } from "@/components/record-kit"
 
 const STATES: { href: Href; title: string; when: string }[] = [
   {
@@ -31,43 +29,17 @@ const STATES: { href: Href; title: string; when: string }[] = [
 ]
 
 /** Not a product screen: an index so each state can be opened directly,
-    like the portal's /screens/errors. */
+    like the portal's /screens/errors. Drawn as the Figma "Hol" detail
+    pages are: the white header bar with its caret, then one card of rows
+    on the page gradient. */
 export default function ErrorStatesIndex() {
   return (
-    <Screen title="Error states">
-      <Stack gap={12}>
+    <FlowScreen page title="Error states">
+      <Group>
         {STATES.map(({ href, title, when }) => (
-          <Pressable
-            key={title}
-            onPress={() => router.push(href)}
-            accessibilityRole="link"
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-          >
-            <View style={styles.rowBody}>
-              <Text style={styles.title}>{title}</Text>
-              <Text style={styles.when}>{when}</Text>
-            </View>
-            <IconChevronRight color={color.muted} />
-          </Pressable>
+          <NeedsRow key={title} title={title} meta={when} onPress={() => router.push(href)} />
         ))}
-      </Stack>
-    </Screen>
+      </Group>
+    </FlowScreen>
   )
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius * 1.5,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  rowPressed: { backgroundColor: color.surface },
-  rowBody: { flex: 1, gap: 2 },
-  title: { fontFamily: font.semibold, fontSize: 15, lineHeight: 22, color: color.text },
-  when: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.muted },
-})

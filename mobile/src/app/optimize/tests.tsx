@@ -2,12 +2,11 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { keepTogether } from "@/components/care-gap"
-import { FlowScreen, Section } from "@/components/flow"
-import { IconCheck } from "@/components/icons"
-import { List, ListRow } from "@/components/list"
+import { FlowScreen } from "@/components/flow"
+import { PrimaryButton } from "@/components/hol"
+import { CheckCircle, Flask } from "@/components/ph"
 import { SetupStepLabel } from "@/components/plan-account-pieces"
-import { ChipRow } from "@/components/record-kit"
-import { Button } from "@/components/ui"
+import { Block, Card, ChipRow, Group, HUE, NeedsRow } from "@/components/record-kit"
 import { useOnboarding } from "@/lib/onboarding"
 import { BASELINE } from "@/lib/program"
 import { bookingsFor, startingTests, useSetupStep } from "@/lib/setup"
@@ -37,30 +36,34 @@ export default function TestsScreen() {
 
   return (
     <FlowScreen
-      back={false}
+      page
       title="Your starting tests"
+      bar={<SetupStepLabel>{label}</SetupStepLabel>}
       footer={
-        <Button onPress={() => finish({ tests: slots, bookings: { ...onboarding.bookings, ...bookingsFor(slots, tests) } })} disabled={!ready}>
+        <PrimaryButton onPress={() => finish({ tests: slots, bookings: { ...onboarding.bookings, ...bookingsFor(slots, tests) } })} disabled={!ready}>
           {ready ? "Book these tests" : "Pick a time for each"}
-        </Button>
+        </PrimaryButton>
       }
     >
-      <SetupStepLabel>{label}</SetupStepLabel>
-
-      <Section title="Already in your record">
-        <List>
+      <Block title="Already in your record">
+        <Group>
           {BASELINE.have.map((t) => (
-            <ListRow key={t.name} icon={<IconCheck color={color.ok} size={18} />} title={t.name} meta={inYear(t.date)} />
+            <NeedsRow key={t.name} icon={<CheckCircle size={16} color={HUE.teal.ink} />} title={t.name} meta={inYear(t.date)} />
           ))}
-        </List>
-      </Section>
+        </Group>
+      </Block>
 
       {tests.map((t) => (
-        <Section key={t.id} title={t.name}>
-          <View style={styles.test}>
-            <View style={styles.words}>
-              <Text style={styles.detail}>{keepTogether(t.detail)}</Text>
-              <Text style={styles.where}>{t.where}</Text>
+        <Block key={t.id} title={t.name}>
+          <Card style={styles.test}>
+            <View style={styles.head}>
+              <View style={styles.tile}>
+                <Flask size={16} color={color.primary} />
+              </View>
+              <View style={styles.words}>
+                <Text style={styles.detail}>{keepTogether(t.detail)}</Text>
+                <Text style={styles.where}>{t.where}</Text>
+              </View>
             </View>
             <ChipRow
               wrap
@@ -69,8 +72,8 @@ export default function TestsScreen() {
               value={slots[t.id]}
               onChange={(words) => setSlots((x) => ({ ...x, [t.id]: words }))}
             />
-          </View>
-        </Section>
+          </Card>
+        </Block>
       ))}
     </FlowScreen>
   )
@@ -79,7 +82,10 @@ export default function TestsScreen() {
 const styles = StyleSheet.create({
   // What the test is and where, then its times.
   test: { gap: space.item },
-  words: { gap: space.stack },
-  detail: { ...type.body },
+  // The test's tile beside its words, as a row's.
+  head: { flexDirection: "row", alignItems: "flex-start", gap: space.lead },
+  tile: { width: 28, height: 28, borderRadius: 14, backgroundColor: color.primaryTint, alignItems: "center", justifyContent: "center" },
+  words: { flex: 1, gap: space.stack },
+  detail: { ...type.title },
   where: { ...type.label },
 })

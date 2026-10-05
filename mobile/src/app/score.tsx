@@ -5,17 +5,17 @@ import { StyleSheet, Text, View } from "react-native"
 import { ScoreGauge, ScoreHistory, type CheckIn } from "@/components/charts"
 import { FlowScreen } from "@/components/flow"
 import { FlourishCard } from "@/components/flourish"
-import { IconFace } from "@/components/icons"
+import { Smiley } from "@/components/ph"
 import { FocusIcon } from "@/components/plan-tab-pieces"
 import { RecordIcon } from "@/components/record-icons"
-import { Block, Card, EmptyState, Group, HUE, KeyValue, NeedsRow, Nudge, SmallAction, Tag } from "@/components/record-kit"
+import { Block, Card, EmptyState, Group, KeyValue, NeedsRow, Nudge, SmallAction, Tag } from "@/components/record-kit"
 import { DOMAINS, flourishScore } from "@/lib/conversation"
 import { planFor, useExperience, useInlayScore, useMarkers } from "@/lib/experience"
 import { nextCheckIn, profileOf } from "@/lib/member"
 import { FOCUS_NAME, planFocus, useOffer } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
 import { scoreOverTime, type FocusArea } from "@/lib/record"
-import { hairline, space, type } from "@/lib/theme"
+import { color, hairline, space, type } from "@/lib/theme"
 import { trendCounts, watchList, type Trend } from "@/lib/trends"
 
 /* The Inlay score (FINAL-SPEC C.12): how she said she is doing beside what
@@ -131,7 +131,7 @@ function Amount({ value, of }: { value: string | number; of: string }) {
 }
 
 /** The face that stands for how she feels, on the answers' rows. */
-const Feeling = () => <IconFace face={3} size={18} color={HUE.teal.ink} />
+const Feeling = () => <Smiley size={16} color={color.primary} />
 
 export default function ScoreScreen() {
   const s = useOnboarding()
@@ -258,7 +258,7 @@ export default function ScoreScreen() {
             accessibilityLabel={`How you're doing, ${flourish.overall.toFixed(1)} of 5, from your ${answers.length} answers`}
           />
           <NeedsRow
-            icon={<RecordIcon name="labs" size={18} color={HUE.teal.ink} />}
+            icon={<RecordIcon name="labs" size={16} color={color.primary} />}
             title="Your record"
             meta="Results in range"
             right={<Amount value={counts.inRange} of={`of ${counts.total}`} />}
@@ -278,7 +278,7 @@ export default function ScoreScreen() {
               return (
                 <NeedsRow
                   key={t.id}
-                  icon={t.marker.focus ? <FocusIcon area={t.marker.focus} /> : <RecordIcon name="labs" size={18} color={HUE.teal.ink} />}
+                  icon={t.marker.focus ? <FocusIcon area={t.marker.focus} /> : <RecordIcon name="labs" size={16} color={color.primary} />}
                   title={`Your ${name}`}
                   meta={`${together(t.valueWithUnit)}, ${range}`}
                   right={

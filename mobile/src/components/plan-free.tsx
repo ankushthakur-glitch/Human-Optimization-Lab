@@ -3,7 +3,7 @@ import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { CheckoutSheet } from "@/components/checkout-sheet"
-import { IconCheck, IconSparkle } from "@/components/icons"
+import { Check, Sparkle } from "@/components/ph"
 import { PlanShowroom } from "@/components/plan-showroom"
 import { Block, Card, EmptyState, Group, Hero, NeedsRow, Quote, ReviewBanner, SmallAction, TextAction, heroText } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
@@ -80,7 +80,7 @@ export function PlanFree() {
       <StepHero />
       <WhyCard />
       {past.length > 0 && (
-        <Block title="Your past plans" variant="title">
+        <Block title="Your past plans">
           <Group>
             {past.map((v) => (
               <NeedsRow key={v.version} title={`Version ${v.version}`} meta={`Approved ${v.approved.replace(/,\s*\d{4}$/, "")}. Kept.`} />
@@ -93,7 +93,7 @@ export function PlanFree() {
           <PlanShowroom mode="tab" onStart={() => setCheckout(true)} />
           <Group>
             <NeedsRow
-              icon={<IconSparkle size={18} color={color.primary} />}
+              icon={<Sparkle size={16} color={color.primary} />}
               hue="teal"
               title="Questions about the plan?"
               right={<SmallAction onPress={() => router.push("/assistant?topic=plan")}>Ask</SmallAction>}
@@ -161,7 +161,7 @@ function StepHero() {
             >
               <Text style={[styles.dayName, isToday && styles.dayNameToday]}>{WEEKDAYS[d.getDay()].slice(0, 3)}</Text>
               <View style={[styles.ring, isToday && styles.ringToday]}>
-                <View style={[styles.dot, on && styles.dotOn]}>{on && <IconCheck size={16} color={color.primary} strokeWidth={2.6} />}</View>
+                <View style={[styles.dot, on && styles.dotOn]}>{on && <Check size={16} color={color.primary} weight="bold" />}</View>
               </View>
             </Pressable>
           )
@@ -178,7 +178,7 @@ function WhyCard() {
   if (!why?.reason) return null
   const on = conversationDay(consentAt)
   return (
-    <Block title="Your why" variant="title">
+    <Block title="Your why">
       <Card>
         <Quote text={why.reason} meta={on ? `From your conversation on ${on}` : undefined} />
       </Card>

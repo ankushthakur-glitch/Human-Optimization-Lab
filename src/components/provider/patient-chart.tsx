@@ -13,6 +13,7 @@ import {
   IconChevronUp,
   IconFileText,
   IconHome,
+  IconFileList,
   IconLab,
   IconLanguage,
   IconLocation,
@@ -63,7 +64,8 @@ import {
 import { avatarTone } from "@/components/practice/directory"
 import {
   ChartDashboard,
-  type DashboardTab,
+  ChartOverview,
+  type OverviewTab,
 } from "@/components/provider/chart-dashboard"
 import {
   DocumentsView,
@@ -121,6 +123,7 @@ import { Illustration } from "@/components/illustrations/illustration"
 
 export type ChartSection =
   | "dashboard"
+  | "overview"
   | "encounters"
   | "diagnoses"
   | "medications"
@@ -142,6 +145,7 @@ const SECTIONS: {
   icon: React.ComponentType<{ className?: string }>
 }[] = [
   { id: "dashboard", label: "Dashboard", icon: IconHome },
+  { id: "overview", label: "Overview", icon: IconFileList },
   { id: "encounters", label: "Encounters", icon: IconStethoscope },
   { id: "diagnoses", label: "Diagnoses", icon: IconClipboard },
   { id: "medications", label: "Medications", icon: IconPill },
@@ -301,9 +305,15 @@ export function PatientChart({ patient }: { patient: Patient }) {
             <RecordNotReady patient={patient} chart={chart} />
           ) : section === "dashboard" ? (
             <ChartDashboard
+              patient={patient}
               record={chart.record}
-              tab={(tab as DashboardTab) || "overview"}
-              onTab={(t) => go({ tab: t === "overview" ? "" : t })}
+              onOpen={(s, i, t) => go({ section: s, item: i, tab: t })}
+            />
+          ) : section === "overview" ? (
+            <ChartOverview
+              record={chart.record}
+              tab={(tab as OverviewTab) || "face-sheet"}
+              onTab={(t) => go({ tab: t === "face-sheet" ? "" : t })}
               onOpen={(s, i, t) => go({ section: s, item: i, tab: t })}
             />
           ) : section === "encounters" ? (

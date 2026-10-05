@@ -2,6 +2,7 @@ import { router } from "expo-router"
 import * as React from "react"
 
 import { FlowScreen } from "@/components/flow"
+import { ArrowsClockwise, ChartLine, Target, User, Warning } from "@/components/ph"
 import { Block, Group, NeedsRow, toast } from "@/components/record-kit"
 import { giveBackQuestions, spendAllQuestions } from "@/lib/allowance"
 import { useAuth } from "@/lib/auth"
@@ -10,6 +11,7 @@ import { DEMOS } from "@/lib/demo"
 import { addDays, clockOf, localDay, shortDay } from "@/lib/member"
 import { TOUCHPOINTS, decide, resetOffers, type OfferKind, type Touchpoint } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
+import { color } from "@/lib/theme"
 
 /* Not a product screen, and never linked from one: the review controls
    (FINAL-SPEC C.29). Every sample patient as a row that opens the app as
@@ -18,7 +20,8 @@ import { useOnboarding } from "@/lib/onboarding"
    and new readings live here, not on the Plan tab), the offer log so HOL
    can watch the caps keep the selling subtle, and the review galleries.
    Like errors/, it sits outside every guard, so it opens whatever the
-   account state. */
+   account state. Drawn as the Figma "Hol" Record tab: quiet section labels
+   over lifted cards of rows, each row on a round teal icon tile. */
 
 type Variant = { id: string; line: string; member?: boolean }
 
@@ -65,6 +68,9 @@ function seeds(): Variant[] {
 const NEW_BATCH = "quest-new"
 
 const KIND_WORD: Record<OfferKind, string> = { proactive: "Proactive", static: "Static", tap: "On tap", pull: "Pull" }
+
+/** The icon on every switch that changes this device. */
+const SWITCH = <ArrowsClockwise size={16} color={color.primary} />
 
 /** "Oct 1, 2:30 PM" */
 const stamp = (at: string) => {
@@ -172,7 +178,15 @@ export default function ReviewScreen() {
   const rows = (member: boolean) =>
     list
       .filter((v) => !!v.member === member)
-      .map((v) => <NeedsRow key={v.id} title={v.line || v.id} meta={`/demo/${v.id}`} onPress={() => open(v.id)} />)
+      .map((v) => (
+        <NeedsRow
+          key={v.id}
+          icon={member ? <Target size={16} color={color.primary} /> : <User size={16} color={color.primary} />}
+          title={v.line || v.id}
+          meta={`/demo/${v.id}`}
+          onPress={() => open(v.id)}
+        />
+      ))
 
   // The last 20 things the cap service wrote, newest first.
   const entries = [
@@ -187,31 +201,31 @@ export default function ReviewScreen() {
 
   return (
     <FlowScreen page title="Review">
-      <Block title="Free record" variant="title">
+      <Block title="Free record">
         <Group>{rows(false)}</Group>
       </Block>
 
-      <Block title="Optimization" variant="title">
+      <Block title="Optimization">
         <Group>{rows(true)}</Group>
       </Block>
 
-      <Block title="Change this device" variant="title">
+      <Block title="Change this device">
         <Group>
-          <NeedsRow title="Dr. Patel finishes the review" meta="The record shows as checked today" onPress={finishReview} chevron={false} />
-          <NeedsRow title="New results arrive" meta="4 results from Quest, today" onPress={newResults} chevron={false} />
-          <NeedsRow title="Use all free questions" meta="The assistant shows its limit card" onPress={spendAll} chevron={false} />
-          <NeedsRow title="Give back the free questions" meta="A fresh month of questions" onPress={returnAll} chevron={false} />
-          <NeedsRow title="Reset offer limits" meta="Clears every impression, Not now and Not for me" onPress={resetLimits} chevron={false} />
-          <NeedsRow title="Dr. Patel approves the plan" meta="The version with Dr. Patel goes live today" onPress={approve} chevron={false} />
-          <NeedsRow title="New readings arrive" meta="A new version goes to Dr. Patel, the live one stays" onPress={redraft} chevron={false} />
-          <NeedsRow title="Membership ends today" meta="A cancelled member goes back to the free record" onPress={endMembership} chevron={false} />
-          <NeedsRow title="Mark yesterday as not logged" meta="Yesterday's meals are cleared" onPress={clearYesterday} chevron={false} />
-          <NeedsRow title="Show the weekly card today" meta="Whatever the weekday" onPress={weekCard} chevron={false} />
-          <NeedsRow title="Start over" meta="Clears this device and signs out" onPress={startOver} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Dr. Patel finishes the review" meta="The record shows as checked today" onPress={finishReview} chevron={false} />
+          <NeedsRow icon={SWITCH} title="New results arrive" meta="4 results from Quest, today" onPress={newResults} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Use all free questions" meta="The assistant shows its limit card" onPress={spendAll} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Give back the free questions" meta="A fresh month of questions" onPress={returnAll} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Reset offer limits" meta="Clears every impression, Not now and Not for me" onPress={resetLimits} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Dr. Patel approves the plan" meta="The version with Dr. Patel goes live today" onPress={approve} chevron={false} />
+          <NeedsRow icon={SWITCH} title="New readings arrive" meta="A new version goes to Dr. Patel, the live one stays" onPress={redraft} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Membership ends today" meta="A cancelled member goes back to the free record" onPress={endMembership} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Mark yesterday as not logged" meta="Yesterday's meals are cleared" onPress={clearYesterday} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Show the weekly card today" meta="Whatever the weekday" onPress={weekCard} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Start over" meta="Clears this device and signs out" onPress={startOver} chevron={false} />
         </Group>
       </Block>
 
-      <Block title="Offer log" variant="title" meta={`${log.sessions ?? 0} sessions`}>
+      <Block title="Offer log" meta={`${log.sessions ?? 0} sessions`}>
         <Group>
           {entries.length ? (
             entries.map((e, i) => (
@@ -223,7 +237,7 @@ export default function ReviewScreen() {
         </Group>
       </Block>
 
-      <Block title="Each offer now" variant="title">
+      <Block title="Each offer now">
         <Group>
           {(Object.keys(TOUCHPOINTS) as Touchpoint[]).map((id) => {
             const d = decide(onboarding, id)
@@ -233,10 +247,10 @@ export default function ReviewScreen() {
         </Group>
       </Block>
 
-      <Block title="Review pages" variant="title">
+      <Block title="Review pages">
         <Group>
-          <NeedsRow title="Kit" meta="Every kit piece and chart in every state" onPress={() => router.push("/demo/kit")} />
-          <NeedsRow title="Error states" meta="Not found, offline, session expired, crash" onPress={() => router.push("/errors")} />
+          <NeedsRow icon={<ChartLine size={16} color={color.primary} />} title="Kit" meta="Every kit piece and chart in every state" onPress={() => router.push("/demo/kit")} />
+          <NeedsRow icon={<Warning size={16} color={color.primary} />} title="Error states" meta="Not found, offline, session expired, crash" onPress={() => router.push("/errors")} />
         </Group>
       </Block>
     </FlowScreen>

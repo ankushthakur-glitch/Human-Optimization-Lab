@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
-import { ProviderDashboard } from "@/components/provider/provider-dashboard"
+import { ProviderHomeV2 } from "@/components/provider/home-v2/provider-home"
 import { LogoLoader } from "@/design-system/ui/logo-loader"
 
 export const metadata: Metadata = { title: "Dashboard" }
 
-/* The dashboard reads the open queue from ?queue=, and a component that
+/* The dashboard reads its tab from the search params, and a component that
    reads search params needs a Suspense boundary to prerender. */
 export default function Page() {
   return (
@@ -17,7 +17,7 @@ export default function Page() {
         </div>
       }
     >
-      <ProviderDashboard />
+      <ProviderHomeV2 />
     </Suspense>
   )
 }

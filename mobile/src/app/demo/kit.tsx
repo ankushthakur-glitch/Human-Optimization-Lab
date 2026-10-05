@@ -4,9 +4,7 @@ import { Pressable, StyleSheet, Switch, Text, View } from "react-native"
 
 import { Art, type ArtName } from "@/components/art"
 import {
-  AllResultsTile,
   BiomarkerTrend,
-  CompositionBar,
   GoalRows,
   PressureChart,
   ProgressChart,
@@ -15,19 +13,17 @@ import {
   ScoreHistory,
   ScoreRing,
   StillPreview,
-  TrendGrid,
-  TrendTile,
   WeekBars,
   type Dated,
   type GoalRow,
   type MarkerSeries,
   type PressureReading,
 } from "@/components/charts"
+import { TheirBubble, bubbleText } from "@/components/chat"
 import { FlowScreen } from "@/components/flow"
-import { IconBloodPressure, IconBowl, IconCamera, IconCheck, IconClock, IconDumbbell, IconSparkle, IconWalk } from "@/components/icons"
+import { Barbell, BowlFood, Camera, Check, Clock, Heartbeat, PersonSimpleWalk } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
 import {
-  AllowanceLine,
   AllowanceMeter,
   Block,
   Card,
@@ -54,7 +50,6 @@ import {
   StatTile,
   Status,
   Steps,
-  SummaryLine,
   Tabs,
   Tag,
   TextAction,
@@ -64,10 +59,11 @@ import {
   TrendPill,
   type BannerState,
 } from "@/components/record-kit"
+import { TrendTiles } from "@/components/trend-tile"
 import { Button } from "@/components/ui"
 import { BIOMARKERS } from "@/lib/record"
-import { chart, color, font, setOutOfRangeColor, type } from "@/lib/theme"
-import { chartInput, classify, directionWords, trendCounts } from "@/lib/trends"
+import { chart, color, hairline, ink, setOutOfRangeColor, space, type } from "@/lib/theme"
+import { chartInput, classify } from "@/lib/trends"
 
 /** Not a product screen, and never linked from one: every piece of the
     record kit and the chart kit in every state, with Olivia's data, for the
@@ -80,7 +76,12 @@ import { chartInput, classify, directionWords, trendCounts } from "@/lib/trends"
     Q-06 by looking. "Play again" mounts everything afresh, so the
     entrances can be watched. ?part=tiles, trend, range, goals, progress,
     week, pressure, score, rows, words, offers, banners, empty or toast shows
-    one group. */
+    one group.
+
+    Drawn in the Figma "Hol" language (5 Oct): the page header, quiet
+    section labels, lifted cards at radius 8, Phosphor icons on round
+    tiles. Only pieces a screen uses are shown, so the gallery never
+    teaches a piece that has gone. */
 export default function KitScreen() {
   const { part } = useLocalSearchParams<{ part?: string }>()
   const show = (p: string) => !part || part === p
@@ -103,10 +104,10 @@ export default function KitScreen() {
 
   return (
     <FlowScreen page title="Kit">
-      <View style={styles.controls}>
+      <Group>
         <Toggle label="Reduce motion" on={still} onToggle={toggleStill} />
-        <Toggle label="Clay for out of range" on={clay} onToggle={toggleClay} last />
-      </View>
+        <Toggle label="Clay for out of range" on={clay} onToggle={toggleClay} />
+      </Group>
       <SmallAction onPress={() => setRound((r) => r + 1)} style={styles.replay}>
         Play again
       </SmallAction>
@@ -134,19 +135,19 @@ export default function KitScreen() {
 
 /** A review switch: the whole row is the control, so its words can be
     tapped. */
-function Toggle({ label, on, onToggle, last }: { label: string; on: boolean; onToggle: () => void; last?: boolean }) {
+function Toggle({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
   return (
     <Pressable
       onPress={onToggle}
       accessibilityRole="switch"
       accessibilityState={{ checked: on }}
-      style={({ pressed }) => [styles.toggle, !last && styles.toggleRule, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.toggle, pressed && styles.pressed]}
     >
       <Text style={styles.toggleText}>{label}</Text>
       <Switch
         value={on}
         onValueChange={onToggle}
-        trackColor={{ false: "#D0D5DD", true: color.primary }}
+        trackColor={{ false: hairline.outline, true: color.primary }}
         thumbColor={color.background}
         {...({ activeThumbColor: color.background } as object)}
       />
@@ -158,11 +159,8 @@ function Toggle({ label, on, onToggle, last }: { label: string; on: boolean; onT
 
 const marker = (id: string) => BIOMARKERS.find((b) => b.id === id)!
 const trendOf = (id: string) => classify(marker(id))
-/** A classified marker as a tile: the data layer's words and marks. */
-const tileOf = (id: string) => {
-  const t = trendOf(id)
-  return { id, ...chartInput(t), direction: directionWords(t), onPress: () => {} }
-}
+/** Classified markers, as the home's tiles take them. */
+const trendsOf = (...ids: string[]) => ids.map(trendOf)
 
 const NONE: MarkerSeries = { name: "Vitamin B12", unit: "pg/mL", low: 232, high: 1245, range: "232 to 1,245", readings: [] }
 
@@ -233,26 +231,19 @@ const HOME_BP: PressureReading[] = [
 /* ------------------------------------------------------------- groups -- */
 
 function Tiles() {
-  const counts = trendCounts()
   return (
-    <Block title="Trend tiles" variant="title">
-      <Sample caption="Out of range and trending up, borderline, in range and improving, and All results in the fourth cell" bare>
-        <TrendGrid
-          tiles={[tileOf("a1c"), tileOf("hdl"), tileOf("ferritin")]}
-          last={<AllResultsTile steady={counts.inRange} inRange={20} borderline={1} out={6} onPress={() => {}} />}
-        />
-      </Sample>
+    <Block title="Trend tiles">
       <Sample caption="Four to watch, as the free home shows them" bare>
-        <TrendGrid tiles={[tileOf("a1c"), tileOf("bmi"), tileOf("ldl"), tileOf("ferritin")]} />
+        <TrendTiles trends={trendsOf("a1c", "bmi", "ldl", "ferritin")} onOpen={() => {}} />
       </Sample>
-      <Sample caption="Wide: the only tile, or an odd last one" bare>
-        <TrendTile {...tileOf("vitd")} wide />
+      <Sample caption="Out of range, borderline and in range; an odd last tile keeps its half" bare>
+        <TrendTiles trends={trendsOf("a1c", "hdl", "ferritin")} onOpen={() => {}} />
       </Sample>
       <Sample caption="Nothing to watch: the steady card in place of the tiles" bare>
         <Card>
           <View style={styles.okRow}>
             <Tile hue="green">
-              <IconCheck size={18} color={HUE.green.ink} strokeWidth={2.2} />
+              <Check size={16} color={HUE.green.ink} />
             </Tile>
             <View style={styles.okBody}>
               <Text style={type.title}>Your results are steady</Text>
@@ -271,7 +262,7 @@ function Tiles() {
 function Trends() {
   const a1c = trendOf("a1c")
   return (
-    <Block title="Marker trend" variant="title">
+    <Block title="Marker trend">
       <Sample caption="Hemoglobin A1c, every result since 2022, scrub to move the readout">
         <BiomarkerTrend {...chartInput(a1c)} takeaway={a1c.takeaway} />
       </Sample>
@@ -290,7 +281,7 @@ function Trends() {
 
 function Ranges() {
   return (
-    <Block title="Range bar" variant="title">
+    <Block title="Range bar">
       <Sample caption="Two sided: vitamin D 21, range 30 to 100">
         <RangeBar value={21} low={30} high={100} range="30 to 100" unit="ng/mL" />
       </Sample>
@@ -322,7 +313,7 @@ function Ranges() {
 
 function Goals() {
   return (
-    <Block title="Goals and the daily score" variant="title">
+    <Block title="Goals and the daily score">
       <Sample caption="Yesterday, weight plan: short, over a limit, and met">
         <View style={styles.dayHead}>
           <ScoreRing percent={85} of="Yesterday's goals" />
@@ -381,7 +372,7 @@ function Goals() {
 
 function Progress() {
   return (
-    <Block title="Progress since you started" variant="title">
+    <Block title="Progress since you started">
       <Sample caption="Detail, with the goal and a forecast">
         <View style={styles.hero}>
           <Text style={type.hero}>11 lb</Text>
@@ -412,7 +403,7 @@ function Progress() {
 
 function Weeks() {
   return (
-    <Block title="Week bars" variant="title">
+    <Block title="Week bars">
       <Sample caption="Daily scores, a day with nothing logged and a partial day">
         <WeekBars
           name="Daily score"
@@ -467,7 +458,7 @@ function Weeks() {
 
 function Pressure() {
   return (
-    <Block title="Blood pressure" variant="title">
+    <Block title="Blood pressure">
       <Sample caption="Home readings since May, fixed 60 to 160">
         <PressureChart readings={HOME_BP} takeaway="Down from 138/88 in May to 126/80, after a rise in late August." />
       </Sample>
@@ -477,7 +468,7 @@ function Pressure() {
 
 function Scores() {
   return (
-    <Block title="Inlay score" variant="title">
+    <Block title="Inlay score">
       <Sample caption="Score page: the first score">
         <ScoreGauge score={71} name="Inlay score" />
       </Sample>
@@ -499,16 +490,13 @@ function Scores() {
       <Sample caption="History: one score">
         <ScoreHistory checkIns={[{ date: "Today", value: 71 }]} />
       </Sample>
-      <Sample caption="Composition: 20 in range, 1 borderline, 6 out of range">
-        <CompositionBar inRange={20} borderline={1} out={6} />
-      </Sample>
     </Block>
   )
 }
 
 function Rows() {
   return (
-    <Block title="Rows and counts" variant="title">
+    <Block title="Rows and counts">
       <Sample caption="On the Hero: the member's doors and the rest of today" bare>
         <Hero>
           <View style={styles.heroHead}>
@@ -518,21 +506,21 @@ function Rows() {
           <ProgressBar onHero done={1} total={4} />
           <Text style={heroText.line}>Today's focus: fiber at lunch</Text>
           <StatRow>
-            <StatTile onHero icon={<IconDumbbell size={16} color={HUE.teal.ink} />} value="20 min" label="Exercise" onPress={() => {}} />
-            <StatTile onHero icon={<IconBowl size={16} color={HUE.teal.ink} />} value="1,700" unit="kcal" label="Diet plan" onPress={() => {}} />
-            <StatTile onHero icon={<IconCamera size={16} color={HUE.teal.ink} />} value="Lunch" label="Log a meal" done onPress={() => {}} />
+            <StatTile onHero icon={<Barbell size={16} color={HUE.teal.ink} />} value="20 min" label="Exercise" onPress={() => {}} />
+            <StatTile onHero icon={<BowlFood size={16} color={HUE.teal.ink} />} value="1,700" unit="kcal" label="Diet plan" onPress={() => {}} />
+            <StatTile onHero icon={<Camera size={16} color={HUE.teal.ink} />} value="Lunch" label="Log a meal" done onPress={() => {}} />
           </StatRow>
           <Group inset>
-            <NeedsRow icon={<IconWalk size={16} color={HUE.teal.ink} />} title="Walk after dinner" meta="20 minutes, brisk" chevron={false} onPress={() => {}} />
+            <NeedsRow icon={<PersonSimpleWalk size={16} color={HUE.teal.ink} />} title="Walk after dinner" meta="20 minutes, brisk" chevron={false} onPress={() => {}} />
             <NeedsRow
-              icon={<IconBloodPressure size={16} color={HUE.teal.ink} />}
+              icon={<Heartbeat size={16} color={HUE.teal.ink} />}
               title="Check your blood pressure"
               meta="Tonight, seated, after 5 minutes of rest"
               right={<SmallAction onPress={() => {}}>Add</SmallAction>}
               chevron={false}
               onPress={() => {}}
             />
-            <NeedsRow icon={<IconClock size={16} color={HUE.teal.ink} />} title="Labs tomorrow at 7:30 AM" meta="Nothing to eat after 9:30 PM tonight. Water is fine." onPress={() => {}} />
+            <NeedsRow icon={<Clock size={16} color={HUE.teal.ink} />} title="Labs tomorrow at 7:30 AM" meta="Nothing to eat after 9:30 PM tonight. Water is fine." onPress={() => {}} />
           </Group>
         </Hero>
       </Sample>
@@ -559,7 +547,7 @@ function Rows() {
       <Sample caption="Needs you, coming up and new in your record" bare>
         <Group>
           <NeedsRow
-            icon={<RecordIcon name="labs" size={18} color={HUE.teal.ink} />}
+            icon={<RecordIcon name="labs" size={16} color={HUE.teal.ink} />}
             title="Book your mammogram"
             meta="Dr. Patel ordered it on Mar 4. Reminder 3 of 3."
             tag={{ tone: "low", label: "Overdue" }}
@@ -567,14 +555,14 @@ function Rows() {
           />
           <NeedsRow date="2026-10-21" title="Cardiology follow up" meta="10:30 AM, Dr. Lee, Pacific Heart" note="2 questions saved" onPress={() => {}} />
           <NeedsRow
-            icon={<RecordIcon name="labs" size={18} color={HUE.teal.ink} />}
+            icon={<RecordIcon name="labs" size={16} color={HUE.teal.ink} />}
             title="Repeat A1c and lipid panel"
             meta="Not booked yet. Due by Nov 12"
             track={{ dates: [{ label: "Ordered", date: "Aug 12" }, { label: "Booked" }, { label: "Done" }] }}
             onPress={() => {}}
           />
           <NeedsRow
-            icon={<RecordIcon name="visits" size={18} color={HUE.blue.ink} />}
+            icon={<RecordIcon name="visits" size={16} color={HUE.blue.ink} />}
             hue="blue"
             title="Urgent care visit"
             meta="Scripps Memorial Hospital, Jun 3"
@@ -602,7 +590,7 @@ function Words() {
   const [tab, setTab] = React.useState<"days" | "weight">("days")
   const [chip, setChip] = React.useState<"all" | "watch" | "in">("all")
   return (
-    <Block title="Words, marks and actions" variant="title">
+    <Block title="Words, marks and actions">
       <Sample caption="Status: a shape and a word">
         <View style={styles.inline}>
           <Status level="out" />
@@ -624,8 +612,7 @@ function Words() {
           <Tag tone="muted">Being checked</Tag>
         </View>
       </Sample>
-      <Sample caption="Lines: the summary, the member's plan line, her why">
-        <SummaryLine>3 need you, 4 coming up, 2 for your next visit</SummaryLine>
+      <Sample caption="Lines: the member's plan line, her why">
         <PlanLine version={2} by="Dr. Patel" on="Sep 12" reviewing={3} onPress={() => {}} />
         <Quote text="To keep up with my kids and feel like myself again" meta="From your conversation on Oct 1" />
       </Sample>
@@ -696,7 +683,7 @@ function Words() {
 
 function Offers() {
   return (
-    <Block title="Offers and the allowance" variant="title">
+    <Block title="Offers and the allowance">
       <Sample caption="Nudge card: the free home's plan card, last" bare>
         <Nudge
           art="seedling"
@@ -724,10 +711,10 @@ function Offers() {
         />
       </Sample>
       <Sample caption="Nudge inline, inside an answer">
-        <View style={styles.bubble}>
-          <Text style={styles.bubbleText}>Small, steady changes to what you eat and how you move are what bring an A1c down over a few months.</Text>
+        <TheirBubble wide>
+          <Text style={bubbleText()}>Small, steady changes to what you eat and how you move are what bring an A1c down over a few months.</Text>
           <Nudge variant="inline" body="If you'd like help turning this into a weekly routine, that's what a plan does." action="See the plan" onAction={() => {}} onDismiss={() => {}} />
-        </View>
+        </TheirBubble>
       </Sample>
       <Sample caption="Nudge link: readiness Somewhat">
         <Nudge variant="link" title="A plan can build your days around your results." action="See how it works" onAction={() => {}} />
@@ -750,17 +737,6 @@ function Offers() {
         <AllowanceMeter left={1} total={8} />
         <AllowanceMeter left={0} total={8} line="No free questions left until Nov 1" />
       </Sample>
-      <Sample caption="Allowance line, for this device's patient (none for a member)">
-        <View style={styles.askRow}>
-          <Tile>
-            <IconSparkle size={18} color={HUE.teal.ink} />
-          </Tile>
-          <View style={styles.flex}>
-            <Text style={type.title}>Ask about your results</Text>
-            <AllowanceLine />
-          </View>
-        </View>
-      </Sample>
     </Block>
   )
 }
@@ -779,7 +755,7 @@ const BANNERS: { caption: string; state: BannerState }[] = [
 
 function Banners() {
   return (
-    <Block title="Status banner" variant="title">
+    <Block title="Status banner">
       {BANNERS.map((b) => (
         <View key={b.state.kind} style={styles.bannerSample}>
           <Text style={type.meta}>{b.caption}</Text>
@@ -814,7 +790,7 @@ const OBJECTS: { name: ArtName; size: number; where: string }[] = [
 
 function Empties() {
   return (
-    <Block title="Empty states and objects" variant="title">
+    <Block title="Empty states and objects">
       <EmptyState art="folder" artSize={112} title="Your records aren't connected" line="Nothing has been collected. Connect when you're ready and we'll bring your history together.">
         <View style={styles.emptyButton}>
           <Button onPress={() => {}}>Connect my records</Button>
@@ -848,7 +824,7 @@ function Empties() {
 
 function Toasts() {
   return (
-    <Block title="Toast" variant="title">
+    <Block title="Toast">
       <Sample caption="As it holds under the status bar for 1.6 s">
         <View style={styles.center}>
           <Toast text="Saved for your next visit" />
@@ -875,20 +851,19 @@ function Sample({ caption, bare, children }: { caption: string; bare?: boolean; 
 }
 
 const styles = StyleSheet.create({
-  controls: { backgroundColor: color.background, borderRadius: 20, borderWidth: 1, borderColor: chart.edge, paddingHorizontal: 16 },
-  toggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 52 },
-  toggleRule: { borderBottomWidth: 1, borderBottomColor: "#F2F2F7" },
+  // A Group row: the rule and the 12 above and below come from the Group.
+  toggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item, paddingVertical: space.rowY },
   toggleText: { ...type.title },
   pressed: { opacity: 0.7 },
-  replay: { marginTop: -8 },
-  groups: { gap: 32 },
-  sample: { gap: 8 },
-  sampleCard: { gap: 14 },
+  replay: { alignSelf: "flex-start" },
+  groups: { gap: space.section },
+  sample: { gap: space.inline },
+  sampleCard: { gap: space.item },
   flex: { flex: 1 },
   center: { alignItems: "center" },
   centerSelf: { alignSelf: "center" },
-  inline: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
-  okRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  inline: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.inline },
+  okRow: { flexDirection: "row", alignItems: "flex-start", gap: space.lead },
   okBody: { flex: 1, gap: 2 },
   okAction: { marginTop: 10 },
   barRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
@@ -897,21 +872,18 @@ const styles = StyleSheet.create({
   dayHead: { flexDirection: "row", alignItems: "center", gap: 16 },
   dayText: { flex: 1, gap: 2 },
   energy: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 4, marginTop: 2 },
-  rule: { height: 1, backgroundColor: "#F2F2F7" },
+  rule: { height: 0.8, backgroundColor: hairline.rule },
   rings: { flexDirection: "row", justifyContent: "space-between" },
-  historyRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
+  historyRow: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
   gauges: { flexDirection: "row", justifyContent: "space-around", alignItems: "flex-start" },
   hero: { flexDirection: "row", alignItems: "baseline", gap: 6 },
   heroHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  saveRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  bubble: { gap: 4, padding: 14, borderRadius: 18, backgroundColor: "#F4F4F2" },
-  bubbleText: { fontFamily: font.regular, fontSize: 15, lineHeight: 21, color: color.text },
-  askRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  saveRow: { flexDirection: "row", alignItems: "center", gap: space.item },
   bannerSample: { gap: 8 },
   emptyButton: { alignSelf: "stretch", marginTop: 8 },
   objects: { flexDirection: "row", flexWrap: "wrap", rowGap: 16 },
   object: { width: "33.33%", alignItems: "center", gap: 2, paddingHorizontal: 4 },
   objectArt: { width: 72, height: 72, alignItems: "center", justifyContent: "center" },
-  objectName: { ...type.metaStrong, color: color.text },
+  objectName: { ...type.metaStrong, color: ink.content },
   objectWhere: { ...type.meta, textAlign: "center" },
 })

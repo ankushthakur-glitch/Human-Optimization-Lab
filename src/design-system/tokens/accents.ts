@@ -12,20 +12,20 @@ import type { AccentTheme } from "@/design-system/tokens/themes"
  * which is what the picker paints.
  */
 export const CUSTOM_ACCENT_THEMES: AccentTheme[] = [
+  { name: "brand-teal", label: "Teal", swatch: "oklch(0.551 0.095 190)" },
   { name: "inlay", label: "Inlay", swatch: "#173E45" },
   { name: "inlay-p7", label: "Inlay P7", swatch: "#417D88" },
   { name: "inlay-palette", label: "Inlay palette", swatch: "#173E45" },
   { name: "brand-blue", label: "Blue", swatch: "oklch(0.571 0.19 260.3)" },
   { name: "brand-cyan", label: "Cyan", swatch: "oklch(0.555 0.102 222)" },
-  { name: "brand-teal", label: "Teal", swatch: "oklch(0.551 0.095 190)" },
 ]
 
 /**
- * Every accent the customizer and the appearance menu can offer: Inlay (the
- * Inlay Health petrol), Inlay P7 (the same petrol three steps lighter, the
- * default), Inlay palette
- * (every identity colour on its role), plus the earlier brand blue, cyan
- * and teal. The generated shadcn presets are not
+ * Every accent the customizer and the appearance menu can offer: Teal (the
+ * default, from the gallery's accent comparison), Inlay (the Inlay Health
+ * petrol), Inlay P7 (the same petrol three steps lighter), Inlay palette
+ * (every identity colour on its role), plus the earlier brand blue and
+ * cyan. The generated shadcn presets are not
  * offered at all; they stay in themes.css only because the generator owns
  * that file.
  */

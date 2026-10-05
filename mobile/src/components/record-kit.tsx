@@ -1,7 +1,3 @@
-import ArrowDownRight01Icon from "@hugeicons/core-free-icons/ArrowDownRight01Icon"
-import ArrowRight02Icon from "@hugeicons/core-free-icons/ArrowRight02Icon"
-import ArrowUpRight01Icon from "@hugeicons/core-free-icons/ArrowUpRight01Icon"
-import MoreHorizontalIcon from "@hugeicons/core-free-icons/MoreHorizontalIcon"
 import * as React from "react"
 import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native"
 import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from "react-native-svg"
@@ -9,23 +5,22 @@ import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 import { Art, type ArtName } from "@/components/art"
 import { RangeBar, useEntrance } from "@/components/charts"
 import { useReducedMotion } from "@/components/chat"
-import { HugeIcon, type IconSvgObject } from "@/components/hugeicon"
-import { IconCheck, IconChevronRight, IconMinus, IconShield } from "@/components/icons"
+import { ArrowDownRight, ArrowRight, ArrowUpRight, CaretRight, Check, DotsThree, Minus, ShieldCheck } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
 import { toast } from "@/components/toast"
 import { Button } from "@/components/ui"
-import { useAllowance } from "@/lib/allowance"
 import { withQuestion } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import type { OrderState } from "@/lib/record"
-import { cardRadius, chart, color, font, gutter, hairline, ink, outOfRangeColor, space, type } from "@/lib/theme"
+import { card, cardRadius, chart, color, font, gutter, hairline, ink, outOfRangeColor, space, type } from "@/lib/theme"
 import { directionWords, type Trend as MarkerTrend } from "@/lib/trends"
 import { keepEnd } from "@/lib/words"
 
 /* The signed-in record's pieces, built to the Frontline patient app's
    design system (Figma, "Patient Mob App" and its component sheet), in
-   Inlay teal, made rounder (catalog V-10): white cards with a 1px #EAECF0
-   edge at radius 20, icon tiles at 36 and radius 12, tint badges for what
+   Inlay teal, restyled to the Figma "Hol" file (5 Oct 2026): cards in 60%
+   white at radius 8 with a soft shadow and no edge, round 28 icon tiles on
+   Primary/00 holding a 16 Phosphor icon, tint badges for what
    changed, white status badges with a dot for what a value means, a warm
    banner with one small action, the gradient task card, rows for results,
    segmented tabs on a grey track, and dated steps. Text, greys and spacing
@@ -83,15 +78,15 @@ export type Tone = "high" | "low" | "ok" | "primary" | "muted"
    words, and red is never words (FINAL-SPEC C.0.3), so "high" draws the
    same calm clay as "low": "Overdue" and "Records differ" need attention,
    not alarm (V-07). */
-const CLAY_TAG = { ink: chart.borderline, fill: "#FFF8F1", edge: "#FCE1BE" }
+const CLAY_TAG = { ink: "#A95413", fill: "#FFF8F1", edge: "rgba(137, 67, 15, 0.04)" }
 const BADGE: Record<Tone, { ink: string; fill: string; edge: string }> = {
   high: CLAY_TAG,
   low: CLAY_TAG,
-  ok: { ink: ink.good, fill: "#ECFDF3", edge: "#ABEFC6" },
+  ok: { ink: ink.good, fill: "#ECFDF3", edge: "rgba(47, 127, 77, 0.06)" },
   // Words on the teal tint take the text teal, as Frontline's badges take
   // the darker step of their hue.
-  primary: { ink: ink.primary, fill: color.primaryTint, edge: color.primaryHalo },
-  muted: { ink: ink.secondary, fill: "#F2F4F7", edge: hairline.edge },
+  primary: { ink: ink.primary, fill: color.primarySoft, edge: color.primaryEdge },
+  muted: { ink: ink.secondary, fill: "#F7F7F7", edge: "rgba(80, 80, 80, 0.08)" },
 }
 
 /* A status mark's colour: the chart kit's out of range, borderline and in
@@ -207,15 +202,15 @@ export function Card({
   )
 }
 
-/* Rows on the Hero's white panel take a smaller tile (32) and a 10 gap
-   inside a panel 12 in from its edges, so the panel stays compact and a
-   row's words keep to one line each (FINAL-SPEC C.1.2): the Hero's own 16
-   already frames the panel. */
+/* Rows on the Hero's white panel sit 12 in from its edges with no edge or
+   shadow of their own, so the panel stays compact and a row's words keep
+   to one line each (FINAL-SPEC C.1.2): the Hero's own 16 already frames
+   the panel. */
 const InsetContext = React.createContext(false)
 
 /** Rows on one white card, split by hairlines. `inset` drops the edge and
-    the shadow, for rows on a white panel inside the Hero (radius 14, 12
-    inside, a 10 gap, tiles 32). */
+    the shadow, for rows on a white panel inside the Hero (radius 8, 12
+    inside, round 28 tiles). */
 export function Group({ children, inset, style }: { children: React.ReactNode; inset?: boolean; style?: StyleProp<ViewStyle> }) {
   const rows = React.Children.toArray(children).filter(Boolean)
   return (
@@ -231,10 +226,14 @@ export function Group({ children, inset, style }: { children: React.ReactNode; i
   )
 }
 
-/** An icon on a tile tinted by what it stands for: 36 at radius 12 (the
-    radius scales with a smaller tile). */
-export function Tile({ hue = "teal", size = 36, children }: { hue?: Hue; size?: number; children: React.ReactNode }) {
-  return <View style={[styles.tile, { width: size, height: size, borderRadius: Math.round(size / 3), backgroundColor: HUE[hue].tint }]}>{children}</View>
+/** An icon on a round tile tinted by what it stands for: 28 by default,
+    its icon resized to the tile. */
+export function Tile({ hue = "teal", size = 28, children }: { hue?: Hue; size?: number; children: React.ReactNode }) {
+  // Figma "Hol": a round 28 tile on Primary/00 holding a 16 icon. An icon
+  // passed at another size is drawn at the tile's own.
+  const glyph = Math.round(size * 0.57)
+  const icon = React.isValidElement<{ size?: number }>(children) && "size" in (children.props ?? {}) ? React.cloneElement(children, { size: glyph }) : children
+  return <View style={[styles.tile, { width: size, height: size, borderRadius: size / 2, backgroundColor: HUE[hue].tint }]}>{icon}</View>
 }
 
 type HeadingProps = {
@@ -264,13 +263,15 @@ export function Heading({ title, action, link, meta, onSeeAll, count, variant = 
       <View style={styles.headingRight}>
         {!!meta && <Text style={styles.meta}>{meta}</Text>}
         {onSeeAll && (
-          <Pressable onPress={onSeeAll} hitSlop={8} accessibilityRole="link">
-            <Text style={styles.link}>{seeAllLabel(count)}</Text>
+          <Pressable onPress={onSeeAll} hitSlop={8} accessibilityRole="link" style={({ pressed }) => [styles.seeAllLink, pressed && styles.pressed]}>
+            <Text style={styles.seeAllLinkText}>{seeAllLabel(count)}</Text>
+            <CaretRight size={16} color={color.primary} />
           </Pressable>
         )}
         {link && (
-          <Pressable onPress={link.onPress} hitSlop={8} accessibilityRole="link" style={({ pressed }) => pressed && styles.pressed}>
-            <Text style={styles.link}>{link.label}</Text>
+          <Pressable onPress={link.onPress} hitSlop={8} accessibilityRole="link" style={({ pressed }) => [styles.seeAllLink, pressed && styles.pressed]}>
+            <Text style={styles.seeAllLinkText}>{link.label}</Text>
+            <CaretRight size={16} color={color.primary} />
           </Pressable>
         )}
       </View>
@@ -324,7 +325,7 @@ export function Dot({ level, tone, size = 8, mark }: { level?: Level; tone?: Ton
   if (shape === "check")
     return (
       <View style={[styles.dotCheck, { backgroundColor: markOf(t) }]}>
-        <IconCheck size={8} color={color.onPrimary} strokeWidth={3} />
+        <Check size={8} color={color.onPrimary} weight="bold" />
       </View>
     )
   return (
@@ -352,7 +353,7 @@ export function Status({ level, tone, mark, children, bare }: { level?: Level; t
   )
 }
 
-const ARROW: Record<Trend, IconSvgObject> = { up: ArrowUpRight01Icon, down: ArrowDownRight01Icon, steady: ArrowRight02Icon }
+const ARROW: Record<Trend, typeof ArrowRight> = { up: ArrowUpRight, down: ArrowDownRight, steady: ArrowRight }
 
 /** Which way a marker is going: the status badge with a neutral grey
     arrow in place of the dot ("Trending up", "Trending down", "Steady").
@@ -362,7 +363,7 @@ const ARROW: Record<Trend, IconSvgObject> = { up: ArrowUpRight01Icon, down: Arro
 export function TrendPill({ trend, children, bare }: { trend?: Trend; children?: string; bare?: boolean }) {
   return (
     <View style={[styles.status, bare && styles.statusBare]}>
-      {trend && <HugeIcon icon={ARROW[trend]} size={12} color={ink.detail} strokeWidth={2} />}
+      {trend && React.createElement(ARROW[trend], { size: 12, color: ink.detail, weight: "bold" })}
       <Text style={styles.statusText}>{children ?? (trend ? TREND_WORD[trend] : MEANING_WORD.unknown)}</Text>
     </View>
   )
@@ -433,7 +434,7 @@ export function Banner({
           <Text style={styles.bannerActionText}>{action}</Text>
         </View>
       ) : (
-        onPress && <IconChevronRight size={16} color={ink.tertiary} />
+        onPress && <CaretRight size={16} color={card.chevron} />
       )}
     </>
   )
@@ -628,8 +629,8 @@ function bannerWords(s: BannerState): BannerCopy {
 
 function BannerGlyph({ icon, hue }: { icon: BannerIcon; hue: Hue }) {
   const tone = HUE[hue].ink
-  if (icon === "shield") return <IconShield size={18} color={tone} />
-  if (icon === "check") return <IconCheck size={18} color={tone} strokeWidth={2.2} />
+  if (icon === "shield") return <ShieldCheck size={18} color={tone} />
+  if (icon === "check") return <Check size={18} color={tone} weight="bold" />
   return <RecordIcon name={icon} size={18} color={tone} />
 }
 
@@ -677,7 +678,7 @@ export function Hero({ children, onPress }: { children: React.ReactNode; onPress
       {size && (
         <Svg style={StyleSheet.absoluteFill} width={size.w} height={size.h}>
           <Defs>
-            <LinearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
+            <LinearGradient id={gradient} x1="0.41" y1="0" x2="0.59" y2="1">
               <Stop offset="0" stopColor="#2D6F7B" />
               <Stop offset="1" stopColor="#4FA3A5" />
             </LinearGradient>
@@ -685,11 +686,12 @@ export function Hero({ children, onPress }: { children: React.ReactNode; onPress
           <Rect width={size.w} height={size.h} fill={`url(#${gradient})`} />
         </Svg>
       )}
-      <Svg style={styles.heroTop} width={110} height={90} viewBox="0 0 110 90">
-        <Circle cx={78} cy={11} r={76} fill="#000" fillOpacity={0.1} />
-      </Svg>
-      <Svg style={styles.heroBottom} width={145} height={70} viewBox="0 0 145 70">
-        <Circle cx={69} cy={70} r={65} fill="#FFF" fillOpacity={0.1} />
+      {/* Figma's three soft circles, kept at their size from the top
+          left corner. */}
+      <Svg style={styles.heroTop} width={387} height={251} viewBox="10 95 387 251">
+        <Circle cx={64.5} cy={151.5} r={64.5} fill="#000" fillOpacity={0.1} />
+        <Circle cx={297} cy={161} r={90} fill="#000" fillOpacity={0.1} />
+        <Circle cx={216} cy={63} r={63} fill="#FFF" fillOpacity={0.1} />
       </Svg>
       {children}
     </>
@@ -775,22 +777,34 @@ export function DateTrack({ dates, late, mini }: { dates: TrackDate[]; late?: bo
     )
   }
   return (
-    <View style={styles.dateTrack}>
+    <View style={styles.dateTrack} accessible accessibilityLabel={trackWords(dates)}>
       {dates.map((d, i) => {
         const on = !!d.date
         const next = i === reached
+        const lateHere = next && late
         return (
-          <View key={d.label} style={styles.trackStep}>
-            <View style={styles.trackRail}>
-              <View style={[styles.trackLine, i === 0 && styles.trackHidden, on && styles.trackLineOn]} />
-              <View style={[styles.trackDot, on && styles.trackDotOn, next && late && styles.trackDotLate]}>
-                {on && <IconCheck size={8} color={color.onPrimary} strokeWidth={3} />}
-              </View>
-              <View style={[styles.trackLine, i === dates.length - 1 && styles.trackHidden, i < reached - 1 && styles.trackLineOn]} />
+          <React.Fragment key={d.label}>
+            {i > 0 && <View style={styles.trackJoin} />}
+            <View style={styles.trackPill}>
+              <Text style={styles.trackLabel} numberOfLines={1}>
+                {d.label}
+              </Text>
+              <Text style={[styles.trackDate, !on && styles.trackDateOff, lateHere && styles.trackDateLate]} numberOfLines={1}>
+                {d.date ?? "Not yet"}
+              </Text>
+              {on ? (
+                <View style={styles.trackBadge}>
+                  <Check size={7} color={color.onPrimary} weight="bold" />
+                </View>
+              ) : (
+                lateHere && (
+                  <View style={[styles.trackBadge, styles.trackBadgeLate]}>
+                    <Text style={styles.trackBadgeMark}>!</Text>
+                  </View>
+                )
+              )}
             </View>
-            <Text style={styles.trackLabel}>{d.label}</Text>
-            <Text style={[styles.trackDate, !on && styles.trackDateOff, next && late && styles.trackDateLate]}>{d.date ?? "Not yet"}</Text>
-          </View>
+          </React.Fragment>
         )
       })}
     </View>
@@ -806,12 +820,12 @@ export function Steps({ steps }: { steps: Step[] }) {
         <View key={i} style={styles.step}>
           <View style={styles.rail}>
             <View style={[styles.node, s.state === "done" && styles.nodeDone, s.state === "now" && styles.nodeNow, s.state === "alert" && styles.nodeAlert]}>
-              {s.state === "done" && <IconCheck size={11} color={color.onPrimary} strokeWidth={2.6} />}
+              {s.state === "done" && <Check size={10} color={color.onPrimary} weight="bold" />}
             </View>
-            {i < steps.length - 1 && <View style={[styles.line, s.state === "done" && styles.lineDone]} />}
+            {i < steps.length - 1 && <View style={styles.line} />}
           </View>
           <View style={styles.stepBody}>
-            <Text style={[styles.stepLabel, s.state === "next" && styles.stepLater]}>{s.label}</Text>
+            <Text style={[styles.stepLabel, (s.state === "next" || s.state === "alert") && styles.stepLater]}>{s.label}</Text>
             {!!s.date && <Text style={styles.stepDate}>{s.date}</Text>}
           </View>
         </View>
@@ -851,8 +865,8 @@ export function DateBlock({ date, hue = "teal" }: { date: DateLike | { weekday: 
   const num = day ? day.getDate() : (given?.day ?? "")
   return (
     <View style={[styles.tile, styles.dateBlock, { backgroundColor: HUE[hue].tint }]}>
-      <Text style={[styles.dateWeekday, { color: HUE[hue].ink }]}>{top}</Text>
-      <Text style={styles.dateDay}>{num}</Text>
+      <Text style={styles.dateWeekday}>{top}</Text>
+      <Text style={[styles.dateDay, hue === "teal" && { color: ink.primary }]}>{num}</Text>
     </View>
   )
 }
@@ -924,7 +938,7 @@ export function NeedsRow({
   const left = date ? (
     <DateBlock date={date} hue={hue} />
   ) : icon ? (
-    <Tile hue={hue} size={inset ? 32 : 36}>
+    <Tile hue={hue} size={28}>
       {icon}
     </Tile>
   ) : null
@@ -1003,7 +1017,7 @@ export function NeedsRow({
       {!action && right != null && <View style={styles.rowSide}>{typeof right === "string" ? <Text style={styles.rowDate}>{right}</Text> : <View>{right}</View>}</View>}
       {onPress && chevron && !action && (
         <View style={styles.rowSide}>
-          <IconChevronRight size={16} color={ink.tertiary} />
+          <CaretRight size={16} color={card.chevron} />
         </View>
       )}
     </>
@@ -1044,7 +1058,7 @@ export function SeeAllRow({ count, what, label, onPress, onHero }: { count?: num
       style={({ pressed }) => [onHero ? styles.seeAllHero : styles.seeAll, pressed && styles.rowPressed]}
     >
       <Text style={[styles.seeAllText, { color: tone }]}>{label ?? seeAllLabel(count, what)}</Text>
-      <IconChevronRight size={16} color={tone} />
+      <CaretRight size={16} color={tone} />
     </Pressable>
   )
 }
@@ -1100,7 +1114,7 @@ export function StatTile({ value, unit, label, meta, icon, hue = "teal", level, 
           )}
           {done && (
             <View style={styles.statDone}>
-              <IconCheck size={10} color={color.onPrimary} strokeWidth={3} />
+              <Check size={10} color={color.onPrimary} weight="bold" />
             </View>
           )}
         </View>
@@ -1168,50 +1182,6 @@ export function summaryText(count: number, when = "this week") {
   return `${count} ${count === 1 ? "thing needs" : "things need"} you ${when}`
 }
 
-/** The one summary line under the greeting: a teal dot and how many things
-    need the patient, or a green check and "You're all caught up". Pass
-    `children` for other words, and `done` to show the check with them. */
-export function SummaryLine({
-  count = 0,
-  when = "this week",
-  children,
-  done,
-  onPress,
-}: {
-  count?: number
-  when?: string
-  children?: string
-  done?: boolean
-  onPress?: () => void
-}) {
-  const clear = done ?? (!children && count <= 0)
-  const body = (
-    <>
-      {clear ? (
-        <View style={styles.summaryCheck}>
-          <IconCheck size={10} color={color.onPrimary} strokeWidth={3} />
-        </View>
-      ) : (
-        <View style={styles.summaryDot} />
-      )}
-      <Text style={styles.summaryText} numberOfLines={2}>
-        {children ?? summaryText(count, when)}
-      </Text>
-      {onPress && (
-        <View style={styles.summaryChevron}>
-          <IconChevronRight size={14} color={ink.tertiary} />
-        </View>
-      )}
-    </>
-  )
-  if (!onPress) return <View style={styles.summary}>{body}</View>
-  return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.summary, pressed && styles.pressed]}>
-      {body}
-    </Pressable>
-  )
-}
-
 /** The member's plan line for the home header: "Version 2, approved by Dr.
     Patel", and while a newer version is with the doctor a second line,
     "Version 3 is with Dr. Patel", with a breathing dot (M-55). The current
@@ -1243,7 +1213,7 @@ export function PlanLine({
           </View>
         ) : (
           <View style={styles.planMark}>
-            <IconCheck size={9} color={color.onPrimary} strokeWidth={3} />
+            <Check size={9} color={color.onPrimary} weight="bold" />
           </View>
         )}
         <Text style={styles.planText} numberOfLines={1}>
@@ -1320,7 +1290,7 @@ export function TextAction({
   return (
     <Pressable onPress={onPress} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
       <Text style={[styles.textActionText, { color: fg }]}>{children}</Text>
-      {chevron && <IconChevronRight size={14} color={fg} />}
+      {chevron && <CaretRight size={14} color={fg} />}
     </Pressable>
   )
 }
@@ -1483,7 +1453,7 @@ export function Nudge({
         <View style={styles.nudgePoints}>
           {points.slice(0, 3).map((p) => (
             <View key={p} style={styles.nudgePoint}>
-              <IconCheck size={14} color={color.primary} strokeWidth={2.2} />
+              <Check size={14} color={color.primary} weight="bold" />
               <Text style={styles.nudgePointText}>{p}</Text>
             </View>
           ))}
@@ -1530,7 +1500,7 @@ export function Nudge({
               aria-expanded={menu}
               style={({ pressed }) => [styles.nudgeMore, pressed && styles.pressed]}
             >
-              <HugeIcon icon={MoreHorizontalIcon} size={18} color={ink.secondary} />
+              <DotsThree size={18} color={ink.secondary} weight="bold" />
             </Pressable>
           </View>
         )}
@@ -1584,21 +1554,6 @@ export function EmptyState({
 
 /* -------------------------------------------------- questions, quotes -- */
 
-/** The free questions left this month, as one line in meta ("6 of 8 free
-    questions left this month", or at the cap "No free questions left until
-    Nov 1"), from useAllowance(). A member has no count, so it draws
-    nothing. On the free home's ask row and above the marker page's "Ask
-    about this result". */
-export function AllowanceLine({ align = "left" }: { align?: "left" | "center" }) {
-  const a = useAllowance()
-  if (a.member || !a.line) return null
-  return (
-    <Text style={[styles.allowanceLine, align === "center" && styles.allowanceCenter]} maxFontSizeMultiplier={1.3}>
-      {a.line}
-    </Text>
-  )
-}
-
 /** The free questions as eight 6 pt dots, teal while a question is left and
     grey once used, with the words beside them: the assistant's header. Pass
     useAllowance()'s `line` for the words at the cap ("until Nov 1"). */
@@ -1633,7 +1588,7 @@ export function SaveQuestion({ text, about, forVisit, label = "Save" }: { text: 
   if (saved)
     return (
       <View style={styles.saved} accessible accessibilityRole="text" accessibilityLabel="Saved for your next visit">
-        <IconCheck size={14} color={color.primary} strokeWidth={2.4} />
+        <Check size={14} color={color.primary} weight="bold" />
         <Text style={styles.savedText}>Saved</Text>
       </View>
     )
@@ -1712,7 +1667,7 @@ export function ResultRow({ trend: t, since, onPress }: { trend: MarkerTrend; si
         <View style={styles.resultSide}>
           <Text style={styles.resultRowValue} numberOfLines={1}>
             {t.value}
-            {!!unit && <Text style={styles.resultRowUnit}>{`${unit === "%" ? "" : " "}${unit}`}</Text>}
+            {!!unit && <Text style={styles.resultRowUnit}>{` ${unit}`}</Text>}
           </Text>
           <RangeBar compact value={t.latest.value} low={t.band.low} high={t.band.high} status={t.status} unit={unit} style={styles.resultBar} />
         </View>
@@ -1741,7 +1696,7 @@ export function Tabs<T extends string>({
 }) {
   const track = (
     <View style={styles.tabs} accessibilityRole="tablist">
-      {options.map((o) => {
+      {options.map((o, i) => {
         const on = o.value === value
         return (
           <Pressable
@@ -1750,7 +1705,7 @@ export function Tabs<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             aria-selected={on}
-            style={[styles.tab, scroll && styles.tabScroll, on && styles.tabOn]}
+            style={[styles.tab, scroll && styles.tabScroll, on && styles.tabOn, i === options.length - 1 && styles.tabLast]}
           >
             <Text style={[styles.tabText, on && styles.tabTextOn]} numberOfLines={1}>
               {o.label}
@@ -1782,7 +1737,7 @@ export function Chip({ label, selected, onPress, radio }: { label: string; selec
       aria-checked={selected}
       style={({ pressed }) => [styles.chip, selected && styles.chipOn, pressed && styles.chipPressed]}
     >
-      {selected && <IconCheck size={14} color={color.primary} />}
+      {selected && <Check size={14} color={color.primary} weight="bold" />}
       <Text style={[styles.chipText, selected && styles.chipTextOn]}>{label}</Text>
     </Pressable>
   )
@@ -1891,7 +1846,7 @@ export function CheckLine({ children, soon, excluded }: { children: string; soon
       accessibilityLabel={excluded ? `Not included: ${children}` : soon ? `${children}, coming soon` : children}
     >
       <View style={[styles.checkMark, excluded && styles.checkMarkOff]}>
-        {excluded ? <IconMinus size={14} color={ink.secondary} /> : <IconCheck size={14} color={color.primary} strokeWidth={2.2} />}
+        {excluded ? <Minus size={14} color={ink.secondary} weight="bold" /> : <Check size={14} color={color.primary} weight="bold" />}
       </View>
       <View style={styles.checkWords}>
         <Text style={[styles.checkText, excluded && styles.checkTextOff]}>{holdNumbers(children)}</Text>
@@ -1926,7 +1881,7 @@ const holdNumbers = (text: string) => text.replace(/(\d) (?=[A-Za-z])/g, "$1\u00
     in the resting mark grey, filled green with a white check once done.
     Home and Today's exercise draw the same one. */
 export function TickCircle({ done }: { done: boolean }) {
-  return <View style={[styles.tick, done && styles.tickDone]}>{done && <IconCheck size={13} color={color.onPrimary} strokeWidth={2.6} />}</View>
+  return <View style={[styles.tick, done && styles.tickDone]}>{done && <Check size={13} color={color.onPrimary} weight="bold" />}</View>
 }
 
 /* --------------------------------------------------------- entrances -- */
@@ -1958,17 +1913,15 @@ export function NotConnected({ line = "Nothing has been collected. Connect when 
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
-  // The one card after onboarding (FINAL-SPEC C.0.1): white, a hairline,
-  // radius 20, 16 inside, the faintest lift.
+  // Figma "Hol" (5 Oct 2026): white at 60% on the page gradient, radius 8,
+  // 12 inside, the softest lift; no edge.
   card: {
-    backgroundColor: color.background,
+    backgroundColor: card.fill,
     borderRadius: CARD_RADIUS,
-    borderWidth: 1,
-    borderColor: hairline.edge,
     padding: space.card,
-    boxShadow: "0 1px 2px rgba(16, 24, 40, 0.04)",
+    boxShadow: card.shadow,
   },
-  inset: { backgroundColor: color.background, borderRadius: 14 },
+  inset: { backgroundColor: color.background, borderRadius: CARD_RADIUS },
   group: { paddingVertical: 0, paddingHorizontal: space.rowX },
   groupInset: { paddingHorizontal: space.compact },
   rule: { borderBottomWidth: 1, borderBottomColor: hairline.rule },
@@ -1979,11 +1932,15 @@ const styles = StyleSheet.create({
   headingText: { flexShrink: 1, ...type.sectionLabel },
   headingTitle: { flexShrink: 1, ...type.section },
   headingRight: { flexDirection: "row", alignItems: "center", gap: space.item },
+  seeAllLink: { flexDirection: "row", alignItems: "center", gap: space.inline },
+  seeAllLinkText: { ...type.seeAll },
 
   // Frontline's small badge: 2 by 8 inside, a faint edge in its hue.
+  // Figma's badge: 10 medium, 8 at the sides and 2 above and below.
   tag: { alignSelf: "flex-start", borderRadius: 16, borderWidth: 1, paddingHorizontal: space.inline, paddingVertical: space.line },
   tagText: { ...type.tag },
   // Frontline's status chip: white, an outline, the mark 6 from its word.
+  // Figma's dot badge: white, a faint edge, the mark 6 from its word.
   status: {
     flexDirection: "row",
     alignItems: "center",
@@ -1991,28 +1948,29 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     backgroundColor: color.background,
     borderWidth: 1,
-    borderColor: hairline.outline,
+    borderColor: "rgba(80, 80, 80, 0.08)",
     borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: space.line,
+    paddingLeft: 6,
+    paddingRight: 8,
+    paddingVertical: space.stack,
   },
   statusBare: { alignSelf: "auto", backgroundColor: "transparent", borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0 },
-  statusText: { ...type.metaStrong },
+  statusText: { ...type.captionStrong, color: ink.detail },
   // A check in a 12 pt circle: "Results in".
   dotCheck: { width: 12, height: 12, borderRadius: 6, alignItems: "center", justifyContent: "center" },
 
-  banner: { flexDirection: "row", alignItems: "center", gap: space.lead, borderRadius: CARD_RADIUS, borderWidth: 1, padding: space.compact },
-  bannerTile: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, backgroundColor: color.background, alignItems: "center", justifyContent: "center" },
+  banner: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: CARD_RADIUS, borderWidth: 1, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 12 },
+  bannerTile: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, backgroundColor: color.background, alignItems: "center", justifyContent: "center" },
   bannerLive: { position: "absolute", top: -4, right: -4, padding: 2, borderRadius: 6, backgroundColor: color.background },
-  bannerBody: { flex: 1, gap: space.line },
+  bannerBody: { flex: 1, gap: space.stack },
   bannerTitle: { ...type.title },
   bannerMeta: { ...type.label },
   // Flat: a white pill with the banner's own edge, never a shadow.
-  bannerAction: { backgroundColor: color.background, borderRadius: 16, borderWidth: 1, height: 32, paddingHorizontal: 12, justifyContent: "center" },
+  bannerAction: { backgroundColor: color.background, borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, justifyContent: "center", boxShadow: card.shadowXs },
   bannerActionText: { ...type.action },
 
-  hero: { borderRadius: CARD_RADIUS, overflow: "hidden", padding: space.card, gap: space.item, backgroundColor: "#3B8790" },
-  heroTop: { position: "absolute", top: 0, right: 0 },
+  hero: { borderRadius: CARD_RADIUS, overflow: "hidden", paddingHorizontal: 14, paddingTop: 10, paddingBottom: 12, gap: 10, backgroundColor: "#3B8790" },
+  heroTop: { position: "absolute", top: 0, left: 0 },
   heroBottom: { position: "absolute", bottom: 0, right: 0 },
 
   track: { height: 8, borderRadius: 4, backgroundColor: MARK.track, overflow: "hidden" },
@@ -2020,25 +1978,45 @@ const styles = StyleSheet.create({
   fill: { height: 8, borderRadius: 4 },
   fillHero: { height: 6, borderRadius: 3 },
 
+  // Figma's reminders: an 18 mark, done filled teal with a check, still to
+  // come a 1.6 pt grey ring, late a clay ring; a 2 pt grey rail between.
   step: { flexDirection: "row", gap: space.lead },
-  rail: { alignItems: "center", width: 20 },
-  node: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: hairline.outline, backgroundColor: color.background, alignItems: "center", justifyContent: "center" },
+  rail: { alignItems: "center", width: 18 },
+  node: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.6, borderColor: hairline.outline, alignItems: "center", justifyContent: "center" },
   nodeDone: { backgroundColor: color.primary, borderColor: color.primary },
-  nodeNow: { borderColor: color.primary, borderWidth: 6 },
+  nodeNow: { borderColor: color.primary, borderWidth: 2 },
   // Something late needs attention, in clay, never red.
-  nodeAlert: { backgroundColor: color.background, borderColor: chart.borderline, borderWidth: 6 },
-  line: { flex: 1, width: 1.5, minHeight: 16, backgroundColor: hairline.edge, marginVertical: 2 },
-  lineDone: { backgroundColor: color.primary },
-  stepBody: { flex: 1, paddingBottom: space.item, gap: space.line },
-  stepLabel: { ...type.title },
-  stepLater: { color: ink.tertiary },
-  stepDate: { ...type.meta },
+  nodeAlert: { borderColor: chart.borderline, borderWidth: 2 },
+  line: { flex: 1, width: 2, minHeight: 12, backgroundColor: hairline.outline },
+  lineDone: { backgroundColor: hairline.outline },
+  stepBody: { flex: 1, paddingBottom: space.item, gap: space.stack },
+  stepLabel: { ...type.chip },
+  stepLater: { color: ink.secondary },
+  stepDate: { ...type.label },
 
-  tabs: { flexDirection: "row", backgroundColor: "#E3E8EF", borderRadius: 10, padding: space.stack, gap: space.stack, borderWidth: 1, borderColor: "#D8DEE6" },
+  // Figma's segmented control: cells side by side in a 6 radius frame,
+  // split by hairlines; the chosen one on the teal tint.
+  tabs: { flexDirection: "row", backgroundColor: "#FAFAFA", borderRadius: 6, borderWidth: 1, borderColor: "#E9E9EE", overflow: "hidden" },
   // Each tab is as wide as its label plus an equal share of the rest, so a
   // long label ("Since you started") keeps to one line in its 32 pt tab.
-  tab: { flexGrow: 1, flexShrink: 1, flexBasis: "auto", paddingHorizontal: space.inline, height: 32, borderRadius: 6, alignItems: "center", justifyContent: "center" },
-  dateTrack: { flexDirection: "row" },
+  tab: { flexGrow: 1, flexShrink: 1, flexBasis: 0, paddingHorizontal: space.gutter, paddingVertical: space.inline, backgroundColor: "#FBFBFB", borderRightWidth: 1, borderRightColor: hairline.outline, alignItems: "center", justifyContent: "center" },
+  // Figma's order track: three lifted pills joined by short grey lines,
+  // each date reached ticked in green at its corner.
+  dateTrack: { flexDirection: "row", alignItems: "center", gap: 10 },
+  trackJoin: { width: 24, height: 1, backgroundColor: hairline.outline },
+  trackPill: {
+    flex: 1,
+    alignItems: "center",
+    gap: space.stack,
+    paddingHorizontal: 10,
+    paddingVertical: space.inline,
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    boxShadow: "2px 4px 12px rgba(0, 0, 0, 0.06)",
+  },
+  trackBadge: { position: "absolute", top: -2.5, right: -3, width: 12, height: 12, borderRadius: 6, backgroundColor: chart.inRange, alignItems: "center", justifyContent: "center" },
+  trackBadgeLate: { backgroundColor: "#FFF9EF", borderWidth: 1, borderColor: chart.borderline },
+  trackBadgeMark: { fontFamily: font.semibold, fontSize: 8, lineHeight: 9, color: chart.borderline },
   trackStep: { flex: 1, alignItems: "center", gap: space.line },
   trackRail: { flexDirection: "row", alignItems: "center", alignSelf: "stretch", marginBottom: space.stack },
   trackLine: { flex: 1, height: 2, backgroundColor: hairline.edge },
@@ -2047,17 +2025,18 @@ const styles = StyleSheet.create({
   trackDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: MARK.off, backgroundColor: color.background, alignItems: "center", justifyContent: "center" },
   trackDotOn: { borderColor: color.primary, backgroundColor: color.primary },
   trackDotLate: { borderColor: chart.borderline },
-  trackLabel: { ...type.metaStrong },
-  trackDate: { ...type.label, fontVariant: ["tabular-nums"] },
-  trackDateOff: { color: ink.tertiary },
-  trackDateLate: { color: chart.borderline },
+  trackLabel: { ...type.metaStrong, color: ink.detail },
+  trackDate: { ...type.caption, fontVariant: ["tabular-nums"] },
+  trackDateOff: { color: ink.secondary },
+  trackDateLate: { color: "#A95413" },
   // Frontline's segment: 16 either side of its word.
   tabScroll: { flexGrow: 0, flexShrink: 0, paddingHorizontal: 16 },
   // Scrolling tabs and chips bleed by onboarding's wider gutter: on a
   // signed-in page (space.gutter) and in a sheet alike they run to the
   // screen's edges, and the first one still lines up with the content.
   tabsScroll: { paddingHorizontal: gutter },
-  tabOn: { backgroundColor: color.background, boxShadow: "0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 23, 40, 0.1)" },
+  tabOn: { backgroundColor: color.primaryTint },
+  tabLast: { borderRightWidth: 0 },
   tabText: { ...type.title, color: ink.secondary },
   tabTextOn: { color: color.primary },
 
@@ -2075,20 +2054,22 @@ const styles = StyleSheet.create({
   chips: { gap: space.inline, paddingHorizontal: gutter },
   // Chips in a row, and a wrapped line under them, 8 apart (Frontline).
   chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
+  // Figma's choice chip: a white pill with a hairline, 12 regular; chosen,
+  // the teal tint with its edge.
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: space.mark,
-    height: 34,
-    paddingHorizontal: 12,
-    borderRadius: 17,
+    gap: space.stack,
+    height: 28,
+    paddingHorizontal: 10,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: hairline.outline,
     backgroundColor: color.background,
   },
-  chipOn: { borderColor: color.primary, backgroundColor: color.primaryTint },
+  chipOn: { borderColor: color.primaryEdge, backgroundColor: color.primaryTint },
   chipPressed: { opacity: 0.85 },
-  chipText: { ...type.chip },
+  chipText: { ...type.label, color: ink.content },
   chipTextOn: { color: ink.primary },
   link: { ...type.link },
   meta: { ...type.meta },
@@ -2101,10 +2082,12 @@ const styles = StyleSheet.create({
   kvSide: { alignItems: "center", minHeight: space.rowY * 2 + type.title.lineHeight, paddingVertical: (space.rowY * 2 + type.title.lineHeight - 32) / 2 },
   // The label wraps when it is long; the value keeps its width up to 60%
   // of the row, so a long value wraps there and never squeezes the label.
-  kvLabel: { ...type.label, flexShrink: 1 },
-  kvValue: { flexShrink: 0, maxWidth: "60%", textAlign: "right", ...type.title },
+  // Figma's detail rows: the key 14 regular, the value 14 medium, both in
+  // Grey/08.
+  kvLabel: { ...type.body, flexShrink: 1 },
+  kvValue: { flexShrink: 0, maxWidth: "60%", textAlign: "right", ...type.title, color: ink.detail },
   kvRight: { flexShrink: 1, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: space.item },
-  kvValueBeside: { flexShrink: 1, textAlign: "right", ...type.title },
+  kvValueBeside: { flexShrink: 1, textAlign: "right", ...type.title, color: ink.detail },
 
   checkLines: { gap: space.mark },
   // The mark sits on the middle of the sentence's first line, however it
@@ -2133,7 +2116,7 @@ const styles = StyleSheet.create({
   rowInset: { gap: 10 },
   rowTop: { alignItems: "flex-start" },
   rowPressed: { opacity: 0.6 },
-  rowBody: { flex: 1, gap: space.line },
+  rowBody: { flex: 1, gap: space.stack },
   rowTitle: { ...type.title },
   rowTitleMuted: { color: ink.tertiary },
   rowTitleLine: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: space.inline, rowGap: space.stack },
@@ -2148,11 +2131,13 @@ const styles = StyleSheet.create({
   rowMeta: { ...type.label },
   rowNote: { ...type.metaStrong, color: ink.primary },
   rowTrack: { marginTop: space.inline, marginBottom: space.line },
-  rowSide: { minHeight: 32, flexDirection: "row", alignItems: "center", gap: space.inline },
+  rowSide: { minHeight: 20, flexDirection: "row", alignItems: "center", gap: space.inline },
   rowDate: { ...type.label, fontVariant: ["tabular-nums"] },
-  dateBlock: { width: 36, height: 36, borderRadius: 12, gap: 0 },
-  dateWeekday: { ...type.captionStrong, lineHeight: 12 },
-  dateDay: { ...type.value, lineHeight: 18, fontVariant: ["tabular-nums"] },
+  // Figma's date block: 32 wide on Primary/00, radius 6, as tall as the
+  // row's words; the month 10 regular over the day 13 semibold.
+  dateBlock: { width: 32, height: 40, alignSelf: "flex-start", borderRadius: 6, gap: space.line },
+  dateWeekday: { ...type.caption, color: ink.detail },
+  dateDay: { fontFamily: font.semibold, fontSize: 13, lineHeight: 17, color: ink.strong, fontVariant: ["tabular-nums"] },
 
   seeAll: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: space.rowY },
   seeAllHero: { flexDirection: "row", alignItems: "center", alignSelf: "flex-end", gap: space.line, minHeight: 24 },
@@ -2161,7 +2146,7 @@ const styles = StyleSheet.create({
   stat: { flexGrow: 1, gap: space.inline, minHeight: 84 },
   // A door: about 99 wide on a phone, so "1,700 kcal" keeps to one line
   // (Frontline's raised tiles keep 10 inside).
-  statHero: { flexGrow: 1, minHeight: 104, backgroundColor: color.background, borderRadius: 14, padding: 10, gap: space.inline },
+  statHero: { flexGrow: 1, minHeight: 104, backgroundColor: color.background, borderRadius: CARD_RADIUS, padding: 10, gap: space.inline },
   statBare: { flexGrow: 1, gap: space.inline },
   // The number and its label sit at the bottom, so tiles in a row line up.
   statFoot: { marginTop: "auto", gap: space.line },
@@ -2181,14 +2166,9 @@ const styles = StyleSheet.create({
   statRowDivided: { gap: 0 },
   // Equal widths whatever the numbers inside take.
   statCell: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0, flexDirection: "column" },
-  statCellDivided: { borderLeftWidth: 1, borderLeftColor: hairline.edge, paddingLeft: space.item, marginLeft: space.item },
+  statCellDivided: { borderLeftWidth: 0.8, borderLeftColor: hairline.rule, paddingLeft: space.item, marginLeft: space.item },
 
   // A wrapped line keeps its mark beside the first line.
-  summary: { flexDirection: "row", alignItems: "flex-start", gap: space.inline, minHeight: 20 },
-  summaryDot: { width: 8, height: 8, borderRadius: 4, marginTop: 6, backgroundColor: color.primary },
-  summaryCheck: { width: 16, height: 16, borderRadius: 8, marginTop: 2, backgroundColor: color.ok, alignItems: "center", justifyContent: "center" },
-  summaryText: { flexShrink: 1, ...type.title },
-  summaryChevron: { height: 20, justifyContent: "center" },
 
   planLine: { gap: space.stack },
   planRow: { flexDirection: "row", alignItems: "center", gap: space.mark },
@@ -2197,16 +2177,17 @@ const styles = StyleSheet.create({
   planText: { flexShrink: 1, ...type.label },
   planStrong: { fontFamily: font.medium, color: ink.content },
 
-  small: { height: 32, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", alignSelf: "flex-start" },
-  smallTint: { backgroundColor: color.primaryTint, borderColor: color.primaryHalo },
-  smallOutline: { backgroundColor: color.background, borderColor: hairline.outline },
+  // Figma's small action: the teal tint, its edge, radius 8, 10 by 6.
+  small: { minHeight: 30, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center", alignSelf: "flex-start", boxShadow: card.shadowXs },
+  smallTint: { backgroundColor: color.primaryTint, borderColor: color.primaryEdge },
+  smallOutline: { backgroundColor: color.primaryTint, borderColor: color.primaryEdge },
   smallHero: { backgroundColor: color.background, borderColor: color.background },
   smallText: { ...type.action },
   textAction: { flexDirection: "row", alignItems: "center", gap: space.line, minHeight: 32 },
   textActionText: { ...type.link },
 
   // The offer is the quietest card on the page: no shadow, the kit's edge.
-  nudge: { backgroundColor: color.background, borderRadius: CARD_RADIUS, borderWidth: 1, borderColor: hairline.edge, padding: space.card, gap: space.item },
+  nudge: { backgroundColor: card.fill, borderRadius: CARD_RADIUS, padding: space.card, gap: space.item, boxShadow: card.shadow },
   nudgeInline: { gap: space.item, marginTop: space.stack, paddingTop: space.item, borderTopWidth: 1, borderTopColor: "#E3E3E0" },
   nudgeTop: { flexDirection: "row", alignItems: "flex-start", gap: space.lead },
   nudgeWords: { flex: 1, gap: space.stack },
@@ -2229,12 +2210,10 @@ const styles = StyleSheet.create({
     bottom: 38,
     minWidth: 140,
     paddingVertical: space.stack,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: hairline.edge,
+    // A Hol card, kept opaque so the offer's words do not show through.
+    borderRadius: CARD_RADIUS,
     backgroundColor: color.background,
-    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
-    elevation: 4,
+    boxShadow: card.shadow,
     zIndex: 3,
   },
   nudgeMenuItem: { paddingHorizontal: 12, paddingVertical: 10 },
@@ -2252,8 +2231,6 @@ const styles = StyleSheet.create({
   // state's own gap included.
   emptyButton: { alignSelf: "stretch", marginTop: space.card - space.inline },
 
-  allowanceLine: { ...type.meta },
-  allowanceCenter: { textAlign: "center" },
   meter: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", columnGap: space.inline, rowGap: space.stack },
   meterDots: { flexDirection: "row", gap: space.stack },
   meterDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#DDE3EA" },
@@ -2267,10 +2244,12 @@ const styles = StyleSheet.create({
 
   // The value sits on the name's line and its bar beside the first meta
   // line, however far the words wrap.
-  resultRow: { alignItems: "flex-start" },
+  // Figma "Hol" result row: the 8 wide mark column sits 8 from the words.
+  resultRow: { alignItems: "flex-start", gap: space.inline },
   resultMark: { width: 8, alignItems: "center", alignSelf: "flex-start", marginTop: 6 },
   resultSide: { alignItems: "flex-end", gap: space.mark },
-  resultRowValue: { ...type.value, fontVariant: ["tabular-nums"] },
+  // The value 14 medium in Grey/09, its unit 12 regular a space after.
+  resultRowValue: { ...type.title, color: ink.content, fontVariant: ["tabular-nums"] },
   resultRowUnit: { ...type.unit, fontVariant: [] },
   resultBar: { width: 104 },
 })

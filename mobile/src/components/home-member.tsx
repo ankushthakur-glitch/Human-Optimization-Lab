@@ -7,15 +7,14 @@ import { CountUp, GoalRows, ProgressChart, ScoreRing, WeekBars } from "@/compone
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { RecordSections } from "@/components/home-free"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
-import { IconBloodPressure, IconBowl, IconCamera, IconClock, IconDumbbell, IconScale, IconSparkle, IconWalk } from "@/components/icons"
-import { RecordIcon } from "@/components/record-icons"
+import { RecordGlyph, SparkleGlyph, dotted } from "@/components/home-parts"
+import { Barbell, BowlFood, Camera, Clock, Heartbeat, PersonSimpleWalk, Scales } from "@/components/ph"
 import {
   Block,
   Card,
   Chip,
   ChipRow,
   Group,
-  HUE,
   Hero,
   NeedsRow,
   PlanLine,
@@ -68,7 +67,7 @@ import {
 import { useOnboarding } from "@/lib/onboarding"
 import { livePlan } from "@/lib/plans"
 import { SETUP, nextSetup } from "@/lib/program"
-import { hairline, ink, space, type } from "@/lib/theme"
+import { color, font, hairline, ink, space, type } from "@/lib/theme"
 import { opensPage, orderHref, weekItems, yourMedicines } from "@/lib/todo"
 import { trendCounts } from "@/lib/trends"
 import { keepEnd } from "@/lib/words"
@@ -155,8 +154,9 @@ function prepParts(prep: string): [string, string | undefined] {
   return [prep.slice(0, at), rest.charAt(0).toUpperCase() + rest.slice(1)]
 }
 
-/** The icons on the hero's doors and rows, teal on their tiles. */
-const iconInk = HUE.teal.ink
+/** The icons on the hero's doors and rows: Phosphor, teal on their tiles
+    (Figma "Hol"). */
+const iconInk = color.primary
 
 /** The widest word a door holds on one line at its value size, "Breakfast"
     or "2,000 kcal" (about 75 pt), and a door's padding around it (10 a
@@ -216,7 +216,7 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
     <StatTile
       key="exercise"
       onHero
-      icon={<IconDumbbell size={16} color={iconInk} />}
+      icon={<Barbell size={16} color={iconInk} />}
       value={t.session ? t.session.minutes : "Rest"}
       unit={t.session ? "min" : undefined}
       label="Exercise"
@@ -227,7 +227,7 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
     <StatTile
       key="diet"
       onHero
-      icon={<IconBowl size={16} color={iconInk} />}
+      icon={<BowlFood size={16} color={iconInk} />}
       value={calories?.target ?? 0}
       unit="kcal"
       label="Diet plan"
@@ -241,7 +241,7 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
     <StatTile
       key="meal"
       onHero
-      icon={<IconCamera size={16} color={iconInk} />}
+      icon={<Camera size={16} color={iconInk} />}
       value={allMeals && meal?.progress ? `${meal.progress.done} of ${meal.progress.of}` : SLOT_WORD[slot]}
       label="Log a meal"
       done={allMeals}
@@ -254,7 +254,7 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
     <Hero>
       <View style={styles.heroHead}>
         <View style={styles.heroTitleRow}>
-          <Text style={heroText.title} accessibilityRole="header">
+          <Text style={styles.heroTitle} accessibilityRole="header">
             Today
           </Text>
           <CountUp value={t.done} format={(v) => `${Math.round(v)} of ${t.of} done`} style={heroText.meta} playKey="member:today-done" />
@@ -281,7 +281,7 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
               return (
                 <NeedsRow
                   key="walk"
-                  icon={<IconWalk size={16} color={iconInk} />}
+                  icon={<PersonSimpleWalk size={16} color={iconInk} />}
                   title={a.title}
                   meta={walk ? `Done at ${clockOf(new Date(walk.at))}` : keepEnd(a.detail)}
                   right={<Tick done={!!walk} onPress={toggleWalk} label={a.title} />}
@@ -295,7 +295,7 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
             return (
               <NeedsRow
                 key={a.id}
-                icon={kind === "bp" ? <IconBloodPressure size={16} color={iconInk} /> : <IconScale size={16} color={iconInk} />}
+                icon={kind === "bp" ? <Heartbeat size={16} color={iconInk} /> : <Scales size={16} color={iconInk} />}
                 title={a.title}
                 meta={entry ? `${reading} at ${clockOf(new Date(entry.at))}` : keepEnd(a.detail)}
                 right={entry ? <TickCircle done /> : <SmallAction onPress={() => onCheckIn(kind)} accessibilityLabel={`Add ${kind === "bp" ? "your blood pressure" : "your weight"}`}>Add</SmallAction>}
@@ -306,7 +306,7 @@ function TodayHero({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
           })}
           {!!prepTitle && (
             <NeedsRow
-              icon={<IconClock size={16} color={iconInk} />}
+              icon={<Clock size={16} color={iconInk} />}
               title={prepTitle}
               meta={prepLine && bySentence(prepLine)}
               onPress={() => router.push(orderHref("labs-nov"))}
@@ -357,7 +357,7 @@ function Yesterday() {
   const todayNext = nextMeal(today(onboarding).actions.find((a) => a.id === "meal"))
 
   return (
-    <Block title="Yesterday" variant="title" meta={y.label}>
+    <Block title="Yesterday" meta={y.label}>
       <Card onPress={openDay} style={styles.cardBody}>
         <View style={styles.dayTop}>
           <ScoreRing percent={complete ? y.percent : undefined} size={96} stroke={10} label={none ? "No log" : "Partial"} playKey="member:yesterday" />
@@ -407,17 +407,16 @@ function ThisWeek() {
   const items = weekItems(onboarding)
   const openToDo = () => openTab("/gaps", "home")
   return (
-    <Block title="This week" variant="title" onSeeAll={openToDo}>
+    <Block title="This week" onSeeAll={openToDo}>
       {items.length ? (
         <Group>
           {items.map((i) => (
             <NeedsRow
               key={i.id}
               date={i.date}
-              icon={i.date ? undefined : <RecordIcon name={i.icon} size={18} color={HUE[i.hue].ink} />}
-              hue={i.hue}
+              icon={i.date ? undefined : <RecordGlyph name={i.icon} />}
               title={i.title}
-              meta={keepEnd(i.meta)}
+              meta={dotted(i.meta, keepEnd)}
               // The fasting note whole in its two lines, its last sentence
               // ("Water is fine.") never split.
               note={i.note && bySentence(i.note)}
@@ -425,6 +424,7 @@ function ThisWeek() {
               // A starting test booked in setup has no page of its own, as on
               // To do: its row is all there is, so it is not a button.
               onPress={opensPage(i) ? () => router.push(i.href) : undefined}
+              chevron={false}
             />
           ))}
         </Group>
@@ -539,7 +539,7 @@ function SinceYouStarted() {
   }
 
   return (
-    <Block title="Since you started" variant="title" link={{ label: "See progress", onPress: openProgress }}>
+    <Block title="Since you started" link={{ label: "See progress", onPress: openProgress }}>
       <Card onPress={openProgress} style={styles.cardBody}>
         <View style={styles.sinceTop}>
           <View style={styles.sinceWords}>
@@ -652,24 +652,22 @@ function YourRecord() {
   const counts = trendCounts(useMarkers())
   const meds = yourMedicines(onboarding)
   return (
-    <Block title="Your record" variant="title">
+    <Block title="Your record">
       <Group>
         <NeedsRow
-          icon={<RecordIcon name="labs" size={18} color={HUE.green.ink} />}
-          hue="green"
+          icon={<RecordGlyph name="labs" />}
           title="Results and trends"
           meta={`${counts.total} results, ${counts.toWatch} to watch`}
           onPress={() => openTab("/results", "home")}
         />
         <NeedsRow
-          icon={<RecordIcon name="medications" size={18} color={HUE.violet.ink} />}
-          hue="violet"
+          icon={<RecordGlyph name="medications" />}
           title="Your medicines"
           meta={meds.line}
           onPress={() => router.push("/medications")}
         />
         <NeedsRow
-          icon={<RecordIcon name="chart" size={18} color={HUE.teal.ink} />}
+          icon={<RecordGlyph name="chart" />}
           title="History"
           meta={keepEnd("Every day, weigh in and reading since May")}
           onPress={() => router.push("/history")}
@@ -696,7 +694,7 @@ function SetupStage() {
           <Hero>
             <View style={styles.stageTop}>
               <View style={styles.stageWords}>
-                <Text style={heroText.title} accessibilityRole="header">
+                <Text style={styles.heroTitle} accessibilityRole="header">
                   Finish setting up your plan
                 </Text>
                 {next && <Text style={heroText.line}>{`Step ${step} of ${SETUP.length}: ${next.title}`}</Text>}
@@ -745,7 +743,7 @@ function ReviewStage() {
           <Hero>
             <View style={styles.stageTop}>
               <View style={styles.stageWords}>
-                <Text style={heroText.title} accessibilityRole="header">
+                <Text style={styles.heroTitle} accessibilityRole="header">
                   Your plan is with Dr. Patel
                 </Text>
                 <Text style={heroText.line}>{bySentence("It starts once it's approved. Billing starts then too.")}</Text>
@@ -755,19 +753,19 @@ function ReviewStage() {
             <Text style={styles.heroLabel}>While you wait</Text>
             <Group inset>
               <NeedsRow
-                icon={<RecordIcon name="labs" size={16} color={iconInk} />}
+                icon={<RecordGlyph name="labs" />}
                 title="Your starting tests"
                 meta={testsLine(onboarding.tests)}
                 onPress={() => openTab("/gaps", "home")}
               />
               <NeedsRow
-                icon={<IconCamera size={16} color={iconInk} />}
+                icon={<Camera size={16} color={iconInk} />}
                 title="Try logging a meal"
                 meta={keepEnd("Your totals show once your targets arrive")}
                 onPress={() => router.push("/log-meal")}
               />
               <NeedsRow
-                icon={<IconSparkle size={16} color={iconInk} />}
+                icon={<SparkleGlyph size={16} tone={iconInk} />}
                 title="Ask about your plan"
                 meta={keepEnd("How it was built and what happens next")}
                 onPress={() => router.push({ pathname: "/assistant", params: { topic: "plan" } } as Href)}
@@ -793,11 +791,13 @@ const styles = StyleSheet.create({
   rule: { height: 1, backgroundColor: hairline.edge },
   meta: { ...type.meta },
   body: { ...type.body },
-  cardTitle: { ...type.section, flexShrink: 1 },
+  cardTitle: { ...type.title, flexShrink: 1 },
 
   // Today: the title row, the bar and the focus line, each a label's
   // distance from the next.
   heroHead: { gap: space.inline },
+  // The Figma banner's title: 14 medium in white.
+  heroTitle: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: ink.onColor },
   // Two rows of doors sit as far apart as the doors in a row.
   doors: { gap: space.inline },
   heroTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },

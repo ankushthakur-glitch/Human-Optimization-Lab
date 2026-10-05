@@ -1,11 +1,11 @@
 import { router } from "expo-router"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
-import { IconCheck, IconChevronRight } from "@/components/icons"
+import { CaretRight, Check } from "@/components/ph"
 import { HUE } from "@/components/record-kit"
 import { moveDone, prescription, type ActivityLog, type Exercise } from "@/lib/member"
 import type { useOnboarding } from "@/lib/onboarding"
-import { chart, color, ink, space, type } from "@/lib/theme"
+import { card, chart, color, ink, space, type } from "@/lib/theme"
 
 /* The pieces today's exercise and one exercise share (FINAL-SPEC C.19,
    C.20): the numbered mark a move carries in the session and a cue carries
@@ -33,16 +33,16 @@ export function goBack(fallback: "/" | "/exercise") {
   else router.navigate(fallback)
 }
 
-/** The numbered mark's size: Frontline's 24 pt step circle. A line of text
+/** The numbered mark's size: the Figma "Hol" row tile, round 28. A line of text
     beside it centres on it with (MARK_SIZE - lineHeight) / 2 above. */
-export const MARK_SIZE = 24
+export const MARK_SIZE = 28
 
 /** A move's or a step's number on the teal tint; a green check once the
     move is done. */
 export function NumberMark({ n, done }: { n: number; done?: boolean }) {
   return (
     <View style={[styles.mark, done && styles.markDone]}>
-      {done ? <IconCheck size={13} color={color.onPrimary} strokeWidth={2.6} /> : <Text style={styles.markText}>{n}</Text>}
+      {done ? <Check size={14} color={color.onPrimary} weight="bold" /> : <Text style={styles.markText}>{n}</Text>}
     </View>
   )
 }
@@ -65,14 +65,14 @@ export function ExerciseRow({ n, move, log, onPress }: { n: number; move: Exerci
         <Text style={type.label}>{prescription(move)}</Text>
         {!!part && <Text style={styles.note}>{part}</Text>}
       </View>
-      <IconChevronRight size={16} color={ink.tertiary} />
+      <CaretRight size={16} color={card.chevron} />
     </Pressable>
   )
 }
 
 /** The walk's tick: an empty ring, then a green check once done. */
 export function TickCircle({ done }: { done: boolean }) {
-  return <View style={[styles.tick, done && styles.tickDone]}>{done && <IconCheck size={13} color={color.onPrimary} strokeWidth={2.6} />}</View>
+  return <View style={[styles.tick, done && styles.tickDone]}>{done && <Check size={14} color={color.onPrimary} weight="bold" />}</View>
 }
 
 const styles = StyleSheet.create({
@@ -81,11 +81,10 @@ const styles = StyleSheet.create({
   markDone: { backgroundColor: chart.inRange },
   // Frontline's step number: 12 medium in the text teal.
   markText: { ...type.metaStrong, color: ink.primary, fontVariant: ["tabular-nums"] },
-  // The kit row's metrics (NeedsRow), so the moves and the walk sit alike;
-  // the 24 pt mark keeps an icon's gap to its words, as Frontline's step
-  // circle does.
-  row: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingVertical: space.rowY },
-  rowBody: { flex: 1, gap: space.line },
+  // The kit row's metrics (NeedsRow), so the moves and the walk sit alike:
+  // the 28 tile 12 from its words, the meta 4 under the title.
+  row: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
+  rowBody: { flex: 1, gap: space.stack },
   // The kit row's teal note line (NeedsRow's `note`).
   note: { ...type.metaStrong, color: ink.primary },
   // The ring is the kit's resting mark grey (a step not reached yet).

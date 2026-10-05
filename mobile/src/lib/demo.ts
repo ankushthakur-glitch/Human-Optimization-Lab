@@ -1,7 +1,7 @@
 import type { Answers } from "@/lib/conversation"
 import { dayKey, monthKey, showDate } from "@/lib/dates"
 import { BONE_SAMPLE_MEALS, BONE_VERSIONS, MEMBER_SCORES, PLAN_VERSIONS, SAMPLE_MEALS, addDays, clock, dayLabel, profileOf, thisWeek } from "@/lib/member"
-import type { useOnboarding } from "@/lib/onboarding"
+import type { PastChat, useOnboarding } from "@/lib/onboarding"
 import { DEMOGRAPHICS, PATIENT } from "@/lib/patient"
 import { BASELINE, SETUP } from "@/lib/program"
 import { localIso } from "@/lib/todo"
@@ -122,6 +122,7 @@ const BLANK: Patch = {
   allowance: undefined,
   asked: undefined,
   chat: undefined,
+  chats: undefined,
   offers: undefined,
   meals: undefined,
   entries: undefined,
@@ -195,6 +196,7 @@ function free(): Patch {
     offers: { sessions: 3 },
     oneStep: [dayKey(on(-1))],
     added: [{ id: "added-scan", title: "Body composition scan", detail: "8 values read, 1 being checked", at: "Jul 18, 2026", unclear: 1 }],
+    chats: pastChats(),
     questions: [],
     scores: [],
     seen: [],
@@ -248,6 +250,7 @@ function member(): Patch {
     meds: MEDS_ANSWERED(),
     scores: MEMBER_SCORES,
     offers: { sessions: 40 },
+    chats: pastChats(true),
     // The oldest reminder was read long ago: three new on the bell.
     seen: ["m-mammogram"],
   }
@@ -358,4 +361,70 @@ export const DEMOS: Record<DemoId, () => Patch> = {
   "onboarding-signin": firstRun,
   // Is this you already answered, as that step saves it.
   "onboarding-consent": () => ({ ...firstRun(), step: "consent", profile: { ...DEMOGRAPHICS } }),
+}
+
+/* ------------------------------------------------------ chat history -- */
+
+/** One past conversation for the assistant's chat history: her question,
+    the answer, a day T minus `daysAgo` at a time of day. The messages take
+    the assistant thread's own shape (app/assistant.tsx), so a past chat
+    opens as it was. */
+function pastChat(id: string, topic: PastChat["topic"], title: string, daysAgo: number, h: number, m: number, said: string[]): PastChat {
+  const at = on(-daysAgo, h, m)
+  const messages = said.map((text, i) => ({
+    id: `${id}-${i}`,
+    at: clock(h, m + i),
+    kind: "text",
+    from: i % 2 === 0 ? "patient" : "assistant",
+    text,
+  }))
+  return { id, title, topic, startedAt: at.toISOString(), lastAt: new Date(at.getTime() + said.length * 60000).toISOString(), messages }
+}
+
+/** Olivia's past chats, newest first: her record's results, her two
+    medicine differences, her visits, and for a member her plan. */
+function pastChats(member = false): PastChat[] {
+  const chats = [
+    pastChat("past-a1c", "result", "Why is my A1c going up?", 1, 19, 10, [
+      "Why is my A1c going up?",
+      "Your A1c was 5.9% on Aug 14, up from 5.7% a year before. That is in the prediabetes range. Meals, sleep and activity all move it, and a repeat test in three months shows the direction.",
+    ]),
+    pastChat("past-atorvastatin", "medicine", "Atorvastatin dose difference", 2, 20, 5, [
+      "Why do my lists show two doses of atorvastatin?",
+      "Dr. Patel's list from Aug 12 says 20 mg once a day. The hospital's list from Jun 3 says 10 mg. The newer one is likely the current dose, so tell us which one you take and Dr. Patel's team will confirm.",
+    ]),
+    pastChat("past-dr-lee", "visit", "What to ask Dr. Lee", 3, 8, 40, [
+      "What should I ask Dr. Lee at my cardiology follow up?",
+      "Three good ones: what the echocardiogram is looking for, whether your blood pressure of 134/86 needs a change, and how your LDL of 162 fits with your heart risk. I saved them to your visit.",
+    ]),
+    pastChat("past-ldl", "result", "Is my LDL cholesterol high?", 6, 12, 25, [
+      "Is my LDL cholesterol high?",
+      "Yes. It was 162 mg/dL on Aug 14, above the range of below 100. Atorvastatin is meant to bring it down, and the next lipid panel shows how well it is working.",
+    ]),
+    pastChat("past-lisinopril", "medicine", "Lisinopril and a dry cough", 9, 21, 0, [
+      "Can lisinopril cause a dry cough?",
+      "It can. A dry, tickly cough is a known side effect of lisinopril. Don't stop it on your own: mention it to Dr. Patel, who can switch you to another medicine if it bothers you.",
+    ]),
+    pastChat("past-vitamin-d", "result", "Vitamin D level explained", 13, 9, 15, [
+      "What does my vitamin D result mean?",
+      "Your vitamin D was 21 ng/mL, below the range of 30 to 100. Low vitamin D is common and can leave you tired. The 2,000 IU you added is a usual dose, and a repeat test shows if it is enough.",
+    ]),
+    pastChat("past-tired", "other", "Feeling tired in the afternoons", 18, 15, 30, [
+      "I feel tired most afternoons. Should I worry?",
+      "Many things cause it, and two in your record can: low vitamin D and blood sugar in the prediabetes range. If it is new or getting worse, bring it up with Dr. Patel.",
+    ]),
+  ]
+  if (!member) return chats
+  return [
+    pastChat("past-dinner", "plan", "Swapping dinner for chicken", 1, 17, 20, [
+      "Can I swap tonight's salmon for chicken?",
+      "Yes. Grilled chicken keeps tonight's protein on target. Keep the vegetables and the half cup of brown rice as planned.",
+    ]),
+    ...chats.slice(0, 4),
+    pastChat("past-walk", "plan", "Is a 20 minute walk enough?", 5, 19, 50, [
+      "Is a 20 minute walk after dinner enough?",
+      "For now, yes. Your plan builds to 30 minutes over the next two weeks. A walk after dinner also helps your blood sugar after the meal.",
+    ]),
+    ...chats.slice(4, 6),
+  ]
 }

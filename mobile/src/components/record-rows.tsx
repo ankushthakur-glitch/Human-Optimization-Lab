@@ -1,24 +1,23 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { Platform, Pressable, StyleSheet, Text, TextInput, View, type TextStyle } from "react-native"
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextStyle } from "react-native"
 
 import { keepTogether } from "@/components/care-gap"
-import { IconCamera, IconCheck, IconChevronRight, IconClose, IconKeyboard, IconSearch } from "@/components/icons"
-import { List, ListRow } from "@/components/list"
+import { Camera, CaretRight, MagnifyingGlass, Notepad, X } from "@/components/ph"
 import { RecordIcon, type RecordIconName } from "@/components/record-icons"
-import { Block, DateBlock, DateTrack, Dot, KeyValue, Status, Tag, Tile, spokenDate, type DateLike, type Level, type Mark, type Tone, type TrackDate } from "@/components/record-kit"
+import { Card, DateBlock, DateTrack, Dot, KeyValue, Tag, Tile, spokenDate, type DateLike, type Level, type Mark, type Tone, type TrackDate } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
-import { dateOfAt } from "@/lib/member"
 import { PROVENANCE_LABEL, type Provenance } from "@/lib/record"
-import { chart, color, hairline, ink, space, touchRadius, type } from "@/lib/theme"
+import { card, chart, color, font, hairline, ink, outOfRangeColor, space, surface, type } from "@/lib/theme"
 
-/* The rows and the item sheet the Record tab and its lists share (FINAL-
-   SPEC C.5, C.6). A row says what an item is, where it stands as a mark
-   and a word ("Records differ" with a clay ring, "Not booked yet" with a
-   dot), one line of facts, and a count or a date on the right; the whole
-   row opens it. The sheet is the approved one from sheet.tsx: the item's
-   name, where it comes from as one provenance label (S-13), its details
-   and its source, short enough that it never needs to scroll. */
+/* The rows, controls and sheets the Record tab and its lists share, in the
+   Figma "Hol" language (5 Oct 2026). A row is a round 28 tile with a 16
+   Phosphor icon, the title, one line of facts 4 under it, a count badge or
+   a date on the right and the grey caret; the whole row opens it. Filter
+   chips, the search field and the "20 of 27 in range" summary are drawn
+   here once, so Results, the Record tab and every list read the same. The
+   item sheet is the Figma's detail sheet: the name with its badge, then
+   one card of label and value rows. */
 
 /** A status as a mark and a word: a dot, a clay ring (records differ,
     borderline), a filled clay dot (a test not booked past its due date), a
@@ -44,6 +43,15 @@ function StatusLine({ status }: { status: RowStatus }) {
   )
 }
 
+/** Figma's count badge: a 10 pt number on a grey pill with a hairline. */
+export function CountBadge({ children }: { children: number | string }) {
+  return (
+    <View style={styles.badge}>
+      <Text style={styles.badgeText}>{String(children)}</Text>
+    </View>
+  )
+}
+
 export type ItemRowProps = {
   /** A record icon on a teal tile, or any node in its place. */
   icon?: RecordIconName | React.ReactNode
@@ -60,7 +68,7 @@ export type ItemRowProps = {
   note?: string
   /** A test's three dates under the row: ordered, scheduled, done. */
   track?: { dates: TrackDate[]; late?: boolean }
-  /** A count on the right, as a value ("5"). */
+  /** A count on the right, as the Figma's badge ("5"). */
   count?: number | string
   /** A date on the right ("Aug 12"). */
   when?: string
@@ -77,7 +85,7 @@ export function ItemRow({ icon, date, title, tag, status, meta, note, track, cou
   ) : icon ? (
     isIconName(icon) ? (
       <Tile>
-        <RecordIcon name={icon} size={18} color={color.primary} />
+        <RecordIcon name={icon} size={16} color={color.primary} />
       </Tile>
     ) : (
       icon
@@ -103,17 +111,17 @@ export function ItemRow({ icon, date, title, tag, status, meta, note, track, cou
           <Text style={styles.title}>{keepTogether(title)}</Text>
         )}
         {status && <StatusLine status={status} />}
-        {!!meta && <Text style={type.label}>{keepTogether(meta)}</Text>}
-        {!!note && <Text style={styles.note}>{keepTogether(note)}</Text>}
+        {!!meta && <Text style={styles.meta}>{keepTogether(meta)}</Text>}
+        {!!note && <Text style={styles.meta}>{keepTogether(note)}</Text>}
         {track && (
           <View style={styles.track}>
             <DateTrack mini dates={track.dates} late={track.late} />
           </View>
         )}
       </View>
-      {count !== undefined && <Text style={styles.count}>{String(count)}</Text>}
+      {count !== undefined && <CountBadge>{count}</CountBadge>}
       {!!when && <Text style={styles.when}>{when}</Text>}
-      {onPress && <IconChevronRight size={16} color={ink.tertiary} />}
+      {onPress && <CaretRight size={16} color={card.chevron} />}
     </>
   )
   const look = [styles.row, (!!track || !!note) && styles.rowTop]
@@ -127,6 +135,86 @@ export function ItemRow({ icon, date, title, tag, status, meta, note, track, cou
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [...look, pressed && styles.pressed]}>
       {body}
     </Pressable>
+  )
+}
+
+/* -------------------------------------------------------- summary -- */
+
+/** "20 of 27 in range": the record's results as one 8 pt bar split in
+    range (teal), borderline (Warning/07) and out of range, white hairlines
+    between the parts, and a legend of dots and counts, so nothing rests on
+    colour alone (Figma "Results" card). */
+export function RangeSummary({ inRange, borderline, out, total }: { inRange: number; borderline: number; out: number; total: number }) {
+  const parts = [
+    { key: "in", n: inRange, tone: color.primary, label: `${inRange} in range` },
+    { key: "borderline", n: borderline, tone: color.amber, label: `${borderline} borderline` },
+    { key: "out", n: out, tone: outOfRangeColor(), label: `${out} out of range` },
+  ].filter((p) => p.n > 0)
+  return (
+    <View style={styles.summary} accessible accessibilityRole="summary" accessibilityLabel={`${inRange} of ${total} in range. ${parts.map((p) => p.label).join(", ")}.`}>
+      <View style={styles.summaryTop}>
+        <Text style={styles.summaryTitle}>{`${inRange} of ${total} in range`}</Text>
+        <View style={styles.bar}>
+          {parts.map((p, i) => (
+            <View key={p.key} style={[{ flexGrow: p.n, flexBasis: 0, backgroundColor: p.tone }, i > 0 && styles.barSplit]} />
+          ))}
+        </View>
+      </View>
+      <View style={styles.legend}>
+        {parts.map((p) => (
+          <View key={p.key} style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: p.tone }]} />
+            <Text style={styles.legendText}>{p.label}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  )
+}
+
+/* ---------------------------------------------------------- chips -- */
+
+/** Figma's filter chips: 28 pills 8 apart, the chosen one on the teal tint
+    with a Primary/03 edge, the rest white at 60% with a hairline. One is
+    chosen at a time. `scroll` keeps many chips on one line that scrolls
+    sideways to the screen's edges (the Timeline's six kinds). */
+export function FilterChips<T extends string>({
+  options,
+  value,
+  onChange,
+  label,
+  scroll,
+}: {
+  options: { value: T; label: string }[]
+  value: T
+  onChange: (value: T) => void
+  label?: string
+  scroll?: boolean
+}) {
+  const chips = (
+    <View style={[styles.chips, scroll && styles.chipsLine]} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      {options.map((o) => {
+        const on = o.value === value
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => onChange(o.value)}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: on }}
+            aria-checked={on}
+            style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}
+          >
+            <Text style={[styles.chipText, on && styles.chipTextOn]}>{o.label}</Text>
+          </Pressable>
+        )
+      })}
+    </View>
+  )
+  if (!scroll) return chips
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsBleed} contentContainerStyle={styles.chipsScroll}>
+      {chips}
+    </ScrollView>
   )
 }
 
@@ -152,81 +240,72 @@ const PROVENANCE_TONE: Record<Provenance, Tone> = {
   ai: "muted",
 }
 
-function Rows({ title, rows }: { title: string; rows: [string, string][] }) {
-  return (
-    <Block title={title}>
-      <View>
-        {rows.map(([label, value], i) => (
-          <KeyValue key={label} label={label} value={value} last={i === rows.length - 1} />
-        ))}
-      </View>
-    </Block>
-  )
-}
-
-/** One item's details over the screen (sheet.tsx, used as it is). */
+/** One item's details over the screen, as the Figma's detail sheet: the
+    name with its badge in the header, then one card of label and value
+    rows, the item's facts first and where it comes from after. */
 export function ItemSheet({ item, onClose }: { item: ItemDetail; onClose: () => void }) {
+  const rows = [...item.details, ...(item.source ?? [])]
   return (
-    <Sheet title={item.title} onClose={onClose}>
-      {item.provenance && (
-        <View style={styles.provenance}>
-          <Status tone={PROVENANCE_TONE[item.provenance]}>{PROVENANCE_LABEL[item.provenance]}</Status>
-        </View>
-      )}
-      <Rows title="Details" rows={item.details} />
-      {!!item.source?.length && <Rows title="Where it comes from" rows={item.source} />}
+    <Sheet title={item.title} titleRight={item.provenance && <Tag tone={PROVENANCE_TONE[item.provenance]}>{PROVENANCE_LABEL[item.provenance]}</Tag>} onClose={onClose}>
+      <Card style={styles.detail}>
+        {rows.map(([label, value], i) => (
+          <KeyValue key={`${label}${i}`} label={label} value={value} last={i === rows.length - 1} />
+        ))}
+      </Card>
     </Sheet>
   )
 }
 
-/** "Add to your record": a photo of a report, or something she tells us
-    (F-95). The Record tab opens it, and "Added by you" when nothing is
-    there yet. */
+/** "Add to your record" (Figma 40024625:205653): a photo of a record, or
+    something she tells us (F-95). The Record tab opens it, and "Added by
+    you" when nothing is there yet. */
 export function AddToRecordSheet({ onClose }: { onClose: () => void }) {
   const go = (path: "/add-report" | "/tell-us") => {
     onClose()
     router.push(path)
   }
+  const options = [
+    { title: "Photo of a record", Icon: Camera, path: "/add-report" as const },
+    { title: "Tell us something", Icon: Notepad, path: "/tell-us" as const },
+  ]
   return (
     <Sheet title="Add to your record" onClose={onClose}>
-      <List>
-        <ListRow
-          icon={
+      <View>
+        {options.map(({ title, Icon, path }, i) => (
+          <Pressable
+            key={path}
+            onPress={() => go(path)}
+            accessibilityRole="button"
+            accessibilityLabel={title}
+            style={({ pressed }) => [styles.option, i > 0 && styles.optionRule, pressed && styles.pressed]}
+          >
             <Tile>
-              <IconCamera size={18} color={color.primary} />
+              <Icon size={16} color={color.primary} />
             </Tile>
-          }
-          title="Photo of a report"
-          onPress={() => go("/add-report")}
-        />
-        <ListRow
-          icon={
-            <Tile>
-              <IconKeyboard size={18} color={color.primary} />
-            </Tile>
-          }
-          title="Tell us something"
-          onPress={() => go("/tell-us")}
-        />
-      </List>
+            <Text style={styles.optionTitle}>{title}</Text>
+            <CaretRight size={16} color={card.chevron} />
+          </Pressable>
+        ))}
+      </View>
     </Sheet>
   )
 }
 
 /* ----------------------------------------------------------- search -- */
 
-/** A search box on the page: the magnifier, the words, and a clear button
-    once something is typed. Its label is spoken, not shown. */
+/** Figma's search field: the magnifier and the words on Grey/01 with a
+    hairline, radius 8, and a clear button once something is typed. Its
+    label is spoken, not shown. */
 export function SearchField({ value, onChange, placeholder }: { value: string; onChange: (text: string) => void; placeholder: string }) {
   const [focused, setFocused] = React.useState(false)
   return (
     <View style={[styles.search, focused && styles.searchFocused]}>
-      <IconSearch size={18} color={focused ? color.primary : ink.tertiary} />
+      <MagnifyingGlass size={20} color={focused ? color.primary : ink.detail} />
       <TextInput
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor={ink.tertiary}
+        placeholderTextColor={PLACEHOLDER}
         accessibilityLabel={placeholder}
         autoCorrect={false}
         autoCapitalize="none"
@@ -237,62 +316,115 @@ export function SearchField({ value, onChange, placeholder }: { value: string; o
         maxFontSizeMultiplier={1.3}
       />
       {!!value && (
-        <Pressable onPress={() => onChange("")} hitSlop={10} accessibilityRole="button" accessibilityLabel="Clear search" style={({ pressed }) => [styles.clear, pressed && styles.pressed]}>
-          <IconClose size={14} color={color.onPrimary} />
+        <Pressable
+          onPress={() => onChange("")}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Clear search"
+          style={({ pressed }) => [styles.clear, pressed && styles.pressed]}
+        >
+          <X size={12} color={color.onPrimary} />
         </Pressable>
       )}
     </View>
   )
 }
 
+/** Figma's Grey/05 placeholder and Grey/01 field. */
+const PLACEHOLDER = "#B7B7B7"
+const FIELD = "#FBFBFB"
+
 const styles = StyleSheet.create({
-  // A 36 tile with a row's 12 above and below: 60, as the kit's rows and
-  // Frontline's tile rows come to. Rows with no tile (Conditions,
-  // Immunizations) keep that height.
-  row: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY, minHeight: 60 },
+  // A 28 tile with a row's 12 above and below; the rules sit between rows.
+  row: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
   rowTop: { alignItems: "flex-start" },
   pressed: { opacity: 0.6 },
-  body: { flex: 1, gap: space.line },
+  body: { flex: 1, gap: space.stack },
   titleLine: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: space.inline, rowGap: space.stack },
   title: { ...type.title, flexShrink: 1 },
-  // A third line sits 4 under the second, as in Frontline's three line rows.
-  note: { ...type.label, marginTop: space.line },
+  meta: { ...type.label },
   track: { marginTop: space.inline, marginBottom: space.line },
-  count: { ...type.value, fontVariant: ["tabular-nums"] },
-  // A date on the right is a timestamp, quieter than the title: the kit's
-  // row date (Frontline's 12 regular in Grey/07).
   when: { ...type.label, fontVariant: ["tabular-nums"] },
+
+  badge: {
+    minWidth: 20,
+    alignItems: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: hairline.outline,
+    backgroundColor: surface.inset,
+  },
+  badgeText: { ...type.captionStrong, color: ink.detail, fontVariant: ["tabular-nums"] },
 
   status: { flexDirection: "row", alignItems: "center", gap: space.mark },
   statusWord: { ...type.metaStrong, flexShrink: 1 },
 
-  // Pulled 6 toward the sheet's title (its 16 less 6: Frontline's 10), so
-  // the label reads as the title's own line.
-  provenance: { flexDirection: "row", marginTop: -6 },
+  // The title 8 over the bar, the legend 12 under it.
+  summary: { gap: space.item },
+  summaryTop: { gap: space.inline },
+  summaryTitle: { ...type.title, color: ink.detail },
+  bar: { flexDirection: "row", height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: hairline.rule },
+  barSplit: { borderLeftWidth: 1, borderLeftColor: color.background },
+  legend: { flexDirection: "row", flexWrap: "wrap", columnGap: space.gutter, rowGap: space.mark },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: space.mark },
+  legendDot: { width: 6, height: 6, borderRadius: 3 },
+  legendText: { ...type.label, color: ink.content },
+
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
+  chipsLine: { flexWrap: "nowrap" },
+  // The row runs under the page's gutter to the screen's edges; the shadow
+  // gets room above and below.
+  chipsBleed: { marginHorizontal: -space.gutter, marginVertical: -space.inline },
+  chipsScroll: { paddingHorizontal: space.gutter, paddingVertical: space.inline },
+  chip: {
+    height: 28,
+    justifyContent: "center",
+    paddingHorizontal: 10.5,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: hairline.outline,
+    backgroundColor: card.fill,
+    boxShadow: card.shadow,
+  },
+  chipOn: { borderWidth: 0.7, borderColor: color.primaryLine, backgroundColor: color.primaryTint, boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)" },
+  chipText: { ...type.label, color: ink.content },
+  chipTextOn: { color: ink.primary },
+
+  // The sheet's one card of label and value rows; each row brings its own
+  // 12 above and below.
+  detail: { paddingVertical: 0 },
+
+  option: { flexDirection: "row", alignItems: "center", gap: space.lead },
+  // Rows 16 apart across a rule, as the Figma's sheet sets them.
+  optionRule: { marginTop: space.gutter, paddingTop: space.gutter, borderTopWidth: 1, borderTopColor: hairline.rule },
+  optionTitle: { ...type.title, flex: 1 },
 
   search: {
     flexDirection: "row",
     alignItems: "center",
     gap: space.inline,
-    height: 44,
-    paddingHorizontal: space.compact,
-    borderRadius: touchRadius,
+    height: 42,
+    paddingHorizontal: space.gutter,
+    borderRadius: 8,
     borderWidth: 1,
-    // A field's edge, as the chips' beside it (Frontline's inputs).
     borderColor: hairline.outline,
-    backgroundColor: color.background,
+    backgroundColor: FIELD,
   },
-  searchFocused: { borderColor: color.primary, boxShadow: `0 0 0 3px ${color.primaryHalo}` },
-  // Frontline's input text: Body/14 in the title grey. No line height, which
-  // a single line field on iOS would clip.
+  searchFocused: { borderColor: color.primary },
+  // Body/14 in the title grey. No line height, which a single line field
+  // on iOS would clip.
   searchInput: {
     flex: 1,
     height: "100%",
-    fontFamily: type.body.fontFamily,
-    fontSize: type.body.fontSize,
+    fontFamily: font.regular,
+    fontSize: 14,
     color: ink.strong,
     // The box draws the focus state; the browser's own ring would double it.
-    ...Platform.select({ web: { outlineStyle: "none" } as unknown as TextStyle }),
+    ...Platform.select({
+      web: { outlineStyle: "none" } as unknown as TextStyle,
+    }),
   },
-  clear: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#A3ACB9", alignItems: "center", justifyContent: "center" },
+  clear: { width: 20, height: 20, borderRadius: 10, backgroundColor: chart.rule, alignItems: "center", justifyContent: "center" },
 })

@@ -294,6 +294,7 @@ export function Directory<T extends { id: string }>({
   exportName,
   exportRow,
   emptyIllustration,
+  initialFilters,
 }: {
   /** The page's name, for screen readers: the toolbar carries no title. */
   title: string
@@ -315,10 +316,14 @@ export function Directory<T extends { id: string }>({
   /** One row of the Excel export, keyed by column header. */
   exportRow: (row: T) => ExportRow
   emptyIllustration: IllustrationName
+  /** Filter values to open with, keyed by filter id (e.g. from a link). */
+  initialFilters?: Record<string, string>
 }) {
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState("all")
-  const [values, setValues] = React.useState<Record<string, string>>({})
+  const [values, setValues] = React.useState<Record<string, string>>(
+    initialFilters ?? {}
+  )
   const [selected, setSelected] = React.useState<string[]>([])
 
   const filtered = React.useMemo(() => {

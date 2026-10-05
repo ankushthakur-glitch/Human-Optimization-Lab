@@ -2,10 +2,10 @@ import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { ActivityIndicator, Animated, Easing, Platform, StyleSheet, Text, View } from "react-native"
 
-import { Art } from "@/components/art"
 import { useReducedMotion } from "@/components/chat"
 import { FlowScreen } from "@/components/flow"
-import { IconMic } from "@/components/icons"
+import { PrimaryButton } from "@/components/hol"
+import { Camera, ForkKnife, Microphone, PencilSimple } from "@/components/ph"
 import { Block, Card, Chip, ChipRow, Group, HUE, NeedsRow, SmallAction, Tag, TextAction } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { Kcal, TotalsHead, isSlot, kcalWords, logDay, nutrientLine, recentMeals, saveLabel, slotName, type LogDay } from "@/components/today-food-meals"
@@ -25,7 +25,7 @@ import { toast } from "@/components/toast"
 import { Button, TextField } from "@/components/ui"
 import { MEAL_SLOTS, clockOf, mealLine, mealName, profileOf, slotAt, totalsOf, type Food, type Meal, type MealSlot, type NutrientId } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { color, space, type } from "@/lib/theme"
+import { color, font, ink, space, type } from "@/lib/theme"
 import { formatNumber } from "@/lib/trends"
 
 /* Log a meal (FINAL-SPEC C.22): logging that takes two taps and never
@@ -142,9 +142,9 @@ export default function LogMealScreen() {
         title="Log a meal"
         onBack={toCapture}
         footer={
-          <Button onPress={go} disabled={!typed.trim()}>
+          <PrimaryButton onPress={go} disabled={!typed.trim()}>
             Continue
-          </Button>
+          </PrimaryButton>
         }
       >
         <TextField
@@ -170,14 +170,15 @@ export default function LogMealScreen() {
         <ChipRow options={MEAL_SLOTS.map((m) => ({ value: m.id, label: m.name }))} value={slot} onChange={setSlot} />
       </View>
 
-      <Card style={styles.capture}>
-        <Art name="camera" size={96} style={styles.art} />
-        <Button onPress={() => setStep({ at: "reading" })}>Take a photo</Button>
-        <View style={styles.smallActions}>
-          <SmallAction onPress={() => setStep({ at: "listening" })}>Say it</SmallAction>
-          <SmallAction onPress={() => setStep({ at: "typing" })}>Type it</SmallAction>
-        </View>
-      </Card>
+      {/* Three ways in, as rows: a photo first, then her voice, then
+          typing. */}
+      <Block title="Log it">
+        <Group>
+          <NeedsRow icon={<Camera size={16} color={HUE.teal.ink} />} title="Take a photo" onPress={() => setStep({ at: "reading" })} />
+          <NeedsRow icon={<Microphone size={16} color={HUE.teal.ink} />} title="Say it" onPress={() => setStep({ at: "listening" })} />
+          <NeedsRow icon={<PencilSimple size={16} color={HUE.teal.ink} />} title="Type it" onPress={() => setStep({ at: "typing" })} />
+        </Group>
+      </Block>
 
       {recent.length > 0 && (
         <Block title="Log again">
@@ -189,6 +190,7 @@ export default function LogMealScreen() {
               return (
                 <NeedsRow
                   key={m.id}
+                  icon={<ForkKnife size={16} color={HUE.teal.ink} />}
                   title={mealName(m)}
                   meta={mealLine(m, profile)}
                   right={
@@ -272,7 +274,7 @@ function ListeningPanel({ transcript, onDone }: { transcript: string; onDone: ()
       <View style={styles.mic}>
         {!still && <Animated.View style={[styles.micRing, { opacity, transform: [{ scale }] }]} />}
         <View style={styles.micCore}>
-          <IconMic size={28} color={HUE.teal.ink} />
+          <Microphone size={28} color={HUE.teal.ink} />
         </View>
       </View>
       <View style={styles.panelWords}>
@@ -362,9 +364,9 @@ function CheckStep({
         title={editing ? `Edit ${slotName(editing.slot).toLowerCase()}` : "Log a meal"}
         onBack={onBack}
         footer={
-          <Button onPress={() => onSave(draft)} disabled={!kept.length}>
+          <PrimaryButton onPress={() => onSave(draft)} disabled={!kept.length}>
             {editing ? "Save changes" : saveLabel(slot, day)}
-          </Button>
+          </PrimaryButton>
         }
       >
         {onSlot && <ChipRow options={MEAL_SLOTS.map((m) => ({ value: m.id, label: m.name }))} value={slot} onChange={onSlot} />}
@@ -372,7 +374,6 @@ function CheckStep({
         <View style={styles.section}>
           <Block
             title={editing ? "What you had" : "Check what we found"}
-            variant="title"
             action={
               onRetake ? (
                 <TextAction tone="muted" onPress={onRetake}>
@@ -390,6 +391,7 @@ function CheckStep({
                   return (
                     <NeedsRow
                       key={f.key}
+                      icon={<ForkKnife size={16} color={HUE.teal.ink} />}
                       title={f.name}
                       meta={f.portions[p].words}
                       right={<Kcal value={kcal} />}
@@ -476,14 +478,11 @@ const styles = StyleSheet.create({
   metaStrong: { ...type.metaStrong },
   centred: { textAlign: "center" },
 
-  capture: { gap: space.card },
-  art: { alignSelf: "center" },
-  smallActions: { flexDirection: "row", justifyContent: "center", gap: space.item },
 
   // The mic and the spinner: a fixed stage, so the panel never jumps.
   panel: { alignItems: "center", justifyContent: "center", gap: space.card, minHeight: 240 },
   panelWords: { alignItems: "center", gap: space.stack },
-  panelTitle: { ...type.section, textAlign: "center" },
+  panelTitle: { fontFamily: font.medium, fontSize: 16, lineHeight: 24, color: ink.content, textAlign: "center" },
   mic: { width: 72, height: 72, alignItems: "center", justifyContent: "center" },
   micRing: { position: "absolute", width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: color.primary },
   micCore: { width: 72, height: 72, borderRadius: 36, backgroundColor: HUE.teal.tint, alignItems: "center", justifyContent: "center" },

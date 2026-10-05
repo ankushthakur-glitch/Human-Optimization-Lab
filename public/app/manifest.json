@@ -6,7 +6,7 @@
   "scope": "/app/",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#417D88",
+  "theme_color": "#01837E",
   "background_color": "#FFFFFF",
   "icons": [
     {

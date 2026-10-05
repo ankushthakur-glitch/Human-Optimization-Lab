@@ -294,3 +294,11 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 
 ## 02-Oct-2026
 
+## 04-Oct-2026
+
+- Optimization member Overview rebuilt to the v5 four-tier spec (Needs you now, Summary, Work, Progress, Context) from prompt 03 and its UI reference; Version 1 and the computed Version 2 scrapped, no version toggle
+- Shared dashboard kit v2 gained zone labels, needs-you rows, the AI brief with source chips, trend text, stacked and diverging bars, the category grid, the radial score, the Gantt and the person card
+- AI brief composed by rules from the mock store (src/lib/brief), tested for the home, free and optimization scopes
+- Added: Provider Portal / Patients / Patient chart Overview (optimization member)
+- Free member Overview rebuilt to the v5 four-tier spec (Needs you now, Summary, Work, Context) from prompt 02 and its UI reference; Version 1 removed and the free Version toggle dropped, one build in patient-dashboard/ (build note: inlay-patient-dashboard-free-v5.md)
+- Added: Provider Portal / Patients / Patient chart Overview (free member)

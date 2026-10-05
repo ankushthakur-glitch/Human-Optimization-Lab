@@ -388,7 +388,23 @@ export type Patient = {
   reactivatedAt?: string
   /** Set when a duplicate was merged into this record. */
   mergedAt?: string
+  /* The fields below are carried by the provider dashboard's sample panel
+     (see DASHBOARD_PANEL); other sample patients derive their record state. */
+  /** Where the patient's Health Gorilla record stands. */
+  recordState?: PanelRecordState
+  /** Local "2026-10-03T05:00" of the last successful pull. */
+  lastSyncAt?: string
+  membership?: "free" | "optimization"
+  /** When the physician last reviewed the whole chart. */
+  lastReviewAt?: string
 }
+
+export type PanelRecordState =
+  | "active"
+  | "building"
+  | "waiting_for_consent"
+  | "invited_not_joined"
+  | "sync_failed"
 
 export type EmergencyContact = {
   relationship: string
@@ -1505,11 +1521,112 @@ PATIENTS[0] = {
   registrationDate: isoDaysAgo(30),
 }
 
+/* The signed-in provider, Dr. Daniel Reyes (the header's chip). He joins the
+   provider list after the patients are dealt out, so the rotation above, and
+   with it every other patient's physician, stays as it was. */
+const HARRINGTON_ID = "PR3132"
+const REYES: Provider = {
+  ...PROVIDERS[0],
+  id: `PR${3132 + PROVIDERS.length}`,
+  firstName: "Daniel",
+  lastName: "Reyes",
+  dob: "1979-05-21",
+  gender: "Male",
+  npi: withNpiCheckDigit("142867301"),
+  specialty: "Internal Medicine",
+  role: "Provider",
+  ssn: "538-61-4471",
+  photo: "",
+  email: `daniel.reyes@${PRACTICE.domain}`,
+  supervisorIds: [HARRINGTON_ID],
+  registrationDate: isoDaysAgo(120),
+  lastLogin: isoDaysAgo(0),
+}
+export const REYES_ID = REYES.id
+
+/* The provider dashboard's sample panel: thirteen patients carrying the
+   record fields its counts read. The four named sample patients keep their
+   rows; nine more take the place of generated rows, so the practice still
+   lists 131. P10444 is a generated id already, so that row is renamed. */
+type PanelRow = [
+  id: string,
+  first: string,
+  last: string,
+  dob: string,
+  sex: "Female" | "Male",
+  membership: "free" | "optimization",
+  recordState: PanelRecordState,
+  providerId: string,
+]
+
+const PANEL_ROWS: PanelRow[] = [
+  ["P10318", "Marcus", "Hale", "1962-03-14", "Male", "optimization", "active", REYES.id],
+  ["P10411", "Daniel", "Okafor", "1957-02-09", "Male", "free", "active", REYES.id],
+  ["P10422", "Priya", "Natarajan", "1969-11-23", "Female", "optimization", "active", REYES.id],
+  ["P10433", "Thomas", "Whitfield", "1949-06-30", "Male", "free", "active", REYES.id],
+  ["P10444", "Grace", "Lindqvist", "1983-09-12", "Female", "free", "active", HARRINGTON_ID],
+  ["P10455", "Samuel", "Ortiz", "1975-01-05", "Male", "optimization", "active", REYES.id],
+  ["P10466", "Hannah", "Brooks", "1991-04-18", "Female", "free", "invited_not_joined", REYES.id],
+  ["P10477", "Walter", "Chen", "1944-12-02", "Male", "free", "active", HARRINGTON_ID],
+  ["P10488", "Leah", "Moreno", "1988-07-27", "Female", "free", "waiting_for_consent", REYES.id],
+]
+
+/* The generated rows the new patients replace: late in the list, so the
+   first pages read as before. */
+const REPLACED_ROWS = [122, 123, 124, 12, 125, 126, 127, 128, 129]
+
+/* Where each panel record stands at the mock clock (provider/mock-clock.ts):
+   the nightly pull ran at 5:00 AM; a failed source last pulled the day before. */
+const NIGHTLY = "2026-10-03T05:00"
+
+PANEL_ROWS.forEach((row, n) => {
+  const [id, firstName, lastName, dob, sex, membership, recordState, providerId] = row
+  const i = REPLACED_ROWS[n]
+  const base = PATIENTS[i]
+  PATIENTS[i] = {
+    ...base,
+    id,
+    firstName,
+    lastName,
+    dob,
+    sex,
+    email: `${firstName}.${lastName}@example.com`.toLowerCase(),
+    photo: hasPhoto(n) ? patientHeadshot(sex, n + 4) : "",
+    providerId,
+    locationId: "LOC1001",
+    status: recordState === "invited_not_joined" ? "Invited" : "Active",
+    invitedAt: isoDaysAgo(20 + n),
+    respondedAt: undefined,
+    recordState,
+    membership,
+    ...(recordState === "active" && { lastSyncAt: NIGHTLY }),
+    ...(id === "P10318" && { phone: "(858)-555-0142" }),
+  }
+})
+
+/* The four named sample patients join the panel under Dr. Harrington. */
+const PANEL_EXISTING: Record<string, Partial<Patient>> = {
+  P10240: { recordState: "active", membership: "free", lastSyncAt: NIGHTLY },
+  P10257: { recordState: "waiting_for_consent", membership: "free", status: "Active" },
+  P10750: { recordState: "building", membership: "free", status: "Active" },
+  P10665: {
+    recordState: "sync_failed",
+    membership: "free",
+    status: "Active",
+    lastSyncAt: "2026-10-02T05:00",
+  },
+}
+PATIENTS.forEach((p, i) => {
+  const extra = PANEL_EXISTING[p.id]
+  if (extra)
+    PATIENTS[i] = { ...p, ...extra, providerId: HARRINGTON_ID, locationId: "LOC1001" }
+})
+
 /* -------------------------------------------------------------------------- */
 /*  Stores                                                                     */
 /* -------------------------------------------------------------------------- */
 
-const VERSION = "v15"
+const VERSION = "v16"
 
 /** The sample patients, before any session edits: the duplicate queue seeds from them. */
 export const PATIENT_SEED = PATIENTS
@@ -1521,7 +1638,7 @@ export const locations = createCollection(
 )
 export const providers = createCollection(
   "hol-practice-providers",
-  PROVIDERS,
+  [...PROVIDERS, REYES],
   VERSION
 )
 export const users = createCollection("hol-practice-users", USERS, VERSION)

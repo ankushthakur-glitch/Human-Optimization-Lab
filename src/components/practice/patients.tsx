@@ -97,7 +97,7 @@ const SYNC_LABEL: Record<RecordState, string> = {
   Active: "Synced",
   Building: "Record building",
   "Source exception": "Sync failed",
-  "Awaiting consent": "Consent not provided",
+  "Awaiting consent": "Waiting for consent",
 }
 
 const SYNC_VARIANT: Record<
@@ -114,7 +114,8 @@ const SYNC_FILTER = [
   "Synced",
   "Record building",
   "Sync failed",
-  "Consent not provided",
+  "Waiting for consent",
+  "Invited, not joined",
   "Consent withdrawn",
 ]
 
@@ -142,10 +143,16 @@ function useSyncLookup() {
       p,
       items.find((r) => r.id === p.id)
     )
+    /* Before consent: enrolled and not yet consented, or invited and not
+       yet joined (the dashboard's record states). */
     const label =
       p.status === "Consent withdrawn"
         ? "Consent withdrawn"
-        : SYNC_LABEL[s.state]
+        : s.state === "Awaiting consent"
+          ? p.status === "Active"
+            ? "Waiting for consent"
+            : "Invited, not joined"
+          : SYNC_LABEL[s.state]
     return { ...s, label }
   }
 }
@@ -453,6 +460,8 @@ export function PatientsScreen() {
   const { patientHref } = portal
   const isProvider = portal.key === "provider"
   const syncOf = useSyncLookup()
+  /* The dashboard's record status bar links here with ?record=. */
+  const recordParam = useSearchParams().get("record")
   const [importing, setImporting] = React.useState(false)
   const [deactivating, setDeactivating] = React.useState<Patient | null>(null)
   const [reactivating, setReactivating] = React.useState<Patient | null>(null)
@@ -680,6 +689,11 @@ export function PatientsScreen() {
           }),
         })}
         emptyIllustration="patients-empty"
+        initialFilters={
+          isProvider && recordParam && SYNC_FILTER.includes(recordParam)
+            ? { record: recordParam }
+            : undefined
+        }
       />
 
       <BulkImportDialog

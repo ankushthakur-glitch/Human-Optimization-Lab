@@ -1,5 +1,5 @@
 import type { RecordIconName } from "@/components/record-icons"
-import type { Hue, Step } from "@/components/record-kit"
+import type { Step } from "@/components/record-kit"
 import type { CareGap, GapKind } from "@/lib/record"
 
 /* How a care gap shows on To do, on the test it follows and on its own
@@ -16,11 +16,6 @@ export const GAP_ICON: Record<GapKind, RecordIconName> = {
   condition: "conditions",
 }
 
-/** A gap's tile: one to talk through at the next visit sits with the
-    other visit items (violet, as To do's "For your next visit" draws
-    them); one to book or call is teal. */
-export const gapHue = (g: Pick<CareGap, "action">): Hue => (g.action === "talk" ? "violet" : "teal")
-
 /** Reminders a care gap gets before the practice follows up. */
 export const REMINDERS = 3
 
@@ -30,32 +25,10 @@ export function reminderLine(g: Pick<CareGap, "reminders">): string | undefined 
   return `Reminder ${Math.min(g.reminders, REMINDERS)} of ${REMINDERS}`
 }
 
-/** What happens after the reminders, as To do says it: "Then Dr. Patel's
-    team will reach out." while reminders are left, "Dr. Patel's team will
-    reach out." once the last one went out. */
-export function teamLine(g: Pick<CareGap, "reminders">): string {
-  return g.reminders >= REMINDERS ? "Dr. Patel's team will reach out." : "Then Dr. Patel's team will reach out."
-}
-
-/** A To do row's facts with where its reminders have got to: "Dr. Patel
-    ordered it on Mar 4" becomes "Dr. Patel ordered it on Mar 4. Reminder 3
-    of 3. Dr. Patel's team will reach out." Home keeps the short line; To
-    do has the room for what comes next. Without reminders the line stays
-    as it is. The facts may already hold their words together (lib/todo.ts
-    sends them through keepTogether), so the reminder is looked for with
-    plain spaces. */
-export function withReminders(meta: string, g: Pick<CareGap, "reminders"> | undefined): string {
-  const reminder = g && reminderLine(g)
-  if (!g || !reminder) return meta
-  const facts = meta.trim().replace(/\.$/, "")
-  const parts = facts.replace(/ /g, " ").includes(reminder) ? [facts] : [facts, reminder]
-  return `${parts.join(". ")}. ${teamLine(g)}`
-}
-
 /** The reminders as dated steps: each one sent ticked with its day, the
     ones still to come after it, and last what follows them (`last`: "Then
-    Dr. Patel's team will reach out" on a test, "Then Dr. Patel and your
-    clinic follow up" on a care gap), marked once it is reached. Once she
+    Dr. Patel's team will reach out", as Figma words it on a test and a
+    care gap alike), marked once it is reached. Once she
     has booked, only the reminders that went out are shown: nothing more
     will be sent. */
 export function reminderSteps(g: Pick<CareGap, "reminders" | "sent">, last: string, booked = false): Step[] {

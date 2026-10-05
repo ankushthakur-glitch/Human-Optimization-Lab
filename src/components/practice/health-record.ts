@@ -753,7 +753,17 @@ const SAMPLE_STATES: Record<string, RecordState> = {
   P10342: "Source exception",
 }
 
+/* The provider dashboard's panel patients carry their state (practice-data). */
+const PANEL_STATE: Record<NonNullable<Patient["recordState"]>, RecordState> = {
+  active: "Active",
+  building: "Building",
+  waiting_for_consent: "Awaiting consent",
+  invited_not_joined: "Awaiting consent",
+  sync_failed: "Source exception",
+}
+
 export function stateFor(p: Patient): RecordState {
+  if (p.recordState) return PANEL_STATE[p.recordState]
   if (
     p.status === "Not invited" ||
     p.status === "Invited" ||
@@ -869,6 +879,17 @@ function labReportsFrom(biomarkers: Biomarker[], orderedBy: string) {
     }
   }
   return [...reports.values()].sort((a, b) => b.date.localeCompare(a.date))
+}
+
+/* Patients whose problem list the sample data fixes, in place of the
+   generated one: Marcus Hale (P10318), the optimization member the
+   optimization dashboard was specified against. */
+const CONDITIONS_BY_PATIENT: Record<string, Condition[]> = {
+  P10318: [
+    { id: "CN-M1", name: "Postprocedural hypothyroidism", tag: "Hypothyroidism", code: "E89.0", snomed: "237531003", type: "Chronic", onset: "2015-08-01", recorded: "2015-08-01", status: "Active", note: "On Synthroid. TSH 0.64 mIU/L on 08/05/2026.", sourceId: "SRC-EPIC" },
+    { id: "CN-M2", name: "Hyperlipidemia", code: "E78.5", snomed: "55822004", type: "Chronic", onset: "2022-11-01", recorded: "2022-11-01", status: "Active", note: "On atorvastatin. ApoB 66 mg/dL on 08/05/2026.", sourceId: "SRC-EPIC" },
+    { id: "CN-M3", name: "Obstructive sleep apnea", tag: "Sleep apnea", code: "G47.33", snomed: "78275009", type: "Chronic", onset: "2020-07-01", recorded: "2020-07-01", status: "Active", note: "Home sleep apnea test 06/04/2026: AHI 5.3, O₂ nadir 85%.", sourceId: "SRC-EPIC" },
+  ],
 }
 
 export function healthRecordFor(p: Patient): HealthRecord {
@@ -1669,7 +1690,7 @@ function fullRecord(p: Patient, base: HealthRecord): HealthRecord {
     sourceIds: ["SRC-EPIC", "SRC-QUEST", "SRC-LABCORP", "SRC-IMG"],
     biomarkers,
     allergies,
-    conditions,
+    conditions: CONDITIONS_BY_PATIENT[p.id] ?? conditions,
     medications,
     immunizations,
     procedures,
@@ -1809,5 +1830,5 @@ export function syncStatusFor(p: Patient, saved?: RecordSync) {
   const state = stateFor(p)
   if (state === "Awaiting consent") return { state, at: "" }
   const nightly = `${isoFromToday(state === "Source exception" ? -1 : 0)}T${NIGHTLY_SYNC}`
-  return { state: saved?.state ?? state, at: saved?.at ?? nightly }
+  return { state: saved?.state ?? state, at: saved?.at ?? p.lastSyncAt ?? nightly }
 }

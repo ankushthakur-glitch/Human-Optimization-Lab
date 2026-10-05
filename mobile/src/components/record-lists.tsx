@@ -3,12 +3,10 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { keepTogether } from "@/components/care-gap"
-import { CompositionBar, TrendGrid } from "@/components/charts"
 import { FlowScreen } from "@/components/flow"
-import { IconCheck } from "@/components/icons"
-import { RecordIcon } from "@/components/record-icons"
-import { Block, Card, ChipRow, EmptyState, Group, HUE, Nudge, ResultRow, Status, TextAction, Tile, toast, type Hue } from "@/components/record-kit"
-import { AddToRecordSheet, ItemRow, ItemSheet, SearchField, type ItemDetail, type RowStatus } from "@/components/record-rows"
+import { Check, Eye, UploadSimple } from "@/components/ph"
+import { Block, Card, ChipRow, EmptyState, Group, Nudge, ResultRow, Status, TextAction, Tile, toast } from "@/components/record-kit"
+import { AddToRecordSheet, FilterChips, ItemRow, ItemSheet, RangeSummary, SearchField, type ItemDetail, type RowStatus } from "@/components/record-rows"
 import { Button } from "@/components/ui"
 import { showDate } from "@/lib/dates"
 import { useExperience, useMarkers } from "@/lib/experience"
@@ -39,7 +37,7 @@ import {
 } from "@/lib/record"
 import { color, space, type } from "@/lib/theme"
 import { orderHref, orderStatus, todo, type TodoItem } from "@/lib/todo"
-import { byBodySystem, chartInput, classify, directionWords, needsReview, pointStatus, timeOf, trendCounts, watchList, type Trend } from "@/lib/trends"
+import { byBodySystem, classify, directionWords, needsReview, pointStatus, timeOf, trendCounts, type Trend } from "@/lib/trends"
 
 /* The record's own pages (FINAL-SPEC C.6), each a FlowScreen page:
 
@@ -83,7 +81,6 @@ const THIS_YEAR = new Date().getFullYear()
 
 /** "Aug 12, 2026" reads "Aug 12" this year; other years and "Oct 2025" stay. */
 const shortDate = (date: string) => date.replace(new RegExp(`,\\s*${THIS_YEAR}$`), "")
-
 
 /** "Pacific Heart, La Jolla" as "Pacific Heart". */
 const placeShort = (where: string) => where.split(",")[0].trim()
@@ -218,6 +215,14 @@ function KindList({ kind, onOpen, onAdd }: { kind: Exclude<RecordKind, "results"
 
 type Opens = { onOpen: (item: ItemDetail) => void }
 
+/** A Phosphor glyph on the rows' round teal tile, for a row that is not a
+    record kind ("Who has looked", "Added by you"). */
+const Glyph = ({ Icon }: { Icon: typeof Eye }) => (
+  <Tile>
+    <Icon size={16} color={color.primary} />
+  </Tile>
+)
+
 function Allergies({ onOpen }: Opens) {
   const onboarding = useOnboarding()
   const provenance = useProvenance()
@@ -261,7 +266,7 @@ function Allergies({ onOpen }: Opens) {
               />
               {said && (
                 <View style={styles.review}>
-                  <IconCheck size={14} color={color.primary} strokeWidth={2.4} />
+                  <Check size={14} color={color.primary} weight="bold" />
                   <Text style={type.label}>Dr. Patel will review.</Text>
                 </View>
               )}
@@ -276,6 +281,7 @@ function Allergies({ onOpen }: Opens) {
             return (
               <ItemRow
                 key={a.id}
+                icon="allergies"
                 title={a.name}
                 meta={both ? `${a.reaction}, on both lists` : `${a.reaction}, ${PLACE[a.lists[0]].name.replace(/ Hospital$/, "")} only`}
                 status={a.difference ? { level: "borderline", word: "Records differ" } : undefined}
@@ -307,6 +313,7 @@ function Conditions({ onOpen }: Opens) {
       {PROBLEMS.map((p) => (
         <ItemRow
           key={p.id}
+          icon="conditions"
           title={p.name}
           meta={`Since ${p.since}`}
           status={p.difference ? { level: "borderline", word: "Records differ" } : undefined}
@@ -345,7 +352,7 @@ function Visits() {
 
   return (
     <View style={styles.stack}>
-      <ChipRow
+      <FilterChips
         options={[
           { value: "coming", label: "Coming up" },
           { value: "past", label: "Past" },
@@ -417,7 +424,7 @@ function Tests() {
 
   return (
     <View style={styles.stack}>
-      <ChipRow
+      <FilterChips
         options={[
           { value: "open", label: "Open" },
           { value: "done", label: "Done" },
@@ -438,17 +445,6 @@ function Tests() {
   )
 }
 
-/** An order's tile by where it stands, as To do and Home draw the same
-    test: the calm grey of an open test (C.0.3), teal once it is booked,
-    green once its results are in. */
-const ORDER_HUE: Record<ReturnType<typeof orderStatus>["tone"], Hue> = {
-  neutral: "neutral",
-  attention: "neutral",
-  booked: "teal",
-  waiting: "teal",
-  done: "green",
-}
-
 /** One order: its name, where it stands, when it is due or where it was
     done, and its three dates (F-40). */
 function OrderRow({ order: o, item }: { order: Order; item?: TodoItem }) {
@@ -462,14 +458,9 @@ function OrderRow({ order: o, item }: { order: Order; item?: TodoItem }) {
       ? item.meta.replace(/^\d{1,2}:\d{2}\s(AM|PM), /, "")
       : `Due by ${shortDate(o.due.replace(/^By /, ""))}${o.at ? `, ${placeShort(o.at)}` : ""}`
   const scheduled = booked && item?.date ? shortDay(dateOfAt(item.date)) : o.scheduled ? shortDate(o.scheduled) : undefined
-  const hue = ORDER_HUE[status.tone]
   return (
     <ItemRow
-      icon={
-        <Tile hue={hue}>
-          <RecordIcon name="labs" size={18} color={HUE[hue].ink} />
-        </Tile>
-      }
+      icon="labs"
       title={o.name}
       status={orderMark(status)}
       meta={meta}
@@ -504,6 +495,7 @@ function Immunizations({ onOpen }: Opens) {
       {IMMUNIZATIONS.map((i) => (
         <ItemRow
           key={i.id}
+          icon="immunizations"
           title={i.name}
           when={i.date}
           onPress={() =>
@@ -528,7 +520,7 @@ function Procedures({ onOpen }: Opens) {
   return (
     <Group>
       {PROCEDURES.map((p) => (
-        <ItemRow key={p.id} title={p.name} meta={p.where} when={shortDate(p.date)} onPress={() => onOpen(procedureDetail(p, provenance))} />
+        <ItemRow key={p.id} icon="procedures" title={p.name} meta={p.where} when={shortDate(p.date)} onPress={() => onOpen(procedureDetail(p, provenance))} />
       ))}
     </Group>
   )
@@ -542,6 +534,7 @@ function Added({ onOpen, onAdd }: Opens & { onAdd: () => void }) {
       {added.map((a) => (
         <ItemRow
           key={a.id}
+          icon={<Glyph Icon={UploadSimple} />}
           title={a.title}
           tag={{ tone: "muted", label: "Being checked" }}
           meta={`Added by you, ${shortDate(a.at)}`}
@@ -571,7 +564,7 @@ function Access() {
   return (
     <Group>
       {ACCESS_LOG.map((a, i) => (
-        <ItemRow key={i} title={a.what} meta={`${a.who}, ${a.role}`} when={a.when.replace(/^Today, /, "")} accessibilityLabel={`${a.what}, ${a.who}, ${a.role}, ${a.when}`} />
+        <ItemRow key={i} icon={<Glyph Icon={Eye} />} title={a.what} meta={`${a.who}, ${a.role}`} when={a.when.replace(/^Today, /, "")} accessibilityLabel={`${a.what}, ${a.who}, ${a.role}, ${a.when}`} />
       ))}
     </Group>
   )
@@ -603,70 +596,54 @@ function AllResults({ initial }: { initial: Filter }) {
   const q = query.trim().toLowerCase()
 
   const counts = trendCounts(markers)
-  const watched = watchList(markers, { improve: onboarding.why?.improve })
   const labs = DATA_TYPES.find((d) => d.key === "Observation.lab")!.count + (onboarding.batches ?? []).reduce((n, b) => n + b.count, 0)
   const vitals = DATA_TYPES.find((d) => d.key === "Observation.vital")!.count
   const open = (id: string) => router.push({ pathname: "/biomarker/[id]", params: { id } })
+  // "To watch" keeps the results worth a look (lib/trends.ts `watch`), "In
+  // range" the rest, each still grouped by body system.
+  const shown = (t: Trend) => (filter === "all" || (filter === "watch" ? t.watch : t.status === "in")) && matches(t, q)
 
   const groups = byBodySystem(markers)
-    .map((g) => ({ group: g.group, trends: g.markers.map(classify).filter((t) => (filter !== "in" || t.status === "in") && matches(t, q)) }))
+    .map((g) => ({ group: g.group, trends: g.markers.map(classify).filter(shown) }))
     .filter((g) => g.trends.length)
-  const tiles = watched.filter((t) => matches(t, q))
-  const none = filter === "watch" ? !tiles.length : !groups.length
 
   return (
     <FlowScreen page title="Results">
       <Card style={styles.summary}>
-        <Text style={type.section}>{`${counts.inRange} of ${counts.total} in range`}</Text>
-        <CompositionBar inRange={counts.inRange} borderline={counts.borderline} out={counts.out} playKey="results:composition" />
-        <Text style={type.meta}>{`From ${labs} lab results and ${vitals} visit readings`}</Text>
+        <RangeSummary inRange={counts.inRange} borderline={counts.borderline} out={counts.out} total={counts.total} />
+        <Text style={type.label}>{`From ${labs} lab results and ${vitals} visit readings`}</Text>
       </Card>
 
-      <View style={styles.controls}>
-        <ChipRow
-          options={[
-            { value: "all", label: `All ${counts.total}` },
-            { value: "watch", label: `To watch ${counts.toWatch}` },
-            { value: "in", label: `In range ${counts.inRange}` },
-          ]}
-          value={filter}
-          onChange={setFilter}
-        />
-        <SearchField value={query} onChange={setQuery} placeholder="Search results" />
-      </View>
+      <FilterChips
+        label="Show"
+        options={[
+          { value: "all", label: "All" },
+          { value: "watch", label: "To watch" },
+          { value: "in", label: "In range" },
+        ]}
+        value={filter}
+        onChange={setFilter}
+      />
+      <SearchField value={query} onChange={setQuery} placeholder="Search results" />
 
-      {none && q ? (
+      {!groups.length && q ? (
         <EmptyState title={`No results match “${query.trim()}”`}>
           <TextAction onPress={() => setQuery("")}>Clear search</TextAction>
         </EmptyState>
-      ) : none && filter === "watch" ? (
+      ) : !groups.length && filter === "watch" ? (
         <EmptyState art="magnifier" artSize={80} title="Nothing to watch right now" />
-      ) : none ? (
+      ) : !groups.length ? (
         <EmptyState title="No results yet" />
-      ) : filter === "watch" ? (
-        <TrendGrid
-          max={tiles.length}
-          tiles={tiles.map((t, i) => ({
-            id: t.id,
-            ...chartInput(t),
-            direction: directionWords(t),
-            index: i,
-            playKey: `results:tile:${t.id}`,
-            onPress: () => open(t.id),
-          }))}
-        />
       ) : (
-        <View style={styles.groups}>
-          {groups.map((g) => (
-            <Block key={g.group} title={g.group}>
-              <Group>
-                {g.trends.map((t) => (
-                  <ResultRow key={t.id} trend={t} since={member ? sinceLine(t.marker) : undefined} onPress={() => open(t.id)} />
-                ))}
-              </Group>
-            </Block>
-          ))}
-        </View>
+        groups.map((g) => (
+          <Block key={g.group} title={g.group}>
+            <Group>
+              {g.trends.map((t) => (
+                <ResultRow key={t.id} trend={t} since={member ? sinceLine(t.marker) : undefined} onPress={() => open(t.id)} />
+              ))}
+            </Group>
+          </Block>
+        ))
       )}
     </FlowScreen>
   )
@@ -794,7 +771,7 @@ export function TimelineList({ onOpen }: Opens) {
   const years = [...new Set(entries.map((e) => e.year))]
   return (
     <View style={styles.stack}>
-      <ChipRow options={TIME_FILTERS} value={filter} onChange={setFilter} />
+      <FilterChips scroll options={TIME_FILTERS} value={filter} onChange={setFilter} />
       <View style={styles.groups}>
         {years.map((year) => (
           <Block key={year} title={year}>
@@ -831,7 +808,7 @@ const styles = StyleSheet.create({
   groups: { gap: space.section },
   controls: { gap: space.item },
 
-  summary: { padding: space.card, gap: space.item },
+  summary: { gap: space.item },
 
   check: { padding: space.card, gap: space.item },
   checkHead: { flexDirection: "row", alignItems: "center", gap: space.item },

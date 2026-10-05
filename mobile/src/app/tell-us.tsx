@@ -107,12 +107,12 @@ function Topic({ label, selected, onPress }: { label: string; selected: boolean;
 }
 
 const styles = StyleSheet.create({
-  topic: { flexDirection: "row", alignItems: "center", gap: space.item, minHeight: 56, paddingVertical: space.rowY },
+  topic: { flexDirection: "row", alignItems: "center", gap: space.item, paddingVertical: space.rowY },
   pressed: { opacity: 0.6 },
   topicText: { flex: 1 },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: "#A3ACB9", alignItems: "center", justifyContent: "center" },
   radioOn: { borderColor: color.primary },
   radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: color.primary },
   // Frontline's form card: 16 inside and 16 between its fields.
-  fields: { gap: space.card, padding: space.card },
+  fields: { gap: space.card },
 })

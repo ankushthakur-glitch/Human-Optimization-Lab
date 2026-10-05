@@ -1,18 +1,17 @@
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { Text } from "react-native"
 
-import { Art } from "@/components/art"
 import { keepTogether } from "@/components/care-gap"
-import { FlowScreen, Section } from "@/components/flow"
-import { List, ListRow } from "@/components/list"
+import { FlowScreen } from "@/components/flow"
+import { PrimaryButton } from "@/components/hol"
+import { Watch } from "@/components/ph"
 import { SetupStepLabel } from "@/components/plan-account-pieces"
-import { ChipRow, Tag } from "@/components/record-kit"
-import { Button } from "@/components/ui"
+import { HeadCard, headText } from "@/components/plan-tab-pieces"
+import { Block, ChipRow, Group, HUE, NeedsRow, Tag } from "@/components/record-kit"
 import { DEVICE_STATUS } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { FOOD_LOGGING } from "@/lib/program"
 import { useSetupStep } from "@/lib/setup"
-import { ink, space, type } from "@/lib/theme"
 
 /* Paid setup, step 3 (FINAL-SPEC C.27, M-70): a watch, ring or scale, and
    how she would like to log food. Devices connect through Terra in a later
@@ -34,43 +33,27 @@ export default function DevicesScreen() {
 
   return (
     <FlowScreen
-      back={false}
+      page
       title="Connect a device"
-      art={<Art name="watch" size={96} />}
-      footer={<Button onPress={() => finish({ devices: [], foodLogging: food })}>Continue</Button>}
+      bar={<SetupStepLabel>{label}</SetupStepLabel>}
+      footer={<PrimaryButton onPress={() => finish({ devices: [], foodLogging: food })}>Continue</PrimaryButton>}
     >
-      <View style={styles.intro}>
-        <SetupStepLabel centred>{label}</SetupStepLabel>
-        <Text style={styles.line}>{keepTogether("Devices arrive in a later update. Your plan works without one.")}</Text>
-      </View>
+      <HeadCard>
+        <Text style={headText.line}>{keepTogether("Devices arrive in a later update. Your plan works without one.")}</Text>
+      </HeadCard>
 
-      <List>
-        {DEVICE_STATUS.map((d) => (
-          <ListRow
-            key={d.id}
-            title={d.name}
-            meta={d.kind}
-            right={
-              <View style={styles.soon}>
-                <Tag tone="muted">{d.label}</Tag>
-              </View>
-            }
-          />
-        ))}
-      </List>
+      <Block title="Devices">
+        <Group>
+          {DEVICE_STATUS.map((d) => (
+            <NeedsRow key={d.id} icon={<Watch size={16} color={HUE.teal.ink} />} title={d.name} meta={d.kind} right={<Tag tone="muted">{d.label}</Tag>} />
+          ))}
+        </Group>
+      </Block>
 
-      <Section title="Log food by">
+      <Block title="Log food by">
         <ChipRow options={FOOD_CHOICES} value={food} onChange={setFood} />
-      </Section>
+      </Block>
     </FlowScreen>
   )
 }
 
-const styles = StyleSheet.create({
-  // The count and the line read with the centred title above them.
-  intro: { gap: space.item },
-  // The line under a centred title, as the kit's empty state sets it.
-  line: { ...type.body, color: ink.secondary, textAlign: "center" },
-  // The tag sits level with the row's two lines, not on the first.
-  soon: { alignSelf: "center" },
-})

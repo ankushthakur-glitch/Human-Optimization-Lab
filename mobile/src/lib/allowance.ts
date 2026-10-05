@@ -57,14 +57,10 @@ export function allowanceOf(a: Allowance | undefined, now: Date = new Date()) {
     left,
     /** "Nov 1" */
     resetsOn,
-    /** "6 of 8 free questions left this month", "1 free question left this
-        month", "No free questions left until Nov 1" */
-    line:
-      left === 0
-        ? `No free questions left until ${resetsOn}`
-        : left === 1
-          ? "1 free question left this month"
-          : `${left} of ${FREE_QUESTIONS} free questions left this month`,
+    /** The AI is metered in tokens now (user, 5 Oct 2026), so the words
+        speak of credit, not questions: "75% of this month's AI credit
+        left", "No AI credit left until Nov 1". The orb's ring draws it. */
+    line: left === 0 ? `No AI credit left until ${resetsOn}` : `${Math.round((left / FREE_QUESTIONS) * 100)}% of this month's AI credit left`,
   }
 }
 
@@ -188,8 +184,8 @@ function write(w: Writer, next: Allowance) {
     visit comes first, the membership second and quiet. */
 export function limitCard(now: Date = new Date()) {
   return {
-    title: "You've used this month's questions",
-    body: `They come back on ${resetDate(now)}. Your record, trends and past answers are all still here.`,
+    title: "You've used this month's AI credit",
+    body: `It comes back on ${resetDate(now)}. Your record, trends and past answers are all still here.`,
     save: "Save for my next visit",
     more: "See what members get",
   }

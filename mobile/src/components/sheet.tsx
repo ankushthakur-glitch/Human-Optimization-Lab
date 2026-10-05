@@ -2,21 +2,43 @@ import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { color, font, gutter } from "@/lib/theme"
+import { X } from "@/components/ph"
+import { color, font, hairline, ink, space } from "@/lib/theme"
 
-/** A bottom sheet over the screen, for a confirmation (not a native modal,
-    so the web build keeps it inside the drawn phone). */
-export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+/** A bottom sheet over the screen (not a native modal, so the web build
+    keeps it inside the drawn phone). Figma "Hol" (5 Oct 2026): white, top
+    corners 24, a header bar with the title and a round close button over a
+    hairline, the content 16 in from the sides. `title` beside it takes a
+    node too, e.g. a medicine's name and its badge. */
+export function Sheet({
+  title,
+  titleRight,
+  onClose,
+  children,
+}: {
+  title: string
+  /** Beside the title, e.g. an "Active" badge. */
+  titleRight?: React.ReactNode
+  onClose: () => void
+  children: React.ReactNode
+}) {
   const { bottom } = useSafeAreaInsets()
   return (
     <View style={StyleSheet.absoluteFill}>
       <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Close" />
-      <View style={[styles.sheet, { paddingBottom: Math.max(bottom - 12, 16) }]} accessibilityViewIsModal>
-        <View style={styles.grabber} />
-        <Text style={styles.title} accessibilityRole="header">
-          {title}
-        </Text>
-        {children}
+      <View style={styles.sheet} accessibilityViewIsModal>
+        <View style={styles.head}>
+          <View style={styles.titleRow}>
+            <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
+              {title}
+            </Text>
+            {titleRight}
+          </View>
+          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" hitSlop={8} style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
+            <X size={20} color={ink.detail} />
+          </Pressable>
+        </View>
+        <View style={[styles.body, { paddingBottom: Math.max(bottom, 24) }]}>{children}</View>
       </View>
     </View>
   )
@@ -31,14 +53,25 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    maxHeight: "90%",
     backgroundColor: color.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: gutter,
-    paddingTop: 10,
-    gap: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: "hidden",
+    boxShadow: "0 -2px 24px rgba(0, 0, 0, 0.12)",
   },
-  grabber: { alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: color.border },
-  title: { fontFamily: font.semibold, fontSize: 22, lineHeight: 28, letterSpacing: -0.5, color: color.text },
-  text: { fontFamily: font.regular, fontSize: 15, lineHeight: 22, color: color.text },
+  head: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.item,
+    padding: space.gutter,
+    borderBottomWidth: 1,
+    borderBottomColor: hairline.edge,
+  },
+  titleRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.inline },
+  title: { flexShrink: 1, fontFamily: font.medium, fontSize: 16, lineHeight: 26, color: ink.content },
+  close: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#F7F7F7", alignItems: "center", justifyContent: "center" },
+  pressed: { opacity: 0.7 },
+  body: { paddingHorizontal: space.gutter, paddingTop: space.gutter, gap: space.gutter },
+  text: { fontFamily: font.regular, fontSize: 14, lineHeight: 21, color: ink.detail },
 })

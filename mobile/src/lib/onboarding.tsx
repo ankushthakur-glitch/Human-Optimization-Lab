@@ -112,7 +112,16 @@ export type Correction = { id: string; text: string; about?: string; at: string 
 
 /** One thread with the assistant, kept 30 minutes after its last message
     so closing and opening the chat carries on (A-34). */
-export type Chat = { id: string; scope?: string; startedAt: string; lastAt: string; messages: unknown[] }
+export type Chat = { id: string; scope?: string; startedAt: string; lastAt: string; messages: unknown[]; topic?: ChatTopic; title?: string }
+
+/** The group a past conversation is filed under in the chat history:
+    medicines, lab results, visits, her plan, or something else. */
+export type ChatTopic = "medicine" | "result" | "visit" | "plan" | "other"
+
+/** A conversation filed in the history when it ends or a new one starts:
+    its first question as the title, its topic, and its messages so it can
+    be opened again. */
+export type PastChat = { id: string; title: string; topic: ChatTopic; startedAt: string; lastAt?: string; messages: unknown[] }
 
 /** Dr. Patel's check of the newly built record (F-13): checking, then
     checked on a day, which the home says for seven days. */
@@ -130,7 +139,7 @@ export type Batch = { id: string; at: string; source: string; count: number; ope
 /** How she hears from Inlay: push, texts and email about her care, and
     "News and offers", a separate marketing consent that stays off unless
     she turns it on (S-57, Q-11). */
-export type Channel = "push" | "sms" | "email" | "news"
+export type Channel = "push" | "sms" | "call" | "email" | "news"
 
 export type Added = { id: string; title: string; detail: string; at: string; unclear?: number }
 
@@ -147,9 +156,10 @@ type State = {
   consentAt?: string
   /** How long the permission lasts before the patient is asked again. */
   consentPeriod?: string
-  /** Texts and messages about her care (new results, reminders), the
-      optional box on the consent: what she chose, and when (ISO). Off
-      unless she ticks it; ticking it turns texts on in `notify`. */
+  /** Texts about her care (new results, reminders), one of the three
+      optional boxes on the consent (texts, calls, email): what she chose,
+      and when (ISO). Each box she ticks turns its channel on in
+      `notify`; calls and email are kept there only. */
   smsConsent?: boolean
   smsConsentAt?: string
   /** What the patient says about each medicine on their lists. */
@@ -191,6 +201,8 @@ type State = {
   asked?: { month: string; count: number }
   /** The assistant thread in progress. */
   chat?: Chat
+  /** Past conversations with the assistant, newest first. */
+  chats?: PastChat[]
   /** Membership offers: sessions, impressions and the patient's "Not now"
       and "Not for me" (lib/offers.ts). */
   offers?: OfferLog

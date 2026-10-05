@@ -1,19 +1,22 @@
-import { router, useLocalSearchParams } from "expo-router"
+import { router, useLocalSearchParams, usePathname } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { keepTogether, reminderSteps } from "@/components/care-gap"
-import { BookedSheet, BookIt, UpdateSheet, contactFor, placeShort, withTold, type TestAnswer } from "@/components/care-orders-book"
+import { BookedSheet, BookIt, BookSheet, UpdateSheet, contactFor, placeShort, withTold, type TestAnswer } from "@/components/care-orders-book"
+import { HeadCard, IconAction, Reminders } from "@/components/care-orders-rows"
 import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
-import { Block, Card, DateTrack, KeyValue, SmallAction, Status, Steps, Tag, TextAction, type Mark, type Tone, type TrackDate } from "@/components/record-kit"
+import { AskButton, PrimaryButton } from "@/components/hol"
+import { CalendarBlank, MapPin } from "@/components/ph"
+import { Block, Card, DateTrack, KeyValue, Status, Tag, type Mark, type Tone, type TrackDate } from "@/components/record-kit"
 import { toast } from "@/components/toast"
 import { experience } from "@/lib/experience"
 import { addToCalendar, call, directions } from "@/lib/links"
 import { dateOfAt, shortDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { CARE_GAPS, PROVENANCE_LABEL, order as findOrder, type Order } from "@/lib/record"
-import { hairline, space, type } from "@/lib/theme"
+import { font, ink, space, type } from "@/lib/theme"
 import { bookingOf, orderStatus, type Booked, type OrderTone } from "@/lib/todo"
 import { timeOf } from "@/lib/trends"
 
@@ -26,7 +29,14 @@ import { timeOf } from "@/lib/trends"
    stays open until the result reaches the record (F-43). "Update this
    test" offers what fits: the Q-22 answers while it is open; once it is
    booked, change or cancel it (F-41), never book it again over a booking.
-   No offer on this page. */
+   No offer on this page.
+
+   Figma "Hol" (5 Oct 2026, "Screening mammogram"): the tinted head card
+   with the status badge and its tag or place across the top, the sentence,
+   then the three date pills; "Book it", "Details" and "Reminders" under
+   it; "Update test" in the header and "Ask to Health Agent" (with "See
+   your results" once they are in) in the footer. /book/[id] is this page
+   with the partner booking sheet open over it. */
 
 /** How each answer from lib/todo.ts's orderStatus is marked (C.0.4): "Not
     booked yet" a filled dot, grey before it is due and clay once overdue
@@ -92,10 +102,17 @@ function factOf(o: Order, stage: Stage, overdue: boolean, told: boolean, doneOn?
   }
 }
 
+/** The sheets this page opens. */
+const SHEETS = ["booked", "update", "book"] as const
+type Sheet = (typeof SHEETS)[number]
+
 export default function OrderScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const { id, sheet: opened } = useLocalSearchParams<{ id: string; sheet?: string }>()
   const onboarding = useOnboarding()
-  const [sheet, setSheet] = React.useState<"booked" | "update">()
+  // Opened as /book/[id], the partner booking sheet is up from the start;
+  // a link can open the others too (?sheet=update, as Profile's renew).
+  const first = usePathname().startsWith("/book/") ? "book" : SHEETS.find((s) => s === opened)
+  const [sheet, setSheet] = React.useState<Sheet | undefined>(first)
 
   const o = id ? findOrder(id) : undefined
   if (!o) return <PageNotFoundState />
@@ -165,36 +182,50 @@ export default function OrderScreen() {
     toast("Saved")
   }
 
+  // The test named, so the assistant answers at once rather than asking
+  // which test.
+  const ask = `What is the ${o.name.charAt(0).toLowerCase()}${o.name.slice(1)} for?`
+
   return (
     <View style={styles.screen}>
-      <FlowScreen page title={o.name}>
-        <Card style={styles.head}>
-          <View style={styles.statusLine}>
-            <Status tone={tone} mark={mark}>
-              {word}
-            </Status>
-            {/* Overdue in words as well as colour, as To do says it (C.0.4,
-                C.0.9). The wrapper centres the shorter tag on the badge. */}
-            {overdue && (
-              <View>
-                <Tag tone="low">Overdue</Tag>
-              </View>
-            )}
-            {!!meta && <Text style={styles.statusMeta}>{keepTogether(meta)}</Text>}
+      <FlowScreen
+        page
+        title={o.name}
+        action={done ? undefined : { label: "Update test", onPress: () => setSheet("update") }}
+        footer={
+          <>
+            <AskButton params={{ ask }} />
+            {done && <PrimaryButton onPress={() => router.push("/record/results")}>See your results</PrimaryButton>}
+          </>
+        }
+      >
+        <HeadCard style={styles.head}>
+          <View style={styles.words}>
+            <View style={styles.statusLine}>
+              <Status tone={tone} mark={mark}>
+                {word}
+              </Status>
+              {/* Overdue in words as well as colour, as To do says it
+                  (C.0.4, C.0.9); otherwise when it is due, or where. */}
+              {overdue ? <Tag tone="low">Overdue</Tag> : !!meta && <Text style={styles.statusMeta}>{keepTogether(meta)}</Text>}
+            </View>
+            <Text style={styles.fact}>{keepTogether(factOf(o, stage, overdue, told, status.on))}</Text>
+            {planTest && <Text style={styles.plan}>This result updates your plan.</Text>}
           </View>
-          <Text style={styles.fact}>{keepTogether(factOf(o, stage, overdue, told, status.on))}</Text>
-          {planTest && <Text style={styles.plan}>This result updates your plan.</Text>}
           {timed && booking && where && (
             <View style={styles.pills}>
-              <SmallAction onPress={() => addToCalendar({ title: o.name, start: booking.date, where })}>Add to calendar</SmallAction>
-              <SmallAction onPress={() => directions(where)}>Directions</SmallAction>
+              <IconAction grow icon={<CalendarBlank size={14} color={ink.primary} />} onPress={() => addToCalendar({ title: o.name, start: booking.date, where })}>
+                Add to calendar
+              </IconAction>
+              <IconAction grow icon={<MapPin size={14} color={ink.primary} />} onPress={() => directions(where)}>
+                Directions
+              </IconAction>
             </View>
           )}
-          <View style={styles.rule} />
           <DateTrack dates={track} late={overdue} />
-        </Card>
+        </HeadCard>
 
-        {stage === "open" && <BookIt order={o} onBooked={() => setSheet("booked")} />}
+        {stage === "open" && <BookIt order={o} onBooked={() => setSheet("booked")} onPartner={() => setSheet("book")} />}
 
         <Block title="Details">
           <Card style={styles.details}>
@@ -207,28 +238,16 @@ export default function OrderScreen() {
 
         {gap && gap.reminders > 0 && !done && (
           <Block title="Reminders">
-            <Card style={styles.steps}>
-              <Steps steps={reminderSteps(gap, "Then Dr. Patel's team will reach out", stage !== "open")} />
+            <Card>
+              <Reminders steps={reminderSteps(gap, "Then Dr. Patel's team will reach out", stage !== "open")} />
             </Card>
           </Block>
         )}
-
-        <View style={styles.more}>
-          {done ? (
-            <TextAction onPress={() => router.push("/record/results")}>See your results</TextAction>
-          ) : (
-            <TextAction onPress={() => setSheet("update")}>Update this test</TextAction>
-          )}
-          {/* The test named, so the assistant answers at once rather than
-              asking which test. */}
-          <TextAction onPress={() => router.push({ pathname: "/assistant", params: { ask: `What is the ${o.name.charAt(0).toLowerCase()}${o.name.slice(1)} for?` } })}>
-            Ask about this test
-          </TextAction>
-        </View>
       </FlowScreen>
 
       {sheet === "booked" && <BookedSheet withWhere onSave={saveBooked} onClose={() => setSheet(undefined)} />}
       {sheet === "update" && <UpdateSheet booked={booked} contact={contact} onAnswer={onAnswer} onClose={() => setSheet(undefined)} />}
+      {sheet === "book" && <BookSheet order={o} onClose={() => setSheet(undefined)} />}
     </View>
   )
 }
@@ -255,26 +274,17 @@ function keepLast(text: string) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  // The words 8 apart, the date pills 12 under them.
   head: { gap: space.item },
-  // The status, its tag and its meta sit in a row like chips, and wrap as
-  // a chip row does.
-  statusLine: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.inline },
-  statusMeta: { ...type.meta },
-  fact: { ...type.body },
+  words: { gap: space.inline },
+  // The status badge on the left, its tag or the place on the right; on a
+  // narrow phone the right side wraps under the badge.
+  statusLine: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: space.inline },
+  statusMeta: { ...type.caption, flexShrink: 1, textAlign: "right" },
+  fact: { fontFamily: font.regular, fontSize: 14, lineHeight: 21, color: ink.detail },
   plan: { ...type.label },
-  pills: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
-  // The rule between the words and the dates, inset to the text as every
-  // rule inside a card is, a card's padding above and below it (the
-  // card's own gap included).
-  rule: { height: 1, backgroundColor: hairline.rule, marginVertical: space.card - space.item },
+  pills: { flexDirection: "row", gap: space.item },
   // The first and last rows' words sit a card's padding from its edge,
   // as its sides do.
   details: { paddingVertical: space.card - space.rowY },
-  // Each step keeps space.item under it; the card adds what brings the
-  // last one to a card's padding, as at the top.
-  steps: { paddingBottom: space.card - space.item },
-  // Two text buttons side by side, with no container, need more room than
-  // a pair of pills; the row sits a little closer to the page above than
-  // the page's own sections do.
-  more: { flexDirection: "row", flexWrap: "wrap", columnGap: 24, rowGap: space.inline, marginTop: -space.inline },
 })

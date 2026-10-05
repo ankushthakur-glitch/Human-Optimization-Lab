@@ -1,12 +1,12 @@
 import * as React from "react"
-import { Animated, Easing, Platform, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native"
+import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native"
 
-import { keepTogether } from "@/components/care-gap"
 import { useReducedMotion } from "@/components/chat"
-import { IconCall, IconCheck, IconInfo } from "@/components/icons"
-import { RecordIcon, type RecordIconName } from "@/components/record-icons"
-import { Banner, Block, Card, ChipRow, Dot, Group, HUE, SmallAction, Status, TextAction, Tile, toast, type Choice, type Hue } from "@/components/record-kit"
-import { TextField } from "@/components/ui"
+import { PageGround } from "@/components/hol"
+import { Check, Info, Phone, Pill } from "@/components/ph"
+import { Banner, Block, Card, Chip, Dot, HUE, KeyValue, SmallAction, Tabs, Tag, TextAction, toast, type Choice } from "@/components/record-kit"
+import { Sheet } from "@/components/sheet"
+import { Button, TextField } from "@/components/ui"
 import { questionKind } from "@/lib/allowance"
 import { URGENT } from "@/lib/assistant"
 import { call } from "@/lib/links"
@@ -14,7 +14,6 @@ import { useOnboarding, type MedRecord } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { MEDICATIONS, ORIGIN_LABEL, REVIEW, medDifference, type Medication, type Origin } from "@/lib/record"
 import { cardRadius, color, hairline, ink, space, type } from "@/lib/theme"
-import { yourMedicines } from "@/lib/todo"
 
 /* Your medicines (FINAL-SPEC C.10): one list the patient and Dr. Patel both
    trust. Dr. Patel's list is the true one (F-65). Where another place lists
@@ -25,7 +24,11 @@ import { yourMedicines } from "@/lib/todo"
    it (F-72); never conflict, error or wrong. Nothing here sells.
 
    MedicineConfirm is the whole list for Your medicines, and, `compact`,
-   the paid setup's medicines step. */
+   the paid setup's medicines step. Drawn as the Figma "Hol" Your
+   medicines (5 Oct 2026): while anything is left to check, the check page
+   (To check, Up to date, Past); once everything is checked, Current and
+   Past medicines on a segmented control, each opening its details in a
+   sheet (MedicineSheet, drawn by the screen over the page). */
 
 export type MedicineConfirmProps = {
   /** The tighter layout for the paid setup's medicines step: the questions
@@ -37,9 +40,16 @@ export type MedicineConfirmProps = {
   onAnswered?: () => void
   /** A medicine to bring into view on arrival and mark for a moment, by
       id: the one she tapped on Home, the Record tab or the timeline
-      (`/medications?id=cetirizine`). */
+      (`/medications?id=cetirizine`). On the list it opens its details. */
   focus?: string
+  /** Which view shows: the check page or the list. Unset, the check page
+      while anything is left to check, else the list. */
+  view?: MedicineView
+  /** Opens a medicine's details (the list's rows). */
+  onOpen?: (m: Medication) => void
 }
+
+export type MedicineView = "check" | "list"
 
 /** What she says about one medicine; the time is added on saving. */
 type Answer = Omit<MedRecord, "at">
@@ -76,16 +86,6 @@ const FROM: Record<Origin, string> = {
   lab: ORIGIN_LABEL.lab,
   you: "told by you",
   report: "from your report",
-}
-
-/** Each place's tile beside its line: the clinic in teal, others in blue,
-    what she told us in violet. */
-const SOURCE: Record<Origin, { icon: RecordIconName; hue: Hue }> = {
-  doctor: { icon: "clinic", hue: "teal" },
-  hospital: { icon: "hospital", hue: "blue" },
-  lab: { icon: "lab", hue: "blue" },
-  you: { icon: "documents", hue: "violet" },
-  report: { icon: "documents", hue: "violet" },
 }
 
 /** "Aug 12" in this year, "Aug 12, 2025" in another. */
@@ -140,17 +140,20 @@ const TAKING: Choice<"taking" | "not-taking">[] = [
 /** The urgent message's icon, which its pills line up after. */
 const URGENT_ICON = 18
 
-/** Her medicines: the count, the ones her lists differ on with a question
-    for each, the ones they agree on, and past ones. */
-export function MedicineConfirm({ compact = false, onAnswered, focus }: MedicineConfirmProps) {
+/** Her medicines. The check page: the ones her lists differ on with a
+    question for each, the ones they agree on, and past ones. The list:
+    current and past medicines, each opening its details. */
+export function MedicineConfirm({ compact = false, onAnswered, focus, view, onOpen }: MedicineConfirmProps) {
   const s = useOnboarding()
   const current = MEDICATIONS.filter((m) => !m.resolved)
   const differ = current.filter((m) => medDifference(m))
   const agree = current.filter((m) => !medDifference(m))
   const past = MEDICATIONS.filter((m) => m.resolved)
-  // The count Home and the Record tab show, from the one place they come from.
-  const count = yourMedicines(s)
   const open = differ.filter((m) => !s.meds?.[m.id]).length
+  // The view is chosen once, as the page opens, so answering the last
+  // question never swaps the page from under her.
+  const [initial] = React.useState<MedicineView>(open > 0 ? "check" : "list")
+  const shown: MedicineView = compact ? "check" : (view ?? initial)
 
   // Setup goes on once every difference has an answer, already or now.
   const told = React.useRef(false)
@@ -167,29 +170,10 @@ export function MedicineConfirm({ compact = false, onAnswered, focus }: Medicine
     toast("Saved")
   }
 
+  if (shown === "list") return <MedicineList current={current} past={past} focus={focus} onOpen={onOpen} />
+
   const sections = (
     <>
-      {!compact && (
-        <Card style={styles.summary}>
-          <Tile hue="violet">
-            <RecordIcon name="medications" size={18} color={HUE.violet.ink} />
-          </Tile>
-          <View style={styles.summaryBody}>
-            <Text style={type.section}>{`${count.total} on your lists`}</Text>
-            <View style={styles.summaryMeta}>
-              {count.toCheck ? (
-                <Dot tone="low" />
-              ) : (
-                <View style={styles.doneMark}>
-                  <IconCheck size={8} color={color.onPrimary} strokeWidth={3} />
-                </View>
-              )}
-              <Text style={type.metaStrong}>{count.toCheck ? `${count.toCheck} to check` : "All checked"}</Text>
-            </View>
-          </View>
-        </Card>
-      )}
-
       {differ.length > 0 && (
         <Block title={open ? "To check" : "Checked"}>
           {differ.map((m) => (
@@ -202,25 +186,25 @@ export function MedicineConfirm({ compact = false, onAnswered, focus }: Medicine
 
       {agree.length > 0 && (
         <Block title="Up to date">
-          <Group>
+          <Rows>
             {agree.map((m, i) => (
               <InView key={m.id} on={focus === m.id}>
                 <AgreeRow m={m} saved={s.meds?.[m.id]} onAnswer={compact ? undefined : (a) => answer(m.id, a)} spotlight={focus === m.id ? edgesOf(i, agree.length) : undefined} />
               </InView>
             ))}
-          </Group>
+          </Rows>
         </Block>
       )}
 
       {!compact && past.length > 0 && (
         <Block title="Past">
-          <Group>
+          <Rows>
             {past.map((m, i) => (
               <InView key={m.id} on={focus === m.id}>
                 <PastRow m={m} spotlight={focus === m.id ? edgesOf(i, past.length) : undefined} />
               </InView>
             ))}
-          </Group>
+          </Rows>
         </Block>
       )}
     </>
@@ -230,6 +214,133 @@ export function MedicineConfirm({ compact = false, onAnswered, focus }: Medicine
   // as every page's sections; the setup step holds them together under its
   // title.
   return compact ? <View style={styles.compact}>{sections}</View> : sections
+}
+
+/** Rows on one white card, 12 either side of a hairline. */
+function Rows({ children }: { children: React.ReactNode }) {
+  const rows = React.Children.toArray(children).filter(Boolean)
+  return (
+    <Card style={styles.rows}>
+      {rows.map((row, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <View style={styles.rule} />}
+          {row}
+        </React.Fragment>
+      ))}
+    </Card>
+  )
+}
+
+/** The pill on its round teal tile. */
+const PillTile = () => (
+  <View style={styles.tile}>
+    <Pill size={16} color={color.primary} />
+  </View>
+)
+
+/** A medicine's line, as a row names it: "10 mg when needed, Dr. Patel". */
+const lineOf = (m: Medication) => {
+  const line = m.lists.find((l) => l.origin === "doctor") ?? m.lists[0]
+  return `${line.dose}, ${FROM[line.origin]}`
+}
+
+/* ------------------------------------------------------------ list -- */
+
+type Shelf = "current" | "past"
+
+const SHELVES: { value: Shelf; label: string }[] = [
+  { value: "current", label: "Current medicines" },
+  { value: "past", label: "Past medicines" },
+]
+
+/** Once everything is checked: current and past medicines on a segmented
+    control, each row opening its details. Opened by name, the medicine's
+    details open as the page arrives. */
+function MedicineList({ current, past, focus, onOpen }: { current: Medication[]; past: Medication[]; focus?: string; onOpen?: (m: Medication) => void }) {
+  const [shelf, setShelf] = React.useState<Shelf>(past.some((m) => m.id === focus) ? "past" : "current")
+  // Each medicine opened by name opens once, on its shelf, also when the
+  // page is already open and only the name changes.
+  const opened = React.useRef<string | undefined>(undefined)
+  React.useEffect(() => {
+    if (!focus || opened.current === focus) return
+    opened.current = focus
+    const m = MEDICATIONS.find((x) => x.id === focus)
+    if (!m) return
+    setShelf(m.resolved ? "past" : "current")
+    onOpen?.(m)
+  }, [focus, onOpen])
+  const list = shelf === "current" ? current : past
+  return (
+    <>
+      <Tabs options={SHELVES} value={shelf} onChange={setShelf} />
+      {list.length > 0 && (
+        <Rows>
+          {list.map((m) => (
+            <Pressable
+              key={m.id}
+              onPress={() => onOpen?.(m)}
+              accessibilityRole="button"
+              accessibilityLabel={[m.name, lineOf(m), m.resolved].filter(Boolean).join(". ")}
+              style={({ pressed }) => [styles.listRow, pressed && styles.pressed]}
+            >
+              <PillTile />
+              <View style={styles.words}>
+                <Text style={styles.name}>{m.name}</Text>
+                <Text style={styles.meta}>{shelf === "past" ? pastLine(m) : lineOf(m)}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </Rows>
+      )}
+    </>
+  )
+}
+
+/** A past medicine's lines: the dose with where and when, then how it
+    ended. */
+function pastLine(m: Medication) {
+  const line = m.lists[0]
+  const first = `${line.dose}, ${oneLine(`${FROM[line.origin]}, ${onDay(line.date)}`)}`
+  return m.resolved ? `${first}\n${lastTwo(m.resolved)}` : first
+}
+
+/** How a past medicine ended, as a value: "Short course, finished". */
+const endedOf = (resolved: string) => {
+  const how = resolved.replace(/^Dr\. Patel marked this as (a |an )?/, "")
+  return how.charAt(0).toUpperCase() + how.slice(1)
+}
+
+/** A medicine's details, in the sheet the list opens: its badge, then each
+    fact on an inset card. A current medicine offers to update what she
+    takes, which opens the check page. */
+export function MedicineSheet({ m, onClose, onUpdate }: { m: Medication; onClose: () => void; onUpdate: () => void }) {
+  const s = useOnboarding()
+  const saved = s.meds?.[m.id]
+  const line = m.lists.find((l) => l.origin === "doctor") ?? m.lists[0]
+  const others = m.lists.filter((l) => l !== line)
+  const rows: { label: string; value: string }[] = [
+    { label: "Medication", value: m.name },
+    { label: "Dose", value: line.dose },
+    { label: "Listed by", value: LIST_NAME[line.origin] },
+    { label: "Date", value: line.date },
+    ...others.map((l) => ({ label: LIST_NAME[l.origin], value: `${l.dose}, ${onDay(l.date)}` })),
+    ...(saved ? [{ label: "You said", value: saidOf(saved) }] : []),
+    ...(m.resolved ? [{ label: "Ended", value: endedOf(m.resolved) }] : []),
+  ]
+  return (
+    <Sheet title={m.name} titleRight={<Tag tone={m.resolved ? "muted" : "ok"}>{m.resolved ? "Past" : "Active"}</Tag>} onClose={onClose}>
+      <Card style={styles.facts}>
+        {rows.map((r, i) => (
+          <KeyValue key={r.label} label={r.label} value={r.value} last={i === rows.length - 1} />
+        ))}
+      </Card>
+      {!m.resolved && (
+        <Button variant="outline" onPress={onUpdate}>
+          Update what you take
+        </Button>
+      )}
+    </Sheet>
+  )
 }
 
 /* ------------------------------------------------- opened by name -- */
@@ -414,35 +525,42 @@ function CheckCard({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: M
     <Card style={styles.check}>
       {spotlight && <Spotlight style={styles.spotCard} />}
       <View style={styles.checkHead}>
-        <Text style={[type.section, styles.grow]}>{m.name}</Text>
-        {!saved && <Status level="borderline" bare>Records differ</Status>}
+        <View style={styles.checkName}>
+          <PillTile />
+          <Text style={styles.name}>{m.name}</Text>
+        </View>
+        {!saved && (
+          <View style={styles.differ}>
+            <Dot tone="low" />
+            <Text style={styles.differText}>Records differ</Text>
+          </View>
+        )}
       </View>
+      <View style={styles.rule} />
 
+      {/* Each list's line on its own tile, side by side; the dose and its
+          source read as one line to a screen reader. */}
       <View style={styles.sources}>
         {m.lists.map((l) => (
-          <View key={`${l.origin}-${l.dose}`} style={styles.source}>
-            <Tile hue={SOURCE[l.origin].hue} size={28}>
-              <RecordIcon name={SOURCE[l.origin].icon} size={16} color={HUE[SOURCE[l.origin].hue].ink} />
-            </Tile>
-            {/* The dose and its source read as one line to a screen reader. */}
-            <Text style={[type.value, styles.grow]}>
+          <View key={`${l.origin}-${l.dose}`} style={styles.source} accessible accessibilityLabel={`${l.dose}, ${LIST_NAME[l.origin]}, ${onDay(l.date)}`}>
+            <PageGround />
+            <Text style={styles.sourceDose} numberOfLines={1}>
               {l.dose}
-              <Text style={styles.sourceMeta}>{`\n${LIST_NAME[l.origin]}, ${onDay(l.date)}`}</Text>
             </Text>
+            <Text style={styles.meta} numberOfLines={1}>{`${LIST_NAME[l.origin]}, ${onDay(l.date)}`}</Text>
           </View>
         ))}
       </View>
 
       {asking ? (
         <>
-          <Text style={type.label}>{keepTogether(onList ? `${DOCTOR} will review the difference.` : `It isn't on ${DOCTOR}'s list. ${DOCTOR} will review it.`)}</Text>
           <View style={styles.rule} />
           <View style={styles.question}>
-            <Text style={type.title}>{onList ? "Which dose do you take?" : "Do you take it?"}</Text>
+            <Text style={styles.ask}>{onList ? "Which dose do you take?" : "Do you take it?"}</Text>
             {onList ? (
-              <ChipRow wrap label="Which dose do you take?" options={doseChoices} value={doseValue} onChange={pickDose} />
+              <Chips label="Which dose do you take?" options={doseChoices} value={doseValue} onChange={pickDose} />
             ) : (
-              <ChipRow wrap label="Do you take it?" options={OFF_LIST} value={saved?.answer as (typeof OFF_LIST)[number]["value"] | undefined} onChange={pickTaking} />
+              <Chips label="Do you take it?" options={OFF_LIST} value={saved?.answer as (typeof OFF_LIST)[number]["value"] | undefined} onChange={pickTaking} />
             )}
           </View>
 
@@ -466,8 +584,8 @@ function CheckCard({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: M
 
           {stopped && (
             <View style={[styles.question, styles.followUp]}>
-              <Text style={type.title}>Why did you stop?</Text>
-              <ChipRow wrap label="Why did you stop?" options={WHY_STOPPED} value={saved?.why} onChange={pickWhy} />
+              <Text style={styles.ask}>Why did you stop?</Text>
+              <Chips label="Why did you stop?" options={WHY_STOPPED} value={saved?.why} onChange={pickWhy} />
             </View>
           )}
 
@@ -492,7 +610,7 @@ function CheckCard({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: M
             <View style={styles.rule} />
             <View style={styles.said}>
               <View style={styles.saidMark}>
-                <IconCheck size={10} color={color.onPrimary} strokeWidth={3} />
+                <Check size={10} color={color.onPrimary} weight="bold" />
               </View>
               <View style={styles.grow}>
                 <Text style={type.body}>
@@ -512,7 +630,7 @@ function CheckCard({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: M
       {sideEffect && (
         <Banner
           hue="teal"
-          icon={<IconCall size={18} color={HUE.teal.ink} />}
+          icon={<Phone size={16} color={HUE.teal.ink} />}
           title={`If you have symptoms now, call ${PRACTICE} at ${PHONE}.`}
           action="Call"
           onPress={() => call(PATIENT.practicePhone)}
@@ -523,7 +641,7 @@ function CheckCard({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: M
         <View style={styles.urgent} accessibilityRole="alert">
           <View style={styles.urgentTop}>
             <View style={styles.urgentIcon}>
-              <IconInfo size={URGENT_ICON} color={color.amber} />
+              <Info size={URGENT_ICON} color={color.amber} />
             </View>
             <Text style={[type.body, styles.grow]}>{URGENT.page.replace(PATIENT.practicePhone, PHONE)}</Text>
           </View>
@@ -543,19 +661,33 @@ function CheckCard({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: M
 
 /* ------------------------------------------------- up to date, past -- */
 
+/** Answer chips that wrap inside a card, 12 between lines and 10 side by
+    side (Figma); one is chosen at a time. */
+function Chips<T extends string>({ options, value, onChange, label }: { options: Choice<T>[]; value?: T; onChange: (v: T) => void; label: string }) {
+  return (
+    <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      {options.map((o) => (
+        <Chip key={o.value} label={o.label} selected={o.value === value} onPress={() => onChange(o.value)} radio />
+      ))}
+    </View>
+  )
+}
+
 /** A medicine her lists agree on: its line and who it comes from, with an
     optional "Taking it" or "Not taking it". */
 function AgreeRow({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: MedRecord; onAnswer?: (a: Answer) => void; spotlight?: Edges }) {
-  const line = m.lists.find((l) => l.origin === "doctor") ?? m.lists[0]
   const value = saved?.answer === "taking" || saved?.answer === "not-taking" ? saved.answer : undefined
   return (
-    <View style={styles.row}>
+    <View style={styles.agree}>
       {spotlight && <Spotlight style={rowSpotlight(spotlight)} />}
-      <View style={styles.rowText}>
-        <Text style={type.title}>{m.name}</Text>
-        <Text style={type.label}>{`${line.dose}, ${FROM[line.origin]}`}</Text>
+      <View style={styles.listRow}>
+        <PillTile />
+        <View style={styles.words}>
+          <Text style={styles.name}>{m.name}</Text>
+          <Text style={styles.meta}>{lineOf(m)}</Text>
+        </View>
       </View>
-      {onAnswer && <ChipRow wrap label={`Are you taking ${m.name}?`} options={TAKING} value={value} onChange={(v) => onAnswer({ answer: v })} />}
+      {onAnswer && <Chips label={`Are you taking ${m.name}?`} options={TAKING} value={value} onChange={(v) => onAnswer({ answer: v })} />}
       {onAnswer && value === "not-taking" && <Text style={type.meta}>{`${DOCTOR} will see this.`}</Text>}
     </View>
   )
@@ -563,15 +695,16 @@ function AgreeRow({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: Me
 
 /** A medicine she no longer takes, with how it ended. */
 function PastRow({ m, spotlight }: { m: Medication; spotlight?: Edges }) {
-  const line = m.lists[0]
   return (
     <View style={styles.pastRow}>
       {spotlight && <Spotlight style={rowSpotlight(spotlight)} />}
-      <Text style={type.title}>{m.name}</Text>
-      {/* Where and when stay together: "400 mg when needed," then
-          "Scripps Memorial, Jun 3" on a narrow phone. */}
-      <Text style={type.label}>{`${line.dose}, ${oneLine(`${FROM[line.origin]}, ${onDay(line.date)}`)}`}</Text>
-      {!!m.resolved && <Text style={type.meta}>{lastTwo(m.resolved)}</Text>}
+      <PillTile />
+      <View style={styles.words}>
+        <Text style={styles.name}>{m.name}</Text>
+        {/* Where and when stay together: "400 mg when needed," then
+            "Scripps Memorial, Jun 3" on a narrow phone. */}
+        <Text style={styles.pastMeta}>{pastLine(m)}</Text>
+      </View>
     </View>
   )
 }
@@ -586,21 +719,42 @@ const styles = StyleSheet.create({
   // The setup step's sections, a screen's section apart.
   compact: { gap: space.section },
   grow: { flex: 1 },
+  pressed: { opacity: 0.7 },
 
-  summary: { flexDirection: "row", alignItems: "center", gap: space.lead },
-  summaryBody: { flex: 1, gap: space.stack },
-  summaryMeta: { flexDirection: "row", alignItems: "center", gap: space.mark },
-  doneMark: { width: 12, height: 12, borderRadius: 6, backgroundColor: color.ok, alignItems: "center", justifyContent: "center" },
+  // A card's rows, 12 either side of a hairline.
+  rows: { gap: space.card },
+  rule: { height: 0.8, backgroundColor: hairline.rule },
+  tile: { width: 28, height: 28, borderRadius: 14, backgroundColor: color.primaryTint, alignItems: "center", justifyContent: "center" },
+  words: { flex: 1, gap: space.stack },
+  name: { ...type.title, color: ink.detail },
+  meta: { ...type.label },
+  listRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 
-  // A question in a card: Frontline's form card, 16 between its parts.
+  // A medicine to check: its name, its lists and the question, 12 apart
+  // over hairlines.
   check: { gap: space.card },
-  checkHead: { flexDirection: "row", alignItems: "center", gap: space.item },
-  sources: { gap: space.item },
-  source: { flexDirection: "row", alignItems: "center", gap: space.lead },
-  sourceMeta: { ...type.meta },
-  rule: { height: 1, backgroundColor: hairline.rule },
-  // A question to its answers (Frontline 12).
-  question: { gap: space.item },
+  checkHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },
+  checkName: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.mark },
+  differ: { flexDirection: "row", alignItems: "center", gap: space.mark },
+  differText: { ...type.captionStrong, color: ink.detail },
+  // Each list on its own tile: the page's gradient inside a hairline.
+  sources: { flexDirection: "row", gap: 13 },
+  source: {
+    flex: 1,
+    gap: space.stack,
+    paddingTop: 8,
+    paddingBottom: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+    overflow: "hidden",
+  },
+  sourceDose: { ...type.title, color: ink.detail },
+  // A question to its answers.
+  question: { gap: 10 },
+  ask: { ...type.title, color: ink.secondary },
+  chips: { flexDirection: "row", flexWrap: "wrap", rowGap: space.item, columnGap: 10 },
   followUp: { marginTop: space.stack },
   // "Change" on the first line of her answer, not above it.
   change: { marginTop: (type.body.lineHeight - TEXT_ACTION) / 2 },
@@ -620,27 +774,29 @@ const styles = StyleSheet.create({
   },
   saidLead: { color: ink.detail },
 
-  urgent: { gap: space.item, padding: space.compact, borderRadius: 14, borderWidth: 1, borderColor: color.amberEdge, backgroundColor: color.amberTint },
+  urgent: { gap: space.item, padding: space.compact, borderRadius: 8, borderWidth: 1, borderColor: color.amberEdge, backgroundColor: color.amberTint },
   urgentTop: { flexDirection: "row", alignItems: "flex-start", gap: space.inline },
   // The icon centred on the message's first line.
   urgentIcon: { marginTop: (type.body.lineHeight - URGENT_ICON) / 2 },
   // The pills start under the words, past the icon.
   urgentActions: { flexDirection: "row", flexWrap: "wrap", gap: space.inline, paddingLeft: URGENT_ICON + space.inline },
 
-  // A medicine and its answer chips: a question to its answers.
-  row: { paddingVertical: space.rowY, gap: space.item },
-  rowText: { gap: space.line },
-  // A past medicine's three lines.
-  pastRow: { paddingVertical: space.rowY, gap: space.stack },
+  // A medicine and its answer chips: the row, then the chips 12 under it.
+  agree: { gap: space.item },
+  // A past medicine: the tile beside its name and two lines.
+  pastRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  pastMeta: { ...type.label },
+
+  // The details sheet's facts: rows edge to edge on the inset card.
+  facts: { paddingVertical: 0 },
 
   // The medicine opened by name: the selected surface's tint behind it.
   spotlight: { position: "absolute", backgroundColor: color.primaryTint },
   // A card's whole inside, with the halo just inside its edge and its
   // corners.
   spotCard: { top: 0, left: 0, right: 0, bottom: 0, borderRadius: cardRadius - 1, borderWidth: 1.5, borderColor: color.primaryHalo },
-  // A row's band, out to its Group's sides and up to its rules.
-  spotRow: { top: 0, bottom: 0, left: -space.rowX, right: -space.rowX },
+  // A row's band, out to its card's sides and up to its rules.
+  spotRow: { top: -space.card, bottom: -space.card, left: -space.card, right: -space.card },
   spotRowFirst: { borderTopLeftRadius: cardRadius - 1, borderTopRightRadius: cardRadius - 1 },
   spotRowLast: { borderBottomLeftRadius: cardRadius - 1, borderBottomRightRadius: cardRadius - 1 },
 })
-

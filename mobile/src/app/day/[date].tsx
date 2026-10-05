@@ -6,11 +6,11 @@ import { GoalRows, ScoreRing, WeekBars, formatNumber } from "@/components/charts
 import { CheckInSheet } from "@/components/check-in-sheet"
 import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
-import { IconBloodPressure, IconCheck, IconDumbbell, IconScale, IconTape, IconWalk } from "@/components/icons"
+import { AskButton, PrimaryButton } from "@/components/hol"
+import { Barbell, CheckCircle, Heartbeat, PersonSimpleWalk, Ruler, Scales } from "@/components/ph"
 import { NutrientSheet, keepGap } from "@/components/member-day-nutrient"
-import { Block, Card, EmptyState, Group, HUE, KeyValue, NeedsRow, SmallAction, Tag, TextAction } from "@/components/record-kit"
+import { Block, Card, EmptyState, Group, HUE, KeyValue, NeedsRow, SmallAction, Tag } from "@/components/record-kit"
 import { MealRow } from "@/components/today-food-meals"
-import { Button } from "@/components/ui"
 import { relativeDay } from "@/lib/dates"
 import {
   BP_CHECK,
@@ -128,7 +128,7 @@ export default function DayScreen() {
 
   return (
     <View style={styles.fill}>
-      <FlowScreen page title={relativeDay(day, now)}>
+      <FlowScreen page title={relativeDay(day, now)} footer={<AskButton params={{ ask }} />}>
         <ScoreCard score={score} relative={isToday || offset === -1} onAdd={logMeal} />
 
         {score.status !== "none" && (
@@ -156,7 +156,7 @@ export default function DayScreen() {
                   icon={m.icon}
                   title={m.title}
                   meta={m.meta}
-                  right={m.done ? <IconCheck size={18} color={chart.inRange} /> : undefined}
+                  right={m.done ? <CheckCircle size={20} color={chart.inRange} weight="fill" /> : undefined}
                   onPress={m.onPress}
                   accessibilityLabel={`${m.title}, ${m.meta}`}
                 />
@@ -201,12 +201,6 @@ export default function DayScreen() {
             )}
           </Card>
         </Block>
-
-        <View style={styles.ask}>
-          <TextAction chevron onPress={() => router.push({ pathname: "/assistant", params: { ask } })}>
-            Ask about this day
-          </TextAction>
-        </View>
       </FlowScreen>
 
       {goal && <NutrientSheet goal={goal} day={day} now={now} onClose={() => setNutrient(undefined)} />}
@@ -228,7 +222,7 @@ function ScoreCard({ score, relative, onAdd }: { score: DayScore; relative: bool
     return (
       <EmptyState title={`Nothing logged on ${score.label}`}>
         <View style={styles.emptyAction}>
-          <Button onPress={() => onAdd("breakfast")}>Add a meal for this day</Button>
+          <PrimaryButton onPress={() => onAdd("breakfast")}>Add a meal for this day</PrimaryButton>
         </View>
       </EmptyState>
     )
@@ -360,7 +354,7 @@ function movesOf(s: Store, day: Date, log: Record<string, { minutes?: number }> 
   const walk = log?.walk
   out.push({
     id: "walk",
-    icon: <IconWalk color={HUE.teal.ink} />,
+    icon: <PersonSimpleWalk size={16} color={HUE.teal.ink} />,
     title: WALK.title,
     meta: walk ? `Done, ${walk.minutes ?? WALK.minutes} minutes` : isToday ? WALK.detail : "Not logged",
     done: Boolean(walk),
@@ -372,7 +366,7 @@ function movesOf(s: Store, day: Date, log: Record<string, { minutes?: number }> 
     const done = log?.[session.id] ? of : session.exercises.filter((e) => log?.[e.id]).length
     out.push({
       id: session.id,
-      icon: <IconDumbbell color={HUE.teal.ink} />,
+      icon: <Barbell size={16} color={HUE.teal.ink} />,
       title: session.title,
       meta: done === of ? `Done, ${of} of ${of} moves` : done ? `${done} of ${of} moves` : isToday ? `${of} moves, about ${session.minutes} minutes` : "Not logged",
       done: done === of,
@@ -409,18 +403,18 @@ function checkInsOf(s: Store, day: Date, isToday: boolean, now: Date, open: (kin
 
   const out: CheckIn[] = []
   weight.forEach((m, i) =>
-    out.push({ id: `weight${i}`, icon: <IconScale color={HUE.teal.ink} />, title: "Weight", meta: `${formatNumber(m.value, 1)} lb${timeOf(m)}` })
+    out.push({ id: `weight${i}`, icon: <Scales size={16} color={HUE.teal.ink} />, title: "Weight", meta: `${formatNumber(m.value, 1)} lb${timeOf(m)}` })
   )
   if (isToday && !weight.length && day.getDay() === 4)
-    out.push({ id: "weight-due", icon: <IconScale color={HUE.teal.ink} />, title: "Weight", meta: "Before breakfast", onAdd: () => open("weight") })
-  waist.forEach((m, i) => out.push({ id: `waist${i}`, icon: <IconTape color={HUE.teal.ink} />, title: "Waist", meta: `${formatNumber(m.value, 1)} in${timeOf(m)}` }))
+    out.push({ id: "weight-due", icon: <Scales size={16} color={HUE.teal.ink} />, title: "Weight", meta: "Before breakfast", onAdd: () => open("weight") })
+  waist.forEach((m, i) => out.push({ id: `waist${i}`, icon: <Ruler size={16} color={HUE.teal.ink} />, title: "Waist", meta: `${formatNumber(m.value, 1)} in${timeOf(m)}` }))
   bp.forEach((m, i) =>
-    out.push({ id: `bp${i}`, icon: <IconBloodPressure color={HUE.teal.ink} />, title: "Blood pressure", meta: `${m.value}/${m.value2}${timeOf(m)}` })
+    out.push({ id: `bp${i}`, icon: <Heartbeat size={16} color={HUE.teal.ink} />, title: "Blood pressure", meta: `${m.value}/${m.value2}${timeOf(m)}` })
   )
   if (isToday && !bp.length)
-    out.push({ id: "bp-due", icon: <IconBloodPressure color={HUE.teal.ink} />, title: "Blood pressure", meta: keepEnd(BP_CHECK.detail), onAdd: () => open("bp") })
+    out.push({ id: "bp-due", icon: <Heartbeat size={16} color={HUE.teal.ink} />, title: "Blood pressure", meta: keepEnd(BP_CHECK.detail), onAdd: () => open("bp") })
   chair.forEach((m, i) =>
-    out.push({ id: `stands${i}`, icon: <IconDumbbell color={HUE.teal.ink} />, title: "Chair stands", meta: `${m.value} in 30 seconds${timeOf(m)}` })
+    out.push({ id: `stands${i}`, icon: <Barbell size={16} color={HUE.teal.ink} />, title: "Chair stands", meta: `${m.value} in 30 seconds${timeOf(m)}` })
   )
   return out
 }
@@ -445,6 +439,4 @@ const styles = StyleSheet.create({
   balanceRight: { flexDirection: "row", alignItems: "center", gap: space.inline, flexShrink: 1 },
 
   week: { gap: space.item },
-  // The page's closing action sits nearer the block above than sections do.
-  ask: { alignItems: "flex-start", marginTop: -space.inline },
 })

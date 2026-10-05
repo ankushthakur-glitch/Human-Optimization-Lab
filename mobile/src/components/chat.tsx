@@ -15,8 +15,8 @@ import {
   type ViewStyle,
 } from "react-native"
 
-import { IconCheck, IconChevronRight, IconSend } from "@/components/icons"
-import { color, font, gutter } from "@/lib/theme"
+import { CaretRight, Check, PaperPlaneRight } from "@/components/ph"
+import { card, color, font, gutter, hairline, ink } from "@/lib/theme"
 
 /* Every chat in the app (the assistant, and the "your why" conversation in
    setup) is drawn from these pieces, after the support chats in food and
@@ -26,9 +26,14 @@ import { color, font, gutter } from "@/lib/theme"
    card pinned under the thread at every step. Motion follows the portal's
    agent components: a typing bubble while it "thinks", replies that stream
    in word by word, and a soft rise for anything new. All of it stands still
-   when the phone asks for reduced motion. */
+   when the phone asks for reduced motion.
 
-const INK = "#18181A"
+   Drawn in the Figma "Hol" language (5 Oct 2026): the assistant speaks on
+   the teal tint inside the Primary/02 edge its ask button wears, her
+   replies sit on the brand teal, both at radius 12; options are white rows
+   at radius 8; the chat bar is the page's white footer holding a Figma
+   field (white, #DFDFE4 edge, radius 8) and a teal send button. */
+
 const native = Platform.OS !== "web"
 
 export function useReducedMotion() {
@@ -174,7 +179,7 @@ export function OptionRow({
         style={({ pressed }) => [styles.option, off && styles.optionOff, pressed && styles.pressed]}
       >
         <View style={[styles.box, picked && styles.boxOn, !live && !picked && styles.boxOff]}>
-          {picked && <IconCheck size={14} color={color.onPrimary} strokeWidth={2.4} />}
+          {picked && <Check size={14} color={color.onPrimary} weight="bold" />}
         </View>
         <View style={styles.optionBody}>{children}</View>
         </Pressable>
@@ -187,7 +192,7 @@ export function OptionRow({
           style={({ pressed }) => [styles.option, off && styles.optionOff, pressed && styles.pressed]}
         >
           <View style={styles.optionBody}>{children}</View>
-          {picked ? <IconCheck size={16} color={color.primary} strokeWidth={2.4} /> : live && <IconChevronRight size={16} color={color.muted} />}
+          {picked ? <Check size={16} color={color.primary} weight="bold" /> : live && <CaretRight size={16} color={card.chevron} />}
         </Pressable>
       )}
     </Fold>
@@ -235,12 +240,10 @@ function Fold({ gone, settle, children }: { gone: boolean; settle?: boolean; chi
 
 export const optionTextStyle = (off: boolean): StyleProp<TextStyle> => [styles.optionText, off && styles.optionTextOff]
 
-// The message field: one line when empty. Once the answer wraps, the bar
-// doubles its one-line height and shows two lines; past two it scrolls.
+// The message field: one line when empty. Once the answer wraps, it grows
+// to two lines; past two it scrolls.
 const FIELD_MIN = 44
-const FIELD_MAX = 22 * 2 + 11 * 2
-// Card padding (6 + 6) plus the field: 56 for one line, twice that for two.
-const TWO_LINE_INSET = ((FIELD_MIN + 12) * 2 - 12 - FIELD_MAX) / 2
+const FIELD_MAX = 21 * 2 + 11 * 2
 
 /** The chat bar, pinned under the thread, one row: the message and the
     round send button, greyed out until there is text. `idle` swaps the
@@ -293,8 +296,8 @@ export function ChatBar({
     grow(h)
   }, [value, multiline])
   return (
-    <View style={[styles.bar, { paddingBottom: Math.max(bottom - 12, 12) }]}>
-      <View style={styles.barCard}>
+    <View style={[styles.bar, { paddingBottom: Math.max(bottom, 16) }]}>
+      <View style={styles.barRow}>
         <TextInput
           ref={ref}
           value={value}
@@ -312,9 +315,7 @@ export function ChatBar({
           }
           style={[
             styles.input,
-            multiline && height > FIELD_MIN
-              ? { height: FIELD_MAX, marginVertical: TWO_LINE_INSET }
-              : { height: FIELD_MIN },
+            multiline && height > FIELD_MIN ? { height: FIELD_MAX } : { height: FIELD_MIN },
           ]}
           accessibilityLabel="Message"
         />
@@ -337,7 +338,7 @@ export function ChatBar({
               accessibilityState={{ disabled: !typed || !canSend }}
               style={({ pressed }) => [styles.send, (!typed || !canSend) && styles.sendOff, pressed && styles.pressed]}
             >
-              <IconSend color={color.onPrimary} size={20} />
+              <PaperPlaneRight color={color.onPrimary} size={20} weight="fill" />
             </Pressable>
           )}
         </View>
@@ -428,88 +429,86 @@ export function StreamedText({
 
 const column = { width: "100%", maxWidth: 420 + gutter * 2, alignSelf: "center" } as const
 
+/** The words in a bubble, an option and the field: Figma's 14 body. */
+const BODY = { fontFamily: font.regular, fontSize: 14, lineHeight: 21 } as const
+
 const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   lines: { gap: 6, alignItems: "flex-start" },
-  sender: { fontFamily: font.semibold, fontSize: 12, color: color.primary, marginLeft: 4 },
+  // "Inlay" over a message: 12 medium in the text teal.
+  sender: { fontFamily: font.medium, fontSize: 12, lineHeight: 16, color: ink.primary },
 
-  bubble: { maxWidth: "85%", borderRadius: 20, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 8, gap: 4 },
-  theirs: { alignSelf: "flex-start", backgroundColor: color.canvas, borderBottomLeftRadius: 6 },
+  bubble: { maxWidth: "85%", borderRadius: 12, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 8, gap: 4 },
+  // The assistant's: the ask button's teal tint and edge, its tail corner 4.
+  theirs: { alignSelf: "flex-start", backgroundColor: color.primaryTint, borderWidth: 1, borderColor: color.primaryEdge, borderBottomLeftRadius: 4 },
   wide: { width: "88%", maxWidth: "88%" },
-  // A one character reply (a rating) still reads as a bubble, not a drop.
-  mine: { alignSelf: "flex-end", minWidth: 52, alignItems: "center", paddingHorizontal: 18, backgroundColor: color.primary, borderBottomRightRadius: 6, marginVertical: 4 },
-  mineMuted: { backgroundColor: color.canvas },
-  bubbleText: { fontFamily: font.regular, fontSize: 15, lineHeight: 21, color: color.text },
+  // Hers: the brand teal. A one character reply (a rating) still reads as
+  // a bubble, not a drop.
+  mine: { alignSelf: "flex-end", minWidth: 52, alignItems: "center", paddingHorizontal: 14, backgroundColor: color.primary, borderBottomRightRadius: 4, marginVertical: 4 },
+  mineMuted: { backgroundColor: color.background, borderWidth: 1, borderColor: hairline.outline },
+  bubbleText: { ...BODY, color: ink.content },
   mineText: { color: color.onPrimary },
-  mineMutedText: { color: color.muted },
-  time: { alignSelf: "flex-end", fontFamily: font.regular, fontSize: 11, color: color.muted },
-  mineTime: { color: color.onPrimary, opacity: 0.7 },
-  mineMutedTime: { color: color.muted, opacity: 1 },
+  mineMutedText: { color: ink.secondary },
+  time: { alignSelf: "flex-end", fontFamily: font.regular, fontSize: 10, lineHeight: 14, color: ink.secondary },
+  mineTime: { color: color.onPrimary, opacity: 0.8 },
+  mineMutedTime: { color: ink.secondary, opacity: 1 },
 
   options: { gap: OPTION_GAP, marginTop: 6 },
+  // An option: a white row at radius 8 inside the field's edge.
   option: {
-    minHeight: 46,
+    minHeight: 44,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
+    gap: 8,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: hairline.outline,
     backgroundColor: color.background,
   },
-  optionOff: { backgroundColor: "transparent", borderWidth: StyleSheet.hairlineWidth, borderColor: color.border },
-  optionBody: { flex: 1, gap: 3 },
+  optionOff: { backgroundColor: "transparent", borderColor: color.primaryEdge },
+  optionBody: { flex: 1, gap: 2 },
   box: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
+    width: 20,
+    height: 20,
+    borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: color.inputBorder,
+    borderColor: hairline.outline,
     alignItems: "center",
     justifyContent: "center",
   },
   boxOn: { backgroundColor: color.primary, borderColor: color.primary },
   boxOff: { opacity: 0.5 },
-  optionText: { fontFamily: font.medium, fontSize: 15, color: color.text },
-  optionTextOff: { color: color.muted, fontFamily: font.regular },
+  optionText: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: ink.content },
+  optionTextOff: { color: ink.secondary, fontFamily: font.regular },
 
-  bar: { ...column, paddingHorizontal: gutter - 4, paddingTop: 6 },
-  barCard: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    backgroundColor: color.background,
-    borderRadius: 28,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.border,
-    paddingVertical: 6,
-    paddingLeft: 12,
-    paddingRight: 6,
-    gap: 4,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
+  // The page's white footer: a 1 pt edge on top, 16 inside.
+  bar: { backgroundColor: color.background, borderTopWidth: 1, borderTopColor: hairline.edge, paddingHorizontal: 16, paddingTop: 12 },
+  barRow: { ...column, flexDirection: "row", alignItems: "flex-end", gap: 8 },
+  // A Figma field: white inside its #DFDFE4 edge at radius 8.
   input: {
     flex: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingTop: 11,
     paddingBottom: 11,
-    fontFamily: font.regular,
-    fontSize: 16,
-    lineHeight: 22,
-    color: color.text,
+    ...BODY,
+    color: ink.content,
+    backgroundColor: color.background,
+    borderWidth: 1,
+    borderColor: hairline.outline,
+    borderRadius: 8,
+    boxShadow: card.shadowXs,
     ...Platform.select({ web: { outlineStyle: "none" } as unknown as TextStyle }),
   },
   tools: { flexDirection: "row", alignItems: "center", gap: 2 },
-  send: { width: 44, height: 44, borderRadius: 22, backgroundColor: color.primary, alignItems: "center", justifyContent: "center" },
+  send: { width: 44, height: 44, borderRadius: 8, backgroundColor: color.primary, alignItems: "center", justifyContent: "center" },
   sendOff: { opacity: 0.4 },
-  idle: { height: 44, paddingHorizontal: 18, borderRadius: 22, backgroundColor: color.canvas, alignItems: "center", justifyContent: "center" },
-  idleText: { fontFamily: font.semibold, fontSize: 15, color: INK },
+  idle: { height: 44, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1, borderColor: color.primaryEdge, backgroundColor: color.primaryTint, alignItems: "center", justifyContent: "center" },
+  idleText: { fontFamily: font.medium, fontSize: 14, lineHeight: 18, color: ink.primary },
 
-  typing: { alignSelf: "flex-start", backgroundColor: color.canvas, borderRadius: 20, borderBottomLeftRadius: 6, paddingHorizontal: 16, paddingVertical: 15 },
+  typing: { alignSelf: "flex-start", backgroundColor: color.primaryTint, borderWidth: 1, borderColor: color.primaryEdge, borderRadius: 12, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 14 },
   dots: { flexDirection: "row", alignItems: "center", gap: 5 },
-  dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: color.muted },
+  dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: color.primary },
   clear: { color: "transparent" },
 })

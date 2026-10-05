@@ -5,7 +5,7 @@ import { FlowScreen } from "@/components/flow"
 import { MedicineConfirm } from "@/components/medicines"
 import { SetupStepLabel } from "@/components/plan-account-pieces"
 import { TextAction } from "@/components/record-kit"
-import { Button } from "@/components/ui"
+import { PrimaryButton } from "@/components/hol"
 import { useSetupStep } from "@/lib/setup"
 
 /** Paid setup, step 2 (FINAL-SPEC C.27): her medicines, confirmed before
@@ -19,13 +19,14 @@ export default function SetupMedicinesScreen() {
   const [answered, setAnswered] = React.useState(false)
   return (
     <FlowScreen
-      back={false}
+      page
       title="Confirm your medicines"
+      bar={<SetupStepLabel>{label}</SetupStepLabel>}
       footer={
         <>
-          <Button onPress={() => finish()} disabled={!answered}>
+          <PrimaryButton onPress={() => finish()} disabled={!answered}>
             Continue
-          </Button>
+          </PrimaryButton>
           {!answered && (
             <View style={styles.quiet}>
               <TextAction tone="muted" onPress={() => finish()}>
@@ -36,7 +37,6 @@ export default function SetupMedicinesScreen() {
         </>
       }
     >
-      <SetupStepLabel>{label}</SetupStepLabel>
       <MedicineConfirm compact onAnswered={() => setAnswered(true)} />
     </FlowScreen>
   )

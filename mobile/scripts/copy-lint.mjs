@@ -64,7 +64,6 @@ const FROZEN = [
   "app/record-ready/",
   "app/errors/",
   "components/flow.tsx",
-  "components/list.tsx",
   "components/ui.tsx",
   "components/chat.tsx",
   "components/consent-kit.tsx",

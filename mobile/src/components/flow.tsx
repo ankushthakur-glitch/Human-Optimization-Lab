@@ -15,14 +15,20 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Svg, { Circle, Defs, Ellipse, RadialGradient, Stop } from "react-native-svg"
 
 import { DarkStatusBar } from "@/components/error-state"
-import { IconCheck, IconChevronLeft } from "@/components/icons"
-import { useTopInset } from "@/components/ui"
-import { color, font, gutter, space, type } from "@/lib/theme"
+import { IconChevronLeft } from "@/components/icons"
+import { CaretLeft, Check } from "@/components/ph"
+import { PageFooter, PageGround, PageHeader } from "@/components/hol"
+import { ButtonLook, useTopInset } from "@/components/ui"
+import { card, color, font, gutter, hairline, ink, space, type } from "@/lib/theme"
 
-/* The first-run screens after the password: white, calm and roomy in the
-   manner of Superpower, built from the app's own pieces (the teal Button,
-   the outlined TextField, Inter). A back button on top, one title, the
-   content, and the step's action pinned to the foot in reach of a thumb. */
+/* The first-run screens after the password. Before the consent ("Is this
+   you?") they keep the classic look the user approved: white, calm and
+   roomy in the manner of Superpower, a back button on top, one title, the
+   content, and the step's action pinned to the foot. From the consent on
+   (`hol`) they take the Figma "Hol" Consent's language (5 Oct 2026): a
+   white status bar over the page's soft gradient, a round grey back
+   button, the content on lifted white cards, and the action in a white
+   footer bar. */
 
 export function FlowScreen({
   title,
@@ -33,14 +39,22 @@ export function FlowScreen({
   onBack,
   bar,
   page = false,
+  hol = false,
+  action,
 }: {
-  /** The signed-in record's look: the cool page, with a white back button
-      floating over it. Setup screens leave it off. */
+  /** A setup screen from the consent on: the Figma "Hol" look. Without it
+      (and without `page`) the classic look, classic buttons included. */
+  hol?: boolean
+  /** The signed-in record's look (Figma "Hol"): the white header bar with
+      the back caret and the title, the page gradient, and the footer as a
+      white bar. Setup screens leave it off. */
   page?: boolean
   /** Replaces going back a screen, e.g. to the previous question. */
   onBack?: () => void
   /** Centred in the top bar, e.g. a review switcher. */
   bar?: React.ReactNode
+  /** A page's text action on the right of its header ("Update test"). */
+  action?: { label: string; onPress: () => void; icon?: React.ReactNode }
   title: string
   /** Sits above the title, centred. */
   art?: React.ReactNode
@@ -49,40 +63,108 @@ export function FlowScreen({
   footer?: React.ReactNode
   back?: boolean
 }) {
-  const { bottom } = useSafeAreaInsets()
+  if (page)
+    return (
+      <View style={styles.screen}>
+        <DarkStatusBar />
+        <PageHeader title={title} back={back} onBack={onBack} action={action} right={bar} />
+        <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={styles.fill}>
+            <PageGround />
+            <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <View style={[styles.body, styles.bodyPage]}>
+                {art && <View style={styles.art}>{art}</View>}
+                {children}
+              </View>
+            </ScrollView>
+          </View>
+          {footer && <PageFooter>{footer}</PageFooter>}
+        </KeyboardAvoidingView>
+      </View>
+    )
+
+  if (!hol) return <ClassicFlow {...{ title, art, footer, back, onBack, bar }}>{children}</ClassicFlow>
 
   return (
-    <View style={[styles.screen, page && styles.screenPage]}>
+    <View style={styles.screen}>
       <DarkStatusBar />
-      <FlowBar back={back} onBack={onBack} bar={bar} floating={page} title={page ? title : undefined} />
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={[styles.body, page && styles.bodyPage]}>
-            {art && <View style={styles.art}>{art}</View>}
-            {!page && (
-              <Text style={[styles.title, !!art && styles.titleCentred]} accessibilityRole="header">
+      <View style={styles.fill}>
+        <PageGround />
+        <HolBar back={back} onBack={onBack} bar={bar} />
+        <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.holBody}>
+              {art && <View style={styles.holArt}>{art}</View>}
+              <Text style={[styles.holTitle, !!art && styles.holTitleCentred]} accessibilityRole="header">
                 {title}
               </Text>
-            )}
-            {children}
-          </View>
-        </ScrollView>
-        {footer && (
-          <View style={[styles.footer, { paddingBottom: Math.max(bottom - 12, 16) }]}>
-            <View style={styles.footerInner}>{footer}</View>
-          </View>
-        )}
-      </KeyboardAvoidingView>
+              {children}
+            </View>
+          </ScrollView>
+          {footer && <PageFooter>{footer}</PageFooter>}
+        </KeyboardAvoidingView>
+      </View>
     </View>
   )
 }
 
-/** The top of every setup screen: back, when there is somewhere to go
-    back to. */
+/** The classic setup screen, as approved before the consent: white, the
+    title, the content, and the action pinned to the foot over a hairline,
+    with the classic buttons. */
+function ClassicFlow({
+  title,
+  art,
+  children,
+  footer,
+  back,
+  onBack,
+  bar,
+}: {
+  title: string
+  art?: React.ReactNode
+  children?: React.ReactNode
+  footer?: React.ReactNode
+  back: boolean
+  onBack?: () => void
+  bar?: React.ReactNode
+}) {
+  const { bottom } = useSafeAreaInsets()
+  return (
+    <ButtonLook.Provider value="figma">
+      <View style={styles.screen}>
+        <DarkStatusBar />
+        <FlowBar back={back} onBack={onBack} bar={bar} />
+        <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.body}>
+              {art && <View style={styles.art}>{art}</View>}
+              <Text style={[styles.title, !!art && styles.titleCentred]} accessibilityRole="header">
+                {title}
+              </Text>
+              {children}
+            </View>
+          </ScrollView>
+          {footer && (
+            <View style={[styles.footer, { paddingBottom: Math.max(bottom - 12, 16) }]}>
+              <View style={styles.footerInner}>{footer}</View>
+            </View>
+          )}
+        </KeyboardAvoidingView>
+      </View>
+    </ButtonLook.Provider>
+  )
+}
+
+/** The top of every classic setup screen: back, when there is somewhere to
+    go back to. */
 export function FlowBar({
   back = true,
   onBack,
@@ -134,7 +216,47 @@ export function FlowBar({
   )
 }
 
-/** A light section: a small heading, a hairline, then its content. */
+/** The top of a setup screen from the consent on: the white status bar,
+    then the Figma's round grey back button, when there is somewhere to go
+    back to. Sits on the page gradient, so put it inside the view that
+    draws it. */
+export function HolBar({ back = true, onBack, bar }: { back?: boolean; onBack?: () => void; bar?: React.ReactNode }) {
+  const top = useTopInset()
+  const canBack = back && (!!onBack || router.canGoBack())
+  const status = <View style={[styles.statusBar, { height: top }]} />
+  // A screen that never goes back keeps only a breath under the status bar.
+  if (!canBack && !bar)
+    return (
+      <>
+        {status}
+        <View style={styles.barEmpty} />
+      </>
+    )
+  return (
+    <>
+      {status}
+      <View style={styles.holBarInner}>
+        {canBack ? (
+          <Pressable
+            onPress={onBack ?? (() => router.back())}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            style={({ pressed }) => [styles.holBack, pressed && styles.holBackPressed]}
+          >
+            <CaretLeft size={20} color={ink.detail} />
+          </Pressable>
+        ) : (
+          <View style={styles.holBackSpace} />
+        )}
+        {bar && <View style={styles.holBarCentred}>{bar}</View>}
+        {bar && <View style={styles.holBackSpace} />}
+      </View>
+    </>
+  )
+}
+
+/** A section: its quiet label, 12 above its content (Figma "Hol"). */
 export function Section({
   title,
   action,
@@ -159,7 +281,9 @@ export function Section({
   )
 }
 
-/** A soft grey card, the flow's main surface. */
+/** The Figma's card: white at 60% on the page, radius 8, 12 inside, the
+    softest lift. With `onPress` it is an option: white with a 1 pt grey
+    edge, the chosen one on the teal tint with a teal edge. */
 export function Card({
   children,
   selected,
@@ -171,7 +295,7 @@ export function Card({
   onPress?: () => void
   style?: object
 }) {
-  const body = <View style={[styles.card, selected && styles.cardSelected, style]}>{children}</View>
+  const body = <View style={[styles.card, !!onPress && styles.cardOption, selected && styles.cardSelected, style]}>{children}</View>
   if (!onPress) return body
   return (
     <Pressable
@@ -185,7 +309,8 @@ export function Card({
   )
 }
 
-/** Two or three options on a grey track, the chosen one lifted in white. */
+/** Two or three options as the Figma's option cards side by side, the
+    chosen one on the teal tint with a teal edge. */
 export function Segmented<T extends string>({
   label,
   options,
@@ -238,7 +363,7 @@ export function Checkbox({
       hitSlop={6}
     >
       <View style={[styles.box, checked && styles.boxOn]}>
-        {checked && <IconCheck size={14} color={color.onPrimary} strokeWidth={2.4} />}
+        {checked && <Check size={12} color={color.onPrimary} weight="bold" />}
       </View>
       <Text style={styles.checkText}>{children}</Text>
     </Pressable>
@@ -254,7 +379,7 @@ export function Chip({ label, selected, onPress }: { label: string; selected: bo
       accessibilityState={{ checked: selected }}
       style={({ pressed }) => [styles.chip, selected && styles.chipOn, pressed && styles.pressed]}
     >
-      {selected && <IconCheck size={14} color={color.primary} />}
+      {selected && <Check size={14} color={ink.primary} />}
       <Text style={[styles.chipText, selected && styles.chipTextOn]}>{label}</Text>
     </Pressable>
   )
@@ -262,7 +387,7 @@ export function Chip({ label, selected, onPress }: { label: string; selected: bo
 
 export function Badge({ children, tone = "primary" }: { children: string; tone?: "primary" | "high" | "low" | "ok" | "ink" }) {
   const tones = {
-    primary: [color.primaryTint, color.primary],
+    primary: [color.primaryTint, ink.primary],
     high: [color.highTint, color.high],
     low: [color.lowTint, color.low],
     ok: [color.okTint, color.ok],
@@ -363,7 +488,6 @@ export function SoftOrb({ size = 168, orbit = false }: { size?: number; orbit?: 
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.background },
-  screenPage: { backgroundColor: color.page },
   barFloating: { backgroundColor: "transparent" },
   backFloating: { backgroundColor: color.background, boxShadow: "0 4px 12px rgba(16, 24, 40, 0.08)" },
   fill: { flex: 1 },
@@ -404,7 +528,8 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 32,
   },
-  bodyPage: { maxWidth: 420 + space.gutter * 2, paddingHorizontal: space.gutter },
+  // Figma "Hol": 16 around the content, 20 between its sections.
+  bodyPage: { maxWidth: 420 + space.gutter * 2, paddingHorizontal: space.gutter, paddingTop: space.gutter, gap: space.section },
   art: { alignItems: "center", marginBottom: -12 },
   title: {
     fontFamily: font.semibold,
@@ -424,56 +549,101 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
-  // No rule under the heading: space and weight carry the hierarchy.
-  sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 24 },
-  sectionTitle: { fontFamily: font.semibold, fontSize: 17, lineHeight: 22, letterSpacing: -0.3, color: color.text },
+  /* ------------------------------------------------- Figma "Hol" setup -- */
+  statusBar: { backgroundColor: color.background },
+  // The back button's row: 16 around a 32 round grey button (the Consent).
+  holBarInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.item,
+    width: "100%",
+    maxWidth: 420 + space.gutter * 2,
+    alignSelf: "center",
+    padding: space.gutter,
+  },
+  barEmpty: { height: space.inline },
+  holBack: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "#EBEBEB" },
+  holBackPressed: { opacity: 0.6 },
+  holBackSpace: { width: 32, height: 32 },
+  holBarCentred: { flex: 1, alignItems: "center" },
+  holBody: {
+    width: "100%",
+    maxWidth: 420 + space.gutter * 2,
+    alignSelf: "center",
+    paddingHorizontal: space.gutter,
+    paddingTop: space.stack,
+    paddingBottom: space.gutter * 2,
+    gap: space.section,
+  },
+  // The Consent's object, centred in a 140 tall band.
+  holArt: { minHeight: 140, alignItems: "center", justifyContent: "center", marginBottom: -space.inline },
+  // A hero title where the step leads with words; under an object, the
+  // page title (18 medium) centred as the Consent names its pages.
+  holTitle: { fontFamily: font.semibold, fontSize: 22, lineHeight: 30, color: ink.content },
+  holTitleCentred: { ...type.tabTitle, textAlign: "center" },
 
-  card: { backgroundColor: color.canvas, borderRadius: 20, padding: 16, borderWidth: 1.5, borderColor: color.canvas },
-  cardSelected: { backgroundColor: color.background, borderColor: color.primary },
-  pressed: { opacity: 0.85 },
+  sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 20 },
+  sectionTitle: { ...type.sectionLabel },
 
-  field: { gap: 6 },
-  label: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: color.text },
-  track: { flexDirection: "row", backgroundColor: color.canvas, borderRadius: 14, padding: 4, gap: 4 },
-  option: { flex: 1, height: 44, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  optionOn: { backgroundColor: color.background, boxShadow: "0 1px 3px rgba(16, 24, 40, 0.12)" },
-  optionText: { fontFamily: font.medium, fontSize: 15, color: color.muted },
-  optionTextOn: { color: color.text },
+  card: { backgroundColor: card.fill, borderRadius: 8, padding: space.card, boxShadow: card.shadow },
+  cardOption: { backgroundColor: color.background, borderWidth: 1, borderColor: hairline.outline, padding: space.card - 1 },
+  cardSelected: { backgroundColor: color.primaryTint, borderColor: color.primaryLine },
+  pressed: { opacity: 0.7 },
 
-  checkRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  box: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderColor: color.inputBorder,
+  field: { gap: space.inline },
+  label: { ...type.sectionLabel },
+  track: { flexDirection: "row", gap: space.item },
+  option: {
+    flex: 1,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: hairline.outline,
+    backgroundColor: card.fill,
+    boxShadow: card.shadow,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 1,
+  },
+  optionOn: { backgroundColor: color.primaryTint, borderColor: color.primaryLine },
+  optionText: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: ink.content },
+  optionTextOn: { color: ink.primary },
+
+  // The Consent's checkbox: 16 at radius 4, a grey edge, teal when ticked.
+  checkRow: { flexDirection: "row", alignItems: "flex-start", gap: space.inline },
+  box: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#C6C6C8",
+    backgroundColor: color.background,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 3,
   },
   boxOn: { backgroundColor: color.primary, borderColor: color.primary },
-  checkText: { flex: 1, fontFamily: font.regular, fontSize: 15, lineHeight: 22, color: color.text },
+  checkText: { flex: 1, fontFamily: font.regular, fontSize: 14, lineHeight: 22, color: ink.content },
 
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    height: 34,
-    paddingHorizontal: 13,
-    borderRadius: 19,
+    gap: space.mark,
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: color.border,
+    borderColor: hairline.outline,
     backgroundColor: color.background,
   },
-  chipOn: { borderColor: color.primary, backgroundColor: color.primaryTint },
-  chipText: { fontFamily: font.medium, fontSize: 13.5, color: color.text },
-  chipTextOn: { color: color.primary },
+  chipOn: { borderColor: color.primaryLine, backgroundColor: color.primaryTint },
+  chipText: { ...type.chip },
+  chipTextOn: { color: ink.primary },
 
-  badge: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontFamily: font.medium, fontSize: 11.5, lineHeight: 16 },
+  badge: { alignSelf: "flex-start", borderRadius: 16, paddingHorizontal: 6, paddingVertical: 2 },
+  badgeText: { fontFamily: font.medium, fontSize: 10, lineHeight: 14 },
 
-  row: { flexDirection: "row", justifyContent: "space-between", gap: 12, paddingVertical: 10 },
-  rowRule: { borderBottomWidth: 1, borderBottomColor: color.border },
-  rowLabel: { fontFamily: font.regular, fontSize: 14, color: color.muted },
-  rowValue: { flexShrink: 1, textAlign: "right", fontFamily: font.medium, fontSize: 14, color: color.text },
+  row: { flexDirection: "row", justifyContent: "space-between", gap: space.item, paddingVertical: space.rowY },
+  rowRule: { borderBottomWidth: 0.8, borderBottomColor: hairline.rule },
+  rowLabel: { ...type.label, fontSize: 14, lineHeight: 20 },
+  rowValue: { ...type.title, flexShrink: 1, textAlign: "right" },
 })

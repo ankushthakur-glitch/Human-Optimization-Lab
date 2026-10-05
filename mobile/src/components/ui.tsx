@@ -53,35 +53,37 @@ export function Screen({
 }) {
   const top = useTopInset()
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={[styles.hero, { paddingTop: top + 64 }]}>
-            <HeroArt />
-            <View style={styles.heroBody}>
-              <Image
-                source={MARK}
-                style={styles.mark}
-                resizeMode="contain"
-                accessibilityRole="image"
-                accessibilityLabel="Inlay Health"
-              />
-              <Text style={styles.title} accessibilityRole="header">
-                {title}
-              </Text>
-              {description && <Text style={styles.description}>{description}</Text>}
+    <ButtonLook.Provider value="figma">
+      <SafeAreaView style={styles.safe} edges={["bottom"]}>
+        <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={[styles.hero, { paddingTop: top + 64 }]}>
+              <HeroArt />
+              <View style={styles.heroBody}>
+                <Image
+                  source={MARK}
+                  style={styles.mark}
+                  resizeMode="contain"
+                  accessibilityRole="image"
+                  accessibilityLabel="Inlay Health"
+                />
+                <Text style={styles.title} accessibilityRole="header">
+                  {title}
+                </Text>
+                {description && <Text style={styles.description}>{description}</Text>}
+              </View>
             </View>
-          </View>
-          <View style={styles.sheet}>
-            <View style={styles.sheetBody}>{children}</View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            <View style={styles.sheet}>
+              <View style={styles.sheetBody}>{children}</View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ButtonLook.Provider>
   )
 }
 
@@ -246,6 +248,11 @@ export const PasswordField = React.forwardRef<TextInput, Omit<FieldProps, "trail
   }
 )
 
+/** Which button a screen draws. Every screen draws the Figma "Hol" button
+    (the user moved sign in and activation to it on 5 Oct); "classic" keeps
+    the earlier pill for anything that opts back in. */
+export const ButtonLook = React.createContext<"figma" | "classic">("figma")
+
 export function Button({
   children,
   onPress,
@@ -259,13 +266,40 @@ export function Button({
   pending?: boolean
   /** Greyed and inert until the step can go on, e.g. an unsigned consent. */
   disabled?: boolean
-  /** destructive: the outline shape in red, for secondary actions like Sign out. */
+  /** outline: the teal tinted secondary button (classic: white with a grey
+      edge). destructive: filled red, for Log out and other ways out
+      (classic: the red tint). */
   variant?: "primary" | "outline" | "destructive"
   /** Drawn before the label, e.g. Face ID on the outline button. */
   icon?: React.ComponentType<{ color: string }>
 }) {
+  const classic = React.useContext(ButtonLook) === "classic"
   const primary = variant === "primary"
   const destructive = variant === "destructive"
+  if (classic)
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={pending || disabled}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: pending || disabled, busy: pending }}
+        style={({ pressed }) => [
+          styles.button,
+          primary ? styles.buttonPrimary : styles.buttonOutline,
+          destructive && styles.buttonDestructive,
+          pressed &&
+            (primary ? styles.buttonPrimaryPressed : destructive ? styles.buttonDestructivePressed : styles.buttonOutlinePressed),
+          pending && styles.buttonPending,
+          disabled && styles.buttonDisabled,
+        ]}
+      >
+        {pending && <ActivityIndicator color={primary ? color.onPrimary : destructive ? color.error : color.primary} size="small" />}
+        {!pending && Icon && <Icon color={color.text} />}
+        <Text style={[styles.buttonText, !primary && styles.buttonTextOutline, destructive && styles.buttonTextDestructive]}>
+          {children}
+        </Text>
+      </Pressable>
+    )
   return (
     <Pressable
       onPress={onPress}
@@ -273,20 +307,17 @@ export function Button({
       accessibilityRole="button"
       accessibilityState={{ disabled: pending || disabled, busy: pending }}
       style={({ pressed }) => [
-        styles.button,
-        primary ? styles.buttonPrimary : styles.buttonOutline,
-        destructive && styles.buttonDestructive,
-        pressed &&
-          (primary ? styles.buttonPrimaryPressed : destructive ? styles.buttonDestructivePressed : styles.buttonOutlinePressed),
+        styles.hol,
+        primary ? styles.holPrimary : styles.holOutline,
+        destructive && styles.holDestructive,
+        pressed && (primary ? styles.holPrimaryPressed : destructive ? styles.holDestructivePressed : styles.holOutlinePressed),
         pending && styles.buttonPending,
         disabled && styles.buttonDisabled,
       ]}
     >
-      {pending && <ActivityIndicator color={primary ? color.onPrimary : destructive ? color.error : color.primary} size="small" />}
-      {!pending && Icon && <Icon color={color.text} />}
-      <Text style={[styles.buttonText, !primary && styles.buttonTextOutline, destructive && styles.buttonTextDestructive]}>
-        {children}
-      </Text>
+      {pending && <ActivityIndicator color={primary || destructive ? color.onPrimary : color.primary} size="small" />}
+      {!pending && Icon && <Icon color={primary || destructive ? color.onPrimary : "#015D59"} />}
+      <Text style={[styles.holText, !primary && styles.holTextOutline, destructive && styles.holTextDestructive]}>{children}</Text>
     </Pressable>
   )
 }
@@ -426,6 +457,31 @@ const styles = StyleSheet.create({
   buttonText: { fontFamily: font.semibold, fontSize: 15, letterSpacing: -0.1, color: color.onPrimary },
   buttonTextOutline: { fontFamily: font.medium, color: color.text },
   buttonTextDestructive: { color: color.error },
+
+  // Figma "Hol" (5 Oct 2026): radius 8, 10 above and below 16 medium
+  // words, the xs shadow.
+  hol: {
+    minHeight: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    boxShadow: "0 1px 2px rgba(16, 24, 40, 0.05)",
+  },
+  holPrimary: { backgroundColor: color.primary, borderColor: color.primary },
+  holPrimaryPressed: { backgroundColor: color.primaryPressed, borderColor: color.primaryPressed },
+  // The secondary button: the teal tint with its edge, as the ask button.
+  holOutline: { borderColor: "#C2E1E0", backgroundColor: "#F2F7F7" },
+  holOutlinePressed: { backgroundColor: "#E6F3F2" },
+  holDestructive: { borderColor: "#C72B32", backgroundColor: "#C72B32" },
+  holDestructivePressed: { borderColor: "#A9232A", backgroundColor: "#A9232A" },
+  holText: { fontFamily: font.medium, fontSize: 16, lineHeight: 20, color: color.onPrimary },
+  holTextOutline: { color: "#015D59" },
+  holTextDestructive: { color: color.onPrimary },
 
   textLink: { alignSelf: "flex-end", marginTop: -4 },
   divider: { flexDirection: "row", alignItems: "center", gap: 12 },

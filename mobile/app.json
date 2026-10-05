@@ -29,7 +29,7 @@
       "bundler": "metro",
       "output": "single",
       "name": "Inlay Health",
-      "themeColor": "#417D88",
+      "themeColor": "#01837E",
       "backgroundColor": "#FFFFFF"
     },
     "plugins": [

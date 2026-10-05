@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { DarkStatusBar } from "@/components/error-state"
 import { FlourishCard } from "@/components/flourish"
-import { FlowBar } from "@/components/flow"
+import { HolBar } from "@/components/flow"
+import { PageGround } from "@/components/hol"
 import { Sheet } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
 import { WHY_LABELS, WhyCard, whyValue, withWhy, type WhyKey } from "@/components/why-card"
@@ -14,7 +15,7 @@ import { IconCheck, IconFace } from "@/components/icons"
 import { EMPTY, FLOURISH, TURNS, needsHelp, nextTurn, spoken, typedScale, type Answers, type Input, type Line, type Value } from "@/lib/conversation"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
-import { color, font, gutter } from "@/lib/theme"
+import { color, font, ink, space } from "@/lib/theme"
 
 /* Step 3: "your why", a conversation with the assistant (the script and its
    reasoning are in lib/conversation.ts), drawn with the app's shared chat
@@ -199,7 +200,8 @@ export default function WhyScreen() {
   return (
     <View style={styles.screen}>
       <DarkStatusBar />
-      <FlowBar back={false} />
+      <PageGround />
+      <HolBar />
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
           ref={scroll}
@@ -494,7 +496,7 @@ const FACE_TONES = [
   { fg: color.ok, bg: color.okTint },
 ]
 
-const column = { width: "100%", maxWidth: 420 + gutter * 2, alignSelf: "center", paddingHorizontal: gutter } as const
+const column = { width: "100%", maxWidth: 420 + space.gutter * 2, alignSelf: "center", paddingHorizontal: space.gutter } as const
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.background },
@@ -503,32 +505,34 @@ const styles = StyleSheet.create({
 
   thread: { ...column, paddingTop: 4, paddingBottom: 20, gap: 10 },
   headingTap: { alignSelf: "flex-start" },
-  heading: { fontFamily: font.semibold, fontSize: 24, lineHeight: 30, letterSpacing: -0.6, color: color.text, marginBottom: 10 },
+  heading: { fontFamily: font.semibold, fontSize: 22, lineHeight: 30, color: ink.content, marginBottom: 10 },
 
   card: { alignSelf: "stretch" },
   // Options has its own top margin, which a bubble with no text above it
   // does not need.
   optionsAlone: { paddingTop: 4, paddingBottom: 10 },
 
-  help: { backgroundColor: color.highTint, borderRadius: 20, padding: 16, gap: 10 },
-  helpTitle: { fontFamily: font.semibold, fontSize: 16, color: color.text },
-  helpText: { fontFamily: font.regular, fontSize: 15, lineHeight: 22, color: color.text },
-  helpActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
+  // The Figma's tinted card in the error's red: tint, a 1 pt edge, radius 8.
+  help: { backgroundColor: color.highTint, borderWidth: 1, borderColor: "#F6C9CC", borderRadius: 8, padding: 12, gap: space.inline },
+  helpTitle: { fontFamily: font.medium, fontSize: 16, lineHeight: 24, color: ink.content },
+  helpText: { fontFamily: font.regular, fontSize: 14, lineHeight: 21, color: ink.detail },
+  helpActions: { flexDirection: "row", flexWrap: "wrap", gap: space.inline, marginTop: space.stack },
 
+  // The Figma's small action, the chosen one in the brand teal.
   pill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    minHeight: 38,
-    paddingHorizontal: 14,
+    gap: space.mark,
+    minHeight: 36,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 19,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: color.primary,
-    backgroundColor: color.background,
+    borderColor: color.primaryEdge,
+    backgroundColor: color.primaryTint,
   },
-  pillOn: { backgroundColor: color.primary },
-  pillText: { fontFamily: font.medium, fontSize: 14, color: color.primary },
+  pillOn: { backgroundColor: color.primary, borderColor: color.primary },
+  pillText: { fontFamily: font.medium, fontSize: 14, lineHeight: 18, color: ink.primary },
   pillTextOn: { color: color.onPrimary },
 
 

@@ -17,9 +17,10 @@ import {
   sentenceLines,
 } from "@/components/assistant-thread"
 import { ChatBar, MyBubble, Options, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
+import { ChatHistory } from "@/components/chat-history"
 import { DarkStatusBar } from "@/components/error-state"
-import { IconClose } from "@/components/icons"
-import { AllowanceMeter, TextAction } from "@/components/record-kit"
+import { PageGround } from "@/components/hol"
+import { CaretLeft, List } from "@/components/ph"
 import { useTopInset } from "@/components/ui"
 import { costOf, questionKind, useAllowance, type QuestionKind } from "@/lib/allowance"
 import {
@@ -69,10 +70,10 @@ import { relativeDay } from "@/lib/dates"
 import { canOffer, useExperience, useMarkers } from "@/lib/experience"
 import { clockOf, questionsFor } from "@/lib/member"
 import { changeCourse } from "@/lib/offers"
-import { useOnboarding, type Chat } from "@/lib/onboarding"
+import { useOnboarding, type Chat, type ChatTopic, type PastChat } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { MEDICATIONS } from "@/lib/record"
-import { color, gutter, ink, space, type } from "@/lib/theme"
+import { color, font, hairline, ink, space, type } from "@/lib/theme"
 import { classify, type Trend } from "@/lib/trends"
 
 /* The assistant (FINAL-SPEC C.4), opened full screen from the round button
@@ -134,7 +135,9 @@ type Msg = { id: string; at: string } & (
 )
 type Draft = Msg extends infer M ? (M extends Msg ? Omit<M, "id" | "at"> : never) : never
 type AskMsg = Extract<Msg, { kind: "ask" }>
-type Thread = { id: string; scope?: string; startedAt: string; lastAt: string; messages: Msg[] }
+/** `topic` and `title` file the thread in the chat history once it ends
+    or a new one starts. */
+type Thread = { id: string; scope?: string; startedAt: string; lastAt: string; messages: Msg[]; topic?: ChatTopic; title?: string }
 
 const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 const minutesSince = (iso: string) => (Date.now() - Date.parse(iso)) / 60000
@@ -149,9 +152,53 @@ function append(t: Thread, msgs: Msg[]): Thread {
   return msgs.length ? { ...t, lastAt: new Date().toISOString(), messages: [...t.messages, ...msgs] } : t
 }
 
-function fresh(drafts: Draft[], scope?: string): Thread {
+function fresh(drafts: Draft[], scope?: string, topic?: ChatTopic): Thread {
   const now = new Date().toISOString()
-  return { id: newId(), scope, startedAt: now, lastAt: now, messages: stamp(drafts) }
+  return { id: newId(), scope, startedAt: now, lastAt: now, messages: stamp(drafts), topic }
+}
+
+/* ------------------------------------------------------ chat history -- */
+
+/** A starter's group in the history: "Something is bothering me" is filed
+    under something else. */
+const GROUP_OF: Record<Topic, ChatTopic> = { result: "result", medicine: "medicine", visit: "visit", plan: "plan", concern: "other" }
+/** The starters she can tap, which never make a title on their own. */
+const STARTERS = new Set<string>([...Object.values(TOPICS), MORE])
+const TITLE_MAX = 44
+
+const patientLines = (t: Thread) => t.messages.flatMap((m) => (m.kind === "text" && m.from === "patient" ? [m.text] : []))
+const hasQuestion = (t: Thread) => patientLines(t).length > 0
+
+/** The first question, shortened to a line: a tapped starter only when she
+    said nothing else. */
+function shorten(text: string) {
+  const one = text.replace(/\s+/g, " ").trim()
+  if (one.length <= TITLE_MAX) return one
+  const cut = one.slice(0, TITLE_MAX)
+  return `${cut.slice(0, cut.lastIndexOf(" ") > 20 ? cut.lastIndexOf(" ") : TITLE_MAX).replace(/[,.;:]$/, "")}…`
+}
+
+/** What a thread is filed under when nothing set it: read from her first
+    question. */
+function inferTopic(t: Thread, planLive: boolean): ChatTopic {
+  if (t.messages.some((m) => m.kind === "context")) return "result"
+  const said = patientLines(t).find((x) => !STARTERS.has(x))
+  if (!said) return "other"
+  if (questionKind(said) === "plan") return "plan"
+  switch (readQuestion(said, { planLive }).kind) {
+    case "marker":
+    case "test":
+    case "outside":
+      return "result"
+    case "medicine":
+      return "medicine"
+    case "visit":
+      return "visit"
+    case "plan":
+      return "plan"
+    default:
+      return "other"
+  }
 }
 
 /** The lists a tap can still answer: only the newest one is live. */
@@ -185,6 +232,32 @@ export default function AssistantScreen() {
   /** The plan questions she can tap: today's for a live plan, the plan with
       Dr. Patel for a new member, what the plan is for anyone else. */
   const planAsks = (): string[] => (planLive ? [...PLAN_ASKS] : reviewing ? [...REVIEW_PLAN_ASKS] : [...FREE_PLAN_ASKS])
+
+  /** A thread's title in the history: its first question, with the result
+      it was opened about when the question does not name it. */
+  function titleOf(t: Thread) {
+    if (t.title) return t.title
+    const said = patientLines(t)
+    const q = said.find((x) => !STARTERS.has(x)) ?? said[0] ?? "New chat"
+    const ctx = t.messages.find((m): m is Extract<Msg, { kind: "context" }> => m.kind === "context")
+    const name = ctx ? trendFor(ctx.marker)?.marker.name : undefined
+    return shorten(name && !q.toLowerCase().includes(name.toLowerCase()) ? `${name}: ${q}` : q)
+  }
+  /** A thread as the history keeps it, without the limit card or the end. */
+  const toPast = (t: Thread): PastChat => ({
+    id: t.id,
+    title: titleOf(t),
+    topic: t.topic ?? inferTopic(t, planLive),
+    startedAt: t.startedAt,
+    lastAt: t.lastAt,
+    messages: t.messages.filter((m) => m.kind !== "limit" && m.kind !== "ended"),
+  })
+  /** The history with a thread filed in it, newest first; a thread she
+      asked nothing in is not kept. */
+  const filed = (list: PastChat[], t: Thread) => (hasQuestion(t) ? [toPast(t), ...list.filter((c) => c.id !== t.id)].slice(0, 50) : list)
+  /** Opened about a result, a new batch or a topic: its group from the start. */
+  const paramTopic: ChatTopic | undefined =
+    params.marker || params.batch ? "result" : params.topic && TOPIC_PARAM[params.topic] ? GROUP_OF[TOPIC_PARAM[params.topic]] : undefined
 
   /** One result: its card, then the questions in its own words. */
   function scopedOpening(id: string): Draft[] {
@@ -239,7 +312,7 @@ export default function AssistantScreen() {
     const ended = stored?.messages.at(-1)?.kind === "ended"
     if (stored?.messages?.length && !ended && minutesSince(stored.lastAt) < OPEN_MINUTES) return scoped ? append(stored, stamp(opening())) : stored
     if (stored?.messages?.length && !scoped) return ended ? stored : { ...stored, messages: [...stored.messages, ...stamp([{ kind: "ended" }])] }
-    return fresh(opening(), params.marker ?? params.topic ?? params.batch)
+    return fresh(opening(), params.marker ?? params.topic ?? params.batch, paramTopic)
   })
   // A question it was opened with waits in the composer, unsent (A-42).
   const [draft, setDraft] = React.useState(params.ask ?? "")
@@ -247,12 +320,15 @@ export default function AssistantScreen() {
   /** "Something else": her own words answer it next. */
   const [awaiting, setAwaiting] = React.useState<"concern" | undefined>()
   const [facts, setFacts] = React.useState<Fact[] | undefined>()
+  /** The chat history drawer. */
+  const [menu, setMenu] = React.useState(false)
 
   // Kept in the store (A-34), without the limit card: it is never shown on
-  // opening the chat.
+  // opening the chat. An ended thread is filed in the history too.
   React.useEffect(() => {
     const chat: Chat = { ...thread, messages: thread.messages.filter((m) => m.kind !== "limit") }
-    onboarding.save({ chat }).catch(() => {})
+    const over = thread.messages.at(-1)?.kind === "ended" && hasQuestion(thread)
+    onboarding.save(over ? { chat, chats: filed(onboarding.chats ?? [], thread) } : { chat }).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thread])
 
@@ -450,6 +526,8 @@ export default function AssistantScreen() {
       case "topic": {
         choose()
         const topic = (Object.keys(TOPICS) as Topic[]).find((k) => TOPICS[k] === option) ?? "result"
+        // The first starter she taps files the thread under its group.
+        setThread((t) => (t.topic ? t : { ...t, topic: GROUP_OF[topic] }))
         return reply(topicOpening(topic))
       }
       case "scoped": {
@@ -578,6 +656,52 @@ export default function AssistantScreen() {
     setThread(fresh([greetingAsk()]))
   }
 
+  /** Back to an empty composer and a still thread, before another one. */
+  function settle() {
+    clearTimeout(timer.current)
+    setThinking(false)
+    setAwaiting(undefined)
+    setDraft("")
+    setFacts(undefined)
+    anchor.current = undefined
+    follow.current = Date.now()
+    tops.current.clear()
+  }
+
+  /** "New chat" in the drawer: the thread on screen is filed, then a
+      fresh one starts. */
+  function newChat() {
+    setMenu(false)
+    if (!ended && hasQuestion(thread)) onboarding.save({ chats: filed(onboarding.chats ?? [], thread) }).catch(() => {})
+    settle()
+    setThread(fresh([greetingAsk()]))
+  }
+
+  /** A past chat from the drawer opens as it was, to carry on; the one on
+      screen is filed first. */
+  function openPast(id: string) {
+    setMenu(false)
+    const past = onboarding.chats?.find((c) => c.id === id)
+    if (!past || id === thread.id) return
+    if (!ended && hasQuestion(thread)) onboarding.save({ chats: filed(onboarding.chats ?? [], thread) }).catch(() => {})
+    settle()
+    setThread({
+      id: past.id,
+      topic: past.topic,
+      title: past.title,
+      startedAt: past.startedAt,
+      lastAt: past.lastAt ?? past.startedAt,
+      messages: (past.messages as Msg[]).filter((m) => m.kind !== "ended"),
+    })
+  }
+
+  /** The drawer's list: the history, with the thread on screen in it. */
+  const history = React.useMemo(
+    () => (menu ? filed(onboarding.chats ?? [], thread) : onboarding.chats ?? []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [menu, onboarding.chats, thread]
+  )
+
   /* --------------------------------------------------------- drawing -- */
 
   const lastChooser = [...thread.messages].reverse().find((m) => CHOOSERS.has(m.kind))?.id
@@ -652,43 +776,44 @@ export default function AssistantScreen() {
   return (
     <View style={styles.screen}>
       <DarkStatusBar />
-      <View style={[styles.head, { paddingTop: top + 8 }]}>
-        {/* Two slots of one width either side, so the title centres over
-            the meter. */}
+      <View style={[styles.head, { paddingTop: top + 16 }]}>
+        {/* The page's white header bar, as every page's: the back caret
+            and the title, and the quiet "End chat" on the right. The AI is
+            metered in tokens now (5 Oct 2026), shown by the orb's ring, so
+            no question counter here. */}
         <View style={styles.headRow}>
-          <View style={[styles.headSide, styles.headLeft]}>
-            <Pressable
-              onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              style={({ pressed }) => [styles.close, pressed && styles.closePressed]}
-            >
-              <IconClose color={color.text} />
-            </Pressable>
-          </View>
-          <Text style={styles.headTitle} accessibilityRole="header">
+          <Pressable
+            onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            style={({ pressed }) => pressed && styles.closePressed}
+          >
+            <CaretLeft size={24} color={ink.detail} />
+          </Pressable>
+          <Pressable
+            onPress={() => setMenu(true)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Chats"
+            style={({ pressed }) => pressed && styles.closePressed}
+          >
+            <List size={24} color={ink.detail} />
+          </Pressable>
+          <Text style={styles.headTitle} numberOfLines={1} accessibilityRole="header">
             Assistant
           </Text>
-          {/* The quiet text button: grey, since ending is nothing urgent. */}
-          <View style={styles.headSide}>
-            {!ended && (
-              <TextAction tone="muted" onPress={endChat}>
-                End chat
-              </TextAction>
-            )}
-          </View>
+          {!ended && (
+            <Pressable onPress={endChat} hitSlop={10} accessibilityRole="button" style={({ pressed }) => pressed && styles.closePressed}>
+              <Text style={styles.endChat}>End chat</Text>
+            </Pressable>
+          )}
         </View>
-        {/* The free questions this month, as the client saw it on 30 Sep;
-            a member has no counter. */}
-        {!allowance.member && !declined && (
-          <View style={styles.meter}>
-            <AllowanceMeter left={allowance.left} total={allowance.total} line={allowance.line} />
-          </View>
-        )}
       </View>
 
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <View style={styles.fill}>
+        <PageGround />
         <ScrollView
           ref={scroll}
           onLayout={(e) => (viewport.current = e.nativeEvent.layout.height)}
@@ -708,9 +833,10 @@ export default function AssistantScreen() {
           ))}
           {thinking && <TypingBubble />}
         </ScrollView>
+        </View>
 
         {!ended && (
-          <View style={styles.bar}>
+          <View>
             <ChatBar
               value={draft}
               onChange={setDraft}
@@ -721,10 +847,11 @@ export default function AssistantScreen() {
             />
           </View>
         )}
-        {ended && <View style={{ height: Math.max(bottom, space.gutter) }} />}
+        {ended && <View style={[styles.endedFoot, { height: Math.max(bottom, space.gutter) }]} />}
       </KeyboardAvoidingView>
 
       {facts && <FactsSheet facts={facts} onClose={() => setFacts(undefined)} />}
+      <ChatHistory open={menu} chats={history} currentId={hasQuestion(thread) ? thread.id : undefined} onClose={() => setMenu(false)} onOpen={openPast} onNew={newChat} />
     </View>
   )
 }
@@ -737,17 +864,14 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.background },
   fill: { flex: 1 },
 
-  // The page bar's own rhythm (flow.tsx): 8 over and under the 40 pt
-  // circle, which sits 4 outside the thread's edge like the record pages'
-  // back button; the meter 8 under it and 12 over the hairline.
-  head: { backgroundColor: color.background, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.border },
-  headRow: { ...column, paddingHorizontal: space.gutter - 4, paddingBottom: 8, flexDirection: "row", alignItems: "center" },
-  headTitle: { ...type.section, flex: 1, textAlign: "center" },
-  close: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: color.canvas },
-  closePressed: { backgroundColor: color.border },
-  headSide: { width: 64, height: 40, alignItems: "flex-end", justifyContent: "center" },
-  headLeft: { alignItems: "flex-start" },
-  meter: { ...column, paddingBottom: 12, alignItems: "center" },
+  // The Figma "Hol" header bar: white, 16 inside, a 1 pt #F2F2F7 hairline
+  // under it; the back caret 8 from the title, 18 medium.
+  head: { backgroundColor: color.background, borderBottomWidth: 1, borderBottomColor: hairline.rule },
+  headRow: { ...column, paddingBottom: 16, flexDirection: "row", alignItems: "center", gap: space.inline },
+  headTitle: { ...type.tabTitle, flex: 1 },
+  endChat: { fontFamily: font.medium, fontSize: 14, lineHeight: 18, color: ink.secondary },
+  closePressed: { opacity: 0.7 },
+  endedFoot: { backgroundColor: color.background },
 
   // Under the header the page's own margin, as at its sides (Frontline
   // 16); messages a list's 12 apart.
@@ -756,8 +880,4 @@ const styles = StyleSheet.create({
   // The day over the thread, as Frontline labels a day's group.
   day: { ...type.metaStrong, color: ink.tertiary },
   safety: { ...type.meta, textAlign: "center", maxWidth: 320 },
-  // The chat bar keeps onboarding's inset (chat.tsx): bled by the two
-  // gutters' difference, its card lines up with the close circle, 4
-  // outside the thread, as it always has.
-  bar: { marginHorizontal: space.gutter - gutter },
 })

@@ -1,7 +1,7 @@
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { IconCheck } from "@/components/icons"
+import { BowlFood, Check } from "@/components/ph"
 import { foodsLine } from "@/components/member-day-nutrient"
 import { Group, NeedsRow, Tag } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
@@ -22,7 +22,7 @@ import {
   type MemberProfile,
   type NutrientId,
 } from "@/lib/member"
-import { chart, color, space, type } from "@/lib/theme"
+import { chart, color, font, ink, space, type } from "@/lib/theme"
 import { formatNumber } from "@/lib/trends"
 
 /* The pieces the diet plan and log a meal share (FINAL-SPEC C.21, C.22):
@@ -123,7 +123,7 @@ export function recentMeals(meals: Record<string, Meal[]> | undefined, now: Date
 export function LoggedCheck() {
   return (
     <View style={styles.check} accessible accessibilityLabel="Logged">
-      <IconCheck size={12} color={color.onPrimary} strokeWidth={2.6} />
+      <Check size={12} color={color.onPrimary} weight="bold" />
     </View>
   )
 }
@@ -151,6 +151,7 @@ export function MealRow({
   const estimated = meal.status === "estimated"
   return (
     <NeedsRow
+      icon={<BowlFood size={16} color={color.primary} />}
       title={`${name}, ${meal.time}`}
       meta={words}
       tag={estimated ? { tone: "muted", label: "Estimated" } : undefined}
@@ -283,7 +284,7 @@ const styles = StyleSheet.create({
   unknown: { ...type.meta },
   // The meal's energy: its words a card title, its number a stat in
   // proportional figures (a headline, not a column).
-  headline: { ...type.section },
+  headline: { fontFamily: font.medium, fontSize: 16, lineHeight: 24, color: ink.content },
   stat: { ...type.stat },
   statUnit: { ...type.unit },
   body: { ...type.body },

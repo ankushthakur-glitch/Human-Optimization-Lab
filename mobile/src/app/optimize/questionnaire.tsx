@@ -3,12 +3,13 @@ import { StyleSheet, Text, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
 import { SetupStepLabel } from "@/components/plan-account-pieces"
-import { Chip } from "@/components/record-kit"
-import { Button, TextField } from "@/components/ui"
+import { PrimaryButton } from "@/components/hol"
+import { Card, Chip } from "@/components/record-kit"
+import { TextField } from "@/components/ui"
 import { useOnboarding } from "@/lib/onboarding"
 import { INTAKE, type Intake } from "@/lib/program"
 import { useSetupStep } from "@/lib/setup"
-import { ink, space, type } from "@/lib/theme"
+import { font, ink, space, type } from "@/lib/theme"
 
 /* Paid setup, step 1: the fuller questionnaire the plan is built from,
    one topic per page (goals, history, a normal week, what has been tried,
@@ -53,13 +54,20 @@ export default function QuestionnaireScreen() {
 
   return (
     <FlowScreen
+      page
+      back={page > 0}
       onBack={page > 0 ? () => setPage((p) => p - 1) : undefined}
-      title={current.title}
-      footer={<Button onPress={next}>{last ? "Continue" : "Next"}</Button>}
+      title="Tell us more about you"
+      bar={<SetupStepLabel>{label}</SetupStepLabel>}
+      footer={<PrimaryButton onPress={next}>{last ? "Continue" : "Next"}</PrimaryButton>}
     >
-      <SetupStepLabel>{label}</SetupStepLabel>
+      {/* The page's topic heads its questions, so a long one is never cut
+          short in the header bar. */}
+      <Text style={styles.topic} accessibilityRole="header">
+        {current.title}
+      </Text>
       {current.questions.map((q) => (
-        <View key={q.id} style={styles.question}>
+        <Card key={q.id} style={styles.question}>
           {q.type === "text" ? (
             <TextField label={q.label} value={text(q.id)} onChangeText={(v) => set(q.id, v)} placeholder={q.placeholder} multiline />
           ) : (
@@ -91,18 +99,20 @@ export default function QuestionnaireScreen() {
               </View>
             </>
           )}
-        </View>
+        </Card>
       ))}
     </FlowScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  // A question's words over its answers, 8 apart.
-  question: { gap: space.inline },
+  // The topic: a block title over the cards, pulled toward them.
+  topic: { fontFamily: font.medium, fontSize: 16, lineHeight: 24, color: ink.content, marginBottom: -space.inline },
+  // A question's card: its words over its answers, 12 apart.
+  question: { gap: space.item },
   // As dark as the text fields' labels on the same page (ui.tsx), so every
   // question reads at one level.
-  label: { ...type.title, color: ink.strong },
+  label: { ...type.title, color: ink.content },
   // Chips in a row and a wrapped line under them, 8 apart (Frontline).
   chips: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
 })

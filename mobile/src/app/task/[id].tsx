@@ -2,21 +2,22 @@ import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { GAP_ICON, gapHue, keepTogether, reminderLine, reminderSteps } from "@/components/care-gap"
-import { BookedSheet, BookIt, CLINIC, withTold } from "@/components/care-orders-book"
+import { GAP_ICON, keepTogether, reminderLine, reminderSteps } from "@/components/care-gap"
+import { BookedSheet, BookIt, BookSheet, CLINIC, withTold } from "@/components/care-orders-book"
+import { HeadCard, KindLine, Reminders } from "@/components/care-orders-rows"
 import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
-import { IconCalendar } from "@/components/icons"
+import { AskButton, PrimaryButton } from "@/components/hol"
+import { CalendarCheck } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
-import { Block, Card, Group, HUE, NeedsRow, SaveQuestion, Status, Steps, TextAction, Tile } from "@/components/record-kit"
+import { Block, Card, Group, HUE, NeedsRow, SaveQuestion, Status } from "@/components/record-kit"
 import { toast } from "@/components/toast"
-import { Button } from "@/components/ui"
 import { call } from "@/lib/links"
 import { dateOfAt, dayLabel, localDay, shortDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { CARE_GAPS, GAP_LABEL, MARKER_CARE, PROVENANCE_LABEL, order as findOrder } from "@/lib/record"
-import { space, type } from "@/lib/theme"
+import { font, ink, space, type } from "@/lib/theme"
 import { bookingOf } from "@/lib/todo"
 
 /* One care gap, found from the record (FINAL-SPEC C.9): what kind it is,
@@ -27,17 +28,22 @@ import { bookingOf } from "@/lib/todo"
    call   call the clinic, or say it is booked
    talk   save the question for the next visit, or ask about it
 
-   It closes when the record shows it happened, not when she says so. */
+   It closes when the record shows it happened, not when she says so.
+
+   Figma "Hol" (5 Oct 2026, "Follow up after urgent care", "Colorectal
+   cancer screening", "Talk with Dr. Patel about your A1c"): the tinted
+   head card with the kind, the why and the reminder line; the way
+   forward; the reminders; "Ask to Health Agent" in the footer, with
+   "Call Harborview" under it for a gap to call about. */
 
 export default function CareGapScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const onboarding = useOnboarding()
-  const [sheet, setSheet] = React.useState(false)
+  const [sheet, setSheet] = React.useState<"booked" | "book">()
 
   const gap = CARE_GAPS.find((g) => g.id === id)
   if (!gap) return <PageNotFoundState />
 
-  const hue = gapHue(gap)
   const test = gap.action === "book" ? findOrder(gap.id) : undefined
   // The test it asks for, booked, or the visit she told us she booked: read
   // where every screen reads a booking (lib/todo.ts bookingOf).
@@ -54,7 +60,7 @@ export default function CareGapScreen() {
   const about = Object.entries(MARKER_CARE).find(([, care]) => care.gaps?.includes(gap.id))?.[0]
 
   const save = (day: Date, where?: string) => {
-    setSheet(false)
+    setSheet(undefined)
     if (test) {
       // A test booked and paid through Inlay keeps its booking.
       const bookings = withTold(onboarding.bookings, test.id, day, where)
@@ -64,16 +70,24 @@ export default function CareGapScreen() {
     toast(test ? "Saved. We'll mark it done when the result arrives." : "Saved")
   }
 
+  // The assistant opens on this gap: its question, or what it is.
+  const ask = gap.question ?? `What should I do about my ${gap.title.charAt(0).toLowerCase()}${gap.title.slice(1)}?`
+  const calls = !doneAt && gap.action === "call" && !booked
+
   return (
     <View style={styles.screen}>
-      <FlowScreen page title={gap.title}>
-        <Card style={styles.head}>
-          <View style={styles.kindLine}>
-            <Tile hue={hue}>
-              <RecordIcon name={GAP_ICON[gap.kind]} size={18} color={HUE[hue].ink} />
-            </Tile>
-            <Text style={styles.kind}>{GAP_LABEL[gap.kind]}</Text>
-          </View>
+      <FlowScreen
+        page
+        title={gap.title}
+        footer={
+          <>
+            <AskButton params={{ ask }} />
+            {calls && <PrimaryButton onPress={() => call(PATIENT.practicePhone)}>{`Call ${CLINIC}`}</PrimaryButton>}
+          </>
+        }
+      >
+        <HeadCard>
+          <KindLine icon={<RecordIcon name={GAP_ICON[gap.kind]} size={16} color={HUE.teal.ink} />}>{GAP_LABEL[gap.kind]}</KindLine>
           <Text style={styles.why}>{keepTogether(gap.why)}</Text>
           {doneAt ? (
             <Status tone="ok">{`Done, ${shortDay(dateOfAt(doneAt))}`}</Status>
@@ -82,14 +96,14 @@ export default function CareGapScreen() {
           ) : (
             !!reminder && <Text style={styles.reminder}>{reminder}</Text>
           )}
-        </Card>
+        </HeadCard>
 
-        {!doneAt && gap.action === "book" && test && !booked && <BookIt order={test} onBooked={() => setSheet(true)} />}
+        {!doneAt && gap.action === "book" && test && !booked && <BookIt order={test} onBooked={() => setSheet("booked")} onPartner={() => setSheet("book")} />}
 
         {!doneAt && gap.action === "book" && test && booked && (
           <Group>
             <NeedsRow
-              icon={<RecordIcon name="labs" size={18} color={HUE.teal.ink} />}
+              icon={<RecordIcon name="labs" size={16} color={HUE.teal.ink} />}
               title={test.name}
               meta={testBooking?.where || PROVENANCE_LABEL.patient}
               onPress={() => router.push({ pathname: "/order/[id]", params: { id: test.id } })}
@@ -97,57 +111,43 @@ export default function CareGapScreen() {
           </Group>
         )}
 
+        {/* Once booked, the card above says so and when; this row moves
+            the day if the clinic moves it. */}
         {!doneAt && gap.action === "call" && (
-          <View style={styles.actions}>
-            {!booked && <Button onPress={() => call(PATIENT.practicePhone)}>{`Call ${CLINIC}`}</Button>}
-            <Group>
-              {/* Once booked, the card above says so and when; this row
-                  moves the day if the clinic moves it. */}
-              <NeedsRow icon={<IconCalendar size={18} color={HUE.teal.ink} />} title={booked ? "Change the day" : "I booked it"} onPress={() => setSheet(true)} />
-            </Group>
-          </View>
+          <Group>
+            <NeedsRow icon={<CalendarCheck size={16} color={HUE.teal.ink} />} title={booked ? "Change the day" : "I booked it"} onPress={() => setSheet("booked")} />
+          </Group>
         )}
 
         {!doneAt && gap.action === "talk" && !!gap.question && (
           <Block title="Save for my next visit">
-            <Group>
-              <View style={styles.question}>
-                <Text style={styles.questionText}>{keepTogether(gap.question)}</Text>
-                <SaveQuestion text={gap.question} about={about} />
-              </View>
-            </Group>
-            <TextAction chevron onPress={() => router.push({ pathname: "/assistant", params: { ask: gap.question } })}>
-              Ask about this
-            </TextAction>
+            <Card style={styles.question}>
+              <Text style={styles.questionText}>{keepTogether(gap.question)}</Text>
+              <SaveQuestion text={gap.question} about={about} />
+            </Card>
           </Block>
         )}
 
         {gap.reminders > 0 && !doneAt && (
           <Block title="Reminders">
-            <Card style={styles.steps}>
-              <Steps steps={reminderSteps(gap, "Then Dr. Patel and your clinic follow up", booked)} />
+            <Card>
+              <Reminders steps={reminderSteps(gap, "Then Dr. Patel's team will reach out", booked)} />
             </Card>
           </Block>
         )}
       </FlowScreen>
 
-      {sheet && <BookedSheet withWhere={!!test} onSave={save} onClose={() => setSheet(false)} />}
+      {sheet === "booked" && <BookedSheet withWhere={!!test} onSave={save} onClose={() => setSheet(undefined)} />}
+      {sheet === "book" && test && <BookSheet order={test} onClose={() => setSheet(undefined)} />}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  head: { gap: space.item },
-  kindLine: { flexDirection: "row", alignItems: "center", gap: space.lead },
-  kind: { ...type.title, flex: 1 },
-  why: { ...type.body },
-  reminder: { ...type.metaStrong },
-  actions: { gap: space.item },
-  // The question and its pill side by side, on the kit's row metrics.
-  question: { flexDirection: "row", alignItems: "center", gap: space.item, paddingVertical: space.rowY },
-  questionText: { ...type.title, flex: 1 },
-  // Each step keeps space.item under it; the card adds what brings the
-  // last one to a card's padding, as at the top.
-  steps: { paddingBottom: space.card - space.item },
+  why: { fontFamily: font.regular, fontSize: 14, lineHeight: 21, color: ink.detail },
+  reminder: { ...type.metaStrong, color: ink.detail },
+  // The question and its pill side by side.
+  question: { flexDirection: "row", alignItems: "center", gap: space.item },
+  questionText: { flex: 1, fontFamily: font.regular, fontSize: 12, lineHeight: 17, color: ink.detail },
 })

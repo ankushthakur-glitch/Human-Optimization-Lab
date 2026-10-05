@@ -1,20 +1,14 @@
-import Award01Icon from "@hugeicons/core-free-icons/Award01Icon"
-import FavouriteIcon from "@hugeicons/core-free-icons/FavouriteIcon"
-import Flag02Icon from "@hugeicons/core-free-icons/Flag02Icon"
-import Idea01Icon from "@hugeicons/core-free-icons/Idea01Icon"
-import PencilEdit02Icon from "@hugeicons/core-free-icons/PencilEdit02Icon"
-import Rocket01Icon from "@hugeicons/core-free-icons/Rocket01Icon"
-import Target02Icon from "@hugeicons/core-free-icons/Target02Icon"
 import * as React from "react"
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native"
 
-import { HugeIcon, type IconSvgObject } from "@/components/hugeicon"
-import { IconTile } from "@/components/list"
+import { Flag, Heart, Lightbulb, PencilSimple, RocketLaunch, Target, Trophy } from "@/components/ph"
+import { Tile } from "@/components/record-kit"
 import { own, spoken, type Answers } from "@/lib/conversation"
-import { color, font } from "@/lib/theme"
+import { card, color, hairline, ink, space, type } from "@/lib/theme"
 
 /* The patient's why, as it goes into the care plan: their reason on top,
-   then one row per answer with its icon. Every answer opens to be edited. */
+   then one row per answer on its round teal tile, on the Figma "Hol" card.
+   Every answer opens to be edited. */
 
 export type WhyKey = "reason" | "values" | "focus" | "why" | "commitment" | "easier" | "obstacle" | "solution" | "success"
 
@@ -30,15 +24,17 @@ export const WHY_LABELS: Record<WhyKey, string> = {
   success: "What success will look like",
 }
 
-const ROWS: { key: Exclude<WhyKey, "reason">; icon: IconSvgObject }[] = [
-  { key: "values", icon: FavouriteIcon },
-  { key: "focus", icon: Target02Icon },
-  { key: "why", icon: Idea01Icon },
-  { key: "commitment", icon: Flag02Icon },
-  { key: "easier", icon: Rocket01Icon },
-  { key: "obstacle", icon: Flag02Icon },
-  { key: "solution", icon: Idea01Icon },
-  { key: "success", icon: Award01Icon },
+type PhIcon = React.ComponentType<{ size?: number; color?: string }>
+
+const ROWS: { key: Exclude<WhyKey, "reason">; icon: PhIcon }[] = [
+  { key: "values", icon: Heart },
+  { key: "focus", icon: Target },
+  { key: "why", icon: Lightbulb },
+  { key: "commitment", icon: Flag },
+  { key: "easier", icon: RocketLaunch },
+  { key: "obstacle", icon: Flag },
+  { key: "solution", icon: Lightbulb },
+  { key: "success", icon: Trophy },
 ]
 
 /** Where each answer on the card is kept: a field, or the reply to a turn. */
@@ -99,9 +95,9 @@ export function WhyCard({ a, onEdit }: { a: Answers; onEdit?: (key: WhyKey) => v
               style={({ pressed }) => [styles.row, i < rows.length - 1 && styles.rule, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <IconTile size={32}>
-                <HugeIcon icon={r.icon} size={15} color={color.primary} />
-              </IconTile>
+              <Tile>
+                <r.icon size={16} color={color.primary} />
+              </Tile>
               <View style={styles.text}>
                 <Text style={styles.label}>{WHY_LABELS[r.key]}</Text>
                 <Text style={styles.value}>{r.value}</Text>
@@ -115,7 +111,7 @@ export function WhyCard({ a, onEdit }: { a: Answers; onEdit?: (key: WhyKey) => v
   )
 }
 
-const Pencil = () => <HugeIcon icon={PencilEdit02Icon} size={15} color={color.muted} />
+const Pencil = () => <PencilSimple size={16} color={card.chevron} />
 
 /** Fades and lifts in, `index` steps after the card appears. */
 function Reveal({ index, children }: { index: number; children: React.ReactNode }) {
@@ -131,28 +127,29 @@ function Reveal({ index, children }: { index: number; children: React.ReactNode 
 }
 
 const styles = StyleSheet.create({
+  // The Figma "Hol" card: white at 60%, radius 8, 12 inside, the softest lift.
   card: {
-    backgroundColor: color.background,
-    borderRadius: 24,
+    backgroundColor: card.fill,
+    borderRadius: 8,
     overflow: "hidden",
-    marginVertical: 4,
-    boxShadow: "0 1px 3px rgba(16, 24, 40, 0.10), 0 12px 32px rgba(16, 24, 40, 0.14)",
+    marginVertical: space.stack,
+    boxShadow: card.shadow,
   },
-  between: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  between: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },
   head: {
-    marginHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 18,
-    gap: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: color.border,
+    marginHorizontal: space.card,
+    paddingTop: space.card,
+    paddingBottom: space.rowY,
+    gap: space.stack,
+    borderBottomWidth: 0.8,
+    borderBottomColor: hairline.rule,
   },
-  reason: { fontFamily: font.semibold, fontSize: 15.5, lineHeight: 21, letterSpacing: -0.1, color: color.text },
-  pad: { paddingHorizontal: 20, paddingBottom: 4 },
-  row: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16 },
-  rule: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.border },
+  reason: { ...type.section, color: ink.content },
+  pad: { paddingHorizontal: space.card },
+  row: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
+  rule: { borderBottomWidth: 0.8, borderBottomColor: hairline.rule },
   pressed: { opacity: 0.6 },
-  text: { flex: 1, gap: 3 },
-  label: { fontFamily: font.regular, fontSize: 12.5, lineHeight: 17, color: color.muted },
-  value: { fontFamily: font.medium, fontSize: 15, lineHeight: 20, color: color.text },
+  text: { flex: 1, gap: space.stack },
+  label: { ...type.label },
+  value: { ...type.title },
 })

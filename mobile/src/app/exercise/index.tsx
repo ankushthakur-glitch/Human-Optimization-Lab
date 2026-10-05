@@ -2,10 +2,11 @@ import { router } from "expo-router"
 import * as React from "react"
 import { KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, View } from "react-native"
 
-import { Art } from "@/components/art"
 import { FlowScreen } from "@/components/flow"
-import { IconWalk } from "@/components/icons"
-import { Block, Card, Chip, ChipRow, Group, HUE, NeedsRow, Tag, TextAction, type Tone } from "@/components/record-kit"
+import { AskButton, PrimaryButton } from "@/components/hol"
+import { PersonSimpleWalk } from "@/components/ph"
+import { HeadCard, headText } from "@/components/plan-tab-pieces"
+import { Block, Chip, ChipRow, Group, HUE, NeedsRow, Tag, TextAction, type Tone } from "@/components/record-kit"
 import { Sheet, SheetText } from "@/components/sheet"
 import { toast } from "@/components/toast"
 import { ExerciseRow, TickCircle, goBack, saveLog } from "@/components/today-exercise-parts"
@@ -62,7 +63,7 @@ export default function TodayExerciseScreen() {
   const walkRow = (
     <Group>
       <NeedsRow
-        icon={<IconWalk size={18} color={HUE.teal.ink} />}
+        icon={<PersonSimpleWalk size={16} color={HUE.teal.ink} />}
         title={WALK.title}
         meta={walk ? `Done at ${clockOf(new Date(walk.at))}` : WALK.detail}
         right={<TickCircle done={!!walk} />}
@@ -76,13 +77,13 @@ export default function TodayExerciseScreen() {
   if (!session) {
     const next = nextSession(profileOf(s).sessionOn, now)
     return (
-      <FlowScreen page title="Today's exercise">
+      <FlowScreen page title="Today's exercise" footer={<AskButton params={{ topic: "plan" }} />}>
         <Header rest>
-          <Text style={type.section} accessibilityRole="header">
+          <Text style={headText.title} accessibilityRole="header">
             Rest day
           </Text>
-          <Text style={type.label}>An easy walk is enough today</Text>
-          {!!next && <Text style={[type.meta, styles.effort]}>{next}</Text>}
+          <Text style={headText.line}>An easy walk is enough today</Text>
+          {!!next && <Text style={[headText.meta, styles.effort]}>{next}</Text>}
         </Header>
         <Block title="Later today">{walkRow}</Block>
       </FlowScreen>
@@ -109,9 +110,9 @@ export default function TodayExerciseScreen() {
 
   // The two ways to close the workout sit together at the foot: finish it,
   // or, until every move is ticked, say she did something else instead.
-  const footer = finished ? undefined : (
+  const footer = finished ? <AskButton params={{ topic: "plan" }} /> : (
     <>
-      <Button onPress={() => setSheet("finish")}>Finish workout</Button>
+      <PrimaryButton onPress={() => setSheet("finish")}>Finish workout</PrimaryButton>
       {!allMoved && (
         <View style={styles.other}>
           <TextAction tone="muted" onPress={() => setSheet("other")}>
@@ -127,14 +128,14 @@ export default function TodayExerciseScreen() {
       <FlowScreen page title="Today's exercise" footer={footer}>
         <Header>
           <View style={styles.titleLine}>
-            <Text style={type.section} accessibilityRole="header">
+            <Text style={headText.title} accessibilityRole="header">
               {session.title}
             </Text>
             <Tag tone={status.tone}>{status.label}</Tag>
           </View>
-          <Text style={type.label}>{`${session.focus}, ${session.exercises.length} moves, ${length}`}</Text>
+          <Text style={headText.line}>{`${session.focus}, ${session.exercises.length} moves, ${length}`}</Text>
           {/* The talk test on its own line, so neither sentence breaks. */}
-          <Text style={[type.meta, styles.effort]}>
+          <Text style={[headText.meta, styles.effort]}>
             {finished ? finishedLine(finished) : `Effort ${session.effort.toLowerCase()}.\nYou can talk, but not sing.`}
           </Text>
         </Header>
@@ -173,15 +174,9 @@ export default function TodayExerciseScreen() {
   )
 }
 
-/* The day's header card: its words, and the one object beside them. A
-   rest day says little, so its words sit level with the object. */
-function Header({ rest, children }: { rest?: boolean; children: React.ReactNode }) {
-  return (
-    <Card style={[styles.header, rest && styles.headerRest]}>
-      <View style={styles.headerWords}>{children}</View>
-      <Art name="dumbbell" size={64} />
-    </Card>
-  )
+/* The day's teal tinted head card: the session, its length and effort. */
+function Header({ children }: { rest?: boolean; children: React.ReactNode }) {
+  return <HeadCard>{children}</HeadCard>
 }
 
 /* What closed the session: the time she finished it, or what she did in
@@ -259,11 +254,6 @@ function OtherSheet({ onSave, onClose }: { onSave: (what: string, minutes: numbe
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  // The object sits a tile's lead from the words.
-  header: { flexDirection: "row", alignItems: "flex-start", gap: space.lead },
-  headerRest: { alignItems: "center" },
-  // A 16 pt title to the line under it.
-  headerWords: { flex: 1, gap: space.stack },
   // The kit row's title line: the tag beside the title, under it when both
   // do not fit.
   titleLine: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: space.inline, rowGap: space.stack },

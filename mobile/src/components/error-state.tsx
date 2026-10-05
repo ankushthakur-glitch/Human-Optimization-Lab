@@ -2,16 +2,17 @@ import { router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import * as React from "react"
 import { Image, Platform, ScrollView, StyleSheet, Text, View, type ImageSourcePropType } from "react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
 
+import { PageFooter, PageGround } from "@/components/hol"
 import { Button, useTopInset } from "@/components/ui"
-import { color, font, gutter } from "@/lib/theme"
+import { color, font, ink, space } from "@/lib/theme"
 
 /* The full-screen states, the app's take on the portal's "Error states"
    (src/components/error-state.tsx): the same illustrations in the app's teal
-   (scripts/gen-mobile-error-illustrations.mjs), a title, one paragraph, and
-   the actions stacked full width at the foot, in reach of a thumb. Each state
-   is its own export so the screen that shows it only says which one. */
+   (scripts/gen-mobile-error-illustrations.mjs), a title and one paragraph on
+   the Figma "Hol" page gradient, and the actions stacked full width in the
+   white footer bar, in reach of a thumb. Each state is its own export so the
+   screen that shows it only says which one. */
 
 export const ART = {
   notFound: require("../../assets/illustrations/errors/not-found.png"),
@@ -33,27 +34,27 @@ export function ErrorState({
   children: React.ReactNode
 }) {
   const top = useTopInset()
-  const { bottom } = useSafeAreaInsets()
   return (
     <View style={styles.screen}>
       <DarkStatusBar />
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: top + 24, paddingBottom: Math.max(bottom - 12, 16) + 8 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.body}>
-          <View style={styles.art}>
-            <Image source={illustration} style={styles.artImage} resizeMode="cover" />
+      <View style={[styles.statusBar, { height: top }]} />
+      <View style={styles.fill}>
+        <PageGround />
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.body}>
+            <View style={styles.art}>
+              <Image source={illustration} style={styles.artImage} resizeMode="cover" />
+            </View>
+            <View style={styles.copy}>
+              <Text style={styles.title} accessibilityRole="header">
+                {title}
+              </Text>
+              <Text style={styles.description}>{description}</Text>
+            </View>
           </View>
-          <View style={styles.copy}>
-            <Text style={styles.title} accessibilityRole="header">
-              {title}
-            </Text>
-            <Text style={styles.description}>{description}</Text>
-          </View>
-        </View>
-        <View style={styles.actions}>{children}</View>
-      </ScrollView>
+        </ScrollView>
+      </View>
+      <PageFooter>{children}</PageFooter>
     </View>
   )
 }
@@ -159,34 +160,23 @@ export function SomethingWentWrongState({ onRetry, canLeave = true }: { onRetry:
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.background },
-  // The copy sits in the middle of the space the actions leave.
+  statusBar: { backgroundColor: color.background },
+  fill: { flex: 1 },
+  // The copy sits in the middle of the space the footer leaves.
   scroll: {
     flexGrow: 1,
     width: "100%",
-    maxWidth: 420 + gutter * 2,
+    maxWidth: 420 + space.gutter * 2,
     alignSelf: "center",
-    paddingHorizontal: gutter,
+    paddingHorizontal: space.gutter,
+    paddingVertical: space.section,
   },
-  body: { flex: 1, justifyContent: "center", gap: 20 },
+  body: { flex: 1, justifyContent: "center", gap: space.section },
   // The art is drawn 3:2 or 4:3 with room around it; 3:2 crops only margin.
   art: { width: "100%", aspectRatio: 3 / 2, overflow: "hidden" },
   // Sized outright: on the web an Image left to size itself takes the file's pixels.
   artImage: { width: "100%", height: "100%" },
-  copy: { gap: 10 },
-  title: {
-    fontFamily: font.semibold,
-    fontSize: 24,
-    lineHeight: 30,
-    letterSpacing: -0.5,
-    color: color.text,
-    textAlign: "center",
-  },
-  description: {
-    fontFamily: font.regular,
-    fontSize: 15,
-    lineHeight: 23,
-    color: color.muted,
-    textAlign: "center",
-  },
-  actions: { gap: 12, paddingTop: 32 },
+  copy: { gap: space.inline },
+  title: { fontFamily: font.semibold, fontSize: 20, lineHeight: 28, color: ink.content, textAlign: "center" },
+  description: { fontFamily: font.regular, fontSize: 14, lineHeight: 21, color: ink.detail, textAlign: "center" },
 })

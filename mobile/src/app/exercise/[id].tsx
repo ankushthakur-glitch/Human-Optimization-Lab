@@ -1,18 +1,18 @@
 import { useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 
-import { Art } from "@/components/art"
 import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
-import { IconInfo, IconPlay } from "@/components/icons"
+import { PrimaryButton } from "@/components/hol"
+import { Info, Play } from "@/components/ph"
 import { Banner, Block, Card, Chip, Group, HUE, KeyValue } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { MARK_SIZE, NumberMark, goBack, keepEnd, saveLog } from "@/components/today-exercise-parts"
 import { Button, TextField } from "@/components/ui"
 import { EXERCISES, localDay, profileOf, type Exercise } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { cardRadius, color, ink, space, type } from "@/lib/theme"
+import { card, color, font, ink, space, type } from "@/lib/theme"
 
 /* One move, opened from today's session: how it looks (the licensed 30
    second video plays in the panel in the real build; the prototype steps
@@ -78,17 +78,20 @@ function Move({ move }: { move: Exercise }) {
 
   return (
     <View style={styles.fill}>
-      <FlowScreen page title={move.name} footer={<Button onPress={done}>Done</Button>}>
-        <Card style={styles.panel}>
-          <View style={styles.stage}>
-            <Art name="dumbbell" size={96} />
-            <View style={styles.watch}>
-              <Button variant="outline" icon={IconPlay} onPress={() => setWatching(true)}>
-                Watch how
-              </Button>
-            </View>
+      <FlowScreen page title={move.name} footer={<PrimaryButton onPress={done}>Done</PrimaryButton>}>
+        {/* The video's place: a teal tinted 16:9 panel with its play
+            button, until the licensed clip plays here. */}
+        <Pressable
+          onPress={() => setWatching(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`Watch how: ${move.name}`}
+          style={({ pressed }) => [styles.stage, pressed && styles.pressed]}
+        >
+          <View style={styles.play}>
+            <Play size={20} color={color.primary} weight="fill" />
           </View>
-        </Card>
+          <Text style={styles.watch}>Watch how</Text>
+        </Pressable>
 
         <Block title={today ? "Today" : "Each time"}>
           <Card style={styles.rows}>
@@ -113,7 +116,7 @@ function Move({ move }: { move: Exercise }) {
               </View>
             ))}
           </Group>
-          <Banner hue="teal" icon={<IconInfo size={18} color={HUE.teal.ink} />} title={keepEnd(move.stop)} />
+          <Banner hue="teal" icon={<Info size={16} color={HUE.teal.ink} />} title={keepEnd(move.stop)} />
         </Block>
 
         <Block title="Your sets" meta={sets ? `${sets} of ${move.sets} done` : undefined}>
@@ -182,33 +185,34 @@ function CueSheet({ move, onClose }: { move: Exercise; onClose: () => void }) {
   )
 }
 
-/** The demonstration panel's thin frame: the stage nearly fills its card,
-    its corners concentric with the card's. */
-const FRAME = 6
-
 /** The frozen TextField's own text inset (ui.tsx), so "lb" sits as far in
     from the right as the number does from the left. */
 const FIELD_INSET = 14
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  panel: { padding: FRAME },
-  // The video's place: 16:9 on the page's cool grey, the object as its poster.
+  pressed: { opacity: 0.7 },
+  // The video's place: 16:9 on the teal tint inside its edge.
   stage: {
     aspectRatio: 16 / 9,
-    borderRadius: cardRadius - FRAME,
-    backgroundColor: color.page,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: color.primaryEdge,
+    backgroundColor: color.primaryTint,
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: space.inline,
+    boxShadow: card.shadow,
   },
-  watch: { alignSelf: "center" },
+  // A 48 white circle holding the play mark.
+  play: { width: 48, height: 48, borderRadius: 24, backgroundColor: color.background, alignItems: "center", justifyContent: "center", boxShadow: card.shadowXs },
+  watch: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: ink.primary },
   // The rows' own 12 plus this keep the first and last words the card's
   // 16 from its edge.
   rows: { paddingVertical: space.card - space.rowY },
-  // The 24 pt mark keeps an icon's gap to its words (Frontline's step
-  // circle), and the cue's first line centres on it.
-  cue: { flexDirection: "row", alignItems: "flex-start", gap: space.inline, paddingVertical: space.rowY },
+  // The 28 mark sits a tile's lead from its words, and the cue's first
+  // line centres on it.
+  cue: { flexDirection: "row", alignItems: "flex-start", gap: space.lead, paddingVertical: space.rowY },
   cueText: { flex: 1, paddingTop: (MARK_SIZE - type.body.lineHeight) / 2 },
   // A form card: 16 between the chips and the fields.
   log: { gap: space.card },
@@ -227,5 +231,5 @@ const styles = StyleSheet.create({
   stepCount: { ...type.metaStrong, color: ink.primary },
   // The cue is what she reads mid move: the sheet's largest words after
   // its title.
-  stepCue: { ...type.section },
+  stepCue: { fontFamily: font.medium, fontSize: 16, lineHeight: 24, color: ink.content },
 })

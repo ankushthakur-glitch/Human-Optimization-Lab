@@ -117,7 +117,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       data-base="neutral"
-      data-accent="inlay-p7"
+      data-accent="brand-teal"
       data-font="inter"
       data-heading="inherit"
       data-radius="small"

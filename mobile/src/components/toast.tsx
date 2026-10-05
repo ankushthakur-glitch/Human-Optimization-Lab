@@ -2,7 +2,7 @@ import * as React from "react"
 import { AccessibilityInfo, Animated, Easing, Platform, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native"
 
 import { useReducedMotion } from "@/components/chat"
-import { IconCheck } from "@/components/icons"
+import { Check } from "@/components/ph"
 import { useTopInset } from "@/components/ui"
 import { buttonRadius, color, ink, space, surface, type } from "@/lib/theme"
 
@@ -45,7 +45,7 @@ export function Toast({ text, style }: { text: string; style?: StyleProp<ViewSty
   return (
     <View style={[styles.pill, style]}>
       <View style={styles.check}>
-        <IconCheck size={10} color={color.onPrimary} strokeWidth={3} />
+        <Check size={11} color={color.onPrimary} weight="bold" />
       </View>
       <Text style={styles.text} numberOfLines={2} maxFontSizeMultiplier={1.3}>
         {text}
@@ -113,7 +113,9 @@ function ToastDrop({ text, onDone }: { text: string; onDone: () => void }) {
 const styles = StyleSheet.create({
   layer: { position: "absolute", left: 0, right: 0, alignItems: "center", paddingHorizontal: space.gutter, zIndex: 1000, elevation: 1000 },
   // Frontline's toast as a pill: Grey/10, 12 inside, the check 8 from the
-  // words. Flat, like every pill in the app: no shadow.
+  // words, its word 14 medium as a Figma "Hol" row title. Flat, like every
+  // pill in the app: no shadow. The check is Phosphor, as every icon in
+  // the Hol content is; Success/07 behind it.
   pill: {
     flexDirection: "row",
     alignItems: "center",

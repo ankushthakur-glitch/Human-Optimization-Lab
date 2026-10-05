@@ -1084,26 +1084,6 @@ function Band({
 
 type DotKind = Standing | "plain" | "other"
 
-/** One result on a plot, with its 2 pt white collar: teal in range (or with
-    no range), red out of range, a clay ring when borderline, a hollow grey
-    ring when measured another way. */
-function PlotDot({ x, y, kind, r = 4, motion, at }: { x: number; y: number; kind: DotKind; r?: number; motion: Motion; at: [number, number] }) {
-  const k = (size: number) => phase(motion, at[0], at[1], size * 0.6, size, easeOut)
-  const opacity = phase(motion, at[0], at[1], 0, 1)
-  const ring = kind === "borderline" || kind === "other"
-  const tone = kind === "other" ? chart.other : kind === "plain" ? chart.data : DOT[kind]
-  return (
-    <AG opacity={opacity}>
-      <ACircle cx={x} cy={y} r={k(r + 2)} fill={color.background} />
-      {ring ? (
-        <ACircle cx={x} cy={y} r={k(r - 0.5)} fill={color.background} stroke={tone} strokeWidth={kind === "other" ? 1.5 : 2} />
-      ) : (
-        <ACircle cx={x} cy={y} r={k(r)} fill={tone} />
-      )}
-    </AG>
-  )
-}
-
 /** The selected result: a ring in its colour around its own mark, with a
     white gap between, so the pick reads at a glance and the legend still
     reads the same for the mark inside: filled in range and out of range, a
@@ -1462,14 +1442,18 @@ export type BiomarkerTrendProps = SeriesInput & {
   playKey?: string
 }
 
-/** A marker's results over the years, for its own page: to scale in time,
-    over the patient's range, joined by straight teal segments through the
-    comparable results only, a rug tick under every result, the range's edge
-    values and at most three labelled gridlines on the trailing side, and the
-    first and latest dates. The whole plot is the touch target and snaps to
-    the nearest result; the readout above follows it. */
+/** A marker's results over the years, for its own page, as the Figma "Hol"
+    marker page draws it (5 Oct 2026, "Over time"): the readout above (the
+    selected result's day and source over its value), then a plot to scale
+    in time with the patient's range as the pale green zone under a
+    hairline, a soft curve through the comparable results (Primary/03 over
+    a teal wash fading to nothing), the selected result as a ringed mark in
+    its status colour with a small white label beside it, and the first and
+    latest dates under the plot. Results measured another way are hollow
+    rings, never joined. The whole plot is the touch target and snaps to
+    the nearest result; the readout and the label follow it. */
 export function BiomarkerTrend(props: BiomarkerTrendProps) {
-  const { height = 176, takeaway, readout = true, legend = true, loading = false, playKey } = props
+  const { height = 120, takeaway, readout = true, legend = true, loading = false, playKey } = props
   const s = seriesFrom(props)
   const readings = sortByTime(s.readings)
   const n = readings.length
@@ -1484,15 +1468,15 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
     setOwn(i)
     if (i !== sel) props.onSelect?.(i)
   }
-  const { width: W, onLayout } = useWidth()
-  const D = 910
-  const motion = useMotion(D, { playKey })
-  const gid = useSvgId("band")
+  const { width: W, onLayout } = useWidth(329)
+  const motion = useMotion(700, { playKey })
+  const gid = useSvgId("wash")
 
-  const top = 6
-  const base = height - 28
-  const yTop = top + 12
-  const yBottom = base - 12
+  // The selected mark's ring reaches 10 from its centre: it stays inside
+  // the plot at the top and the right.
+  const H = height
+  const yTop = 14
+  const yBottom = H - 6
   const [d0, d1] = n
     ? valueDomain(
         readings.map((r) => r.value),
@@ -1501,37 +1485,8 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
       )
     : [0, 1]
   const y = (v: number) => yTop + (1 - (v - d0) / (d1 - d0)) * (yBottom - yTop)
-  const band = n ? bandBox(s.low, s.high, d0, d1, y, top, base) : null
-
-  // The range's edges label themselves in the gutter, at one precision
-  // ("0.4" and "4.0"); gridlines fill in up to three labels, never within
-  // 14 pt of an edge's, and never inside a range whose edges are both
-  // labelled already.
-  const edgeLabels = n ? [s.high, s.low].filter((v): v is number => v !== undefined && v >= d0 && v <= d1).map((v) => ({ v, y: y(v) })) : []
-  const edgeDecimals = Math.max(decimalsOf(s.low ?? 0), decimalsOf(s.high ?? 0))
-  const closed = !!band && !band.openTop && !band.openBottom
-  const candidates = n
-    ? niceTicks(d0, d1, 3).filter(
-        (v) => y(v) >= top + 4 && y(v) <= base - 6 && edgeLabels.every((e) => Math.abs(e.y - y(v)) >= 14) && !(closed && v > s.low! && v < s.high!)
-      )
-    : []
-  const room = Math.max(0, 3 - edgeLabels.length)
-  const ticks = room ? [...candidates].sort((a, b) => nearestEdge(b) - nearestEdge(a)).slice(0, room) : []
-  function nearestEdge(v: number) {
-    return edgeLabels.length ? Math.min(...edgeLabels.map((e) => Math.abs(e.y - y(v)))) : 0
-  }
-  const tickStep = candidates.length > 1 ? candidates[1] - candidates[0] : (candidates[0] ?? 1)
-
-  // The plot sits left of a gutter that fits those labels (36 pt at least);
-  // dots keep clear of the edges so a selection halo is never cut.
-  const gutter = gutterFor(
-    [...edgeLabels.map((e) => formatNumber(e.v, edgeDecimals)), ...ticks.map((v) => formatNumber(v, decimalsOf(tickStep)))],
-    36
-  )
-  const plotRight = W - gutter
-  const x0 = 12
-  const x1 = plotRight - 10
-  const xs = n ? timeScale(timesOf(readings), x0, x1, 12) : []
+  const band = n ? bandBox(s.low, s.high, d0, d1, y, 0, H) : null
+  const xs = n ? timeScale(timesOf(readings), 2, W - 12, 12) : []
   const scrub = useScrub(xs, select)
 
   if (!n)
@@ -1545,39 +1500,24 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
   const xy = readings.map((r, i): XY => [xs[i], y(r.value)])
   const joined = readings.map((_, i) => i).filter((i) => !readings[i].other)
   const joinedXY = joined.map((i) => xy[i])
-  const length = lengthOf(joinedXY)
   const drawn = joined.length > 1
-
-  // The line draws in 600 ms after the band; each dot pops as the line
-  // reaches it, the latest last.
-  const lineStart = 150
-  const lineMs = 600
-  const along = drawn ? fractions(joinedXY) : []
-  const reachMs = (i: number) => {
-    let f: number
-    const k = joined.indexOf(i)
-    if (k >= 0 && drawn) f = along[k]
-    else {
-      const a = drawn ? xs[joined[0]] : xs[0]
-      const b = drawn ? xs[joined[joined.length - 1]] : xs[latest]
-      f = b > a ? clamp((xs[i] - a) / (b - a), 0, 1) : 1
-    }
-    return lineStart + lineMs * (1 - Math.cbrt(1 - f))
-  }
-  const dotAt = (i: number): [number, number] => {
-    const start = i === latest ? lineStart + lineMs : Math.min(reachMs(i), lineStart + lineMs)
-    return [start / D, (start + 160) / D]
-  }
+  const curve = drawn ? monotone(joinedXY) : ""
+  const wash = drawn ? `${curve} L ${joinedXY[joinedXY.length - 1][0].toFixed(1)} ${H} L ${joinedXY[0][0].toFixed(1)} ${H} Z` : ""
 
   const r = readings[sel]
   const st = standing(r)
-  const selTone = r.other ? chart.other : st ? DOT[st] : chart.data
-
-  const meta = [sel === latest ? "Latest" : undefined, showWhen(r.date), r.source, r.other ? r.method : undefined].filter(Boolean).join(", ")
+  const tone = r.other ? chart.other : st ? DOT[st] : chart.data
   const shownValue = r.shown ?? formatNumber(r.value)
-  // A single result's value over its dot, or under it when the plot's top
-  // is too close.
-  const singleY = xy[0][1] - 14 - 12 >= 0 ? xy[0][1] - 14 : xy[0][1] + 24
+  const meta = [sel === latest ? "Latest" : undefined, showWhen(r.date), r.source, r.other ? r.method : undefined].filter(Boolean).join(", ")
+
+  // The label sits left of the mark, its pointer on the mark's middle; with
+  // no room on the left it turns to the right.
+  const tipW = 100
+  const [mx, my] = xy[sel]
+  const tipLeft = mx - 13 - 6 - tipW >= 0
+  const tipX = tipLeft ? mx - 13 - 6 - tipW : mx + 13 + 6
+  const tipY = clamp(my - 21, -8, H - 42)
+
   const trend = s.trend ?? trendOf(readings)
   const latestStatus = s.status ?? standing(readings[latest])
   const others = readings.filter((x) => x.other).length
@@ -1595,99 +1535,80 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
   const valueText = `${spokenWhen(r.date)}, ${withSpokenUnit(shownValue, s.unit)}${st ? `, ${lowerFirst(STATUS_WORD[st])}` : ""}${r.source ? `, ${r.source}` : ""}${r.other && r.method ? `, ${lowerFirst(r.method)}` : ""}`
 
   const note = n === 1 ? "One result so far. A trend needs two from the same test." : !drawn ? OTHER_METHODS : undefined
-  const kinds = readings.filter((x) => !x.other).map(standing)
   const methods = [...new Set(readings.filter((x) => x.other).map((x) => x.method ?? "Another method"))]
-  const items: LegendItem[] = [
-    ...(band ? [{ kind: "band" as const, label: s.range ? `Range, ${lowerFirst(s.range)}` : "Your range" }] : []),
-    ...(banded && kinds.includes("in") ? [{ kind: "dot" as const, tone: chart.data, label: "In range" }] : []),
-    ...(kinds.includes("borderline") ? [{ kind: "ring" as const, tone: chart.borderline, label: "Borderline" }] : []),
-    ...(kinds.includes("out") ? [{ kind: "dot" as const, tone: outOfRangeColor(), label: "Out of range" }] : []),
-    ...methods.map((m) => ({ kind: "hollow" as const, label: `${m}, not joined` })),
-  ]
+  const show = phase(motion, 0, 1, 0, 1, easeOut)
 
   return (
     <View style={[styles.frame, loading && styles.loading]}>
       <Takeaway>{takeaway}</Takeaway>
-      {readout && <Readout meta={meta} value={shownValue} unit={s.unit} status={st} onLatest={sel !== latest ? () => select(latest) : undefined} />}
-      <View onLayout={onLayout} style={{ height }}>
-        <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <Svg width={W} height={height}>
-            {band && (
-              <AG opacity={phase(motion, 0, lineStart / D, 0, 1)}>
-                <Band id={gid} x={0} width={plotRight} top={band.top} bottom={band.bottom} openTop={band.openTop} openBottom={band.openBottom} />
-              </AG>
-            )}
-            {/* Ink at 7% reads as a hairline on white and on the band alike. */}
-            {ticks.map((v) => (
-              <Line key={v} x1={0} x2={plotRight} y1={y(v)} y2={y(v)} stroke={color.text} strokeOpacity={0.07} strokeWidth={1} />
-            ))}
-            {edgeLabels.map((e) => (
-              <Label key={e.v} x={plotRight + 6} y={e.y + 4} weight="medium" tone={ink.detail}>
-                {formatNumber(e.v, edgeDecimals)}
-              </Label>
-            ))}
-            {ticks.map((v) => (
-              <Label key={v} x={plotRight + 6} y={y(v) + 4}>
-                {formatNumber(v, decimalsOf(tickStep))}
-              </Label>
-            ))}
-            <Line x1={0} x2={plotRight} y1={base} y2={base} stroke={chart.track} strokeWidth={1} />
-            {xs.map((x, i) => (
-              <Line key={i} x1={x} x2={x} y1={base + 3} y2={base + 7} stroke={chart.rule} strokeWidth={1.5} strokeLinecap="round" />
-            ))}
-            {n > 1 && (
-              <AG opacity={phase(motion, (lineStart + lineMs) / D, 1, 0, 1)}>
-                <Line x1={xs[sel]} x2={xs[sel]} y1={top} y2={base} stroke={chart.rule} strokeWidth={1} />
-              </AG>
-            )}
-            {drawn && (
-              <APath
-                d={line(joinedXY)}
-                stroke={chart.data}
-                strokeWidth={2}
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray={motion.done ? undefined : `${length} ${length}`}
-                strokeDashoffset={motion.done ? undefined : phase(motion, lineStart / D, (lineStart + lineMs) / D, length, 0, easeOut)}
-              />
-            )}
-            {readings.map((reading, i) => (
-              <PlotDot
-                key={i}
-                x={xs[i]}
-                y={xy[i][1]}
-                kind={reading.other ? "other" : (standing(reading) ?? "plain")}
-                r={i === latest ? 5 : 4}
-                motion={motion}
-                at={dotAt(i)}
-              />
-            ))}
-            <SelectedMark x={xs[sel]} y={xy[sel][1]} tone={selTone} kind={r.other ? "other" : (st ?? "plain")} opacity={phase(motion, (lineStart + lineMs) / D, 1, 0, 1)} />
-            {n === 1 && (
-              <Label x={xs[0]} y={singleY} anchor="middle" weight="semibold" tone={ink.strong} halo>
-                {shownValue}
-              </Label>
-            )}
-            <AxisDates xs={xs} sel={sel} dates={readings.map((x) => showWhen(x.date))} width={W} y={height - 6} />
-          </Svg>
+      {readout && (
+        <View style={styles.trendReadout}>
+          <Text style={styles.readoutMeta} numberOfLines={2}>
+            {meta}
+          </Text>
+          <Text style={styles.readoutValue} numberOfLines={1}>
+            {shownValue}
+            {!!s.unit && <Text style={styles.readoutUnit}>{` ${s.unit}`}</Text>}
+          </Text>
         </View>
-        <View
-          style={StyleSheet.absoluteFill}
-          {...scrub}
-          accessible
-          accessibilityRole="adjustable"
-          accessibilityLabel={props.spoken ?? summary}
-          aria-valuetext={valueText}
-          accessibilityActions={ADJUST}
-          onAccessibilityAction={onAdjust(sel, n, select)}
-        />
+      )}
+      <View style={styles.trendPlotWrap}>
+        <View onLayout={onLayout} style={[styles.trendPlot, { height: H }]}>
+          <Animated.View style={{ opacity: show }} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <Svg width={W} height={H}>
+              <Defs>
+                <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={color.primaryText} stopOpacity={0.16} />
+                  <Stop offset="1" stopColor={color.primaryText} stopOpacity={0} />
+                </LinearGradient>
+              </Defs>
+              {band && <Rect x={0} y={band.top} width={W} height={Math.max(band.bottom - band.top, 0)} fill={TREND_ZONE} />}
+              {band && !band.openTop && <Line x1={0} x2={W} y1={band.top} y2={band.top} stroke={chart.edge} strokeWidth={0.7} />}
+              {band && !band.openBottom && <Line x1={0} x2={W} y1={band.bottom} y2={band.bottom} stroke={chart.edge} strokeWidth={0.7} />}
+              {drawn && <Path d={wash} fill={`url(#${gid})`} />}
+              {drawn && <Path d={curve} stroke={color.primaryLine} strokeWidth={1} fill="none" strokeLinecap="round" strokeLinejoin="round" />}
+              {readings.map((reading, i) =>
+                reading.other && i !== sel ? <Circle key={i} cx={xs[i]} cy={xy[i][1]} r={3.5} fill={color.background} stroke={chart.other} strokeWidth={1.5} /> : null
+              )}
+              <Circle cx={mx} cy={my} r={9.1} fill="none" stroke={tone} strokeOpacity={0.2} strokeWidth={2.1} />
+              <Circle cx={mx} cy={my} r={4.5} fill={color.background} stroke={tone} strokeWidth={2.1} />
+            </Svg>
+          </Animated.View>
+          <Animated.View pointerEvents="none" style={[styles.tip, { left: tipX, top: tipY, width: tipW, opacity: show }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <Text style={styles.tipLabel} numberOfLines={1}>
+              {sel === latest ? "Latest reading" : showWhen(r.date)}
+            </Text>
+            <Text style={styles.tipValue} numberOfLines={1}>
+              {shownValue}
+              {!!s.unit && <Text style={styles.tipUnit}>{` ${s.unit}`}</Text>}
+            </Text>
+            <View style={[styles.tipPointer, tipLeft ? styles.tipPointerRight : styles.tipPointerLeft]} />
+          </Animated.View>
+          <View
+            style={StyleSheet.absoluteFill}
+            {...scrub}
+            accessible
+            accessibilityRole="adjustable"
+            accessibilityLabel={props.spoken ?? summary}
+            aria-valuetext={valueText}
+            accessibilityActions={ADJUST}
+            onAccessibilityAction={onAdjust(sel, n, select)}
+          />
+        </View>
+        <View style={styles.trendDates}>
+          <Text style={type.axis}>{showWhen(readings[0].date)}</Text>
+          {n > 1 && <Text style={type.axis}>{showWhen(readings[latest].date)}</Text>}
+        </View>
       </View>
       <Note>{note}</Note>
-      {legend && <Legend items={items} />}
+      {legend && methods.length > 0 && <Legend items={methods.map((m) => ({ kind: "hollow" as const, label: `${m}, not joined` }))} />}
     </View>
   )
 }
+
+/** The range's pale green zone on the marker plot (Figma: Success/01 at
+    half strength). */
+const TREND_ZONE = "rgba(233, 250, 239, 0.5)"
 
 /* ----------------------------------------------------------- range bar -- */
 
@@ -3504,6 +3425,29 @@ const styles = StyleSheet.create({
   readoutUnit: { ...type.unit },
   readoutTrailing: { ...type.meta },
   latest: { ...type.link },
+
+  // The marker plot (BiomarkerTrend): the readout's day over its value
+  // (16 semibold), the plot over its first and latest dates 8 apart.
+  trendReadout: { gap: space.stack },
+  trendPlotWrap: { gap: space.inline },
+  trendPlot: { borderLeftWidth: 0.7, borderBottomWidth: 0.7, borderColor: chart.edge },
+  trendDates: { flexDirection: "row", justifyContent: "space-between" },
+  // The small white label beside the selected result (Figma tooltip).
+  tip: {
+    position: "absolute",
+    gap: space.stack,
+    paddingHorizontal: 6,
+    paddingVertical: space.stack,
+    borderRadius: 4,
+    backgroundColor: color.background,
+    boxShadow: "0 12px 8px rgba(16, 24, 40, 0.08), 2px 0 3px rgba(16, 24, 40, 0.04)",
+  },
+  tipLabel: { ...type.caption, color: "#818181" },
+  tipValue: { fontFamily: font.medium, fontSize: 14, lineHeight: 18, color: ink.strong },
+  tipUnit: { ...type.caption },
+  tipPointer: { position: "absolute", top: 15, width: 8, height: 8, backgroundColor: color.background, transform: [{ rotate: "45deg" }] },
+  tipPointerRight: { right: -4 },
+  tipPointerLeft: { left: -4 },
 
   legend: { flexDirection: "row", flexWrap: "wrap", columnGap: space.item, rowGap: space.mark },
   legendItem: { flexDirection: "row", alignItems: "center", gap: space.mark },
