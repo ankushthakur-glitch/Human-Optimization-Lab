@@ -683,7 +683,7 @@ function VitalTrend({ vital: k, sets }: { vital: Vital; sets: VitalSet[] }) {
         data={data}
         margin={{ left: 4, right: bp ? 32 : 16, top: 8, bottom: 0 }}
       >
-        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+        <CartesianGrid strokeDasharray="3 3" />
         {k.normal && (
           <ReferenceArea
             y1={k.normal[0]}

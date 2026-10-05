@@ -104,7 +104,7 @@ function MetricChart({ m, since }: { m: TrendMetric; since?: string }) {
   return (
     <ChartContainer config={config} className="aspect-auto min-h-0 w-full flex-1">
       <LineChart data={data} margin={{ left: 4, right: 16, top: 8, bottom: 0 }}>
-        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+        <CartesianGrid strokeDasharray="3 3" />
         {bounds.length > 0 && (
           <ReferenceArea
             y1={m.low ?? axis.lo}
