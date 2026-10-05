@@ -5,13 +5,11 @@ import { keepTogether } from "@/components/care-gap"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, dotted } from "@/components/home-parts"
 import { CheckCircle, Pill, Warning } from "@/components/ph"
-import { Block, Card, Group, NeedsRow, NotConnected, Nudge, ROW_LIMIT, Rise, SmallAction, Status } from "@/components/record-kit"
+import { Block, Card, Group, NeedsRow, NotConnected, ROW_LIMIT, Rise, SmallAction, Status } from "@/components/record-kit"
 import { DEMO_USED, TabScreen, openTab } from "@/components/tab-bar"
-import { toast } from "@/components/toast"
 import { TrendTiles } from "@/components/trend-tile"
 import { useAllowance } from "@/lib/allowance"
-import { canOffer, useExperience, useMarkers } from "@/lib/experience"
-import { planFocus, useOffer } from "@/lib/offers"
+import { useExperience, useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
 import { color, space, type } from "@/lib/theme"
 import { NEW_IN_RECORD_NOTE, caughtUp, comingUp, homeBanner, markSeen, needsTitle, todo, yourMedicines, type TodoItem } from "@/lib/todo"
@@ -22,15 +20,12 @@ import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
    true; the teal "3 things need you" banner, collapsed, which opens To do;
    Your trends, a 2 by 2 grid of sparkline tiles; Upcoming; New in your
    record when an outside visit arrived; Your medicines; the teal Ask
-   about your results banner; and last and quiet, the plan card. The
-   Inlay score and the "checking" banner left the home on 5 Oct 2026, at
-   the user's word; the AI is metered in tokens now, so no question count.
+   about your results banner. The Inlay score, the "checking" banner and
+   the plan card left the home on 5 Oct 2026, at the user's word; the AI is metered in tokens now, so no question count.
 
    The same screen draws every state of the free record (C.1.4, C.28): not
    connected, the record still arriving, sharing turned off, a paused
-   member (the paused card above the banner, no plan card) and a cancelled
-   one. Whether the plan card shows, and as a card or one quiet line, is
-   the cap service's decision (lib/offers.ts), never this screen's.
+   member (the paused card above the banner) and a cancelled one.
 
    RecordSections is the record part on its own (Needs you to Ask), which
    the member home shows under its setup and review heroes with Needs you
@@ -61,7 +56,6 @@ export function FreeHome() {
               </Rise>
             )}
             <RecordSections />
-            <PlanCard />
           </>
         )}
       </View>
@@ -301,53 +295,6 @@ function AskRow() {
         title="Ask about your results"
         line={member ? undefined : `${Math.round((1 - DEMO_USED) * 100)}% of the free credits left`}
         onPress={() => router.push({ pathname: "/assistant", params: { topic: "results" } })}
-      />
-    </Rise>
-  )
-}
-
-/* ---------------------------------------------------------- plan card -- */
-
-const BENEFITS = ["A daily diet plan, with meals logged by photo", "An exercise program with short videos", "Watch and scale sync, coming soon"].map(keepTogether)
-
-/** The one offer on the free home, always last (C.1.2, 10; D.2 touchpoint
-    5): what a plan would do for her, in Inlay's voice, with no price and
-    no doctor. At middling readiness it is one quiet line. "Hide for now"
-    puts it away for 60 days; "Not for me", one tap further in, turns
-    offers off for 90. Never in the first session, at low readiness, with
-    sharing off, while the record is arriving, after a recent cancellation
-    or for any member: the cap service decides. */
-function PlanCard() {
-  const onboarding = useOnboarding()
-  const markers = useMarkers()
-  const offer = useOffer("home-benefits", { eligible: canOffer(onboarding) })
-  if (!offer.show) return null
-
-  const see = () => {
-    offer.markOpened()
-    router.push({ pathname: "/plans", params: { from: "home" } })
-  }
-
-  if (offer.soft) return null
-
-  return (
-    <Rise at={9} id="home:plan">
-      <Nudge
-        art="seedling"
-        artSize={64}
-        title="A plan built around you"
-        body={keepTogether(`For ${planFocus(onboarding, markers).words}, from your record and your why.`)}
-        points={BENEFITS}
-        note="Reviewed by a physician before it starts."
-        action="See how it works"
-        onAction={see}
-        dismissLabel="Hide for now"
-        onDismiss={() => {
-          offer.notNow()
-          toast("Hidden for now. It's always on the Plan tab.")
-        }}
-        onDecline={offer.notForMe}
-        onShow={offer.markShown}
       />
     </Rise>
   )
