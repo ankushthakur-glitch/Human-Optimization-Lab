@@ -17,6 +17,7 @@ export function RadialScore({
   max,
   label,
   size = 112,
+  tone = "primary",
   className,
   children,
 }: {
@@ -24,12 +25,14 @@ export function RadialScore({
   max: number
   label: string
   size?: number
+  /** The arc colour; progress rings pass the band their value falls in. */
+  tone?: "primary" | "clinical" | "process" | "success"
   className?: string
   /** The centre: the number and, optionally, a line under it. */
   children: React.ReactNode
 }) {
   const reduced = useReducedMotion()
-  const config = { value: { label, color: PALETTE.primary } } satisfies ChartConfig
+  const config = { value: { label, color: PALETTE[tone] } } satisfies ChartConfig
   return (
     <div
       role="img"
@@ -50,7 +53,7 @@ export function RadialScore({
           <RadialBar
             dataKey="value"
             cornerRadius={6}
-            fill={PALETTE.primary}
+            fill={PALETTE[tone]}
             background={{ fill: "var(--secondary)" }}
             isAnimationActive={!reduced}
           />

@@ -280,23 +280,23 @@ export const MARCUS: OptimizationData = {
       projection: "165-168 lb", goalDate: "2026-10-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Weight",
     },
     {
-      metric: "Waist", unit: "in", baseline: 38, current: 35.5, goal: 33, goalLabel: "32-33 in", betterDirection: "Lower",
+      metric: "Waist", unit: "in", baseline: 38, current: 35.5, goal: 34, goalLabel: "34 in", betterDirection: "Lower",
       projection: "34-34.5 in", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Waist",
     },
     {
-      metric: "Body fat", unit: "%", baseline: 28, current: 24, goal: 20, goalLabel: "18-20%", betterDirection: "Lower",
+      metric: "Body fat", unit: "%", baseline: 28, current: 24, goal: 22, goalLabel: "22%", betterDirection: "Lower",
       projection: "22-23%", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Body Fat Total",
     },
     {
-      metric: "VAT area", unit: "cm²", baseline: 191, current: 145.5, goal: 100, goalLabel: "< 100 cm²", betterDirection: "Lower",
+      metric: "VAT area", unit: "cm²", baseline: 191, current: 145.5, goal: 130, goalLabel: "< 130 cm²", betterDirection: "Lower",
       projection: "125-135 cm²", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "VAT Area",
     },
     {
-      metric: "HbA1c", unit: "%", baseline: 5.6, current: 5.5, goal: 5.4, goalLabel: "5.2-5.4%", betterDirection: "Lower",
+      metric: "HbA1c", unit: "%", baseline: 5.6, current: 5.5, goal: 5.2, goalLabel: "≤ 5.2%", betterDirection: "Lower",
       projection: "5.4%", goalDate: "2026-11-30", confidence: "Moderate", status: "Improving", seriesMarkerName: "Hemoglobin A1c",
     },
     {
-      metric: "Fat mass", unit: "lb", baseline: 49.8, current: 38.1, goal: 26.4, goalLabel: "26.4 lb", betterDirection: "Lower",
+      metric: "Fat mass", unit: "lb", baseline: 49.8, current: 38.1, goal: 35, goalLabel: "35 lb", betterDirection: "Lower",
       projection: "33-35 lb", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Fat Mass",
     },
     {
@@ -304,23 +304,23 @@ export const MARCUS: OptimizationData = {
       projection: "120-121 lb", goalDate: "2027-03-31", confidence: "Low", status: "Needs improvement", seriesMarkerName: "Lean Mass",
     },
     {
-      metric: "VAT volume", unit: "cm³", baseline: 996, current: 738, goal: 480, goalLabel: "< 480 cm³", betterDirection: "Lower",
+      metric: "VAT volume", unit: "cm³", baseline: 996, current: 738, goal: 600, goalLabel: "< 600 cm³", betterDirection: "Lower",
       projection: "600-650 cm³", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "VAT Volume",
     },
     {
-      metric: "RMR", unit: "kcal/day", baseline: 1754, current: 1902, goal: 2050, goalLabel: "2,050 kcal/day", betterDirection: "Higher",
+      metric: "RMR", unit: "kcal/day", baseline: 1754, current: 1902, goal: 1950, goalLabel: "1,950 kcal/day", betterDirection: "Higher",
       projection: "1,950-2,000 kcal/day", goalDate: "2027-03-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Resting Metabolic Rate",
     },
     {
-      metric: "Fasting glucose", unit: "mg/dL", baseline: 114, current: 103, goal: 92, goalLabel: "≤ 92 mg/dL", betterDirection: "Lower",
+      metric: "Fasting glucose", unit: "mg/dL", baseline: 114, current: 103, goal: 85, goalLabel: "≤ 85 mg/dL", betterDirection: "Lower",
       projection: "95-98 mg/dL", goalDate: "2026-12-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Fasting Glucose",
     },
     {
-      metric: "Fasting insulin", unit: "mcU/mL", baseline: 7.4, current: 5.4, goal: 3.4, goalLabel: "≤ 3.4 mcU/mL", betterDirection: "Lower",
+      metric: "Fasting insulin", unit: "mcU/mL", baseline: 7.4, current: 5.4, goal: 3, goalLabel: "≤ 3 mcU/mL", betterDirection: "Lower",
       projection: "4-4.5 mcU/mL", goalDate: "2026-12-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "Fasting Insulin",
     },
     {
-      metric: "HOMA-IR", unit: "index", baseline: 2.08, current: 1.37, goal: 0.66, goalLabel: "≤ 0.66", betterDirection: "Lower",
+      metric: "HOMA-IR", unit: "index", baseline: 2.08, current: 1.37, goal: 0.5, goalLabel: "≤ 0.5", betterDirection: "Lower",
       projection: "1.0-1.1", goalDate: "2026-12-31", confidence: "Moderate", status: "Improving", seriesMarkerName: "HOMA-IR (calculated)",
     },
     {

@@ -69,12 +69,17 @@ function metricsOf(view: ProgramView, program: Program): TrendMetric[] {
           </>
         ),
         aside: progress !== undefined && (
-          <RadialScore value={Math.min(progress, 100)} max={100} label={`${label(b.name)} goal progress`} size={48}>
+          <RadialScore value={Math.min(progress, 100)} max={100} label={`${label(b.name)} goal progress`} size={48} tone={progressTone(progress)}>
             <span className="text-[11px] font-semibold tabular-nums">{progress}%</span>
           </RadialScore>
         ),
       }
     })
+}
+
+/* Goal progress colour: red under 40%, orange to 74%, green from 75%. */
+function progressTone(progress: number) {
+  return progress >= 75 ? "success" : progress >= 40 ? "process" : "clinical"
 }
 
 export function ProgramPanel({
