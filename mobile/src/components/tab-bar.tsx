@@ -4,6 +4,7 @@ import * as React from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
+import { useDragBack } from "@/components/drag-back"
 import { DarkStatusBar } from "@/components/error-state"
 import { IconHome, IconPlan, IconResults, IconToDo, type TabIconProps } from "@/components/icons"
 import { OrbButton, PageGround, PageHeader } from "@/components/hol"
@@ -67,6 +68,9 @@ export function TabScreen({
 }) {
   const allowance = useAllowance()
   const { bottom } = useSafeAreaInsets()
+  // Record, To do and Plan open over home with no animation; the left edge
+  // swipe still drags them back to it.
+  useDragBack("none", tab !== "home")
   // The bar sits in the home indicator's area, as iOS's own floating bars
   // do; the content keeps clear of it when scrolled to the end.
   const barBottom = Math.max(bottom - 8, 12)

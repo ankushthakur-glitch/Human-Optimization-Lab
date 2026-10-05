@@ -99,7 +99,7 @@ const PAGES = {
   // A provider's portal, reached from the provider invite.
   "/screens/patients": [PROVIDER, "Patients", "Patients (list, health record sync status, bulk import, send invites)"],
   "/screens/patients/new": [PROVIDER, "Patients", "Add patient and send invite"],
-  "/screens/patients/[id]": [PROVIDER, "Patient Chart", "Dashboard: face sheet", { url: "/screens/patients/P10240" }],
+  "/screens/patients/[id]": [PROVIDER, "Patient Chart", "Dashboard: free member (version 1)", { url: "/screens/patients/P10240" }],
   "/screens/patients/[id]/edit": [PROVIDER, "Patients", "Edit patient", { url: "/screens/patients/P10240/edit" }],
   // The patient app's onboarding prototype: listed in EXTRA after the app's
   // sign in, so the Patient Onboarding rows run in the order a patient sees.
@@ -139,7 +139,13 @@ const EXTRA = [
   [GLOBAL, "Error States (mobile app)", "Something went wrong", "/app/errors/crash", "/screens/session-expired"],
 
   // The provider's patient chart: sections of /screens/patients/[id].
-  [PROVIDER, "Patient Chart", "Dashboard: timeline", "/screens/patients/P10240?tab=timeline", "/screens/patients/[id]"],
+  // Dashboard is the chart's first section: the free member (P10240) or the
+  // optimization member (P10318) view, each with Version 1 / Version 2 (?v=2).
+  [PROVIDER, "Patient Chart", "Dashboard: free member (version 2)", "/screens/patients/P10240?v=2", "/screens/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Dashboard: optimization member (version 1)", "/screens/patients/P10318", "/screens/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Dashboard: optimization member (version 2)", "/screens/patients/P10318?v=2", "/screens/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Overview: face sheet", "/screens/patients/P10240?section=overview", "/screens/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Overview: timeline", "/screens/patients/P10240?section=overview&tab=timeline", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Encounters", "/screens/patients/P10240?section=encounters", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Diagnoses", "/screens/patients/P10240?section=diagnoses", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Medications: active", "/screens/patients/P10240?section=medications", "/screens/patients/[id]"],

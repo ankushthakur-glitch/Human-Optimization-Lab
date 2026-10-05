@@ -18,6 +18,7 @@ import {
 } from "@/components/assistant-thread"
 import { ChatBar, MyBubble, Options, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
 import { ChatHistory } from "@/components/chat-history"
+import { useDragBack } from "@/components/drag-back"
 import { DarkStatusBar } from "@/components/error-state"
 import { PageGround } from "@/components/hol"
 import { CaretLeft, List } from "@/components/ph"
@@ -205,6 +206,8 @@ function inferTopic(t: Thread, planLive: boolean): ChatTopic {
 const CHOOSERS = new Set<Msg["kind"]>(["ask", "results", "medicines", "urgent"])
 
 export default function AssistantScreen() {
+  // It rises from the bottom; the left edge swipe still drags it away.
+  useDragBack("slide_from_bottom")
   const top = useTopInset()
   const { bottom } = useSafeAreaInsets()
   const onboarding = useOnboarding()
