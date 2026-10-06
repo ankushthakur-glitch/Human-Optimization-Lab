@@ -8,12 +8,12 @@ import type { FocusArea } from "@/lib/record"
    Optimization membership. Every practice gets every program; a program
    is what a plan focuses on, never a product with a price (B-01).
 
-   The price lives here and only here (TIERS.optimization.price, a
-   placeholder until Inlay sets it; the 21 Sep deck says "$100+ per
-   month"), written one way by priceLabel(): "$100 a month". It shows only
-   on the plan details (the Plan tab and /plans), the checkout and the
-   member's own membership page; never in an offer, the assistant, a
-   notification or next to a doctor (FINAL-SPEC D.4). */
+   The prices live here and only here (TIERS.optimization.billing): $100
+   a month, cancel anytime, or a year paid up front at 15% off, $1,020
+   (6 Oct 2026). Written one way by priceLabel(): "$100 a month". They show only on the plan
+   details (the Plan tab and /plans), the checkout and the member's own
+   membership page; never in an offer, the assistant, a notification or
+   next to a doctor (FINAL-SPEC D.4). */
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
 
@@ -50,42 +50,81 @@ export const programName = (id: ProgramId) => PROGRAMS.find((p) => p.id === id)?
 
 export type Tier = "free" | "optimization"
 
-/** What the membership includes, in this order (the showroom, the checkout
-    and the member's billing page, S-66). */
+/** What the membership includes, in this order (the checkout and the
+    member's billing page, S-66). */
 const INCLUDED = [
-  "A daily diet plan with targets",
-  "Meals logged with a photo",
+  "Your plan, made with your doctor and reviewed every 3 months",
+  "A meal plan with daily targets",
   "An exercise program with short videos",
-  "A daily score for yesterday's goals",
+  "Daily monitoring and a score for yesterday's goals",
   "Progress since you start, with a forecast",
-  "Your plan reviewed by a physician every 3 months",
   "Unlimited questions to your assistant",
 ] as const
+
+/** How a member pays: monthly, cancel anytime, or a year up front for
+    less. */
+export type Cadence = "monthly" | "yearly"
+
+/** The two ways to pay, in the order the checkout lists them. Yearly is
+    twelve months at 15% off: $1,200 less $180. */
+const BILLING: Record<Cadence, { name: string; price: string; period: string; months: number; note: string; save?: string }> = {
+  monthly: { name: "Monthly", price: "$100", period: "a month", months: 1, note: "Cancel anytime" },
+  yearly: { name: "Yearly", price: "$1,020", period: "a year", months: 12, note: "Paid once a year", save: "Save 15%" },
+}
+
+export const CADENCES: Cadence[] = ["monthly", "yearly"]
 
 export const TIERS = {
   free: { name: "Free record" },
   optimization: {
     name: "Optimization membership",
-    /** The client has not set the price (the 21 Sep deck says "$100+ per
-        month"). The only place it lives. */
-    price: "$100",
-    period: "a month",
+    /** The only place the prices live. */
+    billing: BILLING,
+    /** The monthly price, for the pages that show one figure. */
+    price: BILLING.monthly.price,
+    period: BILLING.monthly.period,
     included: INCLUDED,
     /** Charged separately, said before she pays (S-66). */
     excluded: ["Tests and imaging, priced when you book them", "Visits and fees at your clinic", "Medicines"],
   },
 } as const
 
-/** The price as the app writes it, everywhere it appears: "$100 a month". */
-export const priceLabel = () => `${TIERS.optimization.price} ${TIERS.optimization.period}`
+/** The price as the app writes it, everywhere it appears: "$100 a
+    month", or "$1,020 a year". */
+export const priceLabel = (cadence: Cadence = "monthly") => `${BILLING[cadence].price} ${BILLING[cadence].period}`
+
+/** One charge's amount for a cadence: "$100". */
+export const priceOf = (cadence: Cadence = "monthly") => BILLING[cadence].price
 
 /** What stays free, membership or not (S-03), on the same page as the
     price. */
-export const FREE_STAYS = ["Every result and trend", "Reminders and care gaps", "Booking and paying for tests", `${FREE_QUESTIONS} questions a month to your assistant`]
+export const FREE_STAYS = ["Every result and trend", "Reminders and care gaps", "Booking and paying for tests", `${FREE_QUESTIONS} questions a week to your assistant`]
 
-/** The showroom's "What you get": what the membership includes, then watch
-    and scale sync, coming soon. */
-export const BENEFITS: { text: string; soon?: boolean }[] = [...INCLUDED.map((text) => ({ text })), { text: "Watch and scale sync", soon: true }]
+/* The upsell's words (6 Oct 2026). Placeholder copy: Fynn's team is
+   sending the final wording; swap it in here when it arrives. */
+
+/** The upsell's lead line. */
+export const UPSELL_LEAD = "A personal plan built from your own record, with your doctor."
+
+/** What a plan can work toward: more than diet, in her own terms. */
+export const GOALS: { text: string; program: ProgramId }[] = [
+  { text: "Lower your A1c", program: "metabolic" },
+  { text: "Protect your bones", program: "bone" },
+  { text: "Reach a healthy weight", program: "weight" },
+  { text: "Bring down blood pressure", program: "pressure" },
+  { text: "Improve your cholesterol", program: "heart" },
+  { text: "Build strength", program: "strength" },
+  { text: "Sleep better", program: "sleep" },
+]
+
+/** The upsell's "What you get": a title and its line each, her doctor
+    first, then the program, the daily watch and her devices. */
+export const BENEFITS: { title: string; text: string; soon?: boolean }[] = [
+  { title: "Your doctor, on your side", text: "Your doctor reviews and approves your plan, then checks in on it every 3 months." },
+  { title: "Meals and exercise made for you", text: "A meal plan with daily targets and an exercise program with short videos." },
+  { title: "Someone watching every day", text: "Daily monitoring of your numbers, with a score for how yesterday went." },
+  { title: "Your wearables, connected", text: "Bring in your watch, ring or scale so your plan sees your real days.", soon: true },
+]
 
 /** A day on the plan, for the showroom's example (C.14.3 b): the diet
     plan's targets, the first strength session and logging, with the score

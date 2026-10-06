@@ -1486,7 +1486,7 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
     : [0, 1]
   const y = (v: number) => yTop + (1 - (v - d0) / (d1 - d0)) * (yBottom - yTop)
   const band = n ? bandBox(s.low, s.high, d0, d1, y, 0, H) : null
-  const xs = n ? timeScale(timesOf(readings), 2, W - 12, 12) : []
+  const xs = n ? timeScale(timesOf(readings), 4, W - 12, 12) : []
   const scrub = useScrub(xs, select)
 
   if (!n)
@@ -1568,7 +1568,11 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
               {drawn && <Path d={wash} fill={`url(#${gid})`} />}
               {drawn && <Path d={curve} stroke={color.primaryLine} strokeWidth={1} fill="none" strokeLinecap="round" strokeLinejoin="round" />}
               {readings.map((reading, i) =>
-                reading.other && i !== sel ? <Circle key={i} cx={xs[i]} cy={xy[i][1]} r={3.5} fill={color.background} stroke={chart.other} strokeWidth={1.5} /> : null
+                i === sel ? null : reading.other ? (
+                  <Circle key={i} cx={xs[i]} cy={xy[i][1]} r={3.5} fill={color.background} stroke={chart.other} strokeWidth={1.5} />
+                ) : (
+                  <Circle key={i} cx={xs[i]} cy={xy[i][1]} r={3} fill={color.background} stroke={color.primaryLine} strokeWidth={1.2} />
+                )
               )}
               <Circle cx={mx} cy={my} r={9.1} fill="none" stroke={tone} strokeOpacity={0.2} strokeWidth={2.1} />
               <Circle cx={mx} cy={my} r={4.5} fill={color.background} stroke={tone} strokeWidth={2.1} />

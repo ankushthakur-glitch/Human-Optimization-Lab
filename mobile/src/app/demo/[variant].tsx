@@ -2,6 +2,7 @@ import { type Href, router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { ActivityIndicator, StyleSheet, View } from "react-native"
 
+import { CREDIT_SEEDS, usedUp } from "@/lib/allowance"
 import { type Status, useAuth } from "@/lib/auth"
 import { DEMOS, DEMO_ACCOUNT, type DemoId } from "@/lib/demo"
 import { newSession } from "@/lib/offers"
@@ -18,9 +19,14 @@ import NotFoundScreen from "../+not-found"
     account signed out land on activation, or on sign in just after the
     password was created. Like errors/, it sits outside every guard, so the
     link works whatever state the device is in. Each seed is a new session
-    for the offer caps, as a fresh launch would be. */
+    for the offer caps, as a fresh launch would be.
+
+    Two review params: `credit` uses this week's AI credit (high, out,
+    borrowed, member-high, member-out; lib/allowance.ts usedUp) and `to`
+    lands on a page other than Home once signed in:
+    /demo/free?credit=out&to=/results. */
 export default function DemoScreen() {
-  const { variant } = useLocalSearchParams<{ variant: string }>()
+  const { variant, credit, to } = useLocalSearchParams<{ variant: string; credit?: string; to?: string }>()
   // Own keys only, so a name such as "toString" is never a seed.
   const id = variant && Object.prototype.hasOwnProperty.call(DEMOS, variant) ? (variant as DemoId) : undefined
   const onboarding = useOnboarding()
@@ -36,7 +42,9 @@ export default function DemoScreen() {
     ;(async () => {
       newSession()
       const patch = DEMOS[id]()
-      await onboarding.save(patch)
+      const seed = CREDIT_SEEDS.find((c) => c === credit)
+      const spent = seed ? usedUp(seed) : undefined
+      await onboarding.save(spent ? { ...patch, allowance: spent } : patch)
       const account = DEMO_ACCOUNT[id]
       if (account === "activate") {
         // No password on the device: activation with the code, as a new install.
@@ -58,10 +66,11 @@ export default function DemoScreen() {
           await auth.signIn(PATIENT.email, "demo")
         }
         const step = patch.step ?? "done"
-        setLanding({ href: step === "done" ? "/" : STEP_ROUTE[step], status: "signedIn" })
+        const home = to?.startsWith("/") ? (to as Href) : "/"
+        setLanding({ href: step === "done" ? home : STEP_ROUTE[step], status: "signedIn" })
       }
     })()
-  }, [id, onboarding, auth])
+  }, [id, onboarding, auth, credit, to])
 
   React.useEffect(() => {
     if (landing && auth.status === landing.status) router.replace(landing.href)

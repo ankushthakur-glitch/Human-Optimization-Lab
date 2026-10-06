@@ -32,7 +32,7 @@ export function PlanFree() {
 
   if (experience === "declined" || experience === "building")
     return (
-      <TabScreen tab="plan" title="Plan">
+      <TabScreen tab="plan" title="Upgrade">
         <EmptyState title="Your plan options appear once your record is ready." />
       </TabScreen>
     )
@@ -40,7 +40,7 @@ export function PlanFree() {
   const past = onboarding.planHistory ?? []
   const showroom = readiness !== "low" || open
   return (
-    <TabScreen tab="plan" title="Plan" overlay={checkout ? <CheckoutSheet onClose={() => setCheckout(false)} /> : undefined}>
+    <TabScreen tab="plan" title="Upgrade" overlay={checkout ? <CheckoutSheet onClose={() => setCheckout(false)} /> : undefined}>
       {sharingOff && <ReviewBanner state={{ kind: "sharing-off", since: sharingOff.on ?? "" }} onPress={() => router.push("/connect")} />}
       {past.length > 0 && (
         <Block title="Your past plans">

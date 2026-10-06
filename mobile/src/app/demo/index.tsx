@@ -107,12 +107,12 @@ export default function ReviewScreen() {
 
   async function spendAll() {
     await spendAllQuestions(onboarding, onboarding.save)
-    toast("Every free question used this month")
+    toast("All of this week's AI credit used")
   }
 
   async function returnAll() {
     await giveBackQuestions(onboarding, onboarding.save)
-    toast("Free questions back for this month")
+    toast("This month's AI credit is back")
   }
 
   function resetLimits() {
@@ -213,8 +213,8 @@ export default function ReviewScreen() {
         <Group>
           <NeedsRow icon={SWITCH} title="Dr. Patel finishes the review" meta="The record shows as checked today" onPress={finishReview} chevron={false} />
           <NeedsRow icon={SWITCH} title="New results arrive" meta="4 results from Quest, today" onPress={newResults} chevron={false} />
-          <NeedsRow icon={SWITCH} title="Use all free questions" meta="The assistant shows its limit card" onPress={spendAll} chevron={false} />
-          <NeedsRow icon={SWITCH} title="Give back the free questions" meta="A fresh month of questions" onPress={returnAll} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Use all AI credit" meta="The orb turns red, the assistant shows its limit card" onPress={spendAll} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Give back the AI credit" meta="A fresh month, nothing borrowed or added" onPress={returnAll} chevron={false} />
           <NeedsRow icon={SWITCH} title="Reset offer limits" meta="Clears every impression, Not now and Not for me" onPress={resetLimits} chevron={false} />
           <NeedsRow icon={SWITCH} title="Dr. Patel approves the plan" meta="The version with Dr. Patel goes live today" onPress={approve} chevron={false} />
           <NeedsRow icon={SWITCH} title="New readings arrive" meta="A new version goes to Dr. Patel, the live one stays" onPress={redraft} chevron={false} />

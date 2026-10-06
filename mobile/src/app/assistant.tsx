@@ -22,6 +22,7 @@ import { useDragBack } from "@/components/drag-back"
 import { DarkStatusBar } from "@/components/error-state"
 import { PageGround } from "@/components/hol"
 import { ChatText, List } from "@/components/ph"
+import { CreditSheet, useCreditNotice } from "@/components/credit-banner"
 import { useTopInset } from "@/components/ui"
 import { costOf, questionKind, useAllowance, type QuestionKind } from "@/lib/allowance"
 import {
@@ -30,6 +31,7 @@ import {
   CANT_ANSWER,
   CONCERNS,
   FREE_PLAN_ASKS,
+  LIMIT,
   NOT_CONNECTED,
   PLAN_ASKS,
   PROMPTS,
@@ -75,6 +77,7 @@ import { PATIENT } from "@/lib/patient"
 import { MEDICATIONS } from "@/lib/record"
 import { color, ink, space, type } from "@/lib/theme"
 import { classify, type Trend } from "@/lib/trends"
+import { keepEnd } from "@/lib/words"
 
 /* The assistant (FINAL-SPEC C.4), opened full screen from the round button
    beside the tab bar, or about one result from a marker page
@@ -134,6 +137,8 @@ type Msg = { id: string; at: string } & (
   | { kind: "limit"; question: string; about?: string; saved?: boolean; gone?: boolean }
   /** The end of the thread, with "Start a new chat". */
   | { kind: "ended" }
+  /** One quiet line: the credit ran out, and this chat finishes on grace. */
+  | { kind: "grace" }
 )
 type Draft = Msg extends infer M ? (M extends Msg ? Omit<M, "id" | "at"> : never) : never
 type AskMsg = Extract<Msg, { kind: "ask" }>
@@ -256,7 +261,7 @@ export default function AssistantScreen() {
     topic: t.topic ?? inferTopic(t, planLive),
     startedAt: t.startedAt,
     lastAt: t.lastAt,
-    messages: t.messages.filter((m) => m.kind !== "limit" && m.kind !== "ended"),
+    messages: t.messages.filter((m) => m.kind !== "limit" && m.kind !== "ended" && m.kind !== "grace"),
   })
   /** The history with a thread filed in it, newest first; a thread she
       asked nothing in is not kept. */
@@ -324,10 +329,18 @@ export default function AssistantScreen() {
   // With nothing to open it about, it waits for a category first.
   const previous = React.useRef(onboarding.chat as unknown as Thread | undefined)
   const [thread, setThread] = React.useState<Thread>(() => (paramTopic ? fresh(opening(), params.marker ?? params.topic ?? params.batch, paramTopic) : fresh([])))
+  const limitShown = thread.messages.some((m) => m.kind === "limit" && !m.gone)
   /** No category yet: the picker shows in place of the thread. */
   const choosing = !thread.topic && !thread.messages.length
   // A question it was opened with waits in the composer, unsent (A-42).
   const [draft, setDraft] = React.useState(params.ask ?? "")
+  /** Borrowing or adding AI credit, asked in a sheet first. */
+  const [credit, setCredit] = React.useState(false)
+  // This month's AI credit from 75% used, joined to the composer as
+  // Claude's session limit is; closed, it stays hidden until it says
+  // something new (75% becoming 100%), and the limit card says it alone.
+  const creditNotice = useCreditNotice(() => setCredit(true))
+  const [hiddenNotice, setHiddenNotice] = React.useState<string>()
   const [thinking, setThinking] = React.useState(false)
   /** "Something else": her own words answer it next. */
   const [awaiting, setAwaiting] = React.useState<"concern" | undefined>()
@@ -453,13 +466,14 @@ export default function AssistantScreen() {
   /** Counts the first question of a conversation (a result, a topic or her
       own words); false at the cap, when nothing is sent. */
   function charge(text: string, scope: string, kind: QuestionKind = "record", batch?: string) {
-    if (allowance.member) return true
     const threadId = `${thread.id}:${scope}`
     if (costOf({ text, threadId, kind, batch }, onboarding.allowance) === 0) {
       if (kind === "batch" && batch) allowance.markBatch(batch)
       return true
     }
-    return allowance.spend(threadId)
+    const went = allowance.spend(threadId, thread.id)
+    if (went === "grace") setThread((t) => append(t, stamp([{ kind: "grace" }])))
+    return !!went
   }
 
   /** At the cap: the question waits in the composer and the card shows,
@@ -799,10 +813,14 @@ export default function AssistantScreen() {
               setDraft("")
             }}
             onGone={() => patch(m.id, { gone: true })}
+            member={allowance.member}
+            onTopUp={() => setCredit(true)}
           />
         )
       case "ended":
         return <EndedRow onStart={startOver} />
+      case "grace":
+        return <Text style={styles.grace}>{keepEnd(LIMIT.grace)}</Text>
     }
   }
 
@@ -856,6 +874,7 @@ export default function AssistantScreen() {
           {!ended && (
             <View>
               <ChatBar
+                notice={creditNotice && creditNotice.words !== hiddenNotice && !limitShown ? { ...creditNotice, onClose: () => setHiddenNotice(creditNotice.words) } : undefined}
                 value={draft}
                 onChange={setDraft}
                 onSend={send}
@@ -871,6 +890,18 @@ export default function AssistantScreen() {
       )}
 
       {facts && <FactsSheet facts={facts} onClose={() => setFacts(undefined)} />}
+      {credit && (
+        <CreditSheet
+          onClose={() => setCredit(false)}
+          onDone={() => {
+            // A question waiting at the limit goes at once.
+            const waiting = thread.messages.find((m) => m.kind === "limit" && !m.gone)
+            if (!waiting) return
+            patch(waiting.id, { gone: true })
+            send()
+          }}
+        />
+      )}
       <ChatHistory
         open={menu}
         chats={history}
@@ -906,4 +937,5 @@ const styles = StyleSheet.create({
   top: { alignItems: "center", gap: space.stack, marginBottom: space.stack },
   // The day over the thread, as Frontline labels a day's group.
   day: { ...type.metaStrong, color: ink.tertiary },
+  grace: { ...type.meta, color: ink.tertiary, textAlign: "center", paddingHorizontal: space.section, marginVertical: space.inline },
 })

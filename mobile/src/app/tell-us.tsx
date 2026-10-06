@@ -3,10 +3,12 @@ import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
-import { Block, Card, Group, toast } from "@/components/record-kit"
+import { Sparkle } from "@/components/ph"
+import { Banner, Block, Card, Group, HUE, toast } from "@/components/record-kit"
 import { Button, TextField } from "@/components/ui"
 import { showDate } from "@/lib/dates"
 import { useOnboarding } from "@/lib/onboarding"
+import { checkSupplement } from "@/lib/supplement-check"
 import { color, space, type } from "@/lib/theme"
 
 /* What the patient tells Inlay (F-93): a medicine or supplement she takes
@@ -32,6 +34,15 @@ export default function TellUsScreen() {
   const [when, setWhen] = React.useState("")
   const [error, setError] = React.useState<string>()
   const topic = TOPICS.find((t) => t.id === about)
+
+  // The AI check reads what she typed once she pauses (600 ms), so the
+  // card does not flicker in and out letter by letter.
+  const [checked, setChecked] = React.useState("")
+  React.useEffect(() => {
+    const t = setTimeout(() => setChecked(what), 600)
+    return () => clearTimeout(t)
+  }, [what])
+  const warning = about === "medicine" ? checkSupplement(checked) : undefined
 
   async function save() {
     if (!topic) return
@@ -86,6 +97,11 @@ export default function TellUsScreen() {
           />
           <TextField label="When" value={when} onChangeText={setWhen} placeholder="Last month" />
         </Card>
+      )}
+      {warning && (
+        <View accessibilityLiveRegion="polite">
+          <Banner hue="amber" icon={<Sparkle size={16} color={HUE.amber.ink} weight="fill" />} title={warning.title} meta={warning.why} />
+        </View>
       )}
     </FlowScreen>
   )

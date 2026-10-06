@@ -52,7 +52,7 @@ export type MedicineConfirmProps = {
 export type MedicineView = "check" | "list"
 
 /** What she says about one medicine; the time is added on saving. */
-type Answer = Omit<MedRecord, "at">
+type Answer = Omit<MedRecord, "at" | "medication" | "shown">
 
 /** "Dr. Patel", from the doctor who reviews the record ("Dr. Maya Patel"). */
 const DOCTOR = REVIEW.by.replace(/^(Dr\.)\s+\S+\s+(\S+)$/, "$1 $2")
@@ -165,8 +165,12 @@ export function MedicineConfirm({ compact = false, onAnswered, focus, view, onOp
     answered.current?.()
   }, [open])
 
-  const answer = (id: string, a: Answer) => {
-    void s.save({ meds: { ...s.meds, [id]: { ...a, at: new Date().toISOString() } } })
+  // Saved with the medicine's name and the lists she saw, so Dr. Patel
+  // reads her answer against the same difference (lib/record
+  // providerAnswer).
+  const answer = (m: Medication, a: Answer) => {
+    const record: MedRecord = { medication: m.name, shown: m.lists, ...a, at: new Date().toISOString() }
+    void s.save({ meds: { ...s.meds, [m.id]: record } })
     toast("Saved")
   }
 
@@ -178,7 +182,7 @@ export function MedicineConfirm({ compact = false, onAnswered, focus, view, onOp
         <Block title={open ? "To check" : "Checked"}>
           {differ.map((m) => (
             <InView key={m.id} on={focus === m.id}>
-              <CheckCard m={m} saved={s.meds?.[m.id]} onAnswer={(a) => answer(m.id, a)} spotlight={focus === m.id} />
+              <CheckCard m={m} saved={s.meds?.[m.id]} onAnswer={(a) => answer(m, a)} spotlight={focus === m.id} />
             </InView>
           ))}
         </Block>
@@ -189,7 +193,7 @@ export function MedicineConfirm({ compact = false, onAnswered, focus, view, onOp
           <Rows>
             {agree.map((m, i) => (
               <InView key={m.id} on={focus === m.id}>
-                <AgreeRow m={m} saved={s.meds?.[m.id]} onAnswer={compact ? undefined : (a) => answer(m.id, a)} spotlight={focus === m.id ? edgesOf(i, agree.length) : undefined} />
+                <AgreeRow m={m} saved={s.meds?.[m.id]} onAnswer={compact ? undefined : (a) => answer(m, a)} spotlight={focus === m.id ? edgesOf(i, agree.length) : undefined} />
               </InView>
             ))}
           </Rows>

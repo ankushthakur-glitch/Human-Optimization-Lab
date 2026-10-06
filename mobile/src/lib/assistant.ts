@@ -135,8 +135,13 @@ export const FOLLOW_ON = {
 /** The calm card in the thread when a free patient sends a question with
     none left (C.4.7, touchpoint allowance). */
 export const LIMIT = {
-  title: "You've used this month's questions",
-  body: (resetsOn: string) => `They come back on ${resetsOn}. Your record, trends and past answers are all still here.`,
+  title: "You've used this week's AI credit",
+  body: (resetsOn: string) => `It comes back on ${resetsOn}. Your record, trends and past answers are all still here.`,
+  /** A member: add more for this month. */
+  topUpBody: (n: number, price: string) => `Or add ${n} more conversations for this week, ${price}.`,
+  topUp: "Add more credit",
+  /** The quiet line when a chat in progress finishes on grace. */
+  grace: "Your AI credit ran out, so we'll let you finish this chat. It comes off next week's credit.",
   save: "Save for my next visit",
   more: "See what members get",
 } as const

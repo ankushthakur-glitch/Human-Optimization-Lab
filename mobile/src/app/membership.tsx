@@ -13,7 +13,7 @@ import { Sheet, SheetText } from "@/components/sheet"
 import { Button } from "@/components/ui"
 import { dayKey, rowDate, showDate } from "@/lib/dates"
 import { useOnboarding, type Membership } from "@/lib/onboarding"
-import { TIERS, priceLabel } from "@/lib/plans"
+import { TIERS, priceLabel, priceOf } from "@/lib/plans"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* The member's own membership and billing page (FINAL-SPEC C.17, S-67 to
@@ -54,7 +54,8 @@ export default function MembershipScreen() {
   const m: Membership | undefined = onboarding.membership
   const now = new Date()
   const bill = billingOf(m, now)
-  const price = TIERS.optimization.price
+  const cadence = m?.billing ?? "monthly"
+  const price = priceOf(cadence)
   // A paid month still running once she cancels, paused or not: it ends on
   // her next billing day. None before her first charge.
   const paidUntil = (bill.state === "active" || bill.state === "paused") && bill.next ? bill.next : undefined
@@ -128,15 +129,15 @@ export default function MembershipScreen() {
           <FreeRecord />
         ) : (
           <>
-            {bill.state === "active" && bill.renews && <YearCard renews={bill.renews} now={now} onCancel={() => setSheet("cancel")} />}
+            {bill.state === "active" && bill.renews && <YearCard renews={bill.renews} price={priceLabel(cadence)} now={now} onCancel={() => setSheet("cancel")} />}
 
-            <Summary bill={bill} card={m?.card} onCard={() => setSheet("card")} onAddCard={() => chooseCard(CARDS[0])} />
+            <Summary bill={bill} price={price} card={m?.card} onCard={() => setSheet("card")} onAddCard={() => chooseCard(CARDS[0])} />
 
             {bill.state === "ending" && (
               <View style={styles.block}>
                 <Text style={styles.body}>
                   {keepTogether(
-                    `Your membership stays ${bill.paused ? "paused" : "active"} until ${bill.ends ? rowDate(bill.ends) : "this billing month ends"}. After that you go back to the free record, and you keep your record and every version of your plan.`,
+                    `Your membership stays ${bill.paused ? "paused" : "active"} until ${bill.ends ? rowDate(bill.ends) : "this billing period ends"}. After that you go back to the free record, and you keep your record and every version of your plan.`,
                   )}
                 </Text>
                 <PrimaryButton onPress={() => setSheet("resume")}>Resume my membership</PrimaryButton>
@@ -193,7 +194,7 @@ export default function MembershipScreen() {
           <SheetText>
             {keepTogether(
               paidUntil
-                ? `You won't be charged again. You'll go back to the free record on ${rowDate(paidUntil)}, when this billing month ends. You keep your record and every version of your plan.`
+                ? `You won't be charged again. You'll go back to the free record on ${rowDate(paidUntil)}, when this billing period ends. You keep your record and every version of your plan.`
                 : "You haven't been charged, and you won't be. You'll go back to the free record today and keep your record.",
             )}
           </SheetText>
@@ -227,7 +228,7 @@ export default function MembershipScreen() {
             )}
           </SheetText>
           <View style={styles.sheetActions}>
-            <Button onPress={resume}>{`Resume for ${priceLabel()}`}</Button>
+            <Button onPress={resume}>{`Resume for ${priceLabel(cadence)}`}</Button>
             <View style={styles.quiet}>
               <TextAction tone="muted" onPress={close}>
                 Not now
@@ -259,7 +260,7 @@ export default function MembershipScreen() {
             </View>
             <View>
               <KeyValue label="Card" value={cardOn(m, sheet.receipt)} />
-              <KeyValue label="For" value="Optimization membership, monthly" last />
+              <KeyValue label="For" value={`Optimization membership, ${cadence}`} last />
             </View>
           </Card>
           <Button onPress={close}>Done</Button>
@@ -282,8 +283,7 @@ const STATE_TAG: Record<Billing["state"], { tone: "ok" | "muted"; label: (b: Bil
 
 /** What she has: the membership, the next payment (or why there is
     none), and the card. */
-function Summary({ bill, card, onCard, onAddCard }: { bill: Billing; card?: string; onCard: () => void; onAddCard: () => void }) {
-  const price = TIERS.optimization.price
+function Summary({ bill, price, card, onCard, onAddCard }: { bill: Billing; price: string; card?: string; onCard: () => void; onAddCard: () => void }) {
   const tag = STATE_TAG[bill.state]
   const rows: { label: string; value: string }[] =
     bill.state === "active"
@@ -361,14 +361,14 @@ function FreeRecord() {
 
 /** A month before the membership's yearly renewal (S-70): her year, the
     renewal and the price, and the way out beside it. */
-function YearCard({ renews, now, onCancel }: { renews: Date; now: Date; onCancel: () => void }) {
+function YearCard({ renews, price, now, onCancel }: { renews: Date; price: string; now: Date; onCancel: () => void }) {
   const days = (renews.getTime() - now.getTime()) / 86_400_000
   if (days < 0 || days > YEAR_DAYS) return null
   return (
     <Card style={styles.year}>
       <Text style={styles.title}>Your year with Inlay</Text>
       <Text style={styles.body}>{YEAR_WORDS}</Text>
-      <Text style={styles.label}>{`Renews ${rowDate(renews)} for ${priceLabel()}`}</Text>
+      <Text style={styles.label}>{`Renews ${rowDate(renews)} for ${price}`}</Text>
       <View style={styles.yearAction}>
         <Button variant="destructive" onPress={onCancel}>
           Cancel membership

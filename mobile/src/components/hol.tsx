@@ -168,7 +168,7 @@ export function PrimaryButton({ children, onPress, disabled, tone = "primary" }:
 }
 
 /** The assistant's circle beside the tab bar: the live orb in a teal edged
-    ring, and around it an arc for how much of this month's AI credit is
+    ring, and around it an arc for how much of this week's AI credit is
     used (Figma's four variants): green up to 60%, orange above 60%, red
     above 90%. A member has no count, so no arc. */
 export function OrbButton({ used = 0, onPress }: { used?: number; onPress: () => void }) {
@@ -178,12 +178,12 @@ export function OrbButton({ used = 0, onPress }: { used?: number; onPress: () =>
   const r = 26 - sw / 2
   const c = 2 * Math.PI * r
   const s = Math.min(Math.max(used, 0), 1)
-  const arc = s > 0.9 ? ORB_ARC.high : s > 0.6 ? ORB_ARC.mid : ORB_ARC.low
+  const arc = creditTone(s)
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={s > 0 ? `Ask the assistant, ${Math.round(s * 100)}% of this month's questions used` : "Ask the assistant"}
+      accessibilityLabel={s > 0 ? `Ask the assistant, ${Math.round(s * 100)}% of this week's AI credit used` : "Ask the assistant"}
       style={({ pressed }) => [styles.orb, pressed && styles.pressed]}
     >
       <View style={styles.orbInner}>
@@ -214,6 +214,10 @@ export function OrbButton({ used = 0, onPress }: { used?: number; onPress: () =>
 /** The arc's three steps (Success/07, Warning/07, Error/07) and the dark
     ground the orb glows on. */
 const ORB_ARC = { low: "#2F7F4D", mid: "#C8641B", high: "#D9363E" } as const
+
+/** The AI credit's colour for how much is used, 0 to 1: green up to 60%,
+    orange above 60%, red above 90%. The orb's arc and the credit bar. */
+export const creditTone = (used: number) => (used > 0.9 ? ORB_ARC.high : used > 0.6 ? ORB_ARC.mid : ORB_ARC.low)
 const ORB_GROUND = "#0B1214"
 
 const styles = StyleSheet.create({

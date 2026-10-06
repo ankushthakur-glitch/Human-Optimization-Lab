@@ -1,7 +1,7 @@
 /* Dates as the app shows them: "Sep 29, 2026", "Sun, Oct 4", "Today".
    Day and month keys are the device's local date, so a California evening
-   never rolls into tomorrow and the free questions come back on the 1st
-   where she lives, not in UTC (A-40). */
+   never rolls into tomorrow and the AI credit comes back on Monday where
+   she lives, not in UTC (A-40). */
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -14,6 +14,17 @@ export const dayKey = (d: Date = new Date()) => `${d.getFullYear()}-${pad(d.getM
 
 /** The key a month is kept under, in local time: "2026-10". */
 export const monthKey = (d: Date = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`
+
+/** The Monday a local week starts on, at midnight. */
+export const weekStart = (d: Date = new Date()) => {
+  const day = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  day.setDate(day.getDate() - ((day.getDay() + 6) % 7))
+  return day
+}
+
+/** The key a week is kept under, in local time: its Monday, "2026-10-05".
+    The AI credit renews weekly (user, 6 Oct 2026). */
+export const weekKey = (d: Date = new Date()) => dayKey(weekStart(d))
 
 /** A day key ("2026-10-04") at local noon; an ISO time as it is. */
 const asDate = (date: Date | string) => {

@@ -72,7 +72,7 @@ export const HUE: Record<Hue, { ink: string; tint: string; edge: string }> = {
   violet: { ink: color.violet, tint: color.violetTint, edge: "#DDD0F7" },
 }
 
-export type Tone = "high" | "low" | "ok" | "primary" | "muted"
+export type Tone = "high" | "low" | "ok" | "primary" | "muted" | "soon"
 
 /* Frontline's badge tints: ink on a pale fill with a faint edge. A tag is
    words, and red is never words (FINAL-SPEC C.0.3), so "high" draws the
@@ -87,6 +87,8 @@ const BADGE: Record<Tone, { ink: string; fill: string; edge: string }> = {
   // the darker step of their hue.
   primary: { ink: ink.primary, fill: color.primarySoft, edge: color.primaryEdge },
   muted: { ink: ink.secondary, fill: "#F7F7F7", edge: "rgba(80, 80, 80, 0.08)" },
+  // Something on its way ("Coming soon"): a warm yellow, never a warning.
+  soon: { ink: "#93690A", fill: "#FEF7D6", edge: "rgba(202, 150, 4, 0.18)" },
 }
 
 /* A status mark's colour: the chart kit's out of range, borderline and in
@@ -94,7 +96,7 @@ const BADGE: Record<Tone, { ink: string; fill: string; edge: string }> = {
    range is read at render, so the red or clay swap (Q-06, /demo/kit) moves
    badges and charts together. */
 const markOf = (t: Tone) =>
-  t === "high" ? outOfRangeColor() : t === "low" ? chart.borderline : t === "ok" ? chart.inRange : t === "primary" ? color.primary : MARK.faint
+  t === "high" ? outOfRangeColor() : t === "low" ? chart.borderline : t === "ok" ? chart.inRange : t === "primary" ? color.primary : t === "soon" ? "#CA9604" : MARK.faint
 
 /* ------------------------------------------------------------- words -- */
 

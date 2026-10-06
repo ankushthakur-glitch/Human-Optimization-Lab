@@ -4,9 +4,9 @@ import type { Allowance } from "@/lib/allowance"
 import type { Answers } from "@/lib/conversation"
 import type { ActivityLog, Entry, Meal, SavedQuestion } from "@/lib/member"
 import type { OfferLog } from "@/lib/offers"
-import type { ProgramId, Sex, Tier } from "@/lib/plans"
+import type { Cadence, ProgramId, Sex, Tier } from "@/lib/plans"
 import type { Intake, SetupStep } from "@/lib/program"
-import type { MedAnswer } from "@/lib/record"
+import type { MedAnswer, Origin } from "@/lib/record"
 import { store } from "@/lib/storage"
 
 /* Where a signed-in patient is in first-run setup, kept on the device so a
@@ -54,6 +54,8 @@ export type Membership = {
   approvedAt?: string
   /** "Visa ending 4242" */
   card?: string
+  /** How she pays: monthly (the default) or yearly up front. */
+  billing?: Cadence
   /** When she ticked the renewal box at checkout (ISO). */
   renewalConsentAt?: string
   /** When a cancelled membership went back to the free record (ISO): no
@@ -88,8 +90,14 @@ export type Booking = { where: string; when: string; price?: string; paid?: stri
 /** What she says about a medicine on her lists (FINAL-SPEC C.10): she
     takes it, at another dose (what she typed in `dose`), she stopped it
     (and why), she never started it, or she does not take it. Dr. Patel's
-    list is never overwritten. */
+    list is never overwritten. Each answer keeps the medicine's name and
+    the lists she saw when she answered, so Dr. Patel reads it against the
+    same difference she did (lib/record providerAnswer). */
 export type MedRecord = {
+  /** "Atorvastatin". Missing on answers saved by an earlier build. */
+  medication?: string
+  /** Each list's line as she saw it, the doctor's first. */
+  shown?: { origin: Origin; dose: string; date: string }[]
   answer: MedAnswer
   /** "10 mg once a day", or what she typed. */
   dose?: string
@@ -163,7 +171,7 @@ export type Added = {
   via?: "photo" | "typed"
 }
 
-type State = {
+export type State = {
   step: Step
   profile?: Profile
   signedAs?: string
@@ -243,9 +251,12 @@ type State = {
   review?: Review
   /** The record's own state; unset reads as ready once consent is signed. */
   records?: Records
-  /** When she turned sharing off in Profile (ISO); what was collected
+  /** When she turned sharing off on Access (ISO); what was collected
       stays, nothing new arrives. */
   sharingOffAt?: string
+  /** The connections she disconnected on Access, by id (lib/access.ts),
+      each with when (ISO). What came from them stays. */
+  disconnected?: Record<string, string>
   /** Result batches that arrived after the record was built. */
   batches?: Batch[]
   /** The days (local keys) she did her one step from the why conversation,
@@ -280,7 +291,7 @@ const OLD_MED_ANSWER: Record<string, MedAnswer> = { not: "not-taking", different
 /** A store saved by an earlier build, brought up to date: setup used to
     end on a plans step (that's on the dashboard now); a medicine answer
     used to be a bare word; the free questions used to be a bare count
-    (`asked`), now a list of this month's conversations (`allowance`), with
+    (`asked`), now a list of this week's conversations (`allowance`), with
     one placeholder conversation for each question already asked. */
 function migrate(parsed: State & Record<string, unknown>): State {
   if ((parsed.step as string) === "plans") parsed.step = "done"

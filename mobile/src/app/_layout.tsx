@@ -144,6 +144,8 @@ function Routes() {
           {/* The member's own billing page: pause, resume and cancel. */}
           <Stack.Screen name="membership" />
           <Stack.Screen name="profile" />
+          {/* Under Profile: the sharing permission and every connection. */}
+          <Stack.Screen name="access" />
           {/* Connecting later, after "Not now" at setup. */}
           <Stack.Screen name="connect" />
           <Stack.Screen name="connect-texts" />

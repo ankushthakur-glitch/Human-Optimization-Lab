@@ -10,6 +10,7 @@ import { DateBlock, Dot, Group, Nudge, SaveQuestion, SmallAction, Status, TextAc
 import { Sheet } from "@/components/sheet"
 import { Button } from "@/components/ui"
 import { FOLLOW_ON, FOOTER_LINE, FOOTER_LINE_TEAM, LIMIT, PHONE_NUMBERS, URGENT, type Answer, type Fact, type NextVisit } from "@/lib/assistant"
+import { TOP_UP } from "@/lib/allowance"
 import { call } from "@/lib/links"
 import { withQuestion } from "@/lib/member"
 import { useOffer, useShown, type Offer } from "@/lib/offers"
@@ -481,10 +482,12 @@ export function UrgentBubble({ at, live, picked, onPick }: { at?: string; live: 
 
 /* ------------------------------------------------------------- limit -- */
 
-/** The calm card at the free questions' limit (C.4.7): the question waits
-    in the composer, saving it for the visit comes first, and "See what
+/** The calm card when a new chat finds this week's AI credit used
+    (C.4.7, 5 Oct call; a chat in progress finishes on grace instead): the
+    question waits in the composer. A member can add more, which sends the
+    waiting question at once. Then saving it for the visit, and "See what
     members get" only when the cap service allows the offer (touchpoint
-    allowance; at low readiness it is left out). */
+    allowance; never for a member, left out at low readiness). */
 export function LimitCard({
   question,
   about,
@@ -492,6 +495,8 @@ export function LimitCard({
   saved,
   onSaved,
   onGone,
+  member,
+  onTopUp,
 }: {
   question: string
   about?: string
@@ -499,6 +504,8 @@ export function LimitCard({
   saved?: boolean
   onSaved: () => void
   onGone: () => void
+  member: boolean
+  onTopUp: () => void
 }) {
   const onboarding = useOnboarding()
   const offer = useOffer("allowance")
@@ -515,10 +522,13 @@ export function LimitCard({
       <Text style={styles.savedLineText}>Saved for your next visit</Text>
     </View>
   )
-  const common = { art: "sparkle" as const, title: keepTogether(LIMIT.title), body: keepTogether(LIMIT.body(resetsOn)) }
-  // "Save for my next visit" first, then the card's ways out.
+  const lines = [LIMIT.body(resetsOn), ...(member ? [LIMIT.topUpBody(TOP_UP.conversations, TOP_UP.price)] : [])]
+  const common = { art: "sparkle" as const, title: keepTogether(LIMIT.title), body: lines.map(keepTogether) }
+  // A member adds more first, then "Save for my next visit", then the
+  // card's ways out.
   const saveRow = (
-    <View style={styles.limitSave}>
+    <View style={[styles.limitSave, styles.limitActions]}>
+      {member && <Button onPress={onTopUp}>{LIMIT.topUp}</Button>}
       {saved ? (
         savedRow
       ) : (
@@ -682,6 +692,7 @@ const styles = StyleSheet.create({
   tick: { height: type.body.lineHeight, justifyContent: "center" },
 
   limitSave: { marginTop: space.line },
+  limitActions: { gap: space.item },
   savedLine: { flexDirection: "row", alignItems: "center", gap: space.stack, minHeight: 32 },
   savedLineText: { ...type.action },
 

@@ -1,4 +1,5 @@
 import { dayKey } from "@/lib/dates"
+import type { MedRecord } from "@/lib/onboarding"
 
 /* The sample health record the prototype "pulls" once the patient signs the
    authorization. It follows what Health Gorilla's Patient360 retrieve returns
@@ -267,6 +268,70 @@ export const MED_ANSWER_LABEL: Record<MedAnswer, string> = {
   stopped: "I stopped it",
   never: "I never started it",
   "not-taking": "Not taking it",
+}
+
+/** Her answer as the provider's chart reads it: the portal's
+    PatientMedAnswer (src/components/patient-dashboard/types.ts), which its
+    medication reconciliation lists beside each difference. */
+export type ProviderMedAnswer = {
+  medication: string
+  answer: "Taking" | "Not taking" | "Taking differently"
+  /** The detail behind the answer: "Takes 10 mg once a day, matching
+      Scripps Memorial", "Stopped: side effect". */
+  note?: string
+  /** "2026-10-06". */
+  date: string
+}
+
+/** Where a list came from, as the provider's note names it. */
+const SOURCE_NOTE: Record<Origin, string> = {
+  doctor: "the practice list",
+  hospital: ORIGIN_LABEL.hospital,
+  lab: ORIGIN_LABEL.lab,
+  you: "what they told us before",
+  report: "their uploaded report",
+}
+
+const STOPPED_NOTE: Record<NonNullable<MedRecord["why"]>, string> = {
+  "side-effect": "Stopped: side effect",
+  doctor: "Stopped: a doctor told them to",
+  "ran-out": "Stopped: ran out",
+  other: "Stopped: another reason",
+}
+
+/** One saved answer, for the provider: what she takes, set against the
+    lists she saw when she answered (the medicine's lists for an answer
+    saved before those were kept). */
+export function providerAnswer(id: string, r: MedRecord): ProviderMedAnswer | undefined {
+  const m = MEDICATIONS.find((x) => x.id === id)
+  const medication = r.medication ?? m?.name
+  if (!medication) return undefined
+  const lists = r.shown ?? m?.lists ?? []
+  const date = r.at.slice(0, 10)
+  switch (r.answer) {
+    case "taking":
+      return { medication, answer: "Taking", date }
+    case "dose": {
+      const match = lists.find((l) => l.dose === r.dose)
+      const note = r.dose ? `Takes ${r.dose}${match ? `, matching ${SOURCE_NOTE[match.origin]}` : ""}` : undefined
+      // The practice's own dose is no change to its list.
+      return { medication, answer: match?.origin === "doctor" ? "Taking" : "Taking differently", note, date }
+    }
+    case "stopped":
+      return { medication, answer: "Not taking", note: r.why === "other" && r.note ? `Stopped: ${r.note}` : r.why ? STOPPED_NOTE[r.why] : "Stopped, reason not given", date }
+    case "never":
+      return { medication, answer: "Not taking", note: "Never started it", date }
+    case "not-taking":
+      return { medication, answer: "Not taking", date }
+  }
+}
+
+/** Every answer she saved, for the provider, newest first. */
+export function providerAnswers(meds: Record<string, MedRecord> | undefined): ProviderMedAnswer[] {
+  return Object.entries(meds ?? {})
+    .map(([id, r]) => providerAnswer(id, r))
+    .filter((a): a is ProviderMedAnswer => !!a)
+    .sort((a, b) => b.date.localeCompare(a.date))
 }
 
 export type Medication = {

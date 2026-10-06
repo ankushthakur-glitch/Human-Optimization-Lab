@@ -16,6 +16,7 @@ import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon"
 import CheckmarkSquare02Icon from "@hugeicons/core-free-icons/CheckmarkSquare02Icon"
 import Clock01Icon from "@hugeicons/core-free-icons/Clock01Icon"
 import CreditCardIcon from "@hugeicons/core-free-icons/CreditCardIcon"
+import CrownIcon from "@hugeicons/core-free-icons/CrownIcon"
 import Dumbbell01Icon from "@hugeicons/core-free-icons/Dumbbell01Icon"
 import FaceIdIcon from "@hugeicons/core-free-icons/FaceIdIcon"
 import FootprintsIcon from "@hugeicons/core-free-icons/FootprintsIcon"
@@ -147,4 +148,5 @@ function tabIcon(icon: typeof Home09Icon, body: readonly number[]) {
 export const IconHome = tabIcon(Home09Icon, [0])
 export const IconResults = tabIcon(Analytics01Icon, [3])
 export const IconPlan = tabIcon(Task01Icon, [0, 2])
+export const IconUpgrade = tabIcon(CrownIcon, [2])
 export const IconToDo = tabIcon(CheckmarkSquare02Icon, [0])

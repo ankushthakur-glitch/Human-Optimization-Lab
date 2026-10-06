@@ -126,7 +126,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const DAY_MS = 86400000
 
 /** Sharing turned off after the record was collected (consent withdrawn
-    in Profile), with the day she did it when the store has it: "Oct 3".
+    on Access), with the day she did it when the store has it: "Oct 3".
     Undefined while sharing is on, and for a patient who never connected
     (that is the declined experience). */
 export function sharingOff(s: Snapshot): { at?: string; on?: string } | undefined {

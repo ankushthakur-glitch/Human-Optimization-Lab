@@ -1,5 +1,5 @@
 import type { Answers } from "@/lib/conversation"
-import { dayKey, monthKey, showDate } from "@/lib/dates"
+import { dayKey, showDate, weekKey } from "@/lib/dates"
 import { BONE_SAMPLE_MEALS, BONE_VERSIONS, MEMBER_SCORES, PLAN_VERSIONS, SAMPLE_MEALS, addDays, clock, dayLabel, profileOf, thisWeek } from "@/lib/member"
 import type { PastChat, useOnboarding } from "@/lib/onboarding"
 import { DEMOGRAPHICS, PATIENT } from "@/lib/patient"
@@ -133,6 +133,7 @@ const BLANK: Patch = {
   review: undefined,
   records: undefined,
   sharingOffAt: undefined,
+  disconnected: undefined,
   batches: undefined,
   oneStep: undefined,
   planHistory: undefined,
@@ -175,7 +176,7 @@ function weekdayAfter(d: Date): Date {
 }
 
 /** This month's free questions with `n` conversations already counted. */
-const questionsUsed = (n: number) => ({ month: monthKey(), threads: Array.from({ length: n }, (_, i) => `demo-${i + 1}`), batches: [] as string[] })
+const questionsUsed = (n: number) => ({ month: weekKey(), threads: Array.from({ length: n }, (_, i) => `demo-${i + 1}`), batches: [] as string[] })
 
 /** Both medicines her records differ on, answered. */
 const MEDS_ANSWERED = () => ({

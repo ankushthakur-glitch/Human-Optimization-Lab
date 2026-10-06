@@ -8,17 +8,19 @@ import { Button } from "@/components/ui"
 import { useMarkers } from "@/lib/experience"
 import { FOCUS_NAME, logEvent, planFocus, useOffer, useShown } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
-import { BENEFITS, FREE_STAYS, TIERS, planPreview, priceLabel } from "@/lib/plans"
+import { BENEFITS, CADENCES, FREE_STAYS, GOALS, TIERS, UPSELL_LEAD, planPreview, priceLabel } from "@/lib/plans"
 import type { Biomarker, FocusArea } from "@/lib/record"
 import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
 
 /* The plan showroom (FINAL-SPEC C.14.3, D.4): the one place that tells the
    whole story of the Optimization membership, told one way in two places,
    the free Plan tab and the plan page every offer pushes (/plans). In
-   order: what a plan would work on for her, from her record and her own
-   words; an example day drawn with the member's own pieces; what she
-   would get; how it starts; what it costs, with the first charge and the
-   way out beside the price; what stays free; what happens if she stops;
+   order (6 Oct 2026): the lead, a personal plan from her own record with
+   her doctor, and what it would work on for her; the goals a plan can
+   work toward, well past diet; what she would get (her doctor, meals and
+   exercise, daily monitoring, her wearables); an example day drawn with
+   the member's own pieces; how it starts; what it costs, monthly or
+   yearly, with the first charge and the way out beside the price; what stays free; what happens if she stops;
    then "Start my plan" and a real "Not for me" (ShowroomActions), which
    close the showroom on the tab and are the plan page's pinned footer.
    Drawn as the Figma "Hol" Plan (5 Oct 2026, the extended frame): the
@@ -26,8 +28,10 @@ import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
    rows on a white card, and the rest as lifted cards whose lines sit on
    an inset grey panel.
 
-   Inlay speaks here, never her doctor: no physician's name, photo or quote
-   anywhere near the price (B-03). The price is read from the one
+   Inlay speaks here, never her doctor: "your doctor" is named only as a
+   role, with no physician's name, photo or quote anywhere near the price
+   (B-03). The words are placeholders from lib/plans.ts until Fynn's team
+   sends the final copy. The price is read from the one
    placeholder in lib/plans.ts. `from` says where she came from, and sets
    the first line and the focus row it highlights. */
 
@@ -36,7 +40,7 @@ type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
 /** The first line, by where she came from (C.14.3). A marker id is
     handled apart: it names the marker. */
 const CONTEXT: Record<string, string> = {
-  allowance: "You've used this month's questions. Members ask as many as they like.",
+  allowance: "You've used this week's AI credit. Members get more, and can add more.",
   assistant: "You asked how to change something. This is what a plan does.",
   score: "You asked what moves your score. Here's how a plan works on it.",
   results: "Your new results are in. Here's how a plan would use them.",
@@ -55,13 +59,13 @@ function contextOf(from: string | undefined, markers: Biomarker[]): { line?: str
 /** How a plan starts, in the order she would live it: the first step is
     where she starts, ticked in teal; the rest wait in grey. */
 const HOW_IT_STARTS: { label: string; meta?: string; first?: boolean }[] = [
-  { label: "Answer a few questions about your goals and your week", meta: "About 10 minutes", first: true },
-  { label: "We draft your plan from your record" },
-  { label: "A physician reviews and approves it" },
-  { label: "You start, and we book your starting tests" },
+  { label: "Tell us about your goals and your week", meta: "About 10 minutes", first: true },
+  { label: "We draft your plan from your own record" },
+  { label: "Your doctor reviews and approves it" },
+  { label: "You start, and we book your first tests" },
 ]
 
-const COSTS = ["No charge until your plan is approved", "Cancel anytime in Profile", "Tests and imaging are priced when you book them"]
+const COSTS = ["No charge until your doctor approves your plan", "Monthly: cancel anytime in Profile", "Tests and imaging are priced when you book them"]
 
 /** "Start again" for someone who had a plan before, "Start my plan" for
     everyone else. */
@@ -99,7 +103,7 @@ function Lifted({ title, head, children }: { title: string; head?: React.ReactNo
   )
 }
 
-/** Ticked lines on the inset panel: a 12 teal check and 12 words. */
+/** Ticked lines on the inset panel: a 14 teal check and 14 words. */
 function Ticks({ lines }: { lines: readonly (string | { text: string; soon?: boolean })[] }) {
   return (
     <>
@@ -107,7 +111,9 @@ function Ticks({ lines }: { lines: readonly (string | { text: string; soon?: boo
         const line = typeof l === "string" ? { text: l } : l
         return (
           <View key={line.text} style={styles.tick} accessible accessibilityLabel={line.soon ? `${line.text}, coming soon` : line.text}>
-            <Check size={12} color={color.primary} />
+            <View style={styles.checkBox}>
+              <Check size={14} color={color.primary} />
+            </View>
             <Text style={styles.tickText}>{line.text}</Text>
             {line.soon && <Tag tone="muted">Coming soon</Tag>}
           </View>
@@ -165,8 +171,9 @@ export function PlanShowroom(props: ShowroomProps) {
             A plan built around you
           </Text>
         )}
+        <Text style={mode === "tab" ? styles.body : styles.lead}>{UPSELL_LEAD}</Text>
         {!!context.line && <Text style={styles.body}>{context.line}</Text>}
-        <Text style={styles.body}>Built from your record and what you told us. A physician reviews it before it starts.</Text>
+        <Text style={styles.label}>Where yours would start:</Text>
         <View style={styles.focus} accessibilityLabel="It would focus on">
           {focus.areas.map((area, i) => {
             const Icon = FOCUS_ICON[area]
@@ -182,6 +189,25 @@ export function PlanShowroom(props: ShowroomProps) {
           })}
         </View>
       </View>
+
+      <Lifted title="What a plan can help you do">
+        <Ticks lines={GOALS.map((g) => g.text)} />
+      </Lifted>
+
+      <Lifted title="What you get">
+        {BENEFITS.map((b) => (
+          <View key={b.title} style={styles.benefit} accessible accessibilityLabel={`${b.title}. ${b.text}${b.soon ? ". Coming soon" : ""}`}>
+            <View style={styles.benefitHead}>
+              <View style={styles.checkBox}>
+                <Check size={14} color={color.primary} />
+              </View>
+              <Text style={styles.benefitTitle}>{b.title}</Text>
+              {b.soon && <Tag tone="muted">Coming soon</Tag>}
+            </View>
+            <Text style={styles.benefitText}>{b.text}</Text>
+          </View>
+        ))}
+      </Lifted>
 
       <Block title="A day on the plan">
         <Card style={styles.day}>
@@ -201,10 +227,6 @@ export function PlanShowroom(props: ShowroomProps) {
           ))}
         </Card>
       </Block>
-
-      <Lifted title="What you get">
-        <Ticks lines={BENEFITS} />
-      </Lifted>
 
       <Lifted title="How it starts">
         <View>
@@ -226,15 +248,20 @@ export function PlanShowroom(props: ShowroomProps) {
         </View>
       </Lifted>
 
-      <Lifted
-        title="What it costs"
-        head={
-          <View style={styles.price} accessible accessibilityLabel={priceLabel()}>
-            <Text style={styles.priceValue}>{TIERS.optimization.price}</Text>
-            <Text style={styles.pricePer}>/mo</Text>
-          </View>
-        }
-      >
+      <Lifted title="What it costs">
+        <View style={styles.prices}>
+          {CADENCES.map((c) => {
+            const b = TIERS.optimization.billing[c]
+            return (
+              <View key={c} style={styles.priceOption} accessible accessibilityLabel={`${b.name}, ${priceLabel(c)}, ${b.save ?? b.note}`}>
+                <Text style={styles.priceName}>{b.name}</Text>
+                <Text style={styles.priceValue}>{b.price}</Text>
+                <Text style={styles.pricePer}>{b.period}</Text>
+                <Text style={styles.priceNote}>{b.save ?? b.note}</Text>
+              </View>
+            )
+          })}
+        </View>
         <Ticks lines={COSTS} />
       </Lifted>
 
@@ -287,7 +314,7 @@ const styles = StyleSheet.create({
   // The teal tinted card on top: its words, then the focus tiles.
   built: {
     gap: space.item,
-    padding: 11.5,
+    padding: space.gutter,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: color.primaryEdge,
@@ -295,14 +322,17 @@ const styles = StyleSheet.create({
     boxShadow: card.shadow,
   },
   cardTitle: { ...type.section },
+  lead: { ...type.section },
   body: { ...type.body },
+  // "Where yours would start:" heads the tiles, a step above their words.
+  label: { ...type.sectionLabel, marginTop: space.stack },
   // Three lifted tiles side by side, as tall as the tallest.
-  focus: { flexDirection: "row", alignItems: "stretch", gap: 10 },
+  focus: { flexDirection: "row", alignItems: "stretch", gap: space.inline },
   focusTile: {
     flex: 1,
     gap: space.stack,
     paddingHorizontal: 10,
-    paddingVertical: space.inline,
+    paddingVertical: space.compact,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "transparent",
@@ -311,8 +341,8 @@ const styles = StyleSheet.create({
   },
   // The area she came from, edged in teal.
   focusTileOn: { borderColor: color.primary },
-  focusName: { ...type.metaStrong, color: ink.detail },
-  focusWhy: { ...type.caption },
+  focusName: { ...type.title, marginTop: space.stack },
+  focusWhy: { ...type.label },
 
   tile: { width: 28, height: 28, borderRadius: 14, backgroundColor: color.primaryTint, alignItems: "center", justifyContent: "center" },
 
@@ -325,8 +355,8 @@ const styles = StyleSheet.create({
   dayMeta: { ...type.label },
 
   lifted: {
-    gap: 10,
-    padding: 9,
+    gap: space.item,
+    padding: space.gutter,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: LIFTED_EDGE,
@@ -334,10 +364,18 @@ const styles = StyleSheet.create({
     boxShadow: "2px 4px 12px rgba(0, 0, 0, 0.06)",
   },
   liftedHead: { gap: space.stack },
-  liftedTitle: { ...type.sectionLabel },
-  inset: { gap: space.inline, padding: space.inline, borderRadius: 8, backgroundColor: surface.inset },
-  tick: { flexDirection: "row", alignItems: "center", gap: space.inline },
-  tickText: { flexShrink: 1, ...type.label, color: ink.detail },
+  // Every card's title the same level as the top card's.
+  liftedTitle: { ...type.section },
+  inset: { gap: space.card, padding: space.compact, borderRadius: 8, backgroundColor: surface.inset },
+  // A check sits on the first line of its words, however many they wrap to.
+  checkBox: { height: 20, justifyContent: "center" },
+  tick: { flexDirection: "row", alignItems: "flex-start", gap: space.inline },
+  tickText: { flexShrink: 1, ...type.chip },
+  // A benefit: its ticked title, its line under the words.
+  benefit: { gap: space.line },
+  benefitHead: { flexDirection: "row", alignItems: "flex-start", gap: space.inline },
+  benefitTitle: { flexShrink: 1, ...type.title },
+  benefitText: { ...type.label, paddingLeft: 14 + space.inline },
 
   // How it starts: an 18 node on a 2 pt grey rail, the words 12 beside it.
   step: { flexDirection: "row", gap: space.lead },
@@ -350,10 +388,14 @@ const styles = StyleSheet.create({
   stepLabel: { ...type.chip, color: ink.secondary },
   stepLabelFirst: { color: ink.content },
 
-  price: { flexDirection: "row", alignItems: "center", gap: space.stack },
+  // The two ways to pay side by side, each a white tile on the inset.
+  prices: { flexDirection: "row", gap: space.inline },
+  priceOption: { flex: 1, gap: space.line, padding: space.compact, borderRadius: 8, backgroundColor: "#FFFFFF" },
+  priceName: { ...type.metaStrong, color: ink.detail },
   priceValue: { ...type.section, color: color.primaryText },
   pricePer: { ...type.label, color: ink.detail },
-  freeLine: { ...type.label },
+  priceNote: { ...type.label, color: ink.primary },
+  freeLine: { ...type.body },
 
   // The quiet answer sits right under the button; its own height spaces it.
   actions: { gap: space.inline },

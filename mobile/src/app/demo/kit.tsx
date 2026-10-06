@@ -722,8 +722,8 @@ function Offers() {
       <Sample caption="The limit card, in the thread at the cap" bare>
         <Nudge
           art="sparkle"
-          title="You've used this month's questions"
-          body="They come back on Nov 1. Your record, trends and past answers are all still here."
+          title="You've used this week's AI credit"
+          body="It comes back on Mon, Oct 12. Your record, trends and past answers are all still here."
           action="See what members get"
           onAction={() => {}}
         >
@@ -735,7 +735,7 @@ function Offers() {
       <Sample caption="Allowance meter: 8 left, 1 left, none left">
         <AllowanceMeter left={8} total={8} />
         <AllowanceMeter left={1} total={8} />
-        <AllowanceMeter left={0} total={8} line="No free questions left until Nov 1" />
+        <AllowanceMeter left={0} total={8} line="No AI credit left until Mon, Oct 12" />
       </Sample>
     </Block>
   )

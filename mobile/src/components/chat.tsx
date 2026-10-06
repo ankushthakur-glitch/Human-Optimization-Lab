@@ -15,8 +15,8 @@ import {
   type ViewStyle,
 } from "react-native"
 
-import { CaretRight, Check, PaperPlaneRight } from "@/components/ph"
-import { card, color, font, gutter, hairline, ink } from "@/lib/theme"
+import { CaretRight, Check, PaperPlaneRight, X } from "@/components/ph"
+import { card, color, font, gutter, hairline, ink, type } from "@/lib/theme"
 
 /* Every chat in the app (the assistant, and the "your why" conversation in
    setup) is drawn from these pieces, after the support chats in food and
@@ -260,7 +260,12 @@ export function ChatBar({
   keyboardType,
   inputRef,
   bare,
+  notice,
 }: {
+  /** A strip joined to the top of the field, as Claude's session limit
+      sits on its composer: the words, a small action and a close; the
+      field's edge takes its colour. */
+  notice?: { words: string; hue: "amber" | "red"; action?: { label: string; onPress: () => void }; onClose: () => void }
   value: string
   onChange: (text: string) => void
   onSend: () => void
@@ -302,6 +307,22 @@ export function ChatBar({
   return (
     <View style={[styles.bar, bare && styles.barBare, { paddingBottom: Math.max(bottom, 16) }]}>
       <View style={styles.barRow}>
+        <View style={styles.fieldCol}>
+        {notice && (
+          <View style={[styles.notice, { backgroundColor: NOTICE[notice.hue].tint, borderColor: NOTICE[notice.hue].edge }]}>
+            <Text style={[styles.noticeText, { color: NOTICE[notice.hue].ink }]} numberOfLines={1}>
+              {notice.words}
+            </Text>
+            {notice.action && (
+              <Pressable onPress={notice.action.onPress} accessibilityRole="button" hitSlop={8} style={({ pressed }) => pressed && styles.pressed}>
+                <Text style={[styles.noticeAction, { color: NOTICE[notice.hue].ink }]}>{notice.action.label}</Text>
+              </Pressable>
+            )}
+            <Pressable onPress={notice.onClose} accessibilityRole="button" accessibilityLabel="Hide" hitSlop={10} style={({ pressed }) => pressed && styles.pressed}>
+              <X size={14} color={NOTICE[notice.hue].ink} />
+            </Pressable>
+          </View>
+        )}
         <TextInput
           ref={ref}
           value={value}
@@ -319,10 +340,14 @@ export function ChatBar({
           }
           style={[
             styles.input,
+            // In its column now, the field keeps its own height.
+            { flex: 0 },
             multiline && height > FIELD_MIN ? { height: FIELD_MAX } : { height: FIELD_MIN },
+            notice && { borderColor: NOTICE[notice.hue].edge, borderTopLeftRadius: 0, borderTopRightRadius: 0 },
           ]}
           accessibilityLabel="Message"
         />
+        </View>
         <View style={styles.tools}>
           {!typed && idle ? (
             <Pressable
@@ -350,6 +375,13 @@ export function ChatBar({
     </View>
   )
 }
+
+/* The notice strip's two hues, as the record kit's banners draw amber and
+   red (HUE in record-kit, which imports this file). */
+const NOTICE = {
+  amber: { ink: color.amber, tint: color.amberTint, edge: color.amberEdge },
+  red: { ink: color.high, tint: color.highTint, edge: "#FECDCA" },
+} as const
 
 /** Three dots that rise in turn: the assistant is writing. */
 export function TypingBubble({ style }: { style?: StyleProp<ViewStyle> }) {
@@ -507,6 +539,21 @@ const styles = StyleSheet.create({
     ...Platform.select({ web: { outlineStyle: "none" } as unknown as TextStyle }),
   },
   tools: { flexDirection: "row", alignItems: "center", gap: 2 },
+  fieldCol: { flex: 1 },
+  // Claude's limit strip: tinted, its edge running into the field's.
+  notice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  noticeText: { ...type.metaStrong, flex: 1 },
+  noticeAction: { ...type.metaStrong, textDecorationLine: "underline" },
   send: { width: 44, height: 44, borderRadius: 8, backgroundColor: color.primary, alignItems: "center", justifyContent: "center" },
   sendOff: { opacity: 0.4 },
   idle: { height: 44, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1, borderColor: color.primaryEdge, backgroundColor: color.primaryTint, alignItems: "center", justifyContent: "center" },

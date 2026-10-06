@@ -6,7 +6,7 @@ import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, dotted } from "@/components/home-parts"
 import { CheckCircle, Pill, Warning } from "@/components/ph"
 import { Block, Card, Group, NeedsRow, NotConnected, ROW_LIMIT, Rise, SmallAction, Status } from "@/components/record-kit"
-import { DEMO_USED, TabScreen, openTab } from "@/components/tab-bar"
+import { TabScreen, openTab } from "@/components/tab-bar"
 import { TrendTiles } from "@/components/trend-tile"
 import { useAllowance } from "@/lib/allowance"
 import { useExperience, useMarkers } from "@/lib/experience"
@@ -285,7 +285,7 @@ function Medicines() {
     grey teal banner with the free credits left, as the orb's ring shows
     them; a member's are never counted, so no line. */
 function AskRow() {
-  const { member } = useAllowance()
+  const { member, line } = useAllowance()
   return (
     <Rise at={7} id="home:ask">
       <HeroRow
@@ -293,7 +293,7 @@ function AskRow() {
         tile={ASK_TILE}
         muted
         title="Ask about your results"
-        line={member ? undefined : `${Math.round((1 - DEMO_USED) * 100)}% of the free credits left`}
+        line={member ? undefined : line}
         onPress={() => router.push({ pathname: "/assistant", params: { topic: "results" } })}
       />
     </Rise>

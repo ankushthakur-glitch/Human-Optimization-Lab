@@ -533,8 +533,8 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
       hue: "teal",
       title: "Renew sharing your records",
       meta: daysBetween(now, ends) < 0 ? `Sharing ended on ${shortDay(ends)}` : `Sharing ends on ${shortDay(ends)}`,
-      action: { label: "Renew", href: href("/profile?sheet=renew") },
-      href: href("/profile?sheet=renew"),
+      action: { label: "Renew", href: href("/access?sheet=renew") },
+      href: href("/access?sheet=renew"),
       sortAt: localIso(ends),
       rank: 5,
     })
@@ -820,7 +820,7 @@ export function bannerTarget(b: HomeBanner): { href: Href } | { tab: "results" |
       return { href: href("/connect") }
     case "sharing-ended":
     case "sharing-ends":
-      return { href: href("/profile?sheet=renew") }
+      return { href: href("/access?sheet=renew") }
     case "not-found":
       return { href: href("/tell-us") }
     case "new-results":

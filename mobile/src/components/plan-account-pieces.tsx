@@ -51,7 +51,7 @@ function chargeIn(year: number, month: number, day: number) {
 /** The membership's billing calendar on a day: what was charged, what is
     next, and when a cancelled membership ends. Charges start the day her
     first plan is approved (C.15) and come each month on that day until she
-    pauses or cancels. */
+    pauses or cancels; yearly, once a year on that day. */
 export function billingOf(m: Membership | undefined, now: Date = new Date()): Billing {
   const started = valid(m?.startedAt)
   const approved = valid(m?.approvedAt)
@@ -64,9 +64,10 @@ export function billingOf(m: Membership | undefined, now: Date = new Date()): Bi
   const charges: Date[] = []
   let next: Date | undefined
   if (approved) {
+    const step = m.billing === "yearly" ? 12 : 1
     const until = dayKey(cancelled && cancelled < now ? cancelled : now)
     for (let i = 0; ; i++) {
-      const d = chargeIn(approved.getFullYear(), approved.getMonth() + i, approved.getDate())
+      const d = chargeIn(approved.getFullYear(), approved.getMonth() + i * step, approved.getDate())
       if (dayKey(d) > until) {
         next = d
         break

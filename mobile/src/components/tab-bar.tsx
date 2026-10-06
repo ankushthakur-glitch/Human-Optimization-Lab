@@ -6,8 +6,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { useDragBack } from "@/components/drag-back"
 import { DarkStatusBar } from "@/components/error-state"
-import { IconHome, IconPlan, IconResults, IconToDo, type TabIconProps } from "@/components/icons"
+import { IconHome, IconPlan, IconResults, IconToDo, IconUpgrade, type TabIconProps } from "@/components/icons"
 import { OrbButton, PageGround, PageHeader } from "@/components/hol"
+import { useAllowance } from "@/lib/allowance"
+import { planFor, useExperience } from "@/lib/experience"
 import { color, font, space } from "@/lib/theme"
 
 /* The signed-in app's bottom navigation, from the Figma "Hol" file: a
@@ -91,21 +93,29 @@ export function TabScreen({
         >
           {children}
         </ScrollView>
-        <TabBar active={tab} bottom={barBottom} used={DEMO_USED} />
+        <TabBar active={tab} bottom={barBottom} />
       </View>
       {overlay}
     </View>
   )
 }
 
-function TabBar({ active, used, bottom }: { active: TabName; used: number; bottom: number }) {
+function TabBar({ active, bottom }: { active: TabName; bottom: number }) {
+  // The plan tab reads "Upgrade", with a crown, for everyone who is not a
+  // member (5 Oct call): it holds the showroom, not a plan of her own.
+  const member = planFor(useExperience()) === "member"
+  // The arc draws this week's AI credit used, as the chat's strip says it.
+  const { share } = useAllowance()
   return (
     <View style={[styles.bar, { bottom }]} pointerEvents="box-none">
       <View style={styles.barInner} pointerEvents="box-none">
         <View style={styles.pill} accessibilityRole="tablist">
           <BlurView intensity={BLUR} tint="light" style={StyleSheet.absoluteFill} />
-          {TABS.map(({ name, label, href, Icon }) => {
+          {TABS.map(({ name, label: tabLabel, href, Icon: TabIcon }) => {
             const on = name === active
+            const upgrade = name === "plan" && !member
+            const label = upgrade ? "Upgrade" : tabLabel
+            const Icon = upgrade ? IconUpgrade : TabIcon
             return (
               <Pressable
                 key={name}
@@ -125,17 +135,12 @@ function TabBar({ active, used, bottom }: { active: TabName; used: number; botto
         </View>
         <View style={styles.orbWrap}>
           <BlurView intensity={BLUR} tint="light" style={StyleSheet.absoluteFill} />
-          <OrbButton used={used} onPress={() => router.push("/assistant")} />
+          <OrbButton used={share} onPress={() => router.push("/assistant")} />
         </View>
       </View>
     </View>
   )
 }
-
-/** The AI usage the orb's arc shows: fixed at 80% for now (user, 5 Oct
-    2026), in place of the allowance; the home's Ask banner says what is
-    left. */
-export const DEMO_USED = 0.8
 
 /** The bar's height, and how strongly it blurs what scrolls beneath it. */
 const BAR = 54
