@@ -326,3 +326,67 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Removed: Global Pages / Login / Invitation email variations
 - Removed: Provider Portal / Patients / Patient chart Overview (optimization member)
 - Removed: Provider Portal / Patients / Patient chart Overview (free member)
+
+## 07-Oct-2026
+
+- Added: Patient Portal / Patient Onboarding / Consent (mobile app)
+- Added: Patient Portal / Patient Onboarding / Sign in after creating a password (mobile app)
+- Added: Patient Portal / Mobile App: Free Record / Home
+- Added: Patient Portal / Mobile App: Free Record / Home: Dr. Patel finished the review
+- Added: Patient Portal / Mobile App: Free Record / Home: new results arrived
+- Added: Patient Portal / Mobile App: Free Record / Home: first session
+- Added: Patient Portal / Mobile App: Free Record / Home: nothing to watch
+- Added: Patient Portal / Mobile App: Free Record / Home: everything booked and answered
+- Added: Patient Portal / Mobile App: Free Record / Home: record still arriving
+- Added: Patient Portal / Mobile App: Free Record / Home: records never connected
+- Added: Patient Portal / Mobile App: Free Record / Home: sharing turned off
+- Added: Patient Portal / Mobile App: Free Record / Home: cancelled member back on the free record
+- Added: Patient Portal / Mobile App: Free Record / Biomarker trend (A1c)
+- Added: Patient Portal / Mobile App: Free Record / All trends
+- Added: Patient Portal / Mobile App: Free Record / Notifications
+- Added: Patient Portal / Mobile App: Record / Record tab
+- Added: Patient Portal / Mobile App: Record / Medicines (with dose differences)
+- Added: Patient Portal / Mobile App: Record / Allergies
+- Added: Patient Portal / Mobile App: Record / Conditions
+- Added: Patient Portal / Mobile App: Record / Visits
+- Added: Patient Portal / Mobile App: Record / Visit details
+- Added: Patient Portal / Mobile App: Record / Tests and orders
+- Added: Patient Portal / Mobile App: Record / Documents
+- Added: Patient Portal / Mobile App: Record / Immunizations
+- Added: Patient Portal / Mobile App: Record / Procedures
+- Added: Patient Portal / Mobile App: Record / Added by you
+- Added: Patient Portal / Mobile App: Record / Add a medicine (form)
+- Added: Patient Portal / Mobile App: Record / Timeline
+- Added: Patient Portal / Mobile App: Record / Tell us about a difference
+- Added: Patient Portal / Mobile App: To Do / To do tab
+- Added: Patient Portal / Mobile App: To Do / Care gap (mammogram)
+- Added: Patient Portal / Mobile App: To Do / Lab order
+- Added: Patient Portal / Mobile App: To Do / Book with a partner
+- Added: Patient Portal / Mobile App: AI Assistant / Assistant
+- Added: Patient Portal / Mobile App: AI Assistant / Assistant: AI credit nearly used
+- Added: Patient Portal / Mobile App: AI Assistant / Assistant: AI credit used up
+- Added: Patient Portal / Mobile App: AI Assistant / Assistant: borrowed from next month
+- Added: Patient Portal / Mobile App: Upgrade / Upgrade tab
+- Added: Patient Portal / Mobile App: Upgrade / Plan page with checkout
+- Added: Patient Portal / Mobile App: Upgrade / Human Flourishing score
+- Added: Patient Portal / Mobile App: Optimization Member / Home
+- Added: Patient Portal / Mobile App: Optimization Member / Home: bone plan
+- Added: Patient Portal / Mobile App: Optimization Member / Home: nothing logged yesterday
+- Added: Patient Portal / Mobile App: Optimization Member / Home: dinner not logged
+- Added: Patient Portal / Mobile App: Optimization Member / Setup after joining (step 3 of 5)
+- Added: Patient Portal / Mobile App: Optimization Member / Plan with Dr. Patel for review
+- Added: Patient Portal / Mobile App: Optimization Member / New plan version with Dr. Patel
+- Added: Patient Portal / Mobile App: Optimization Member / Plan paused
+- Added: Patient Portal / Mobile App: Optimization Member / Plan tab
+- Added: Patient Portal / Mobile App: Optimization Member / Diet
+- Added: Patient Portal / Mobile App: Optimization Member / Log a meal
+- Added: Patient Portal / Mobile App: Optimization Member / Exercise
+- Added: Patient Portal / Mobile App: Optimization Member / Yesterday
+- Added: Patient Portal / Mobile App: Optimization Member / Progress
+- Added: Patient Portal / Mobile App: Optimization Member / History
+- Added: Patient Portal / Mobile App: Optimization Member / Assistant: member credit used up
+- Added: Patient Portal / Mobile App: Profile and Settings / Profile
+- Added: Patient Portal / Mobile App: Profile and Settings / Access (connected records and devices)
+- Added: Patient Portal / Mobile App: Profile and Settings / Who has looked at your record
+- Added: Patient Portal / Mobile App: Profile and Settings / Membership
+- Added: Patient Portal / Mobile App: Profile and Settings / Connect your records
