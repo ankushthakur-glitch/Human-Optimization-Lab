@@ -497,11 +497,11 @@ export default function AssistantScreen() {
     else setDraft("")
     mine(said)
     const answer = answerFor(ask, t, { s: onboarding, markers })
-    // The follow on line: a habits answer, once a conversation, only where
-    // the marker itself may lead to the plan (a trend moving away from its range,
-    // no clinical step first) and only for the free record.
+    // The plan offer: once a conversation, right after she learns why the
+    // number matters, only where the marker itself may lead to the plan (a
+    // trend moving away from its range, no clinical step first) and only
+    // for the free record.
     const followOn =
-      Boolean(answer.lifestyle) &&
       canOffer(onboarding) &&
       changeCourse(t.marker, onboarding).eligible &&
       !thread.messages.some((m) => m.kind === "answer" && m.scope === t.id && m.followOn)

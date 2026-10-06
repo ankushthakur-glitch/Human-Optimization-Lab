@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { membershipOn } from "@/lib/member"
+import { MEMBER, membershipOn } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { CARE_GAPS, MARKER_CARE, ORDERS, type Biomarker, type FocusArea } from "@/lib/record"
 import { classify, needsReview, valueText, watchList, type Trend } from "@/lib/trends"
@@ -461,6 +461,21 @@ export function changeCourse(b: Biomarker, s: Snapshot = {}) {
     dismiss: "Not now",
     /** The quiet variant at middling readiness. */
     link: "Want to change course? See how a plan works",
+    /** The marker page's card: what a plan adds to what she already sees
+        for free. The intervention only, never the facts about her result. */
+    adds: {
+      title: "What a plan adds",
+      points: [
+        `Your own ${name} target and timeline`,
+        "Meals and exercise built for you",
+        "Weekly progress, with adjustments",
+        `${MEMBER.doctorShort} reviews and approves it`,
+        `A forecast of where your ${name} ${b.plural ? "are" : "is"} heading`,
+        "Unlimited questions to your assistant",
+      ],
+      note: "This page stays free.",
+      action: "See plans",
+    },
   }
 }
 

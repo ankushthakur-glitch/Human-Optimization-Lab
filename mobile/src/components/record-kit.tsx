@@ -1311,6 +1311,8 @@ export type NudgeProps = {
       assistant answer or a sheet. link: one quiet line, for a soft mention
       (readiness 4 to 6, the score page, a recap's last line). */
   variant?: "card" | "inline" | "link"
+  /** A card's title at the row title size, for a card inside a chat. */
+  compact?: boolean
   /** One soft 3D object beside the words (card only), at most 64 pt. */
   art?: ArtName
   artSize?: number
@@ -1357,6 +1359,7 @@ function guardOffer(words: string) {
     "Not for me" one tap further in the overflow. */
 export function Nudge({
   variant = "card",
+  compact = false,
   art,
   artSize = 64,
   title,
@@ -1444,7 +1447,7 @@ export function Nudge({
         <View style={styles.nudgeTop}>
           <View style={styles.nudgeWords}>
             {!!title && (
-              <Text style={inline ? styles.nudgeTitleInline : styles.nudgeTitle} accessibilityRole="header">
+              <Text style={inline || compact ? styles.nudgeTitleInline : styles.nudgeTitle} accessibilityRole="header">
                 {title}
               </Text>
             )}

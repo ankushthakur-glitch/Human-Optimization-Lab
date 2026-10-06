@@ -9,7 +9,7 @@ import { CaretRight, Check, Phone } from "@/components/ph"
 import { DateBlock, Dot, Group, Nudge, SaveQuestion, SmallAction, Status, TextAction, toast } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { Button } from "@/components/ui"
-import { FOLLOW_ON, FOOTER_LINE, FOOTER_LINE_TEAM, LIMIT, PHONE_NUMBERS, URGENT, type Answer, type Fact, type NextVisit } from "@/lib/assistant"
+import { FOLLOW_ON, FOOTER_LINE, LIMIT, PHONE_NUMBERS, URGENT, type Answer, type Fact, type NextVisit } from "@/lib/assistant"
 import { TOP_UP } from "@/lib/allowance"
 import { call } from "@/lib/links"
 import { withQuestion } from "@/lib/member"
@@ -124,7 +124,7 @@ function Tick() {
 /** An answer in the thread (S-34, S-38): the direct answer first, then
     what the record shows, what it doesn't tell us and the question to
     ask, each folded; the confidence line; "Why Inlay said this"; at the
-    end of a lifestyle answer only, the one follow on line; and under the
+    end of an answer about a result that may lead to the plan, the plan offer; and under the
     conversation's first answer, the educational line. */
 export function AnswerBubble({
   answer,
@@ -144,14 +144,11 @@ export function AnswerBubble({
 }) {
   const [open, setOpen] = React.useState<Partial<Record<Part, boolean>>>(answer.askOpen ? { ask: true } : {})
   const parts = PARTS.filter((p) => answer[p.key])
-  // The follow on line shows when the cap service allows it (touchpoint
-  // assistant-answer), until she says "Not now". Under a turn that carried
-  // it, the educational line names her care team, so no physician is named
-  // beside an offer (D.1.2).
+  // The plan offer shows when the cap service allows it (touchpoint
+  // assistant-answer), in place of the educational line, so no physician
+  // is named beside an offer (D.1.2).
   const offer = useOffer("assistant-answer", { eligible: Boolean(followOn?.eligible), key: followOn?.key })
-  const [declined, setDeclined] = React.useState(false)
   useShown(offer)
-  const offered = offer.show || declined
   // The way to the plan page under an answer about the plan is an offer
   // too (touchpoint assistant-plan): it shows only when the cap service
   // allows it, never at low readiness, in her first session or after "Not
@@ -227,30 +224,28 @@ export function AnswerBubble({
           </View>
         )}
 
-        {offer.show && !declined && <FollowOn offer={offer} onDecline={() => setDeclined(true)} />}
       </TheirBubble>
 
-      {footer && <Text style={styles.centerLine}>{sentenceLines(offered ? FOOTER_LINE_TEAM : FOOTER_LINE)}</Text>}
+      {offer.show && <FollowOn offer={offer} />}
+
+      {footer && !offer.show && <Text style={styles.centerLine}>{sentenceLines(FOOTER_LINE)}</Text>}
     </View>
   )
 }
 
-/** The one line that may end a complete answer about habits (touchpoint
-    assistant-answer): once a conversation, and quiet. Never a price, never
-    the doctor. */
-function FollowOn({ offer, onDecline }: { offer: Offer; onDecline: () => void }) {
+/** The plan offer under an answer about a result (touchpoint
+    assistant-answer): once a conversation, at the moment she understands
+    why the number matters. Never a price, never the doctor. */
+function FollowOn({ offer }: { offer: Offer }) {
   return (
     <Nudge
-      variant="inline"
+      compact
+      title={FOLLOW_ON.title}
       body={keepTogether(FOLLOW_ON.body)}
       action={FOLLOW_ON.action}
       onAction={() => {
         offer.markOpened()
         router.push({ pathname: "/plans", params: { from: "assistant" } })
-      }}
-      onDismiss={() => {
-        offer.notNow()
-        onDecline()
       }}
     />
   )

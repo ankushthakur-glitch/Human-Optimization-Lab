@@ -13,7 +13,7 @@ import { MEMBER, PLAN_START_RESULTS, pressureReadingsOf, pressures, sinceStart, 
 import { useChangeCourse } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
-import { PLACE_NAME, type Biomarker, type Point } from "@/lib/record"
+import { PLACE_NAME, type Biomarker, type Point, type Zone } from "@/lib/record"
 import {
   STATUS_WORD,
   chartSeries,
@@ -29,7 +29,7 @@ import {
   valueText,
   type Trend,
 } from "@/lib/trends"
-import { color, font, hairline, ink, space, type } from "@/lib/theme"
+import { chart, color, font, hairline, ink, outOfRangeColor, space, type } from "@/lib/theme"
 
 /* One marker's page (FINAL-SPEC C.3; Figma "Hol" marker page, extended
    frame 40024634:2166). Top to bottom: where the latest result sits (its
@@ -37,8 +37,9 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    the change in words and the range bar); how it has moved, to scale in
    time ("Over time"); the clinical next step; every result with where it
    came from; and last, only for a free patient whose results are moving
-   away from her range and only when the cap service allows it, "Want to
-   change course?". "Ask to Health Agent" stays pinned in the footer,
+   away from her range and only when the cap service allows it, "What a
+   plan adds". Every fact about the result stays free; the card names only
+   what a plan does about it (client, 6 Oct 2026). "Ask to Health Agent" stays pinned in the footer,
    opening the assistant about this marker.
 
    The words are facts from lib/trends.ts (status, direction, the change
@@ -94,9 +95,8 @@ function takeawayLine(t: Trend) {
   return plain ? `${line}, across ${counted(t.count, t.noun)}.` : `${line}.`
 }
 
-/** The offer's action, from its one line ("Want to change course? See how
-    a plan works"), so the words live with the offer. */
-const courseAction = (c: { title: string; link: string }) => (c.link.startsWith(c.title) ? c.link.slice(c.title.length).trim() : c.link)
+/** The clinical range a value falls in: the first whose limit it is under. */
+const zoneOf = (zones: Zone[], v: number) => zones.find((z) => z.below === undefined || v < z.below) ?? zones[zones.length - 1]
 
 /** The arrow on the direction badge: a fact, never a status colour. */
 const ARROW: Partial<Record<Trend["movement"], typeof TrendUp>> = { rising: TrendUp, falling: TrendDown, steady: ArrowRight }
@@ -133,9 +133,8 @@ export default function MarkerScreen() {
       {!!home && <HomeReadings list={homeList} average={home} />}
       <EveryResult b={b} t={t} />
       {!review && offer.show && course && (
-        <ChangeCourse
-          title={course.title}
-          action={courseAction(course)}
+        <PlanAdds
+          {...course.adds}
           onShow={offer.markShown}
           onPress={() => {
             offer.markOpened()
@@ -161,6 +160,7 @@ function Readout({ b, t, member, review }: { b: Biomarker; t: Trend; member: boo
   const start = since ? PLAN_START_RESULTS[b.id]?.value : undefined
   const takeaway = takeawayLine(t)
   const Arrow = ARROW[t.movement]
+  const zone = latest && b.zones ? zoneOf(b.zones, latest.value) : undefined
 
   return (
     <Animated.View style={{ opacity: fade }}>
@@ -168,7 +168,7 @@ function Readout({ b, t, member, review }: { b: Biomarker; t: Trend; member: boo
         {latest ? (
           <View style={styles.head}>
             <View style={styles.badges}>
-              <Status level={t.status} />
+              <Status level={t.status}>{zone ? `${zone.name} range` : undefined}</Status>
               <View style={styles.trend}>
                 {Arrow && <Arrow size={12} color={color.primaryText} />}
                 <Text style={styles.trendText}>{directionWords(t)}</Text>
@@ -199,6 +199,8 @@ function Readout({ b, t, member, review }: { b: Biomarker; t: Trend; member: boo
             {!!takeaway && <Text style={styles.takeaway}>{takeaway}</Text>}
             {b.id === "bp" && latest.value2 !== undefined ? (
               <PressureBars b={b} latest={latest} />
+            ) : b.zones && zone ? (
+              <ZoneBar zones={b.zones} value={latest.value} at={zone} status={t.status} />
             ) : (
               <RangeBar
                 value={latest.value}
@@ -257,6 +259,45 @@ function PressureBars({ b, latest }: { b: Biomarker; latest: Point }) {
           </View>
         )
       })}
+    </View>
+  )
+}
+
+/** A marker with clinical ranges (A1c): one bar in a segment for each,
+    equal widths, the result's ring inside the one it falls in, and each
+    range's name and limits under its segment, the one she is in in her
+    status colour. */
+function ZoneBar({ zones, value, at, status }: { zones: Zone[]; value: number; at: Zone; status: Level }) {
+  const i = zones.indexOf(at)
+  // Each segment spans its limits; the open ends take the width of the
+  // nearest closed range, so a value sits in its segment to scale.
+  const limits = zones.map((z) => z.below).filter((v): v is number => v !== undefined)
+  const step = limits.length > 1 ? limits[1] - limits[0] : 1
+  const lo = i === 0 ? limits[0] - step : limits[i - 1]
+  const hi = at.below ?? lo + step
+  const within = Math.min(Math.max((value - lo) / (hi - lo), 0.04), 0.96)
+  const left = `${((i + within) / zones.length) * 100}%` as const
+  const fills = [chart.targetZone, HUE.amber.edge, HUE.red.edge]
+  const tone = status === "in" ? chart.inRange : status === "borderline" ? chart.borderline : outOfRangeColor()
+  return (
+    <View style={styles.zones} accessible accessibilityLabel={`${zones.map((z) => `${z.name}, ${z.range}`).join(". ")}. Yours is in ${lowerFirst(at.name)}.`}>
+      <View style={styles.zoneTrack}>
+        {zones.map((z, k) => (
+          <View key={z.name} style={[styles.zoneFill, k === 0 && styles.zoneStart, k === zones.length - 1 && styles.zoneEnd, { backgroundColor: fills[Math.min(k, fills.length - 1)] }]} />
+        ))}
+        <View style={[styles.zoneMark, { left, borderColor: tone }]} />
+      </View>
+      <View style={styles.zoneNames}>
+        {zones.map((z, k) => {
+          const here = z === at
+          const align = k === 0 ? "left" : k === zones.length - 1 ? "right" : "center"
+          return (
+            <Text key={z.name} style={[styles.zoneName, { textAlign: align }, here && { color: tone, fontFamily: font.semibold }]}>
+              {`${z.name}\n${z.range}`}
+            </Text>
+          )
+        })}
+      </View>
     </View>
   )
 }
@@ -351,20 +392,35 @@ function EveryResult({ b, t }: { b: Biomarker; t: Trend }) {
   )
 }
 
-/* ---------------------------------------------------- change course -- */
+/* ------------------------------------------------- what a plan adds -- */
 
-/** "Want to change course?" as the Figma's last card: the question on the
-    left and "See how a plan works" as a small action on the right. */
-function ChangeCourse({ title, action, onShow, onPress }: { title: string; action: string; onShow: () => void; onPress: () => void }) {
+/** "What a plan adds" as the page's last card: what a plan would do about
+    this result, one plus each, then that the page stays free and the one
+    action. Counted once, when it first shows. */
+function PlanAdds({ title, points, note, action, onShow, onPress }: { title: string; points: string[]; note: string; action: string; onShow: () => void; onPress: () => void }) {
   React.useEffect(() => {
     onShow()
-    // Counted once, when it first shows.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   return (
-    <Card style={styles.course}>
-      <Text style={styles.courseTitle}>{title}</Text>
-      <SmallAction onPress={onPress}>{action}</SmallAction>
+    <Card style={styles.adds}>
+      <Text style={styles.addsTitle} accessibilityRole="header">
+        {title}
+      </Text>
+      <View style={styles.addsList}>
+        {points.map((p) => (
+          <View key={p} style={styles.addsRow}>
+            <Text style={styles.addsPlus} importantForAccessibility="no" accessibilityElementsHidden>
+              +
+            </Text>
+            <Text style={styles.addsText}>{p}</Text>
+          </View>
+        ))}
+      </View>
+      <View style={styles.addsFoot}>
+        <Text style={type.meta}>{note}</Text>
+        <SmallAction onPress={onPress}>{action}</SmallAction>
+      </View>
     </Card>
   )
 }
@@ -414,6 +470,21 @@ const styles = StyleSheet.create({
   result: { flexDirection: "row", alignItems: "center", gap: space.inline },
   resultValue: { ...type.title, fontVariant: ["tabular-nums"] },
 
-  course: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item, paddingVertical: space.inline },
-  courseTitle: { flexShrink: 1, ...type.title, color: ink.detail },
+  // Clinical ranges: the track 6 high in equal segments, names under it.
+  zones: { gap: space.item, paddingTop: space.stack },
+  zoneTrack: { flexDirection: "row", height: 6 },
+  zoneFill: { flex: 1, height: 6 },
+  zoneStart: { borderTopLeftRadius: 3, borderBottomLeftRadius: 3 },
+  zoneEnd: { borderTopRightRadius: 3, borderBottomRightRadius: 3 },
+  zoneMark: { position: "absolute", top: -6, width: 18, height: 18, marginLeft: -9, borderRadius: 9, borderWidth: 3, backgroundColor: color.background },
+  zoneNames: { flexDirection: "row", gap: space.stack },
+  zoneName: { flex: 1, ...type.label },
+
+  adds: { gap: space.item },
+  addsTitle: { ...type.title, color: ink.detail },
+  addsList: { gap: space.inline },
+  addsRow: { flexDirection: "row", gap: space.inline },
+  addsPlus: { ...type.body, color: color.primary, fontFamily: font.semibold },
+  addsText: { flex: 1, ...type.body, color: ink.content },
+  addsFoot: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },
 })

@@ -498,7 +498,14 @@ export type Biomarker = {
   /** Past these values a result goes to the doctor first and never leads to
       an offer. Placeholders until Dr. Blanchard sets the red flag rules (Q-08). */
   review?: { above?: number; below?: number }
+  /** The clinical ranges a result falls in, lowest first, each up to (not
+      including) `below`; the last runs open. The marker page names the one
+      the latest result sits in and draws them all on its bar. */
+  zones?: Zone[]
 }
+
+/** One clinical range on a marker's bar: "Prediabetes", "5.7 to 6.4". */
+export type Zone = { name: string; range: string; below?: number }
 
 /* Every marker in the record, one entry per marker with every dated result
    from every source. Labs are Quest panels drawn on Apr 19 2022, May 9 2023,
@@ -520,6 +527,11 @@ export const BIOMARKERS: Biomarker[] = [
     about: "A1c shows your average blood sugar over the last 2 to 3 months. Lower is better, and your range is below 5.7.",
     questions: ["My A1c has gone from {first} to {latest} since {since}. What would you like me to change?", "When should I have my next A1c?"],
     review: { above: 6.4 },
+    zones: [
+      { name: "Normal", range: "below 5.7", below: 5.7 },
+      { name: "Prediabetes", range: "5.7 to 6.4", below: 6.5 },
+      { name: "Diabetes", range: "6.5 and up" },
+    ],
     points: [
       { date: "Apr 2022", at: "2022-04-19", value: 5.3, origin: "lab" },
       { date: "May 2023", at: "2023-05-09", value: 5.4, origin: "lab" },

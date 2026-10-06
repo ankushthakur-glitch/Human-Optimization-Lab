@@ -12,9 +12,9 @@ import { planFor, useExperience } from "@/lib/experience"
 /* The plan page (FINAL-SPEC C.14.2): where every offer in the app leads,
    pushed over the screen she was on (a marker, the assistant, Profile), so
    the swipe back returns her there. The same showroom as the free Plan
-   tab, told the same way, with its actions pinned to the foot: "Start my
-   plan" and "Not for me" under it, so the no is on screen whenever the
-   yes is (D.1.5); the checkout sheet opens over the page. `?from=` says
+   tab, told the same way, with its actions pinned to the foot: "Build my
+   personalized plan" and "Ask to Health Agent" under it; the checkout
+   sheet opens over the page. `?from=` says
    where she came from and sets the first line ("You were looking at your
    A1c...") and the focus row it highlights. */
 

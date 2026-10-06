@@ -31,10 +31,6 @@ export const SAFETY_LINE = "Your care team doesn't watch this chat in real time.
 /** Once per conversation, after its first answer. */
 export const FOOTER_LINE = "This is educational and based on your record. Dr. Patel can confirm what applies to you."
 
-/** The same line under an answer that carries the follow on offer: no
-    physician is named beside an offer (D.1.2). */
-export const FOOTER_LINE_TEAM = "This is educational and based on your record. Your care team can confirm what applies to you."
-
 export const TOPICS = {
   plan: "Help with today's plan",
   result: "Explain one of my results",
@@ -128,8 +124,9 @@ export const CONCERNS = ["I feel tired all the time", "I want to lose weight", "
     (touchpoint assistant-answer, D.2): never after symptoms, medicines or
     an escalation, never a price, never the doctor. */
 export const FOLLOW_ON = {
-  body: "If you'd like help turning this into a weekly routine, that's what the Optimization plan does.",
-  action: "See the plan",
+  title: "You don't just have to watch this number.",
+  body: "Inlay can build a plan to help improve it.",
+  action: "Build my personalized plan",
 } as const
 
 /** The calm card in the thread when a free patient sends a question with
@@ -171,8 +168,6 @@ export type Answer = {
   questions?: string[]
   /** A short ticked list, e.g. what stays free. */
   points?: string[]
-  /** An answer about habits: the only kind the follow on line may end. */
-  lifestyle?: boolean
   /** Opens with the question to ask showing: an answer that sends her to
       Dr. Patel (a concern, a condition, a dose) ends on her next step. */
   askOpen?: boolean
@@ -595,7 +590,6 @@ function helpAnswer(t: Trend, s: Snapshot, now: Date): Answer {
     about: b.id,
     confidence: confidence("high", `general guidance and your ${countWords(t)}`),
     facts: resultFacts(t),
-    lifestyle: true,
   }
 }
 
