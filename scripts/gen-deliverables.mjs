@@ -186,7 +186,7 @@ const EXTRA = [
 /** The patient app's signed-in screens. Each opens as a sample patient
     (mobile app/demo/[variant].tsx seeds the device), then lands on `to`. */
 function patientApp() {
-  const at = (seed, to, query = "") => `/app/demo/${seed}${to || query ? "?" : ""}${[to && `to=${to}`, query].filter(Boolean).join("&")}`
+  const at = (seed, to, query = "") => `/app/demo/${seed}${to || query ? "?" : ""}${[to && `to=${to.includes("?") ? encodeURIComponent(to) : to}`, query].filter(Boolean).join("&")}`
   const FREE = "Mobile App: Free Record"
   const RECORD = "Mobile App: Record"
   const TODO = "Mobile App: To Do"
@@ -219,7 +219,7 @@ function patientApp() {
     [RECORD, "Immunizations", at("free", "/record/immunizations")],
     [RECORD, "Procedures", at("free", "/record/procedures")],
     [RECORD, "Added by you", at("free", "/record/added")],
-    [RECORD, "Add to your record (photo, file or form)", at("free", "/record/add")],
+    [RECORD, "Add a medicine (form)", at("free", "/record/add?kind=medicines")],
     [RECORD, "Timeline", at("free", "/timeline")],
     [RECORD, "Tell us about a difference", at("free", "/tell-us")],
     [TODO, "To do tab", at("free", "/gaps")],
