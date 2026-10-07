@@ -2,28 +2,26 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { Text } from "react-native"
 
-import { IconCalendar } from "@/components/icons"
+import { IconCalendar, IconMail } from "@/components/icons"
 import { Button, CodeField, FooterLink, FormError, Screen, Stack, TextField } from "@/components/ui"
 import { InstallApp } from "@/components/install-app"
 import { useAuth } from "@/lib/auth"
-import { PATIENT } from "@/lib/patient"
-import { VALIDATE } from "@/lib/validate"
+import { VALIDATE, emailError } from "@/lib/validate"
 import { font } from "@/lib/theme"
 
-/** First sign-in, step one: date of birth, then the 6-digit activation
-    code from the invitation. The email's Activate account button
-    (hol://activate?email=...) names the account, so there is no email to
-    type; the prototype falls back to the sample patient. Under the fields,
+/** First sign-in, step one: email address, date of birth, then the 6-digit
+    activation code from the invitation. The email's Activate account button
+    (hol://activate?email=...) fills the email in; otherwise it is typed. Under the fields,
     the Inlay Health lockup and what Inlay offers. Set password follows,
     over this screen: going back from it cancels the code, so it has to be
     entered again. */
 export default function ActivateScreen() {
   const { activate, status, signOut } = useAuth()
   const params = useLocalSearchParams<{ email?: string }>()
-  const email = params.email ?? PATIENT.email
+  const [email, setEmail] = React.useState(params.email ?? "")
   const [dob, setDob] = React.useState("")
   const [code, setCode] = React.useState("")
-  const [errors, setErrors] = React.useState<{ dob?: string; code?: string; form?: string }>({})
+  const [errors, setErrors] = React.useState<{ email?: string; dob?: string; code?: string; form?: string }>({})
   const [pending, setPending] = React.useState(false)
 
   // The code accepted: set password opens over this screen, carrying the
@@ -44,8 +42,9 @@ export default function ActivateScreen() {
 
   async function onSubmit(value = code) {
     if (pending) return
-    if (VALIDATE && (dob.length < 10 || value.length < 6)) {
+    if (VALIDATE && (emailError(email) || dob.length < 10 || value.length < 6)) {
       setErrors({
+        email: emailError(email),
         dob: dob.length < 10 ? "Enter your date of birth." : undefined,
         code: value.length < 6 ? "Enter all six digits." : undefined,
       })
@@ -66,12 +65,29 @@ export default function ActivateScreen() {
       title="Activate your account"
       description={
         <>
-          Enter the 6-digit code we sent to <Text style={{ fontFamily: font.semibold }}>{email}</Text>.
+          Enter your email, date of birth and the <Text style={{ fontFamily: font.semibold }}>6-digit code</Text> from your invitation.
         </>
       }
     >
       <Stack>
         <FormError message={errors.form} />
+        <TextField
+          label="Email address"
+          icon={IconMail}
+          required
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text)
+            if (errors.email || errors.form) setErrors({})
+          }}
+          placeholder="Enter email"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          textContentType="emailAddress"
+          error={errors.email}
+        />
         <TextField
           label="Date of birth"
           icon={IconCalendar}
@@ -87,7 +103,7 @@ export default function ActivateScreen() {
           error={errors.dob}
         />
         <CodeField
-          label="Activation code"
+          label="One-time code"
           value={code}
           onChange={(value) => {
             setCode(value)

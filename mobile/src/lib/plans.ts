@@ -111,6 +111,17 @@ export const BENEFITS: { title: string; text: string }[] = [
   { title: "Retesting", text: "See if it is working" },
 ]
 
+/** "What you get as a member", the upgrade page's checklist (6 Oct 2026
+    reference). */
+export const MEMBER_GETS = [
+  "A personalized nutrition and exercise plan",
+  "Guidance based on your complete record",
+  "Unlimited Ask Inlay",
+  "Physician review every 3 months",
+  "Track progress with updated plans",
+  "Support for multiple health goals",
+] as const
+
 /** What a personalized program would do for each area it focuses on. */
 export const FOCUS_DOES: Record<FocusArea, string> = {
   "blood sugar": "Meals built to bring your A1c down, retested in 3 months",

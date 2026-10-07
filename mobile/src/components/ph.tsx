@@ -100,3 +100,4 @@ export { PaperclipIcon as Paperclip } from "phosphor-react-native/src/icons/Pape
 export { ImagesIcon as Images } from "phosphor-react-native/src/icons/Images"
 export { FileIcon as File } from "phosphor-react-native/src/icons/File"
 export { ArrowUpIcon as ArrowUp } from "phosphor-react-native/src/icons/ArrowUp"
+export { ArrowDownIcon as ArrowDown } from "phosphor-react-native/src/icons/ArrowDown"

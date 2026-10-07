@@ -15,7 +15,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from "react-native"
-import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from "react-native-svg"
+import Svg, { Circle, Defs, G, Line, LinearGradient, Mask, Path, Rect, Stop, Text as SvgText } from "react-native-svg"
 
 import { ORIGIN_LABEL, inRange, type Biomarker } from "@/lib/record"
 import { cardRadius, chart, color, font, ink, outOfRangeColor, space, surface, type } from "@/lib/theme"
@@ -121,10 +121,64 @@ const TONE: Record<Standing, string> = {
   },
 }
 
+/* The status colour scale, by value. Deep inside the range is green; it turns
+   orange across the borderline margin (the app's own Q-05 rule: a tenth of a
+   two sided range's width, a twentieth of a one sided limit) and is orange
+   at the edge; one more margin beyond the edge it is red. So a line that
+   climbs out of its range goes green, orange, red, and one that comes back
+   goes red, orange, green. */
+
+const mixHex = (a: string, b: string, t: number) => {
+  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+  const [p, q] = [rgb(a), rgb(b)]
+  return `#${p.map((c, i) => Math.round(c + (q[i] - c) * t).toString(16).padStart(2, "0")).join("")}`
+}
+
+/** How wide the orange stretch is, in the marker's unit. */
+function marginOf(low?: number, high?: number) {
+  if (low !== undefined && high !== undefined) return (high - low) * THRESHOLDS.borderline
+  const edge = high ?? low
+  return edge === undefined ? 0 : Math.abs(edge) * THRESHOLDS.borderlineOneSided
+}
+
+/** 0 well inside the range, 1 at its edge, 2 a margin beyond it. */
+function severityAt(v: number, low?: number, high?: number) {
+  const m = marginOf(low, high) || 1e-9
+  let s = 0
+  if (high !== undefined) s = Math.max(s, clamp((v - (high - m)) / m, 0, 2))
+  if (low !== undefined) s = Math.max(s, clamp((low + m - v) / m, 0, 2))
+  return s
+}
+
+/** A value's colour on that scale; teal for a marker with no range. */
+function tintAt(v: number, low?: number, high?: number) {
+  if (low === undefined && high === undefined) return chart.data
+  const s = severityAt(v, low, high)
+  return s <= 1 ? mixHex(chart.inRange, chart.borderline, s) : mixHex(chart.borderline, outOfRangeColor(), s - 1)
+}
+
+/** The scale as gradient stops across a line (use with a userSpaceOnUse
+    gradient from the first x to the last): the line is sampled along each
+    segment, so a run that climbs out of its range passes through green,
+    orange and red in order, and the line and the fill under it share them. */
+function curveStops(xy: [number, number][], values: number[], tint: (v: number) => string) {
+  const x0 = xy[0][0]
+  const span = Math.max(xy[xy.length - 1][0] - x0, 1)
+  const out: React.ReactElement[] = []
+  for (let k = 0; k < xy.length - 1; k++) {
+    for (let j = k ? 1 : 0; j <= 8; j++) {
+      const t = j / 8
+      const x = xy[k][0] + (xy[k + 1][0] - xy[k][0]) * t
+      out.push(<Stop key={`${k}-${j}`} offset={(x - x0) / span} stopColor={tint(values[k] + (values[k + 1] - values[k]) * t)} />)
+    }
+  }
+  return out
+}
+
 /** A result dot's colour on a plot: teal inside the range (it is the
     patient's data), status colour only outside it. */
 const DOT: Record<Standing, string> = {
-  in: chart.data,
+  in: chart.inRange,
   borderline: chart.borderline,
   get out() {
     return outOfRangeColor()
@@ -1181,10 +1235,21 @@ export function DotGraph(props: DotGraphProps) {
         {band && (
           <Band id={gid} x={0} width={W} top={band.top} bottom={band.bottom} openTop={band.openTop} openBottom={band.openBottom} edges={false} radius={4} />
         )}
+        <Defs>
+          <LinearGradient id={`${gid}-j`} gradientUnits="userSpaceOnUse" x1={xs[0]} y1="0" x2={xs[n - 1] + 0.01} y2="0">
+            {pts.map((p, i) => (
+              <Stop
+                key={i}
+                offset={n > 1 ? (xs[i] - xs[0]) / Math.max(xs[n - 1] - xs[0], 1) : 0}
+                stopColor={DOT[p.status ?? statusOf(p.value, s.low, s.high)]}
+              />
+            ))}
+          </LinearGradient>
+        </Defs>
         {n > 1 && (
           <APath
             d={line(xy)}
-            stroke={chart.connector}
+            stroke={`url(#${gid}-j)`}
             strokeWidth={1.5}
             fill="none"
             strokeLinecap="round"
@@ -1196,7 +1261,14 @@ export function DotGraph(props: DotGraphProps) {
         {xy.slice(0, -1).map(([x, yy], i) => (
           <AG key={i} opacity={phase(motion, reach[i], reach[i] + 120 / D, 0, 1)}>
             <Circle cx={x} cy={yy} r={4.5} fill={color.background} />
-            <Circle cx={x} cy={yy} r={3} fill={chart.history} />
+            <Circle
+              cx={x}
+              cy={yy}
+              r={3}
+              fill={color.background}
+              stroke={DOT[pts[i].status ?? statusOf(pts[i].value, s.low, s.high)]}
+              strokeWidth={1.8}
+            />
           </AG>
         ))}
         <ACircle cx={lx} cy={ly} r={8.5} fill={tone} opacity={steps(motion, pop, [0, 0.3, 0.14])} />
@@ -1461,16 +1533,25 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
   const banded = s.low !== undefined || s.high !== undefined
   const standing = (r: Reading): Standing | undefined => r.status ?? (banded ? statusOf(r.value, s.low, s.high) : undefined)
   const [own, setOwn] = React.useState(latest)
+  // Every result carries its value on the plot; the label beside the mark
+  // appears only once a result has been picked.
+  const [picked, setPicked] = React.useState(false)
   // A new result moves the selection to it.
-  React.useEffect(() => setOwn(latest), [latest])
+  React.useEffect(() => {
+    setOwn(latest)
+    setPicked(false)
+  }, [latest])
   const sel = clampIndex(props.selected ?? own, n)
   const select = (i: number) => {
     setOwn(i)
+    setPicked(true)
     if (i !== sel) props.onSelect?.(i)
   }
   const { width: W, onLayout } = useWidth(329)
   const motion = useMotion(700, { playKey })
   const gid = useSvgId("wash")
+  const lid = useSvgId("line")
+  const mid = useSvgId("mask")
 
   // The selected mark's ring reaches 10 from its centre: it stays inside
   // the plot at the top and the right.
@@ -1485,7 +1566,6 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
       )
     : [0, 1]
   const y = (v: number) => yTop + (1 - (v - d0) / (d1 - d0)) * (yBottom - yTop)
-  const band = n ? bandBox(s.low, s.high, d0, d1, y, 0, H) : null
   const xs = n ? timeScale(timesOf(readings), 4, W - 12, 12) : []
   const scrub = useScrub(xs, select)
 
@@ -1504,9 +1584,34 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
   const curve = drawn ? monotone(joinedXY) : ""
   const wash = drawn ? `${curve} L ${joinedXY[joinedXY.length - 1][0].toFixed(1)} ${H} L ${joinedXY[0][0].toFixed(1)} ${H} Z` : ""
 
+  // The colour of a result's mark, from where its value sits against the
+  // range: the same scale the line and the fill under it are painted with.
+  const tintOf = (v: number) => tintAt(v, s.low, s.high)
+
+  // The orange and red stretches also get a pale full-height backdrop in
+  // their colour, with a dashed divider where the colour changes, halfway
+  // between the two results. The green stretch has none: only the fill under
+  // the line. The last zone reaches the plot's right edge.
+  const zoneOf = (v: number): Standing => {
+    const sev = severityAt(v, s.low, s.high)
+    return sev >= 1.5 ? "out" : sev >= 0.5 ? "borderline" : "in"
+  }
+  const zones: { from: number; to: number; status: Standing }[] = []
+  if (drawn && banded) {
+    joined.forEach((i, k) => {
+      const status = zoneOf(readings[i].value)
+      const prev = zones[zones.length - 1]
+      if (prev && prev.status === status) return
+      const cut = k === 0 ? 0 : (xy[joined[k - 1]][0] + xy[i][0]) / 2
+      if (prev) prev.to = cut
+      zones.push({ from: cut, to: W, status })
+    })
+  }
+
   const r = readings[sel]
   const st = standing(r)
-  const tone = r.other ? chart.other : st ? DOT[st] : chart.data
+  // The selected mark takes its place on the colour scale.
+  const tone = r.other ? chart.other : banded ? tintOf(r.value) : chart.data
   const shownValue = r.shown ?? formatNumber(r.value)
   const meta = [sel === latest ? "Latest" : undefined, showWhen(r.date), r.source, r.other ? r.method : undefined].filter(Boolean).join(", ")
 
@@ -1517,6 +1622,19 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
   const tipLeft = mx - 13 - 6 - tipW >= 0
   const tipX = tipLeft ? mx - 13 - 6 - tipW : mx + 13 + 6
   const tipY = clamp(my - 21, -8, H - 42)
+
+  // Each result's value sits over its mark; a mark too close to the last
+  // label's turns its value under the mark, and near the top it goes under.
+  let lastX = -Infinity
+  let lastUnder = true
+  const valueSpots = readings.map((reading, i) => {
+    const x = xy[i][0]
+    const close = x - lastX < 26
+    const under = xy[i][1] < 26 || (close && !lastUnder)
+    lastX = x
+    lastUnder = under
+    return { x: clamp(x, 12, W - 12), y: under ? xy[i][1] + 17 : xy[i][1] - 9, text: reading.shown ?? formatNumber(reading.value) }
+  })
 
   const trend = s.trend ?? trendOf(readings)
   const latestStatus = s.status ?? standing(readings[latest])
@@ -1558,27 +1676,51 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
             <Svg width={W} height={H}>
               <Defs>
                 <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={color.primaryText} stopOpacity={0.16} />
-                  <Stop offset="1" stopColor={color.primaryText} stopOpacity={0} />
+                  <Stop offset="0" stopColor={banded ? "#FFFFFF" : color.primaryText} stopOpacity={banded ? 0.38 : 0.16} />
+                  <Stop offset="1" stopColor={banded ? "#FFFFFF" : color.primaryText} stopOpacity={0} />
                 </LinearGradient>
+                {/* With a range the wash fades down through a mask and takes
+                    the line's colours across: green, orange, red as the
+                    values leave the range, and back the other way. It sits
+                    under the line only. */}
+                {drawn && banded && (
+                  <Mask id={mid} maskUnits="userSpaceOnUse" x={0} y={0} width={W} height={H}>
+                    <Path d={wash} fill={`url(#${gid})`} />
+                  </Mask>
+                )}
+                {drawn && banded && (
+                  <LinearGradient id={lid} gradientUnits="userSpaceOnUse" x1={joinedXY[0][0]} y1="0" x2={joinedXY[joinedXY.length - 1][0] + 0.01} y2="0">
+                    {curveStops(
+                      joinedXY,
+                      joined.map((i) => readings[i].value),
+                      tintOf
+                    )}
+                  </LinearGradient>
+                )}
               </Defs>
-              {band && <Rect x={0} y={band.top} width={W} height={Math.max(band.bottom - band.top, 0)} fill={TREND_ZONE} />}
-              {band && !band.openTop && <Line x1={0} x2={W} y1={band.top} y2={band.top} stroke={chart.edge} strokeWidth={0.7} />}
-              {band && !band.openBottom && <Line x1={0} x2={W} y1={band.bottom} y2={band.bottom} stroke={chart.edge} strokeWidth={0.7} />}
-              {drawn && <Path d={wash} fill={`url(#${gid})`} />}
-              {drawn && <Path d={curve} stroke={color.primaryLine} strokeWidth={1} fill="none" strokeLinecap="round" strokeLinejoin="round" />}
+              {zones.slice(1).map((z, k) => (
+                <Line key={`d${z.from}`} x1={z.from} x2={z.from} y1={0} y2={H} stroke={DOT[z.status === "in" ? zones[k].status : z.status]} strokeWidth={1} strokeDasharray="4 4" strokeOpacity={0.7} />
+              ))}
+              {drawn && !banded && <Path d={wash} fill={`url(#${gid})`} />}
+              {drawn && banded && <Rect x={0} y={0} width={W} height={H} fill={`url(#${lid})`} mask={`url(#${mid})`} />}
+              {drawn && <Path d={curve} stroke={banded ? `url(#${lid})` : color.primaryLine} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />}
               {readings.map((reading, i) =>
                 i === sel ? null : reading.other ? (
                   <Circle key={i} cx={xs[i]} cy={xy[i][1]} r={3.5} fill={color.background} stroke={chart.other} strokeWidth={1.5} />
                 ) : (
-                  <Circle key={i} cx={xs[i]} cy={xy[i][1]} r={3} fill={color.background} stroke={color.primaryLine} strokeWidth={1.2} />
+                  <Circle key={i} cx={xs[i]} cy={xy[i][1]} r={3.5} fill={color.background} stroke={banded ? tintOf(reading.value) : color.primaryLine} strokeWidth={1.8} />
                 )
               )}
               <Circle cx={mx} cy={my} r={9.1} fill="none" stroke={tone} strokeOpacity={0.2} strokeWidth={2.1} />
               <Circle cx={mx} cy={my} r={4.5} fill={color.background} stroke={tone} strokeWidth={2.1} />
+              {valueSpots.map((v, i) => (
+                <Label key={`v${i}`} x={v.x} y={v.y} anchor="middle" size={11} weight={i === sel ? "semibold" : "regular"} tone={i === sel ? ink.content : ink.secondary} halo>
+                  {v.text}
+                </Label>
+              ))}
             </Svg>
           </Animated.View>
-          <Animated.View pointerEvents="none" style={[styles.tip, { left: tipX, top: tipY, width: tipW, opacity: show }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {picked && <Animated.View pointerEvents="none" style={[styles.tip, { left: tipX, top: tipY, width: tipW, opacity: show }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
             <Text style={styles.tipLabel} numberOfLines={1}>
               {sel === latest ? "Latest reading" : showWhen(r.date)}
             </Text>
@@ -1587,7 +1729,7 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
               {!!s.unit && <Text style={styles.tipUnit}>{` ${s.unit}`}</Text>}
             </Text>
             <View style={[styles.tipPointer, tipLeft ? styles.tipPointerRight : styles.tipPointerLeft]} />
-          </Animated.View>
+          </Animated.View>}
           <View
             style={StyleSheet.absoluteFill}
             {...scrub}
@@ -1609,10 +1751,6 @@ export function BiomarkerTrend(props: BiomarkerTrendProps) {
     </View>
   )
 }
-
-/** The range's pale green zone on the marker plot (Figma: Success/01 at
-    half strength). */
-const TREND_ZONE = "rgba(233, 250, 239, 0.5)"
 
 /* ----------------------------------------------------------- range bar -- */
 
@@ -1687,9 +1825,10 @@ export function RangeBar({
   const a = low !== undefined ? x(low) : undefined
   const b = high !== undefined ? x(high) : undefined
   const zones: { from: number; to: number; fill: string }[] = []
-  if (a !== undefined) zones.push({ from: 0, to: a, fill: chart.track })
+  const beyond = kind === "neutral" ? chart.track : kind === "in" ? chart.track : kind === "borderline" ? chart.zoneBorderline : chart.zoneOut
+  if (a !== undefined) zones.push({ from: 0, to: a, fill: at < (low ?? -Infinity) ? beyond : chart.track })
   zones.push({ from: a ?? 0, to: b ?? W, fill: chart.targetZone })
-  if (b !== undefined) zones.push({ from: b, to: W, fill: chart.track })
+  if (b !== undefined) zones.push({ from: b, to: W, fill: at > (high ?? Infinity) || (kind === "borderline" && at >= b - (b - (a ?? 0)) * 0.2) ? beyond : chart.track })
 
   const edge = compact ? 5.5 : 9
   const mx = clamp(x(at), edge, W - edge)
@@ -2902,6 +3041,7 @@ export function PressureChart({
     if (i !== sel) onSelect?.(i)
   }
   const { width: W, onLayout } = useWidth()
+  const pid = useSvgId("bp")
   const stagger = n > 1 ? Math.min(35, 450 / (n - 1)) : 0
   const D = 450 + stagger * Math.max(n - 1, 0) + 160
   const motion = useMotion(D, { playKey })
@@ -2936,7 +3076,6 @@ export function PressureChart({
   const ring = dense ? 0 : 2
   const r = readings[sel]
   const st = statusAt(r)
-  const tone = DOT[st]
   const grow = (i: number): [number, number] => [(stagger * i) / D, (stagger * i + 450) / D]
   const marksAt = (i: number) => phase(motion, grow(i)[1], Math.min(grow(i)[1] + 160 / D, 1), 0, 1)
   const meta = [sel === latest ? "Latest" : undefined, showWhen(r.date), r.source].filter(Boolean).join(", ")
@@ -2971,16 +3110,25 @@ export function PressureChart({
               const [a, b] = grow(i)
               const ys = y(reading.systolic)
               const yd = y(reading.diastolic)
+              // The capsule runs from the top number's colour to the bottom
+              // number's, each placed on the green, orange, red scale.
               return (
-                <ARect
-                  key={i}
-                  x={xs[i] - cap / 2}
-                  width={cap}
-                  rx={cap / 2}
-                  y={phase(motion, a, b, yd, ys, easeOut)}
-                  height={phase(motion, a, b, 0, Math.max(yd - ys, 0), easeOut)}
-                  fill={chart.dataWash}
-                />
+                <React.Fragment key={i}>
+                  <Defs>
+                    <LinearGradient id={`${pid}-${i}`} gradientUnits="userSpaceOnUse" x1="0" y1={ys} x2="0" y2={yd + 0.01}>
+                      <Stop offset="0" stopColor={tintAt(reading.systolic, undefined, target.systolic)} stopOpacity={0.35} />
+                      <Stop offset="1" stopColor={tintAt(reading.diastolic, undefined, target.diastolic)} stopOpacity={0.35} />
+                    </LinearGradient>
+                  </Defs>
+                  <ARect
+                    x={xs[i] - cap / 2}
+                    width={cap}
+                    rx={cap / 2}
+                    y={phase(motion, a, b, yd, ys, easeOut)}
+                    height={phase(motion, a, b, 0, Math.max(yd - ys, 0), easeOut)}
+                    fill={`url(#${pid}-${i})`}
+                  />
+                </React.Fragment>
               )
             })}
             {/* The marks' white collars sit under the target lines, so a line
@@ -3008,16 +3156,17 @@ export function PressureChart({
               const ys = y(reading.systolic)
               const yd = y(reading.diastolic)
               const on = i === sel
-              const fill = on ? tone : chart.data
+              const topTone = tintAt(reading.systolic, undefined, target.systolic)
+              const bottomTone = tintAt(reading.diastolic, undefined, target.diastolic)
               // The selected reading as every chart marks a pick: a ring in
               // its colour round each mark, a white gap between (a rounded
               // square's ring round the bottom number's square).
               return (
                 <AG key={i} opacity={marksAt(i)}>
-                  {on && <Circle cx={xs[i]} cy={ys} r={9.25} fill={color.background} stroke={tone} strokeWidth={2} />}
-                  {on && <Rect x={xs[i] - 9.25} y={yd - 9.25} width={18.5} height={18.5} rx={6} fill={color.background} stroke={tone} strokeWidth={2} />}
-                  <Circle cx={xs[i]} cy={ys} r={dot} fill={fill} />
-                  <Rect x={xs[i] - sq / 2} y={yd - sq / 2} width={sq} height={sq} rx={2} fill={fill} />
+                  {on && <Circle cx={xs[i]} cy={ys} r={9.25} fill={color.background} stroke={topTone} strokeWidth={2} />}
+                  {on && <Rect x={xs[i] - 9.25} y={yd - 9.25} width={18.5} height={18.5} rx={6} fill={color.background} stroke={bottomTone} strokeWidth={2} />}
+                  <Circle cx={xs[i]} cy={ys} r={dot} fill={topTone} />
+                  <Rect x={xs[i] - sq / 2} y={yd - sq / 2} width={sq} height={sq} rx={2} fill={bottomTone} />
                 </AG>
               )
             })}

@@ -107,14 +107,20 @@ export const chart = {
   muted: "#67656B",
   /** Status, on small marks only: in range (4.93:1). */
   inRange: "#2F7F4D",
-  /** Borderline, always a ring (4.81:1). */
-  borderline: "#B25A12",
+  /** Borderline, always a ring: orange, so green, orange and red read as
+      one scale from normal to borderline to abnormal. */
+  borderline: "#F28A1E",
   /** Out of range, always a filled dot (5.50:1). Charts and badges read it
       through outOfRangeColor(), so the review can swap it. */
   outside: "#C72B32",
   /** The clay the client may choose for out of range instead (Q-06, decided
       on 5 Oct): shown only on /demo/kit's "Clay for out of range". */
   outsideClay: "#B4602A",
+  /** The range bar's three clinical zones, soft fills for in range,
+      borderline and out of range. */
+  zoneIn: "#BFEBCF",
+  zoneBorderline: "#FCDDB8",
+  zoneOut: "#F8C4C6",
   /** A result measured another way: hollow, never joined (4.97:1). */
   other: "#667085",
   /** The forecast side of the progress chart. */

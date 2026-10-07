@@ -6,7 +6,7 @@ import { Art, type ArtName } from "@/components/art"
 import { useEntrance } from "@/components/charts"
 import { RecentDots } from "@/components/recent-dots"
 import { useReducedMotion } from "@/components/chat"
-import { ArrowDownRight, ArrowRight, ArrowUpRight, CaretRight, Check, DotsThree, Minus, ShieldCheck } from "@/components/ph"
+import { ArrowDownRight, ArrowRight, ArrowUpRight, CaretRight, Check, DotsThree, Minus, ShieldCheck, Warning, X } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
 import { toast } from "@/components/toast"
 import { Button } from "@/components/ui"
@@ -14,7 +14,7 @@ import { withQuestion } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import type { OrderState } from "@/lib/record"
 import { card, cardRadius, chart, color, font, gutter, hairline, ink, outOfRangeColor, space, type } from "@/lib/theme"
-import type { Trend as MarkerTrend } from "@/lib/trends"
+import { monthYear, type Trend as MarkerTrend } from "@/lib/trends"
 import { keepEnd } from "@/lib/words"
 
 /* The signed-in record's pieces, built to the Frontline patient app's
@@ -120,7 +120,17 @@ export const LEVEL_COLOR: Record<Level, string> = {
   in: chart.inRange,
 }
 
-const LEVEL_TONE: Record<Level, Tone> = { out: "high", borderline: "low", in: "ok" }
+/** A level's colour as text on white: green and red as the marks, borderline
+    a deeper amber (5.5:1), as the yellow mark itself is too light to read. */
+export const LEVEL_TEXT: Record<Level, string> = {
+  get out() {
+    return outOfRangeColor()
+  },
+  borderline: "#8A6200",
+  in: chart.inRange,
+}
+
+const LEVEL_TONE: Record<Level, Tone> ={ out: "high", borderline: "low", in: "ok" }
 
 /** Which way a marker's last comparable results are going, as a fact. */
 export type Trend = "up" | "down" | "steady"
@@ -346,12 +356,13 @@ export function Dot({ level, tone, size = 8, mark }: { level?: Level; tone?: Ton
     range"); `tone` with your own word is kept for other states, such as an
     order's. `bare` drops the pill, for a status inside a row. Words the
     client ruled out ("Outside target", High, Low) print as patient words. */
-export function Status({ level, tone, mark, children, bare }: { level?: Level; tone?: Tone; mark?: Mark; children?: string; bare?: boolean }) {
+export function Status({ level, tone, mark, children, bare, tinted }: { level?: Level; tone?: Tone; mark?: Mark; children?: string; bare?: boolean; tinted?: boolean }) {
   const word = patientWord(children ?? (level ? LEVEL_WORD[level] : ""))
+  const hue = tinted && level ? { backgroundColor: `${LEVEL_COLOR[level]}1A`, borderColor: `${LEVEL_COLOR[level]}4D` } : undefined
   return (
-    <View style={[styles.status, bare && styles.statusBare]}>
+    <View style={[styles.status, bare && styles.statusBare, hue]}>
       <Dot level={level} tone={tone} mark={mark} />
-      <Text style={styles.statusText}>{word}</Text>
+      <Text style={[styles.statusText, tinted && level ? { color: LEVEL_TEXT[level] } : undefined]}>{word}</Text>
     </View>
   )
 }
@@ -408,6 +419,7 @@ export function Banner({
   onPress,
   hue = "amber",
   live,
+  onDismiss,
 }: {
   icon: React.ReactNode
   title: string
@@ -416,11 +428,13 @@ export function Banner({
   onPress?: () => void
   hue?: Hue
   live?: boolean
+  /** Adds a close X on the right, as in the alert layout. */
+  onDismiss?: () => void
 }) {
   const h = HUE[hue]
   const body = (
     <>
-      <View style={[styles.bannerTile, { borderColor: h.edge }]}>
+      <View style={styles.bannerIcon}>
         {icon}
         {live && (
           <View style={styles.bannerLive}>
@@ -439,9 +453,14 @@ export function Banner({
       ) : (
         onPress && <CaretRight size={16} color={card.chevron} />
       )}
+      {onDismiss && (
+        <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel="Dismiss" hitSlop={10} style={styles.bannerClose}>
+          <X size={18} color={ink.content} />
+        </Pressable>
+      )}
     </>
   )
-  const look = [styles.banner, { backgroundColor: h.tint, borderColor: h.edge }]
+  const look = [styles.banner, { backgroundColor: h.tint }]
   if (!onPress)
     return (
       <View style={look} accessible accessibilityRole="text">
@@ -632,6 +651,8 @@ function bannerWords(s: BannerState): BannerCopy {
 
 function BannerGlyph({ icon, hue }: { icon: BannerIcon; hue: Hue }) {
   const tone = HUE[hue].ink
+  // Amber is the warning look: a filled triangle, as in the alert layout.
+  if (hue === "amber") return <Warning size={22} color={tone} weight="fill" />
   if (icon === "shield") return <ShieldCheck size={18} color={tone} />
   if (icon === "check") return <Check size={18} color={tone} weight="bold" />
   return <RecordIcon name={icon} size={18} color={tone} />
@@ -1645,6 +1666,8 @@ export function ResultRow({ trend: t, since, onPress }: { trend: MarkerTrend; si
   const unit = t.marker.unit
   const tone = t.status === "out" ? outOfRangeColor() : chart.borderline
   const Arrow = t.side === "below" ? ArrowDownRight : ArrowUpRight
+  // Out of range says which side ("Above target"), as the client's reference does.
+  const status = t.status === "out" ? (t.side === "below" ? "Below target" : "Above target") : LEVEL_WORD[t.status]
   return (
     <Pressable
       onPress={onPress}
@@ -1654,31 +1677,34 @@ export function ResultRow({ trend: t, since, onPress }: { trend: MarkerTrend; si
       style={({ pressed }) => [styles.resultRow, pressed && styles.rowPressed]}
     >
       <View style={styles.resultBody}>
-        <View style={styles.resultName}>
-          <Text style={styles.resultNameText} numberOfLines={2}>
-            {t.marker.name}
-          </Text>
-          <Tag tone={LEVEL_TONE[t.status]}>{LEVEL_WORD[t.status]}</Tag>
-        </View>
+        <Text style={styles.resultNameText} numberOfLines={2}>
+          {t.marker.name}
+        </Text>
         {t.latest ? (
           <View style={styles.resultValueLine}>
             <Text style={styles.resultValue}>
               {t.value}
               {!!unit && <Text style={styles.resultUnit}>{`${unit === "%" ? "" : " "}${unit}`}</Text>}
             </Text>
-            {t.status !== "in" && (
-              <View style={styles.resultArrow}>
-                <Arrow size={14} color={tone} weight="bold" />
-              </View>
-            )}
+            <View style={styles.resultArrow}>
+              {t.status === "in" ? <Check size={16} color={chart.inRange} weight="bold" /> : <Arrow size={16} color={tone} weight="bold" />}
+            </View>
           </View>
         ) : (
           <Text style={styles.rowMeta}>No results</Text>
         )}
         {!!since && <Text style={styles.resultSince}>{since}</Text>}
       </View>
-      {t.latest && <RecentDots trend={t} style={styles.resultBar} alert={t.status === "out"} />}
-      <CaretRight size={16} color={card.chevron} />
+      {t.latest && <RecentDots trend={t} plain style={styles.resultBar} alert={t.status === "out"} />}
+      {t.latest && (
+        <View style={styles.resultStatus}>
+          <Tag tone={LEVEL_TONE[t.status]}>{status}</Tag>
+          <Text style={styles.resultDate} numberOfLines={1}>
+            {monthYear(t.latest.t)}
+          </Text>
+        </View>
+      )}
+      <CaretRight size={16} color={card.chevron} weight="bold" />
     </Pressable>
   )
 }
@@ -1964,8 +1990,10 @@ const styles = StyleSheet.create({
   // A check in a 12 pt circle: "Results in".
   dotCheck: { width: 12, height: 12, borderRadius: 6, alignItems: "center", justifyContent: "center" },
 
-  banner: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: CARD_RADIUS, borderWidth: 1, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 12 },
-  bannerTile: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, backgroundColor: color.background, alignItems: "center", justifyContent: "center" },
+  // Flat tinted bar, no edge: bare icon, title over message, close on the right.
+  banner: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12 },
+  bannerIcon: { width: 24, height: 24, alignItems: "center", justifyContent: "center" },
+  bannerClose: { width: 24, height: 24, alignItems: "center", justifyContent: "center" },
   bannerLive: { position: "absolute", top: -4, right: -4, padding: 2, borderRadius: 6, backgroundColor: color.background },
   bannerBody: { flex: 1, gap: space.stack },
   bannerTitle: { ...type.title },
@@ -2253,7 +2281,6 @@ const styles = StyleSheet.create({
      the air between the lines, so only 2 is added. */
   resultRow: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: 14 },
   resultBody: { flex: 1, minWidth: 0 },
-  resultName: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", columnGap: space.inline, rowGap: space.stack },
   resultNameText: { ...type.title, color: ink.content, flexShrink: 1 },
   resultValueLine: { flexDirection: "row", alignItems: "baseline", gap: space.mark, marginTop: space.line },
   resultValue: { ...type.hero, lineHeight: 26, color: ink.strong, flexShrink: 1, fontVariant: ["tabular-nums"] },
@@ -2262,4 +2289,7 @@ const styles = StyleSheet.create({
   resultArrow: { alignSelf: "center" },
   resultSince: { ...type.meta, color: ink.tertiary, marginTop: space.line },
   resultBar: { width: 72 },
+  // The status badge with the latest result's month under it, on the right.
+  resultStatus: { alignItems: "flex-start", gap: space.stack, minWidth: 84 },
+  resultDate: { ...type.meta, color: ink.tertiary },
 })

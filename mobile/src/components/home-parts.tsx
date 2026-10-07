@@ -1,5 +1,5 @@
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 import Svg, { Path } from "react-native-svg"
 
 import {
@@ -97,8 +97,11 @@ export function HeroRow({
   onPress,
   muted,
   alert,
+  tileSize = 32,
 }: {
   icon: React.ReactNode
+  /** The round tile's diameter; the glyph is sized by the caller. */
+  tileSize?: number
   /** The tile's fill: Primary/01, or the Ask banner's grey teal. */
   tile?: string
   title: string
@@ -109,10 +112,29 @@ export function HeroRow({
   /** The muted red gradient, for what needs her. */
   alert?: boolean
 }) {
+  // What needs her is a light red card, not a gradient (user, 7 Oct 2026):
+  // a red title, a grey line and a grey caret.
+  if (alert)
+    return (
+      <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.alertCard, pressed && styles.pressed]}>
+        <View style={[styles.tile, { backgroundColor: tile, width: tileSize, height: tileSize, borderRadius: tileSize / 2 }]}>{icon}</View>
+        <View style={styles.words}>
+          <Text style={styles.alertTitle} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+            {title}
+          </Text>
+          {!!line && (
+            <Text style={styles.alertLine} numberOfLines={2} maxFontSizeMultiplier={1.3}>
+              {line}
+            </Text>
+          )}
+        </View>
+        <CaretRight size={16} color={ink.secondary} />
+      </Pressable>
+    )
   return (
-    <Hero onPress={onPress} muted={muted} alert={alert}>
+    <Hero onPress={onPress} muted={muted}>
       <View style={styles.row}>
-        <View style={[styles.tile, { backgroundColor: tile }]}>{icon}</View>
+        <View style={[styles.tile, { backgroundColor: tile, width: tileSize, height: tileSize, borderRadius: tileSize / 2 }]}>{icon}</View>
         <View style={styles.words}>
           <Text style={styles.title} numberOfLines={1} maxFontSizeMultiplier={1.3}>
             {title}
@@ -133,6 +155,19 @@ export function HeroRow({
 export const ASK_TILE = "#EAF1F2"
 
 const styles = StyleSheet.create({
+  alertCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: color.highTint,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#F5C6CA",
+  },
+  pressed: { opacity: 0.85 },
+  alertTitle: { fontFamily: font.semibold, fontSize: 14, lineHeight: 20, color: color.high },
+  alertLine: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: ink.secondary },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
   tile: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   words: { flex: 1, gap: space.stack },

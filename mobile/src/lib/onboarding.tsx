@@ -274,7 +274,17 @@ export type State = {
   gapsDone?: Record<string, string>
   /** Review build switches, set from /demo only: the steady record for
       /demo/free-steady, and the weekly card shown on any day. */
-  demo?: { steady?: boolean; forceWeekCard?: boolean; assistantVersion?: 1 | 2 }
+  demo?: {
+    steady?: boolean
+    forceWeekCard?: boolean
+    assistantVersion?: 1 | 2
+    /** Home variation: no "Ask Inlay" words under the orb; the app tour's
+        second stop names it instead. */
+    tourNamesAsk?: boolean
+    /** Home variation: no words under the orb; a tooltip over it says
+        "Ask Inlay" for a few seconds, every few seconds. */
+    orbTooltip?: boolean
+  }
 }
 
 type Onboarding = State & {

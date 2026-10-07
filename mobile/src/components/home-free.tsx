@@ -5,7 +5,7 @@ import { keepTogether } from "@/components/care-gap"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, dotted } from "@/components/home-parts"
 import { CheckCircle, Pill, Target, Warning } from "@/components/ph"
-import { Block, Card, Group, NeedsRow, NotConnected, ROW_LIMIT, Rise, SmallAction, Status } from "@/components/record-kit"
+import { Block, Card, Group, NeedsRow, NotConnected, Rise, SmallAction, Status } from "@/components/record-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { TrendTiles } from "@/components/trend-tile"
 import { useAllowance } from "@/lib/allowance"
@@ -80,8 +80,8 @@ export function RecordSections({ needsAsCard = false }: { needsAsCard?: boolean 
     <View style={styles.page}>
       {!building && <NeedsYou asCard={needsAsCard} />}
       {building ? <Waiting at={2} id="trends" title="Your trends" line={`Your trends appear once your results${NBSP}arrive.`} /> : <Trends />}
-      <Upcoming />
       {!needsAsCard && !building && exp !== "paused" && <UpgradeCard />}
+      <Upcoming />
       {!building && <NewInRecord />}
       {building ? <Waiting at={5} id="medicines" title="Your medicines" line={`Your medicines appear once your records${NBSP}arrive.`} /> : <Medicines />}
       <AskRow />
@@ -104,8 +104,8 @@ const together = (words?: string) => (words ? keepTogether(words) : undefined)
 
 /* --------------------------------------------------------- needs you -- */
 
-/** "You have 3 pending actions to stay on track." */
-const pendingLine = (n: number) => `You have ${n} pending ${n === 1 ? "action" : "actions"} to stay on track.`
+/** "3 pending actions to stay on track." Short enough for one line on a phone. */
+const pendingLine = (n: number) => `${n} pending ${n === 1 ? "action" : "actions"} to stay on track.`
 
 /** What needs her now (C.1.2, 3), as a collapsed muted red banner:
     the count as the title, the pending line under it, and the whole banner
@@ -195,7 +195,8 @@ function Trends() {
     says its due date in words, its facts split by a dot as in the Figma. */
 function Upcoming() {
   const onboarding = useOnboarding()
-  const coming = comingUp(onboarding).slice(0, ROW_LIMIT)
+  // One row, so the home fits a screen without scrolling; See all has the rest.
+  const coming = comingUp(onboarding).slice(0, 1)
   if (!coming.length) return null
   return (
     <Rise at={3} id="home:coming">
@@ -229,7 +230,8 @@ function UpgradeCard() {
   return (
     <Rise at={4} id="home:upgrade">
       <HeroRow
-        icon={<Target size={18} color={color.primary} />}
+        tileSize={56}
+        icon={<Target size={34} color={color.primary} />}
         title="A healthier you is possible"
         line="Inlay can turn your insights into a personalized plan to help you improve."
         onPress={() => openTab("/plan", "home")}
@@ -286,7 +288,7 @@ function Medicines() {
     <Rise at={5} id="home:medicines">
       <Block title="Your medicines" onSeeAll={() => router.push("/medications")}>
         <Group>
-          {meds.rows.map((m) => (
+          {meds.rows.slice(0, 1).map((m) => (
             <NeedsRow
               key={m.id}
               icon={<Pill size={16} color={color.primary} />}
