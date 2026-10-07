@@ -101,12 +101,6 @@ const PAGES = {
   "/screens/patients/new": [PROVIDER, "Patients", "Add patient and send invite"],
   "/screens/patients/[id]": [PROVIDER, "Patient Chart", "Dashboard: free member", { url: "/screens/patients/P10240" }],
   "/screens/patients/[id]/edit": [PROVIDER, "Patients", "Edit patient", { url: "/screens/patients/P10240/edit" }],
-  // The patient app's onboarding prototype: listed in EXTRA after the app's
-  // sign in, so the Patient Onboarding rows run in the order a patient sees.
-  "/screens/app": [PATIENT, "", "", { skip: true }],
-  "/screens/app/consent": [PATIENT, "", "", { skip: true }],
-  "/screens/app/habits": [PATIENT, "", "", { skip: true }],
-  "/screens/app/medications": [PATIENT, "", "", { skip: true }],
 }
 
 /** The shared sign-in screens as one portal's user sees them (?as=key). */
@@ -175,9 +169,6 @@ const EXTRA = [
   // home sit behind the app's session, so they have no link of their own.
   [PATIENT, AUTH, "Activate account (mobile app)", "/app/activate", -1],
   [PATIENT, AUTH, "Sign in (mobile app)", "/app/sign-in", -1],
-  [PATIENT, "Patient Onboarding", "Consent", "/screens/app/consent"],
-  [PATIENT, "Patient Onboarding", "Daily habits", "/screens/app/habits"],
-  [PATIENT, "Patient Onboarding", "Medications", "/screens/app/medications"],
   [PATIENT, "Patient Onboarding", "Consent (mobile app)", "/app/demo/onboarding-consent"],
   [PATIENT, "Patient Onboarding", "Sign in after creating a password (mobile app)", "/app/demo/onboarding-signin"],
   ...patientApp(),
@@ -220,7 +211,6 @@ function patientApp() {
     [RECORD, "Procedures", at("free", "/record/procedures")],
     [RECORD, "Added by you", at("free", "/record/added")],
     [RECORD, "Add a medicine (form)", at("free", "/record/add?kind=medicines")],
-    [RECORD, "Timeline", at("free", "/timeline")],
     [RECORD, "Tell us about a difference", at("free", "/tell-us")],
     [TODO, "To do tab", at("free", "/gaps")],
     [TODO, "Care gap (mammogram)", at("free", "/task/mammogram")],

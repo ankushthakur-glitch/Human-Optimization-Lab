@@ -33,7 +33,7 @@ const FONTS = {
    signed in, new        onboarding/: about you, consent, your why, record builds
    signed in             tabs: home (index), results, to do (gaps), plan;
                          the assistant, plans, the record's pages (score,
-                         timeline, what's open, a test to book,
+                         what's open, a test to book,
                          notifications), care (booking a test with a
                          partner, an appointment), the member's day
                          (today's exercise and one move, the diet plan,
@@ -129,7 +129,6 @@ function Routes() {
           <Stack.Screen name="book/[id]" />
           <Stack.Screen name="visit/[id]" />
           <Stack.Screen name="score" />
-          <Stack.Screen name="timeline" />
           <Stack.Screen name="notifications" />
           {/* The member's day, opened from the member home's doors and
               cards: today's exercise and each move, the diet plan, logging
