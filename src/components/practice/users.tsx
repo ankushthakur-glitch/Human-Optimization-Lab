@@ -329,11 +329,18 @@ export function StaffPanel({ heading }: { heading: React.ReactNode }) {
   const current = panel?.id ? items.find((u) => u.id === panel.id) : undefined
 
   const columns: Column<StaffUser>[] = [
-    { id: "id", header: "User ID", className: ID_CELL, cell: (u) => u.id },
+    {
+      id: "id",
+      header: "User ID",
+      className: ID_CELL,
+      sortValue: (u) => u.id,
+      cell: (u) => u.id,
+    },
     {
       id: "name",
       header: "User name",
       className: "max-w-[14rem]",
+      sortValue: fullName,
       cell: (u) => (
         <PersonCell
           name={fullName(u)}
@@ -347,35 +354,41 @@ export function StaffPanel({ heading }: { heading: React.ReactNode }) {
       id: "role",
       header: "Role",
       className: "hidden md:table-cell",
+      sortValue: roleOf,
       cell: roleOf,
     },
     {
       id: "sub",
       header: "Sub role",
       className: "hidden sm:table-cell",
+      sortValue: subRoleOf,
       cell: subRoleOf,
     },
     {
       id: "phone",
       header: "Contact number",
       className: "hidden tabular-nums lg:table-cell",
+      sortValue: (u) => u.phone,
       cell: (u) => u.phone,
     },
     {
       id: "email",
       header: "Email",
       className: "hidden max-w-[16rem] truncate lg:table-cell",
+      sortValue: (u) => u.email,
       cell: (u) => u.email,
     },
     {
       id: "active",
       header: "Last activity",
       className: "hidden text-muted-foreground tabular-nums xl:table-cell",
+      sortValue: (u) => u.lastActive,
       cell: (u) => shortDate(u.lastActive) || "Never",
     },
     {
       id: "status",
       header: "Status",
+      sortValue: (u) => u.status,
       cell: (u) => <StatusBadge status={u.status} />,
     },
     {

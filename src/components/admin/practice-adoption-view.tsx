@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { IconArrowDown, IconArrowUp, IconWarning } from "@/design-system/icons"
+import { IconWarning } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
 import type {
@@ -34,9 +34,10 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
+  TableSortHead,
+  useTableSort,
 } from "@/design-system/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
 import { TablePager, usePaged } from "@/components/table-pager"
@@ -184,64 +185,18 @@ export function NothingYet({
 /*  Enrollment by provider                                                     */
 /* -------------------------------------------------------------------------- */
 
-type SortKey = "rate" | "name" | "open"
-
-/* Lowest rate first by default, so the providers HOL should follow up with
-   are at the top. Providers with no open patients sort last. */
-function sortProviders(list: ProviderAdoption[], key: SortKey, asc: boolean) {
-  const dir = asc ? 1 : -1
-  return [...list].sort((a, b) => {
-    if (key === "name") return dir * a.name.localeCompare(b.name)
-    if (key === "open")
-      return dir * (a.open - b.open) || a.name.localeCompare(b.name)
-    if (a.rate === null || b.rate === null) {
-      return a.rate === b.rate
-        ? a.name.localeCompare(b.name)
-        : a.rate === null
-          ? 1
-          : -1
-    }
-    return dir * (a.rate - b.rate) || b.open - a.open
-  })
-}
-
-function SortHead({
-  label,
-  column,
-  sort,
-  onSort,
-  className,
-}: {
-  label: string
-  column: SortKey
-  sort: { key: SortKey; asc: boolean }
-  onSort: (key: SortKey) => void
-  className?: string
-}) {
-  const active = sort.key === column
-  return (
-    <TableHead
-      className={className}
-      aria-sort={active ? (sort.asc ? "ascending" : "descending") : "none"}
-    >
-      <button
-        type="button"
-        onClick={() => onSort(column)}
-        className={cn(
-          "inline-flex items-center gap-1 rounded-sm hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
-          active && "text-foreground"
-        )}
-      >
-        {label}
-        {active &&
-          (sort.asc ? (
-            <IconArrowUp className="size-3" />
-          ) : (
-            <IconArrowDown className="size-3" />
-          ))}
-      </button>
-    </TableHead>
-  )
+/* Lowest rate first, so the providers HOL should follow up with are at the
+   top. Providers with no open patients sort last. A header click sorts on
+   top of this, and a third click comes back to it. */
+function byRate(a: ProviderAdoption, b: ProviderAdoption) {
+  if (a.rate === null || b.rate === null) {
+    return a.rate === b.rate
+      ? a.name.localeCompare(b.name)
+      : a.rate === null
+        ? 1
+        : -1
+  }
+  return a.rate - b.rate || b.open - a.open
 }
 
 function ProvidersTable({
@@ -251,57 +206,64 @@ function ProvidersTable({
   practiceId: string
   adoption: Adoption
 }) {
-  const [sort, setSort] = React.useState<{ key: SortKey; asc: boolean }>({
-    key: "rate",
-    asc: true,
+  const sorting = useTableSort([...adoption.providers].sort(byRate), {
+    name: (p) => p.name,
+    status: (p) => p.status,
+    open: (p) => p.open,
+    enrolled: (p) => p.enrolled,
+    invited: (p) => p.invited,
+    declined: (p) => p.declined,
+    rate: (p) => p.rate,
   })
-
-  const rows = sortProviders(adoption.providers, sort.key, sort.asc)
-  const paged = usePaged(rows)
+  const paged = usePaged(sorting.rows)
 
   if (adoption.providers.length === 0) {
     return (
       <NothingYet title="No providers yet" illustration="providers-empty" />
     )
   }
-  const onSort = (key: SortKey) =>
-    setSort((s) =>
-      s.key === key ? { key, asc: !s.asc } : { key, asc: key !== "open" }
-    )
 
   return (
     <TableCard pager={<TablePager paged={paged} />}>
       <Table>
         <TableHeader className={HEAD}>
           <TableRow>
-            <SortHead
-              label="Provider"
-              column="name"
-              sort={sort}
-              onSort={onSort}
-            />
-            <TableHead className="hidden md:table-cell">Status</TableHead>
-            <SortHead
-              label="Patients"
-              column="open"
-              sort={sort}
-              onSort={onSort}
+            <TableSortHead {...sorting.headProps("name")}>
+              Provider
+            </TableSortHead>
+            <TableSortHead
+              className="hidden md:table-cell"
+              {...sorting.headProps("status")}
+            >
+              Status
+            </TableSortHead>
+            <TableSortHead
               className="text-center"
-            />
-            <TableHead className="text-center">Enrolled</TableHead>
-            <TableHead className="hidden text-center sm:table-cell">
+              {...sorting.headProps("open")}
+            >
+              Patients
+            </TableSortHead>
+            <TableSortHead
+              className="text-center"
+              {...sorting.headProps("enrolled")}
+            >
+              Enrolled
+            </TableSortHead>
+            <TableSortHead
+              className="hidden text-center sm:table-cell"
+              {...sorting.headProps("invited")}
+            >
               Pending
-            </TableHead>
-            <TableHead className="hidden text-center sm:table-cell">
+            </TableSortHead>
+            <TableSortHead
+              className="hidden text-center sm:table-cell"
+              {...sorting.headProps("declined")}
+            >
               Declined
-            </TableHead>
-            <SortHead
-              label="Enrollment rate"
-              column="rate"
-              sort={sort}
-              onSort={onSort}
-              className="w-56"
-            />
+            </TableSortHead>
+            <TableSortHead className="w-56" {...sorting.headProps("rate")}>
+              Enrollment rate
+            </TableSortHead>
           </TableRow>
         </TableHeader>
         <TableBody className="[&_td]:px-4 [&_td]:py-2">
@@ -410,7 +372,13 @@ function UsersTable({ users }: { users: AdoptionUser[] }) {
       USER_ORDER.indexOf(a.status) - USER_ORDER.indexOf(b.status) ||
       a.name.localeCompare(b.name)
   )
-  const paged = usePaged(rows)
+  const sorting = useTableSort(rows, {
+    name: (u) => u.name,
+    role: (u) => u.role,
+    status: (u) => u.status,
+    active: (u) => u.lastActive,
+  })
+  const paged = usePaged(sorting.rows)
 
   if (users.length === 0)
     return <NothingYet title="No users yet" illustration="users-empty" />
@@ -420,10 +388,17 @@ function UsersTable({ users }: { users: AdoptionUser[] }) {
       <Table>
         <TableHeader className={HEAD}>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="hidden sm:table-cell">Last active</TableHead>
+            <TableSortHead {...sorting.headProps("name")}>Name</TableSortHead>
+            <TableSortHead {...sorting.headProps("role")}>Role</TableSortHead>
+            <TableSortHead {...sorting.headProps("status")}>
+              Status
+            </TableSortHead>
+            <TableSortHead
+              className="hidden sm:table-cell"
+              {...sorting.headProps("active")}
+            >
+              Last active
+            </TableSortHead>
           </TableRow>
         </TableHeader>
         <TableBody className="[&_td]:px-4 [&_td]:py-2">

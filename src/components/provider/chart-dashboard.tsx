@@ -31,8 +31,7 @@ import {
   useDashboard,
 } from "@/components/patient-dashboard/patient-dashboard"
 import { useOptimization } from "@/components/patient-dashboard/optimization/model"
-import { DecisionDashboard } from "@/components/patient-dashboard/widgets/decision-dashboard"
-import { ChangesDashboard, ReviewButton } from "@/components/patient-dashboard/widgets/changes-dashboard"
+import { ChartingDashboard } from "@/components/patient-dashboard/widgets/charting-dashboard"
 import { FreeWidgetDashboard } from "@/components/patient-dashboard/widgets/free-dashboard"
 import {
   MemberWidgetDashboard,
@@ -91,7 +90,7 @@ export function ChartDashboard({
         tabs={[
           { id: "1", label: "Version 1" },
           { id: "2", label: "Version 2" },
-          { id: "4", label: "Version 4" },
+          { id: "3", label: "Version 3" },
         ]}
         value={version}
         onTab={(v) => setVersion(v as DashboardVersion)}
@@ -103,22 +102,20 @@ export function ChartDashboard({
             ) : (
               <DashboardToolbar dash={dash} />
             )}
-            {/* Version 4 has Mark all reviewed in its decision band. */}
-            {version !== "1" && version !== "4" && <ReviewButton dash={dash} />}
           </div>
         }
       />
-      <SectionBody>
-        {version === "4" ? (
-          <DecisionDashboard
+      <SectionBody className={version === "3" ? "relative" : undefined}>
+        {version === "2" || version === "3" ? (
+          <ChartingDashboard
+            key={version}
+            docked={version === "3"}
             dash={dash}
             opt={opt}
             optimized={optimized}
             patientName={patient.firstName}
             onOpen={onOpen}
           />
-        ) : version === "2" ? (
-          <ChangesDashboard dash={dash} opt={opt} optimized={optimized} onOpen={onOpen} />
         ) : optimized && opt.model ? (
           <MemberWidgetDashboard opt={opt} onOpen={onOpen} />
         ) : (
@@ -129,20 +126,20 @@ export function ChartDashboard({
   )
 }
 
-/* Version 1 is the widget dashboard; version 2 (5 Oct call) is the "what
-   changed" page in patient-dashboard/widgets/changes-dashboard.tsx;
-   version 4 is the client's CareMap
-   reference mixed with version 2 (widgets/decision-dashboard.tsx). The
-   pick is kept per browser for the prototype. */
-type DashboardVersion = "1" | "2" | "4"
-const VERSION_KEY = "hol.chart.dashboardVersion"
+/* Version 1 is the widget dashboard; version 2 is the detailed charting
+   dashboard from the 7 Oct CareMap images and the 6 Oct call
+   (widgets/charting-dashboard.tsx); version 3 is the same dashboard with
+   the detail panel docked open on the top priority subject. The pick is kept per browser for the
+   prototype. */
+type DashboardVersion = "1" | "2" | "3"
+const VERSION_KEY = "hol.chart.dashboardVersion.v2"
 
 const versionListeners = new Set<() => void>()
 
 function readVersion(): DashboardVersion {
   try {
     const v = localStorage.getItem(VERSION_KEY)
-    return v === "1" || v === "4" ? v : "2"
+    return v === "1" || v === "3" ? v : "2"
   } catch {
     return "2"
   }

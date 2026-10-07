@@ -397,6 +397,10 @@ export type Patient = {
   membership?: "free" | "optimization"
   /** When the physician last reviewed the whole chart. */
   lastReviewAt?: string
+  /** Local "2026-07-02T09:15" of the last visit, if any. */
+  lastVisitAt?: string
+  /** Local "2026-11-12T09:30" of the next booked visit, if any. */
+  nextVisitAt?: string
 }
 
 export type PanelRecordState =

@@ -1,3 +1,4 @@
+import { backfillBiomarker } from "@/components/patient-dashboard/backfill"
 import type { DashboardData } from "@/components/patient-dashboard/types"
 import type {
   BetterDirection,
@@ -34,6 +35,8 @@ export const MARCUS_CORE: DashboardData = {
     { medication: "Synthroid", dose: "1 mg", sig: "1 tablet daily", frequency: "daily", prescriber: "Dr. Blanchard", source: PRACTICE, date: "2015-09-01", isPracticeList: true },
     { medication: "Atorvastatin", dose: "10 mg", sig: "1 tablet daily", frequency: "daily", prescriber: "Dr. Blanchard", source: PRACTICE, date: "2022-11-20", isPracticeList: true },
     { medication: "Tadalafil", dose: "5 mg", sig: "as needed", frequency: "as needed", prescriber: "Dr. Reyes", source: PRACTICE, date: "2026-01-14", isPracticeList: true },
+    { medication: "Lisinopril", dose: "10 mg", sig: "1 tablet daily", frequency: "daily", prescriber: "Dr. Blanchard", source: PRACTICE, date: "2023-04-11", isPracticeList: true },
+    { medication: "Lisinopril", dose: "20 mg", sig: "1 tablet daily", frequency: "daily", prescriber: "Dr. Jones", source: HENRY_FORD, date: "2026-09-29", isPracticeList: false },
     { medication: "Atorvastatin", dose: "15 mg", sig: "1 tablet daily", frequency: "daily", prescriber: "Dr. Jones", source: HENRY_FORD, date: "2025-10-25", isPracticeList: false },
   ],
   answers: [
@@ -45,6 +48,10 @@ export const MARCUS_CORE: DashboardData = {
     {
       order: "Sleep medicine referral", orderedBy: "Dr. Reyes", orderedAt: "2026-06-10", facility: "Corewell Health",
       reminderDates: ["2026-06-24", "2026-07-08", "2026-07-22"], status: "open",
+    },
+    {
+      order: "Renal ultrasound", orderedBy: "Dr. Reyes", orderedAt: "2026-08-04", facility: "Corewell Health",
+      reminderDates: ["2026-08-18", "2026-09-01"], status: "open",
     },
     {
       order: "Advanced lipid panel", orderedBy: "Dr. Reyes", orderedAt: "2026-08-31", facility: "Quest Diagnostics",
@@ -64,6 +71,8 @@ export const MARCUS_CORE: DashboardData = {
     },
   ],
   reviewLog: [{ at: "2026-08-12T10:00:00", by: "Dr. Reyes", kind: "review" }],
+  lastVisit: "2026-08-12T09:00",
+  nextVisit: "2026-10-28T14:00",
 }
 
 /* ------------------------------------------------------- biomarkers -- */
@@ -229,7 +238,9 @@ function parseSeries(text: string) {
 function parseBiomarkers(csv: string): Biomarker[] {
   const series = parseSeries(SERIES)
   const [, ...rows] = csv.trim().split("\n")
-  return rows.map((line) => {
+  return rows.map((line) => backfillBiomarker(parse(line)))
+
+  function parse(line: string): Biomarker {
     const f = fields(line)
     const [category, name, unit, bDate, bValue, lDate, lValue] = f
     const baseline = bDate && bValue ? { date: bDate, value: bValue } : undefined
@@ -257,7 +268,7 @@ function parseBiomarkers(csv: string): Biomarker[] {
       note: opt(f[17]),
       history: series.get(name) ?? fallback,
     }
-  })
+  }
 }
 
 /* ------------------------------------------------------------ marcus -- */

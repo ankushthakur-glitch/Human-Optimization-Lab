@@ -62,6 +62,7 @@ import {
   usDate,
 } from "@/components/practice/practice-data"
 import { avatarTone } from "@/components/practice/directory"
+import { useDashboard } from "@/components/patient-dashboard/model"
 import {
   ChartDashboard,
   ChartOverview,
@@ -261,7 +262,7 @@ export function useChartRecord(patient: Patient) {
       toast.success(state === "Active" ? "Record synced" : "Record ready", {
         description:
           state === "Active"
-            ? `Checked ${sources} sources through Health Gorilla. Nothing new since the last sync.`
+            ? `Checked ${sources} sources through the EHR connection. Nothing new since the last sync.`
             : `All ${sources} sources reported: ${built.encounters.length} encounters, ${built.labReports.length} lab reports and ${built.documents.length} documents.`,
       })
     }, SYNC_MS)
@@ -530,7 +531,7 @@ function ChartHeader({
           </div>
         </div>
 
-        <SyncPanel chart={chart} collapsed={collapsed} />
+        <SyncPanel patient={p} chart={chart} collapsed={collapsed} />
       </div>
 
       <div
@@ -781,24 +782,30 @@ function Meta({
   )
 }
 
-/* Where the record stands with Health Gorilla, and the one button that
-   pulls a fresh copy. It sits on the banner's right edge. */
-function SyncPanel({ chart, collapsed }: { chart: Chart; collapsed: boolean }) {
+/* Where the record stands: the last EHR pull, the physician's last full
+   review and the next booked visit, as three facts on one card at the
+   banner's right edge, with the one button that pulls a fresh copy. */
+function SyncPanel({
+  patient,
+  chart,
+  collapsed,
+}: {
+  patient: Patient
+  chart: Chart
+  collapsed: boolean
+}) {
   const { record, state, syncedAt, syncing, sync } = chart
+  const { model } = useDashboard(patient, record)
   const waiting = state === "Awaiting consent"
   const status = syncing
     ? "Syncing now"
     : waiting
       ? "Waiting for consent"
-      : dateTime(syncedAt)
-  const detail =
-    state === "Active"
-      ? `${record.sourceIds.length} sources connected`
-      : state === "Building"
-        ? "Record still building"
-        : state === "Source exception"
-          ? "Last sync failed at a source"
-          : "Nothing pulled yet"
+      : state === "Source exception"
+        ? "Failed"
+        : syncedWhen(syncedAt)
+  const last = model.data.lastVisit
+  const next = model.data.nextVisit
 
   const button = (
     <Button
@@ -807,7 +814,7 @@ function SyncPanel({ chart, collapsed }: { chart: Chart; collapsed: boolean }) {
       disabled={waiting || syncing}
       onClick={sync}
       className={cn(
-        "w-[116px] justify-center border-primary/40 bg-card text-primary-tint hover:text-primary-tint",
+        "justify-center border-primary/40 bg-card text-primary-tint hover:text-primary-tint",
         state === "Source exception" &&
           "border-destructive/40 text-destructive hover:text-destructive"
       )}
@@ -824,19 +831,12 @@ function SyncPanel({ chart, collapsed }: { chart: Chart; collapsed: boolean }) {
   return (
     <div
       className={cn(
-        "ml-auto flex shrink-0 rounded-md border border-primary/30 bg-primary-surface [view-transition-name:chart-sync] max-lg:ml-0",
-        collapsed
-          ? "flex-row items-center gap-4 py-1.5 pr-1.5 pl-3"
-          : "flex-row items-center gap-5 self-stretch py-2 pr-3 pl-3"
+        "ml-auto flex shrink-0 items-stretch gap-2 [view-transition-name:chart-sync] max-lg:ml-0",
+        !collapsed && "self-stretch"
       )}
     >
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <span
-          className={cn(
-            "flex items-center gap-1.5 font-semibold text-foreground",
-            collapsed ? "text-[13px]" : "text-sm"
-          )}
-        >
+      <FactCard collapsed={collapsed}>
+        <SyncFact label="Last sync" collapsed={collapsed}>
           <span
             aria-hidden
             className={cn(
@@ -850,29 +850,104 @@ function SyncPanel({ chart, collapsed }: { chart: Chart; collapsed: boolean }) {
                     : "bg-muted-foreground/60"
             )}
           />
-          Health Gorilla sync
-        </span>
-        <span className="truncate text-[13px] text-foreground/80">
           {status}
-        </span>
-        {!collapsed && (
-          <span className="truncate text-xs text-muted-foreground">
-            {detail}
-          </span>
+        </SyncFact>
+        {waiting ? (
+          <Tooltip>
+            <TooltipTrigger render={<span tabIndex={0} />}>
+              {button}
+            </TooltipTrigger>
+            <TooltipContent>Available once the patient consents</TooltipContent>
+          </Tooltip>
+        ) : (
+          button
         )}
-      </div>
-      {waiting ? (
-        <Tooltip>
-          <TooltipTrigger render={<span tabIndex={0} />}>
-            {button}
-          </TooltipTrigger>
-          <TooltipContent>Available once the patient consents</TooltipContent>
-        </Tooltip>
-      ) : (
-        button
-      )}
+      </FactCard>
+      <FactCard collapsed={collapsed}>
+        <SyncFact label="Last visit" collapsed={collapsed}>
+          {last ? visitWhen(last) : "None"}
+        </SyncFact>
+        <SyncFact label="Next visit" collapsed={collapsed}>
+          {next ? visitWhen(next) : "Not booked"}
+        </SyncFact>
+      </FactCard>
     </div>
   )
+}
+
+/* A light grey card on the banner's right edge. Open, its contents stack;
+   folded, they sit in one row. */
+function FactCard({
+  collapsed,
+  children,
+}: {
+  collapsed: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      className={cn(
+        "flex rounded-md border border-border/60 bg-muted/60",
+        collapsed
+          ? "flex-row items-center gap-4 px-2 py-1.5"
+          : "flex-col justify-center gap-2 px-3 py-2"
+      )}
+    >
+      {children}
+    </div>
+  )
+}
+
+function SyncFact({
+  label,
+  collapsed,
+  children,
+}: {
+  label: string
+  collapsed: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span
+        className={cn(
+          "flex items-center gap-1.5 truncate font-semibold whitespace-nowrap text-foreground",
+          collapsed ? "text-[13px]" : "text-sm"
+        )}
+      >
+        {children}
+      </span>
+    </div>
+  )
+}
+
+/** "Sep 18" this year, "Sep 18, 2025" otherwise. */
+function monthDay(iso: string) {
+  const d = new Date(`${iso}T12:00:00`)
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(iso.slice(0, 4) === today().slice(0, 4) ? {} : { year: "numeric" }),
+  })
+}
+
+function clock(time: string) {
+  const [h, m] = time.split(":").map(Number)
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`
+}
+
+/** "Today 10:42 AM" for a pull today, "Sep 18 10:42 AM" before. */
+function syncedWhen(at: string) {
+  if (!at) return "Never"
+  const [date, time = "00:00"] = at.split("T")
+  return `${date === today() ? "Today" : monthDay(date)} ${clock(time)}`
+}
+
+/** "Jul 2, 9:15 AM" for a visit. */
+function visitWhen(at: string) {
+  const [date, time = "00:00"] = at.split("T")
+  return `${monthDay(date)}, ${clock(time)}`
 }
 
 function HeaderIcon({
@@ -990,7 +1065,7 @@ function ConsentDialog({
                 value: waiting ? "" : usDate(p.invitedAt),
               },
               { label: "Given in", value: waiting ? "" : "HOL patient app" },
-              { label: "Retrieved through", value: "Health Gorilla" },
+              { label: "Retrieved through", value: "EHR connection" },
               { label: "Valid", value: "Until the patient withdraws it" },
               {
                 label: "Covers",
@@ -1115,14 +1190,14 @@ function RecordNotReady({
           title: "No record yet",
           text:
             patient.status === "Consent withdrawn"
-              ? `${patient.firstName} withdrew consent. Nothing new is pulled from Health Gorilla.`
-              : `The chart fills in once ${patient.firstName} consents in the HOL app and Health Gorilla returns the record.`,
+              ? `${patient.firstName} withdrew consent. Nothing new is pulled from the EHR.`
+              : `The chart fills in once ${patient.firstName} consents in the HOL app and the EHR returns the record.`,
         }
       : state === "Building"
         ? {
             art: "record-syncing" as const,
             title: "Building the record",
-            text: "Health Gorilla is still collecting from the connected sources. Results appear as each one reports in.",
+            text: "The EHR connection is still collecting from the connected sources. Results appear as each one reports in.",
           }
         : {
             art: "sync-failed" as const,

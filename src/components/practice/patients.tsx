@@ -475,12 +475,14 @@ export function PatientsScreen() {
       id: "id",
       header: "Patient ID",
       className: ID_CELL,
+      sortValue: (p) => p.id,
       cell: (p) => p.id,
     },
     {
       id: "name",
       header: "Name",
       className: "max-w-[14rem]",
+      sortValue: fullName,
       cell: (p) => (
         <PersonCell
           name={fullName(p)}
@@ -493,12 +495,14 @@ export function PatientsScreen() {
       id: "dob",
       header: "Date of birth",
       className: "hidden tabular-nums sm:table-cell",
+      sortValue: (p) => p.dob,
       cell: (p) => `${usDate(p.dob)} (${ageFrom(p.dob)})`,
     },
     {
       id: "sex",
       header: "Sex",
       className: "hidden lg:table-cell",
+      sortValue: (p) => p.sex,
       cell: (p) => p.sex,
     },
     {
@@ -508,6 +512,7 @@ export function PatientsScreen() {
         "hidden tabular-nums",
         isProvider ? "min-[1800px]:table-cell" : "xl:table-cell"
       ),
+      sortValue: (p) => p.phone,
       cell: (p) => p.phone,
     },
     {
@@ -517,18 +522,21 @@ export function PatientsScreen() {
         "hidden max-w-[16rem] truncate",
         isProvider ? "min-[2100px]:table-cell" : "2xl:table-cell"
       ),
+      sortValue: (p) => p.email,
       cell: (p) => p.email,
     },
     {
       id: "location",
       header: "Location",
       className: "hidden md:table-cell",
+      sortValue: (p) => loc.name(p.locationId),
       cell: (p) => loc.name(p.locationId),
     },
     {
       id: "provider",
       header: "Primary provider",
       className: "hidden lg:table-cell",
+      sortValue: (p) => prov.name(p.providerId),
       cell: (p) => prov.name(p.providerId),
     },
     ...(isProvider
@@ -539,12 +547,14 @@ export function PatientsScreen() {
             header: "Invited",
             className:
               "hidden text-muted-foreground tabular-nums xl:table-cell",
+            sortValue: (p: Patient) => p.invitedAt,
             cell: (p: Patient) => shortDate(p.invitedAt),
           },
         ]),
     {
       id: "status",
       header: "Status",
+      sortValue: (p) => p.status,
       cell: (p) => <StatusBadge status={p.status} />,
     },
     ...(isProvider
@@ -553,6 +563,7 @@ export function PatientsScreen() {
             id: "record",
             header: "Health record",
             className: "hidden md:table-cell",
+            sortValue: (p: Patient) => syncOf(p).label,
             cell: (p: Patient) => <SyncBadge status={syncOf(p)} />,
           },
           {
@@ -560,6 +571,7 @@ export function PatientsScreen() {
             header: "Last sync",
             className:
               "hidden text-muted-foreground tabular-nums xl:table-cell",
+            sortValue: (p: Patient) => syncOf(p).at,
             cell: (p: Patient) => {
               const { at } = syncOf(p)
               return at ? syncedAt(at) : ""

@@ -1,11 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { Bar, BarChart, Cell, Line, LineChart, ReferenceLine, XAxis, YAxis } from "recharts"
+import { Area, Bar, BarChart, Cell, ComposedChart, Line, ReferenceLine, XAxis, YAxis } from "recharts"
 import { FireIcon, FootprintsIcon, HeartCheckIcon, Moon02Icon } from "@hugeicons/core-free-icons"
 
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/design-system/ui/chart"
-import { AXIS_PROPS, Grid, Legend, useReducedMotion } from "@/components/dashboard-kit-v2"
+import { AXIS_PROPS, Grid, Legend, StatusDefs, statusColors, useReducedMotion } from "@/components/dashboard-kit-v2"
 import { fmt, markerByName, numericHistory } from "@/components/patient-dashboard/optimization/rules"
 import type { Biomarker, EnergyDay, WearableDay } from "@/components/patient-dashboard/optimization/types"
 import { BAR_GAP, Headline } from "@/components/patient-dashboard/widgets/bars"
@@ -138,13 +138,29 @@ const monthYear = (iso: string) =>
     triglycerides over time against the target, then the triglyceride to
     HDL ratio and small LDL particles. */
 export function HeartRisk({ markers }: { markers: Biomarker[] }) {
+  const id = `hr${React.useId().replace(/:/g, "")}`
   const reduced = useReducedMotion()
   const tg = markerByName(markers, "Triglycerides")
   const history = tg ? numericHistory(tg) : []
   const last = history[history.length - 1]
   const target = tg?.targetHigh
-  const data = history.map((p) => ({ date: p.date, label: monthYear(p.date), tg: p.n }))
-  const config = { tg: { label: "Triglycerides", color: SUBTLE.green } } satisfies ChartConfig
+  /* Each reading, the line into it and the area under it in status
+     colour: green under the target, orange near it, red over it. */
+  const colors = statusColors(
+    history.map((p) => p.n),
+    tg?.targetLow,
+    target
+  )
+  const data = history.map((p, i) => ({
+    date: p.date,
+    label: monthYear(p.date),
+    tg: p.n,
+    color: colors[i],
+    /* The tooltip's swatch reads the row's fill. */
+    fill: colors[i],
+  }))
+  const paint = colors.every((c) => c === colors[0]) ? colors[0] : `url(#${id}-c)`
+  const config = { tg: { label: "Triglycerides", color: colors[colors.length - 1] ?? SUBTLE.green } } satisfies ChartConfig
   const rows = [
     { name: "Triglyceride:HDL Ratio (calculated)", label: "Triglyceride to HDL ratio", unit: "" },
     { name: "LDL Small", label: "Small LDL particles", unit: " nmol/L" },
@@ -160,7 +176,10 @@ export function HeartRisk({ markers }: { markers: Biomarker[] }) {
           unit="mg/dL triglycerides"
         />
         <ChartContainer config={config} className="aspect-auto h-[160px] w-full">
-          <LineChart data={data} margin={{ left: 0, right: 8, top: 8 }}>
+          <ComposedChart data={data} margin={{ left: 0, right: 8, top: 8 }}>
+            <defs>
+              <StatusDefs id={id} xs={data.map((_, i) => i)} colors={colors} />
+            </defs>
             <Grid />
             <XAxis dataKey="label" {...AXIS_PROPS} interval="preserveStartEnd" />
             <YAxis {...AXIS_PROPS} width={36} allowDecimals={false} />
@@ -173,19 +192,30 @@ export function HeartRisk({ markers }: { markers: Biomarker[] }) {
               />
             )}
             <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+            <Area
+              type="monotone"
+              dataKey="tg"
+              stroke="none"
+              fill={paint}
+              mask={`url(#${id}-f)`}
+              activeDot={false}
+              tooltipType="none"
+              isAnimationActive={!reduced}
+            />
             <Line
               type="monotone"
               dataKey="tg"
-              stroke="var(--color-tg)"
+              stroke={paint}
               strokeWidth={2}
               dot={(props) => {
-                const { cx, cy, payload } = props as { cx: number; cy: number; payload: { date: string; tg: number } }
-                const over = target !== undefined && payload.tg > target
-                return <circle key={payload.date} cx={cx} cy={cy} r={3} fill={over ? SUBTLE.red : SUBTLE.green} />
+                const { cx, cy, payload } = props as { cx: number; cy: number; payload: { date: string; color: string } }
+                return (
+                  <circle key={payload.date} cx={cx} cy={cy} r={3.5} fill="var(--card)" stroke={payload.color} strokeWidth={2} />
+                )
               }}
               isAnimationActive={!reduced}
             />
-          </LineChart>
+          </ComposedChart>
         </ChartContainer>
         <ul className="mt-auto flex flex-col border-t pt-1 text-[13px]">
           {rows.map(({ label, unit, b }) => {

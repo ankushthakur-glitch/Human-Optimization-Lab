@@ -2,12 +2,21 @@
 
 import * as React from "react"
 import { ArrowDown02Icon, ArrowRight01Icon, ArrowUp02Icon, BulbIcon } from "@hugeicons/core-free-icons"
-import { Area, AreaChart, LabelList, ReferenceLine, XAxis, YAxis } from "recharts"
+import { Area, ComposedChart, LabelList, Line, ReferenceLine, XAxis, YAxis } from "recharts"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/ui/button"
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/design-system/ui/chart"
-import { AXIS_PROPS, Grid, KitIcon, SidePanel, useReducedMotion } from "@/components/dashboard-kit-v2"
+import {
+  AXIS_PROPS,
+  Grid,
+  KitIcon,
+  STATUS_COLOR,
+  SidePanel,
+  StatusDefs,
+  statusColors,
+  useReducedMotion,
+} from "@/components/dashboard-kit-v2"
 import { usDay } from "@/components/provider/mock-clock"
 import { fmt, shown } from "@/components/patient-dashboard/optimization/rules"
 import {
@@ -93,14 +102,32 @@ export function MetricSummary({ m }: { m: HealthMetric }) {
 
 const shortDate = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(8, 10)}`
 
-/** The marker over time in its band's colour: a filled line, a dashed
-    target line with its label, and the first and latest values printed. */
+/** The marker over time in status colour: each reading's dot, the line
+    into it and the fading area under it green inside the target, orange
+    at its edge and red outside, a dashed target line with its label, and
+    the first and latest values printed. Without a target every reading
+    takes the marker's own status. */
 function ToneTrend({ m, tone }: { m: HealthMetric; tone: ToneKey }) {
-  const id = React.useId().replace(/:/g, "")
+  const id = `tt${React.useId().replace(/:/g, "")}`
   const reduced = useReducedMotion()
-  const color = TONE[tone].hex
   const h = m.history
-  const data = h.map((p) => ({ day: shortDate(p.date), value: p.value }))
+  const hasTarget = m.targetLow != null || m.targetHigh != null
+  const own = STATUS_COLOR[tone === "red" ? "red" : tone === "orange" ? "orange" : "green"]
+  const series = statusColors(
+    h.map((p) => p.value),
+    m.targetLow,
+    m.targetHigh
+  )
+  const data = h.map((p, i) => ({
+    day: shortDate(p.date),
+    value: p.value,
+    color: hasTarget ? series[i] : own,
+    /* The tooltip's swatch reads the row's fill. */
+    fill: hasTarget ? series[i] : own,
+  }))
+  const colors = data.map((d) => d.color)
+  /* One colour paints plainly: a gradient over a flat line has no height. */
+  const paint = colors.every((c) => c === colors[0]) ? colors[0] : `url(#${id}-c)`
   const target = m.targetHigh ?? m.targetLow
   const values = [...h.map((p) => p.value), ...(target !== undefined ? [target] : [])]
   const lo = Math.min(...values)
@@ -108,16 +135,13 @@ function ToneTrend({ m, tone }: { m: HealthMetric; tone: ToneKey }) {
   const pad = (hi - lo || Math.abs(hi) || 1) * 0.15
   const last = data.length - 1
   const unit = unitText(m.unit)
-  const config = { value: { label: unit ? `${m.label} (${unit})` : m.label, color } } satisfies ChartConfig
+  const config = { value: { label: unit ? `${m.label} (${unit})` : m.label, color: colors[last] } } satisfies ChartConfig
   return (
     <div role="img" aria-label={`${m.name} over time`}>
       <ChartContainer config={config} className="aspect-auto h-[220px] w-full">
-        <AreaChart data={data} margin={{ top: 24, right: 24, bottom: 0, left: -8 }}>
+        <ComposedChart data={data} margin={{ top: 24, right: 24, bottom: 0, left: -8 }}>
           <defs>
-            <linearGradient id={`v4-trend-${id}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.28} />
-              <stop offset="100%" stopColor={color} stopOpacity={0.02} />
-            </linearGradient>
+            <StatusDefs id={id} xs={data.map((_, i) => i)} colors={colors} fade={[0.28, 0.02]} />
           </defs>
           <Grid />
           <XAxis dataKey="day" {...AXIS_PROPS} interval="preserveStartEnd" />
@@ -130,13 +154,13 @@ function ToneTrend({ m, tone }: { m: HealthMetric; tone: ToneKey }) {
           {target !== undefined && (
             <ReferenceLine
               y={target}
-              stroke={color}
+              stroke="var(--muted-foreground)"
               strokeDasharray="5 4"
-              strokeOpacity={0.8}
+              strokeOpacity={0.6}
               label={{
                 value: `Target ${m.target}`,
                 position: "insideBottomRight",
-                fill: color,
+                fill: "var(--muted-foreground)",
                 fontSize: 12,
                 fontWeight: 600,
               }}
@@ -146,11 +170,30 @@ function ToneTrend({ m, tone }: { m: HealthMetric; tone: ToneKey }) {
           <Area
             type="linear"
             dataKey="value"
-            stroke={color}
-            strokeWidth={2.5}
-            fill={`url(#v4-trend-${id})`}
+            stroke="none"
+            fill={paint}
+            mask={`url(#${id}-f)`}
             isAnimationActive={!reduced}
-            dot={{ r: 4, fill: color, stroke: "var(--card)", strokeWidth: 2 }}
+            activeDot={false}
+            tooltipType="none"
+          />
+          <Line
+            type="linear"
+            dataKey="value"
+            stroke={paint}
+            strokeWidth={2.5}
+            isAnimationActive={!reduced}
+            dot={(p: { cx?: number; cy?: number; index?: number }) => (
+              <circle
+                key={p.index}
+                cx={p.cx}
+                cy={p.cy}
+                r={4}
+                fill={colors[p.index ?? 0]}
+                stroke="var(--card)"
+                strokeWidth={2}
+              />
+            )}
             activeDot={{ r: 6 }}
           >
             <LabelList
@@ -169,8 +212,8 @@ function ToneTrend({ m, tone }: { m: HealthMetric; tone: ToneKey }) {
                 ) : null
               }
             />
-          </Area>
-        </AreaChart>
+          </Line>
+        </ComposedChart>
       </ChartContainer>
     </div>
   )

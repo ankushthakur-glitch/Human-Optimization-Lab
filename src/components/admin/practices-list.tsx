@@ -72,6 +72,8 @@ import {
   TableCell,
   TableHead,
   TableHeader,
+  TableSortHead,
+  useTableSort,
   TableRow,
 } from "@/design-system/ui/table"
 import {
@@ -206,9 +208,21 @@ export function PracticesList() {
     Number(managerFilter !== "all") +
     Number(region !== "all")
 
+  const sorting = useTableSort(filtered, {
+    id: (p) => p.id,
+    name: (p) => p.name,
+    region: (p) => p.region,
+    referral: (p) => p.referralUrl,
+    manager: (p) => (p.manager ? managerName(p.manager) : ""),
+    clinicians: (p) => p.clinicians,
+    patients: (p) => p.patients,
+    status: (p) => p.status,
+    created: (p) => p.createdAt,
+  })
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, totalPages)
-  const rows = filtered.slice(
+  const rows = sorting.rows.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   )
@@ -399,29 +413,54 @@ export function PracticesList() {
               <Table>
                 <TableHeader className="sticky top-0 z-10 bg-surface-head [&_th]:h-9 [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
                   <TableRow>
-                    <TableHead className="hidden md:table-cell">
+                    <TableSortHead
+                      className="hidden md:table-cell"
+                      {...sorting.headProps("id")}
+                    >
                       Practice ID
-                    </TableHead>
-                    <TableHead>Practice</TableHead>
-                    <TableHead className="hidden md:table-cell">
+                    </TableSortHead>
+                    <TableSortHead {...sorting.headProps("name")}>
+                      Practice
+                    </TableSortHead>
+                    <TableSortHead
+                      className="hidden md:table-cell"
+                      {...sorting.headProps("region")}
+                    >
                       Region
-                    </TableHead>
-                    <TableHead className="hidden 2xl:table-cell">
+                    </TableSortHead>
+                    <TableSortHead
+                      className="hidden 2xl:table-cell"
+                      {...sorting.headProps("referral")}
+                    >
                       Referral URL
-                    </TableHead>
-                    <TableHead className="hidden lg:table-cell">
+                    </TableSortHead>
+                    <TableSortHead
+                      className="hidden lg:table-cell"
+                      {...sorting.headProps("manager")}
+                    >
                       Clinic manager
-                    </TableHead>
-                    <TableHead className="hidden text-center sm:table-cell">
+                    </TableSortHead>
+                    <TableSortHead
+                      className="hidden text-center sm:table-cell"
+                      {...sorting.headProps("clinicians")}
+                    >
                       Clinicians
-                    </TableHead>
-                    <TableHead className="hidden text-center sm:table-cell">
+                    </TableSortHead>
+                    <TableSortHead
+                      className="hidden text-center sm:table-cell"
+                      {...sorting.headProps("patients")}
+                    >
                       Patients
-                    </TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden lg:table-cell">
+                    </TableSortHead>
+                    <TableSortHead {...sorting.headProps("status")}>
+                      Status
+                    </TableSortHead>
+                    <TableSortHead
+                      className="hidden lg:table-cell"
+                      {...sorting.headProps("created")}
+                    >
                       Created
-                    </TableHead>
+                    </TableSortHead>
                     <TableHead className="w-10 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>

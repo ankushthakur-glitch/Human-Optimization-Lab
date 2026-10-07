@@ -49,8 +49,9 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
+  TableSortHead,
+  useTableSort,
   TableRow,
 } from "@/design-system/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
@@ -180,12 +181,7 @@ function ProviderBody({
 /*  Patients                                                                   */
 /* -------------------------------------------------------------------------- */
 
-type Segment =
-  | "all"
-  | "enrolled"
-  | "pending"
-  | "declined"
-  | "closed"
+type Segment = "all" | "enrolled" | "pending" | "declined" | "closed"
 
 const SEGMENTS: {
   id: Segment
@@ -238,7 +234,15 @@ function PatientsTable({ provider }: { provider: ProviderAdoption }) {
         ? a.invitedAt.localeCompare(b.invitedAt) || a.name.localeCompare(b.name)
         : rank(a.status) - rank(b.status) || a.name.localeCompare(b.name)
     )
-  const paged = usePaged(rows)
+  const sorting = useTableSort(rows, {
+    id: (p) => p.id,
+    name: (p) => p.name,
+    status: (p) => rank(p.status),
+    invited: (p) => p.invitedAt,
+    waiting: (p) => (p.invitedAt ? daysSince(p.invitedAt) : ""),
+    declined: (p) => p.respondedAt,
+  })
+  const paged = usePaged(sorting.rows)
 
   if (provider.patients.length === 0) {
     return (
@@ -290,14 +294,34 @@ function PatientsTable({ provider }: { provider: ProviderAdoption }) {
           <Table>
             <TableHeader className={HEAD}>
               <TableRow>
-                <TableHead className="hidden md:table-cell">
+                <TableSortHead
+                  className="hidden md:table-cell"
+                  {...sorting.headProps("id")}
+                >
                   Patient ID
-                </TableHead>
-                <TableHead>Patient</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden sm:table-cell">Invited</TableHead>
-                {segment === "pending" && <TableHead>Waiting</TableHead>}
-                {segment === "declined" && <TableHead>Declined</TableHead>}
+                </TableSortHead>
+                <TableSortHead {...sorting.headProps("name")}>
+                  Patient
+                </TableSortHead>
+                <TableSortHead {...sorting.headProps("status")}>
+                  Status
+                </TableSortHead>
+                <TableSortHead
+                  className="hidden sm:table-cell"
+                  {...sorting.headProps("invited")}
+                >
+                  Invited
+                </TableSortHead>
+                {segment === "pending" && (
+                  <TableSortHead {...sorting.headProps("waiting")}>
+                    Waiting
+                  </TableSortHead>
+                )}
+                {segment === "declined" && (
+                  <TableSortHead {...sorting.headProps("declined")}>
+                    Declined
+                  </TableSortHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody className="[&_td]:px-4 [&_td]:py-2">

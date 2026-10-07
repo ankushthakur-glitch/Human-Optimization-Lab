@@ -176,4 +176,8 @@ export type DashboardData = {
   reports: ClinicalReport[]
   intake?: Intake
   reviewLog: ReviewLog[]
+  /** Local "2026-07-02T09:15" of the last visit at the practice, if any. */
+  lastVisit?: string
+  /** Local "2026-11-12T09:30" of the next booked visit, if any. */
+  nextVisit?: string
 }

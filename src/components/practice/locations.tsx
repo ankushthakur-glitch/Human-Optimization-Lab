@@ -50,11 +50,18 @@ export function LocationsScreen() {
     ).length
 
   const columns: Column<Location>[] = [
-    { id: "id", header: "Location ID", className: ID_CELL, cell: (l) => l.id },
+    {
+      id: "id",
+      header: "Location ID",
+      className: ID_CELL,
+      sortValue: (l) => l.id,
+      cell: (l) => l.id,
+    },
     {
       id: "name",
       header: "Location name",
       className: "max-w-[14rem]",
+      sortValue: (l) => l.name,
       cell: (l) => (
         <PersonCell
           name={l.name}
@@ -68,6 +75,7 @@ export function LocationsScreen() {
       id: "specialty",
       header: "Specialties",
       className: "hidden lg:table-cell",
+      sortValue: (l) => l.specialtyType,
       cell: (l) => l.specialtyType,
     },
     {
@@ -75,35 +83,41 @@ export function LocationsScreen() {
       header: "Address",
       className:
         "hidden max-w-[16rem] truncate text-muted-foreground xl:table-cell",
+      sortValue: (l) => [l.address1, l.address2].filter(Boolean).join(", "),
       cell: (l) => [l.address1, l.address2].filter(Boolean).join(", "),
     },
     {
       id: "city",
       header: "City",
       className: "hidden md:table-cell",
+      sortValue: (l) => l.city,
       cell: (l) => l.city,
     },
     {
       id: "state",
       header: "State",
       className: "hidden md:table-cell",
+      sortValue: (l) => l.state,
       cell: (l) => l.state,
     },
     {
       id: "zip",
       header: "ZIP code",
       className: "hidden tabular-nums lg:table-cell",
+      sortValue: (l) => l.zip,
       cell: (l) => l.zip,
     },
     {
       id: "phone",
       header: "Contact number",
       className: "hidden tabular-nums sm:table-cell",
+      sortValue: (l) => l.phone,
       cell: (l) => l.phone,
     },
     {
       id: "status",
       header: "Status",
+      sortValue: (l) => l.status,
       cell: (l) => <StatusBadge status={l.status} />,
     },
     {

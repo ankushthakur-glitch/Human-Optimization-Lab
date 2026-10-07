@@ -5,8 +5,10 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
   Rectangle,
-  ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -22,6 +24,10 @@ import {
 } from "@/design-system/ui/chart"
 import { Card } from "@/components/dashboard-kit-v2/card"
 import { DIVIDER, FOCUS } from "@/components/dashboard-kit-v2/icon"
+import {
+  StatusDefs,
+  statusColors,
+} from "@/components/dashboard-kit-v2/status-trend"
 
 /* The kit's chart layer: shadcn/ui Chart on Recharts, the build's one chart
    stack. Colours are build tokens read as CSS variables, so charts follow
@@ -398,9 +404,9 @@ export function AreaSpark({
 
 const shortDate = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(8, 10)}`
 
-/** A result over time: a grey area with hollow dots, the reference range
-    as a faint green band, and the latest point a 5px red dot when it is
-    out of range. */
+/** A result over time in status colour: each reading's dot, the line
+    into it and the fading area under it green inside the reference range,
+    orange at its edge and red outside (status-trend.tsx). */
 export function TrendChart({
   points,
   low,
@@ -418,9 +424,26 @@ export function TrendChart({
   label: string
   height?: number
 }) {
-  const id = React.useId().replace(/:/g, "")
+  const id = `tc${React.useId().replace(/:/g, "")}`
   const reduced = useReducedMotion()
-  const data = points.map((p) => ({ day: shortDate(p.date), value: p.value }))
+  const last = points.length - 1
+  const colors = statusColors(
+    points.map((p) => p.value),
+    low,
+    high,
+    points.map((_, i) => i === last && latestOut)
+  )
+  const data = points.map((p, i) => ({
+    day: shortDate(p.date),
+    value: p.value,
+    color: colors[i],
+    /* The tooltip's swatch reads the row's fill. */
+    fill: colors[i],
+  }))
+  /* One colour paints plainly: a gradient over a flat line has no height. */
+  const paint = colors.every((c) => c === colors[0])
+    ? colors[0]
+    : `url(#${id}-c)`
   const values = points.map((p) => p.value)
   const lo = Math.min(...values, ...(low !== undefined ? [low] : []))
   const hi = Math.max(...values, ...(high !== undefined ? [high] : []))
@@ -433,11 +456,10 @@ export function TrendChart({
     { length: Math.round((yMax - yMin) / step) + 1 },
     (_, i) => +(yMin + i * step).toFixed(2)
   )
-  const last = data.length - 1
   const config = {
     value: {
       label: unit ? `Value (${unit})` : "Value",
-      color: PALETTE.neutral,
+      color: colors[last],
     },
   } satisfies ChartConfig
 
@@ -448,32 +470,27 @@ export function TrendChart({
         className="aspect-auto w-full"
         style={{ height }}
       >
-        <AreaChart
+        <ComposedChart
           data={data}
           margin={{ top: 8, right: 12, bottom: 0, left: -12 }}
         >
           <defs>
-            <linearGradient id={`trend-${id}`} x1="0" y1="0" x2="0" y2="1">
-              <stop
-                offset="0%"
-                stopColor={PALETTE.neutral}
-                stopOpacity={0.16}
-              />
-              <stop
-                offset="100%"
-                stopColor={PALETTE.neutral}
-                stopOpacity={0.02}
-              />
-            </linearGradient>
+            <StatusDefs
+              id={id}
+              xs={data.map((_, i) => i)}
+              colors={colors}
+            />
           </defs>
           <Grid />
-          {(low !== undefined || high !== undefined) && (
-            <ReferenceArea
-              y1={low ?? yMin}
-              y2={high ?? yMax}
-              fill={PALETTE.success}
-              fillOpacity={0.07}
-            />
+          {[low, high].map((l) =>
+            l === undefined ? null : (
+              <ReferenceLine
+                key={l}
+                y={l}
+                stroke="var(--border)"
+                strokeDasharray="3 3"
+              />
+            )
           )}
           <XAxis dataKey="day" {...AXIS_PROPS} interval="preserveStartEnd" />
           <YAxis
@@ -489,34 +506,33 @@ export function TrendChart({
           <Area
             type="monotone"
             dataKey="value"
-            stroke={PALETTE.neutral}
+            stroke="none"
+            fill={paint}
+            mask={`url(#${id}-f)`}
+            isAnimationActive={!reduced}
+            activeDot={false}
+            tooltipType="none"
+          />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke={paint}
             strokeWidth={2}
-            fill={`url(#trend-${id})`}
             isAnimationActive={!reduced}
             activeDot={{ r: 5 }}
-            dot={(p: { cx?: number; cy?: number; index?: number }) =>
-              p.index === last && latestOut ? (
-                <circle
-                  key={p.index}
-                  cx={p.cx}
-                  cy={p.cy}
-                  r={5}
-                  fill={PALETTE.clinical}
-                />
-              ) : (
-                <circle
-                  key={p.index}
-                  cx={p.cx}
-                  cy={p.cy}
-                  r={3.5}
-                  fill="var(--card)"
-                  stroke={PALETTE.neutral}
-                  strokeWidth={1.5}
-                />
-              )
-            }
+            dot={(p: { cx?: number; cy?: number; index?: number }) => (
+              <circle
+                key={p.index}
+                cx={p.cx}
+                cy={p.cy}
+                r={p.index === last ? 4.5 : 3.5}
+                fill="var(--card)"
+                stroke={colors[p.index ?? 0]}
+                strokeWidth={2}
+              />
+            )}
           />
-        </AreaChart>
+        </ComposedChart>
       </ChartContainer>
     </div>
   )

@@ -24,8 +24,19 @@ export { DIVIDER, FOCUS, type IconDef, KitIcon } from "@/components/dashboard-ki
 export { ListRow } from "@/components/dashboard-kit-v2/list-row"
 export { MetricCard, MetricCardSkeleton } from "@/components/dashboard-kit-v2/metric-card"
 export { ProgressBar, type ProgressTone } from "@/components/dashboard-kit-v2/progress-bar"
-export { SidePanel } from "@/components/dashboard-kit-v2/side-panel"
+export { DockedPanel, SidePanel } from "@/components/dashboard-kit-v2/side-panel"
 export { Sparkline } from "@/components/dashboard-kit-v2/sparkline"
+export {
+  type ResultStatus,
+  STATUS_COLOR,
+  StatusDefs,
+  StatusTrace,
+  resultStatus,
+  movedToward,
+  statusColor,
+  statusColors,
+  statusSeries,
+} from "@/components/dashboard-kit-v2/status-trend"
 export { StatTile, type Tint } from "@/components/dashboard-kit-v2/stat-tile"
 export { DataTable, Row, Td, Th } from "@/components/dashboard-kit-v2/table"
 export { SegmentedControl, type TabItem, UnderlineTabs } from "@/components/dashboard-kit-v2/tabs"

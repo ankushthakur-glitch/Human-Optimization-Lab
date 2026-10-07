@@ -257,12 +257,14 @@ export function ProvidersPanel({ heading }: { heading: React.ReactNode }) {
       id: "id",
       header: "Provider ID",
       className: ID_CELL,
+      sortValue: (p) => p.id,
       cell: (p) => p.id,
     },
     {
       id: "name",
       header: "Name",
       className: "max-w-[14rem]",
+      sortValue: providerName,
       cell: (p) => (
         <PersonCell
           name={providerName(p)}
@@ -275,35 +277,41 @@ export function ProvidersPanel({ heading }: { heading: React.ReactNode }) {
       id: "role",
       header: "Role type",
       className: "hidden lg:table-cell",
+      sortValue: (p) => p.role,
       cell: (p) => p.role,
     },
     {
       id: "npi",
       header: "NPI number",
       className: "hidden tabular-nums md:table-cell",
+      sortValue: (p) => p.npi,
       cell: (p) => p.npi,
     },
     {
       id: "phone",
       header: "Phone number",
       className: "hidden tabular-nums xl:table-cell",
+      sortValue: (p) => p.phone,
       cell: (p) => p.phone,
     },
     {
       id: "email",
       header: "Email",
       className: "hidden max-w-[16rem] truncate lg:table-cell",
+      sortValue: (p) => p.email,
       cell: (p) => p.email,
     },
     {
       id: "login",
       header: "Last login",
       className: "hidden text-muted-foreground tabular-nums sm:table-cell",
+      sortValue: (p) => p.lastLogin,
       cell: (p) => shortDate(p.lastLogin) || "Never",
     },
     {
       id: "status",
       header: "Status",
+      sortValue: (p) => p.status,
       cell: (p) => <StatusBadge status={p.status} />,
     },
     {

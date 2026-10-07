@@ -50,7 +50,7 @@ import {
 import { TONE, type ToneKey } from "@/components/patient-dashboard/widgets/palette"
 import { Fact } from "@/components/patient-dashboard/widgets/programs"
 import { Pill } from "@/components/patient-dashboard/widgets/status"
-import { MetricTrends, type TrendMetric } from "@/components/patient-dashboard/widgets/trends"
+import { MetricStatus, MetricTrends, type TrendMetric } from "@/components/patient-dashboard/widgets/trends"
 
 /* The free member's Dashboard, laid out as the optimization member's and
    filled from their own EHR record. The result summary donut sits beside
@@ -129,38 +129,29 @@ const DIASTOLIC_HIGH = 80
 const monthOf = (since: string) =>
   new Date(`${since.slice(0, 7)}-01T12:00:00`).toLocaleDateString("en-US", { month: "short", year: "numeric" })
 
-function StatusDot({ out, children }: { out: boolean; children: React.ReactNode }) {
-  return (
-    <span className={cn("inline-flex items-center gap-1.5", out && TONE.red.text)}>
-      <span aria-hidden className={cn("size-1.5 rounded-full", out ? "bg-destructive" : "bg-success")} />
-      {children}
-    </span>
-  )
-}
-
 function labMetric(lab: LabResult): TrendMetric | undefined {
   const readings = comparable(lab)
   const last = readings[readings.length - 1]
   if (!last) return undefined
-  const status = readingStatus(lab, last)
+  const points = readings.map((r) => ({
+    date: r.date,
+    value: r.value,
+    out: readingStatus(lab, r) !== "In range",
+    source: shortSource(r.source),
+  }))
   return {
     id: lab.code,
     label: lab.name,
     unit: lab.unit,
     value: String(last.value),
-    points: readings.map((r) => ({
-      date: r.date,
-      value: r.value,
-      out: readingStatus(lab, r) !== "In range",
-      source: shortSource(r.source),
-    })),
+    points,
     low: lab.refLow,
     high: lab.refHigh,
     target: rangeText(lab) || undefined,
     meta: (
       <>
         {rangeText(lab) && <span>Range {rangeText(lab)}</span>}
-        <StatusDot out={status !== "In range"}>{status}</StatusDot>
+        <MetricStatus m={{ points, low: lab.refLow, high: lab.refHigh }} noun="range" />
       </>
     ),
     aside: readings.length > 1 && <TrendWord trend={trendOf(lab)} rising={isRising(lab)} />,
@@ -171,7 +162,7 @@ function bpMetrics(model: DashboardModel): TrendMetric[] {
   const bp = [...model.data.bp].sort((a, b) => a.date.localeCompare(b.date))
   if (bp.length === 0) return []
   const series = (id: string, label: string, high: number, pick: (r: (typeof bp)[number]) => number): TrendMetric => {
-    const last = pick(bp[bp.length - 1])
+    const points = bp.map((r) => ({ date: r.date, value: pick(r), out: pick(r) > high, source: shortSource(r.source) }))
     const asLab: LabResult = {
       code: id,
       name: label,
@@ -184,14 +175,14 @@ function bpMetrics(model: DashboardModel): TrendMetric[] {
       id,
       label,
       unit: "mmHg",
-      value: String(last),
-      points: bp.map((r) => ({ date: r.date, value: pick(r), out: pick(r) > high, source: shortSource(r.source) })),
+      value: String(pick(bp[bp.length - 1])),
+      points,
       high,
       target: `under ${high}`,
       meta: (
         <>
           <span>Under {high}</span>
-          <StatusDot out={last > high}>{last > high ? "High" : "In range"}</StatusDot>
+          <MetricStatus m={{ points, high }} noun="range" />
         </>
       ),
       aside: bp.length > 1 && <TrendWord trend={trendOf(asLab)} rising={isRising(asLab)} />,

@@ -58,6 +58,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableSortHead,
+  type SortValue,
+  useTableSort,
 } from "@/design-system/ui/table"
 import { Separator } from "@/design-system/ui/separator"
 import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
@@ -175,6 +178,8 @@ export type Column<T> = {
   /** Applied to the header and every cell, for widths and breakpoints. */
   className?: string
   cell: (row: T) => React.ReactNode
+  /** What the column sorts by; without it the header doesn't sort. */
+  sortValue?: (row: T) => SortValue
 }
 
 export type FilterDef<T> = {
@@ -340,8 +345,12 @@ export function Directory<T extends { id: string }>({
     })
   }, [rows, query, status, statusTabs, values, filters, search])
 
+  const sorting = useTableSort(
+    filtered,
+    Object.fromEntries(columns.map((column) => [column.id, column.sortValue]))
+  )
   const activeFilters = Object.values(values).filter(Boolean).length
-  const paged = usePaged(filtered)
+  const paged = usePaged(sorting.rows)
   const visible = paged.visible
   const setPage = paged.setPage
 
@@ -599,11 +608,21 @@ export function Directory<T extends { id: string }>({
                       aria-label="Select all on this page"
                     />
                   </TableHead>
-                  {columns.map((column) => (
-                    <TableHead key={column.id} className={column.className}>
-                      {column.header}
-                    </TableHead>
-                  ))}
+                  {columns.map((column) =>
+                    column.sortValue ? (
+                      <TableSortHead
+                        key={column.id}
+                        className={column.className}
+                        {...sorting.headProps(column.id)}
+                      >
+                        {column.header}
+                      </TableSortHead>
+                    ) : (
+                      <TableHead key={column.id} className={column.className}>
+                        {column.header}
+                      </TableHead>
+                    )
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody className="[&_td]:px-4 [&_td]:py-2">

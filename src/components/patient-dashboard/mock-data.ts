@@ -11,6 +11,7 @@ import type {
   LabResult,
 } from "@/components/patient-dashboard/types"
 import { MARCUS_CORE } from "@/components/patient-dashboard/optimization/mock-data"
+import { backfillLabs } from "@/components/patient-dashboard/backfill"
 
 /* The dashboard's sample data. Olivia Bennett (P10240) carries the full
    free-member case the build was specified against; every other patient's
@@ -153,6 +154,8 @@ export const OLIVIA: DashboardData = {
     reviewed: false,
   },
   reviewLog: [{ at: "2026-07-02T16:30:00", by: "Dr. Reyes", kind: "review" }],
+  lastVisit: "2026-07-02T09:15",
+  nextVisit: "2026-11-12T09:30",
 }
 
 const SAMPLES: Record<string, DashboardData> = { [OLIVIA.patientId]: OLIVIA, [MARCUS_CORE.patientId]: MARCUS_CORE }
@@ -232,10 +235,12 @@ function fromRecord(patient: Patient, record: HealthRecord): DashboardData {
     encounters: [],
     reports: [],
     reviewLog: patient.lastReviewAt ? [{ at: patient.lastReviewAt, by: "Dr. Reyes", kind: "review" }] : [],
+    lastVisit: patient.lastVisitAt,
+    nextVisit: patient.nextVisitAt,
   }
 }
 
 /** The dashboard's data for a patient. */
 export function dashboardDataFor(patient: Patient, record: HealthRecord): DashboardData {
-  return SAMPLES[patient.id] ?? fromRecord(patient, record)
+  return backfillLabs(SAMPLES[patient.id] ?? fromRecord(patient, record))
 }

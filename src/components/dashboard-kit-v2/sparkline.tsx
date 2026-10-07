@@ -1,8 +1,13 @@
 import { cn } from "@/lib/utils"
+import {
+  StatusTrace,
+  statusColors,
+} from "@/components/dashboard-kit-v2/status-trend"
 
-/* An inline sparkline: a grey line through grey points, the latest point
-   3px in red when it sits outside the range, green when it is improving, or
-   grey. A faint band marks the reference range. No axes. */
+/* An inline sparkline in status colour: each point, the line into it and
+   a faint area under it green inside the reference range, orange at its
+   edge and red outside (status-trend.tsx), the latest point larger. No
+   axes. `latest="out"` forces the latest point red. */
 
 export function Sparkline({
   values,
@@ -39,19 +44,14 @@ export function Sparkline({
       : pad + (i * (width - pad * 2)) / (values.length - 1)
   const y = (v: number) =>
     height - pad - ((v - min) / span) * (height - pad * 2)
-  const path = values
-    .map(
-      (v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`
-    )
-    .join(" ")
   const last = values.length - 1
-  const line = "color-mix(in oklab, var(--muted-foreground) 55%, var(--card))"
-  const dot =
-    latest === "out"
-      ? "var(--destructive)"
-      : latest === "better"
-        ? "var(--success)"
-        : "var(--muted-foreground)"
+  const xy = values.map((v, i): [number, number] => [x(i), y(v)])
+  const colors = statusColors(
+    values,
+    low,
+    high,
+    values.map((_, i) => i === last && latest === "out")
+  )
 
   return (
     <svg
@@ -62,28 +62,20 @@ export function Sparkline({
       viewBox={`0 0 ${width} ${height}`}
       className={cn("shrink-0 overflow-visible", className)}
     >
-      {low !== undefined && high !== undefined && (
-        <rect
-          x={0}
-          y={y(high)}
-          width={width}
-          height={Math.max(1, y(low) - y(high))}
-          fill="var(--secondary)"
-        />
-      )}
-      <path
-        d={path}
-        fill="none"
-        stroke={line}
+      <StatusTrace
+        xy={xy}
+        colors={colors}
+        bottom={height}
         strokeWidth={1.5}
-        strokeLinejoin="round"
+        dividers={false}
+        fade={[0.22, 0.02]}
       />
       {values.map((v, i) =>
         i === last ? null : (
-          <circle key={i} cx={x(i)} cy={y(v)} r={1.5} fill={line} />
+          <circle key={i} cx={x(i)} cy={y(v)} r={1.75} fill={colors[i]} />
         )
       )}
-      <circle cx={x(last)} cy={y(values[last]!)} r={3} fill={dot} />
+      <circle cx={x(last)} cy={y(values[last]!)} r={3} fill={colors[last]} />
     </svg>
   )
 }

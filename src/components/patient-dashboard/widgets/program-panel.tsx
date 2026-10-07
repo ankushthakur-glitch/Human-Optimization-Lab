@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/design-system/ui/table"
-import { Badge, KitIcon, ProgressBar, RadialScore } from "@/components/dashboard-kit-v2"
+import { Badge, KitIcon, ProgressBar, RadialScore, STATUS_COLOR } from "@/components/dashboard-kit-v2"
 import { daysSince, usDay } from "@/components/provider/mock-clock"
 import type { OptimizationModel } from "@/components/patient-dashboard/optimization/model"
 import { isInside, numericHistory, shown, targetText } from "@/components/patient-dashboard/optimization/rules"
@@ -21,12 +21,12 @@ import {
   PROGRAMS,
   type Program,
   type ProgramView,
-  StatusText,
   goalProgress,
   label,
 } from "@/components/patient-dashboard/widgets/programs"
 import { Widget, WidgetTabs } from "@/components/patient-dashboard/widgets/kit"
-import { MetricTrends, type TrendMetric } from "@/components/patient-dashboard/widgets/trends"
+import { MetricStatus, MetricTrends, type TrendMetric } from "@/components/patient-dashboard/widgets/trends"
+import type { Goal } from "@/components/patient-dashboard/optimization/types"
 
 /* The plans the member is enrolled in, one tab each (Weight loss, Diabetes
    control). Under the plan's facts and goal, its metrics run down the left
@@ -52,29 +52,61 @@ function metricsOf(view: ProgramView, program: Program): TrendMetric[] {
       const h = numericHistory(b)
       const last = h[h.length - 1]
       const goal = view.goal(b)
-      const progress = goal ? Math.round(goalProgress(goal)) : undefined
+      /* Progress from the plan's baseline toward its goal, measured on the
+         latest reading the chart ends on. It never shows below 0%: a value
+         that moved away from its goal reads 0% on an empty red ring, with
+         how far it went in the grey line, so the tab still shows the
+         change the chart draws. */
+      const raw = goal && last ? towardGoal(goal, last.n) : undefined
+      const progress = raw === undefined ? undefined : Math.max(0, Math.round(raw))
+      const away = goal && last && raw !== undefined && raw < 0 ? Math.abs(last.n - goal.baseline) : undefined
+      const unit = b.unit && !UNITLESS.test(b.unit) ? ` ${b.unit}` : ""
+      const low = b.targetLow ?? undefined
+      const high = b.targetHigh ?? undefined
+      const points = h.map((p) => ({ date: p.date, value: p.n, out: !isInside(b, p.n), source: p.source }))
       return {
         id: b.name,
         label: label(b.name),
         unit: b.unit && !UNITLESS.test(b.unit) ? b.unit : undefined,
         value: last ? shown(last.value) : "None",
-        points: h.map((p) => ({ date: p.date, value: p.n, out: !isInside(b, p.n), source: p.source })),
-        low: b.targetLow ?? undefined,
-        high: b.targetHigh ?? undefined,
+        points,
+        low,
+        high,
         target: targetText(b) || undefined,
+        /* The goal gets its own line unless it is already a target limit. */
+        goal: goal && goal.goal !== low && goal.goal !== high ? { value: goal.goal, label: goal.goalLabel } : undefined,
         meta: (
           <>
             {goal && <span>Goal {goal.goalLabel}</span>}
-            <StatusText b={b} />
+            <MetricStatus m={{ points, low, high }} />
+            {away !== undefined && goal && (
+              <span>
+                {goal.betterDirection === "Higher" ? "Down" : "Up"} {shown(+away.toFixed(2))}
+                {unit} since start
+              </span>
+            )}
           </>
         ),
         aside: progress !== undefined && (
-          <RadialScore value={Math.min(progress, 100)} max={100} label={`${label(b.name)} goal progress`} size={48} tone={progressTone(progress)}>
-            <span className="text-[11px] font-semibold tabular-nums">{progress}%</span>
+          <RadialScore value={Math.min(progress, 100)} max={100} label={`${label(b.name)} goal progress, ${progress}%`} size={48} tone={progressTone(progress)}>
+            <span
+              className="text-[11px] font-semibold tabular-nums"
+              style={away !== undefined ? { color: STATUS_COLOR.red } : undefined}
+            >
+              {progress}%
+            </span>
           </RadialScore>
         ),
       }
     })
+}
+
+/** Percent of the way from baseline to goal at `current`, below zero when
+    it moved the wrong way (the tab shows that as 0%), capped at 100. */
+function towardGoal(g: Goal, current: number) {
+  const span = g.goal - g.baseline
+  if (span === 0) return 100
+  return Math.min(100, ((current - g.baseline) / span) * 100)
 }
 
 /* Goal progress colour: red under 40%, orange to 74%, green from 75%. */

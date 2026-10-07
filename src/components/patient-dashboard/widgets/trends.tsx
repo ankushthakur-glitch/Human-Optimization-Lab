@@ -1,18 +1,25 @@
 "use client"
 
 import * as React from "react"
-import { CartesianGrid, Line, LineChart, ReferenceArea, XAxis, YAxis } from "recharts"
+import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, XAxis, YAxis } from "recharts"
 
 import { cn } from "@/lib/utils"
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/design-system/ui/chart"
 import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
 import { SUB_TAB, SUB_TABS_LIST } from "@/components/practice/directory"
 import { NOW, usDay } from "@/components/provider/mock-clock"
+import {
+  STATUS_COLOR,
+  StatusDefs,
+  statusColors,
+  statusSeries,
+} from "@/components/dashboard-kit-v2/status-trend"
 
 /* A list of metrics as vertical tabs beside the picked one's trend, shared
    by the optimization member's plans and the free member's problems. It
-   works like the chart's Vitals trend: every reading as a dot (red outside
-   target), the target band behind, a range switch, and on a switch the old
+   works like the chart's Vitals trend: every reading as a dot, the line
+   and a fading area in each reading's status colour (green in target,
+   orange at its edge, red outside), a range switch, and on a switch the old
    line retracts before the new one draws in (globals.css, .vital-line and
    .vital-dot). */
 
@@ -31,6 +38,9 @@ export type TrendMetric = {
   high?: number
   /** "70-99", for the chart's subline. */
   target?: string
+  /** A plan goal apart from the target: drawn as its own dashed line and
+      named in the subline, so the tab's goal is always on the chart. */
+  goal?: { value: number; label: string }
   /** Under the value in the tab: goal, status. */
   meta?: React.ReactNode
   /** On the tab's right: goal progress, trend. */
@@ -42,6 +52,49 @@ const RANGES = [
   { id: "180", label: "6 months" },
   { id: "all", label: "All" },
 ]
+
+/** The latest reading's standing, from the same rule the chart colours
+    with, so the tab and the graph never disagree: outside and moving away
+    is red, outside but moving toward the range is green "Improving", near
+    a limit is orange, inside is green. */
+export function metricStatus(m: Pick<TrendMetric, "points" | "low" | "high">, noun = "target") {
+  const last = m.points[m.points.length - 1]
+  if (!last) return undefined
+  const status = statusSeries(
+    m.points.map((p) => p.value),
+    m.low,
+    m.high,
+    m.points.map((p) => p.out)
+  )[m.points.length - 1]
+  const above = m.high != null && last.value > m.high
+  const below = m.low != null && last.value < m.low
+  const outside = above || below || last.out
+  const word =
+    status === "red"
+      ? above
+        ? `Above ${noun}`
+        : below
+          ? `Below ${noun}`
+          : "Out of range"
+      : status === "orange"
+        ? "Near limit"
+        : outside
+          ? "Improving"
+          : `In ${noun}`
+  return { word, color: STATUS_COLOR[status] }
+}
+
+/** The status word with its dot, in the tab's grey line. */
+export function MetricStatus({ m, noun }: { m: Pick<TrendMetric, "points" | "low" | "high">; noun?: string }) {
+  const s = metricStatus(m, noun)
+  if (!s) return null
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span aria-hidden className="size-1.5 rounded-full" style={{ backgroundColor: s.color }} />
+      {s.word}
+    </span>
+  )
+}
 
 function isoDaysAgo(days: number) {
   return new Date(new Date(NOW).getTime() - days * 86_400_000).toISOString().slice(0, 10)
@@ -61,10 +114,9 @@ function niceAxis(values: number[]) {
   return { lo, hi, ticks }
 }
 
-type DotProps = { cx?: number; cy?: number; index?: number; payload?: { out: boolean } }
+type DotProps = { cx?: number; cy?: number; index?: number; payload?: { color: string } }
 
 function ReadingDot({ cx, cy, index = 0, payload, count }: DotProps & { count: number }) {
-  const out = payload?.out
   return (
     <circle
       className="vital-dot"
@@ -72,14 +124,24 @@ function ReadingDot({ cx, cy, index = 0, payload, count }: DotProps & { count: n
       cx={cx}
       cy={cy}
       r={3.5}
-      strokeWidth={1.5}
-      stroke={out ? "var(--destructive)" : "var(--color-value)"}
-      fill={out ? "var(--destructive)" : "var(--card)"}
+      strokeWidth={2}
+      stroke={payload?.color}
+      fill="var(--card)"
     />
   )
 }
 
 function MetricChart({ m, since }: { m: TrendMetric; since?: string }) {
+  const id = `mt${React.useId().replace(/:/g, "")}`
+  /* Status over the whole series, so the first reading shown keeps the
+     direction it came in on. */
+  const all = statusColors(
+    m.points.map((p) => p.value),
+    m.low,
+    m.high,
+    m.points.map((p) => p.out)
+  )
+  const tone = new Map(m.points.map((p, i) => [p, all[i]]))
   const points = m.points.filter((p) => !since || p.date >= since)
   /* Readings that cross a year show it on the axis. */
   const years = new Set(points.map((p) => p.date.slice(0, 4))).size > 1
@@ -90,11 +152,16 @@ function MetricChart({ m, since }: { m: TrendMetric; since?: string }) {
     ),
     when: `${usDay(p.date.slice(0, 10))} · ${p.source}`,
     value: p.value,
-    out: p.out,
+    color: tone.get(p)!,
+    /* The tooltip's swatch reads the row's fill. */
+    fill: tone.get(p)!,
   }))
+  const colors = data.map((d) => d.color)
+  /* One colour paints plainly: a gradient over a flat line has no height. */
+  const paint = colors.every((c) => c === colors[0]) ? colors[0] : `url(#${id}-c)`
   const config = { value: { label: m.label, color: "var(--primary)" } } satisfies ChartConfig
   const bounds = [m.low, m.high].filter((n): n is number => n != null)
-  const axis = niceAxis([...data.map((d) => d.value), ...bounds])
+  const axis = niceAxis([...data.map((d) => d.value), ...bounds, ...(m.goal ? [m.goal.value] : [])])
   if (data.length < 2)
     return (
       <p className="m-auto text-sm text-muted-foreground">
@@ -103,31 +170,49 @@ function MetricChart({ m, since }: { m: TrendMetric; since?: string }) {
     )
   return (
     <ChartContainer config={config} className="aspect-auto min-h-0 w-full flex-1">
-      <LineChart data={data} margin={{ left: 4, right: 16, top: 8, bottom: 0 }}>
+      <ComposedChart data={data} margin={{ left: 4, right: 16, top: 8, bottom: 0 }}>
+        <defs>
+          <StatusDefs id={id} xs={data.map((_, i) => i)} colors={colors} />
+        </defs>
         <CartesianGrid strokeDasharray="3 3" />
-        {bounds.length > 0 && (
-          <ReferenceArea
-            y1={m.low ?? axis.lo}
-            y2={m.high ?? axis.hi}
-            fill="var(--success)"
-            fillOpacity={0.07}
-            ifOverflow="hidden"
+        {m.goal && (
+          <ReferenceLine
+            y={m.goal.value}
+            stroke="var(--muted-foreground)"
+            strokeDasharray="5 4"
+            strokeOpacity={0.7}
+            label={{
+              value: `Goal ${m.goal.label}`,
+              position: "insideTopRight",
+              fill: "var(--muted-foreground)",
+              fontSize: 11,
+            }}
           />
         )}
         <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} minTickGap={28} />
         <YAxis width={44} tickLine={false} axisLine={false} domain={[axis.lo, axis.hi]} ticks={axis.ticks} />
         <ChartTooltip content={<ChartTooltipContent labelFormatter={(_, items) => items?.[0]?.payload?.when} />} />
+        <Area
+          dataKey="value"
+          type="linear"
+          isAnimationActive={false}
+          stroke="none"
+          fill={paint}
+          mask={`url(#${id}-f)`}
+          activeDot={false}
+          tooltipType="none"
+        />
         <Line
           dataKey="value"
           type="linear"
           className="vital-line"
           isAnimationActive={false}
-          stroke="var(--color-value)"
+          stroke={paint}
           strokeWidth={1.75}
           dot={(p: DotProps) => <ReadingDot key={p.index} {...p} count={data.length} />}
           activeDot={{ r: 5 }}
         />
-      </LineChart>
+      </ComposedChart>
     </ChartContainer>
   )
 }
@@ -197,7 +282,7 @@ export function MetricTrends({ metrics, label = "Metrics" }: { metrics: TrendMet
                   <span className={cn("truncate text-xs text-muted-foreground", on && "font-medium text-foreground")}>
                     {m.label}
                   </span>
-                  <span className={cn("text-lg leading-6 font-semibold tabular-nums", on && "text-primary")}>
+                  <span className="text-lg leading-6 font-semibold tabular-nums">
                     {m.value}
                     {m.unit && <span className="ml-1 text-xs font-normal text-muted-foreground">{m.unit}</span>}
                   </span>
@@ -223,6 +308,7 @@ export function MetricTrends({ metrics, label = "Metrics" }: { metrics: TrendMet
             <span className="text-xs text-muted-foreground tabular-nums">
               {readings} {readings === 1 ? "reading" : "readings"}
               {view.target && `, target ${view.target}`}
+              {view.goal && `, goal ${view.goal.label}`}
             </span>
           </div>
           <Tabs value={range} onValueChange={(v) => v !== range && show(current.id, v as string)}>
