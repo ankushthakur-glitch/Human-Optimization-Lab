@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from "react-native"
 import { keepTogether } from "@/components/care-gap"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, dotted } from "@/components/home-parts"
-import { CheckCircle, Pill, Warning } from "@/components/ph"
+import { CheckCircle, Pill, Target, Warning } from "@/components/ph"
 import { Block, Card, Group, NeedsRow, NotConnected, ROW_LIMIT, Rise, SmallAction, Status } from "@/components/record-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { TrendTiles } from "@/components/trend-tile"
@@ -17,7 +17,7 @@ import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
 
 /* Home on the free record (FINAL-SPEC C.1), as the Figma "Hol" Home
    (40024634:963, 5 Oct 2026): the one status banner when something is
-   true; the teal "3 things need you" banner, collapsed, which opens To do;
+   true; the red "3 things need you" banner, collapsed, which opens To do;
    Your trends, a 2 by 2 grid of sparkline tiles; Upcoming; New in your
    record when an outside visit arrived; Your medicines; the teal Ask
    about your results banner. The Inlay score, the "checking" banner and
@@ -26,6 +26,10 @@ import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
    The same screen draws every state of the free record (C.1.4, C.28): not
    connected, the record still arriving, sharing turned off, a paused
    member (the paused card above the banner) and a cancelled one.
+
+   Since 6 Oct 2026 the Needs you banner is red, a rising result out of
+   range is drawn red in its tile, and the teal "A healthier you is
+   possible" banner after Upcoming opens Upgrade.
 
    RecordSections is the record part on its own (Needs you to Ask), which
    the member home shows under its setup and review heroes with Needs you
@@ -65,17 +69,19 @@ export function FreeHome() {
 
 /** The record part of the free home, from Needs you to Ask about your
     results. `needsAsCard` draws Needs you as a white row instead of the
-    teal banner, for a screen that has its own hero (the member home's
+    red banner, for a screen that has its own hero (the member home's
     setup and review stages). While the record is still arriving nothing
     can need her yet: practice appointments, and one line each where
     trends and medicines will be. */
 export function RecordSections({ needsAsCard = false }: { needsAsCard?: boolean }) {
-  const building = useExperience().experience === "building"
+  const exp = useExperience().experience
+  const building = exp === "building"
   return (
     <View style={styles.page}>
       {!building && <NeedsYou asCard={needsAsCard} />}
       {building ? <Waiting at={2} id="trends" title="Your trends" line={`Your trends appear once your results${NBSP}arrive.`} /> : <Trends />}
       <Upcoming />
+      {!needsAsCard && !building && exp !== "paused" && <UpgradeCard />}
       {!building && <NewInRecord />}
       {building ? <Waiting at={5} id="medicines" title="Your medicines" line={`Your medicines appear once your records${NBSP}arrive.`} /> : <Medicines />}
       <AskRow />
@@ -101,7 +107,7 @@ const together = (words?: string) => (words ? keepTogether(words) : undefined)
 /** "You have 3 pending actions to stay on track." */
 const pendingLine = (n: number) => `You have ${n} pending ${n === 1 ? "action" : "actions"} to stay on track.`
 
-/** What needs her now (C.1.2, 3), as the Figma's collapsed teal banner:
+/** What needs her now (C.1.2, 3), as a collapsed muted red banner:
     the count as the title, the pending line under it, and the whole banner
     opens To do, where each item has its action. With nothing open, the
     same banner says she is all caught up and opens what is next. As a card
@@ -134,7 +140,14 @@ function NeedsYou({ asCard }: { asCard: boolean }) {
           <NeedsRow icon={<Warning size={16} color={color.primary} />} title={needsTitle(needs.length)} meta={pendingLine(needs.length)} onPress={openToDo} />
         </Group>
       ) : (
-        <HeroRow icon={<Warning size={18} color={color.primary} />} title={needsTitle(needs.length)} line={pendingLine(needs.length)} onPress={openToDo} />
+        <HeroRow
+          icon={<Warning size={18} color={color.high} />}
+          tile={color.highTint}
+          alert
+          title={needsTitle(needs.length)}
+          line={pendingLine(needs.length)}
+          onPress={openToDo}
+        />
       )}
     </Rise>
   )
@@ -203,6 +216,24 @@ function Upcoming() {
           ))}
         </Group>
       </Block>
+    </Rise>
+  )
+}
+
+/* ------------------------------------------------------- upgrade card -- */
+
+/** The way into Optimization, after Upcoming: the home's teal
+    banner, the target glyph on its tile, a title and one line; the whole
+    banner opens the Upgrade tab. */
+function UpgradeCard() {
+  return (
+    <Rise at={4} id="home:upgrade">
+      <HeroRow
+        icon={<Target size={18} color={color.primary} />}
+        title="A healthier you is possible"
+        line="Inlay can turn your insights into a personalized plan to help you improve."
+        onPress={() => openTab("/plan", "home")}
+      />
     </Rise>
   )
 }

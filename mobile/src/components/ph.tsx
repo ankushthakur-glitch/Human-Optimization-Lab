@@ -95,3 +95,8 @@ export { ArrowDownRightIcon as ArrowDownRight } from "phosphor-react-native/src/
 export { DotsThreeIcon as DotsThree } from "phosphor-react-native/src/icons/DotsThree"
 export { ListIcon as List } from "phosphor-react-native/src/icons/List"
 export { ImageSquareIcon as ImageSquare } from "phosphor-react-native/src/icons/ImageSquare"
+export { StopIcon as StopSquare } from "phosphor-react-native/src/icons/Stop"
+export { PaperclipIcon as Paperclip } from "phosphor-react-native/src/icons/Paperclip"
+export { ImagesIcon as Images } from "phosphor-react-native/src/icons/Images"
+export { FileIcon as File } from "phosphor-react-native/src/icons/File"
+export { ArrowUpIcon as ArrowUp } from "phosphor-react-native/src/icons/ArrowUp"

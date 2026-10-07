@@ -6,6 +6,7 @@ import { keepTogether } from "@/components/care-gap"
 import { SmallLink } from "@/components/care-orders-rows"
 import { CaretRight } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
+import { FilterChips } from "@/components/record-rows"
 import { DateBlock, EmptyState, Group, HUE, NotConnected, ReviewBanner, SmallAction, Tile, spokenDate } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { experience, sharingOff } from "@/lib/experience"
@@ -31,7 +32,15 @@ import { opensPage, removeQuestion, todo, type TodoItem } from "@/lib/todo"
    empty state; with nothing ever connected, the same not connected state
    as every tab; with sharing turned off, the same banner as every tab,
    over what was collected before; while the record is still arriving, its
-   banner over the clinic's appointments. */
+   banner over the clinic's appointments.
+
+   Filter chips over the groups: All (every group), Overdue (the late
+   rows wherever they sit), Upcoming (Upcoming and Booked) and Completed
+   (Done recently). The open filters carry their counts. */
+
+type Show = "all" | "overdue" | "upcoming" | "completed"
+
+const isLate = (item: TodoItem) => item.tag?.label === "Overdue"
 
 export default function ToDoScreen() {
   const onboarding = useOnboarding()
@@ -42,6 +51,15 @@ export default function ToDoScreen() {
   const arriving = exp === "building"
   const off = sharingOff(onboarding)
   const open = t.needs.length + t.coming.length + t.visit.length + t.booked.length
+  const late = [...t.needs, ...t.coming, ...t.visit, ...t.booked].filter(isLate)
+  const [show, setShow] = React.useState<Show>("all")
+  const shows: { value: Show; label: string }[] = [
+    { value: "all", label: `All (${open})` },
+    { value: "overdue", label: `Overdue (${late.length})` },
+    { value: "upcoming", label: `Upcoming (${t.coming.length + t.booked.length})` },
+    { value: "completed", label: "Completed" },
+  ]
+  const all = show === "all"
 
   const go = (href: Href) => router.push(href)
 
@@ -57,7 +75,7 @@ export default function ToDoScreen() {
     // A row that would only open this list again (a starting test booked
     // in setup) is not a button.
     const opens = opensPage(item)
-    const overdue = item.tag?.label === "Overdue"
+    const overdue = isLate(item)
     return (
       <TodoRow
         key={item.id}
@@ -80,15 +98,22 @@ export default function ToDoScreen() {
           <NotConnected line={keepTogether("Your to do list appears once your records are connected.")} onConnect={() => router.push("/connect")} />
         ) : (
           <>
-            {open === 0 && <EmptyState art="calendar" artSize={96} title="Nothing to do right now" />}
+            {open + t.done.length > 0 && <FilterChips options={shows} value={show} onChange={setShow} label="Show" scroll />}
 
-            {t.needs.length > 0 && <Section title="Needs you">{t.needs.map((item) => row(item, { withAction: true }))}</Section>}
-            {t.coming.length > 0 && <Section title="Upcoming">{t.coming.map((item) => row(item, { facts: true }))}</Section>}
-            {t.visit.length > 0 && <Section title="For your next visit">{t.visit.map((item) => row(item))}</Section>}
+            {all && open === 0 && <EmptyState art="calendar" artSize={96} title="Nothing to do right now" />}
+            {show === "overdue" && late.length === 0 && <EmptyState art="calendar" artSize={96} title="Nothing overdue" />}
+            {show === "upcoming" && t.coming.length + t.booked.length === 0 && <EmptyState art="calendar" artSize={96} title="Nothing coming up" />}
+            {show === "completed" && t.done.length === 0 && <EmptyState art="calendar" artSize={96} title="Nothing completed yet" />}
+
+            {show === "overdue" && late.length > 0 && <Section title="Overdue">{late.map((item) => row(item, { withAction: true }))}</Section>}
+
+            {all && t.needs.length > 0 && <Section title="Needs you">{t.needs.map((item) => row(item, { withAction: true }))}</Section>}
+            {(all || show === "upcoming") && t.coming.length > 0 && <Section title="Upcoming">{t.coming.map((item) => row(item, { facts: true }))}</Section>}
+            {all && t.visit.length > 0 && <Section title="For your next visit">{t.visit.map((item) => row(item))}</Section>}
             {/* The heading says they are booked; each row keeps its day and
                 where. */}
-            {t.booked.length > 0 && <Section title="Booked">{t.booked.map((item) => row(item, { facts: true }))}</Section>}
-            {t.done.length > 0 && <Section title="Done recently">{t.done.map((item) => row(item))}</Section>}
+            {(all || show === "upcoming") && t.booked.length > 0 && <Section title="Booked">{t.booked.map((item) => row(item, { facts: true }))}</Section>}
+            {(all || show === "completed") && t.done.length > 0 && <Section title="Done recently">{t.done.map((item) => row(item))}</Section>}
           </>
         )}
       </View>

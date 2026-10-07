@@ -61,7 +61,7 @@ export default function ProfileScreen() {
   const [loggingOut, setLoggingOut] = React.useState(false)
   const name = `${profile?.firstName ?? PATIENT.firstName} ${profile?.lastName ?? PATIENT.lastName}`
   const period = onboarding.consentPeriod ?? DEFAULT_PERIOD
-  const access = consent !== "signed" ? "Not sharing" : `${connectedCount(onboarding)} connected`
+  const access = consent !== "signed" ? "Not sharing" : `${connectedCount(onboarding, paid)} connected`
 
   /* Turning it on checks her face once, so it's known to work before the
      app starts asking for it. */

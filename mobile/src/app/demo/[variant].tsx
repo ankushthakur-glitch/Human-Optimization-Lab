@@ -34,7 +34,7 @@ export default function DemoScreen() {
   const started = React.useRef(false)
   // Where the seed lands, opened once its account state has reached the
   // guards (app/_layout.tsx), so the screen exists by then.
-  const [landing, setLanding] = React.useState<{ href: Href; status: Status } | null>(null)
+  const [landing, setLanding] = React.useState<{ href: Href; status: Status; overHome?: boolean } | null>(null)
 
   React.useEffect(() => {
     if (!id || started.current || !onboarding.loaded || auth.status === "loading") return
@@ -67,13 +67,19 @@ export default function DemoScreen() {
         }
         const step = patch.step ?? "done"
         const home = to?.startsWith("/") ? (to as Href) : "/"
-        setLanding({ href: step === "done" ? home : STEP_ROUTE[step], status: "signedIn" })
+        setLanding(step === "done" ? { href: home, status: "signedIn", overHome: home !== "/" } : { href: STEP_ROUTE[step], status: "signedIn" })
       }
     })()
   }, [id, onboarding, auth, credit, to])
 
   React.useEffect(() => {
-    if (landing && auth.status === landing.status) router.replace(landing.href)
+    if (!landing || auth.status !== landing.status) return
+    // A page other than Home (?to=/results) opens over Home, so it can
+    // swipe back to it like any page reached from there.
+    if (landing.overHome) {
+      router.replace("/")
+      router.push(landing.href)
+    } else router.replace(landing.href)
   }, [landing, auth.status])
 
   if (!id) return <NotFoundScreen />

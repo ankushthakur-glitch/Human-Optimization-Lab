@@ -39,7 +39,13 @@ export const recentWords = (t: Trend) => {
   return `Last ${recent.length} ${t.noun}: ${recent.map((p) => valueText(t.marker, p)).join(", ")}`
 }
 
-export function RecentDots({ trend: t, style }: { trend: Trend; style?: StyleProp<ViewStyle> }) {
+/** A rising result out of its range: its line and area are red instead
+    of teal, wherever the graph is drawn (6 Oct 2026). */
+export const risingAway = (t: Trend) => t.movement === "rising" && t.status !== "in"
+
+const RED_LINE = "#E5484D"
+
+export function RecentDots({ trend: t, style, alert = risingAway(t) }: { trend: Trend; style?: StyleProp<ViewStyle>; alert?: boolean }) {
   const [w, setW] = React.useState(0)
   const gid = `spark${React.useId().replace(/[^a-zA-Z0-9]/g, "")}`
   const onLayout = (e: LayoutChangeEvent) => {
@@ -74,6 +80,8 @@ export function RecentDots({ trend: t, style }: { trend: Trend; style?: StylePro
   const tone = TONE[t.status]
   const last = points.length - 1
   const band = PLOT / 3
+  const stroke = alert ? RED_LINE : color.primaryLine
+  const fill = alert ? color.high : color.primaryText
 
   return (
     <View style={[styles.graph, style]} onLayout={onLayout} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -82,15 +90,15 @@ export function RecentDots({ trend: t, style }: { trend: Trend; style?: StylePro
           <Svg width={w} height={PLOT}>
             <Defs>
               <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={color.primaryText} stopOpacity={0.16} />
-                <Stop offset="1" stopColor={color.primaryText} stopOpacity={0} />
+                <Stop offset="0" stopColor={fill} stopOpacity={0.16} />
+                <Stop offset="1" stopColor={fill} stopOpacity={0} />
               </LinearGradient>
             </Defs>
             <Rect x={0} y={0} width={w} height={band} fill="#FFFFFF" />
             <Rect x={0} y={band} width={w} height={PLOT - band} fill={BAND} />
             <Line x1={0} x2={w} y1={band} y2={band} stroke={BAND_EDGE} strokeWidth={0.3} />
             <Path d={area} fill={`url(#${gid})`} />
-            <Path d={line} stroke={color.primaryLine} strokeWidth={1} fill="none" />
+            <Path d={line} stroke={stroke} strokeWidth={1} fill="none" />
             {xy.map(([px, py], i) =>
               i === last ? (
                 <React.Fragment key={points[i].t}>
@@ -98,7 +106,7 @@ export function RecentDots({ trend: t, style }: { trend: Trend; style?: StylePro
                   <Circle cx={px} cy={py} r={1.8} fill={tone.fill} stroke={tone.edge} strokeWidth={0.754} />
                 </React.Fragment>
               ) : (
-                <Circle key={points[i].t} cx={px} cy={py} r={2.2} fill="#FFFFFF" stroke={color.primaryLine} strokeWidth={1} />
+                <Circle key={points[i].t} cx={px} cy={py} r={2.2} fill="#FFFFFF" stroke={stroke} strokeWidth={1} />
               ),
             )}
           </Svg>

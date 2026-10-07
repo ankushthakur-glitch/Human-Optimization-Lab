@@ -2,13 +2,19 @@ import { router } from "expo-router"
 import * as React from "react"
 import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 
+import { useTourTarget } from "@/components/app-tour"
 import { BellSimple } from "@/components/ph"
 import { ReviewBanner, type BannerState } from "@/components/record-kit"
 import { openTab, type TabName } from "@/components/tab-bar"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { chart, color, hairline, ink, space, type } from "@/lib/theme"
-import { bannerTarget, homeBanner, unreadCount, type HomeBanner } from "@/lib/todo"
+import {
+  bannerTarget,
+  homeBanner,
+  unreadCount,
+  type HomeBanner,
+} from "@/lib/todo"
 
 /* The top of both homes, pinned while the page scrolls (FINAL-SPEC C.1.2,
    C.2.2, F.4): her own photo, which opens Profile; the greeting by the
@@ -35,32 +41,48 @@ export function greetingFor(now: Date = new Date()) {
     needed (the store says who she is); early callers still pass it. */
 export function HomeHeader(_: { variant?: "free" | "member" } = {}) {
   const onboarding = useOnboarding()
-  const name = onboarding.profile?.preferredName?.trim() || onboarding.profile?.firstName?.trim() || PATIENT.firstName
+  const name =
+    onboarding.profile?.preferredName?.trim() ||
+    onboarding.profile?.firstName?.trim() ||
+    PATIENT.firstName
   const unread = unreadCount(onboarding)
+  const photoRef = useTourTarget("account")
 
   return (
     <View style={styles.row}>
       <Pressable
+        ref={photoRef}
         onPress={() => router.push("/profile")}
         accessibilityRole="button"
         accessibilityLabel="Your profile"
         hitSlop={4}
         style={({ pressed }) => [styles.avatar, pressed && styles.pressed]}
       >
-        <Image source={PHOTO} style={styles.photo} accessibilityIgnoresInvertColors />
+        <Image
+          source={PHOTO}
+          style={styles.photo}
+          accessibilityIgnoresInvertColors
+        />
       </Pressable>
       <View style={styles.names}>
         <Text style={styles.greeting} maxFontSizeMultiplier={1.3}>
           {`${greetingFor()}!`}
         </Text>
-        <Text style={styles.name} accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={1.3}>
+        <Text
+          style={styles.name}
+          accessibilityRole="header"
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.3}
+        >
           {name}
         </Text>
       </View>
       <Pressable
         onPress={() => router.push("/notifications")}
         accessibilityRole="button"
-        accessibilityLabel={unread ? `Notifications, ${unread} new` : "Notifications"}
+        accessibilityLabel={
+          unread ? `Notifications, ${unread} new` : "Notifications"
+        }
         hitSlop={2}
         style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
       >
@@ -89,7 +111,13 @@ function kitState(b: HomeBanner): BannerState {
     the tab it sits on, so a banner that opens another tab switches from
     the right place; the same sharing off banner shows on every tab. A
     member's home shows only sharing and new results. */
-export function StatusBanner({ variant = "free", tab = "home" }: { variant?: "free" | "member"; tab?: TabName }) {
+export function StatusBanner({
+  variant = "free",
+  tab = "home",
+}: {
+  variant?: "free" | "member"
+  tab?: TabName
+}) {
   const onboarding = useOnboarding()
   const banner = homeBanner(onboarding, { member: variant === "member" })
   if (!banner) return null
@@ -97,10 +125,17 @@ export function StatusBanner({ variant = "free", tab = "home" }: { variant?: "fr
   const open = () => {
     const target = bannerTarget(banner)
     if (!target) return
-    if ("tab" in target) return openTab(target.tab === "results" ? "/results" : "/plan", tab)
+    if ("tab" in target)
+      return openTab(target.tab === "results" ? "/results" : "/plan", tab)
     // Opening new results reads them: the banner goes.
     if (banner.kind === "new-results" && onboarding.batches?.length)
-      onboarding.save({ batches: onboarding.batches.map((x) => (x.opened ? x : { ...x, opened: true })) }).catch(() => {})
+      onboarding
+        .save({
+          batches: onboarding.batches.map((x) =>
+            x.opened ? x : { ...x, opened: true }
+          ),
+        })
+        .catch(() => {})
     router.push(target.href)
   }
 
@@ -112,12 +147,25 @@ const styles = StyleSheet.create({
   // right.
   row: { flexDirection: "row", alignItems: "center", gap: space.inline },
   pressed: { opacity: 0.8 },
-  avatar: { width: 40, height: 40, borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: hairline.rule, backgroundColor: color.primaryTint },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: hairline.rule,
+    backgroundColor: color.primaryTint,
+  },
   photo: { width: "100%", height: "100%" },
   names: { flex: 1, gap: space.line },
   greeting: { ...type.label },
   name: { ...type.section, color: ink.content },
-  bell: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  bell: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   // The one red besides an out of range mark: the unread count.
   badge: {
     position: "absolute",
@@ -131,5 +179,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  badgeText: { ...type.captionStrong, lineHeight: 14, color: ink.onColor, fontVariant: ["tabular-nums"] },
+  badgeText: {
+    ...type.captionStrong,
+    lineHeight: 14,
+    color: ink.onColor,
+    fontVariant: ["tabular-nums"],
+  },
 })

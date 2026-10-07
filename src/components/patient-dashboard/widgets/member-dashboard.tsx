@@ -274,8 +274,8 @@ export function MemberWidgetDashboard({ opt, onOpen }: { opt: Optimization; onOp
 
 
 /** The right side of the Dashboard bar: membership. */
-export function OptimizationToolbar({ dash, opt }: { dash: Dashboard; opt: Optimization }) {
-  if (!dash.ready || !opt.model) return null
+export function OptimizationToolbar({ dash }: { dash: Dashboard; opt: Optimization }) {
+  if (!dash.ready) return null
   return (
     <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
       <Badge tone="primary">Optimization member</Badge>

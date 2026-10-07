@@ -3,7 +3,8 @@ import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, Vi
 import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { Art, type ArtName } from "@/components/art"
-import { RangeBar, useEntrance } from "@/components/charts"
+import { useEntrance } from "@/components/charts"
+import { RecentDots } from "@/components/recent-dots"
 import { useReducedMotion } from "@/components/chat"
 import { ArrowDownRight, ArrowRight, ArrowUpRight, CaretRight, Check, DotsThree, Minus, ShieldCheck } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
@@ -13,7 +14,7 @@ import { withQuestion } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import type { OrderState } from "@/lib/record"
 import { card, cardRadius, chart, color, font, gutter, hairline, ink, outOfRangeColor, space, type } from "@/lib/theme"
-import { directionWords, type Trend as MarkerTrend } from "@/lib/trends"
+import type { Trend as MarkerTrend } from "@/lib/trends"
 import { keepEnd } from "@/lib/words"
 
 /* The signed-in record's pieces, built to the Frontline patient app's
@@ -663,8 +664,8 @@ export function ReviewBanner({ state, onPress }: { state: BannerState | null | u
     teal. The gradient fills whatever the block holds (rows on a white inset
     panel, count tiles); the two soft circles keep their size in the top and
     bottom right corners. `muted` is the Ask banner's softer grey teal. */
-export function Hero({ children, onPress, muted }: { children: React.ReactNode; onPress?: () => void; muted?: boolean }) {
-  const [from, to] = muted ? HERO_MUTED : HERO_TEAL
+export function Hero({ children, onPress, muted, alert }: { children: React.ReactNode; onPress?: () => void; muted?: boolean; alert?: boolean }) {
+  const [from, to] = alert ? HERO_RED : muted ? HERO_MUTED : HERO_TEAL
   // On a phone, react-native-svg sizes a percentage Svg once, so a block
   // that grew after its first layout (fonts loading, rows arriving) kept a
   // smaller gradient and its panel spilled past it. The gradient is drawn
@@ -714,10 +715,12 @@ export function Hero({ children, onPress, muted }: { children: React.ReactNode; 
   )
 }
 
-/** The Hero's gradient, top to bottom: the brand teal, or the Ask
-    banner's grey teal (user, 5 Oct 2026). */
+/** The Hero's gradient, top to bottom: the brand teal, the Ask banner's
+    grey teal (user, 5 Oct 2026), or the muted red for what needs her
+    (6 Oct 2026). */
 const HERO_TEAL = ["#2D6F7B", "#4FA3A5"] as const
 const HERO_MUTED = ["#3E6B72", "#6A9EA0"] as const
+const HERO_RED = ["#A9484D", "#C9676B"] as const
 
 /** Words on the Hero's gradient: the title ("3 things need you", "Today"),
     a line under it (the focus line, "Step 3 of 5: Connect a device") and
@@ -1630,61 +1633,52 @@ export function Quote({ text, meta }: { text: string; meta?: string }) {
 
 /* ----------------------------------------------------------- results -- */
 
-/* A result's day in a row: "Aug 14" this year, "Aug 14, 2025" before it,
-   or the record's own "Aug 2026" when it has no day. */
-function resultDay(p: { date: string; at?: string; t: number }) {
-  if (!p.at) return p.date
-  const d = new Date(p.t)
-  const day = `${MONTHS[d.getMonth()]} ${d.getDate()}`
-  return d.getFullYear() === new Date().getFullYear() ? day : `${day}, ${d.getFullYear()}`
-}
-
-/** One marker in a list (the Record tab, Results, Progress): a status dot
-    only when out of range or borderline, the name, the direction words and
-    the short date ("Trending up, Aug 14"; or the member's `since` line,
-    "Down 0.1 since you started in May"), and on the right the value with
-    its unit over a compact range bar. The whole row opens the marker. Feed
-    it a classified marker from lib/trends.ts. */
+/** One marker in a list (the Record tab, Results, Progress, a batch of
+    new results), from the client's reference (6 Oct 2026): the name with
+    its status badge, under it the value and unit (an arrow when out of
+    range or borderline; in range needs no mark, the badge says it), and
+    on the right its last results as a small trend chart and a caret.
+    `since` adds a quiet line under the value: the member's change since
+    she started, or a new result's words. The whole row opens the marker.
+    Feed it a classified marker from lib/trends.ts. */
 export function ResultRow({ trend: t, since, onPress }: { trend: MarkerTrend; since?: string; onPress: () => void }) {
-  const level: Level | undefined = t.status === "out" || t.status === "borderline" ? t.status : undefined
-  // The direction ("Trending up", "One result so far") and the day ("Aug
-  // 14") are each held whole, so a narrow phone wraps after a comma:
-  // "Trending up, / improving, Aug 14", "One result so far, / Aug 14".
-  const day = t.latest ? resultDay(t.latest).replace(/ /g, "\u00A0") : undefined
-  const words = directionWords(t).replace(/^(?:Trending (?:up|down)|One result so far)/, (w) => w.replace(/ /g, "\u00A0"))
-  const meta = since ?? (day ? `${words}, ${day}` : words)
-  // A number stays with its word ("Vitamin D, / 25 hydroxy"), and a long
-  // name takes a third line on a narrow phone rather than being cut short.
-  const name = t.marker.name.replace(/(\d) (?=[a-z])/g, "$1\u00A0")
   const unit = t.marker.unit
+  const tone = t.status === "out" ? outOfRangeColor() : chart.borderline
+  const Arrow = t.side === "below" ? ArrowDownRight : ArrowUpRight
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={[t.spoken, since].filter(Boolean).join(" ")}
       accessibilityHint="Opens details"
-      style={({ pressed }) => [styles.row, styles.resultRow, pressed && styles.rowPressed]}
+      style={({ pressed }) => [styles.resultRow, pressed && styles.rowPressed]}
     >
-      <View style={styles.resultMark}>{level && <Dot level={level} />}</View>
-      <View style={styles.rowBody}>
-        <Text style={styles.rowTitle} numberOfLines={3}>
-          {name}
-        </Text>
-        <Text style={styles.rowMeta} numberOfLines={2}>
-          {meta}
-        </Text>
-      </View>
-      {t.latest ? (
-        <View style={styles.resultSide}>
-          <Text style={styles.resultRowValue} numberOfLines={1}>
-            {t.value}
-            {!!unit && <Text style={styles.resultRowUnit}>{` ${unit}`}</Text>}
+      <View style={styles.resultBody}>
+        <View style={styles.resultName}>
+          <Text style={styles.resultNameText} numberOfLines={2}>
+            {t.marker.name}
           </Text>
-          <RangeBar compact value={t.latest.value} low={t.band.low} high={t.band.high} status={t.status} unit={unit} style={styles.resultBar} />
+          <Tag tone={LEVEL_TONE[t.status]}>{LEVEL_WORD[t.status]}</Tag>
         </View>
-      ) : (
-        <Text style={styles.rowMeta}>No results</Text>
-      )}
+        {t.latest ? (
+          <View style={styles.resultValueLine}>
+            <Text style={styles.resultValue}>
+              {t.value}
+              {!!unit && <Text style={styles.resultUnit}>{`${unit === "%" ? "" : " "}${unit}`}</Text>}
+            </Text>
+            {t.status !== "in" && (
+              <View style={styles.resultArrow}>
+                <Arrow size={14} color={tone} weight="bold" />
+              </View>
+            )}
+          </View>
+        ) : (
+          <Text style={styles.rowMeta}>No results</Text>
+        )}
+        {!!since && <Text style={styles.resultSince}>{since}</Text>}
+      </View>
+      {t.latest && <RecentDots trend={t} style={styles.resultBar} alert={t.status === "out"} />}
+      <CaretRight size={16} color={card.chevron} />
     </Pressable>
   )
 }
@@ -2253,14 +2247,19 @@ const styles = StyleSheet.create({
   quoteText: { ...type.body },
   quoteMeta: { ...type.meta },
 
-  // The value sits on the name's line and its bar beside the first meta
-  // line, however far the words wrap.
-  // Figma "Hol" result row: the 8 wide mark column sits 8 from the words.
-  resultRow: { alignItems: "flex-start", gap: space.inline },
-  resultMark: { width: 8, alignItems: "center", alignSelf: "flex-start", marginTop: 6 },
-  resultSide: { alignItems: "flex-end", gap: space.mark },
-  // The value 14 medium in Grey/09, its unit 12 regular a space after.
-  resultRowValue: { ...type.title, color: ink.content, fontVariant: ["tabular-nums"] },
-  resultRowUnit: { ...type.unit, fontVariant: [] },
-  resultBar: { width: 104 },
+  /* The result row: rows 14 above and below, the trend 12 from the
+     words. Three levels: the value (20 semibold, darkest), the name (14
+     medium), the unit (12 regular, grey). The value's own 26 line keeps
+     the air between the lines, so only 2 is added. */
+  resultRow: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: 14 },
+  resultBody: { flex: 1, minWidth: 0 },
+  resultName: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", columnGap: space.inline, rowGap: space.stack },
+  resultNameText: { ...type.title, color: ink.content, flexShrink: 1 },
+  resultValueLine: { flexDirection: "row", alignItems: "baseline", gap: space.mark, marginTop: space.line },
+  resultValue: { ...type.hero, lineHeight: 26, color: ink.strong, flexShrink: 1, fontVariant: ["tabular-nums"] },
+  resultUnit: { ...type.unit, color: ink.secondary, fontVariant: [] },
+  // The arrow sits on the value's middle, not its baseline.
+  resultArrow: { alignSelf: "center" },
+  resultSince: { ...type.meta, color: ink.tertiary, marginTop: space.line },
+  resultBar: { width: 72 },
 })

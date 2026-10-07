@@ -7,8 +7,10 @@ import { SOURCES } from "@/lib/record"
    kinds: her doctors' record systems, read directly (Epic MyChart, Oracle
    Health); and her devices, Apple Health first (she controls it, and it
    carries her Quest and Labcorp results), the Apple Watch writing into
-   it, then any ring, scale or watch she adds. Each one can be disconnected
-   on its own: nothing new arrives from it, what came stays.
+   it, then any ring, scale or watch she adds. Devices come with the paid
+   plan, so a free patient's list is her doctors' systems only. Nothing is
+   disconnected from here (user, 6 Oct 2026); stopping the sharing is the
+   one switch.
 
    A prototype: the sample patient's connections. When the API exists the
    server lists them. */
@@ -21,7 +23,7 @@ export type Connection = {
   name: string
   /** The line under the name: the system or what it brings. */
   via: string
-  /** One she added on Access: disconnecting takes it off the list. */
+  /** One she added on Access, after the phone's own. */
   added?: boolean
 }
 
@@ -44,18 +46,14 @@ const PHONE: Connection[] = [
     is already there. */
 export const ADDABLE: Connection[] = DEVICES.filter((d) => d.id !== "apple").map((d) => ({ id: d.id, kind: "device", name: d.name, via: d.kind, added: true }))
 
-/** Everything connected, the devices she added after the phone's own. */
-export function connectionsOf(s: Pick<State, "devices">): Connection[] {
+/** Everything connected: her doctors' systems, and for a member the
+    phone's devices then the ones she added. */
+export function connectionsOf(s: Pick<State, "devices">, paid: boolean): Connection[] {
+  if (!paid) return EHRS
   return [...EHRS, ...PHONE, ...ADDABLE.filter((d) => s.devices?.includes(d.id))]
 }
 
-/** The words for what stops when she disconnects one. */
-export function disconnectText(c: Connection): string {
-  if (c.kind === "ehr") return `We'll stop collecting new records from ${c.name}. What's already in your record stays, and your care team can still see it.`
-  return `We'll stop reading new data from ${c.name}. What's already in your record stays.`
-}
-
-/** How many are still connected, for Profile's Access row. */
-export function connectedCount(s: Pick<State, "devices" | "disconnected">): number {
-  return connectionsOf(s).filter((c) => !s.disconnected?.[c.id]).length
+/** How many are connected, for Profile's Access row. */
+export function connectedCount(s: Pick<State, "devices">, paid: boolean): number {
+  return connectionsOf(s, paid).length
 }

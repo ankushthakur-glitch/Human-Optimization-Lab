@@ -218,7 +218,7 @@ const ORB_ARC = { low: "#2F7F4D", mid: "#C8641B", high: "#D9363E" } as const
 /** The AI credit's colour for how much is used, 0 to 1: green up to 60%,
     orange above 60%, red above 90%. The orb's arc and the credit bar. */
 export const creditTone = (used: number) => (used > 0.9 ? ORB_ARC.high : used > 0.6 ? ORB_ARC.mid : ORB_ARC.low)
-const ORB_GROUND = "#0B1214"
+export const ORB_GROUND = "#0B1214"
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },

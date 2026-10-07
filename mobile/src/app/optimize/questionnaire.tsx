@@ -55,7 +55,7 @@ export default function QuestionnaireScreen() {
   return (
     <FlowScreen
       page
-      back={page > 0}
+      // Back steps through the questions, then leaves to the page underneath.
       onBack={page > 0 ? () => setPage((p) => p - 1) : undefined}
       title="Tell us more about you"
       bar={<SetupStepLabel>{label}</SetupStepLabel>}

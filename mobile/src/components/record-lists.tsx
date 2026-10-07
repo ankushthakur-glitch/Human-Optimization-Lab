@@ -190,7 +190,7 @@ export function RecordListScreen({ kind }: { kind: Exclude<RecordKind, "results"
   )
 }
 
-function KindList({ kind, onOpen, onAdd }: { kind: Exclude<RecordKind, "results">; onOpen: (item: ItemDetail) => void; onAdd: () => void }) {
+export function KindList({ kind, onOpen, onAdd }: { kind: Exclude<RecordKind, "results">; onOpen: (item: ItemDetail) => void; onAdd: () => void }) {
   switch (kind) {
     case "allergies":
       return <Allergies onOpen={onOpen} />

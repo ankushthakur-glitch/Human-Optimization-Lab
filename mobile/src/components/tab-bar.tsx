@@ -4,9 +4,17 @@ import * as React from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
+import { TourHost, useTourTarget } from "@/components/app-tour"
 import { useDragBack } from "@/components/drag-back"
 import { DarkStatusBar } from "@/components/error-state"
-import { IconHome, IconPlan, IconResults, IconToDo, IconUpgrade, type TabIconProps } from "@/components/icons"
+import {
+  IconHome,
+  IconPlan,
+  IconResults,
+  IconToDo,
+  IconUpgrade,
+  type TabIconProps,
+} from "@/components/icons"
 import { OrbButton, PageGround, PageHeader } from "@/components/hol"
 import { useAllowance } from "@/lib/allowance"
 import { planFor, useExperience } from "@/lib/experience"
@@ -22,7 +30,12 @@ import { color, font, space } from "@/lib/theme"
 
 export type TabName = "home" | "results" | "todo" | "plan"
 
-const TABS: { name: TabName; label: string; href: "/" | "/results" | "/gaps" | "/plan"; Icon: React.ComponentType<TabIconProps> }[] = [
+const TABS: {
+  name: TabName
+  label: string
+  href: "/" | "/results" | "/gaps" | "/plan"
+  Icon: React.ComponentType<TabIconProps>
+}[] = [
   { name: "home", label: "Home", href: "/", Icon: IconHome },
   { name: "results", label: "Record", href: "/results", Icon: IconResults },
   { name: "todo", label: "To do", href: "/gaps", Icon: IconToDo },
@@ -77,25 +90,37 @@ export function TabScreen({
   const barSpace = barBottom + BAR
   return (
     <View style={styles.screen}>
-      <DarkStatusBar />
-      <PageHeader back={false} title={title} right={headerRight} compact={!!header}>
-        {header}
-      </PageHeader>
-      <View style={styles.fill}>
-        <PageGround />
-        {pinned && <View style={[styles.body, styles.pinned]}>{pinned}</View>}
-        {/* The list stops above the bar: nothing scrolls beneath the pill
-            or the orb, the strip under them is the page's own ground. */}
-        <ScrollView
-          style={{ marginBottom: barSpace + space.inline }}
-          contentContainerStyle={[styles.body, styles.content, !!pinned && styles.contentPinned]}
-          showsVerticalScrollIndicator={false}
+      {/* On home, the first-run walk through dims all of this but one part. */}
+      <TourHost active={tab === "home"}>
+        <DarkStatusBar />
+        <PageHeader
+          back={false}
+          title={title}
+          right={headerRight}
+          compact={!!header}
         >
-          {children}
-        </ScrollView>
-        <TabBar active={tab} bottom={barBottom} />
-      </View>
-      {overlay}
+          {header}
+        </PageHeader>
+        <View style={styles.fill}>
+          <PageGround />
+          {pinned && <View style={[styles.body, styles.pinned]}>{pinned}</View>}
+          {/* The list stops above the bar: nothing scrolls beneath the pill
+            or the orb, the strip under them is the page's own ground. */}
+          <ScrollView
+            style={{ marginBottom: barSpace + space.inline }}
+            contentContainerStyle={[
+              styles.body,
+              styles.content,
+              !!pinned && styles.contentPinned,
+            ]}
+            showsVerticalScrollIndicator={false}
+          >
+            {children}
+          </ScrollView>
+          <TabBar active={tab} bottom={barBottom} />
+        </View>
+        {overlay}
+      </TourHost>
     </View>
   )
 }
@@ -106,11 +131,17 @@ function TabBar({ active, bottom }: { active: TabName; bottom: number }) {
   const member = planFor(useExperience()) === "member"
   // The arc draws this week's AI credit used, as the chat's strip says it.
   const { share } = useAllowance()
+  const tabsRef = useTourTarget("tabs")
+  const orbRef = useTourTarget("assistant")
   return (
     <View style={[styles.bar, { bottom }]} pointerEvents="box-none">
       <View style={styles.barInner} pointerEvents="box-none">
-        <View style={styles.pill} accessibilityRole="tablist">
-          <BlurView intensity={BLUR} tint="light" style={StyleSheet.absoluteFill} />
+        <View ref={tabsRef} style={styles.pill} accessibilityRole="tablist">
+          <BlurView
+            intensity={BLUR}
+            tint="light"
+            style={StyleSheet.absoluteFill}
+          />
           {TABS.map(({ name, label: tabLabel, href, Icon: TabIcon }) => {
             const on = name === active
             const upgrade = name === "plan" && !member
@@ -125,16 +156,28 @@ function TabBar({ active, bottom }: { active: TabName; bottom: number }) {
                 accessibilityLabel={label}
                 style={({ pressed }) => [styles.tab, pressed && styles.pressed]}
               >
-                <Icon size={18} color={on ? INK : REST} active={on} cut={color.primaryTint} />
-                <Text style={[styles.tabLabel, { color: on ? INK : REST }]} numberOfLines={1}>
+                <Icon
+                  size={18}
+                  color={on ? INK : REST}
+                  active={on}
+                  cut={color.primaryTint}
+                />
+                <Text
+                  style={[styles.tabLabel, { color: on ? INK : REST }]}
+                  numberOfLines={1}
+                >
                   {label}
                 </Text>
               </Pressable>
             )
           })}
         </View>
-        <View style={styles.orbWrap}>
-          <BlurView intensity={BLUR} tint="light" style={StyleSheet.absoluteFill} />
+        <View ref={orbRef} style={styles.orbWrap}>
+          <BlurView
+            intensity={BLUR}
+            tint="light"
+            style={StyleSheet.absoluteFill}
+          />
           <OrbButton used={share} onPress={() => router.push("/assistant")} />
         </View>
       </View>
@@ -151,7 +194,13 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   // The signed-in page gutter (16); the column stays 420 wide on a large
   // screen.
-  body: { width: "100%", maxWidth: 420 + space.gutter * 2, alignSelf: "center", paddingHorizontal: space.gutter, gap: space.section },
+  body: {
+    width: "100%",
+    maxWidth: 420 + space.gutter * 2,
+    alignSelf: "center",
+    paddingHorizontal: space.gutter,
+    gap: space.section,
+  },
   pinned: { paddingTop: space.gutter, gap: space.item },
   content: { paddingTop: space.gutter, paddingBottom: space.gutter * 2 },
   contentPinned: { paddingTop: space.item },
@@ -159,8 +208,20 @@ const styles = StyleSheet.create({
 
   // No footer of its own: the pill and the orb float over the page, 16 in
   // from its sides, each blurring what is under it.
-  bar: { position: "absolute", left: 0, right: 0, paddingHorizontal: space.gutter },
-  barInner: { flexDirection: "row", alignItems: "center", gap: 6, width: "100%", maxWidth: 420, alignSelf: "center" },
+  bar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    paddingHorizontal: space.gutter,
+  },
+  barInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    width: "100%",
+    maxWidth: 420,
+    alignSelf: "center",
+  },
   pill: {
     flex: 1,
     height: 54,
@@ -174,7 +235,19 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
   },
-  orbWrap: { width: 52, height: 52, borderRadius: 26, overflow: "hidden", boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)" },
-  tab: { flex: 1, height: 52, alignItems: "center", justifyContent: "center", gap: 3 },
+  orbWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    overflow: "hidden",
+    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
+  },
+  tab: {
+    flex: 1,
+    height: 52,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
   tabLabel: { fontFamily: font.medium, fontSize: 10.5, lineHeight: 13 },
 })

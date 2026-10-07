@@ -3,47 +3,66 @@ import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { StatusBanner } from "@/components/home-header"
-import { Clock, Plus, UploadSimple } from "@/components/ph"
-import { Block, Card, EmptyState, Group, ResultRow, Tile } from "@/components/record-kit"
-import { sinceLine } from "@/components/record-lists"
-import { AddToRecordSheet, ItemRow, RangeSummary } from "@/components/record-rows"
+import { Plus } from "@/components/ph"
+import { MedicineConfirm, MedicineSheet } from "@/components/medicines"
+import { ChipRow, EmptyState, Group, Heading, ResultRow } from "@/components/record-kit"
+import { KindList, RECORD_TITLES, sinceLine } from "@/components/record-lists"
+import { AddToRecordSheet, openItem } from "@/components/record-rows"
 import { TabScreen } from "@/components/tab-bar"
 import { Button } from "@/components/ui"
-import { relativeDay } from "@/lib/dates"
 import { useExperience, useMarkers } from "@/lib/experience"
-import { sinceStart } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { ALLERGIES, IMMUNIZATIONS, ORDERS, PROBLEMS, PROCEDURES, VISITS } from "@/lib/record"
-import { color, hairline, space, type } from "@/lib/theme"
-import { homeBanner, todo, yourMedicines } from "@/lib/todo"
-import { trendCounts, watchList } from "@/lib/trends"
+import { addKindOf } from "@/lib/add-record"
+import { BODY_SYSTEMS, type Medication } from "@/lib/record"
+import { color, space, type } from "@/lib/theme"
+import { homeBanner } from "@/lib/todo"
+import { classify, type Status } from "@/lib/trends"
 
-/* The Record tab (FINAL-SPEC C.5; Figma "Hol" Record, extended frame
-   40024634:2803): one place for everything collected, every item
-   reachable.
+/* The Record tab (from the client's reference image, 6 Oct 2026): one
+   list of every result, every part of the record one tap away.
 
    1. The header names the tab and holds "+ Add to your record" (a photo of
       a record, or something she tells us).
-   2. Results: "20 of 27 in range" as one bar with its legend, and the one
-      result most worth watching; "See all" opens every result. A member's
-      row says how far it has moved since she started. New results that
-      arrived in the last two weeks sit under it until they are old.
-   3. In your record: every category as a row with its count badge.
+   2. Category pills: each one swaps the section below in place
+      (Biomarkers, Medicines, Conditions, Visits, Allergies, Tests and
+      orders, Immunizations, Procedures, and Added by you once she has
+      added something); "See all" opens that part on its own page.
+   3. "Biomarkers and results" with See all, body system chips to narrow
+      it (All first), and every result as a row (record-kit ResultRow):
+      out of range first, then borderline, then in range. A member's row
+      says how far it has moved since she started.
 
    Before anything was collected it shows the not connected state, and
    while the record is still arriving, that; with sharing turned off, the
    same banner as every tab, over what was collected before. */
 
-/** New results stay on the tab this long after they arrive. */
-const NEW_DAYS = 14
+type Category = "biomarkers" | "medicines" | "conditions" | "visits" | "allergies" | "tests" | "immunizations" | "procedures" | "added"
 
-/** Whole days since an ISO time or day key. */
-const daysAgo = (at: string) => Math.floor((Date.now() - Date.parse(at.length > 10 ? at : `${at}T12:00`)) / 86400000)
+const CATEGORIES: { value: Category; label: string }[] = [
+  { value: "biomarkers", label: "Biomarkers" },
+  { value: "medicines", label: "Medicines" },
+  { value: "conditions", label: "Conditions" },
+  { value: "visits", label: "Visits" },
+  { value: "allergies", label: "Allergies" },
+  { value: "tests", label: "Tests and orders" },
+  { value: "immunizations", label: "Immunizations" },
+  { value: "procedures", label: "Procedures" },
+]
+
+/** The chips' short names for the record's body systems. */
+const SYSTEM_LABEL: Record<string, string> = {
+  "Blood pressure and weight": "Heart and weight",
+  "Vitamins and minerals": "Vitamins",
+}
+
+const STATUS_ORDER: Record<Status, number> = { out: 0, borderline: 1, in: 2 }
 
 export function RecordTab() {
   const onboarding = useOnboarding()
   const info = useExperience()
   const [adding, setAdding] = React.useState(false)
+  const [category, setCategory] = React.useState<Category>("biomarkers")
+  const [medicine, setMedicine] = React.useState<Medication | null>(null)
 
   if (info.experience === "declined")
     return (
@@ -73,16 +92,47 @@ export function RecordTab() {
 
   // A member with a plan reads each result against where she started.
   const member = info.experience === "member" || info.experience === "paused"
+  // The add sheet opens on the part of the record she is looking at.
+  const addKind = category === "medicines" ? "medicines" : category === "biomarkers" ? undefined : addKindOf(category)?.kind
   return (
     <TabScreen
       tab="results"
       title="Record"
       headerRight={<AddAction onPress={() => setAdding(true)} />}
-      overlay={adding ? <AddToRecordSheet onClose={() => setAdding(false)} /> : undefined}
+      overlay={
+        adding ? (
+          <AddToRecordSheet kind={addKind} onClose={() => setAdding(false)} />
+        ) : medicine ? (
+          <MedicineSheet
+            m={medicine}
+            onClose={() => setMedicine(null)}
+            onUpdate={() => {
+              setMedicine(null)
+              router.push("/medications")
+            }}
+          />
+        ) : undefined
+      }
     >
       <RecordBanner />
-      <Results member={member} />
-      <InYourRecord />
+      <Categories value={category} onChange={setCategory} />
+      {category === "biomarkers" ? (
+        <Results member={member} />
+      ) : category === "medicines" ? (
+        <View style={styles.results}>
+          <Heading title="Medicines" variant="title" onSeeAll={() => router.push("/medications")} />
+          <MedicineConfirm view="list" onOpen={setMedicine} />
+        </View>
+      ) : (
+        <View style={styles.results}>
+          <Heading
+            title={RECORD_TITLES[category]}
+            variant="title"
+            onSeeAll={() => router.push({ pathname: "/record/[kind]", params: { kind: category } })}
+          />
+          <KindList kind={category} onOpen={openItem} onAdd={() => setAdding(true)} />
+        </View>
+      )}
     </TabScreen>
   )
 }
@@ -108,86 +158,48 @@ function RecordBanner() {
   return <StatusBanner tab="results" />
 }
 
+/* ------------------------------------------------------ categories -- */
+
+function Categories({ value, onChange }: { value: Category; onChange: (c: Category) => void }) {
+  const onboarding = useOnboarding()
+  const added = onboarding.added ?? []
+  const options = added.length ? [...CATEGORIES, { value: "added" as const, label: "Added by you" }] : CATEGORIES
+  return <ChipRow options={options} value={value} onChange={onChange} label="Part of your record" />
+}
+
 /* --------------------------------------------------------- results -- */
 
 function Results({ member }: { member: boolean }) {
-  const onboarding = useOnboarding()
   const markers = useMarkers()
-  const counts = trendCounts(markers)
-  const watched = watchList(markers, { improve: onboarding.why?.improve })
-  // A member's plan markers lead, each with its change since she started.
-  const ordered = member ? [...watched].sort((a, b) => Number(!!sinceStart(b.marker)) - Number(!!sinceStart(a.marker))) : watched
-  const top = ordered[0]
-  // Results that arrived in the last two weeks open on their own page.
-  const fresh = (onboarding.batches ?? []).filter((b) => daysAgo(b.at) <= NEW_DAYS).sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+  const [system, setSystem] = React.useState("all")
+  // Only the body systems the record holds, in the record's order.
+  const systems = BODY_SYSTEMS.filter((g) => markers.some((m) => m.group === g))
+  const chips = [{ value: "all", label: "All" }, ...systems.map((g) => ({ value: g as string, label: SYSTEM_LABEL[g] ?? g }))]
+  const rows = markers
+    .filter((m) => system === "all" || m.group === system)
+    .map(classify)
+    .filter((t) => t.latest)
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
   return (
-    <Block title="Results" onSeeAll={() => router.push("/record/results")}>
-      <Card style={styles.results}>
-        <RangeSummary inRange={counts.inRange} borderline={counts.borderline} out={counts.out} total={counts.total} />
-        {top && (
-          <View style={styles.rule}>
-            <ResultRow
-              trend={top}
-              since={member ? sinceLine(top.marker) : undefined}
-              onPress={() =>
-                router.push({
-                  pathname: "/biomarker/[id]",
-                  params: { id: top.id },
-                })
-              }
-            />
-          </View>
-        )}
-        {fresh.map((b) => (
-          <View key={b.id} style={styles.rule}>
-            <ItemRow
-              icon="labs"
-              title={`${b.count} new ${b.count === 1 ? "result" : "results"} from ${b.source}`}
-              meta={relativeDay(b.at)}
-              onPress={() =>
-                router.push({
-                  pathname: "/record/[kind]",
-                  params: { kind: "results", batch: b.id },
-                })
-              }
-            />
-          </View>
+    <View style={styles.results}>
+      <Heading title="Biomarkers and results" variant="title" onSeeAll={() => router.push("/record/results")} />
+      <ChipRow options={chips} value={system} onChange={setSystem} label="Body system" />
+      <Group>
+        {rows.map((t) => (
+          <ResultRow
+            key={t.id}
+            trend={t}
+            since={member ? sinceLine(t.marker) : undefined}
+            onPress={() =>
+              router.push({
+                pathname: "/biomarker/[id]",
+                params: { id: t.id },
+              })
+            }
+          />
         ))}
-      </Card>
-    </Block>
-  )
-}
-
-/* -------------------------------------------------- in your record -- */
-
-function InYourRecord() {
-  const onboarding = useOnboarding()
-  const t = todo(onboarding)
-  const meds = yourMedicines(onboarding)
-  const upcoming = t.coming.filter((i) => i.kind === "appointment" || i.kind === "review").length
-  // The same score as Home and the score page: her answers and her own
-  // record (a steady record keeps its whole record half).
-  const added = onboarding.added ?? []
-  const list = (kind: string) => () => router.push({ pathname: "/record/[kind]", params: { kind } })
-  const glyph = (Icon: typeof Clock) => (
-    <Tile>
-      <Icon size={16} color={color.primary} />
-    </Tile>
-  )
-
-  return (
-    <Block title="In your record" variant="label">
-      <Group style={styles.list}>
-        <ItemRow icon="medications" title="Medicines" count={meds.total} onPress={() => router.push("/medications")} />
-        <ItemRow icon="allergies" title="Allergies" count={ALLERGIES.length} onPress={list("allergies")} />
-        <ItemRow icon="conditions" title="Conditions" count={PROBLEMS.length} onPress={list("conditions")} />
-        <ItemRow icon="visits" title="Visits" count={VISITS.length + upcoming} onPress={list("visits")} />
-        <ItemRow icon="labs" title="Tests and orders" count={ORDERS.length} onPress={list("tests")} />
-        <ItemRow icon="immunizations" title="Immunizations" count={IMMUNIZATIONS.length} onPress={list("immunizations")} />
-        <ItemRow icon="procedures" title="Procedures" count={PROCEDURES.length} onPress={list("procedures")} />
-        {added.length > 0 && <ItemRow icon={glyph(UploadSimple)} title="Added by you" count={added.length} onPress={list("added")} />}
       </Group>
-    </Block>
+    </View>
   )
 }
 
@@ -199,12 +211,6 @@ const styles = StyleSheet.create({
   add: { flexDirection: "row", alignItems: "center", gap: space.inline },
   addText: { ...type.link },
 
-  // The summary, then each row 12 under a rule (the row brings its own
-  // 12 below the rule, so the card keeps 12 at its foot).
-  results: { paddingBottom: 0 },
-  rule: { marginTop: space.item, borderTopWidth: 1, borderTopColor: hairline.rule },
-
-  // "In your record" sits 16 under its label in the Figma, 4 more than a
-  // section's 12.
-  list: { marginTop: space.stack },
+  // The heading, its chips and the list, 12 apart.
+  results: { gap: space.item },
 })

@@ -3,6 +3,7 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -15,7 +16,10 @@ import {
   type ViewStyle,
 } from "react-native"
 
-import { CaretRight, Check, PaperPlaneRight, X } from "@/components/ph"
+import type { Attachment } from "@/components/attach-sheet"
+import { ArrowUp, CaretRight, Check, File, Microphone, PaperPlaneRight, Plus, StopSquare, X } from "@/components/ph"
+import { VoiceBeam } from "@/components/voice-beam"
+import { useVoiceInput } from "@/lib/voice"
 import { card, color, font, gutter, hairline, ink, type } from "@/lib/theme"
 
 /* Every chat in the app (the assistant, and the "your why" conversation in
@@ -109,10 +113,28 @@ export function TheirBubble({
 }
 
 /** The patient's reply; `muted` for one they skipped. */
-export function MyBubble({ text, at, muted }: { text: string; at?: string; muted?: boolean }) {
+export function MyBubble({ text, at, muted, files }: { text: string; at?: string; muted?: boolean; files?: Attachment[] }) {
   return (
     <Appear style={[styles.bubble, styles.mine, muted && styles.mineMuted]}>
-      <Text style={[styles.bubbleText, styles.mineText, muted && styles.mineMutedText]}>{text}</Text>
+      {/* What was attached, over the words: photos as small thumbnails,
+          files by name. */}
+      {!!files?.length && (
+        <View style={styles.sentFiles}>
+          {files.map((f) =>
+            f.kind === "image" ? (
+              <Image key={f.id} source={{ uri: f.uri }} style={styles.sentThumb} accessibilityLabel={f.name} />
+            ) : (
+              <View key={f.id} style={styles.sentFile}>
+                <File size={16} color={color.onPrimary} />
+                <Text style={[styles.fileName, styles.mineText]} numberOfLines={1}>
+                  {f.name}
+                </Text>
+              </View>
+            )
+          )}
+        </View>
+      )}
+      {!!text && <Text style={[styles.bubbleText, styles.mineText, muted && styles.mineMutedText]}>{text}</Text>}
       {at && <Text style={[styles.time, styles.mineTime, muted && styles.mineMutedTime]}>{at}</Text>}
     </Appear>
   )
@@ -261,6 +283,10 @@ export function ChatBar({
   inputRef,
   bare,
   notice,
+  voice,
+  attachments = [],
+  onAttach,
+  onRemoveAttachment,
 }: {
   /** A strip joined to the top of the field, as Claude's session limit
       sits on its composer: the words, a small action and a close; the
@@ -279,8 +305,19 @@ export function ChatBar({
   /** No white bar or rule behind it: the field and button sit on the
       page's own ground (the assistant). */
   bare?: boolean
+  /** A microphone in the field: speak the question, the voice beam
+      glowing along the field's edge while it listens (lib/voice). */
+  voice?: boolean
+  /** A "+" in the field that opens the screen's attach sheet; what was
+      added shows over the text until it is sent. */
+  onAttach?: () => void
+  attachments?: Attachment[]
+  onRemoveAttachment?: (id: string) => void
 }) {
-  const typed = value.trim().length > 0
+  const typed = value.trim().length > 0 || attachments.length > 0
+  const speech = useVoiceInput(onChange)
+  const hearing = speech.state !== "idle"
+  const tooled = voice || !!onAttach
   const own = React.useRef<TextInput | null>(null)
   const ref = React.useCallback(
     (node: TextInput | null) => {
@@ -304,6 +341,34 @@ export function ChatBar({
     node.style.height = prev
     grow(h)
   }, [value, multiline])
+  const field = (
+    <TextInput
+      ref={ref}
+      value={value}
+      onChangeText={onChange}
+      onSubmitEditing={onSend}
+      placeholder={hearing ? "Listening…" : placeholder}
+      placeholderTextColor={color.placeholder}
+      returnKeyType="send"
+      submitBehavior="submit"
+      multiline={multiline}
+      keyboardType={keyboardType}
+      maxLength={600}
+      editable={!hearing}
+      onContentSizeChange={
+        multiline && Platform.OS !== "web" ? (e) => grow(e.nativeEvent.contentSize.height) : undefined
+      }
+      style={[
+        styles.input,
+        // In its column now, the field keeps its own height.
+        { flex: 0 },
+        multiline && height > FIELD_MIN ? { height: FIELD_MAX } : { height: FIELD_MIN },
+        notice && { borderColor: NOTICE[notice.hue].edge, borderTopLeftRadius: 0, borderTopRightRadius: 0 },
+        tooled && styles.inputInBox,
+      ]}
+      accessibilityLabel="Message"
+    />
+  )
   return (
     <View style={[styles.bar, bare && styles.barBare, { paddingBottom: Math.max(bottom, 16) }]}>
       <View style={styles.barRow}>
@@ -323,31 +388,80 @@ export function ChatBar({
             </Pressable>
           </View>
         )}
-        <TextInput
-          ref={ref}
-          value={value}
-          onChangeText={onChange}
-          onSubmitEditing={onSend}
-          placeholder={placeholder}
-          placeholderTextColor={color.placeholder}
-          returnKeyType="send"
-          submitBehavior="submit"
-          multiline={multiline}
-          keyboardType={keyboardType}
-          maxLength={600}
-          onContentSizeChange={
-            multiline && Platform.OS !== "web" ? (e) => grow(e.nativeEvent.contentSize.height) : undefined
-          }
-          style={[
-            styles.input,
-            // In its column now, the field keeps its own height.
-            { flex: 0 },
-            multiline && height > FIELD_MIN ? { height: FIELD_MAX } : { height: FIELD_MIN },
-            notice && { borderColor: NOTICE[notice.hue].edge, borderTopLeftRadius: 0, borderTopRightRadius: 0 },
-          ]}
-          accessibilityLabel="Message"
-        />
+        {tooled ? (
+          <VoiceBeam
+            level={speech.level}
+            active={hearing}
+            processing={speech.state === "processing"}
+            style={[styles.fieldBox, notice && { borderColor: NOTICE[notice.hue].edge, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}
+          >
+            {attachments.length > 0 && (
+              <View style={styles.files}>
+                {attachments.map((a) => (
+                  <View key={a.id} style={styles.file}>
+                    {a.kind === "image" ? <Image source={{ uri: a.uri }} style={styles.fileThumb} /> : <File size={16} color={ink.detail} />}
+                    <Text style={styles.fileName} numberOfLines={1}>
+                      {a.name}
+                    </Text>
+                    <Pressable
+                      onPress={() => onRemoveAttachment?.(a.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${a.name}`}
+                      hitSlop={8}
+                      style={({ pressed }) => pressed && styles.pressed}
+                    >
+                      <X size={12} color={ink.detail} />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+            <View style={styles.boxRow}>
+              {onAttach && (
+                <Pressable
+                  onPress={onAttach}
+                  disabled={hearing}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add a photo or file"
+                  hitSlop={6}
+                  style={({ pressed }) => [styles.fieldTool, hearing && styles.sendOff, pressed && styles.pressed]}
+                >
+                  <Plus size={20} color={ink.detail} />
+                </Pressable>
+              )}
+              {field}
+              {voice && (
+                <Pressable
+                  onPress={() => (hearing ? speech.stop() : speech.start(value))}
+                  disabled={speech.state === "processing"}
+                  accessibilityRole="button"
+                  accessibilityLabel={hearing ? "Stop listening" : "Speak"}
+                  hitSlop={6}
+                  style={({ pressed }) => [styles.fieldTool, hearing && styles.fieldToolOn, pressed && styles.pressed]}
+                >
+                  {hearing ? <StopSquare size={16} color={color.primary} weight="fill" /> : <Microphone size={20} color={ink.detail} />}
+                </Pressable>
+              )}
+              {/* The send sits in the field, a round arrow at its end. */}
+              {!(!typed && idle) && (
+                <Pressable
+                  onPress={onSend}
+                  disabled={!typed || !canSend || hearing}
+                  accessibilityRole="button"
+                  accessibilityLabel="Send"
+                  accessibilityState={{ disabled: !typed || !canSend || hearing }}
+                  style={({ pressed }) => [styles.sendIn, (!typed || !canSend || hearing) && styles.sendOff, pressed && styles.pressed]}
+                >
+                  <ArrowUp color={color.onPrimary} size={18} weight="bold" />
+                </Pressable>
+              )}
+            </View>
+          </VoiceBeam>
+        ) : (
+          field
+        )}
         </View>
+        {(!tooled || (!typed && idle)) && (
         <View style={styles.tools}>
           {!typed && idle ? (
             <Pressable
@@ -361,16 +475,17 @@ export function ChatBar({
             // Greyed and inert until there is something to send.
             <Pressable
               onPress={onSend}
-              disabled={!typed || !canSend}
+              disabled={!typed || !canSend || hearing}
               accessibilityRole="button"
               accessibilityLabel="Send"
-              accessibilityState={{ disabled: !typed || !canSend }}
-              style={({ pressed }) => [styles.send, (!typed || !canSend) && styles.sendOff, pressed && styles.pressed]}
+              accessibilityState={{ disabled: !typed || !canSend || hearing }}
+              style={({ pressed }) => [styles.send, (!typed || !canSend || hearing) && styles.sendOff, pressed && styles.pressed]}
             >
               <PaperPlaneRight color={color.onPrimary} size={20} weight="fill" />
             </Pressable>
           )}
         </View>
+        )}
       </View>
     </View>
   )
@@ -484,6 +599,9 @@ const styles = StyleSheet.create({
   mineMuted: { backgroundColor: color.background, borderWidth: 1, borderColor: hairline.outline },
   bubbleText: { ...BODY, color: ink.content },
   mineText: { color: color.onPrimary },
+  sentFiles: { flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-end", gap: 6, paddingTop: 2 },
+  sentThumb: { width: 96, height: 96, borderRadius: 8 },
+  sentFile: { flexDirection: "row", alignItems: "center", gap: 6, maxWidth: 200, height: 32, paddingHorizontal: 8, borderRadius: 8, backgroundColor: "rgba(255, 255, 255, 0.16)" },
   mineMutedText: { color: ink.secondary },
   time: { alignSelf: "flex-end", fontFamily: font.regular, fontSize: 10, lineHeight: 14, color: ink.secondary },
   mineTime: { color: color.onPrimary, opacity: 0.8 },
@@ -539,6 +657,33 @@ const styles = StyleSheet.create({
     ...Platform.select({ web: { outlineStyle: "none" } as unknown as TextStyle }),
   },
   tools: { flexDirection: "row", alignItems: "center", gap: 2 },
+  // The field as a box when it holds tools: the input's edge and ground
+  // move to it, the "+" and the microphone sit inside at either end.
+  fieldBox: {
+    backgroundColor: color.background,
+    borderWidth: 1,
+    borderColor: hairline.outline,
+    borderRadius: 8,
+    boxShadow: card.shadowXs,
+  },
+  boxRow: { flexDirection: "row", alignItems: "flex-end" },
+  inputInBox: { flex: 1, borderWidth: 0, boxShadow: "none", backgroundColor: "transparent", paddingHorizontal: 4 },
+  fieldTool: { width: 36, height: 36, margin: 3, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  fieldToolOn: { backgroundColor: color.primaryTint },
+  files: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 8, paddingTop: 8 },
+  file: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    maxWidth: 160,
+    height: 32,
+    paddingLeft: 4,
+    paddingRight: 8,
+    borderRadius: 8,
+    backgroundColor: color.canvas,
+  },
+  fileThumb: { width: 24, height: 24, borderRadius: 4 },
+  fileName: { ...type.meta, color: ink.content, flexShrink: 1 },
   fieldCol: { flex: 1 },
   // Claude's limit strip: tinted, its edge running into the field's.
   notice: {
@@ -555,6 +700,7 @@ const styles = StyleSheet.create({
   noticeText: { ...type.metaStrong, flex: 1 },
   noticeAction: { ...type.metaStrong, textDecorationLine: "underline" },
   send: { width: 44, height: 44, borderRadius: 8, backgroundColor: color.primary, alignItems: "center", justifyContent: "center" },
+  sendIn: { width: 36, height: 36, margin: 3, borderRadius: 18, backgroundColor: color.primary, alignItems: "center", justifyContent: "center" },
   sendOff: { opacity: 0.4 },
   idle: { height: 44, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1, borderColor: color.primaryEdge, backgroundColor: color.primaryTint, alignItems: "center", justifyContent: "center" },
   idleText: { fontFamily: font.medium, fontSize: 14, lineHeight: 18, color: ink.primary },

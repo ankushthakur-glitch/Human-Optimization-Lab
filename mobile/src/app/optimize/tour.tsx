@@ -21,8 +21,8 @@ export default function TourScreen() {
   return (
     <FlowScreen
       page
+      // Back steps through the cards, then leaves to the setup step before.
       onBack={at > 0 ? () => setAt((a) => a - 1) : undefined}
-      back={at > 0}
       title="How your plan works"
       bar={<SetupStepLabel>{label}</SetupStepLabel>}
       art={<SoftOrb size={150} orbit={last} />}

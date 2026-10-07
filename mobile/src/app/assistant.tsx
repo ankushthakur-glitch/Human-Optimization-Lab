@@ -15,12 +15,14 @@ import {
   VisitBubble,
   keepTogether,
 } from "@/components/assistant-thread"
+import { AskWelcome, DISCLAIMER } from "@/components/ask-welcome"
+import { AttachSheet, MAX_ATTACHMENTS, type Attachment } from "@/components/attach-sheet"
 import { ChatBar, MyBubble, Options, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
 import { CategoryPicker } from "@/components/chat-categories"
 import { ChatHistory, type ChatGroup } from "@/components/chat-history"
 import { useDragBack } from "@/components/drag-back"
 import { DarkStatusBar } from "@/components/error-state"
-import { PageGround } from "@/components/hol"
+import { PageGround, PageHeader } from "@/components/hol"
 import { ChatText, List } from "@/components/ph"
 import { CreditSheet, useCreditNotice } from "@/components/credit-banner"
 import { useTopInset } from "@/components/ui"
@@ -79,6 +81,9 @@ import { color, ink, space, type } from "@/lib/theme"
 import { classify, type Trend } from "@/lib/trends"
 import { keepEnd } from "@/lib/words"
 
+/** The reply to a photo or file sent without words. */
+const ATTACHED = "Thanks, it's in this chat now. What would you like to know about it?"
+
 /* The assistant (FINAL-SPEC C.4), opened full screen from the round button
    beside the tab bar, or about one result from a marker page
    (?marker=a1c). It helps the patient understand her own record and arrive
@@ -116,7 +121,7 @@ const PAUSED: Answer = { text: "Your plan is paused. Everything about it, and ho
 type Step = "topic" | "scoped" | "urgent" | "concern" | "plan" | "batch" | "test"
 
 type Msg = { id: string; at: string } & (
-  | { kind: "text"; from: "patient" | "assistant"; text: string }
+  | { kind: "text"; from: "patient" | "assistant"; text: string; files?: Attachment[] }
   /** A question with its options inside the bubble; locks once answered. */
   | { kind: "ask"; text: string; options: string[]; picked?: string; step: Step; scope?: string }
   /** Every marker, to choose one to explain. */
@@ -332,6 +337,10 @@ export default function AssistantScreen() {
   const limitShown = thread.messages.some((m) => m.kind === "limit" && !m.gone)
   /** No category yet: the picker shows in place of the thread. */
   const choosing = !thread.topic && !thread.messages.length
+  /** "Ask Inlay", opening on the orb and the topics to tap with the
+      composer ready: every flow by default; version 1, the category
+      picker, only when the demo page switches back to it. */
+  const asking = onboarding.demo?.assistantVersion !== 1
   // A question it was opened with waits in the composer, unsent (A-42).
   const [draft, setDraft] = React.useState(params.ask ?? "")
   /** Borrowing or adding AI credit, asked in a sheet first. */
@@ -345,6 +354,9 @@ export default function AssistantScreen() {
   /** "Something else": her own words answer it next. */
   const [awaiting, setAwaiting] = React.useState<"concern" | undefined>()
   const [facts, setFacts] = React.useState<Fact[] | undefined>()
+  // Photos and files waiting in the chat bar, sent with the next message.
+  const [files, setFiles] = React.useState<Attachment[]>([])
+  const [attaching, setAttaching] = React.useState(false)
   /** The chat history drawer. */
   const [menu, setMenu] = React.useState(false)
 
@@ -404,6 +416,16 @@ export default function AssistantScreen() {
     return { topic: id, name: categoryName, Icon: ChatText }
   }
 
+  /** A topic tapped on the Ask Inlay opening: as the greeting's own list.
+      Never connected, there is nothing to answer from, as in version 1. */
+  function pickTopic(option: string) {
+    if (thinking) return
+    const topic = (Object.keys(TOPICS) as Topic[]).find((k) => TOPICS[k] === option) ?? "result"
+    setThread((t) => ({ ...t, topic: GROUP_OF[topic] }))
+    mine(option)
+    reply(declined ? [notConnected()] : topicOpening(topic))
+  }
+
   /* ---------------------------------------------------------- writing -- */
 
   function say(drafts: Draft[]) {
@@ -419,7 +441,8 @@ export default function AssistantScreen() {
 
   /** Her reply, sent: the newest answer then reads from it. */
   function mine(text: string) {
-    const [m] = say([{ kind: "text", from: "patient", text }])
+    const [m] = say([{ kind: "text", from: "patient", text, files: files.length ? files : undefined }])
+    if (files.length) setFiles([])
     anchor.current = m.id
   }
 
@@ -635,6 +658,11 @@ export default function AssistantScreen() {
   /** Her own words: safety first, then the open list, then what they ask. */
   function send() {
     const said = draft.trim()
+    // Only a photo or a file: it goes, and the assistant asks what about it.
+    if (!said && files.length && !thinking && !ended) {
+      mine("")
+      return reply([{ kind: "text", from: "assistant", text: ATTACHED }])
+    }
     if (!said || thinking || ended) return
     if (declined && questionKind(said) !== "safety") {
       setDraft("")
@@ -760,7 +788,7 @@ export default function AssistantScreen() {
     switch (m.kind) {
       case "text":
         return m.from === "patient" ? (
-          <MyBubble text={m.text} at={m.at} />
+          <MyBubble text={m.text} at={m.at} files={m.files} />
         ) : (
           <TheirBubble at={m.at} named>
             <Text style={bubbleText()}>{keepTogether(m.text)}</Text>
@@ -830,27 +858,34 @@ export default function AssistantScreen() {
           white bars over or under the thread (user, 5 Oct 2026). */}
       <PageGround />
       <DarkStatusBar />
-      <View style={[styles.head, { paddingTop: top + 16 }]}>
-        {/* Only the chats menu here (user, 5 Oct 2026): no back caret,
-            title or "End chat". Swipe back still leaves the page. */}
-        <View style={styles.headRow}>
-          <Pressable
-            onPress={() => setMenu(true)}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Chats"
-            style={({ pressed }) => [styles.menu, pressed && styles.closePressed]}
-          >
-            <List size={20} color={ink.detail} />
-          </Pressable>
+      {asking ? (
+        <PageHeader title="Ask Inlay" action={{ label: "History", onPress: () => setMenu(true) }} />
+      ) : (
+        <View style={[styles.head, { paddingTop: top + 16 }]}>
+          {/* Only the chats menu here (user, 5 Oct 2026): no back caret,
+              title or "End chat". Swipe back still leaves the page. */}
+          <View style={styles.headRow}>
+            <Pressable
+              onPress={() => setMenu(true)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Chats"
+              style={({ pressed }) => [styles.menu, pressed && styles.closePressed]}
+            >
+              <List size={20} color={ink.detail} />
+            </Pressable>
+          </View>
         </View>
-      </View>
+      )}
 
-      {choosing ? (
+      {choosing && !asking ? (
         <CategoryPicker chats={onboarding.chats ?? []} categories={onboarding.chatCategories} planLive={planLive} onStart={startIn} onCreate={createCategory} />
       ) : (
         <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={styles.fill}>
+          {choosing ? (
+            <AskWelcome options={topics()} onPick={pickTopic} />
+          ) : (
           <ScrollView
             ref={scroll}
             onLayout={(e) => (viewport.current = e.nativeEvent.layout.height)}
@@ -869,6 +904,7 @@ export default function AssistantScreen() {
             ))}
             {thinking && <TypingBubble />}
           </ScrollView>
+          )}
           </View>
 
           {!ended && (
@@ -879,16 +915,28 @@ export default function AssistantScreen() {
                 onChange={setDraft}
                 onSend={send}
                 canSend={!thinking}
-                placeholder={awaiting ? "Describe what's bothering you" : "Ask a question"}
-                bottom={bottom}
+                placeholder={awaiting ? "Describe what's bothering you" : asking ? "Ask anything" : "Ask a question"}
+                bottom={asking ? 0 : bottom}
                 bare
+                voice
+                attachments={files}
+                onAttach={files.length < MAX_ATTACHMENTS ? () => setAttaching(true) : undefined}
+                onRemoveAttachment={(id) => setFiles((f) => f.filter((x) => x.id !== id))}
               />
+              {asking && <Text style={[styles.disclaimer, { paddingBottom: Math.max(bottom, space.gutter) }]}>{DISCLAIMER}</Text>}
             </View>
           )}
           {ended && <View style={[styles.endedFoot, { height: Math.max(bottom, space.gutter) }]} />}
         </KeyboardAvoidingView>
       )}
 
+      {attaching && (
+        <AttachSheet
+          room={MAX_ATTACHMENTS - files.length}
+          onAdd={(added) => setFiles((f) => [...f, ...added].slice(0, MAX_ATTACHMENTS))}
+          onClose={() => setAttaching(false)}
+        />
+      )}
       {facts && <FactsSheet facts={facts} onClose={() => setFacts(undefined)} />}
       {credit && (
         <CreditSheet
@@ -937,5 +985,6 @@ const styles = StyleSheet.create({
   top: { alignItems: "center", gap: space.stack, marginBottom: space.stack },
   // The day over the thread, as Frontline labels a day's group.
   day: { ...type.metaStrong, color: ink.tertiary },
+  disclaimer: { ...type.meta, textAlign: "center", paddingHorizontal: space.gutter, marginTop: -8 },
   grace: { ...type.meta, color: ink.tertiary, textAlign: "center", paddingHorizontal: space.section, marginVertical: space.inline },
 })

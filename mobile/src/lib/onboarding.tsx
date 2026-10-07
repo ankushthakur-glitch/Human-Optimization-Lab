@@ -274,7 +274,7 @@ export type State = {
   gapsDone?: Record<string, string>
   /** Review build switches, set from /demo only: the steady record for
       /demo/free-steady, and the weekly card shown on any day. */
-  demo?: { steady?: boolean; forceWeekCard?: boolean }
+  demo?: { steady?: boolean; forceWeekCard?: boolean; assistantVersion?: 1 | 2 }
 }
 
 type Onboarding = State & {

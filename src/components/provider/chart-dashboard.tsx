@@ -31,6 +31,8 @@ import {
   useDashboard,
 } from "@/components/patient-dashboard/patient-dashboard"
 import { useOptimization } from "@/components/patient-dashboard/optimization/model"
+import { DecisionDashboard } from "@/components/patient-dashboard/widgets/decision-dashboard"
+import { ChangesDashboard, ReviewButton } from "@/components/patient-dashboard/widgets/changes-dashboard"
 import { FreeWidgetDashboard } from "@/components/patient-dashboard/widgets/free-dashboard"
 import {
   MemberWidgetDashboard,
@@ -82,14 +84,42 @@ export function ChartDashboard({
     patient.membership === "optimization" &&
     (patient.recordState ?? "active") === "active" &&
     Boolean(opt.model)
+  const [version, setVersion] = useDashboardVersion()
   return (
     <Section>
       <SectionBar
-        title="Dashboard"
-        actions={optimized ? <OptimizationToolbar dash={dash} opt={opt} /> : <DashboardToolbar dash={dash} />}
+        tabs={[
+          { id: "1", label: "Version 1" },
+          { id: "2", label: "Version 2" },
+          { id: "4", label: "Version 4" },
+        ]}
+        value={version}
+        onTab={(v) => setVersion(v as DashboardVersion)}
+        actions={
+          <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+            {/* Two kinds of patient only: the badge follows the membership. */}
+            {patient.membership === "optimization" ? (
+              <OptimizationToolbar dash={dash} opt={opt} />
+            ) : (
+              <DashboardToolbar dash={dash} />
+            )}
+            {/* Version 4 has Mark all reviewed in its decision band. */}
+            {version !== "1" && version !== "4" && <ReviewButton dash={dash} />}
+          </div>
+        }
       />
       <SectionBody>
-        {optimized && opt.model ? (
+        {version === "4" ? (
+          <DecisionDashboard
+            dash={dash}
+            opt={opt}
+            optimized={optimized}
+            patientName={patient.firstName}
+            onOpen={onOpen}
+          />
+        ) : version === "2" ? (
+          <ChangesDashboard dash={dash} opt={opt} optimized={optimized} onOpen={onOpen} />
+        ) : optimized && opt.model ? (
           <MemberWidgetDashboard opt={opt} onOpen={onOpen} />
         ) : (
           <FreeWidgetDashboard dash={dash} onOpen={onOpen} />
@@ -97,6 +127,43 @@ export function ChartDashboard({
       </SectionBody>
     </Section>
   )
+}
+
+/* Version 1 is the widget dashboard; version 2 (5 Oct call) is the "what
+   changed" page in patient-dashboard/widgets/changes-dashboard.tsx;
+   version 4 is the client's CareMap
+   reference mixed with version 2 (widgets/decision-dashboard.tsx). The
+   pick is kept per browser for the prototype. */
+type DashboardVersion = "1" | "2" | "4"
+const VERSION_KEY = "hol.chart.dashboardVersion"
+
+const versionListeners = new Set<() => void>()
+
+function readVersion(): DashboardVersion {
+  try {
+    const v = localStorage.getItem(VERSION_KEY)
+    return v === "1" || v === "4" ? v : "2"
+  } catch {
+    return "2"
+  }
+}
+
+function useDashboardVersion() {
+  const version = React.useSyncExternalStore(
+    (l) => {
+      versionListeners.add(l)
+      return () => versionListeners.delete(l)
+    },
+    readVersion,
+    () => "2" as const
+  )
+  const set = React.useCallback((v: DashboardVersion) => {
+    try {
+      localStorage.setItem(VERSION_KEY, v)
+    } catch {}
+    versionListeners.forEach((l) => l())
+  }, [])
+  return [version, set] as const
 }
 
 export function ChartOverview({

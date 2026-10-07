@@ -163,6 +163,12 @@ export default function ReviewScreen() {
     toast("Yesterday is not logged now")
   }
 
+  const askV2 = onboarding.demo?.assistantVersion !== 1
+  async function toggleAssistant() {
+    await onboarding.save({ demo: { ...onboarding.demo, assistantVersion: askV2 ? 1 : 2 } })
+    toast(askV2 ? "Assistant: version 1" : "Assistant: version 2")
+  }
+
   async function weekCard() {
     await onboarding.save({ demo: { ...onboarding.demo, forceWeekCard: true } })
     toast("The weekly card shows today")
@@ -220,6 +226,13 @@ export default function ReviewScreen() {
           <NeedsRow icon={SWITCH} title="New readings arrive" meta="A new version goes to Dr. Patel, the live one stays" onPress={redraft} chevron={false} />
           <NeedsRow icon={SWITCH} title="Membership ends today" meta="A cancelled member goes back to the free record" onPress={endMembership} chevron={false} />
           <NeedsRow icon={SWITCH} title="Mark yesterday as not logged" meta="Yesterday's meals are cleared" onPress={clearYesterday} chevron={false} />
+          <NeedsRow
+            icon={SWITCH}
+            title={askV2 ? "Assistant: version 2" : "Assistant: version 1"}
+            meta={askV2 ? "Tap for version 1, the category picker" : "Tap for version 2: Ask Inlay, questions to tap"}
+            onPress={toggleAssistant}
+            chevron={false}
+          />
           <NeedsRow icon={SWITCH} title="Show the weekly card today" meta="Whatever the weekday" onPress={weekCard} chevron={false} />
           <NeedsRow icon={SWITCH} title="Start over" meta="Clears this device and signs out" onPress={startOver} chevron={false} />
         </Group>
