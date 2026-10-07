@@ -1,16 +1,17 @@
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { ArrowsClockwise, Barbell, Bone, ChartLineUp, Flask, ForkKnife, Heartbeat, Stethoscope } from "@/components/ph"
+import { ArrowDown, ArrowRight, ArrowUp, Barbell, Bone, Check, Flask, Heartbeat, Sparkle } from "@/components/ph"
 import { AskButton } from "@/components/hol"
-import { Block, Card, Group, NeedsRow, StatRow, StatTile } from "@/components/record-kit"
+import { Block, Card, HUE, Tile, StatRow, StatTile, type Hue } from "@/components/record-kit"
+import { UpgradeHero } from "@/components/upgrade-hero"
 import { Button } from "@/components/ui"
 import { useMarkers } from "@/lib/experience"
-import { FOCUS_NAME, logEvent, planFocus, useOffer, useShown } from "@/lib/offers"
+import { logEvent, useOffer, useShown } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
-import { BENEFITS, CADENCES, FOCUS_DOES, TIERS, priceLabel } from "@/lib/plans"
+import { CADENCES, FREE_STAYS, MEMBER_GETS, TIERS, priceLabel } from "@/lib/plans"
 import type { Biomarker, FocusArea } from "@/lib/record"
-import { color, space, type } from "@/lib/theme"
+import { color, font, hairline, ink, space, type } from "@/lib/theme"
 import { watchList, type Trend } from "@/lib/trends"
 
 /* The plan showroom (FINAL-SPEC C.14.3, D.4): the one place that tells the
@@ -34,6 +35,9 @@ import { watchList, type Trend } from "@/lib/trends"
    and the focus row it highlights. */
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
+
+/** The warm accent of the upgrade card in the assistant, carried here. */
+const AMBER = "#F5A524"
 
 /** The first line, by where she came from (C.14.3). A marker id is
     handled apart: it names the marker. */
@@ -63,14 +67,101 @@ function startLabelOf(s: Snapshot) {
 /** A focus area's icon, Phosphor as the Figma draws them. */
 const FOCUS_ICON: Record<FocusArea, typeof Flask> = { "blood sugar": Flask, heart: Heartbeat, weight: Barbell, bone: Bone }
 
-/** What Inlay sees in one watched marker, as a row's facts: "5.9%, up
-    from 5.3 in Apr 2022". */
-function seenLine(t: Trend) {
-  return t.takeaway ? `${t.valueWithUnit}, ${t.takeaway.charAt(0).toLowerCase()}${t.takeaway.slice(1)}` : t.valueWithUnit
+/** A watched marker's tile, by how far out it is: red out of range, amber
+    borderline, teal in range. */
+const STATUS_HUE: Record<Trend["status"], Hue> = { out: "red", borderline: "amber", in: "teal" }
+
+/** One watched marker in the "areas worth working on" card: its icon, the
+    name with its value and the way it is moving, and one line of why. */
+function AreaRow({ t, last }: { t: Trend; last?: boolean }) {
+  const hue = STATUS_HUE[t.status]
+  const Icon = (t.marker.focus && FOCUS_ICON[t.marker.focus]) || Flask
+  const Arrow = t.movement === "rising" ? ArrowUp : t.movement === "falling" ? ArrowDown : undefined
+  return (
+    <View style={[styles.area, !last && styles.areaRule]} accessible accessibilityLabel={t.spoken}>
+      <Tile hue={hue} size={36}>
+        <Icon size={20} color={HUE[hue].ink} />
+      </Tile>
+      <View style={styles.areaWords}>
+        <View style={styles.areaTitle}>
+          <Text style={styles.areaName}>{t.marker.short ?? t.marker.name}</Text>
+          <Text style={styles.areaValue}>{t.valueWithUnit}</Text>
+          {Arrow && <Arrow size={14} weight="bold" color={HUE[hue].ink} />}
+        </View>
+        <Text style={styles.areaMeta}>{t.change?.words ?? t.movementWord}</Text>
+      </View>
+    </View>
+  )
 }
 
-/** What membership includes, an icon each, in BENEFITS' order. */
-const BENEFIT_ICON = [Stethoscope, ForkKnife, ChartLineUp, ArrowsClockwise]
+/** The checklist under the card: what a member gets, a green tick each. */
+function MemberGets() {
+  return (
+    <Block title="What you get as a member">
+      <Card>
+        <View style={styles.gets}>
+          {MEMBER_GETS.map((line) => (
+            <View key={line} style={styles.get}>
+              <Check size={16} weight="bold" color={color.ok} />
+              <Text style={styles.getText}>{line}</Text>
+            </View>
+          ))}
+        </View>
+      </Card>
+    </Block>
+  )
+}
+
+/** A plain checklist block: ticks for what stays free, dashes for what is charged apart. */
+function Points({ title, lines, tick }: { title: string; lines: readonly string[]; tick?: boolean }) {
+  return (
+    <Block title={title}>
+      <Card>
+        <View style={styles.gets}>
+          {lines.map((line) => (
+            <View key={line} style={styles.get}>
+              {tick ? <Check size={16} weight="bold" color={color.ok} /> : <Text style={styles.dash}>–</Text>}
+              <Text style={styles.getText}>{line}</Text>
+            </View>
+          ))}
+        </View>
+      </Card>
+    </Block>
+  )
+}
+
+/** The page's one question and its answer, in the words the assistant's
+    upgrade card uses, so the two say the same thing. */
+function Pitch() {
+  return (
+    <View style={styles.pitch}>
+      <View style={styles.pitchHead}>
+        <View style={styles.pitchBadge}>
+          <Sparkle size={22} color="#FFFFFF" weight="fill" />
+        </View>
+        <Text style={styles.pitchTitle} accessibilityRole="header">
+          Want unlimited AI and a personalized plan?
+        </Text>
+      </View>
+      <Text style={styles.pitchBody}>Get answers, guidance and a plan built from your complete health record.</Text>
+    </View>
+  )
+}
+
+function Prices() {
+  return (
+    <Block title="Price">
+      <Card>
+        <StatRow>
+          {CADENCES.map((c) => {
+            const b = TIERS.optimization.billing[c]
+            return <StatTile key={c} bare value={b.price} label={b.name} meta={b.save ?? b.note} accessibilityLabel={`${b.name}, ${priceLabel(c)}, ${b.save ?? b.note}`} />
+          })}
+        </StatRow>
+      </Card>
+    </Block>
+  )
+}
 
 type ShowroomProps = {
   /** Where she came from: a marker id, or allowance, assistant, score,
@@ -106,76 +197,49 @@ export function PlanShowroom(props: ShowroomProps) {
     logEvent(onboarding, "plan_viewed", { from: from ?? mode })
   }, [onboarding, from, mode])
 
-  const watched = watchList(markers, { improve: onboarding.why?.improve }).filter((t) => t.latest)
-  const shown = watched.slice(0, 3)
-  // The program focuses on the areas of the numbers shown above it, so
-  // every patient's page names her own; her own answers when none show.
-  const shownAreas = [...new Set(shown.map((t) => t.marker.focus).filter((f): f is FocusArea => Boolean(f)))]
-  const areas = shownAreas.length ? shownAreas : planFocus(onboarding, markers, 3).areas
+  const shown = watchList(markers, { improve: onboarding.why?.improve })
+    .filter((t) => t.latest)
+    .slice(0, 3)
   const context = contextOf(from, markers)
-
   return (
     <>
-      <View style={styles.lead}>
-        {mode === "tab" && (
-          <Text style={styles.leadTitle} accessibilityRole="header">
-            A plan built around you
-          </Text>
-        )}
-        <Text style={mode === "tab" ? styles.body : styles.leadTitle}>
-          {shown.length ? `Your record shows ${shown.length === 1 ? "1 area" : `${shown.length} areas`} worth working on` : "Your record is in range"}
+      <UpgradeHero />
+
+      {!!context.line && <Text style={styles.body}>{context.line}</Text>}
+
+      <Card style={styles.areas}>
+        <Text style={styles.leadTitle} accessibilityRole="header">
+          {shown.length ? (
+            <>
+              {"Your record shows "}
+              <Text style={styles.count}>{shown.length === 1 ? "1 area" : `${shown.length} areas`}</Text>
+              {" worth working on"}
+            </>
+          ) : (
+            "Your record is in range"
+          )}
         </Text>
-        {!!context.line && <Text style={styles.body}>{context.line}</Text>}
-      </View>
-
-      {shown.length > 0 && (
-        <Block title="My health">
-          <StatRow>
-            {shown.map((t) => (
-              <StatTile key={t.id} value={t.value} label={t.marker.short ?? t.marker.name} meta={t.statusWord} level={t.status} accessibilityLabel={t.spoken} />
+        {shown.length > 0 && (
+          <View>
+            {shown.map((t, i) => (
+              <AreaRow key={t.id} t={t} last={i === shown.length - 1} />
             ))}
-          </StatRow>
-        </Block>
-      )}
+          </View>
+        )}
+        <View style={styles.note}>
+          <Text style={styles.noteText}>Inlay can turn these insights into a personalized program designed around you and reviewed by a physician.</Text>
+        </View>
+      </Card>
 
-      {shown.length > 0 && (
-        <Block title="What Inlay sees">
-          <Group>
-            {shown.map((t) => (
-              <NeedsRow key={t.id} title={t.marker.short ?? t.marker.name} meta={seenLine(t)} />
-            ))}
-          </Group>
-        </Block>
-      )}
+      <Pitch />
 
-      <Block title="Your personalized program would focus on">
-        <Group>
-          {areas.map((area) => {
-            const Icon = FOCUS_ICON[area]
-            return <NeedsRow key={area} icon={<Icon size={16} color={color.primary} />} title={FOCUS_NAME[area]} meta={FOCUS_DOES[area]} />
-          })}
-        </Group>
-      </Block>
+      <MemberGets />
 
-      <Block title="What membership includes">
-        <Group>
-          {BENEFITS.map((b, i) => {
-            const Icon = BENEFIT_ICON[i]
-            return <NeedsRow key={b.title} icon={<Icon size={16} color={color.primary} />} title={b.title} meta={b.text} />
-          })}
-        </Group>
-      </Block>
+      <Prices />
 
-      <Block title="Price">
-        <Card>
-          <StatRow>
-            {CADENCES.map((c) => {
-              const b = TIERS.optimization.billing[c]
-              return <StatTile key={c} bare value={b.price} label={b.name} meta={b.save ?? b.note} accessibilityLabel={`${b.name}, ${priceLabel(c)}, ${b.save ?? b.note}`} />
-            })}
-          </StatRow>
-        </Card>
-      </Block>
+      <Points title="What stays free" lines={FREE_STAYS} tick />
+
+      <Points title="Charged separately" lines={TIERS.optimization.excluded} />
 
       {props.mode === "tab" && <ShowroomActions mode="tab" from={from} onStart={props.onStart} />}
     </>
@@ -202,6 +266,7 @@ export function ShowroomActions({
   return (
     <View style={styles.actions}>
       <Button
+        trailing={({ color: c }) => <ArrowRight size={18} weight="bold" color={c} />}
         onPress={() => {
           offer.markOpened()
           logEvent(onboarding, "checkout_started", { from: from ?? mode })
@@ -216,9 +281,44 @@ export function ShowroomActions({
 }
 
 const styles = StyleSheet.create({
-  lead: { gap: space.stack },
-  leadTitle: { ...type.section },
   body: { ...type.body },
+  leadTitle: { ...type.section },
+  count: { fontFamily: font.semibold, color: ink.primary },
+
+  // The card's rows carry their own rule and room, as a Group's do.
+  areas: { gap: space.item },
+  area: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
+  areaRule: { borderBottomWidth: 1, borderBottomColor: hairline.rule },
+  areaWords: { flex: 1, gap: space.line },
+  areaTitle: { flexDirection: "row", alignItems: "center", gap: space.mark },
+  areaName: { ...type.title },
+  areaValue: { ...type.value },
+  areaMeta: { ...type.label },
+  note: { backgroundColor: color.primarySoft, borderRadius: 8, padding: space.compact },
+  noteText: { ...type.body, color: ink.primary },
+
+  pitch: {
+    padding: 16,
+    gap: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#F6D99A",
+    backgroundColor: "#FFFAEE",
+    shadowColor: AMBER,
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  pitchHead: { flexDirection: "row", alignItems: "center", gap: 12 },
+  pitchBadge: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: AMBER },
+  pitchTitle: { ...type.section, flex: 1, color: ink.primary },
+  pitchBody: { ...type.body, color: ink.detail },
+
+  gets: { gap: space.item },
+  get: { flexDirection: "row", alignItems: "flex-start", gap: space.item },
+  getText: { ...type.body, flex: 1, color: ink.content },
+  dash: { ...type.body, width: 16, textAlign: "center", color: ink.detail },
 
   // The quiet answer sits right under the button; its own height spaces it.
   actions: { gap: space.inline },

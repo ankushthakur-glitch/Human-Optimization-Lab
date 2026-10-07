@@ -1,7 +1,16 @@
 import { BlurView } from "expo-blur"
 import { router } from "expo-router"
 import * as React from "react"
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import {
+  Animated,
+  Easing,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { TourHost, useTourTarget } from "@/components/app-tour"
@@ -172,18 +181,64 @@ function TabBar({ active, bottom }: { active: TabName; bottom: number }) {
             )
           })}
         </View>
-        <View ref={orbRef} style={styles.orbWrap}>
-          <BlurView
-            intensity={BLUR}
-            tint="light"
-            style={StyleSheet.absoluteFill}
-          />
-          <OrbButton used={share} onPress={() => router.push("/assistant")} />
+        <View style={styles.orbColumn}>
+          <View ref={orbRef} style={styles.orbWrap}>
+            <BlurView
+              intensity={BLUR}
+              tint="light"
+              style={StyleSheet.absoluteFill}
+            />
+            <OrbButton used={share} onPress={() => router.push("/assistant")} />
+          </View>
+          {/* No words under the orb: a tooltip over it says "Ask AI" now and then. */}
+          <OrbTooltip />
         </View>
       </View>
     </View>
   )
 }
+
+/** A small dark tooltip over the orb that fades in every 10 seconds, says
+    "Ask AI" with a chatbot emoji and fades out again. It never takes a touch. */
+function OrbTooltip() {
+  const show = React.useRef(new Animated.Value(0)).current
+  React.useEffect(() => {
+    const run = Animated.loop(
+      Animated.sequence([
+        Animated.delay(TIP_EVERY - TIP_FOR),
+        Animated.timing(show, { toValue: 1, duration: 250, easing: Easing.out(Easing.quad), useNativeDriver: native }),
+        Animated.delay(TIP_FOR - 500),
+        Animated.timing(show, { toValue: 0, duration: 250, easing: Easing.in(Easing.quad), useNativeDriver: native }),
+      ]),
+    )
+    run.start()
+    return () => run.stop()
+  }, [show])
+  return (
+    <Animated.View
+      style={[
+        styles.tip,
+        {
+          opacity: show,
+          transform: [{ translateY: show.interpolate({ inputRange: [0, 1], outputRange: [4, 0] }) }],
+        },
+      ]}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <Text style={styles.tipText} numberOfLines={1}>
+        🤖 Ask AI
+      </Text>
+      <View style={styles.tipArrow} />
+    </Animated.View>
+  )
+}
+
+const native = Platform.OS !== "web"
+/** The tooltip comes every 10 seconds and stays for 3. */
+const TIP_EVERY = 10000
+const TIP_FOR = 3000
 
 /** The bar's height, and how strongly it blurs what scrolls beneath it. */
 const BAR = 54
@@ -234,6 +289,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
     overflow: "hidden",
     boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
+  },
+  orbColumn: { width: 52, height: 52 },
+  // Sits over the orb with its right edge on the orb's, the arrow under the
+  // orb's middle.
+  tip: {
+    position: "absolute",
+    bottom: 58,
+    right: 0,
+    width: 76,
+    maxWidth: 76,
+    alignItems: "flex-end",
+  },
+  tipText: {
+    overflow: "hidden",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: INK,
+    color: "#FFFFFF",
+    textAlign: "center",
+    fontFamily: font.medium,
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  tipArrow: {
+    marginRight: 20,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 6,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderTopColor: INK,
   },
   orbWrap: {
     width: 52,

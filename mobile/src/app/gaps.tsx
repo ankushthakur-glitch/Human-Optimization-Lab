@@ -10,6 +10,7 @@ import { FilterChips } from "@/components/record-rows"
 import { DateBlock, EmptyState, Group, HUE, NotConnected, ReviewBanner, SmallAction, Tile, spokenDate } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { experience, sharingOff } from "@/lib/experience"
+import { dateOfAt, shortDay } from "@/lib/member"
 import { call } from "@/lib/links"
 import { useOnboarding } from "@/lib/onboarding"
 import { card, font, ink, space, type } from "@/lib/theme"
@@ -41,6 +42,8 @@ import { opensPage, removeQuestion, todo, type TodoItem } from "@/lib/todo"
 type Show = "all" | "overdue" | "upcoming" | "completed"
 
 const isLate = (item: TodoItem) => item.tag?.label === "Overdue"
+/** Late tests and medicines to check: drawn in red and counted as overdue. */
+const isUrgent = (item: TodoItem) => isLate(item) || item.kind === "meds"
 
 export default function ToDoScreen() {
   const onboarding = useOnboarding()
@@ -51,7 +54,7 @@ export default function ToDoScreen() {
   const arriving = exp === "building"
   const off = sharingOff(onboarding)
   const open = t.needs.length + t.coming.length + t.visit.length + t.booked.length
-  const late = [...t.needs, ...t.coming, ...t.visit, ...t.booked].filter(isLate)
+  const late = [...t.needs, ...t.coming, ...t.visit, ...t.booked].filter(isUrgent)
   const [show, setShow] = React.useState<Show>("all")
   const shows: { value: Show; label: string }[] = [
     { value: "all", label: `All (${open})` },
@@ -75,12 +78,12 @@ export default function ToDoScreen() {
     // A row that would only open this list again (a starting test booked
     // in setup) is not a button.
     const opens = opensPage(item)
-    const overdue = isLate(item)
     return (
       <TodoRow
         key={item.id}
         item={item}
-        late={overdue}
+        urgent={isUrgent(item)}
+        late={isLate(item)}
         facts={opts.facts ? item.meta : undefined}
         action={action}
         onPress={opens ? () => go(item.href as Href) : undefined}
@@ -107,7 +110,11 @@ export default function ToDoScreen() {
 
             {show === "overdue" && late.length > 0 && <Section title="Overdue">{late.map((item) => row(item, { withAction: true }))}</Section>}
 
-            {all && t.needs.length > 0 && <Section title="Needs you">{t.needs.map((item) => row(item, { withAction: true }))}</Section>}
+            {all && t.needs.length > 0 && (
+              <Section title="Needs your attention" badge={late.length > 0 ? `${late.length} overdue` : undefined}>
+                {t.needs.map((item) => row(item, { withAction: true }))}
+              </Section>
+            )}
             {(all || show === "upcoming") && t.coming.length > 0 && <Section title="Upcoming">{t.coming.map((item) => row(item, { facts: true }))}</Section>}
             {all && t.visit.length > 0 && <Section title="For your next visit">{t.visit.map((item) => row(item))}</Section>}
             {/* The heading says they are booked; each row keeps its day and
@@ -123,12 +130,20 @@ export default function ToDoScreen() {
 
 /** A group's label and its rows on one card: Figma's 14 medium in Grey/08,
     16 above the card. */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, badge, children }: { title: string; badge?: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle} accessibilityRole="header">
-        {title}
-      </Text>
+      <View style={styles.sectionHead}>
+        <Text style={styles.sectionTitle} accessibilityRole="header">
+          {title}
+        </Text>
+        {!!badge && (
+          <View style={styles.badge}>
+            <View style={styles.badgeDot} />
+            <Text style={styles.badgeText}>{badge}</Text>
+          </View>
+        )}
+      </View>
       <Group>{children}</Group>
     </View>
   )
@@ -141,12 +156,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function TodoRow({
   item,
   late,
+  urgent,
   facts,
   action,
   onPress,
 }: {
   item: TodoItem
   late?: boolean
+  urgent?: boolean
   facts?: string
   action?: { label: string; onPress: () => void; quiet?: boolean }
   onPress?: () => void
@@ -161,19 +178,23 @@ function TodoRow({
         .filter(Boolean)
     : []
   const spoken = item.date ? spokenDate(item.date) : undefined
-  const label = [item.title, late ? "Overdue" : undefined, spoken, ...parts, item.note].filter(Boolean).join(", ")
+  // A late test says when it was due, a medicine check asks for a look,
+  // and any other needs row reads its own line.
+  const due = late ? `Due ${shortDay(dateOfAt(item.sortAt))}` : undefined
+  const line = due ?? (item.kind === "meds" ? "Please review" : item.group === "needs" ? item.meta : undefined)
+  const label = [item.title, late ? "Overdue" : undefined, line, spoken, ...parts, item.note].filter(Boolean).join(", ")
   const body = (
     <>
       {item.date ? (
         <DateBlock date={item.date} />
       ) : (
-        <Tile hue="teal">
-          <RecordIcon name={item.icon} size={16} color={HUE.teal.ink} />
+        <Tile hue={urgent ? "red" : "teal"}>
+          <RecordIcon name={item.icon} size={16} color={urgent ? HUE.red.ink : HUE.teal.ink} />
         </Tile>
       )}
       <View style={styles.words}>
         <Text style={styles.title}>{item.title}</Text>
-        {late && <Text style={styles.late}>Overdue</Text>}
+        {!!line && <Text style={late ? styles.late : styles.fact}>{line}</Text>}
         {/* One line of words, so a long fact wraps as a sentence does;
             the dots are drawn in the chevron grey. */}
         {parts.length > 0 && (
@@ -230,7 +251,11 @@ const styles = StyleSheet.create({
   // Sections sit space.section apart, as on every tab.
   page: { gap: space.section },
   section: { gap: space.gutter },
+  sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   sectionTitle: { ...type.title, color: ink.detail },
+  badge: { flexDirection: "row", alignItems: "center", gap: 6 },
+  badgeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: HUE.red.ink },
+  badgeText: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: HUE.red.ink },
 
   row: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
   // A date block stands 10 from its words.
@@ -238,7 +263,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.6 },
   words: { flex: 1, gap: space.stack },
   title: { ...type.title, color: ink.detail },
-  late: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: "#A95413" },
+  late: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: HUE.red.ink },
   fact: { ...type.label },
   factDot: { color: card.chevron },
   note: { ...type.metaStrong, color: ink.primary },

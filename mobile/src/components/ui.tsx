@@ -260,6 +260,7 @@ export function Button({
   disabled = false,
   variant = "primary",
   icon: Icon,
+  trailing: Trailing,
 }: {
   children: string
   onPress: () => void
@@ -272,6 +273,8 @@ export function Button({
   variant?: "primary" | "outline" | "destructive"
   /** Drawn before the label, e.g. Face ID on the outline button. */
   icon?: React.ComponentType<{ color: string }>
+  /** Drawn after the label, e.g. an arrow on a button that moves on. */
+  trailing?: React.ComponentType<{ color: string }>
 }) {
   const classic = React.useContext(ButtonLook) === "classic"
   const primary = variant === "primary"
@@ -318,6 +321,7 @@ export function Button({
       {pending && <ActivityIndicator color={primary ? color.onPrimary : destructive ? color.error : color.primary} size="small" />}
       {!pending && Icon && <Icon color={primary ? color.onPrimary : destructive ? color.error : "#015D59"} />}
       <Text style={[styles.holText, !primary && styles.holTextOutline, destructive && styles.holTextDestructive]}>{children}</Text>
+      {!pending && Trailing && <Trailing color={primary ? color.onPrimary : destructive ? color.error : "#015D59"} />}
     </Pressable>
   )
 }

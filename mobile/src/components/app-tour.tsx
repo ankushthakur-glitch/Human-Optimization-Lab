@@ -42,7 +42,7 @@ const SEEN = "app-tour"
 
 type Stop = { target: TourTarget; title: string; body: string }
 
-function stopsFor(member: boolean): Stop[] {
+function stopsFor(member: boolean, namesAsk: boolean): Stop[] {
   return [
     {
       target: "tabs",
@@ -53,7 +53,7 @@ function stopsFor(member: boolean): Stop[] {
     },
     {
       target: "assistant",
-      title: "Ask your health assistant",
+      title: namesAsk ? "Ask Inlay" : "Ask your health assistant",
       body: member
         ? "Tap the circle to ask about your results, medicines, visits or plan."
         : "Tap the circle to ask about your results, medicines or visits. The ring fills as you use this week's AI credit.",
@@ -86,7 +86,7 @@ export function TourHost({
   const fade = React.useRef(new Animated.Value(0)).current
 
   const show = active && !onboarding.dismissed?.[SEEN]
-  const stops = stopsFor(member)
+  const stops = stopsFor(member, !!onboarding.demo?.tourNamesAsk)
   const stop = stops[step]
   const targetId = stop?.target
 

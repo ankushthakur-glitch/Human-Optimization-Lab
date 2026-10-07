@@ -27,8 +27,18 @@ export type CreditNotice = { words: string; hue: "amber" | "red"; action?: { lab
 
 export function useCreditNotice(onAsk: () => void): CreditNotice | null {
   const credit = useAllowance()
-  if (credit.share < CREDIT_WARN) return null
   const out = credit.left === 0
+  if (!credit.member) {
+    // The free record counts questions: always shown, and the last one (or
+    // none left) carries the upgrade prompt.
+    const last = credit.left <= 1
+    return {
+      words: credit.line,
+      hue: out ? "red" : "amber",
+      action: last ? { label: "Upgrade", onPress: () => router.push({ pathname: "/plans", params: { from: "allowance" } }) } : undefined,
+    }
+  }
+  if (credit.share < CREDIT_WARN) return null
   return {
     words: out ? `No AI credit left until ${credit.resetsOn}` : `${Math.round(credit.share * 100)}% of this week's AI credit used`,
     hue: out ? "red" : "amber",

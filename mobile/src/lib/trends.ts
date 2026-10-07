@@ -253,6 +253,13 @@ function nearEdge(low: number | undefined, high: number | undefined, v: number) 
 
 /** In range, Borderline or Out of range, for one result. */
 export function pointStatus(b: Biomarker, p: Pick<Point, "value" | "value2">): Status {
+  // Clinical ranges (A1c): the first is in range, the last out of range,
+  // anything between is borderline.
+  if (b.zones && b.zones.length > 1) {
+    const i = b.zones.findIndex((z) => z.below === undefined || p.value < z.below)
+    const at = i < 0 ? b.zones.length - 1 : i
+    return at === 0 ? "in" : at === b.zones.length - 1 ? "out" : "borderline"
+  }
   if (pointSide(b, p)) return "out"
   const second = b.high2 !== undefined && p.value2 !== undefined && nearEdge(undefined, b.high2, p.value2)
   return nearEdge(b.low, b.high, p.value) || second ? "borderline" : "in"

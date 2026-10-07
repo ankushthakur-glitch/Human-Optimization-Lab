@@ -1,24 +1,22 @@
 import * as React from "react"
-import { ScrollView, StyleSheet, Text, View } from "react-native"
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 
-import { Options } from "@/components/chat"
 import { ORB_GROUND } from "@/components/hol"
 import { SiriSheet } from "@/components/voiceorbs/siri-sheet"
-import { color, space, type } from "@/lib/theme"
+import { color, ink, space, type } from "@/lib/theme"
 
-/* The assistant's second version (6 Oct 2026, from the client's "Ask
-   Inlay" mock): instead of the category picker it opens on the live orb,
-   one line on what it can answer and the chat's own topics to tap (the
-   rows its greeting has always offered), with the
-   composer ready under them. No AI credit banner here: credit stays on the
-   orb's ring and the composer strip. A question asked here starts a
-   general health chat; the history drawer still files it by what it was
-   about. */
+/* The assistant's third look (7 Oct 2026, from the client's reference
+   screen): the live orb in its halo, "Your health, in context.", one line
+   on what it can answer, then "Try asking one of these" as rounded pills that wrap, the
+   composer ready under them. The pills are the chat's own topics, so a tap
+   starts the same flow the greeting's rows always did. A question asked
+   here starts a general health chat; the history drawer still files it by
+   what it was about. */
 
 export const DISCLAIMER = "Inlay provides general information, not medical advice."
 
-const ORB = 88
-const RING = ORB + 24
+const ORB = 80
+const RING = ORB + 28
 
 export function AskWelcome({ options, onPick }: { options: string[]; onPick: (option: string) => void }) {
   return (
@@ -30,12 +28,23 @@ export function AskWelcome({ options, onPick }: { options: string[]; onPick: (op
         <Text style={styles.title} accessibilityRole="header">
           Your health, in context.
         </Text>
-        <Text style={styles.line}>Ask about your results, medicines, visits or anything in your record.</Text>
+        <Text style={styles.line}>Ask questions about your results, medicines, appointments or anything in your record.</Text>
       </View>
 
       <View style={styles.tries}>
-        <Text style={styles.label}>Start with one of these</Text>
-        <Options options={options} live onPick={onPick} />
+        <Text style={styles.label}>Try asking one of these</Text>
+        <View style={styles.pills}>
+          {options.map((o) => (
+            <Pressable
+              key={o}
+              onPress={() => onPick(o)}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.pill, pressed && styles.pillPressed]}
+            >
+              <Text style={styles.pillText}>{o}</Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
     </ScrollView>
   )
@@ -51,22 +60,35 @@ const styles = StyleSheet.create({
     paddingBottom: space.section,
     gap: space.section,
   },
-  hero: { alignItems: "center", gap: space.inline },
+  hero: { alignItems: "center", gap: space.item },
   // A soft teal halo round the orb, as the tab bar's ring, larger.
   ring: {
     width: RING,
     height: RING,
     borderRadius: RING / 2,
     borderWidth: 1,
-    borderColor: "#E6F3F2",
+    borderColor: color.primarySoft,
     backgroundColor: color.primaryTint,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: space.item,
   },
   title: { ...type.hero, textAlign: "center" },
   line: { ...type.body, textAlign: "center", paddingHorizontal: space.item },
 
   tries: { gap: space.item },
   label: { ...type.title },
+  pills: { alignItems: "flex-start", gap: space.inline },
+  pill: {
+    maxWidth: "100%",
+    minHeight: 40,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: space.inline,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: color.primaryEdge,
+    backgroundColor: color.primaryTint,
+  },
+  pillPressed: { backgroundColor: color.primarySoft },
+  pillText: { ...type.chip, color: ink.primary },
 })

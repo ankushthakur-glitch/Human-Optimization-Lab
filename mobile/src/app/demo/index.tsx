@@ -169,6 +169,23 @@ export default function ReviewScreen() {
     toast(askV2 ? "Assistant: version 1" : "Assistant: version 2")
   }
 
+  // Home variation: the orb has no "Ask Inlay" words, the tour's second
+  // stop says it. Switching either way replays the tour on Home.
+  const tourNamesAsk = !!onboarding.demo?.tourNamesAsk
+  async function toggleTourAsk() {
+    const { "app-tour": _seen, ...dismissed } = onboarding.dismissed ?? {}
+    await onboarding.save({ demo: { ...onboarding.demo, tourNamesAsk: !tourNamesAsk }, dismissed })
+    toast(tourNamesAsk ? "Home: Ask Inlay under the orb" : "Home: Ask Inlay in the tour")
+  }
+
+  // Home variation: the orb has no words; a tooltip over it says "Ask Inlay"
+  // every few seconds.
+  const orbTooltip = !!onboarding.demo?.orbTooltip
+  async function toggleOrbTooltip() {
+    await onboarding.save({ demo: { ...onboarding.demo, orbTooltip: !orbTooltip } })
+    toast(orbTooltip ? "Home: Ask Inlay under the orb" : "Home: Ask Inlay in a tooltip")
+  }
+
   async function weekCard() {
     await onboarding.save({ demo: { ...onboarding.demo, forceWeekCard: true } })
     toast("The weekly card shows today")
@@ -231,6 +248,20 @@ export default function ReviewScreen() {
             title={askV2 ? "Assistant: version 2" : "Assistant: version 1"}
             meta={askV2 ? "Tap for version 1, the category picker" : "Tap for version 2: Ask Inlay, questions to tap"}
             onPress={toggleAssistant}
+            chevron={false}
+          />
+          <NeedsRow
+            icon={SWITCH}
+            title={tourNamesAsk ? "Home: Ask Inlay in the tour" : "Home: Ask Inlay under the orb"}
+            meta={tourNamesAsk ? "Tap to put the words back under the orb" : "Tap to drop the words; the tour's second stop says Ask Inlay"}
+            onPress={toggleTourAsk}
+            chevron={false}
+          />
+          <NeedsRow
+            icon={SWITCH}
+            title={orbTooltip ? "Home: Ask Inlay in a tooltip" : "Home: no tooltip over the orb"}
+            meta={orbTooltip ? "Tap to put the words back under the orb" : "Tap to drop the words; a tooltip over the orb says Ask Inlay every few seconds"}
+            onPress={toggleOrbTooltip}
             chevron={false}
           />
           <NeedsRow icon={SWITCH} title="Show the weekly card today" meta="Whatever the weekday" onPress={weekCard} chevron={false} />

@@ -31,7 +31,7 @@ type Save = ReturnType<typeof useOnboarding>["save"]
 
 /** Free conversations a week (Q-02 default; configurable from 5 to 10).
     Members have no count. */
-export const FREE_QUESTIONS = 8
+export const FREE_QUESTIONS = 5
 
 /** A member's conversations a week (5 Oct call: a higher cap). */
 export const MEMBER_QUESTIONS = 40
@@ -105,7 +105,13 @@ export function allowanceOf(a: Allowance | undefined, now: Date = new Date(), me
         speak of credit, not questions: "75% of this week's AI credit
         left", "No AI credit left until Mon, Oct 12". The orb's ring
         draws it. */
-    line: left === 0 ? `No AI credit left until ${resetsOn}` : `${Math.round((left / total) * 100)}% of this week's AI credit left`,
+    line: member
+      ? left === 0
+        ? `No AI credit left until ${resetsOn}`
+        : `${Math.round((left / total) * 100)}% of this week's AI credit left`
+      : left === 0
+        ? `No questions left until ${resetsOn}`
+        : `${left} of ${total} ${total === 1 ? "question" : "questions"} remaining`,
   }
 }
 
@@ -238,7 +244,7 @@ function write(w: Writer, next: Allowance) {
     visit comes first, the membership second and quiet. */
 export function limitCard(now: Date = new Date()) {
   return {
-    title: "You've used this week's AI credit",
+    title: "You've used your 5 questions this week",
     body: `It comes back on ${resetDate(now)}. Your record, trends and past answers are all still here.`,
     save: "Save for my next visit",
     more: "See what members get",

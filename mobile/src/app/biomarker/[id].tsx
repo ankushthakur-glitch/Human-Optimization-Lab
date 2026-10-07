@@ -7,7 +7,7 @@ import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
 import { AskButton } from "@/components/hol"
 import { ArrowRight, Info, TrendDown, TrendUp } from "@/components/ph"
-import { Banner, Block, Card, Dot, Group, HUE, NeedsRow, SeeAllRow, SmallAction, Status, type Level } from "@/components/record-kit"
+import { Banner, Block, Card, Dot, Group, HUE, LEVEL_TEXT, NeedsRow, SeeAllRow, SmallAction, Status, type Level } from "@/components/record-kit"
 import { experience, useMarkers } from "@/lib/experience"
 import { MEMBER, PLAN_START_RESULTS, pressureReadingsOf, pressures, sinceStart, type Measure } from "@/lib/member"
 import { useChangeCourse } from "@/lib/offers"
@@ -129,7 +129,7 @@ export default function MarkerScreen() {
   return (
     <FlowScreen page title={b.name} footer={<AskButton params={{ marker: b.id }} />}>
       <Readout b={b} t={t} member={member} review={review} />
-      {b.points.length > 0 && <OverTime b={b} t={t} />}
+      <OverTime b={b} t={t} />
       {!!home && <HomeReadings list={homeList} average={home} />}
       <EveryResult b={b} t={t} />
       {!review && offer.show && course && (
@@ -168,7 +168,7 @@ function Readout({ b, t, member, review }: { b: Biomarker; t: Trend; member: boo
         {latest ? (
           <View style={styles.head}>
             <View style={styles.badges}>
-              <Status level={t.status}>{zone ? `${zone.name} range` : undefined}</Status>
+              <Status level={t.status} tinted>{zone ? `${zone.name} range` : undefined}</Status>
               <View style={styles.trend}>
                 {Arrow && <Arrow size={12} color={color.primaryText} />}
                 <Text style={styles.trendText}>{directionWords(t)}</Text>
@@ -180,7 +180,7 @@ function Readout({ b, t, member, review }: { b: Biomarker; t: Trend; member: boo
               accessibilityLabel={`Latest result, ${spokenValue(b, latest)}, ${lowerFirst(STATUS_WORD[t.status])}. ${spokenDay(latest)}, ${PLACE_NAME[latest.origin]}.`}
             >
               <View style={styles.value}>
-                <Text style={styles.valueText}>{t.value}</Text>
+                <Text style={[styles.valueText, { color: LEVEL_TEXT[t.status] }]}>{t.value}</Text>
                 <Text style={type.unit}>{b.unit}</Text>
               </View>
               <Text style={type.label}>{`Latest, ${pointDate(latest)}, ${PLACE_NAME[latest.origin]}`}</Text>
@@ -277,8 +277,12 @@ function ZoneBar({ zones, value, at, status }: { zones: Zone[]; value: number; a
   const hi = at.below ?? lo + step
   const within = Math.min(Math.max((value - lo) / (hi - lo), 0.04), 0.96)
   const left = `${((i + within) / zones.length) * 100}%` as const
-  const fills = [chart.targetZone, HUE.amber.edge, HUE.red.edge]
+  const fills = [chart.zoneIn, chart.zoneBorderline, chart.zoneOut]
   const tone = status === "in" ? chart.inRange : status === "borderline" ? chart.borderline : outOfRangeColor()
+  // Each range keeps its own colour, green, yellow, red, so the scale reads
+  // at a glance; the one she is in is bold. Text uses the deeper amber.
+  const levels: Level[] = ["in", "borderline", "out"]
+  const levelAt = (k: number): Level => levels[Math.min(k, levels.length - 1)]
   return (
     <View style={styles.zones} accessible accessibilityLabel={`${zones.map((z) => `${z.name}, ${z.range}`).join(". ")}. Yours is in ${lowerFirst(at.name)}.`}>
       <View style={styles.zoneTrack}>
@@ -292,7 +296,7 @@ function ZoneBar({ zones, value, at, status }: { zones: Zone[]; value: number; a
           const here = z === at
           const align = k === 0 ? "left" : k === zones.length - 1 ? "right" : "center"
           return (
-            <Text key={z.name} style={[styles.zoneName, { textAlign: align }, here && { color: tone, fontFamily: font.semibold }]}>
+            <Text key={z.name} style={[styles.zoneName, { textAlign: align, color: LEVEL_TEXT[levelAt(k)] }, here && { fontFamily: font.semibold }]}>
               {`${z.name}\n${z.range}`}
             </Text>
           )

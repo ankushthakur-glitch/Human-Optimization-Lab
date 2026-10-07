@@ -65,16 +65,16 @@ export function HomeHeader(_: { variant?: "free" | "member" } = {}) {
         />
       </Pressable>
       <View style={styles.names}>
-        <Text style={styles.greeting} maxFontSizeMultiplier={1.3}>
-          {`${greetingFor()}!`}
-        </Text>
         <Text
           style={styles.name}
           accessibilityRole="header"
           numberOfLines={1}
           maxFontSizeMultiplier={1.3}
         >
-          {name}
+          {`${greetingFor()}, ${name}`}
+        </Text>
+        <Text style={styles.greeting} maxFontSizeMultiplier={1.3}>
+          Here's what's important today.
         </Text>
       </View>
       <Pressable
@@ -145,7 +145,7 @@ export function StatusBanner({
 const styles = StyleSheet.create({
   // Figma "Hol" home header: the photo 8 from the greeting, the bell on the
   // right.
-  row: { flexDirection: "row", alignItems: "center", gap: space.inline },
+  row: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.inline },
   pressed: { opacity: 0.8 },
   avatar: {
     width: 40,
@@ -157,10 +157,13 @@ const styles = StyleSheet.create({
     backgroundColor: color.primaryTint,
   },
   photo: { width: "100%", height: "100%" },
-  names: { flex: 1, gap: space.line },
+  // minWidth 0 lets the longer greeting wrap instead of pushing the bell off.
+  names: { flex: 1, minWidth: 0, gap: space.line },
   greeting: { ...type.label },
   name: { ...type.section, color: ink.content },
   bell: {
+    flexShrink: 0,
+    marginLeft: "auto",
     width: 28,
     height: 28,
     alignItems: "center",
