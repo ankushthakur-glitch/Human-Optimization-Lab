@@ -390,3 +390,10 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Added: Patient Portal / Mobile App: Profile and Settings / Who has looked at your record
 - Added: Patient Portal / Mobile App: Profile and Settings / Membership
 - Added: Patient Portal / Mobile App: Profile and Settings / Connect your records
+
+## 08-Oct-2026
+
+- Removed: Patient Portal / Patient Onboarding / Consent
+- Removed: Patient Portal / Patient Onboarding / Daily habits
+- Removed: Patient Portal / Patient Onboarding / Medications
+- Removed: Patient Portal / Mobile App: Record / Timeline
