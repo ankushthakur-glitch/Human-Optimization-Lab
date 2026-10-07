@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
-import Svg, { Path } from "react-native-svg"
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg"
 
 import {
   Bandaids,
@@ -151,6 +151,67 @@ export function HeroRow({
   )
 }
 
+/** The "A healthier you is possible" banner as the 7 Oct 2026 reference
+    draws it: a deep teal gradient card with a soft lift, a round mint tile
+    with a heart and its pulse, a white title on one line, two lines under
+    it, and a plant with three sparks on the right. The whole card is the
+    button. */
+export function UpgradeBanner({ title, line, onPress }: { title: string; line: string; onPress: () => void }) {
+  // The plant is drawn at a share of the card's measured width, so it
+  // scales with the screen and stays behind the words.
+  const [w, setW] = React.useState(0)
+  const artW = Math.max(80, Math.min(130, w * 0.28))
+  const id = `up${React.useId().replace(/[^a-zA-Z0-9]/g, "")}`
+  return (
+    <Pressable
+      onPress={onPress}
+      onLayout={(e) => setW(e.nativeEvent.layout.width)}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.upgrade, pressed && styles.pressed]}
+    >
+      <View style={styles.upgradeClip} pointerEvents="none">
+        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
+          <Defs>
+            <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor="#1F6F7A" />
+              <Stop offset="1" stopColor="#0E5560" />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill={`url(#${id})`} />
+        </Svg>
+        <Svg style={styles.upgradeArt} opacity={0.35} width={artW} height={artW * 0.95} viewBox="0 0 120 114" preserveAspectRatio="xMaxYMax meet">
+          <Path d="M0 114C6 92 34 82 62 86C92 90 112 98 120 114Z" fill="#3A9C93" fillOpacity={0.45} />
+          <Path d="M74 114C76 94 82 72 96 50" stroke="#6FD0B8" strokeWidth={2.5} strokeLinecap="round" />
+          <Path d="M96 50C116 48 126 60 124 76C106 78 94 68 96 50Z" fill="#5CC6AB" fillOpacity={0.9} />
+          <Path d="M80 86C62 86 50 74 50 58C68 56 82 68 80 86Z" fill="#46B09B" fillOpacity={0.9} />
+          <Path d="M90 62C84 48 86 36 96 28C102 40 100 54 90 62Z" fill="#82DCC4" fillOpacity={0.9} />
+          <Path d="M62 26L56 16M76 20L74 8M90 22L98 12" stroke="#4FCB99" strokeWidth={2.5} strokeLinecap="round" />
+        </Svg>
+      </View>
+      <View style={styles.upgradeTile}>
+        <Svg width={22} height={22} viewBox="0 0 36 36" fill="none">
+          <Path
+            d="M18 32C18 32 3 23.5 3 12.8C3 8.5 6.3 5.5 10.2 5.5C13.4 5.5 16.4 7.2 18 10C19.6 7.2 22.6 5.5 25.8 5.5C29.7 5.5 33 8.5 33 12.8C33 23.5 18 32 18 32Z"
+            fill="#2BB5A0"
+          />
+          <Path d="M7 18H13L15.5 12.5L19.5 23L22 18H29" stroke="#FFFFFF" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+      </View>
+      <View style={styles.upgradeWords}>
+        <Text style={styles.upgradeTitle} maxFontSizeMultiplier={1.2}>
+          {title}
+        </Text>
+        <Text style={styles.upgradeLine} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} maxFontSizeMultiplier={1.1}>
+          {line}
+        </Text>
+      </View>
+      <View style={styles.upgradeCaret}>
+        <CaretRight size={20} weight="bold" color="#FFFFFF" />
+      </View>
+    </Pressable>
+  )
+}
+
 /** The Ask banner's tile (Figma #EAF1F2). */
 export const ASK_TILE = "#EAF1F2"
 
@@ -166,6 +227,28 @@ const styles = StyleSheet.create({
     borderColor: "#F5C6CA",
   },
   pressed: { opacity: 0.85 },
+  upgrade: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    backgroundColor: "#14606B",
+    // A soft lift so the card stands off the page.
+    shadowColor: "#0E5560",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  upgradeClip: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: 18, overflow: "hidden" },
+  upgradeArt: { position: "absolute", right: 0, bottom: 0 },
+  upgradeTile: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#E3F6F1", alignItems: "center", justifyContent: "center" },
+  upgradeCaret: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.22)", alignItems: "center", justifyContent: "center" },
+  upgradeWords: { flex: 1, gap: 6 },
+  upgradeTitle: { fontFamily: font.semibold, fontSize: 15, lineHeight: 22, color: ink.onColor },
+  upgradeLine: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: "#F7F7F7" },
   alertTitle: { fontFamily: font.semibold, fontSize: 14, lineHeight: 20, color: color.high },
   alertLine: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: ink.secondary },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },

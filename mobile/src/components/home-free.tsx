@@ -3,8 +3,8 @@ import { StyleSheet, Text, View } from "react-native"
 
 import { keepTogether } from "@/components/care-gap"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
-import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, dotted } from "@/components/home-parts"
-import { CheckCircle, Pill, Target, Warning } from "@/components/ph"
+import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, UpgradeBanner, dotted } from "@/components/home-parts"
+import { CheckCircle, Pill, Warning } from "@/components/ph"
 import { Block, Card, Group, NeedsRow, NotConnected, Rise, SmallAction, Status } from "@/components/record-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { TrendTiles } from "@/components/trend-tile"
@@ -229,9 +229,7 @@ function Upcoming() {
 function UpgradeCard() {
   return (
     <Rise at={4} id="home:upgrade">
-      <HeroRow
-        tileSize={56}
-        icon={<Target size={34} color={color.primary} />}
+      <UpgradeBanner
         title="A healthier you is possible"
         line="Inlay can turn your insights into a personalized plan to help you improve."
         onPress={() => openTab("/plan", "home")}
