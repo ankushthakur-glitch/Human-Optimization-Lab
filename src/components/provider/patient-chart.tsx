@@ -898,7 +898,7 @@ function ChartNav({
   return (
     <nav
       aria-label="Patient chart"
-      className="flex shrink-0 gap-0.5 border-border py-2 max-md:overflow-x-auto max-md:border-b md:w-[136px] md:flex-col md:overflow-y-auto md:border-r print:hidden"
+      className="flex shrink-0 gap-0.5 border-border py-2 max-md:overflow-x-auto max-md:border-b md:w-[168px] md:flex-col md:overflow-y-auto md:border-r print:hidden"
     >
       {SECTIONS.map((s) => {
         const on = s.id === active
@@ -909,7 +909,7 @@ function ChartNav({
             aria-current={on ? "page" : undefined}
             onClick={() => onSelect(s.id)}
             className={cn(
-              "relative flex h-10 shrink-0 items-center gap-2 px-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground",
+              "relative flex h-10 shrink-0 items-center gap-2.5 px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground",
               on &&
                 "bg-primary-surface font-medium text-primary hover:bg-primary-surface hover:text-primary dark:text-primary-tint"
             )}
