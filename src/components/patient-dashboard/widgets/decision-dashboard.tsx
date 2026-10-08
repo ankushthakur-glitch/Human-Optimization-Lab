@@ -1162,7 +1162,7 @@ function programSubjects(ctx: Ctx, patientName: string): ProgramRow[] {
   const { model, opt, optimized } = ctx
   if (optimized && opt.model) {
     const o = opt.model
-    return PROGRAMS.map((p) => {
+    const active: ProgramRow[] = PROGRAMS.map((p) => {
       const view = buildProgram(p, o)
       const lead = view.kpis[0] as Biomarker | undefined
       const goal = lead && view.goal(lead)
@@ -1207,6 +1207,7 @@ function programSubjects(ctx: Ctx, patientName: string): ProgramRow[] {
         actions: [{ label: "Show plan", primary: true, run: ctx.showPlan }],
       }
     })
+    return [...active, ...offered(ctx, patientName)]
   }
   /* A free member: programs their problems make them a fit for. */
   const problems = model.data.conditions
@@ -1279,6 +1280,75 @@ function programSubjects(ctx: Ctx, patientName: string): ProgramRow[] {
           label: "Recommend optimization",
           primary: true,
           run: recommend(p.name, why),
+        },
+        { label: "Not now", run: () => {} },
+      ],
+    })
+  }
+  return rows
+}
+
+/* Programs a member is not enrolled in, from their own tracker: Eligible
+   when one of the program's markers is out of target, Consider when one is
+   only on watch. Matched on the tracker's marker names. */
+const OFFERED: { id: string; name: string; keys: string[] }[] = [
+  {
+    id: "heart",
+    name: "Heart health",
+    keys: ["lipoprotein(a)", "apob", "ldl", "hs-crp"],
+  },
+  { id: "kidney", name: "Kidney health", keys: ["egfr", "cystatin"] },
+  { id: "bone", name: "Bone health", keys: ["bmd"] },
+]
+
+function offered(ctx: Ctx, patientName: string): ProgramRow[] {
+  const bands = ctx.opt.model?.data.snapshot.bands
+  if (!bands) return []
+  const enrolled = new Set(PROGRAMS.map((p) => p.name.toLowerCase()))
+  const hits = (rows: (typeof bands)["On watch"], keys: string[]) =>
+    rows.filter((r) => keys.some((k) => r.name.toLowerCase().includes(k)))
+  const rows: ProgramRow[] = []
+  for (const p of OFFERED) {
+    if (enrolled.has(p.name.toLowerCase())) continue
+    const out = hits(bands["Out of target"], p.keys)
+    const watch = hits(bands["On watch"], p.keys)
+    if (!out.length && !watch.length) continue
+    const status = out.length ? "Eligible" : "Consider"
+    const tone = status === "Eligible" ? "blue" : "orange"
+    const markers = [...out, ...watch]
+    const why = markers
+      .map((m) => `${m.name} ${m.latest}${m.unit ? ` ${m.unit}` : ""}`)
+      .join(", ")
+    rows.push({
+      id: `program:${p.id}`,
+      kind: "program",
+      status,
+      title: p.name,
+      line: markers.map((m) => m.name).join(", "),
+      fact: p.name,
+      short: p.name,
+      category: "Program",
+      sub: status === "Eligible" ? "Out of target markers" : "Markers on watch",
+      figure: { label: "Status", value: status, sub: "Not enrolled", tone },
+      note: { tone, title: "Why it fits", text: `${why}.` },
+      sections: [
+        {
+          title: "Eligibility",
+          rows: markers.map((m) => ({
+            label: m.name,
+            value: `${m.latest}${m.unit ? ` ${m.unit}` : ""}, target ${m.target}`,
+            tone: out.includes(m) ? ("red" as const) : undefined,
+          })),
+        },
+      ],
+      actions: [
+        {
+          label: "Recommend program",
+          primary: true,
+          run: () => {
+            ctx.dash.actions.recommend([p.name], why)
+            toast.success(`${p.name} recommended to ${patientName}`)
+          },
         },
         { label: "Not now", run: () => {} },
       ],
@@ -1413,7 +1483,7 @@ export function DecisionBand({
         className="shrink-0 self-start md:self-center"
         onClick={(e) => onOpen(lead, e.currentTarget)}
       >
-        Review {lowerFirst(lead.story?.area ?? lead.short)}
+        Review
       </Button>
     </section>
   )

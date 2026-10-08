@@ -6,7 +6,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "@/design-system/ui/sonner"
 import {
   IconAdd,
-  IconArrowLeft,
   IconCalendar,
   IconClose,
   IconChevronDown,
@@ -19,15 +18,10 @@ import {
   IconLocation,
   IconMail,
   IconPhone,
-  IconPrint,
   IconRefresh,
-  IconSparkles,
   IconStethoscope,
   IconUserCircle,
   IconClock,
-  IconDownload,
-  IconEye,
-  IconShieldCheck,
   IconClipboard,
   IconPill,
   IconShieldAlert,
@@ -46,9 +40,7 @@ import {
   healthRecordFor,
   recordSyncs,
 } from "@/components/practice/health-record"
-import { RecommendPlanDialog } from "@/components/practice/health-record-view"
 import { chartEntries, withEntries } from "@/components/provider/chart-entries"
-import { consentFileName, consentPdf } from "@/components/provider/consent-pdf"
 import {
   PatientActions,
   PatientDetails,
@@ -86,7 +78,6 @@ import {
   SectionBar,
   SectionBody,
 } from "@/components/provider/chart-layout"
-import { DetailGrid } from "@/components/practice/record-page"
 import { Avatar, AvatarFallback, AvatarImage } from "@/design-system/ui/avatar"
 import {
   Dialog,
@@ -278,8 +269,6 @@ export function useChartRecord(patient: Patient) {
 export function PatientChart({ patient }: { patient: Patient }) {
   const { section, tab, item, go } = useChartParams()
   const chart = useChartRecord(patient)
-  const [recommending, setRecommending] = React.useState(false)
-  const [consentOpen, setConsentOpen] = React.useState(false)
   /* Folded to one line on every section; the chevron opens or folds it for
      all sections at once, so moving between sections keeps its state. */
   const [collapsed, setCollapsed] = React.useState(true)
@@ -293,8 +282,6 @@ export function PatientChart({ patient }: { patient: Patient }) {
         chart={chart}
         collapsed={collapsed}
         onToggle={() => morph(() => setCollapsed(!collapsed))}
-        onRecommend={() => setRecommending(true)}
-        onConsent={() => setConsentOpen(true)}
       />
 
       <div className="flex min-h-[420px] flex-1 overflow-hidden rounded-lg bg-card shadow-[0_0_5px_rgb(0_0_0/0.06)] [view-transition-name:chart-body] max-md:flex-col print:overflow-visible">
@@ -368,19 +355,6 @@ export function PatientChart({ patient }: { patient: Patient }) {
           )}
         </div>
       </div>
-
-      <RecommendPlanDialog
-        patient={patient}
-        record={chart.record}
-        open={recommending}
-        onOpenChange={setRecommending}
-      />
-      <ConsentDialog
-        patient={patient}
-        chart={chart}
-        open={consentOpen}
-        onOpenChange={setConsentOpen}
-      />
     </div>
   )
 }
@@ -406,24 +380,20 @@ function initials(p: Patient) {
   return `${p.firstName[0] ?? ""}${p.lastName[0] ?? ""}`.toUpperCase()
 }
 
-/* The patient 360 banner. Open, its details sit on three rows so the card
-   is as tall as the three action buttons beside it; folded, it is one line. */
+/* The patient 360 banner. Open, its details sit on three rows; folded, it
+   is one line. */
 function ChartHeader({
   patient: p,
   chart,
   collapsed,
   onToggle,
-  onRecommend,
-  onConsent,
 }: {
   patient: Patient
   chart: Chart
   collapsed: boolean
   onToggle: () => void
-  onRecommend: () => void
-  onConsent: () => void
 }) {
-  const { record, state } = chart
+  const { record } = chart
   const conditionTags = React.useMemo(
     () => [
       ...new Set(
@@ -437,9 +407,6 @@ function ChartHeader({
   const { items: saved } = patientTags.use()
   const tags = saved.find((t) => t.id === p.id)?.tags ?? conditionTags
   const [tagsOpen, setTagsOpen] = React.useState(false)
-  /* Folded, the action buttons fill the card as squares with larger icons;
-     open, they stay small and stacked. */
-  const iconFill = collapsed ? "aspect-square h-auto w-auto" : undefined
   const age = p.dob ? `${usDate(p.dob)} (${ageFrom(p.dob)} yrs)` : ""
 
   return (
@@ -532,39 +499,6 @@ function ChartHeader({
         </div>
 
         <SyncPanel patient={p} chart={chart} collapsed={collapsed} />
-      </div>
-
-      <div
-        className={cn(
-          "flex shrink-0 justify-center rounded-lg bg-card shadow-[0_0_5px_rgb(0_0_0/0.06)] [view-transition-name:chart-actions] max-sm:hidden",
-          collapsed
-            ? "flex-row items-stretch gap-2 p-2"
-            : "flex-col items-center gap-1.5 px-2.5 py-2"
-        )}
-      >
-        <HeaderIcon
-          label="Recommend plan"
-          className={iconFill}
-          large={collapsed}
-          icon={IconSparkles}
-          disabled={state !== "Active"}
-          onClick={onRecommend}
-        />
-        <HeaderIcon
-          label="Print chart"
-          className={iconFill}
-          large={collapsed}
-          icon={IconPrint}
-          disabled={state !== "Active"}
-          onClick={() => window.print()}
-        />
-        <HeaderIcon
-          label="Record consent"
-          className={iconFill}
-          large={collapsed}
-          icon={IconShieldCheck}
-          onClick={onConsent}
-        />
       </div>
 
       <button
@@ -950,167 +884,6 @@ function visitWhen(at: string) {
   return `${monthDay(date)}, ${clock(time)}`
 }
 
-function HeaderIcon({
-  label,
-  icon: Icon,
-  onClick,
-  disabled,
-  className,
-  large,
-}: {
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-  onClick?: () => void
-  disabled?: boolean
-  className?: string
-  large?: boolean
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label={label}
-            disabled={disabled}
-            onClick={onClick}
-            className={cn(
-              "size-7 border-primary/60 text-primary-tint",
-              className
-            )}
-          />
-        }
-      >
-        <Icon className={large ? "size-6!" : "size-4!"} />
-      </TooltipTrigger>
-      <TooltipContent side="left">{label}</TooltipContent>
-    </Tooltip>
-  )
-}
-
-/* The consent that lets HOL pull the record: what the patient agreed to in
-   the app, and what it covers. */
-function ConsentDialog({
-  patient: p,
-  chart,
-  open,
-  onOpenChange,
-}: {
-  patient: Patient
-  chart: Chart
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}) {
-  const waiting = chart.state === "Awaiting consent"
-  const withdrawn = p.status === "Consent withdrawn"
-  // The signed form, shown in the dialog or saved.
-  const [pdfUrl, setPdfUrl] = React.useState<string | null>(null)
-  const pdf = () => URL.createObjectURL(consentPdf(p, withdrawn))
-  const view = () => setPdfUrl(pdf())
-  const back = () => {
-    if (pdfUrl) URL.revokeObjectURL(pdfUrl)
-    setPdfUrl(null)
-  }
-  const download = () => {
-    const url = pdf()
-    const a = document.createElement("a")
-    a.href = url
-    a.download = consentFileName(p)
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-  const viewing = pdfUrl !== null
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) back()
-        onOpenChange(next)
-      }}
-    >
-      <DialogContent
-        className={cn(
-          "sm:max-w-lg",
-          viewing && "h-[88vh] grid-rows-[auto_1fr_auto] sm:max-w-4xl"
-        )}
-      >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            Record consent
-            <Badge
-              variant={
-                withdrawn ? "destructive" : waiting ? "outline" : "success"
-              }
-            >
-              {withdrawn ? "Withdrawn" : waiting ? "Not given" : "Active"}
-            </Badge>
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            The consent that lets HOL pull this patient&apos;s records.
-          </DialogDescription>
-        </DialogHeader>
-        {pdfUrl ? (
-          <iframe
-            src={`${pdfUrl}#toolbar=0&navpanes=0&view=FitH`}
-            title="Record consent form"
-            className="size-full min-h-0 rounded-lg border bg-surface-sunken"
-          />
-        ) : (
-          <DetailGrid
-            className="grid-cols-2"
-            items={[
-              {
-                label: "Given on",
-                value: waiting ? "" : usDate(p.invitedAt),
-              },
-              { label: "Given in", value: waiting ? "" : "HOL patient app" },
-              { label: "Retrieved through", value: "EHR connection" },
-              { label: "Valid", value: "Until the patient withdraws it" },
-              {
-                label: "Covers",
-                value:
-                  "Records from hospitals, clinics, labs and imaging centers on Carequality, CommonWell, eHealth Exchange and the lab networks, pulled read only.",
-                wide: true,
-              },
-            ]}
-          />
-        )}
-        <DialogFooter>
-          {!waiting && (
-            <div className="flex gap-3 sm:mr-auto">
-              {viewing ? (
-                <Button variant="outline" onClick={back}>
-                  <IconArrowLeft />
-                  Back
-                </Button>
-              ) : (
-                <Button variant="outline" onClick={view}>
-                  <IconEye />
-                  View PDF
-                </Button>
-              )}
-              <Button variant="outline" onClick={download}>
-                <IconDownload />
-                Download
-              </Button>
-            </div>
-          )}
-          <Button
-            variant="outline"
-            onClick={() => {
-              back()
-              onOpenChange(false)
-            }}
-          >
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 /* -------------------------------------------------------------------------- */
 /*  Nav                                                                        */
 /* -------------------------------------------------------------------------- */
@@ -1125,7 +898,7 @@ function ChartNav({
   return (
     <nav
       aria-label="Patient chart"
-      className="flex shrink-0 gap-0.5 border-border py-2 max-md:overflow-x-auto max-md:border-b md:w-[160px] md:flex-col md:overflow-y-auto md:border-r print:hidden"
+      className="flex shrink-0 gap-0.5 border-border py-2 max-md:overflow-x-auto max-md:border-b md:w-[136px] md:flex-col md:overflow-y-auto md:border-r print:hidden"
     >
       {SECTIONS.map((s) => {
         const on = s.id === active

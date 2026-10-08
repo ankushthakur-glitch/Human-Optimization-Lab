@@ -45,7 +45,7 @@ function PanelFooter({
     return (
       /* Two columns of actions, the primary across the row when the count is
          odd; the list is walked from the rows (and Arrow Up and Down). */
-      <footer className="grid grid-cols-2 gap-2 border-t border-border bg-surface-head/50 px-5 py-3 [&>*]:w-full [&>*:first-child:nth-last-child(odd)]:col-span-2">
+      <footer className="grid grid-cols-2 gap-2 border-t border-border bg-surface-head/50 px-4 py-3 [&>*]:w-full [&>*:first-child:nth-last-child(odd)]:col-span-2">
         {actions}
       </footer>
     )
@@ -168,11 +168,13 @@ export function DockedPanel({
     <aside
       onKeyDown={walk}
       className={cn(
-        "flex h-full w-[440px] shrink-0 flex-col overflow-hidden border-l bg-card",
+        "flex h-full w-[400px] shrink-0 flex-col overflow-hidden border-l bg-card",
         className
       )}
     >
-      <header className="flex items-start gap-3 border-b border-border bg-surface-head/50 px-5 py-4">
+      {/* As tall as the section bar beside it (p-3 around an h-8 row, plus
+          its border), with the same 16px heading, so the two read as one row. */}
+      <header className="flex min-h-[57px] items-center gap-3 border-b border-border bg-surface-head/50 px-4 py-2">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <h2 className="text-base leading-6 font-semibold">{title}</h2>
           {meta && (
@@ -187,7 +189,7 @@ export function DockedPanel({
           </span>
         )}
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto bg-surface-sunken/30 px-5 py-5">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto bg-surface-sunken/30 px-4 py-4">{children}</div>
       <PanelFooter onPrevious={onPrevious} onNext={onNext} actions={actions} compact />
     </aside>
   )

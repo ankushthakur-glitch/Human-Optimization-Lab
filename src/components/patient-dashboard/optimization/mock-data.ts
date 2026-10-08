@@ -61,8 +61,51 @@ export const MARCUS_CORE: DashboardData = {
   gaps: [
     { gap: "Influenza vaccine 2026-27", gapType: "Preventive", lastDone: "2025-10-10", due: "2026-10-01", remindersSent: 0, status: "open" },
   ],
-  encounters: [],
+  /* Outside care since the review on 08/12/2026: nothing acute, so every
+     visit and report below lands under For review. */
+  encounters: [
+    {
+      event: "Specialist visit", facility: "Corewell Endocrinology", clinician: "Dr. Priya Shah", reason: "Thyroid dose review",
+      date: "2026-09-18", documents: ["C-CDA"], reviewed: false, source: COREWELL,
+    },
+    {
+      event: "Urgent care", facility: "Henry Ford Urgent Care Troy", clinician: "Dr. Lisa Moreno", reason: "Ankle sprain, X-ray negative",
+      date: "2026-09-06", documents: ["C-CDA", "PDF"], reviewed: false, source: HENRY_FORD,
+    },
+    {
+      event: "Specialist visit", facility: "Henry Ford Cardiology", clinician: "Dr. Jones", reason: "Blood pressure follow-up",
+      date: "2026-09-29", documents: ["C-CDA"], reviewed: false, source: HENRY_FORD,
+    },
+    {
+      event: "Specialist visit", facility: "Corewell Sleep Medicine", clinician: "Dr. Naomi Fischer", reason: "Sleep apnea consult",
+      date: "2026-09-24", documents: ["C-CDA", "PDF"], reviewed: false, source: COREWELL,
+    },
+    {
+      event: "Urgent care", facility: "Corewell Health Virtual Care", clinician: "Dr. Mark Ellis", reason: "Seasonal allergies",
+      date: "2026-08-21", documents: ["C-CDA"], reviewed: false, source: COREWELL,
+    },
+    {
+      event: "Specialist visit", facility: "Corewell Dermatology", clinician: "Dr. Helen Cho", reason: "Skin check, two moles removed",
+      date: "2026-09-02", documents: ["C-CDA"], reviewed: false, source: COREWELL,
+    },
+  ],
   reports: [
+    {
+      report: "Echocardiogram", finding: "Mild left ventricular hypertrophy", values: "LVEF 60% · septum 1.2 cm",
+      date: "2026-09-29", source: HENRY_FORD, isOutsideSource: true, flag: "Abnormal", reviewed: false,
+    },
+    {
+      report: "Thyroid ultrasound", finding: "Small benign-appearing nodule, 6 mm", values: "TI-RADS 2",
+      date: "2026-09-18", source: COREWELL, isOutsideSource: true, flag: "Abnormal", reviewed: false,
+    },
+    {
+      report: "Skin biopsy", finding: "Benign compound nevus, margins clear",
+      date: "2026-09-09", source: COREWELL, isOutsideSource: true, flag: "Abnormal", reviewed: false,
+    },
+    {
+      report: "Ankle X-ray", finding: "Soft tissue swelling, no fracture",
+      date: "2026-09-06", source: HENRY_FORD, isOutsideSource: true, flag: "Abnormal", reviewed: false,
+    },
     {
       report: "Home sleep apnea test", finding: "Mild obstructive sleep apnea", short: "mild OSA",
       values: "AHI 5.3 · O₂ nadir 85%", summary: "AHI 5.3 with an O₂ nadir of 85%", inBrief: "the home test",

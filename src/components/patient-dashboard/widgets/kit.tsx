@@ -66,8 +66,8 @@ export function Widget({
           title would, at the same height. */}
       <header
         className={cn(
-          "flex min-h-13 items-center gap-2 border-b bg-[color-mix(in_oklab,var(--primary-tint)_5%,var(--card))] px-4 text-[15px] font-medium text-muted-foreground",
-          tabs ? "py-1.5 pl-3" : "py-3",
+          "flex min-h-11 items-center gap-2 border-b bg-[color-mix(in_oklab,var(--primary-tint)_5%,var(--card))] px-4 text-[15px] font-medium text-muted-foreground",
+          tabs ? "py-1 pl-3" : "py-2",
           !flush && "mb-3"
         )}
       >
@@ -76,9 +76,12 @@ export function Widget({
         ) : (
           <>
             <KitIcon icon={icon} size={18} />
-            <h3 className="flex-1">
+            {/* The title outranks the rows under it; icon and count stay quiet. */}
+            <h3 className="flex-1 font-semibold text-foreground">
               {title}
-              {count !== undefined && <span className="ml-1.5 font-normal tabular-nums">{count}</span>}
+              {count !== undefined && (
+                <span className="ml-1.5 font-normal text-muted-foreground tabular-nums">{count}</span>
+              )}
             </h3>
           </>
         )}

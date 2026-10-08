@@ -62,7 +62,7 @@ export function SectionBar({
           </TabsList>
         </Tabs>
       ) : (
-        <h2 className="flex h-8 items-center text-[15px] font-semibold">
+        <h2 className="flex h-8 items-center text-base font-semibold">
           {title}
         </h2>
       )}

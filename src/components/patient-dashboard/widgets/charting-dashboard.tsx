@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import {
   Alert02Icon,
   ArrowRight01Icon,
@@ -132,6 +133,15 @@ const SOFT_TEXT: Record<ToneKey, string> = {
   violet: "text-[color-mix(in_oklab,#9C86E6_72%,var(--foreground))]",
   green: "text-[color-mix(in_oklab,#5FB386_70%,var(--foreground))]",
   blue: "text-[color-mix(in_oklab,#6E9CE8_72%,var(--foreground))]",
+}
+/* A group heading's fill, per tone: the tint mixed into the card so the
+   sticky heading stays opaque over the rows scrolling under it. */
+const HEAD_TINT: Record<ToneKey, string> = {
+  red: "bg-[color-mix(in_oklab,#DE6F68_9%,var(--card))]",
+  orange: "bg-[color-mix(in_oklab,#EB9A52_10%,var(--card))]",
+  violet: "bg-[color-mix(in_oklab,#9C86E6_9%,var(--card))]",
+  green: "bg-[color-mix(in_oklab,#5FB386_9%,var(--card))]",
+  blue: "bg-[color-mix(in_oklab,#6E9CE8_9%,var(--card))]",
 }
 /* The decision band's card, per tone: a 40% border over an 8% tint. */
 const SOFT_CARD: Record<ToneKey, string> = {
@@ -693,7 +703,7 @@ function Readings({ m }: { m: Marker }) {
                       ? "No change"
                       : `${diff > 0 ? "+" : ""}${Number(diff.toFixed(2))}`}
                 </TableCell>
-                <TableCell className="px-0 py-2.5 text-right">
+                <TableCell className="px-0 py-2.5 text-right whitespace-normal">
                   {r.source}
                 </TableCell>
               </TableRow>
@@ -710,8 +720,9 @@ function Readings({ m }: { m: Marker }) {
 /** The hover card: small, soft and borderless, never in the way of a click. */
 const PEEK = "w-80 rounded-2xl p-4 shadow-[0_16px_40px_rgba(16,24,40,.12)]"
 
-/** Version 3 docks the detail beside the rows, so they show no hover peek. */
-const NoPeek = React.createContext(false)
+/** Version 3 docks the detail beside the rows, so its marker rows carry
+    the latest value under the name. */
+const Compact = React.createContext(false)
 
 /** A row that selects its subject; the selected one carries a teal edge. */
 function PickRow({
@@ -733,7 +744,6 @@ function PickRow({
 }) {
   /* The peek opens from the name block only, so moving across the graph
      or the status never throws a card over the rows below. */
-  const noPeek = React.useContext(NoPeek)
   return (
     <li>
       <button
@@ -773,7 +783,7 @@ function PickRow({
                 )}
               </span>
             </HoverCardTrigger>
-            {!selected && !noPeek && (
+            {!selected && (
               <HoverCardContent
                 side="bottom"
                 align="start"
@@ -847,6 +857,45 @@ function MarkerRow({
   const last = m.points[m.points.length - 1]
   const tone = bands(m)[m.points.length - 1]
   const word = STATUS_WORD(m)
+  const compact = React.useContext(Compact)
+  if (compact) {
+    /* Version 3: the name over the latest value, coloured by its band,
+       then the trend with the readings before it. */
+    return (
+      <PickRow
+        s={{ ...s, title: m.name }}
+        selected={selected}
+        onPick={onPick}
+        meta={
+          <span className="tabular-nums">
+            <span
+              className={cn(
+                "font-semibold",
+                tone === "green" ? "text-foreground" : SOFT_TEXT[tone]
+              )}
+            >
+              {last.value}
+            </span>
+            {m.unit && ` ${m.unit}`}
+          </span>
+        }
+        graph={
+          <span className="hidden shrink-0 sm:flex">
+            <DotTrend
+              subtle
+              points={m.points}
+              low={m.low}
+              high={m.high}
+              label={`${m.name}, last readings ${m.points
+                .slice(-3)
+                .map((p) => p.value)
+                .join(", ")}`}
+            />
+          </span>
+        }
+      />
+    )
+  }
   return (
     <PickRow
       s={{ ...s, title: m.name }}
@@ -1297,6 +1346,7 @@ export function ChartingDashboard({
   patientName,
   onOpen,
   docked = false,
+  slot,
 }: {
   dash: Dashboard
   opt: Optimization
@@ -1304,6 +1354,8 @@ export function ChartingDashboard({
   patientName: string
   onOpen: OpenSection
   docked?: boolean
+  /** Where Version 3's sidebar renders: a column beside the tab bar. */
+  slot?: HTMLElement | null
 }) {
   const wide = useWide()
   const dock = docked && wide
@@ -1373,7 +1425,7 @@ export function ChartingDashboard({
       <div
         className={cn(
           "grid grid-cols-1 gap-4",
-          a && b && (dock ? "min-[1800px]:grid-cols-2" : "2xl:grid-cols-2")
+          a && b && (dock ? "grid-cols-2" : "2xl:grid-cols-2")
         )}
       >
         {a}
@@ -1387,19 +1439,22 @@ export function ChartingDashboard({
       <Pill tone={panelTone(current)}>{current.category}</Pill>
     </span>
   )
-  const panelActions = current?.actions.map((a, i) => (
-    <Button
-      key={a.label}
-      variant={a.primary ? "default" : i <= 1 ? "outline" : "secondary"}
-      className={cn(!a.primary && i <= 1 && SECOND)}
-      onClick={() => act(a)}
-    >
-      {a.label}
-    </Button>
-  ))
+  /* Version 3 has no plan card to scroll to, so "Show plan" goes. */
+  const panelActions = current?.actions
+    .filter((a) => !(docked && a.run === showPlan))
+    .map((a, i) => (
+      <Button
+        key={a.label}
+        variant={a.primary ? "default" : i <= 1 ? "outline" : "secondary"}
+        className={cn(!a.primary && i <= 1 && SECOND)}
+        onClick={() => act(a)}
+      >
+        {a.label}
+      </Button>
+    ))
 
   const lists = (
-    <NoPeek.Provider value={docked}>
+    <Compact.Provider value={docked}>
       <div className={cn("flex min-w-0 flex-col gap-4", TYPE_SCALE)}>
         {view.lead ? (
           <DecisionBand
@@ -1422,46 +1477,49 @@ export function ChartingDashboard({
           </div>
         )}
 
-        <Glance
-          since={view.reviewAt}
-          items={[
-            {
-              shape: URGENT_SNAPSHOT,
-              label: "Action needed",
-              icon: Alert02Icon,
-              items: action,
-              color: PALETTE.clinical,
-              urgent: true,
-              target: "v5-updates",
-            },
-            {
-              shape: OPEN_SNAPSHOTS.abnormal_result,
-              label: "Out of range",
-              icon: TestTube01Icon,
-              items: view.results,
-              color: PALETTE.clinical,
-              target: "v5-results",
-            },
-            {
-              shape: OPEN_SNAPSHOTS.medication_change,
-              label: "Watchful trends",
-              icon: ChartLineData01Icon,
-              items: view.watches,
-              color: PALETTE.process,
-              target: "v5-watch",
-            },
-            {
-              shape: OPEN_SNAPSHOTS.care_gap,
-              label: "Care gaps",
-              icon: Calendar03Icon,
-              items: view.care.filter(
-                (c) => c.alert === "Overdue" || c.alert === "Never tested"
-              ),
-              color: PALETTE.process,
-              target: "v5-care",
-            },
-          ]}
-        />
+        {/* Version 3 leads with the rows; the counts stay on Version 2. */}
+        {!docked && (
+          <Glance
+            since={view.reviewAt}
+            items={[
+              {
+                shape: URGENT_SNAPSHOT,
+                label: "Action needed",
+                icon: Alert02Icon,
+                items: action,
+                color: PALETTE.clinical,
+                urgent: true,
+                target: "v5-updates",
+              },
+              {
+                shape: OPEN_SNAPSHOTS.abnormal_result,
+                label: "Out of range",
+                icon: TestTube01Icon,
+                items: view.results,
+                color: PALETTE.clinical,
+                target: "v5-results",
+              },
+              {
+                shape: OPEN_SNAPSHOTS.medication_change,
+                label: "Watchful trends",
+                icon: ChartLineData01Icon,
+                items: view.watches,
+                color: PALETTE.process,
+                target: "v5-watch",
+              },
+              {
+                shape: OPEN_SNAPSHOTS.care_gap,
+                label: "Care gaps",
+                icon: Calendar03Icon,
+                items: view.care.filter(
+                  (c) => c.alert === "Overdue" || c.alert === "Never tested"
+                ),
+                color: PALETTE.process,
+                target: "v5-care",
+              },
+            ]}
+          />
+        )}
 
         {view.updates.length > 0 && (
           <div id="v5-updates" className="scroll-mt-3">
@@ -1478,66 +1536,84 @@ export function ChartingDashboard({
               }
               flush
             >
-              {(
-                [
-                  ["action", action, 99],
-                  ["review", review, 3],
-                ] as [Group, Subject[], number][]
-              ).map(([g, rows, limit]) =>
-                rows.length ? (
-                  <div
-                    key={g}
-                    className="flex flex-col border-b last:border-b-0"
-                  >
-                    <Preview
-                      items={rows}
-                      limit={limit}
-                      render={(s) => {
-                        const t =
-                          s.kind === "visit"
-                            ? { kind: "", subject: s.title }
-                            : splitTitle(s.title)
-                        return (
-                          <PickRow
-                            key={s.id}
-                            s={{ ...s, title: t.subject }}
-                            tone={GROUP_TONE[g]}
-                            selected={isPicked(s)}
-                            onPick={choose(view.updates)}
-                            meta={
-                              <>
-                                {t.kind && (
-                                  <span className="text-foreground/70">
-                                    {t.kind}.{" "}
+              {/* Version 3 scrolls the list inside the card, every row
+                  under an Action needed or For review heading. */}
+              <div className={cn(docked && "max-h-[420px] overflow-y-auto")}>
+                {(
+                  [
+                    ["action", action, 99, "Action needed"],
+                    ["review", review, 3, "For review"],
+                  ] as [Group, Subject[], number, string][]
+                ).map(([g, rows, limit, label]) =>
+                  rows.length ? (
+                    <div
+                      key={g}
+                      className="flex flex-col border-b last:border-b-0"
+                    >
+                      {docked && (
+                        <h4
+                          className={cn(
+                            "sticky top-0 z-[1] flex items-center gap-2 border-b px-4 py-2 text-xs font-semibold",
+                            HEAD_TINT[GROUP_TONE[g]],
+                            SOFT_TEXT[GROUP_TONE[g]]
+                          )}
+                        >
+                          {label}
+                          <span className="font-normal text-muted-foreground tabular-nums">
+                            {rows.length}
+                          </span>
+                        </h4>
+                      )}
+                      <Preview
+                        items={rows}
+                        limit={docked ? rows.length : limit}
+                        render={(s) => {
+                          const t =
+                            s.kind === "visit"
+                              ? { kind: "", subject: s.title }
+                              : splitTitle(s.title)
+                          return (
+                            <PickRow
+                              key={s.id}
+                              s={{ ...s, title: t.subject }}
+                              tone={GROUP_TONE[g]}
+                              selected={isPicked(s)}
+                              onPick={choose(view.updates)}
+                              meta={
+                                <>
+                                  {t.kind && (
+                                    <span className="text-foreground/70">
+                                      {t.kind}.{" "}
+                                    </span>
+                                  )}
+                                  {s.line}
+                                  {s.alert && (
+                                    <span
+                                      className={cn(
+                                        "ml-1 font-medium",
+                                        SOFT_TEXT[GROUP_TONE[g]]
+                                      )}
+                                    >
+                                      {s.alert}
+                                    </span>
+                                  )}
+                                </>
+                              }
+                              status={
+                                s.date && (
+                                  <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+                                    {day(s.date)}
                                   </span>
-                                )}
-                                {s.line}
-                                {s.alert && (
-                                  <span
-                                    className={cn(
-                                      "ml-1 font-medium",
-                                      SOFT_TEXT[GROUP_TONE[g]]
-                                    )}
-                                  >
-                                    {s.alert}
-                                  </span>
-                                )}
-                              </>
-                            }
-                            status={
-                              s.date && (
-                                <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-                                  {day(s.date)}
-                                </span>
-                              )
-                            }
-                          />
-                        )
-                      }}
-                    />
-                  </div>
-                ) : null
-              )}
+                                )
+                              }
+                            />
+                          )
+                        }}
+                      />
+                    </div>
+                  ) : null
+                )}
+              </div>
             </Widget>
           </div>
         )}
@@ -1688,7 +1764,8 @@ export function ChartingDashboard({
           ) : null
         )}
 
-        {programView && opt.model && (
+        {/* Version 3 drops the program plan card. */}
+        {!docked && programView && opt.model && (
           <div id={PLAN_ID} className="scroll-mt-3">
             <ProgramPanel
               opt={opt.model}
@@ -1708,26 +1785,25 @@ export function ChartingDashboard({
             </Quiet>
           )}
       </div>
-    </NoPeek.Provider>
+    </Compact.Provider>
   )
 
-  if (dock && current)
+  if (dock && current && slot)
     return (
-      /* Fills the section body (made relative by the caller): the lists
-         scroll on the left, the panel is a full height sidebar on the right. */
-      <div className="absolute inset-0 flex">
-        <div className="min-w-0 flex-1 overflow-y-auto px-3 pt-3 pb-6">
-          {lists}
-        </div>
-        <DockedPanel
-          title={panelHead}
-          onPrevious={at > 0 ? go(at - 1) : undefined}
-          onNext={at >= 0 ? go(at + 1) : undefined}
-          actions={panelActions}
-        >
-          <DetailBody s={current} model={model} opt={opt.model} />
-        </DockedPanel>
-      </div>
+      <>
+        {lists}
+        {createPortal(
+          <DockedPanel
+            title={panelHead}
+            onPrevious={at > 0 ? go(at - 1) : undefined}
+            onNext={at >= 0 ? go(at + 1) : undefined}
+            actions={panelActions}
+          >
+            <DetailBody s={current} model={model} opt={opt.model} />
+          </DockedPanel>,
+          slot
+        )}
+      </>
     )
 
   return (

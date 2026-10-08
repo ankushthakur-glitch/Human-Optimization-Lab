@@ -31,6 +31,7 @@ import {
   useDashboard,
 } from "@/components/patient-dashboard/patient-dashboard"
 import { useOptimization } from "@/components/patient-dashboard/optimization/model"
+import { useDashboardVersion } from "@/components/provider/dashboard-version"
 import { ChartingDashboard } from "@/components/patient-dashboard/widgets/charting-dashboard"
 import { FreeWidgetDashboard } from "@/components/patient-dashboard/widgets/free-dashboard"
 import {
@@ -83,84 +84,50 @@ export function ChartDashboard({
     patient.membership === "optimization" &&
     (patient.recordState ?? "active") === "active" &&
     Boolean(opt.model)
-  const [version, setVersion] = useDashboardVersion()
+  const [version] = useDashboardVersion()
+  /* Version 3's sidebar renders into this column, beside the tab bar and
+     the body, so it runs the full height of the card. */
+  const [slot, setSlot] = React.useState<HTMLDivElement | null>(null)
   return (
     <Section>
-      <SectionBar
-        tabs={[
-          { id: "1", label: "Version 1" },
-          { id: "2", label: "Version 2" },
-          { id: "3", label: "Version 3" },
-        ]}
-        value={version}
-        onTab={(v) => setVersion(v as DashboardVersion)}
-        actions={
-          <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
-            {/* Two kinds of patient only: the badge follows the membership. */}
-            {patient.membership === "optimization" ? (
-              <OptimizationToolbar dash={dash} opt={opt} />
-            ) : (
-              <DashboardToolbar dash={dash} />
-            )}
-          </div>
-        }
-      />
-      <SectionBody className={version === "3" ? "relative" : undefined}>
-        {version === "2" || version === "3" ? (
-          <ChartingDashboard
-            key={version}
-            docked={version === "3"}
-            dash={dash}
-            opt={opt}
-            optimized={optimized}
-            patientName={patient.firstName}
-            onOpen={onOpen}
+      <div className="flex min-h-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <SectionBar
+            title="Dashboard"
+            actions={
+              <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+                {/* Two kinds of patient only: the badge follows the membership. */}
+                {patient.membership === "optimization" ? (
+                  <OptimizationToolbar dash={dash} opt={opt} />
+                ) : (
+                  <DashboardToolbar dash={dash} />
+                )}
+              </div>
+            }
           />
-        ) : optimized && opt.model ? (
-          <MemberWidgetDashboard opt={opt} onOpen={onOpen} />
-        ) : (
-          <FreeWidgetDashboard dash={dash} onOpen={onOpen} />
-        )}
-      </SectionBody>
+          <SectionBody>
+            {version === "2" || version === "3" ? (
+              <ChartingDashboard
+                key={version}
+                docked={version === "3"}
+                slot={slot}
+                dash={dash}
+                opt={opt}
+                optimized={optimized}
+                patientName={patient.firstName}
+                onOpen={onOpen}
+              />
+            ) : optimized && opt.model ? (
+              <MemberWidgetDashboard opt={opt} onOpen={onOpen} />
+            ) : (
+              <FreeWidgetDashboard dash={dash} onOpen={onOpen} />
+            )}
+          </SectionBody>
+        </div>
+        {version === "3" && <div ref={setSlot} className="flex empty:hidden" />}
+      </div>
     </Section>
   )
-}
-
-/* Version 1 is the widget dashboard; version 2 is the detailed charting
-   dashboard from the 7 Oct CareMap images and the 6 Oct call
-   (widgets/charting-dashboard.tsx); version 3 is the same dashboard with
-   the detail panel docked open on the top priority subject. The pick is kept per browser for the
-   prototype. */
-type DashboardVersion = "1" | "2" | "3"
-const VERSION_KEY = "hol.chart.dashboardVersion.v2"
-
-const versionListeners = new Set<() => void>()
-
-function readVersion(): DashboardVersion {
-  try {
-    const v = localStorage.getItem(VERSION_KEY)
-    return v === "1" || v === "3" ? v : "2"
-  } catch {
-    return "2"
-  }
-}
-
-function useDashboardVersion() {
-  const version = React.useSyncExternalStore(
-    (l) => {
-      versionListeners.add(l)
-      return () => versionListeners.delete(l)
-    },
-    readVersion,
-    () => "2" as const
-  )
-  const set = React.useCallback((v: DashboardVersion) => {
-    try {
-      localStorage.setItem(VERSION_KEY, v)
-    } catch {}
-    versionListeners.forEach((l) => l())
-  }, [])
-  return [version, set] as const
 }
 
 export function ChartOverview({
