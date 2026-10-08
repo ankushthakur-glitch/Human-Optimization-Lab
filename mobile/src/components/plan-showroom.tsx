@@ -1,9 +1,10 @@
+import { router } from "expo-router"
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
-import { ArrowDown, ArrowRight, ArrowUp, Barbell, Bone, Check, Flask, Heartbeat, Sparkle } from "@/components/ph"
-import { AskButton } from "@/components/hol"
-import { Block, Card, HUE, Tile, StatRow, StatTile, type Hue } from "@/components/record-kit"
+import { ArrowDown, ArrowRight, ArrowUp, Barbell, Bone, Buildings, CalendarCheck, ChartLineUp, ChatText, Check, ClipboardText, FileText, Flask, Gauge, Heart, Heartbeat, Microscope, Pill, Target } from "@/components/ph"
+import { Block, Card, HUE, Tile, type Hue } from "@/components/record-kit"
 import { UpgradeHero } from "@/components/upgrade-hero"
 import { Button } from "@/components/ui"
 import { useMarkers } from "@/lib/experience"
@@ -35,9 +36,6 @@ import { watchList, type Trend } from "@/lib/trends"
    and the focus row it highlights. */
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
-
-/** The warm accent of the upgrade card in the assistant, carried here. */
-const AMBER = "#F5A524"
 
 /** The first line, by where she came from (C.14.3). A marker id is
     handled apart: it names the marker. */
@@ -71,94 +69,181 @@ const FOCUS_ICON: Record<FocusArea, typeof Flask> = { "blood sugar": Flask, hear
     borderline, teal in range. */
 const STATUS_HUE: Record<Trend["status"], Hue> = { out: "red", borderline: "amber", in: "teal" }
 
+/** The cost cards' brown ink, on their tan icon block and cream ground. */
+const COST_INK = "#8A6A2F"
+
+/** A marker's icon: its focus area's, or the gauge for blood pressure. */
+function iconOf(t: Trend): typeof Flask {
+  if (t.marker.focus) return FOCUS_ICON[t.marker.focus]
+  return /pressure|bp/i.test(`${t.marker.short ?? ""} ${t.marker.name}`) ? Gauge : Flask
+}
+
+/** The way a result is moving, for its arrow. */
+const directionOf = (t: Trend) => (t.movement === "rising" ? "up" : t.movement === "falling" ? "down" : undefined)
+
 /** One watched marker in the "areas worth working on" card: its icon, the
-    name with its value and the way it is moving, and one line of why. */
-function AreaRow({ t, last }: { t: Trend; last?: boolean }) {
+    name and the way it is moving, and the value with its arrow; the row
+    opens the marker. */
+function AreaRow({ t }: { t: Trend }) {
   const hue = STATUS_HUE[t.status]
-  const Icon = (t.marker.focus && FOCUS_ICON[t.marker.focus]) || Flask
-  const Arrow = t.movement === "rising" ? ArrowUp : t.movement === "falling" ? ArrowDown : undefined
+  const Icon = iconOf(t)
+  const Arrow = directionOf(t) === "up" ? ArrowUp : directionOf(t) === "down" ? ArrowDown : undefined
   return (
-    <View style={[styles.area, !last && styles.areaRule]} accessible accessibilityLabel={t.spoken}>
-      <Tile hue={hue} size={36}>
-        <Icon size={20} color={HUE[hue].ink} />
+    <Pressable
+      onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: t.id } })}
+      accessibilityRole="button"
+      accessibilityLabel={t.spoken}
+      style={({ pressed }) => [styles.area, pressed && styles.areaPressed]}
+    >
+      <Tile hue={hue} size={40}>
+        <Icon size={22} color={HUE[hue].ink} />
       </Tile>
       <View style={styles.areaWords}>
-        <View style={styles.areaTitle}>
-          <Text style={styles.areaName}>{t.marker.short ?? t.marker.name}</Text>
-          <Text style={styles.areaValue}>{t.valueWithUnit}</Text>
-          {Arrow && <Arrow size={14} weight="bold" color={HUE[hue].ink} />}
-        </View>
+        <Text style={styles.areaName}>{t.marker.short ?? t.marker.name}</Text>
         <Text style={styles.areaMeta}>{t.change?.words ?? t.movementWord}</Text>
       </View>
-    </View>
+      <View style={styles.areaValue}>
+        <Text style={styles.areaValueText}>{t.valueWithUnit}</Text>
+        {Arrow && <Arrow size={14} weight="bold" color={HUE[hue].ink} />}
+      </View>
+    </Pressable>
   )
 }
 
-/** The checklist under the card: what a member gets, a green tick each. */
+/** One icon for each line of MEMBER_GETS, in its order. */
+const GET_ICON = [ClipboardText, FileText, ChatText, CalendarCheck, ChartLineUp, Target] as const
+
+/** What a member gets, as a grid of small cards (6 Oct 2026 reference): each
+    a soft teal icon tile over its words, two to a row and level. Read
+    across, then down. */
 function MemberGets() {
+  const rows: (typeof MEMBER_GETS)[number][][] = []
+  for (let i = 0; i < MEMBER_GETS.length; i += 2) rows.push(MEMBER_GETS.slice(i, i + 2))
   return (
     <Block title="What you get as a member">
-      <Card>
-        <View style={styles.gets}>
-          {MEMBER_GETS.map((line) => (
-            <View key={line} style={styles.get}>
-              <Check size={16} weight="bold" color={color.ok} />
-              <Text style={styles.getText}>{line}</Text>
-            </View>
-          ))}
-        </View>
-      </Card>
-    </Block>
-  )
-}
-
-/** A plain checklist block: ticks for what stays free, dashes for what is charged apart. */
-function Points({ title, lines, tick }: { title: string; lines: readonly string[]; tick?: boolean }) {
-  return (
-    <Block title={title}>
-      <Card>
-        <View style={styles.gets}>
-          {lines.map((line) => (
-            <View key={line} style={styles.get}>
-              {tick ? <Check size={16} weight="bold" color={color.ok} /> : <Text style={styles.dash}>–</Text>}
-              <Text style={styles.getText}>{line}</Text>
-            </View>
-          ))}
-        </View>
-      </Card>
-    </Block>
-  )
-}
-
-/** The page's one question and its answer, in the words the assistant's
-    upgrade card uses, so the two say the same thing. */
-function Pitch() {
-  return (
-    <View style={styles.pitch}>
-      <View style={styles.pitchHead}>
-        <View style={styles.pitchBadge}>
-          <Sparkle size={22} color="#FFFFFF" weight="fill" />
-        </View>
-        <Text style={styles.pitchTitle} accessibilityRole="header">
-          Want unlimited AI and a personalized plan?
-        </Text>
+      <View style={styles.getsGrid}>
+        {rows.map((pair, r) => (
+          <View key={r} style={styles.getsRow}>
+            {pair.map((line, c) => {
+              const Icon = GET_ICON[(r * 2 + c) % GET_ICON.length]
+              return (
+                <View key={line} style={styles.get} accessible accessibilityLabel={line}>
+                  <View style={styles.getIcon}>
+                    <Icon size={18} color={color.primary} />
+                  </View>
+                  <Text style={styles.getText}>{line}</Text>
+                </View>
+              )
+            })}
+            {pair.length < 2 && <View style={styles.getSpacer} />}
+          </View>
+        ))}
       </View>
-      <Text style={styles.pitchBody}>Get answers, guidance and a plan built from your complete health record.</Text>
-    </View>
+    </Block>
   )
 }
 
-function Prices() {
+/** One icon for each line of FREE_STAYS, in its order. */
+const FREE_ICON = [Heartbeat, Heart, Flask, ChatText] as const
+
+/** What stays free, however she pays (S-03): all the lines in one soft mint
+    card, a row each with a teal icon block and a tick on the right. */
+function FreeStays() {
   return (
-    <Block title="Price">
-      <Card>
-        <StatRow>
-          {CADENCES.map((c) => {
-            const b = TIERS.optimization.billing[c]
-            return <StatTile key={c} bare value={b.price} label={b.name} meta={b.save ?? b.note} accessibilityLabel={`${b.name}, ${priceLabel(c)}, ${b.save ?? b.note}`} />
-          })}
-        </StatRow>
-      </Card>
+    <Block title="What stays free">
+      <View style={styles.frees}>
+        {FREE_STAYS.map((line, i, all) => {
+          const Icon = FREE_ICON[i % FREE_ICON.length]
+          return (
+            <View key={line} style={[styles.free, i < all.length - 1 && styles.freeRule]} accessible accessibilityLabel={`${line}, free`}>
+              <View style={styles.freeIcon}>
+                <Icon size={18} color={color.primary} />
+              </View>
+              <Text style={styles.freeText}>{line}</Text>
+              <View style={styles.freeTick}>
+                <Check size={12} weight="bold" color={color.primary} />
+              </View>
+            </View>
+          )
+        })}
+      </View>
+    </Block>
+  )
+}
+
+/** One icon for each line of TIERS.optimization.excluded, in its order. */
+const COST_ICON = [Microscope, Buildings, Pill] as const
+
+/** What is charged apart from the plan (S-66): all the lines in one soft cream
+    card, a row each with a small tan icon block, so it reads as a cost to know
+    about and not as something the plan includes. */
+function ChargedSeparately() {
+  return (
+    <Block title="Charged separately">
+      <View style={styles.costs}>
+        {TIERS.optimization.excluded.map((line, i, all) => {
+          const Icon = COST_ICON[i % COST_ICON.length]
+          return (
+            <View key={line} style={[styles.cost, i < all.length - 1 && styles.costRule]} accessible accessibilityLabel={line}>
+              <View style={styles.costIcon}>
+                <Icon size={18} color={COST_INK} />
+              </View>
+              <Text style={styles.costText}>{line}</Text>
+            </View>
+          )
+        })}
+      </View>
+    </Block>
+  )
+}
+
+/** The Premium Plan's two prices (8 Oct 2026): Monthly and Yearly as two
+    cards side by side, each a name, a figure and its period. View only:
+    nothing here is picked; the checkout is where she confirms how she pays,
+    from the pinned "Build my personalized plan". Yearly carries its saving
+    on a badge over the edge and a light green to white wash. */
+function Prices() {
+  const gradient = React.useId().replace(/:/g, "")
+  return (
+    <Block title="Premium Plan">
+      <View style={styles.prices}>
+        {CADENCES.map((c) => {
+          const b = TIERS.optimization.billing[c]
+          const yearly = c === "yearly"
+          return (
+            <View
+              key={c}
+              style={[styles.price, yearly && styles.priceYearly]}
+              accessible
+              accessibilityLabel={`${b.name}, ${priceLabel(c)}${b.save ? `, ${b.save}` : ""}`}
+            >
+              {yearly && (
+                <View style={styles.priceWash} pointerEvents="none">
+                  <Svg style={StyleSheet.absoluteFill} viewBox="0 0 1 1" preserveAspectRatio="none">
+                    <Defs>
+                      <LinearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
+                        <Stop offset="0" stopColor="#D9F1EC" />
+                        <Stop offset="1" stopColor="#FFFFFF" />
+                      </LinearGradient>
+                    </Defs>
+                    <Rect width="1" height="1" fill={`url(#${gradient})`} />
+                  </Svg>
+                </View>
+              )}
+              <Text style={styles.priceName}>{b.name}</Text>
+              <Text style={styles.priceFigure} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                {b.price}
+                <Text style={styles.pricePeriod}>{` / ${b.period}`}</Text>
+              </Text>
+              {!!b.save && (
+                <View style={styles.priceBadge}>
+                  <Text style={styles.priceBadgeText}>{b.save}</Text>
+                </View>
+              )}
+            </View>
+          )
+        })}
+      </View>
     </Block>
   )
 }
@@ -180,6 +265,8 @@ type ShowroomProps = {
           actions as its footer (ShowroomActions); a member reading the
           page gets the story alone. */
       mode: "page"
+      /** Opens the checkout sheet from the pricing card. */
+      onStart?: () => void
     }
 )
 
@@ -208,49 +295,40 @@ export function PlanShowroom(props: ShowroomProps) {
       {!!context.line && <Text style={styles.body}>{context.line}</Text>}
 
       <Card style={styles.areas}>
-        <Text style={styles.leadTitle} accessibilityRole="header">
-          {shown.length ? (
-            <>
-              {"Your record shows "}
-              <Text style={styles.count}>{shown.length === 1 ? "1 area" : `${shown.length} areas`}</Text>
-              {" worth working on"}
-            </>
-          ) : (
-            "Your record is in range"
-          )}
-        </Text>
-        {shown.length > 0 && (
-          <View>
-            {shown.map((t, i) => (
-              <AreaRow key={t.id} t={t} last={i === shown.length - 1} />
-            ))}
-          </View>
-        )}
-        <View style={styles.note}>
-          <Text style={styles.noteText}>Inlay can turn these insights into a personalized program designed around you and reviewed by a physician.</Text>
+        <View style={styles.lead}>
+          <Text style={styles.leadTitle} accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+            {shown.length ? (
+              <>
+                {"Your record shows "}
+                <Text style={styles.count}>{shown.length === 1 ? "1 area" : `${shown.length} areas`}</Text>
+                {" worth working on"}
+              </>
+            ) : (
+              "Your record is in range"
+            )}
+          </Text>
         </View>
+        {shown.map((t) => (
+          <AreaRow key={t.id} t={t} />
+        ))}
       </Card>
-
-      <Pitch />
 
       <MemberGets />
 
       <Prices />
 
-      <Points title="What stays free" lines={FREE_STAYS} tick />
+      <FreeStays />
 
-      <Points title="Charged separately" lines={TIERS.optimization.excluded} />
+      <ChargedSeparately />
 
-      {props.mode === "tab" && <ShowroomActions mode="tab" from={from} onStart={props.onStart} />}
     </>
   )
 }
 
-/** The showroom's actions (C.14.3 h): "Build my personalized plan" as the primary
-    button and under it the "Ask to Health Agent" button as the
-    secondary one, with its orb and sparkle (user, 5 Oct 2026: no "Not for me"). On the tab they close the showroom; on
-    /plans they are the pinned footer. Logged on the same offer as the
-    showroom's view, keyed by where she came from. */
+/** The showroom's one action (C.14.3 h): "Build my personalized plan" (the
+    "Ask to Health Agent" button is gone, 8 Oct 2026). On the tab it closes
+    the showroom; on /plans it is the pinned footer. Logged on the same
+    offer as the showroom's view, keyed by where she came from. */
 export function ShowroomActions({
   mode,
   from,
@@ -264,62 +342,89 @@ export function ShowroomActions({
   const onboarding = useOnboarding()
   const offer = useOffer("plan-tab", { key: from ?? mode })
   return (
-    <View style={styles.actions}>
-      <Button
-        trailing={({ color: c }) => <ArrowRight size={18} weight="bold" color={c} />}
-        onPress={() => {
-          offer.markOpened()
-          logEvent(onboarding, "checkout_started", { from: from ?? mode })
-          onStart()
-        }}
-      >
-        {startLabelOf(onboarding)}
-      </Button>
-      <AskButton params={{ topic: "plan" }} secondary />
-    </View>
+    <Button
+      trailing={({ color: c }) => <ArrowRight size={18} weight="bold" color={c} />}
+      onPress={() => {
+        offer.markOpened()
+        logEvent(onboarding, "checkout_started", { from: from ?? mode })
+        onStart()
+      }}
+    >
+      {startLabelOf(onboarding)}
+    </Button>
   )
 }
 
 const styles = StyleSheet.create({
   body: { ...type.body },
-  leadTitle: { ...type.section },
+
+  // The areas card: a lead row, then each marker on its own white row.
+  areas: { gap: space.item, padding: space.item },
+  lead: { flexDirection: "row", alignItems: "center", gap: space.lead },
+  leadTitle: { ...type.section, flex: 1, fontSize: 14, lineHeight: 20 },
   count: { fontFamily: font.semibold, color: ink.primary },
-
-  // The card's rows carry their own rule and room, as a Group's do.
-  areas: { gap: space.item },
-  area: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
-  areaRule: { borderBottomWidth: 1, borderBottomColor: hairline.rule },
+  area: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.lead,
+    padding: space.item,
+    borderRadius: 12,
+    backgroundColor: color.background,
+    boxShadow: "0 1px 6px rgba(16, 24, 40, 0.06)",
+  },
+  areaPressed: { opacity: 0.7 },
   areaWords: { flex: 1, gap: space.line },
-  areaTitle: { flexDirection: "row", alignItems: "center", gap: space.mark },
   areaName: { ...type.title },
-  areaValue: { ...type.value },
   areaMeta: { ...type.label },
-  note: { backgroundColor: color.primarySoft, borderRadius: 8, padding: space.compact },
-  noteText: { ...type.body, color: ink.primary },
+  areaValue: { flexDirection: "row", alignItems: "center", gap: space.mark },
+  areaValueText: { ...type.value },
 
-  pitch: {
+  getsGrid: { gap: space.item },
+  getsRow: { flexDirection: "row", gap: space.item },
+  get: {
+    flex: 1,
+    gap: 14,
     padding: 16,
-    gap: 10,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#F6D99A",
-    backgroundColor: "#FFFAEE",
-    shadowColor: AMBER,
-    shadowOpacity: 0.14,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    borderColor: "#D6EAE7",
+    backgroundColor: color.background,
   },
-  pitchHead: { flexDirection: "row", alignItems: "center", gap: 12 },
-  pitchBadge: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: AMBER },
-  pitchTitle: { ...type.section, flex: 1, color: ink.primary },
-  pitchBody: { ...type.body, color: ink.detail },
+  getSpacer: { flex: 1 },
+  getIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: color.primaryTint },
+  getText: { fontFamily: font.semibold, fontSize: 13, lineHeight: 18, color: ink.strong },
 
-  gets: { gap: space.item },
-  get: { flexDirection: "row", alignItems: "flex-start", gap: space.item },
-  getText: { ...type.body, flex: 1, color: ink.content },
-  dash: { ...type.body, width: 16, textAlign: "center", color: ink.detail },
+  costs: { paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: "#F4ECD6", backgroundColor: "#FFFCF3" },
+  cost: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
+  costRule: { borderBottomWidth: 1, borderBottomColor: "#F4ECD6" },
+  costIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#F4E5BE" },
+  costText: { ...type.body, flex: 1, color: ink.content },
 
-  // The quiet answer sits right under the button; its own height spaces it.
-  actions: { gap: space.inline },
+  frees: { paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, borderColor: "#CFE8E3", backgroundColor: "#F3FAF8" },
+  free: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
+  freeRule: { borderBottomWidth: 1, borderBottomColor: "#DCEEEA" },
+  freeIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#D7EFEA" },
+  freeText: { ...type.body, flex: 1, color: ink.content },
+  freeTick: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "#CBEBE5" },
+
+  // The two price cards, level and equal; the badge floats over the top edge.
+  prices: { flexDirection: "row", gap: space.item, paddingTop: 10 },
+  price: {
+    flex: 1,
+    alignItems: "center",
+    gap: 2,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#D6EAE7",
+    backgroundColor: color.background,
+  },
+  priceYearly: { borderWidth: 1.5, borderColor: color.primary },
+  priceWash: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, borderRadius: 14, overflow: "hidden" },
+  priceName: { ...type.title },
+  priceFigure: { ...type.hero, textAlign: "center" },
+  pricePeriod: { ...type.label, fontFamily: font.medium },
+  priceBadge: { position: "absolute", top: -10, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 10, backgroundColor: color.primary },
+  priceBadgeText: { fontFamily: font.semibold, fontSize: 11, lineHeight: 16, color: "#FFFFFF" },
 })
