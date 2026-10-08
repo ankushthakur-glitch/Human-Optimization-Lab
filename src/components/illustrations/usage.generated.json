@@ -2,21 +2,21 @@
   "no-results": [
     {
       "file": "src/components/admin/practices-list.tsx",
-      "line": 374,
+      "line": 388,
       "routes": [
         "/screens/admin/practices"
       ]
     },
     {
       "file": "src/components/admin/provider-adoption.tsx",
-      "line": 287,
+      "line": 291,
       "routes": [
         "/screens/admin/practices/593892/providers/PR4775"
       ]
     },
     {
       "file": "src/components/practice/directory.tsx",
-      "line": 577,
+      "line": 586,
       "routes": [
         "/screens/practice/users",
         "/screens/practice/patients",
@@ -32,7 +32,7 @@
     },
     {
       "file": "src/components/admin/practices-list.tsx",
-      "line": 373,
+      "line": 387,
       "routes": [
         "/screens/admin/practices"
       ]
@@ -41,14 +41,14 @@
   "providers-empty": [
     {
       "file": "src/components/admin/practice-adoption-view.tsx",
-      "line": 264,
+      "line": 222,
       "routes": [
         "/screens/admin/practices/593892"
       ]
     },
     {
       "file": "src/components/practice/providers.tsx",
-      "line": 414,
+      "line": 422,
       "routes": [
         "/screens/practice/users"
       ]
@@ -57,14 +57,14 @@
   "users-empty": [
     {
       "file": "src/components/admin/practice-adoption-view.tsx",
-      "line": 416,
+      "line": 384,
       "routes": [
         "/screens/admin/practices/593892"
       ]
     },
     {
       "file": "src/components/practice/users.tsx",
-      "line": 472,
+      "line": 485,
       "routes": [
         "/screens/practice/users"
       ]
@@ -73,14 +73,14 @@
   "patients-empty": [
     {
       "file": "src/components/admin/provider-adoption.tsx",
-      "line": 247,
+      "line": 251,
       "routes": [
         "/screens/admin/practices/593892/providers/PR4775"
       ]
     },
     {
       "file": "src/components/practice/patients.tsx",
-      "line": 691,
+      "line": 703,
       "routes": [
         "/screens/practice/patients",
         "/screens/patients"
@@ -90,7 +90,7 @@
   "locations-empty": [
     {
       "file": "src/components/practice/locations.tsx",
-      "line": 195,
+      "line": 209,
       "routes": [
         "/screens/practice/locations"
       ]
@@ -106,7 +106,7 @@
     },
     {
       "file": "src/components/admin/provider-adoption.tsx",
-      "line": 108,
+      "line": 109,
       "routes": [
         "/screens/admin/practices/593892/providers/PR4775"
       ]
@@ -154,15 +154,7 @@
   ],
   "record-syncing": [],
   "sync-failed": [],
-  "biomarkers-in-range": [
-    {
-      "file": "src/components/practice/health-record-view.tsx",
-      "line": 238,
-      "routes": [
-        "/screens/patients/P10240?section=labs&tab=trends"
-      ]
-    }
-  ],
+  "biomarkers-in-range": [],
   "no-conditions": [],
   "no-medications": [],
   "no-encounters": [
@@ -175,15 +167,7 @@
     }
   ],
   "plan-sent": [],
-  "single-reading": [
-    {
-      "file": "src/components/practice/health-record-view.tsx",
-      "line": 333,
-      "routes": [
-        "/screens/patients/P10240?section=labs&tab=trends"
-      ]
-    }
-  ],
+  "single-reading": [],
   "sync-requested": [],
   "load-failed": [
     {
@@ -254,7 +238,7 @@
     },
     {
       "file": "src/components/practice/patients.tsx",
-      "line": 713,
+      "line": 725,
       "routes": [
         "/screens/practice/patients",
         "/screens/patients"
@@ -262,7 +246,7 @@
     },
     {
       "file": "src/components/practice/users.tsx",
-      "line": 497,
+      "line": 510,
       "routes": [
         "/screens/practice/users"
       ]
@@ -278,7 +262,7 @@
     },
     {
       "file": "src/components/practice/providers.tsx",
-      "line": 424,
+      "line": 432,
       "routes": [
         "/screens/practice/users"
       ]
@@ -294,7 +278,7 @@
     },
     {
       "file": "src/components/practice/locations.tsx",
-      "line": 199,
+      "line": 213,
       "routes": [
         "/screens/practice/locations"
       ]

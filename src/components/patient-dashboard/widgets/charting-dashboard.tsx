@@ -3,7 +3,6 @@
 import * as React from "react"
 import { createPortal } from "react-dom"
 import {
-  Alert02Icon,
   ArrowRight01Icon,
   Calendar03Icon,
   ChartLineData01Icon,
@@ -22,21 +21,13 @@ import {
   HoverCardTrigger,
 } from "@/design-system/ui/hover-card"
 import {
-  Badge,
   FOCUS,
   KitIcon,
-  MetricCard,
-  PALETTE,
   DockedPanel,
   SidePanel,
   StatusTrace,
   statusSeries,
 } from "@/components/dashboard-kit-v2"
-import { deltaText } from "@/components/provider/home-v2/metric-row"
-import {
-  OPEN_SNAPSHOTS,
-  URGENT_SNAPSHOT,
-} from "@/components/provider/home-v2/mock"
 import type { DashboardModel } from "@/components/patient-dashboard/model"
 import type { Dashboard } from "@/components/patient-dashboard/patient-dashboard"
 import type {
@@ -84,11 +75,6 @@ import {
   Widget,
 } from "@/components/patient-dashboard/widgets/kit"
 import { type ToneKey } from "@/components/patient-dashboard/widgets/palette"
-import { ProgramPanel } from "@/components/patient-dashboard/widgets/program-panel"
-import {
-  PROGRAMS,
-  buildProgram,
-} from "@/components/patient-dashboard/widgets/programs"
 import {
   PeekChart,
   monotone,
@@ -720,10 +706,6 @@ function Readings({ m }: { m: Marker }) {
 /** The hover card: small, soft and borderless, never in the way of a click. */
 const PEEK = "w-80 rounded-2xl p-4 shadow-[0_16px_40px_rgba(16,24,40,.12)]"
 
-/** Version 3 docks the detail beside the rows, so its marker rows carry
-    the latest value under the name. */
-const Compact = React.createContext(false)
-
 /** A row that selects its subject; the selected one carries a teal edge. */
 function PickRow({
   s,
@@ -807,43 +789,6 @@ function PickRow({
   )
 }
 
-/** Status word over the date of the latest reading, after the graph. */
-function StatusDate({
-  word,
-  date,
-  tone,
-  up,
-}: {
-  word: string
-  date?: string
-  tone?: ToneKey
-  /** The direction of the latest move, shown as an arrow after the word. */
-  up?: boolean
-}) {
-  return (
-    <span className="flex w-28 shrink-0 flex-col items-end gap-0.5 text-right">
-      <span
-        className={cn(
-          "text-xs font-semibold",
-          tone ? SOFT_TEXT[tone] : "text-muted-foreground"
-        )}
-      >
-        {word}
-        {up !== undefined && (
-          <span aria-hidden className="ml-1">
-            {up ? "↑" : "↓"}
-          </span>
-        )}
-      </span>
-      {date && (
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {day(date)}
-        </span>
-      )}
-    </span>
-  )
-}
-
 function MarkerRow({
   s,
   selected,
@@ -856,54 +801,28 @@ function MarkerRow({
   const m = s.marker!
   const last = m.points[m.points.length - 1]
   const tone = bands(m)[m.points.length - 1]
-  const word = STATUS_WORD(m)
-  const compact = React.useContext(Compact)
-  if (compact) {
-    /* Version 3: the name over the latest value, coloured by its band,
-       then the trend with the readings before it. */
-    return (
-      <PickRow
-        s={{ ...s, title: m.name }}
-        selected={selected}
-        onPick={onPick}
-        meta={
-          <span className="tabular-nums">
-            <span
-              className={cn(
-                "font-semibold",
-                tone === "green" ? "text-foreground" : SOFT_TEXT[tone]
-              )}
-            >
-              {last.value}
-            </span>
-            {m.unit && ` ${m.unit}`}
-          </span>
-        }
-        graph={
-          <span className="hidden shrink-0 sm:flex">
-            <DotTrend
-              subtle
-              points={m.points}
-              low={m.low}
-              high={m.high}
-              label={`${m.name}, last readings ${m.points
-                .slice(-3)
-                .map((p) => p.value)
-                .join(", ")}`}
-            />
-          </span>
-        }
-      />
-    )
-  }
+  /* The name over the latest value, coloured by its band, then the trend
+     with the readings before it. */
   return (
     <PickRow
       s={{ ...s, title: m.name }}
       selected={selected}
       onPick={onPick}
-      meta={m.range ? `Range ${m.range}${unitText(m)}` : undefined}
+      meta={
+        <span className="tabular-nums">
+          <span
+            className={cn(
+              "font-semibold",
+              tone === "green" ? "text-foreground" : SOFT_TEXT[tone]
+            )}
+          >
+            {last.value}
+          </span>
+          {m.unit && ` ${m.unit}`}
+        </span>
+      }
       graph={
-        <span className="hidden w-[232px] shrink-0 justify-end sm:flex">
+        <span className="hidden shrink-0 sm:flex">
           <DotTrend
             subtle
             points={m.points}
@@ -915,16 +834,6 @@ function MarkerRow({
               .join(", ")}`}
           />
         </span>
-      }
-      status={
-        <StatusDate
-          word={word}
-          date={last.date}
-          up={word === "In range" || m.points.length < 2 ? undefined : m.rising}
-          tone={
-            word === "Improving" ? "green" : tone === "green" ? undefined : tone
-          }
-        />
       }
     />
   )
@@ -961,65 +870,6 @@ function Preview<T>({
     >
       {items.map(render)}
     </ul>
-  )
-}
-
-type GlanceItem = {
-  label: string
-  icon: React.ComponentProps<typeof MetricCard>["icon"]
-  items: Subject[]
-  color: string
-  /** The provider home's 14 day series for the same kind of work. */
-  shape: number[]
-  urgent?: boolean
-  target: string
-}
-
-/** The last 14 days, drawn in the provider home's snapshot shape for the
-    same kind of work and scaled to end on today's live count. */
-function openByDay(live: number, shape: number[]) {
-  const end = shape[shape.length - 1] || 1
-  return shape.map((v, i) => (i === shape.length - 1 ? live : (v * live) / end))
-}
-
-/** The counts at a glance on the provider home's metric card, each a jump
-    to its section: value, what is new since the review, the week's change. */
-function Glance({ items, since }: { items: GlanceItem[]; since?: string }) {
-  return (
-    <nav
-      aria-label="At a glance"
-      className="grid grid-cols-2 gap-3 lg:grid-cols-4"
-    >
-      {items.map((g) => {
-        const series = openByDay(g.items.length, g.shape)
-        const fresh = since
-          ? g.items.filter(
-              (s) => s.date && s.date.slice(0, 10) > since.slice(0, 10)
-            ).length
-          : 0
-        return (
-          <MetricCard
-            key={g.label}
-            icon={g.icon}
-            label={g.label}
-            value={g.items.length}
-            badge={
-              fresh > 0 ? (
-                <Badge tone={g.urgent ? "error" : "light"}>{fresh} new</Badge>
-              ) : null
-            }
-            delta={deltaText(Math.round(series[13] - series[6]))}
-            series={series}
-            color={g.color}
-            onPress={() =>
-              document
-                .getElementById(g.target)
-                ?.scrollIntoView({ behavior: "smooth", block: "start" })
-            }
-          />
-        )
-      })}
-    </nav>
   )
 }
 
@@ -1322,8 +1172,6 @@ const panelTone = (s: Subject): ToneKey =>
 
 /* ----------------------------------------------------------- dashboard -- */
 
-const PLAN_ID = "dashboard-v5-plan"
-
 /* The docked panel needs room beside the lists; below this width the
    docked pattern falls back to the click overlay. */
 const WIDE = "(min-width: 1280px)"
@@ -1339,17 +1187,17 @@ function useWide() {
   )
 }
 
-/** `docked` is Version 3: the detail panel always sits beside the lists and
-    opens on the top priority subject (the decision band's lead, else the
-    first update, result or trend) every time the dashboard opens. Picking a
-    row swaps it; an action that finishes the subject goes back to the top. */
+/** The patient chart's dashboard. The detail panel sits beside the lists
+    and opens on the top priority subject (the decision band's lead, else
+    the first update, result or trend) every time the dashboard opens.
+    Picking a row swaps it; an action that finishes the subject slides it
+    shut. Below the wide breakpoint a row opens the detail as an overlay. */
 export function ChartingDashboard({
   dash,
   opt,
   optimized,
   patientName,
   onOpen,
-  docked = false,
   slot,
 }: {
   dash: Dashboard
@@ -1357,30 +1205,17 @@ export function ChartingDashboard({
   optimized: boolean
   patientName: string
   onOpen: OpenSection
-  docked?: boolean
-  /** Where Version 3's sidebar renders: a column beside the tab bar. */
+  /** Where the sidebar renders: a column beside the section bar. */
   slot?: HTMLElement | null
 }) {
-  const wide = useWide()
-  const dock = docked && wide
+  const dock = useWide()
   const { ready, model } = dash
   const [pick, setPick] = React.useState<{ id: string; list: string[] } | null>(
     null
   )
   const [from, setFrom] = React.useState<HTMLElement | null>(null)
-  /* Version 3: the subject a finishing action closed the sidebar on. */
+  /* The subject a finishing action closed the sidebar on. */
   const [closedId, setClosedId] = React.useState<string | null>(null)
-  const [planId, setPlanId] = React.useState(PROGRAMS[0].id)
-  const program = PROGRAMS.find((p) => p.id === planId) ?? PROGRAMS[0]
-  const programView = React.useMemo(
-    () => (optimized && opt.model ? buildProgram(program, opt.model) : null),
-    [optimized, opt.model, program]
-  )
-  const showPlan = React.useCallback(() => {
-    document
-      .getElementById(PLAN_ID)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" })
-  }, [])
   const close = React.useCallback(() => setPick(null), [])
   const view = useDecisionView({
     dash,
@@ -1389,7 +1224,6 @@ export function ChartingDashboard({
     patientName,
     onOpen,
     close,
-    showPlan,
   })
 
   if (!ready || !view)
@@ -1454,353 +1288,290 @@ export function ChartingDashboard({
       <Pill tone={panelTone(shown)}>{shown.category}</Pill>
     </span>
   )
-  /* Version 3 has no plan card to scroll to, so "Show plan" goes. */
-  const panelActions = shown?.actions
-    .filter((a) => !(docked && a.run === showPlan))
-    .map((a, i) => (
-      <Button
-        key={a.label}
-        variant={a.primary ? "default" : i <= 1 ? "outline" : "secondary"}
-        className={cn(!a.primary && i <= 1 && SECOND)}
-        onClick={() => act(a)}
-      >
-        {a.label}
-      </Button>
-    ))
+  const panelActions = shown?.actions.map((a, i) => (
+    <Button
+      key={a.label}
+      variant={a.primary ? "default" : i <= 1 ? "outline" : "secondary"}
+      className={cn(!a.primary && i <= 1 && SECOND)}
+      onClick={() => act(a)}
+    >
+      {a.label}
+    </Button>
+  ))
 
   const lists = (
-    <Compact.Provider value={docked}>
-      <div className={cn("flex min-w-0 flex-col gap-4", TYPE_SCALE)}>
-        {view.lead ? (
-          <DecisionBand
-            lead={view.lead}
-            related={view.related}
-            reviewAt={view.reviewAt}
-            onOpen={choose([view.lead, ...view.related])}
+    <div className={cn("flex min-w-0 flex-col gap-4", TYPE_SCALE)}>
+      {view.lead ? (
+        <DecisionBand
+          lead={view.lead}
+          related={view.related}
+          reviewAt={view.reviewAt}
+          onOpen={choose([view.lead, ...view.related])}
+        />
+      ) : (
+        <div className="flex items-center gap-3 rounded-2xl border bg-card px-5 py-4">
+          <KitIcon
+            icon={CheckmarkCircle02Icon}
+            size={18}
+            className={SOFT_TEXT.green}
           />
-        ) : (
-          <div className="flex items-center gap-3 rounded-2xl border bg-card px-5 py-4">
-            <KitIcon
-              icon={CheckmarkCircle02Icon}
-              size={18}
-              className={SOFT_TEXT.green}
-            />
-            <span className="flex-1 text-sm font-medium">
-              Nothing needs a decision today
-            </span>
-            <ReviewButton dash={dash} />
-          </div>
-        )}
+          <span className="flex-1 text-sm font-medium">
+            Nothing needs a decision today
+          </span>
+          <ReviewButton dash={dash} />
+        </div>
+      )}
 
-        {/* Version 3 leads with the rows; the counts stay on Version 2. */}
-        {!docked && (
-          <Glance
-            since={view.reviewAt}
-            items={[
-              {
-                shape: URGENT_SNAPSHOT,
-                label: "Action needed",
-                icon: Alert02Icon,
-                items: action,
-                color: PALETTE.clinical,
-                urgent: true,
-                target: "v5-updates",
-              },
-              {
-                shape: OPEN_SNAPSHOTS.abnormal_result,
-                label: "Out of range",
-                icon: TestTube01Icon,
-                items: view.results,
-                color: PALETTE.clinical,
-                target: "v5-results",
-              },
-              {
-                shape: OPEN_SNAPSHOTS.medication_change,
-                label: "Watchful trends",
-                icon: ChartLineData01Icon,
-                items: view.watches,
-                color: PALETTE.process,
-                target: "v5-watch",
-              },
-              {
-                shape: OPEN_SNAPSHOTS.care_gap,
-                label: "Care gaps",
-                icon: Calendar03Icon,
-                items: view.care.filter(
-                  (c) => c.alert === "Overdue" || c.alert === "Never tested"
-                ),
-                color: PALETTE.process,
-                target: "v5-care",
-              },
-            ]}
-          />
-        )}
+      {view.updates.length > 0 && (
+        <div id="v5-updates" className="scroll-mt-3">
+          <Widget
+            icon={Notification03Icon}
+            title="Important updates"
+            count={view.updates.length}
+            action={
+              <span className="text-xs font-normal text-muted-foreground tabular-nums">
+                {view.reviewAt
+                  ? `New since ${day(view.reviewAt)}`
+                  : "Last 90 days"}
+              </span>
+            }
+            flush
+          >
+            {/* The list scrolls inside the card, every row under an
+                  Action needed or For review heading. */}
+            <div className="max-h-[420px] overflow-y-auto">
+              {(
+                [
+                  ["action", action, "Action needed"],
+                  ["review", review, "For review"],
+                ] as [Group, Subject[], string][]
+              ).map(([g, rows, label]) =>
+                rows.length ? (
+                  <div
+                    key={g}
+                    className="flex flex-col border-b last:border-b-0"
+                  >
+                    <h4
+                      className={cn(
+                        "sticky top-0 z-[1] flex items-center gap-2 border-b px-4 py-2 text-xs font-semibold",
+                        HEAD_TINT[GROUP_TONE[g]],
+                        SOFT_TEXT[GROUP_TONE[g]]
+                      )}
+                    >
+                      {label}
+                      <span className="font-normal text-muted-foreground tabular-nums">
+                        {rows.length}
+                      </span>
+                    </h4>
+                    <Preview
+                      items={rows}
+                      limit={rows.length}
+                      render={(s) => {
+                        const t =
+                          s.kind === "visit"
+                            ? { kind: "", subject: s.title }
+                            : splitTitle(s.title)
+                        return (
+                          <PickRow
+                            key={s.id}
+                            s={{ ...s, title: t.subject }}
+                            tone={GROUP_TONE[g]}
+                            selected={isPicked(s)}
+                            onPick={choose(view.updates)}
+                            meta={
+                              <>
+                                {t.kind && (
+                                  <span className="text-foreground/70">
+                                    {t.kind}.{" "}
+                                  </span>
+                                )}
+                                {s.line}
+                                {s.alert && (
+                                  <span
+                                    className={cn(
+                                      "ml-1 font-medium",
+                                      SOFT_TEXT[GROUP_TONE[g]]
+                                    )}
+                                  >
+                                    {s.alert}
+                                  </span>
+                                )}
+                              </>
+                            }
+                            status={
+                              s.date && (
+                                <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+                                  {day(s.date)}
+                                </span>
+                              )
+                            }
+                          />
+                        )
+                      }}
+                    />
+                  </div>
+                ) : null
+              )}
+            </div>
+          </Widget>
+        </div>
+      )}
 
-        {view.updates.length > 0 && (
-          <div id="v5-updates" className="scroll-mt-3">
+      {pair(
+        view.results.length > 0 ? (
+          <div id="v5-results" className="h-full scroll-mt-3">
             <Widget
-              icon={Notification03Icon}
-              title="Important updates"
-              count={view.updates.length}
+              icon={TestTube01Icon}
+              title="Out of range"
+              count={view.results.length}
               action={
-                <span className="text-xs font-normal text-muted-foreground tabular-nums">
-                  {view.reviewAt
-                    ? `New since ${day(view.reviewAt)}`
-                    : "Last 90 days"}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => onOpen("labs")}
+                  className={cn(
+                    "rounded text-[13px] font-medium text-primary hover:underline",
+                    FOCUS
+                  )}
+                >
+                  View all
+                </button>
               }
               flush
             >
-              {/* Version 3 scrolls the list inside the card, every row
-                  under an Action needed or For review heading. */}
-              <div className={cn(docked && "max-h-[420px] overflow-y-auto")}>
-                {(
-                  [
-                    ["action", action, 99, "Action needed"],
-                    ["review", review, 3, "For review"],
-                  ] as [Group, Subject[], number, string][]
-                ).map(([g, rows, limit, label]) =>
-                  rows.length ? (
-                    <div
-                      key={g}
-                      className="flex flex-col border-b last:border-b-0"
-                    >
-                      {docked && (
-                        <h4
-                          className={cn(
-                            "sticky top-0 z-[1] flex items-center gap-2 border-b px-4 py-2 text-xs font-semibold",
-                            HEAD_TINT[GROUP_TONE[g]],
-                            SOFT_TEXT[GROUP_TONE[g]]
-                          )}
-                        >
-                          {label}
-                          <span className="font-normal text-muted-foreground tabular-nums">
-                            {rows.length}
-                          </span>
-                        </h4>
-                      )}
-                      <Preview
-                        items={rows}
-                        limit={docked ? rows.length : limit}
-                        render={(s) => {
-                          const t =
-                            s.kind === "visit"
-                              ? { kind: "", subject: s.title }
-                              : splitTitle(s.title)
-                          return (
-                            <PickRow
-                              key={s.id}
-                              s={{ ...s, title: t.subject }}
-                              tone={GROUP_TONE[g]}
-                              selected={isPicked(s)}
-                              onPick={choose(view.updates)}
-                              meta={
-                                <>
-                                  {t.kind && (
-                                    <span className="text-foreground/70">
-                                      {t.kind}.{" "}
-                                    </span>
-                                  )}
-                                  {s.line}
-                                  {s.alert && (
-                                    <span
-                                      className={cn(
-                                        "ml-1 font-medium",
-                                        SOFT_TEXT[GROUP_TONE[g]]
-                                      )}
-                                    >
-                                      {s.alert}
-                                    </span>
-                                  )}
-                                </>
-                              }
-                              status={
-                                s.date && (
-                                  <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-                                    {day(s.date)}
-                                  </span>
-                                )
-                              }
-                            />
-                          )
-                        }}
-                      />
-                    </div>
-                  ) : null
-                )}
-              </div>
-            </Widget>
-          </div>
-        )}
-
-        {pair(
-          view.results.length > 0 ? (
-            <div id="v5-results" className="h-full scroll-mt-3">
-              <Widget
-                icon={TestTube01Icon}
-                title="Out of range"
-                count={view.results.length}
-                action={
-                  <button
-                    type="button"
-                    onClick={() => onOpen("labs")}
-                    className={cn(
-                      "rounded text-[13px] font-medium text-primary hover:underline",
-                      FOCUS
-                    )}
-                  >
-                    View all
-                  </button>
-                }
-                flush
-              >
-                <Preview
-                  items={view.results}
-                  render={(s) => (
-                    <MarkerRow
-                      key={s.id}
-                      s={s}
-                      selected={isPicked(s)}
-                      onPick={choose(view.results)}
-                    />
-                  )}
-                />
-              </Widget>
-            </div>
-          ) : null,
-          view.watches.length > 0 ? (
-            <div id="v5-watch" className="h-full scroll-mt-3">
-              <Widget
-                icon={ChartLineData01Icon}
-                title="Watchful trends"
-                count={view.watches.length}
-                action={
-                  <button
-                    type="button"
-                    onClick={() => onOpen("labs")}
-                    className={cn(
-                      "rounded text-[13px] font-medium text-primary hover:underline",
-                      FOCUS
-                    )}
-                  >
-                    View all
-                  </button>
-                }
-                flush
-              >
-                <Preview
-                  items={view.watches}
-                  render={(s) => (
-                    <MarkerRow
-                      key={s.id}
-                      s={s}
-                      selected={isPicked(s)}
-                      onPick={choose(view.watches)}
-                    />
-                  )}
-                />
-              </Widget>
-            </div>
-          ) : null
-        )}
-
-        {pair(
-          view.care.length > 0 ? (
-            <div id="v5-care" className="h-full scroll-mt-3">
-              <Widget
-                icon={Calendar03Icon}
-                title="Future care and follow up"
-                count={view.care.length}
-                flush
-              >
-                <Preview
-                  items={view.care}
-                  render={(s) => {
-                    const gap =
-                      s.alert === "Overdue" || s.alert === "Never tested"
-                    return (
-                      <PickRow
-                        key={s.id}
-                        s={s}
-                        selected={isPicked(s)}
-                        onPick={choose(view.care)}
-                        meta={s.line || undefined}
-                        status={
-                          <span
-                            className={cn(
-                              "w-24 shrink-0 text-right text-xs tabular-nums",
-                              gap
-                                ? cn("font-semibold", SOFT_TEXT.orange)
-                                : "text-muted-foreground"
-                            )}
-                          >
-                            {s.alert}
-                          </span>
-                        }
-                      />
-                    )
-                  }}
-                />
-              </Widget>
-            </div>
-          ) : null,
-          view.programs.length > 0 ? (
-            <Widget
-              icon={Target02Icon}
-              title="Optimization programs"
-              count={view.programs.length}
-              flush
-            >
-              <ul className="divide-y">
-                {view.programs.map((s) => (
-                  <PickRow
+              <Preview
+                items={view.results}
+                render={(s) => (
+                  <MarkerRow
                     key={s.id}
                     s={s}
                     selected={isPicked(s)}
-                    onPick={choose(view.programs)}
-                    meta={s.line}
-                    status={
-                      <Pill
-                        tone={
-                          s.status === "Active"
-                            ? "green"
-                            : s.status === "Eligible"
-                              ? "blue"
-                              : "orange"
-                        }
-                      >
-                        {s.status}
-                      </Pill>
-                    }
+                    onPick={choose(view.results)}
                   />
-                ))}
-              </ul>
+                )}
+              />
             </Widget>
-          ) : null
-        )}
-
-        {/* Version 3 drops the program plan card. */}
-        {!docked && programView && opt.model && (
-          <div id={PLAN_ID} className="scroll-mt-3">
-            <ProgramPanel
-              opt={opt.model}
-              program={program}
-              view={programView}
-              onProgram={setPlanId}
-            />
           </div>
-        )}
+        ) : null,
+        view.watches.length > 0 ? (
+          <div id="v5-watch" className="h-full scroll-mt-3">
+            <Widget
+              icon={ChartLineData01Icon}
+              title="Watchful trends"
+              count={view.watches.length}
+              action={
+                <button
+                  type="button"
+                  onClick={() => onOpen("labs")}
+                  className={cn(
+                    "rounded text-[13px] font-medium text-primary hover:underline",
+                    FOCUS
+                  )}
+                >
+                  View all
+                </button>
+              }
+              flush
+            >
+              <Preview
+                items={view.watches}
+                render={(s) => (
+                  <MarkerRow
+                    key={s.id}
+                    s={s}
+                    selected={isPicked(s)}
+                    onPick={choose(view.watches)}
+                  />
+                )}
+              />
+            </Widget>
+          </div>
+        ) : null
+      )}
 
-        {view.updates.length === 0 &&
-          view.results.length === 0 &&
-          view.watches.length === 0 && (
-            <Quiet>
-              No results out of range, medication changes, open orders or
-              outside care.
-            </Quiet>
-          )}
-      </div>
-    </Compact.Provider>
+      {pair(
+        view.care.length > 0 ? (
+          <div id="v5-care" className="h-full scroll-mt-3">
+            <Widget
+              icon={Calendar03Icon}
+              title="Future care and follow up"
+              count={view.care.length}
+              flush
+            >
+              <Preview
+                items={view.care}
+                render={(s) => {
+                  const gap =
+                    s.alert === "Overdue" || s.alert === "Never tested"
+                  return (
+                    <PickRow
+                      key={s.id}
+                      s={s}
+                      selected={isPicked(s)}
+                      onPick={choose(view.care)}
+                      meta={s.line || undefined}
+                      status={
+                        <span
+                          className={cn(
+                            "w-24 shrink-0 text-right text-xs tabular-nums",
+                            gap
+                              ? cn("font-semibold", SOFT_TEXT.orange)
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {s.alert}
+                        </span>
+                      }
+                    />
+                  )
+                }}
+              />
+            </Widget>
+          </div>
+        ) : null,
+        view.programs.length > 0 ? (
+          <Widget
+            icon={Target02Icon}
+            title="Optimization programs"
+            count={view.programs.length}
+            flush
+          >
+            <ul className="divide-y">
+              {view.programs.map((s) => (
+                <PickRow
+                  key={s.id}
+                  s={s}
+                  selected={isPicked(s)}
+                  onPick={choose(view.programs)}
+                  meta={s.line}
+                  status={
+                    <Pill
+                      tone={
+                        s.status === "Active"
+                          ? "green"
+                          : s.status === "Eligible"
+                            ? "blue"
+                            : "orange"
+                      }
+                    >
+                      {s.status}
+                    </Pill>
+                  }
+                />
+              ))}
+            </ul>
+          </Widget>
+        ) : null
+      )}
+
+      {view.updates.length === 0 &&
+        view.results.length === 0 &&
+        view.watches.length === 0 && (
+          <Quiet>
+            No results out of range, medication changes, open orders or outside
+            care.
+          </Quiet>
+        )}
+    </div>
   )
 
   if (dock && shown && slot)

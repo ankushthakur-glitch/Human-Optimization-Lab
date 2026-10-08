@@ -31,13 +31,8 @@ import {
   useDashboard,
 } from "@/components/patient-dashboard/patient-dashboard"
 import { useOptimization } from "@/components/patient-dashboard/optimization/model"
-import { useDashboardVersion } from "@/components/provider/dashboard-version"
 import { ChartingDashboard } from "@/components/patient-dashboard/widgets/charting-dashboard"
-import { FreeWidgetDashboard } from "@/components/patient-dashboard/widgets/free-dashboard"
-import {
-  MemberWidgetDashboard,
-  OptimizationToolbar,
-} from "@/components/patient-dashboard/widgets/member-dashboard"
+import { Badge as KitBadge } from "@/components/dashboard-kit-v2"
 import {
   Section,
   SectionBar,
@@ -75,18 +70,17 @@ export function ChartDashboard({
 }) {
   const dash = useDashboard(patient, record)
   const opt = useOptimization(patient.id, dash.model)
-  /* One dashboard for everyone, widget based: the result summary donut
-     beside the picked band's table, then widgets. An active optimization
-     member with tracker data gets it from the HOLv.9 sheet with their
-     enrolled plans, everyone else from their own record with their active
-     problems in the plans' place (patient-dashboard/widgets/). */
+  /* One dashboard for everyone (widgets/charting-dashboard.tsx): the
+     decision band, important updates, results and trends, care and
+     programs, with the detail docked in a sidebar. An active optimization
+     member with tracker data reads from the HOLv.9 sheet, everyone else
+     from their own record. */
   const optimized =
     patient.membership === "optimization" &&
     (patient.recordState ?? "active") === "active" &&
     Boolean(opt.model)
-  const [version] = useDashboardVersion()
-  /* Version 3's sidebar renders into this column, beside the tab bar and
-     the body, so it runs the full height of the card. */
+  /* The detail sidebar renders into this column, beside the section bar
+     and the body, so it runs the full height of the card. */
   const [slot, setSlot] = React.useState<HTMLDivElement | null>(null)
   return (
     <Section>
@@ -98,7 +92,9 @@ export function ChartDashboard({
               <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
                 {/* Two kinds of patient only: the badge follows the membership. */}
                 {patient.membership === "optimization" ? (
-                  <OptimizationToolbar dash={dash} opt={opt} />
+                  dash.ready && (
+                    <KitBadge tone="primary">Optimization member</KitBadge>
+                  )
                 ) : (
                   <DashboardToolbar dash={dash} />
                 )}
@@ -106,25 +102,17 @@ export function ChartDashboard({
             }
           />
           <SectionBody>
-            {version === "2" || version === "3" ? (
-              <ChartingDashboard
-                key={version}
-                docked={version === "3"}
-                slot={slot}
-                dash={dash}
-                opt={opt}
-                optimized={optimized}
-                patientName={patient.firstName}
-                onOpen={onOpen}
-              />
-            ) : optimized && opt.model ? (
-              <MemberWidgetDashboard opt={opt} onOpen={onOpen} />
-            ) : (
-              <FreeWidgetDashboard dash={dash} onOpen={onOpen} />
-            )}
+            <ChartingDashboard
+              slot={slot}
+              dash={dash}
+              opt={opt}
+              optimized={optimized}
+              patientName={patient.firstName}
+              onOpen={onOpen}
+            />
           </SectionBody>
         </div>
-        {version === "3" && <div ref={setSlot} className="flex empty:hidden" />}
+        <div ref={setSlot} className="flex empty:hidden" />
       </div>
     </Section>
   )

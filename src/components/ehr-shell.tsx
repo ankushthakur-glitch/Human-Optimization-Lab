@@ -22,7 +22,6 @@ import {
 import { cn } from "@/lib/utils"
 import { BRAND_NAME, LOGO, MARK } from "@/lib/brand"
 import { AppearanceMenuSection } from "@/design-system/appearance-menu"
-import { DashboardVersionSwitch } from "@/components/provider/dashboard-version"
 import { Avatar, AvatarFallback, AvatarImage } from "@/design-system/ui/avatar"
 import { Button } from "@/design-system/ui/button"
 import {
@@ -422,9 +421,6 @@ export function EhrShell({
 
           {/* The reference carries one bell and the account, nothing else. */}
           <div className="ml-auto flex shrink-0 items-center gap-1">
-            {/* For now: the patient chart's dashboard versions, while they
-                are compared. */}
-            <DashboardVersionSwitch />
             {/* Below lg the centred field would run under this cluster, so the
                 palette opens from an icon instead. */}
             <Button

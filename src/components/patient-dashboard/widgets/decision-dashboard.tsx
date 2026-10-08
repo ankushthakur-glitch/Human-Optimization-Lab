@@ -1,31 +1,11 @@
 "use client"
 
 import * as React from "react"
-import {
-  Alert02Icon,
-  ArrowRight01Icon,
-  Calendar03Icon,
-  ChartLineData01Icon,
-  CheckmarkCircle02Icon,
-  Notification03Icon,
-  Target02Icon,
-  TestTube01Icon,
-} from "@hugeicons/core-free-icons"
+import { Alert02Icon } from "@hugeicons/core-free-icons"
 
-import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/ui/button"
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/design-system/ui/hover-card"
 import { toast } from "@/design-system/ui/sonner"
-import {
-  FOCUS,
-  KitIcon,
-  SidePanel,
-  TrendChart,
-} from "@/components/dashboard-kit-v2"
+import { KitIcon } from "@/components/dashboard-kit-v2"
 import { NOW, daysSince, usDay } from "@/components/provider/mock-clock"
 import type {
   DashboardModel,
@@ -50,16 +30,9 @@ import type {
   ClinicalReport,
   OutsideEncounter,
 } from "@/components/patient-dashboard/types"
+import { type OpenSection } from "@/components/patient-dashboard/ui"
 import {
-  CardSkeleton,
-  type OpenSection,
-  Quiet,
-} from "@/components/patient-dashboard/ui"
-import {
-  DotTrend,
   type Marker,
-  ReviewButton,
-  TrendWindow,
   byChange,
   caseTag,
   fromBiomarker,
@@ -68,18 +41,12 @@ import {
   lowerFirst,
   orderState,
 } from "@/components/patient-dashboard/widgets/changes-dashboard"
-import { TYPE_SCALE, Widget } from "@/components/patient-dashboard/widgets/kit"
-import {
-  TONE,
-  type ToneKey,
-} from "@/components/patient-dashboard/widgets/palette"
-import { ProgramPanel } from "@/components/patient-dashboard/widgets/program-panel"
+import { type ToneKey } from "@/components/patient-dashboard/widgets/palette"
 import {
   PROGRAMS,
   buildProgram,
   goalProgress,
 } from "@/components/patient-dashboard/widgets/programs"
-import { Pill } from "@/components/patient-dashboard/widgets/status"
 
 /* Dashboard version 4: the client's CareMap reference (6 Oct) on our
    version 2. From the reference: one decision band at the top that states
@@ -507,7 +474,6 @@ type Ctx = {
   optimized: boolean
   onOpen: OpenSection
   close: () => void
-  showPlan: () => void
 }
 
 function confirm(ctx: Ctx, c: MedCase, decision: "acknowledged" | "dismissed") {
@@ -1204,7 +1170,7 @@ function programSubjects(ctx: Ctx, patientName: string): ProgramRow[] {
             ],
           },
         ],
-        actions: [{ label: "Show plan", primary: true, run: ctx.showPlan }],
+        actions: [],
       }
     })
     return [...active, ...offered(ctx, patientName)]
@@ -1359,63 +1325,6 @@ function offered(ctx: Ctx, patientName: string): ProgramRow[] {
 
 /* ------------------------------------------------------------- pieces -- */
 
-/** A list row that opens its subject: title, line with its alert, date, chevron. */
-function SubjectRow({
-  s,
-  tone,
-  right,
-  onOpen,
-}: {
-  s: Subject
-  tone?: ToneKey
-  right?: React.ReactNode
-  onOpen: (s: Subject, from: HTMLElement) => void
-}) {
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={(e) => onOpen(s, e.currentTarget)}
-        className={cn(
-          "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-row-hover",
-          FOCUS
-        )}
-      >
-        {tone && (
-          <span
-            aria-hidden
-            className={cn("size-2 shrink-0 rounded-full", TONE[tone].solid)}
-          />
-        )}
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-sm font-semibold">{s.title}</span>
-          {(s.line || s.alert) && (
-            <span className="text-[13px] text-muted-foreground">
-              {s.line}
-              {s.alert && tone && (
-                <span className={cn("ml-1 font-medium", TONE[tone].text)}>
-                  {s.alert}
-                </span>
-              )}
-            </span>
-          )}
-        </span>
-        {right ??
-          (s.date && (
-            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-              {day(s.date)}
-            </span>
-          ))}
-        <KitIcon
-          icon={ArrowRight01Icon}
-          size={14}
-          className="shrink-0 text-muted-foreground"
-        />
-      </button>
-    </li>
-  )
-}
-
 export function DecisionBand({
   lead,
   related,
@@ -1489,163 +1398,6 @@ export function DecisionBand({
   )
 }
 
-function SubjectPanel({ s }: { s: Subject }) {
-  const f = s.figure
-  return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted-foreground">{f.label}</span>
-        <span
-          className={cn(
-            "text-3xl leading-tight font-semibold tabular-nums",
-            f.tone && TONE[f.tone].text
-          )}
-        >
-          {f.value}
-          {f.unit && (
-            <span className="ml-1.5 text-sm font-normal text-muted-foreground">
-              {f.unit}
-            </span>
-          )}
-        </span>
-        {f.sub && (
-          <span className="text-[13px] text-muted-foreground">{f.sub}</span>
-        )}
-      </div>
-      {s.stats && s.stats.length > 0 && (
-        <dl className="flex flex-wrap gap-x-8 gap-y-2 border-t pt-4">
-          {s.stats.map((r) => (
-            <div key={r.label} className="flex flex-col gap-0.5">
-              <dt className="text-xs text-muted-foreground">{r.label}</dt>
-              <dd
-                className={cn(
-                  "text-base font-semibold tabular-nums",
-                  r.tone && TONE[r.tone].text
-                )}
-              >
-                {r.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      )}
-      {s.note && (
-        <div
-          className={cn(
-            "flex flex-col gap-1 rounded-xl px-4 py-3",
-            TONE[s.note.tone].soft
-          )}
-        >
-          <span className={cn("text-sm font-semibold", TONE[s.note.tone].text)}>
-            {s.note.title}
-          </span>
-          <p className="text-[13px] leading-5 text-foreground/80">
-            {s.note.text}
-          </p>
-        </div>
-      )}
-      {s.marker && s.marker.points.length > 1 && (
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-semibold">
-            {s.marker.name} trend
-            {s.marker.unit && (
-              <span className="ml-1 text-xs font-normal text-muted-foreground">
-                {s.marker.unit}
-              </span>
-            )}
-          </span>
-          <TrendChart
-            points={s.marker.points.map((p) => ({
-              date: p.date.slice(0, 10),
-              value: p.value,
-            }))}
-            low={s.marker.low}
-            high={s.marker.high}
-            unit={s.marker.unit}
-            latestOut={s.marker.points[s.marker.points.length - 1].out}
-            label={`${s.marker.name} over time, range band shaded`}
-            height={200}
-          />
-        </div>
-      )}
-      {s.med && (
-        <div className="grid gap-2 sm:grid-cols-3">
-          {[
-            {
-              label: "Your list",
-              value: s.med.practice
-                ? doseText(s.med.practice)
-                : "Not on your list",
-              meta: s.med.practice
-                ? `${s.med.practice.prescriber}, ${day(s.med.practice.date)}`
-                : undefined,
-            },
-            {
-              label: "Other record",
-              value: s.med.other ? doseText(s.med.other) : "No other source",
-              meta: s.med.other
-                ? `${s.med.other.prescriber}, ${shortSource(s.med.other.source)}`
-                : undefined,
-              tone: s.med.other ? ("orange" as const) : undefined,
-            },
-            {
-              label: "Patient confirmed",
-              value: s.med.answer ? s.med.answer.answer : "Not asked yet",
-              meta: s.med.answer
-                ? `${s.med.answer.note ? `${s.med.answer.note}, ` : ""}${day(s.med.answer.date)}`
-                : undefined,
-              tone:
-                s.med.answer && s.med.answer.answer !== "Taking"
-                  ? ("violet" as const)
-                  : undefined,
-            },
-          ].map((b) => (
-            <div
-              key={b.label}
-              className="flex flex-col gap-0.5 rounded-xl bg-surface-head px-3 py-2.5"
-            >
-              <span className="text-xs text-muted-foreground">{b.label}</span>
-              <span
-                className={cn(
-                  "text-sm font-medium",
-                  b.tone && TONE[b.tone].text
-                )}
-              >
-                {b.value}
-              </span>
-              {b.meta && (
-                <span className="text-xs text-muted-foreground">{b.meta}</span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-      {s.sections.map((sec) => (
-        <section key={sec.title} className="flex flex-col gap-2 border-t pt-4">
-          <h4 className="text-xs font-medium text-muted-foreground">
-            {sec.title}
-          </h4>
-          <dl className="grid grid-cols-[minmax(0,140px)_1fr] gap-x-4 gap-y-2 text-[13px]">
-            {sec.rows.map((r) => (
-              <div key={r.label} className="contents">
-                <dt className="text-muted-foreground">{r.label}</dt>
-                <dd
-                  className={cn(
-                    "font-medium tabular-nums",
-                    r.tone && TONE[r.tone].text
-                  )}
-                >
-                  {r.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      ))}
-    </div>
-  )
-}
-
 /* ---------------------------------------------------------- dashboard -- */
 
 /** Every subject of the dashboard, triaged, with the decision band's lead
@@ -1657,7 +1409,6 @@ export function useDecisionView({
   patientName,
   onOpen,
   close,
-  showPlan,
 }: {
   dash: Dashboard
   opt: Optimization
@@ -1665,7 +1416,6 @@ export function useDecisionView({
   patientName: string
   onOpen: OpenSection
   close: () => void
-  showPlan: () => void
 }) {
   const { ready, model } = dash
   return React.useMemo(() => {
@@ -1677,7 +1427,6 @@ export function useDecisionView({
       optimized,
       onOpen,
       close,
-      showPlan,
     }
     const reviewAt = model.review?.at
     const cutoff =
@@ -1799,390 +1548,5 @@ export function useDecisionView({
       reviewAt,
       cutoff,
     }
-  }, [ready, model, opt, optimized, onOpen, dash, patientName, close, showPlan])
-}
-
-const PLAN_ID = "dashboard-v4-plan"
-
-export function DecisionDashboard({
-  dash,
-  opt,
-  optimized,
-  patientName,
-  onOpen,
-}: {
-  dash: Dashboard
-  opt: Optimization
-  optimized: boolean
-  patientName: string
-  onOpen: OpenSection
-}) {
-  const { ready } = dash
-  const [open, setOpen] = React.useState<{ id: string; list: string[] } | null>(
-    null
-  )
-  const [from, setFrom] = React.useState<HTMLElement | null>(null)
-  const [planId, setPlanId] = React.useState(PROGRAMS[0].id)
-  const program = PROGRAMS.find((p) => p.id === planId) ?? PROGRAMS[0]
-  const programView = React.useMemo(
-    () => (optimized && opt.model ? buildProgram(program, opt.model) : null),
-    [optimized, opt.model, program]
-  )
-
-  const showPlan = React.useCallback(() => {
-    setOpen(null)
-    document
-      .getElementById(PLAN_ID)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" })
-  }, [])
-  const close = React.useCallback(() => setOpen(null), [])
-  const view = useDecisionView({
-    dash,
-    opt,
-    optimized,
-    patientName,
-    onOpen,
-    close,
-    showPlan,
-  })
-
-  if (!ready || !view)
-    return (
-      <div className="flex flex-col gap-4" aria-busy>
-        <CardSkeleton rows={2} />
-        <CardSkeleton rows={6} />
-      </div>
-    )
-
-  const openSubject = (list: Subject[]) => (s: Subject, el: HTMLElement) => {
-    setFrom(el)
-    setOpen({ id: s.id, list: list.map((x) => x.id) })
-  }
-  const current = open ? view.byId.get(open.id) : undefined
-
-  const action = view.updates.filter((s) => s.group === "action")
-  const review = view.updates.filter((s) => s.group === "review")
-
-  const pair = (a: React.ReactNode | null, b: React.ReactNode | null) =>
-    a || b ? (
-      <div className={cn("grid grid-cols-1 gap-4", a && b && "xl:grid-cols-2")}>
-        {a}
-        {b}
-      </div>
-    ) : null
-
-  return (
-    <div className={cn("flex flex-col gap-4", TYPE_SCALE)}>
-      {view.lead ? (
-        <DecisionBand
-          lead={view.lead}
-          related={view.related}
-          reviewAt={view.reviewAt}
-          onOpen={openSubject([view.lead, ...view.related])}
-        />
-      ) : (
-        <div className="flex items-center gap-3 rounded-2xl border bg-card px-5 py-4">
-          <KitIcon
-            icon={CheckmarkCircle02Icon}
-            size={18}
-            className={TONE.green.text}
-          />
-          <span className="flex-1 text-sm font-medium">
-            Nothing needs a decision today
-          </span>
-          <ReviewButton dash={dash} />
-        </div>
-      )}
-
-      {view.updates.length > 0 && (
-        <Widget
-          icon={Notification03Icon}
-          title="Important updates"
-          count={view.updates.length}
-          action={
-            <span className="text-xs font-normal text-muted-foreground tabular-nums">
-              {view.reviewAt
-                ? `New since ${day(view.reviewAt)}`
-                : "Last 90 days"}
-            </span>
-          }
-          flush
-        >
-          {[
-            ["action", action],
-            ["review", review],
-          ].map(([g, list]) =>
-            (list as Subject[]).length ? (
-              <div key={g as string} className="flex flex-col">
-                <h4
-                  className={cn(
-                    "px-4 pt-3 pb-1 text-xs font-semibold",
-                    TONE[GROUP_TONE[g as Group]].text
-                  )}
-                >
-                  {GROUP_LABEL[g as Group]}
-                </h4>
-                <ul className="divide-y">
-                  {(list as Subject[]).map((s) => (
-                    <SubjectRow
-                      key={s.id}
-                      s={s}
-                      tone={GROUP_TONE[g as Group]}
-                      onOpen={openSubject(view.updates)}
-                    />
-                  ))}
-                </ul>
-              </div>
-            ) : null
-          )}
-        </Widget>
-      )}
-
-      {pair(
-        view.results.length > 0 ? (
-          <Widget
-            icon={TestTube01Icon}
-            title="Out of range"
-            count={view.results.length}
-            flush
-          >
-            <ul className="divide-y">
-              {view.results.map((s) => {
-                const m = s.marker!
-                const last = m.points[m.points.length - 1]
-                const prev = m.points[m.points.length - 2]
-                return (
-                  <SubjectRow
-                    key={s.id}
-                    s={{ ...s, title: m.name, line: "", alert: undefined }}
-                    onOpen={openSubject(view.results)}
-                    right={
-                      <HoverCard>
-                        <HoverCardTrigger
-                          delay={150}
-                          render={
-                            <span className="flex items-baseline gap-1.5" />
-                          }
-                        >
-                          <span
-                            className={cn(
-                              "text-lg font-semibold tabular-nums",
-                              TONE.red.text
-                            )}
-                          >
-                            {last.value}
-                          </span>
-                          {m.unit && (
-                            <span className="text-xs text-muted-foreground">
-                              {m.unit}
-                            </span>
-                          )}
-                          <span className="ml-2 text-xs text-muted-foreground tabular-nums">
-                            {prev
-                              ? `${last.value > prev.value ? "up" : "down"} from ${prev.value}`
-                              : "first reading"}
-                          </span>
-                        </HoverCardTrigger>
-                        <HoverCardContent
-                          side="left"
-                          align="start"
-                          className="w-80 rounded-2xl"
-                        >
-                          <TrendWindow m={m} onOpen={() => onOpen("labs")} />
-                        </HoverCardContent>
-                      </HoverCard>
-                    }
-                  />
-                )
-              })}
-            </ul>
-          </Widget>
-        ) : null,
-        view.watches.length > 0 ? (
-          <Widget
-            icon={ChartLineData01Icon}
-            title="Watchlist and trends"
-            count={view.watches.length}
-            flush
-          >
-            <ul className="divide-y">
-              {view.watches.map((s) => {
-                const m = s.marker!
-                return (
-                  <SubjectRow
-                    key={s.id}
-                    s={{
-                      ...s,
-                      title: m.name,
-                      line: m.range ? `Range ${m.range}${unitText(m)}` : "",
-                      alert: undefined,
-                    }}
-                    onOpen={openSubject(view.watches)}
-                    right={
-                      <span className="flex items-center gap-3">
-                        <DotTrend
-                          points={m.points}
-                          low={m.low}
-                          high={m.high}
-                          label={`${m.name}, last readings`}
-                        />
-                        <span
-                          className={cn(
-                            "w-16 text-xs font-semibold",
-                            m.trend === "worsening"
-                              ? TONE.orange.text
-                              : m.trend === "improving"
-                                ? TONE.green.text
-                                : "text-muted-foreground"
-                          )}
-                        >
-                          {m.trend === "worsening"
-                            ? m.rising
-                              ? "rising"
-                              : "declining"
-                            : m.trend === "improving"
-                              ? "improving"
-                              : "stable"}
-                        </span>
-                      </span>
-                    }
-                  />
-                )
-              })}
-            </ul>
-          </Widget>
-        ) : null
-      )}
-
-      {pair(
-        view.care.length > 0 ? (
-          <Widget
-            icon={Calendar03Icon}
-            title="Future care and follow up"
-            count={view.care.length}
-            flush
-          >
-            <ul className="divide-y">
-              {view.care.map((s) => (
-                <SubjectRow
-                  key={s.id}
-                  s={{ ...s, alert: undefined }}
-                  onOpen={openSubject(view.care)}
-                  right={
-                    <span
-                      className={cn(
-                        "shrink-0 text-xs tabular-nums",
-                        s.alert === "Overdue" || s.alert === "Never tested"
-                          ? cn("font-semibold", TONE.orange.text)
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      {s.alert}
-                    </span>
-                  }
-                />
-              ))}
-            </ul>
-          </Widget>
-        ) : null,
-        view.programs.length > 0 ? (
-          <Widget
-            icon={Target02Icon}
-            title="Optimization programs"
-            count={view.programs.length}
-            flush
-          >
-            <ul className="divide-y">
-              {view.programs.map((s) => (
-                <SubjectRow
-                  key={s.id}
-                  s={s}
-                  onOpen={openSubject(view.programs)}
-                  right={
-                    <Pill
-                      tone={
-                        s.status === "Active"
-                          ? "green"
-                          : s.status === "Eligible"
-                            ? "blue"
-                            : "orange"
-                      }
-                    >
-                      {s.status}
-                    </Pill>
-                  }
-                />
-              ))}
-            </ul>
-          </Widget>
-        ) : null
-      )}
-
-      {programView && opt.model && (
-        <div id={PLAN_ID} className="scroll-mt-3">
-          <ProgramPanel
-            opt={opt.model}
-            program={program}
-            view={programView}
-            onProgram={setPlanId}
-          />
-        </div>
-      )}
-
-      {view.updates.length === 0 &&
-        view.results.length === 0 &&
-        view.watches.length === 0 && (
-          <Quiet>
-            No results out of range, discrepancies, open orders or outside care.
-          </Quiet>
-        )}
-
-      {current && (
-        <SidePanel
-          open
-          onClose={() => setOpen(null)}
-          returnFocus={{ current: from }}
-          title={
-            <span className="flex flex-wrap items-center gap-2">
-              {current.heading ??
-                (current.title.includes(" · ")
-                  ? current.title.split(" · ").slice(1).join(" · ")
-                  : current.title)}
-              <Pill
-                tone={
-                  current.group
-                    ? GROUP_TONE[current.group]
-                    : current.kind === "watch"
-                      ? "orange"
-                      : "blue"
-                }
-              >
-                {current.category}
-              </Pill>
-            </span>
-          }
-          meta={current.sub}
-          actions={current.actions.map((a, i) => (
-            <Button
-              key={a.label}
-              variant={a.primary ? "default" : i <= 1 ? "outline" : "secondary"}
-              className={cn(
-                !a.primary &&
-                  i <= 1 &&
-                  "border-primary/25 bg-primary/8 text-primary-tint hover:bg-primary/12 hover:text-primary-tint"
-              )}
-              onClick={() => {
-                a.run()
-                if (!a.keepOpen) setOpen(null)
-              }}
-            >
-              {a.label}
-            </Button>
-          ))}
-        >
-          <SubjectPanel s={current} />
-        </SidePanel>
-      )}
-    </div>
-  )
+  }, [ready, model, opt, optimized, onOpen, dash, patientName, close])
 }
