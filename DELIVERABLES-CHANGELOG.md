@@ -397,3 +397,6 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Removed: Patient Portal / Patient Onboarding / Daily habits
 - Removed: Patient Portal / Patient Onboarding / Medications
 - Removed: Patient Portal / Mobile App: Record / Timeline
+
+## 09-Oct-2026
+
