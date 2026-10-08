@@ -1461,12 +1461,12 @@ export function DecisionBand({
   return (
     <section
       aria-label="Decide today"
-      className="flex flex-col gap-3 rounded-xl border border-[#EB9A52]/40 bg-[#EB9A52]/[0.08] px-4 py-3.5 md:flex-row md:items-center md:gap-4"
+      className="flex flex-col gap-3 rounded-xl border border-[#EB9A52]/40 bg-[#EB9A52]/[0.08] px-3.5 py-2.5 md:flex-row md:items-center md:gap-3"
     >
       <div className="flex min-w-0 flex-1 gap-3">
         <span
           aria-hidden
-          className="grid size-8 shrink-0 place-items-center rounded-full bg-[#EB9A52]/25 text-[#B8661F]"
+          className="grid size-7 shrink-0 place-items-center rounded-full bg-[#EB9A52]/25 text-[#B8661F]"
         >
           <KitIcon icon={Alert02Icon} size={16} />
         </span>

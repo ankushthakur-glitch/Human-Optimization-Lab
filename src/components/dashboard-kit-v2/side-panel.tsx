@@ -1,11 +1,20 @@
 "use client"
 
 import * as React from "react"
-import { ArrowLeft01Icon, ArrowRight01Icon, Cancel01Icon } from "@hugeicons/core-free-icons"
+import {
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Cancel01Icon,
+} from "@hugeicons/core-free-icons"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/ui/button"
-import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/design-system/ui/sheet"
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetTitle,
+} from "@/design-system/ui/sheet"
 import { KitIcon } from "@/components/dashboard-kit-v2/icon"
 
 /* The right-hand drawer a list opens into: 610px, full height, on the
@@ -17,7 +26,12 @@ import { KitIcon } from "@/components/dashboard-kit-v2/icon"
 function useWalk(onPrevious?: () => void, onNext?: () => void) {
   return (e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement
-    if (target.closest("input,textarea,select,[role=radiogroup],[role=listbox],[role=menu]")) return
+    if (
+      target.closest(
+        "input,textarea,select,[role=radiogroup],[role=listbox],[role=menu]"
+      )
+    )
+      return
     if (e.key === "ArrowDown" && onNext) {
       e.preventDefault()
       onNext()
@@ -110,13 +124,17 @@ export function SidePanel({
         onKeyDown={walk}
         className={cn(
           "gap-0 border-l-0 p-0 shadow-[-12px_0_32px_rgba(16,24,40,.12)] data-[side=right]:w-full",
-          wide ? "data-[side=right]:sm:max-w-[810px]" : "data-[side=right]:sm:max-w-[610px]"
+          wide
+            ? "data-[side=right]:sm:max-w-[810px]"
+            : "data-[side=right]:sm:max-w-[610px]"
         )}
       >
         <header className="flex items-start gap-3 border-b border-border bg-surface-head/50 px-6 py-4">
           {lead}
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <SheetTitle className="truncate text-base leading-6 font-semibold">{title}</SheetTitle>
+            <SheetTitle className="truncate text-base leading-6 font-semibold">
+              {title}
+            </SheetTitle>
             {meta && (
               <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-[13px] text-muted-foreground tabular-nums">
                 {meta}
@@ -128,12 +146,28 @@ export function SidePanel({
               {index + 1} of {total}
             </span>
           )}
-          <SheetClose render={<Button variant="outline" size="icon-sm" aria-label="Close" className="rounded-lg" />}>
+          <SheetClose
+            render={
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label="Close"
+                className="rounded-lg"
+              />
+            }
+          >
             <KitIcon icon={Cancel01Icon} />
           </SheetClose>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto bg-surface-sunken/30 px-6 py-5">{children}</div>
-        <PanelFooter onPrevious={onPrevious} onNext={onNext} walkable={total !== undefined} actions={actions} />
+        <div className="min-h-0 flex-1 overflow-y-auto bg-surface-sunken/30 px-6 py-5">
+          {children}
+        </div>
+        <PanelFooter
+          onPrevious={onPrevious}
+          onNext={onNext}
+          walkable={total !== undefined}
+          actions={actions}
+        />
       </SheetContent>
     </Sheet>
   )
@@ -150,6 +184,7 @@ export function DockedPanel({
   onPrevious,
   onNext,
   actions,
+  onClose,
   className,
   children,
 }: {
@@ -160,6 +195,8 @@ export function DockedPanel({
   onPrevious?: () => void
   onNext?: () => void
   actions?: React.ReactNode
+  /** Shows the close button; the caller decides how the panel goes. */
+  onClose?: () => void
   className?: string
   children: React.ReactNode
 }) {
@@ -188,9 +225,27 @@ export function DockedPanel({
             {index + 1} of {total}
           </span>
         )}
+        {onClose && (
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label="Close"
+            className="rounded-lg"
+            onClick={onClose}
+          >
+            <KitIcon icon={Cancel01Icon} />
+          </Button>
+        )}
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto bg-surface-sunken/30 px-4 py-4">{children}</div>
-      <PanelFooter onPrevious={onPrevious} onNext={onNext} actions={actions} compact />
+      <div className="min-h-0 flex-1 overflow-y-auto bg-surface-sunken/30 px-4 py-4">
+        {children}
+      </div>
+      <PanelFooter
+        onPrevious={onPrevious}
+        onNext={onNext}
+        actions={actions}
+        compact
+      />
     </aside>
   )
 }

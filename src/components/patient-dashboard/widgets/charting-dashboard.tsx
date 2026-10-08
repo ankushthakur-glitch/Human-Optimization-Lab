@@ -1033,12 +1033,16 @@ const splitTitle = (t: string) => {
 
 function Figure({ s }: { s: Subject }) {
   const f = s.figure
+  /* A number reads large; words ("Skin check, two moles removed") stay at
+     heading size so a long reason never fills the panel. */
+  const numeric = /^[-+−]?[\d.,]+%?$/.test(String(f.value).trim())
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs text-muted-foreground">{f.label}</span>
       <span
         className={cn(
-          "text-3xl leading-tight font-semibold tabular-nums",
+          "font-semibold tabular-nums",
+          numeric ? "text-2xl leading-tight" : "text-base leading-6",
           f.tone && SOFT_TEXT[f.tone]
         )}
       >
@@ -1364,6 +1368,8 @@ export function ChartingDashboard({
     null
   )
   const [from, setFrom] = React.useState<HTMLElement | null>(null)
+  /* Version 3: the subject a finishing action closed the sidebar on. */
+  const [closedId, setClosedId] = React.useState<string | null>(null)
   const [planId, setPlanId] = React.useState(PROGRAMS[0].id)
   const program = PROGRAMS.find((p) => p.id === planId) ?? PROGRAMS[0]
   const programView = React.useMemo(
@@ -1403,6 +1409,11 @@ export function ChartingDashboard({
   /* The open subject and the list it was opened from. */
   const picked = pick ? view.byId.get(pick.id) : undefined
   const current = picked ?? top
+  /* "Mark reviewed" and the other finishing actions slide the sidebar shut;
+     it keeps what was finished on show while it closes, and picking a row
+     opens it again. */
+  const closed = dock && closedId !== null
+  const shown = closed ? (view.byId.get(closedId) ?? current) : current
   const list = picked && pick ? pick.list : topList.map((x) => x.id)
   const at = current ? list.indexOf(current.id) : -1
   const go = (i: number) =>
@@ -1410,13 +1421,17 @@ export function ChartingDashboard({
 
   const choose = (group: Subject[]) => (s: Subject, el: HTMLElement) => {
     setFrom(el)
+    setClosedId(null)
     setPick({ id: s.id, list: group.map((x) => x.id) })
   }
   const act = (a: Subject["actions"][number]) => {
     a.run()
-    if (!a.keepOpen) setPick(null)
+    if (!a.keepOpen) {
+      if (dock && current) setClosedId(current.id)
+      setPick(null)
+    }
   }
-  const isPicked = (s: Subject) => current?.id === s.id
+  const isPicked = (s: Subject) => !closed && current?.id === s.id
 
   const action = view.updates.filter((s) => s.group === "action")
   const review = view.updates.filter((s) => s.group === "review")
@@ -1433,14 +1448,14 @@ export function ChartingDashboard({
       </div>
     ) : null
 
-  const panelHead = current && (
+  const panelHead = shown && (
     <span className="flex flex-wrap items-center gap-2">
-      {panelTitle(current)}
-      <Pill tone={panelTone(current)}>{current.category}</Pill>
+      {panelTitle(shown)}
+      <Pill tone={panelTone(shown)}>{shown.category}</Pill>
     </span>
   )
   /* Version 3 has no plan card to scroll to, so "Show plan" goes. */
-  const panelActions = current?.actions
+  const panelActions = shown?.actions
     .filter((a) => !(docked && a.run === showPlan))
     .map((a, i) => (
       <Button
@@ -1788,19 +1803,31 @@ export function ChartingDashboard({
     </Compact.Provider>
   )
 
-  if (dock && current && slot)
+  if (dock && shown && slot)
     return (
       <>
         {lists}
         {createPortal(
-          <DockedPanel
-            title={panelHead}
-            onPrevious={at > 0 ? go(at - 1) : undefined}
-            onNext={at >= 0 ? go(at + 1) : undefined}
-            actions={panelActions}
+          /* The width eases to zero when closed, so the lists widen into
+             the space; the panel keeps its own width and slides out. */
+          <div
+            aria-hidden={closed || undefined}
+            inert={closed || undefined}
+            className={cn(
+              "flex h-full justify-end overflow-hidden transition-[width] duration-300 ease-out motion-reduce:transition-none",
+              closed ? "w-0" : "w-[400px]"
+            )}
           >
-            <DetailBody s={current} model={model} opt={opt.model} />
-          </DockedPanel>,
+            <DockedPanel
+              title={panelHead}
+              onPrevious={at > 0 ? go(at - 1) : undefined}
+              onNext={at >= 0 ? go(at + 1) : undefined}
+              actions={panelActions}
+              onClose={() => current && setClosedId(current.id)}
+            >
+              <DetailBody s={shown} model={model} opt={opt.model} />
+            </DockedPanel>
+          </div>,
           slot
         )}
       </>
