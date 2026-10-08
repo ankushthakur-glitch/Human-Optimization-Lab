@@ -12,9 +12,8 @@ import { planFor, useExperience } from "@/lib/experience"
 /* The plan page (FINAL-SPEC C.14.2): where every offer in the app leads,
    pushed over the screen she was on (a marker, the assistant, Profile), so
    the swipe back returns her there. The same showroom as the free Plan
-   tab, told the same way, with its actions pinned to the foot: "Build my
-   personalized plan" and "Ask to Health Agent" under it; the checkout
-   sheet opens over the page. `?from=` says
+   tab, told the same way, with "Build my personalized plan" pinned to
+   the foot; the checkout sheet opens over the page. `?from=` says
    where she came from and sets the first line ("You were looking at your
    A1c...") and the focus row it highlights. */
 
@@ -36,7 +35,7 @@ export default function PlansScreen() {
   return (
     <View style={styles.fill}>
       <FlowScreen page title="A plan built around you" footer={footer}>
-        {waiting ? <EmptyState title="Your plan options appear once your record is ready." /> : <PlanShowroom mode="page" from={from} />}
+        {waiting ? <EmptyState title="Your plan options appear once your record is ready." /> : <PlanShowroom mode="page" from={from} onStart={() => setCheckout(true)} />}
       </FlowScreen>
       {checkout && <CheckoutSheet onClose={() => setCheckout(false)} />}
     </View>

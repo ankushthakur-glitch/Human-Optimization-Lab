@@ -232,6 +232,7 @@ function UpgradeCard() {
       <UpgradeBanner
         title="A healthier you is possible"
         line="Inlay can turn your insights into a personalized plan to help you improve."
+        hint="Opens your plan options"
         onPress={() => openTab("/plan", "home")}
       />
     </Rise>

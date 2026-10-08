@@ -59,6 +59,9 @@ export function openTab(href: (typeof TABS)[number]["href"], from: TabName) {
   else router.replace(href)
 }
 
+/** Room the scrolling list leaves for a pinned footer button at its end. */
+const FOOTER_SPACE = 76
+
 const INK = "#18181A"
 const REST = "#818181"
 
@@ -73,9 +76,13 @@ export function TabScreen({
   header,
   headerRight,
   pinned,
+  footer,
   overlay,
   children,
 }: {
+  /** Stays above the tab bar while the page scrolls beneath it, e.g. the
+      Plan tab's "Build my personalized plan". */
+  footer?: React.ReactNode
   /** Drawn over everything, tab bar included, e.g. a detail panel. */
   overlay?: React.ReactNode
   tab: TabName
@@ -121,11 +128,19 @@ export function TabScreen({
               styles.body,
               styles.content,
               !!pinned && styles.contentPinned,
+              !!footer && { paddingBottom: FOOTER_SPACE },
             ]}
             showsVerticalScrollIndicator={false}
           >
             {children}
           </ScrollView>
+          {/* The footer floats at the foot of the list, right above the bar;
+            the page scrolls beneath it and clears it at the end. */}
+          {footer && (
+            <View style={[styles.footer, { bottom: barSpace + space.inline }]} pointerEvents="box-none">
+              {footer}
+            </View>
+          )}
           <TabBar active={tab} bottom={barBottom} />
         </View>
         {overlay}
@@ -257,6 +272,7 @@ const styles = StyleSheet.create({
     gap: space.section,
   },
   pinned: { paddingTop: space.gutter, gap: space.item },
+  footer: { position: "absolute", left: 0, right: 0, paddingHorizontal: space.gutter },
   content: { paddingTop: space.gutter, paddingBottom: space.gutter * 2 },
   contentPinned: { paddingTop: space.item },
   pressed: { opacity: 0.7 },

@@ -1,10 +1,9 @@
-import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { CheckoutSheet } from "@/components/checkout-sheet"
-import { PlanShowroom } from "@/components/plan-showroom"
-import { Block, Card, EmptyState, Group, NeedsRow, ReviewBanner, TextAction } from "@/components/record-kit"
+import { PlanShowroom, ShowroomActions } from "@/components/plan-showroom"
+import { Block, Card, EmptyState, Group, NeedsRow, TextAction } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { useExperience } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
@@ -18,14 +17,13 @@ import { space, type } from "@/lib/theme"
 
    States: readiness "Not ready" or "A little" keeps the showroom folded
    behind one quiet link; a cancelled member finds her past plans above it
-   and the button reads "Start again"; with sharing off the same banner as
-   every tab sits on top; while the record is arriving, or when it was
+   and the button reads "Start again"; while the record is arriving, or when it was
    never connected, one card says when the plan options appear. It renders
    its own tab screen, so the checkout sheet passes over the tab bar. */
 
 export function PlanFree() {
   const onboarding = useOnboarding()
-  const { experience, readiness, sharingOff } = useExperience()
+  const { experience, readiness } = useExperience()
   const [checkout, setCheckout] = React.useState(false)
   // At low readiness the showroom waits behind "See what a plan includes".
   const [open, setOpen] = React.useState(false)
@@ -40,8 +38,12 @@ export function PlanFree() {
   const past = onboarding.planHistory ?? []
   const showroom = readiness !== "low" || open
   return (
-    <TabScreen tab="plan" title="Upgrade" overlay={checkout ? <CheckoutSheet onClose={() => setCheckout(false)} /> : undefined}>
-      {sharingOff && <ReviewBanner state={{ kind: "sharing-off", since: sharingOff.on ?? "" }} onPress={() => router.push("/connect")} />}
+    <TabScreen
+      tab="plan"
+      title="Upgrade"
+      footer={showroom ? <ShowroomActions mode="tab" onStart={() => setCheckout(true)} /> : undefined}
+      overlay={checkout ? <CheckoutSheet onClose={() => setCheckout(false)} /> : undefined}
+    >
       {past.length > 0 && (
         <Block title="Your past plans">
           <Group>

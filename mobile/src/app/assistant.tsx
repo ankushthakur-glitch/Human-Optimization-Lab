@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -15,6 +15,7 @@ import {
   VisitBubble,
   keepTogether,
 } from "@/components/assistant-thread"
+import { AskUpgrade } from "@/components/ask-upgrade"
 import { AskWelcome, DISCLAIMER } from "@/components/ask-welcome"
 import { AttachSheet, MAX_ATTACHMENTS, type Attachment } from "@/components/attach-sheet"
 import { ChatBar, MyBubble, Options, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
@@ -909,6 +910,7 @@ export default function AssistantScreen() {
 
           {!ended && (
             <View>
+              {asking && experience === "free" && <AskUpgrade onPress={() => router.push("/plan")} />}
               <ChatBar
                 notice={creditNotice && creditNotice.words !== hiddenNotice && !limitShown ? { ...creditNotice, onClose: () => setHiddenNotice(creditNotice.words) } : undefined}
                 value={draft}
