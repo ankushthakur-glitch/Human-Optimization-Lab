@@ -1,4 +1,4 @@
-import type { Trend } from "@/components/dashboard-kit"
+import type { Trend } from "@/components/dashboard-kit-v2"
 import { NOW } from "@/components/provider/mock-clock"
 import type { DashboardModel } from "@/components/patient-dashboard/model"
 import type {

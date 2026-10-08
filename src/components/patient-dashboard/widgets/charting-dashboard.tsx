@@ -19,6 +19,7 @@ import {
   HoverCardContent,
   HoverCardSection,
   HoverCardTrigger,
+  createHoverCardHandle,
 } from "@/design-system/ui/hover-card"
 import {
   FOCUS,
@@ -703,8 +704,102 @@ function Readings({ m }: { m: Marker }) {
 
 /* -------------------------------------------------------------- pieces -- */
 
-/** The hover card: small, soft and borderless, never in the way of a click. */
-const PEEK = "w-80 rounded-2xl p-4 shadow-[0_16px_40px_rgba(16,24,40,.12)]"
+/** The hover card: small, soft and borderless, never in the way of a click.
+    It ignores the pointer, so it closes as soon as the pointer leaves the
+    row and never catches a hover meant for the rows under it. */
+const PEEK =
+  "pointer-events-none w-80 rounded-2xl p-4 shadow-[0_16px_40px_rgba(16,24,40,.12)]"
+
+type PeekHandle = ReturnType<typeof createHoverCardHandle<Subject>>
+
+type Peek = {
+  handle: PeekHandle
+  enter: (s: Subject, id: string) => void
+  leave: () => void
+  close: () => void
+}
+
+/** The dashboard's one hover card: every row opens this same card, so only
+    one is ever open. The first card waits a beat, so sweeping across the
+    list opens nothing; once one is open, the next row swaps in at once;
+    leaving the names closes it. */
+const PeekContext = React.createContext<Peek | null>(null)
+
+const PEEK_OPEN_DELAY = 300
+const PEEK_CLOSE_DELAY = 80
+
+function usePeek() {
+  const [handle] = React.useState(() => createHoverCardHandle<Subject>())
+  /* The subject stays after closing, so the card animates out with it. */
+  const [card, setCard] = React.useState<{
+    s: Subject
+    id: string
+    open: boolean
+  } | null>(null)
+  const shown = React.useRef(false)
+  const timer = React.useRef<number | undefined>(undefined)
+  React.useEffect(() => () => window.clearTimeout(timer.current), [])
+
+  const peek = React.useMemo<Peek>(() => {
+    const show = (s: Subject, id: string) => {
+      shown.current = true
+      setCard({ s, id, open: true })
+    }
+    const close = () => {
+      window.clearTimeout(timer.current)
+      shown.current = false
+      setCard((c) => c && { ...c, open: false })
+    }
+    return {
+      handle,
+      close,
+      enter: (s, id) => {
+        window.clearTimeout(timer.current)
+        if (shown.current) show(s, id)
+        else
+          timer.current = window.setTimeout(() => show(s, id), PEEK_OPEN_DELAY)
+      },
+      leave: () => {
+        window.clearTimeout(timer.current)
+        timer.current = window.setTimeout(close, PEEK_CLOSE_DELAY)
+      },
+    }
+  }, [handle])
+  return { peek, card }
+}
+
+function SharedPeek({
+  peek,
+  card,
+}: {
+  peek: Peek
+  card: { s: Subject; id: string; open: boolean } | null
+}) {
+  return (
+    <HoverCard
+      handle={peek.handle}
+      open={card?.open ?? false}
+      triggerId={card?.id ?? null}
+      /* The rows drive opening and closing; only Escape or a press
+         elsewhere closes it from here. */
+      onOpenChange={(open, details) => {
+        if (!open && details.reason !== "trigger-hover") peek.close()
+      }}
+    >
+      {card && (
+        <HoverCardContent
+          side="bottom"
+          align="start"
+          sideOffset={8}
+          followCursor={false}
+          className={PEEK}
+        >
+          <PeekCard s={card.s} />
+        </HoverCardContent>
+      )}
+    </HoverCard>
+  )
+}
 
 /** A row that selects its subject; the selected one carries a teal edge. */
 function PickRow({
@@ -726,12 +821,38 @@ function PickRow({
 }) {
   /* The peek opens from the name block only, so moving across the graph
      or the status never throws a card over the rows below. */
+  const peek = React.useContext(PeekContext)
+  const triggerId = React.useId()
+  const name = (
+    <>
+      {tone && (
+        <span
+          aria-hidden
+          className={cn("size-2 shrink-0 rounded-full", SOFT_DOT[tone])}
+        />
+      )}
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="truncate text-sm font-medium text-foreground">
+          {s.title}
+        </span>
+        {meta && (
+          <span className="truncate text-[13px] text-muted-foreground">
+            {meta}
+          </span>
+        )}
+      </span>
+    </>
+  )
+  const nameBox = "-my-2 flex max-w-full min-w-0 items-center gap-3 py-2 pr-6"
   return (
     <li>
       <button
         type="button"
         aria-pressed={selected}
-        onClick={(e) => onPick(s, e.currentTarget)}
+        onClick={(e) => {
+          peek?.close()
+          onPick(s, e.currentTarget)
+        }}
         className={cn(
           "relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-row-hover",
           selected &&
@@ -740,42 +861,19 @@ function PickRow({
         )}
       >
         <span className="flex min-w-0 flex-1">
-          <HoverCard>
+          {peek && !selected ? (
             <HoverCardTrigger
-              delay={260}
-              closeDelay={80}
-              render={
-                <span className="-my-2 flex max-w-full min-w-0 items-center gap-3 py-2 pr-6" />
-              }
+              handle={peek.handle}
+              id={triggerId}
+              onPointerEnter={() => peek.enter(s, triggerId)}
+              onPointerLeave={peek.leave}
+              render={<span className={nameBox} />}
             >
-              {tone && (
-                <span
-                  aria-hidden
-                  className={cn("size-2 shrink-0 rounded-full", SOFT_DOT[tone])}
-                />
-              )}
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="truncate text-sm font-medium text-foreground">
-                  {s.title}
-                </span>
-                {meta && (
-                  <span className="truncate text-[13px] text-muted-foreground">
-                    {meta}
-                  </span>
-                )}
-              </span>
+              {name}
             </HoverCardTrigger>
-            {!selected && (
-              <HoverCardContent
-                side="bottom"
-                align="start"
-                sideOffset={8}
-                className={PEEK}
-              >
-                <PeekCard s={s} />
-              </HoverCardContent>
-            )}
-          </HoverCard>
+          ) : (
+            <span className={nameBox}>{name}</span>
+          )}
         </span>
         {graph}
         {status}
@@ -1209,6 +1307,7 @@ export function ChartingDashboard({
   slot?: HTMLElement | null
 }) {
   const dock = useWide()
+  const { peek, card } = usePeek()
   const { ready, model } = dash
   const [pick, setPick] = React.useState<{ id: string; list: string[] } | null>(
     null
@@ -1300,278 +1399,281 @@ export function ChartingDashboard({
   ))
 
   const lists = (
-    <div className={cn("flex min-w-0 flex-col gap-4", TYPE_SCALE)}>
-      {view.lead ? (
-        <DecisionBand
-          lead={view.lead}
-          related={view.related}
-          reviewAt={view.reviewAt}
-          onOpen={choose([view.lead, ...view.related])}
-        />
-      ) : (
-        <div className="flex items-center gap-3 rounded-2xl border bg-card px-5 py-4">
-          <KitIcon
-            icon={CheckmarkCircle02Icon}
-            size={18}
-            className={SOFT_TEXT.green}
+    <PeekContext.Provider value={peek}>
+      <SharedPeek peek={peek} card={card} />
+      <div className={cn("flex min-w-0 flex-col gap-4", TYPE_SCALE)}>
+        {view.lead ? (
+          <DecisionBand
+            lead={view.lead}
+            related={view.related}
+            reviewAt={view.reviewAt}
+            onOpen={choose([view.lead, ...view.related])}
           />
-          <span className="flex-1 text-sm font-medium">
-            Nothing needs a decision today
-          </span>
-          <ReviewButton dash={dash} />
-        </div>
-      )}
+        ) : (
+          <div className="flex items-center gap-3 rounded-2xl border bg-card px-5 py-4">
+            <KitIcon
+              icon={CheckmarkCircle02Icon}
+              size={18}
+              className={SOFT_TEXT.green}
+            />
+            <span className="flex-1 text-sm font-medium">
+              Nothing needs a decision today
+            </span>
+            <ReviewButton dash={dash} />
+          </div>
+        )}
 
-      {view.updates.length > 0 && (
-        <div id="v5-updates" className="scroll-mt-3">
-          <Widget
-            icon={Notification03Icon}
-            title="Important updates"
-            count={view.updates.length}
-            action={
-              <span className="text-xs font-normal text-muted-foreground tabular-nums">
-                {view.reviewAt
-                  ? `New since ${day(view.reviewAt)}`
-                  : "Last 90 days"}
-              </span>
-            }
-            flush
-          >
-            {/* The list scrolls inside the card, every row under an
+        {view.updates.length > 0 && (
+          <div id="v5-updates" className="scroll-mt-3">
+            <Widget
+              icon={Notification03Icon}
+              title="Important updates"
+              count={view.updates.length}
+              action={
+                <span className="text-xs font-normal text-muted-foreground tabular-nums">
+                  {view.reviewAt
+                    ? `New since ${day(view.reviewAt)}`
+                    : "Last 90 days"}
+                </span>
+              }
+              flush
+            >
+              {/* The list scrolls inside the card, every row under an
                   Action needed or For review heading. */}
-            <div className="max-h-[420px] overflow-y-auto">
-              {(
-                [
-                  ["action", action, "Action needed"],
-                  ["review", review, "For review"],
-                ] as [Group, Subject[], string][]
-              ).map(([g, rows, label]) =>
-                rows.length ? (
-                  <div
-                    key={g}
-                    className="flex flex-col border-b last:border-b-0"
-                  >
-                    <h4
-                      className={cn(
-                        "sticky top-0 z-[1] flex items-center gap-2 border-b px-4 py-2 text-xs font-semibold",
-                        HEAD_TINT[GROUP_TONE[g]],
-                        SOFT_TEXT[GROUP_TONE[g]]
-                      )}
+              <div className="max-h-[420px] overflow-y-auto">
+                {(
+                  [
+                    ["action", action, "Action needed"],
+                    ["review", review, "For review"],
+                  ] as [Group, Subject[], string][]
+                ).map(([g, rows, label]) =>
+                  rows.length ? (
+                    <div
+                      key={g}
+                      className="flex flex-col border-b last:border-b-0"
                     >
-                      {label}
-                      <span className="font-normal text-muted-foreground tabular-nums">
-                        {rows.length}
-                      </span>
-                    </h4>
-                    <Preview
-                      items={rows}
-                      limit={rows.length}
-                      render={(s) => {
-                        const t =
-                          s.kind === "visit"
-                            ? { kind: "", subject: s.title }
-                            : splitTitle(s.title)
-                        return (
-                          <PickRow
-                            key={s.id}
-                            s={{ ...s, title: t.subject }}
-                            tone={GROUP_TONE[g]}
-                            selected={isPicked(s)}
-                            onPick={choose(view.updates)}
-                            meta={
-                              <>
-                                {t.kind && (
-                                  <span className="text-foreground/70">
-                                    {t.kind}.{" "}
+                      <h4
+                        className={cn(
+                          "sticky top-0 z-[1] flex items-center gap-2 border-b px-4 py-2 text-xs font-semibold",
+                          HEAD_TINT[GROUP_TONE[g]],
+                          SOFT_TEXT[GROUP_TONE[g]]
+                        )}
+                      >
+                        {label}
+                        <span className="font-normal text-muted-foreground tabular-nums">
+                          {rows.length}
+                        </span>
+                      </h4>
+                      <Preview
+                        items={rows}
+                        limit={rows.length}
+                        render={(s) => {
+                          const t =
+                            s.kind === "visit"
+                              ? { kind: "", subject: s.title }
+                              : splitTitle(s.title)
+                          return (
+                            <PickRow
+                              key={s.id}
+                              s={{ ...s, title: t.subject }}
+                              tone={GROUP_TONE[g]}
+                              selected={isPicked(s)}
+                              onPick={choose(view.updates)}
+                              meta={
+                                <>
+                                  {t.kind && (
+                                    <span className="text-foreground/70">
+                                      {t.kind}.{" "}
+                                    </span>
+                                  )}
+                                  {s.line}
+                                  {s.alert && (
+                                    <span
+                                      className={cn(
+                                        "ml-1 font-medium",
+                                        SOFT_TEXT[GROUP_TONE[g]]
+                                      )}
+                                    >
+                                      {s.alert}
+                                    </span>
+                                  )}
+                                </>
+                              }
+                              status={
+                                s.date && (
+                                  <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+                                    {day(s.date)}
                                   </span>
-                                )}
-                                {s.line}
-                                {s.alert && (
-                                  <span
-                                    className={cn(
-                                      "ml-1 font-medium",
-                                      SOFT_TEXT[GROUP_TONE[g]]
-                                    )}
-                                  >
-                                    {s.alert}
-                                  </span>
-                                )}
-                              </>
-                            }
-                            status={
-                              s.date && (
-                                <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-                                  {day(s.date)}
-                                </span>
-                              )
-                            }
-                          />
-                        )
-                      }}
-                    />
-                  </div>
-                ) : null
-              )}
-            </div>
-          </Widget>
-        </div>
-      )}
-
-      {pair(
-        view.results.length > 0 ? (
-          <div id="v5-results" className="h-full scroll-mt-3">
-            <Widget
-              icon={TestTube01Icon}
-              title="Out of range"
-              count={view.results.length}
-              action={
-                <button
-                  type="button"
-                  onClick={() => onOpen("labs")}
-                  className={cn(
-                    "rounded text-[13px] font-medium text-primary hover:underline",
-                    FOCUS
-                  )}
-                >
-                  View all
-                </button>
-              }
-              flush
-            >
-              <Preview
-                items={view.results}
-                render={(s) => (
-                  <MarkerRow
-                    key={s.id}
-                    s={s}
-                    selected={isPicked(s)}
-                    onPick={choose(view.results)}
-                  />
+                                )
+                              }
+                            />
+                          )
+                        }}
+                      />
+                    </div>
+                  ) : null
                 )}
-              />
+              </div>
             </Widget>
           </div>
-        ) : null,
-        view.watches.length > 0 ? (
-          <div id="v5-watch" className="h-full scroll-mt-3">
-            <Widget
-              icon={ChartLineData01Icon}
-              title="Watchful trends"
-              count={view.watches.length}
-              action={
-                <button
-                  type="button"
-                  onClick={() => onOpen("labs")}
-                  className={cn(
-                    "rounded text-[13px] font-medium text-primary hover:underline",
-                    FOCUS
-                  )}
-                >
-                  View all
-                </button>
-              }
-              flush
-            >
-              <Preview
-                items={view.watches}
-                render={(s) => (
-                  <MarkerRow
-                    key={s.id}
-                    s={s}
-                    selected={isPicked(s)}
-                    onPick={choose(view.watches)}
-                  />
-                )}
-              />
-            </Widget>
-          </div>
-        ) : null
-      )}
+        )}
 
-      {pair(
-        view.care.length > 0 ? (
-          <div id="v5-care" className="h-full scroll-mt-3">
-            <Widget
-              icon={Calendar03Icon}
-              title="Future care and follow up"
-              count={view.care.length}
-              flush
-            >
-              <Preview
-                items={view.care}
-                render={(s) => {
-                  const gap =
-                    s.alert === "Overdue" || s.alert === "Never tested"
-                  return (
-                    <PickRow
+        {pair(
+          view.results.length > 0 ? (
+            <div id="v5-results" className="h-full scroll-mt-3">
+              <Widget
+                icon={TestTube01Icon}
+                title="Out of range"
+                count={view.results.length}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => onOpen("labs")}
+                    className={cn(
+                      "rounded text-[13px] font-medium text-primary hover:underline",
+                      FOCUS
+                    )}
+                  >
+                    View all
+                  </button>
+                }
+                flush
+              >
+                <Preview
+                  items={view.results}
+                  render={(s) => (
+                    <MarkerRow
                       key={s.id}
                       s={s}
                       selected={isPicked(s)}
-                      onPick={choose(view.care)}
-                      meta={s.line || undefined}
-                      status={
-                        <span
-                          className={cn(
-                            "w-24 shrink-0 text-right text-xs tabular-nums",
-                            gap
-                              ? cn("font-semibold", SOFT_TEXT.orange)
-                              : "text-muted-foreground"
-                          )}
-                        >
-                          {s.alert}
-                        </span>
-                      }
+                      onPick={choose(view.results)}
                     />
-                  )
-                }}
-              />
-            </Widget>
-          </div>
-        ) : null,
-        view.programs.length > 0 ? (
-          <Widget
-            icon={Target02Icon}
-            title="Optimization programs"
-            count={view.programs.length}
-            flush
-          >
-            <ul className="divide-y">
-              {view.programs.map((s) => (
-                <PickRow
-                  key={s.id}
-                  s={s}
-                  selected={isPicked(s)}
-                  onPick={choose(view.programs)}
-                  meta={s.line}
-                  status={
-                    <Pill
-                      tone={
-                        s.status === "Active"
-                          ? "green"
-                          : s.status === "Eligible"
-                            ? "blue"
-                            : "orange"
-                      }
-                    >
-                      {s.status}
-                    </Pill>
-                  }
+                  )}
                 />
-              ))}
-            </ul>
-          </Widget>
-        ) : null
-      )}
-
-      {view.updates.length === 0 &&
-        view.results.length === 0 &&
-        view.watches.length === 0 && (
-          <Quiet>
-            No results out of range, medication changes, open orders or outside
-            care.
-          </Quiet>
+              </Widget>
+            </div>
+          ) : null,
+          view.watches.length > 0 ? (
+            <div id="v5-watch" className="h-full scroll-mt-3">
+              <Widget
+                icon={ChartLineData01Icon}
+                title="Watchful trends"
+                count={view.watches.length}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => onOpen("labs")}
+                    className={cn(
+                      "rounded text-[13px] font-medium text-primary hover:underline",
+                      FOCUS
+                    )}
+                  >
+                    View all
+                  </button>
+                }
+                flush
+              >
+                <Preview
+                  items={view.watches}
+                  render={(s) => (
+                    <MarkerRow
+                      key={s.id}
+                      s={s}
+                      selected={isPicked(s)}
+                      onPick={choose(view.watches)}
+                    />
+                  )}
+                />
+              </Widget>
+            </div>
+          ) : null
         )}
-    </div>
+
+        {pair(
+          view.care.length > 0 ? (
+            <div id="v5-care" className="h-full scroll-mt-3">
+              <Widget
+                icon={Calendar03Icon}
+                title="Future care and follow up"
+                count={view.care.length}
+                flush
+              >
+                <Preview
+                  items={view.care}
+                  render={(s) => {
+                    const gap =
+                      s.alert === "Overdue" || s.alert === "Never tested"
+                    return (
+                      <PickRow
+                        key={s.id}
+                        s={s}
+                        selected={isPicked(s)}
+                        onPick={choose(view.care)}
+                        meta={s.line || undefined}
+                        status={
+                          <span
+                            className={cn(
+                              "w-24 shrink-0 text-right text-xs tabular-nums",
+                              gap
+                                ? cn("font-semibold", SOFT_TEXT.orange)
+                                : "text-muted-foreground"
+                            )}
+                          >
+                            {s.alert}
+                          </span>
+                        }
+                      />
+                    )
+                  }}
+                />
+              </Widget>
+            </div>
+          ) : null,
+          view.programs.length > 0 ? (
+            <Widget
+              icon={Target02Icon}
+              title="Optimization programs"
+              count={view.programs.length}
+              flush
+            >
+              <ul className="divide-y">
+                {view.programs.map((s) => (
+                  <PickRow
+                    key={s.id}
+                    s={s}
+                    selected={isPicked(s)}
+                    onPick={choose(view.programs)}
+                    meta={s.line}
+                    status={
+                      <Pill
+                        tone={
+                          s.status === "Active"
+                            ? "green"
+                            : s.status === "Eligible"
+                              ? "blue"
+                              : "orange"
+                        }
+                      >
+                        {s.status}
+                      </Pill>
+                    }
+                  />
+                ))}
+              </ul>
+            </Widget>
+          ) : null
+        )}
+
+        {view.updates.length === 0 &&
+          view.results.length === 0 &&
+          view.watches.length === 0 && (
+            <Quiet>
+              No results out of range, medication changes, open orders or
+              outside care.
+            </Quiet>
+          )}
+      </div>
+    </PeekContext.Provider>
   )
 
   if (dock && shown && slot)

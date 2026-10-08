@@ -34,7 +34,7 @@ export function CardHeader({
   divider = true,
   className,
 }: {
-  title: string
+  title: React.ReactNode
   titleId?: string
   /** A badge after the title. */
   count?: React.ReactNode

@@ -162,7 +162,6 @@ Metabolic,Anion Gap,mmol/L,,,2026-08-14,8,5,17,,,Range,In Range,Maintain,No acti
 Metabolic,Bicarbonate,mmol/L,,,2026-08-14,25,19,29,,,Range,In Range,Maintain,No action based on this result,Basic metabolic panel,As clinically indicated,
 Metabolic,Calcium,mg/dL,,,2026-08-14,9.7,8.4,10.2,,,Range,In Range,Maintain,No action based on this result,Basic metabolic panel,As clinically indicated,
 Metabolic,Chloride,mmol/L,,,2026-08-14,107,98,111,,,Range,In Range,Maintain,No action based on this result,Basic metabolic panel,As clinically indicated,
-Metabolic,Glucose (fasting status not specified),mg/dL,,,2026-08-14,97,70,99,,,Range,In Range,Monitor,Do not merge with fasting-glucose trend unless fasting status is confirmed,Basic metabolic panel,As clinically indicated,Fasting status not reported
 Metabolic,Potassium,mmol/L,,,2026-08-14,4.5,3.5,5.2,,,Range,In Range,Monitor,"Repeat value normalized on Aug 14, 2026",CMP / basic metabolic panel,As clinically indicated,
 Metabolic,Sodium,mmol/L,,,2026-08-14,140,134,146,,,Range,In Range,Maintain,No action based on this result,Basic metabolic panel,As clinically indicated,
 Nutrients,Folate,ng/mL,,,2026-08-14,15.5,5.4,,,,Higher,In Range,Monitor,Maintain,Folate,6-12 mo / clinician-directed,

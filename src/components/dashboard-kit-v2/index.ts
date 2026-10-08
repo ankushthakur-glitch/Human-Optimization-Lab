@@ -4,7 +4,7 @@
 
 export { Alert } from "@/components/dashboard-kit-v2/alert"
 export { Avatar, initialsOf } from "@/components/dashboard-kit-v2/avatar"
-export { Badge, type Tone } from "@/components/dashboard-kit-v2/badge"
+export { Badge, type Tone, type Trend } from "@/components/dashboard-kit-v2/badge"
 export { Card, CardBody, CardFooter, CardHeader, ExpandButton } from "@/components/dashboard-kit-v2/card"
 export {
   AXIS_PROPS,

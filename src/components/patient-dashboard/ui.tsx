@@ -5,7 +5,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/ui/button"
 import { Skeleton } from "@/design-system/ui/skeleton"
-import { Card, CardBody, CardFooter, CardHeader } from "@/components/dashboard-kit"
+import { Card, CardBody, CardFooter, CardHeader } from "@/components/dashboard-kit-v2"
 import type { ChartSection } from "@/components/provider/patient-chart"
 import type { SectionId } from "@/components/patient-dashboard/rules"
 
@@ -42,9 +42,7 @@ export function DashCard({
   const domId = sectionDomId(id)
   return (
     <Card id={domId} tabIndex={-1} aria-labelledby={`${domId}-title`} className="@container/card scroll-mt-3 outline-none">
-      <CardHeader title={title} titleId={`${domId}-title`} description={description}>
-        {controls}
-      </CardHeader>
+      <CardHeader title={title} titleId={`${domId}-title`} description={description} actions={controls} />
       <CardBody flush={flush}>{children}</CardBody>
       {footer && <CardFooter>{footer}</CardFooter>}
     </Card>
@@ -55,11 +53,11 @@ export function DashCard({
 export function CardSkeleton({ rows = 3, tall, className }: { rows?: number; tall?: boolean; className?: string }) {
   return (
     <Card aria-hidden className={className}>
-      <div className={cn("flex min-h-[60px] items-center gap-3 border-b px-5", DIVIDER)}>
+      <div className={cn("flex min-h-[56px] items-center gap-3 border-b px-4", DIVIDER)}>
         <Skeleton className="h-4 w-36 rounded-sm" />
         <Skeleton className="ml-auto h-7 w-40 rounded-md" />
       </div>
-      <div className="flex flex-col gap-3 p-5">
+      <div className="flex flex-col gap-3 p-4">
         {Array.from({ length: rows }, (_, i) => (
           <Skeleton key={i} className={cn("w-full rounded-md", tall ? "h-20" : "h-9")} />
         ))}

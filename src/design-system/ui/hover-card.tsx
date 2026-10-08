@@ -15,11 +15,20 @@ if (typeof window !== "undefined")
     { passive: true, capture: true }
   )
 
-function HoverCard({ ...props }: PreviewCardPrimitive.Root.Props) {
+function HoverCard<Payload>({
+  ...props
+}: PreviewCardPrimitive.Root.Props<Payload>) {
   return <PreviewCardPrimitive.Root data-slot="hover-card" {...props} />
 }
 
-function HoverCardTrigger({ ...props }: PreviewCardPrimitive.Trigger.Props) {
+/* One card shared by many triggers: each trigger passes the handle and its
+   payload, and a single HoverCard renders the payload. Only one card can be
+   open, and moving to the next trigger swaps it rather than stacking. */
+const createHoverCardHandle = PreviewCardPrimitive.createHandle
+
+function HoverCardTrigger<Payload>({
+  ...props
+}: PreviewCardPrimitive.Trigger.Props<Payload>) {
   return (
     <PreviewCardPrimitive.Trigger data-slot="hover-card-trigger" {...props} />
   )
@@ -68,12 +77,17 @@ function Positioned({
       side={side}
       sideOffset={sideOffset}
       collisionPadding={12}
-      className="isolate z-50"
+      /* A card that ignores the pointer leaves its box clickable too. */
+      className={cn(
+        "isolate z-50",
+        className?.toString().includes("pointer-events-none") &&
+          "pointer-events-none"
+      )}
     >
       <PreviewCardPrimitive.Popup
         data-slot="hover-card-content"
         className={cn(
-          "z-50 w-72 origin-(--transform-origin) rounded-2xl bg-popover p-4 text-sm text-popover-foreground shadow-[0_16px_40px_rgba(16,24,40,.12)] ring-1 ring-foreground/5 outline-hidden duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dark:ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "z-50 w-72 origin-(--transform-origin) rounded-2xl bg-popover p-4 text-sm text-popover-foreground shadow-[0_16px_40px_rgba(16,24,40,.12)] ring-1 ring-foreground/5 outline-hidden duration-200 ease-out data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dark:ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:duration-150 data-closed:ease-in data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
@@ -136,4 +150,10 @@ function HoverCardSection({
   )
 }
 
-export { HoverCard, HoverCardTrigger, HoverCardContent, HoverCardSection }
+export {
+  HoverCard,
+  HoverCardTrigger,
+  HoverCardContent,
+  HoverCardSection,
+  createHoverCardHandle,
+}

@@ -1,4 +1,4 @@
-import type { Trend } from "@/components/dashboard-kit"
+import type { Trend } from "@/components/dashboard-kit-v2"
 import { NOW, daysSince, ms } from "@/components/provider/mock-clock"
 import type {
   CareGap,

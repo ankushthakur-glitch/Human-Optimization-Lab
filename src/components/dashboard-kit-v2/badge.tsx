@@ -11,6 +11,9 @@ import { type IconDef, KitIcon } from "@/components/dashboard-kit-v2/icon"
    never relies on colour alone: it carries a 12px icon or a dot before the
    word. */
 
+/** Which way a marker is heading between readings. */
+export type Trend = "worsening" | "improving" | "stable" | "new"
+
 export type Tone = "error" | "warning" | "success" | "info" | "primary" | "light" | "outline"
 
 const VARIANT: Record<Tone, VariantProps<typeof badgeVariants>["variant"]> = {

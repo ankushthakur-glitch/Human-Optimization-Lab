@@ -26,7 +26,7 @@ import { Badge } from "@/components/dashboard-kit-v2/badge"
 import { Card } from "@/components/dashboard-kit-v2/card"
 import { DIVIDER, FOCUS, type IconDef, KitIcon } from "@/components/dashboard-kit-v2/icon"
 
-/* The AI brief on kit v2, the same anatomy as dashboard-kit/brief.tsx:
+/* The AI brief:
    three or four sourced sentences under a sparkles header, marked twice as
    AI (the icon and the words "AI summary"), each with the chips that open
    its evidence. The brief never acts: its one footer action is the
