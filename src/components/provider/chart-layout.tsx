@@ -144,7 +144,7 @@ export function RecordTable<T>({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-card print:overflow-visible">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md bg-card border border-[color-mix(in_oklab,var(--border)_90%,var(--foreground))] shadow-[0_1px_2px_rgba(16,24,40,.05)] print:overflow-visible">
       <div className="min-h-0 flex-1 overflow-auto print:overflow-visible [&_td]:py-2.5 [&_td]:align-top [&_th]:h-10 [&_th]:bg-[color-mix(in_oklab,var(--primary)_7%,var(--surface-sunken))] [&_th]:text-[13px] [&_th]:font-medium [&_th]:text-muted-foreground [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&>[data-slot=table-container]]:overflow-visible">
         {children}
       </div>
