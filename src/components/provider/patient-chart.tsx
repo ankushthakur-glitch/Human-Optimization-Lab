@@ -284,7 +284,7 @@ export function PatientChart({ patient }: { patient: Patient }) {
         onToggle={() => morph(() => setCollapsed(!collapsed))}
       />
 
-      <div className="flex min-h-[420px] flex-1 overflow-hidden rounded-lg bg-card border border-[color-mix(in_oklab,var(--border)_90%,var(--foreground))] shadow-[0_1px_2px_rgba(16,24,40,.05)] [view-transition-name:chart-body] max-md:flex-col print:overflow-visible">
+      <div className="flex min-h-[420px] flex-1 overflow-hidden rounded-lg bg-card border border-border shadow-[0_1px_2px_rgba(16,24,40,.04)] [view-transition-name:chart-body] max-md:flex-col print:overflow-visible">
         <ChartNav active={section} onSelect={(s) => go({ section: s })} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {section === "profile" ? (
@@ -402,7 +402,7 @@ function ChartHeader({
     <div className="relative z-10 flex shrink-0 items-stretch gap-3 print:hidden">
       <div
         className={cn(
-          "relative flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-3 rounded-lg bg-card border border-[color-mix(in_oklab,var(--border)_90%,var(--foreground))] shadow-[0_1px_2px_rgba(16,24,40,.05)] [view-transition-name:chart-banner]",
+          "relative flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-3 rounded-lg bg-card border border-border shadow-[0_1px_2px_rgba(16,24,40,.04)] [view-transition-name:chart-banner]",
           collapsed ? "px-3 py-2" : "p-3"
         )}
       >

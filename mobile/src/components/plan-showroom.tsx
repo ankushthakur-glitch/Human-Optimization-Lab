@@ -183,7 +183,7 @@ function ChargedSeparately() {
 function Prices() {
   const gradient = React.useId().replace(/:/g, "")
   return (
-    <Block title="Premium Plan">
+    <Block title="Premium plan">
       <View style={styles.prices}>
         {CADENCES.map((c) => {
           const b = TIERS.optimization.billing[c]

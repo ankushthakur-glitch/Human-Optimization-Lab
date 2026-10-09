@@ -4,7 +4,8 @@ import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View, type Sty
 import { useReducedMotion } from "@/components/chat"
 import { PageGround } from "@/components/hol"
 import { Check, Info, Phone, Pill } from "@/components/ph"
-import { Banner, Block, Card, Chip, Dot, HUE, KeyValue, SmallAction, Tabs, Tag, TextAction, toast, type Choice } from "@/components/record-kit"
+import { Banner, Block, Card, Chip, Dot, HUE, KeyValue, SmallAction, Tag, TextAction, toast, type Choice } from "@/components/record-kit"
+import { FilterChips } from "@/components/record-rows"
 import { Sheet } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
 import { questionKind } from "@/lib/allowance"
@@ -26,7 +27,7 @@ import { cardRadius, color, hairline, ink, space, type } from "@/lib/theme"
    MedicineConfirm is the whole list for Your medicines. Drawn as the Figma "Hol" Your
    medicines (5 Oct 2026): while anything is left to check, the check page
    (To check, Up to date, Past); once everything is checked, Current and
-   Past medicines on a segmented control, each opening its details in a
+   Past medicines on filter chips, each opening its details in a
    sheet (MedicineSheet, drawn by the screen over the page). */
 
 export type MedicineConfirmProps = {
@@ -234,12 +235,12 @@ const lineOf = (m: Medication) => {
 type Shelf = "current" | "past"
 
 const SHELVES: { value: Shelf; label: string }[] = [
-  { value: "current", label: "Current medicines" },
-  { value: "past", label: "Past medicines" },
+  { value: "current", label: "Current" },
+  { value: "past", label: "Past" },
 ]
 
-/** Once everything is checked: current and past medicines on a segmented
-    control, each row opening its details. Opened by name, the medicine's
+/** Once everything is checked: current and past medicines on filter
+    chips, each row opening its details. Opened by name, the medicine's
     details open as the page arrives. */
 function MedicineList({ current, past, focus, onOpen }: { current: Medication[]; past: Medication[]; focus?: string; onOpen?: (m: Medication) => void }) {
   const [shelf, setShelf] = React.useState<Shelf>(past.some((m) => m.id === focus) ? "past" : "current")
@@ -257,7 +258,7 @@ function MedicineList({ current, past, focus, onOpen }: { current: Medication[];
   const list = shelf === "current" ? current : past
   return (
     <>
-      <Tabs options={SHELVES} value={shelf} onChange={setShelf} />
+      <FilterChips options={SHELVES} value={shelf} onChange={setShelf} label="Medicines" />
       {list.length > 0 && (
         <Rows>
           {list.map((m) => (

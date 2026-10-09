@@ -107,7 +107,7 @@ export function BookIt({ order: o, onBooked, onPartner }: { order: Order; onBook
         <QuietRow
           // The last three words kept together, so the line never ends on a
           // lone "partner".
-          title={"You may be able to get this for less with a partner"}
+          title={"Let Inlay arrange this with a partner"}
           meta={`From ${partnerLine(partner)}`}
           onPress={onPartner}
         />

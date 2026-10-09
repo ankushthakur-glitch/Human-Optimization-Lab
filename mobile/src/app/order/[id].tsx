@@ -94,11 +94,11 @@ function factOf(o: Order, stage: Stage, overdue: boolean, told: boolean, doneOn?
     case "booked":
       return `${origin}.${needOf(o)}${told ? " We'll mark it done when the result arrives." : ""}`
     case "elsewhere":
-      return "We'll look for the result in your record."
+      return "We're tracking the results for you and will add them to your record."
     case "not-needed":
       return `${origin}.`
     case "done":
-      return `${origin}. The results reached your record on ${doneOn ? shortDay(doneOn) : dayWords(o.completed ?? o.dueAt)}.`
+      return `${origin}. Your results arrived on ${doneOn ? shortDay(doneOn) : dayWords(o.completed ?? o.dueAt)} and are with your physician for review.`
   }
 }
 

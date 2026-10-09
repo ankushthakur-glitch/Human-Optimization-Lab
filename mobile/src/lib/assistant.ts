@@ -117,7 +117,7 @@ export const CONCERNS = ["I feel tired all the time", "I want to lose weight", "
     an escalation, never a price, never the doctor. */
 export const FOLLOW_ON = {
   title: "You don't just have to watch this number.",
-  body: "Inlay can build a plan to help improve it.",
+  body: "We can build a plan with you to work on it.",
   action: "Build my personalized plan",
 } as const
 
@@ -930,9 +930,9 @@ export function planInfoAnswer(question: string, reviewing = false): Answer {
     return { text: "Once Dr. Patel approves your plan, it goes live here: your targets, your week and your daily score." }
   }
   if (/includ|what (do|does)|get/i.test(question))
-    return { text: "It turns your results into a plan for every day, reviewed by a physician every 3 months.", points: TIERS.optimization.included.filter((x) => !/physician/i.test(x)), link: PLAN_PAGE }
+    return { text: "It turns your results into a plan for every day, reviewed by your physician every 3 months.", points: TIERS.optimization.included.filter((x) => !/physician/i.test(x)), link: PLAN_PAGE }
   if (/start|begin|work/i.test(question))
-    return { text: "A short questionnaire and a few starting tests go into one plan built around you. A physician reviews it before it starts, and the first charge comes only once it's approved.", link: PLAN_PAGE }
+    return { text: "A short questionnaire and a few starting tests go into one plan built around you. Your physician reviews it before it starts, and the first charge comes only once it's approved.", link: PLAN_PAGE }
   if (/free/i.test(question)) return { text: "Your record stays free, always, with or without the plan.", points: [...FREE_STAYS] }
   if (/stop|cancel|pause|leave/i.test(question))
     return { text: "You can pause or cancel online at any time, with one confirmation. If you stop, you keep your record and every version of your plan." }

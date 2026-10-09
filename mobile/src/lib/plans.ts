@@ -51,7 +51,7 @@ export type Tier = "free" | "optimization"
 /** What the membership includes, in this order (the checkout and the
     member's billing page, S-66). */
 const INCLUDED = [
-  "Your plan, made with your doctor and reviewed every 3 months",
+  "Your plan, approved by your physician and reviewed every 3 months",
   "A meal plan with daily targets",
   "An exercise program with short videos",
   "Daily monitoring and a score for yesterday's goals",
@@ -104,7 +104,7 @@ export const FREE_STAYS = ["Every result and trend", "Reminders and care gaps", 
 /** What membership includes, in the showroom's grid: a title and a few
     words each, her doctor first. */
 export const BENEFITS: { title: string; text: string }[] = [
-  { title: "Your doctor", text: "Reviews and approves your plan" },
+  { title: "Your physician", text: "Reviews and approves your plan" },
   { title: "Meals and exercise", text: "Made for your goals" },
   { title: "Daily check in", text: "Your numbers, watched" },
   { title: "Retesting", text: "See if it is working" },
@@ -123,8 +123,8 @@ export const MEMBER_GETS = [
 
 /** What a personalized program would do for each area it focuses on. */
 export const FOCUS_DOES: Record<FocusArea, string> = {
-  "blood sugar": "Meals built to bring your A1c down, retested in 3 months",
-  heart: "Diet, exercise and blood pressure targets, with your doctor reviewing medicine",
+  "blood sugar": "Meals built to help lower your A1c, retested in 3 months",
+  heart: "Diet, exercise and blood pressure targets, with your physician reviewing medicine",
   weight: "Calorie and protein targets with a strength program",
   bone: "Calcium, vitamin D and strength work, with a repeat scan",
 }

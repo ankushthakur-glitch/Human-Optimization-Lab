@@ -289,7 +289,7 @@ function Box({
   return (
     <section
       aria-label={title}
-      className="flex h-full flex-col overflow-hidden rounded-2xl bg-card border border-[color-mix(in_oklab,var(--border)_90%,var(--foreground))] shadow-[0_1px_2px_rgba(16,24,40,.05)]"
+      className="flex h-full flex-col overflow-hidden rounded-2xl bg-card border border-border shadow-[0_1px_2px_rgba(16,24,40,.04)]"
     >
       <header
         className={cn(

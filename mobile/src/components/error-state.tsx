@@ -89,7 +89,7 @@ export function PageNotFoundState() {
   return (
     <ErrorState
       illustration={ART.notFound}
-      title="Oops! Page not found"
+      title="Page not found"
       description="The page you’re looking for doesn’t exist, has been moved, or the link may be incorrect."
     >
       <Button onPress={() => router.replace("/")}>Go to home</Button>

@@ -650,7 +650,7 @@ function FaceCard({
 }) {
   const items = React.Children.toArray(children).filter(Boolean)
   return (
-    <section className="group/card min-w-0 overflow-hidden rounded-md bg-card border border-[color-mix(in_oklab,var(--border)_90%,var(--foreground))] shadow-[0_1px_2px_rgba(16,24,40,.05)]">
+    <section className="group/card min-w-0 overflow-hidden rounded-md bg-card border border-border shadow-[0_1px_2px_rgba(16,24,40,.04)]">
       <header className="flex h-9 items-center justify-between gap-2 border-b bg-[color-mix(in_oklab,var(--primary)_9%,var(--card))] px-2">
         <DragHandle />
         <h3 className="flex min-w-0 flex-1 items-baseline gap-1.5 text-[15px] font-semibold">

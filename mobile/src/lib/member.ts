@@ -1802,7 +1802,7 @@ export function forecastWeight(series: Measure[], goal: number = MEMBER.goalWeig
   }
   const spread = 0.15 * (days / 7)
   points.push({ at: localDay(date), value: goal, low: Math.round((goal - spread) * 10) / 10, high: Math.round((goal + spread) * 10) / 10 })
-  return { forecast: { goal, date, when, perWeek: Math.round(perWeek * 100) / 100, label, caption: `${label}. A forecast, not a promise.`, points } }
+  return { forecast: { goal, date, when, perWeek: Math.round(perWeek * 100) / 100, label, caption: `${label}. An estimate, not a guarantee.`, points } }
 }
 
 /** A smoothed line through the weigh-ins for the progress chart (a moving

@@ -1454,14 +1454,14 @@ export const NOTIFICATIONS: Notice[] = [
   { id: "n2", kind: "review", title: "Dr. Patel is checking your record", body: "Your doctor confirms your record, medicines above all.", at: localAt(ONBOARDED, 8, 50), when: "8:50 AM", day: "Earlier", href: "/results" },
   { id: "n3", kind: "reminder", title: "Colorectal cancer screening", body: "Reminder 1 of 3. Screening is advised from age 45.", at: "2026-09-29T09:00", when: "Sep 29", day: "Earlier", href: "/task/colon" },
   { id: "n4", kind: "reminder", title: "Follow up after urgent care", body: "Reminder 2 of 3. Book a visit with your doctor.", at: "2026-09-15T09:00", when: "Sep 15", day: "Earlier", href: "/task/follow-up" },
-  { id: "n5", kind: "result", title: "New lab results", body: "Your lipid and metabolic panel from Quest is in your record.", at: "2026-08-14T16:20", when: "Aug 14", day: "Earlier", href: "/biomarker/ldl" },
+  { id: "n5", kind: "result", title: "New lab results", body: "Your lipid and metabolic panel from Quest has arrived and is with Dr. Patel for review.", at: "2026-08-14T16:20", when: "Aug 14", day: "Earlier", href: "/biomarker/ldl" },
 ]
 
 /** A member's notifications with fixed days, newest first; lib/todo.ts
     noticesFor() adds the one about this week's booked tests. */
 export const MEMBER_NOTIFICATIONS: Notice[] = [
   { id: "m-plan-v2", kind: "review", title: "Version 2 of your plan is approved", body: "Dr. Patel approved your updated plan.", at: "2026-09-12T15:10", when: "Sep 12", day: "Earlier", href: "/plan" },
-  { id: "m-labs", kind: "result", title: "New lab results", body: "Your lipid and metabolic panel from Quest is in your record.", at: "2026-08-14T16:20", when: "Aug 14", day: "Earlier", href: "/biomarker/ldl" },
+  { id: "m-labs", kind: "result", title: "New lab results", body: "Your lipid and metabolic panel from Quest has arrived and is with Dr. Patel for review.", at: "2026-08-14T16:20", when: "Aug 14", day: "Earlier", href: "/biomarker/ldl" },
   { id: "m-mammogram", kind: "reminder", title: "Screening mammogram", body: "Reminder 3 of 3. Dr. Patel's team will reach out.", at: "2026-04-15T09:00", when: "Apr 15", day: "Earlier", href: "/order/mammogram" },
 ]
 

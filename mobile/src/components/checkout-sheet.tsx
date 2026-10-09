@@ -85,7 +85,7 @@ export function CheckoutSheet({ onClose }: { onClose: () => void }) {
   if (step === "plan")
     return (
       <Sheet title="Choose your plan" onClose={onClose}>
-        <Text style={styles.lead}>Your plan, your doctor and your daily check-ins start here.</Text>
+        <Text style={styles.lead}>Your plan, your physician and your daily check-ins start here.</Text>
 
         <View accessibilityRole="radiogroup" accessibilityLabel="How you pay">
           <Group>
@@ -112,9 +112,9 @@ export function CheckoutSheet({ onClose }: { onClose: () => void }) {
       <Card style={styles.rows}>
         <KeyValue label="Plan" value={TIERS.optimization.billing[cadence].name} action={<SmallAction onPress={() => setStep("plan")}>Change</SmallAction>} />
         <KeyValue label="Price" value={price} />
-        <KeyValue label="First charge" value="When your doctor approves your plan" />
+        <KeyValue label="First charge" value="When your physician approves your plan" />
         <KeyValue label="Renews" value={cadence === "yearly" ? "Every year, until you cancel" : "Every month, cancel anytime"} />
-        <KeyValue label="Included" value="Your plan, your doctor's reviews, more AI credit" />
+        <KeyValue label="Included" value="Your plan, your physician's reviews, more AI credit" />
         <KeyValue label="Not included" value="Tests, imaging and medicines" />
         {card ? (
           <KeyValue label="Payment" value={card} last />

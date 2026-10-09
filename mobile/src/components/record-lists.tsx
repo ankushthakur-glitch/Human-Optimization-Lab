@@ -463,7 +463,7 @@ function Immunizations({ onOpen }: Opens) {
               provenance: provenance("doctor"),
               details: [
                 ["Given", i.date],
-                ["Status", "Complete"],
+                ["Status", "Completed"],
               ],
               source: sourceRows(["doctor"]),
             })

@@ -382,7 +382,7 @@ function pastChats(member = false): PastChat[] {
     ]),
     pastChat("past-lisinopril", "medicine", "Lisinopril and a dry cough", 9, 21, 0, [
       "Can lisinopril cause a dry cough?",
-      "It can. A dry, tickly cough is a known side effect of lisinopril. Don't stop it on your own: mention it to Dr. Patel, who can switch you to another medicine if it bothers you.",
+      "It can. A dry, tickly cough is a known side effect of lisinopril. Don't stop it on your own: mention it to Dr. Patel, who can look at another medicine if it bothers you.",
     ]),
     pastChat("past-vitamin-d", "result", "Vitamin D level explained", 13, 9, 15, [
       "What does my vitamin D result mean?",
@@ -390,7 +390,7 @@ function pastChats(member = false): PastChat[] {
     ]),
     pastChat("past-hospital", "other", "Best hospital for foot surgery", 4, 18, 45, [
       "Which hospital near me is best for foot surgery?",
-      "For foot surgery, look for a hospital with a dedicated foot and ankle team and a high yearly volume of the procedure you need. Ask Dr. Patel for a referral: the clinic can point you to orthopedic surgeons your plan covers.",
+      "Options to consider: a hospital with a dedicated foot and ankle team and a high yearly volume of the procedure you're weighing. Dr. Patel can refer you: the clinic can point you to orthopedic surgeons your plan covers.",
     ]),
     pastChat("past-tired", "other", "Feeling tired in the afternoons", 18, 15, 30, [
       "I feel tired most afternoons. Should I worry?",
@@ -398,7 +398,7 @@ function pastChats(member = false): PastChat[] {
     ]),
     pastChat("past-thyroid-hospital", "other", "Best hospital for thyroid cancer", 21, 11, 5, [
       "Which hospital is best for thyroid cancer?",
-      "Look for a center with a dedicated endocrine surgery team that treats many thyroid cancers each year, often an NCI designated cancer center. Dr. Patel can refer you to one your plan covers.",
+      "One option to consider is a center with a dedicated endocrine surgery team that treats many thyroid cancers each year, often an NCI designated cancer center. Dr. Patel can refer you to one your plan covers.",
     ]),
     ...categoryChats(),
   ]
@@ -411,7 +411,7 @@ function pastChats(member = false): PastChat[] {
     ...chats.slice(0, 4),
     pastChat("past-walk", "plan", "Is a 20 minute walk enough?", 5, 19, 50, [
       "Is a 20 minute walk after dinner enough?",
-      "For now, yes. Your plan builds to 30 minutes over the next two weeks. A walk after dinner also helps your blood sugar after the meal.",
+      "For now, yes. Your plan builds to 30 minutes over the next two weeks. A walk after dinner can also help your blood sugar after the meal.",
     ]),
     ...chats.slice(4),
   ]
@@ -451,7 +451,7 @@ function categoryChats(): PastChat[] {
     ]),
     pastChat("past-sleep-waking", "cat-sleep", "Waking up at 3 AM", 4, 7, 10, [
       "Why do I keep waking up at 3 AM?",
-      "Common causes are stress, alcohol in the evening, a late meal, a warm room and blood sugar dipping overnight. A steady bedtime and no screens in the last hour help. If it lasts weeks, tell Dr. Patel.",
+      "Common causes are stress, alcohol in the evening, a late meal, a warm room and blood sugar dipping overnight. A steady bedtime and no screens in the last hour often help. If it lasts weeks, tell Dr. Patel.",
     ]),
     pastChat("past-sleep-magnesium", "cat-sleep", "Does magnesium help sleep?", 15, 22, 0, [
       "Does magnesium help with sleep?",

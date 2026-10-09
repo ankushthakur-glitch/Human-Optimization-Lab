@@ -1684,9 +1684,11 @@ export function ResultRow({ trend: t, since, onPress }: { trend: MarkerTrend; si
               {t.value}
               {!!unit && <Text style={styles.resultUnit}>{`${unit === "%" ? "" : " "}${unit}`}</Text>}
             </Text>
-            <View style={styles.resultArrow}>
-              {t.status === "in" ? <Check size={16} color={chart.inRange} weight="bold" /> : <Arrow size={16} color={tone} weight="bold" />}
-            </View>
+            {t.status !== "in" && (
+              <View style={styles.resultArrow}>
+                <Arrow size={16} color={tone} weight="bold" />
+              </View>
+            )}
           </View>
         ) : (
           <Text style={styles.rowMeta}>No results</Text>

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { StatusBanner } from "@/components/home-header"
 import { Plus } from "@/components/ph"
-import { MedicineConfirm, MedicineSheet } from "@/components/medicines"
+import { MedicineConfirm, MedicineSheet, type MedicineView } from "@/components/medicines"
 import { ChipRow, Group, Heading, ResultRow } from "@/components/record-kit"
 import { KindList, RECORD_TITLES, sinceLine } from "@/components/record-lists"
 import { AddToRecordSheet, openItem } from "@/components/record-rows"
@@ -61,6 +61,8 @@ export function RecordTab() {
   const [adding, setAdding] = React.useState(false)
   const [category, setCategory] = React.useState<Category>("biomarkers")
   const [medicine, setMedicine] = React.useState<Medication | null>(null)
+  // Medicines are checked and updated here, on the Record tab itself.
+  const [medView, setMedView] = React.useState<MedicineView>()
 
   // Opening the record reads any new results: the home's "New results are
   // in" goes.
@@ -88,7 +90,7 @@ export function RecordTab() {
             onClose={() => setMedicine(null)}
             onUpdate={() => {
               setMedicine(null)
-              router.push("/medications")
+              setMedView("check")
             }}
           />
         ) : undefined
@@ -100,8 +102,8 @@ export function RecordTab() {
         <Results member={member} />
       ) : category === "medicines" ? (
         <View style={styles.results}>
-          <Heading title="Medicines" variant="title" onSeeAll={() => router.push("/medications")} />
-          <MedicineConfirm view="list" onOpen={setMedicine} />
+          <Heading title="Medicines" variant="title" />
+          <MedicineConfirm view={medView} onOpen={setMedicine} />
         </View>
       ) : (
         <View style={styles.results}>

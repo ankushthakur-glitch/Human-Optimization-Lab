@@ -122,7 +122,7 @@ export function PageFooter({ children, style }: { children: React.ReactNode; sty
     it as the secondary button (teal tint, teal words) under a page's
     primary one, the orb and sparkle kept. */
 export function AskButton({
-  label = "Ask to Health Agent",
+  label = "Ask Inlay",
   onPress,
   params,
   secondary,

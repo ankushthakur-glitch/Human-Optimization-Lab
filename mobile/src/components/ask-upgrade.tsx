@@ -68,7 +68,7 @@ export function AskUpgrade({ onPress }: { onPress: () => void }) {
           </Animated.View>
         </View>
         <Text style={styles.title} numberOfLines={2}>
-          Unlock more AI credit and a personalized plan
+          More AI credit and a personalized plan, if you'd like
         </Text>
         <Animated.View style={[styles.button, press]}>
           <Text style={styles.buttonText}>Upgrade</Text>

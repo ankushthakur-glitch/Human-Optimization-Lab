@@ -226,7 +226,7 @@ function LogOutDialog({ onLogOut, onClose }: { onLogOut: () => void; onClose: ()
         </View>
         <View style={styles.dialogActions}>
           <Pressable onPress={onLogOut} accessibilityRole="button" style={({ pressed }) => [styles.dialogButton, styles.dialogDanger, pressed && styles.pressed]}>
-            <Text style={styles.dialogDangerText}>Log Out</Text>
+            <Text style={styles.dialogDangerText}>Log out</Text>
           </Pressable>
           <Pressable onPress={onClose} accessibilityRole="button" style={({ pressed }) => [styles.dialogButton, pressed && styles.pressed]}>
             <Text style={styles.dialogQuietText}>Not now</Text>

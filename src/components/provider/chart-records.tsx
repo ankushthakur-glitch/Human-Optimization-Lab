@@ -813,7 +813,7 @@ function VitalTrends({
     return () => window.clearTimeout(t)
   }, [k.key, range, shown, drawn])
   return (
-    <div className="flex min-h-[420px] min-w-0 flex-1 flex-col rounded-md bg-card border border-[color-mix(in_oklab,var(--border)_90%,var(--foreground))] shadow-[0_1px_2px_rgba(16,24,40,.05)]">
+    <div className="flex min-h-[420px] min-w-0 flex-1 flex-col rounded-md bg-card border border-border shadow-[0_1px_2px_rgba(16,24,40,.04)]">
       <div
         role="tablist"
         aria-label="Vitals"
@@ -979,7 +979,7 @@ export function VitalsView({
                   key={k.key}
                   onClick={() => onSelect(k.key)}
                   title={`View the ${k.label.toLowerCase()} trend`}
-                  className="flex flex-col gap-3 rounded-md bg-card p-4 text-left border border-[color-mix(in_oklab,var(--border)_90%,var(--foreground))] shadow-[0_1px_2px_rgba(16,24,40,.05)] transition-colors hover:border-foreground/25"
+                  className="flex flex-col gap-3 rounded-md bg-card p-4 text-left border border-border shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-colors hover:border-foreground/25"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-semibold">{k.label}</span>

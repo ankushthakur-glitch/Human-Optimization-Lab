@@ -2582,7 +2582,7 @@ export function ProgressChart(props: ProgressChartProps) {
       ? undefined
       : (props.caption ??
         (end && unit !== undefined
-          ? `If current habits continue, you may reach ${formatNumber(end.value)} ${unit} by ${partOfMonth(end.t)}. A forecast, not a promise.`
+          ? `If current habits continue, you may reach ${formatNumber(end.value)} ${unit} by ${partOfMonth(end.t)}. An estimate, not a guarantee.`
           : undefined))
   const items: LegendItem[] = [
     { kind: "line", label: name ? `Your ${name}` : "Trend" },
