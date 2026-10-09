@@ -393,20 +393,9 @@ function ChartHeader({
   collapsed: boolean
   onToggle: () => void
 }) {
-  const { record } = chart
-  const conditionTags = React.useMemo(
-    () => [
-      ...new Set(
-        record.conditions
-          .filter((c) => c.status === "Active")
-          .map((c) => c.tag ?? c.name)
-      ),
-    ],
-    [record]
-  )
-  const { items: saved } = patientTags.use()
-  const tags = saved.find((t) => t.id === p.id)?.tags ?? conditionTags
-  const [tagsOpen, setTagsOpen] = React.useState(false)
+  const { items: saved } = patientLabels.use()
+  const labels = saved.find((t) => t.id === p.id)?.labels ?? []
+  const [labelsOpen, setLabelsOpen] = React.useState(false)
   const age = p.dob ? `${usDate(p.dob)} (${ageFrom(p.dob)} yrs)` : ""
 
   return (
@@ -454,26 +443,28 @@ function ChartHeader({
               <h1 className="text-base font-semibold">
                 {fullName(p)} ({p.id})
               </h1>
-              {tags.slice(0, 3).map((t) => (
-                <TagChip
-                  key={t}
-                  tag={t}
-                  condition={conditionTags.includes(t)}
-                />
+              {labels.slice(0, 3).map((l) => (
+                <LabelChip key={l.name} label={l} />
               ))}
-              {tags.length > 3 && (
-                <Badge variant="outline" title={tags.slice(3).join(", ")}>
-                  +{tags.length - 3}
+              {labels.length > 3 && (
+                <Badge
+                  variant="outline"
+                  title={labels
+                    .slice(3)
+                    .map((l) => l.name)
+                    .join(", ")}
+                >
+                  +{labels.length - 3}
                 </Badge>
               )}
               <Button
                 variant="ghost"
                 size="xs"
-                onClick={() => setTagsOpen(true)}
+                onClick={() => setLabelsOpen(true)}
                 className="text-primary-tint hover:text-primary-tint"
               >
                 <IconAdd />
-                {tags.length ? "Add" : "Add tag"}
+                {labels.length ? "Add" : "Add label"}
               </Button>
             </div>
             {collapsed ? (
@@ -515,18 +506,17 @@ function ChartHeader({
         )}
       </button>
 
-      <TagsDialog
-        key={tagsOpen ? "open" : "closed"}
-        open={tagsOpen}
-        onOpenChange={setTagsOpen}
-        tags={tags}
-        conditionTags={conditionTags}
+      <LabelsDialog
+        key={labelsOpen ? "open" : "closed"}
+        open={labelsOpen}
+        onOpenChange={setLabelsOpen}
+        labels={labels}
         onSave={(next) => {
-          if (patientTags.get().some((t) => t.id === p.id))
-            patientTags.patch(p.id, { tags: next })
-          else patientTags.add([{ id: p.id, tags: next }])
-          setTagsOpen(false)
-          toast.success("Tags updated")
+          if (patientLabels.get().some((t) => t.id === p.id))
+            patientLabels.patch(p.id, { labels: next })
+          else patientLabels.add([{ id: p.id, labels: next }])
+          setLabelsOpen(false)
+          toast.success("Labels updated")
         }}
       />
     </div>
@@ -537,81 +527,132 @@ function ChartHeader({
 /*  Tags                                                                       */
 /* -------------------------------------------------------------------------- */
 
-/* The banner's tags start from the active conditions in the record; once the
-   provider changes them they keep their own list per patient. Tags are the
-   provider's labels, so editing them never touches the record itself. */
-const patientTags = createCollection<{ id: string; tags: string[] }>(
-  "hol-patient-tags",
+/* Labels are the provider's own, like labels on folders: any name, in
+   one of a few colours, kept per patient. They are not clinical data, so
+   editing them never touches the record; the record's conditions show in
+   the Key conditions card instead. */
+type LabelColor =
+  "gray" | "teal" | "blue" | "violet" | "amber" | "rose" | "green"
+type PatientLabel = { name: string; color: LabelColor }
+
+const patientLabels = createCollection<{ id: string; labels: PatientLabel[] }>(
+  "hol-patient-labels",
   [],
   "v1"
 )
 
-const PRESET_TAGS = [
-  "New patient",
-  "Follow up",
-  "Needs labs",
-  "High risk",
-  "Weight loss",
-  "Hormone therapy",
-  "VIP",
+const LABEL_COLORS: Record<
+  LabelColor,
+  { chip: string; dot: string; name: string }
+> = {
+  gray: {
+    chip: "bg-neutral-100 text-neutral-700 dark:bg-neutral-500/15 dark:text-neutral-300",
+    dot: "bg-neutral-500",
+    name: "Grey",
+  },
+  teal: {
+    chip: "bg-teal-50 text-teal-800 dark:bg-teal-500/15 dark:text-teal-300",
+    dot: "bg-teal-600",
+    name: "Teal",
+  },
+  blue: {
+    chip: "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
+    dot: "bg-blue-500",
+    name: "Blue",
+  },
+  violet: {
+    chip: "bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
+    dot: "bg-violet-500",
+    name: "Violet",
+  },
+  amber: {
+    chip: "bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+    dot: "bg-amber-500",
+    name: "Amber",
+  },
+  rose: {
+    chip: "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+    dot: "bg-rose-500",
+    name: "Rose",
+  },
+  green: {
+    chip: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+    dot: "bg-emerald-500",
+    name: "Green",
+  },
+}
+
+const PRESET_LABELS: PatientLabel[] = [
+  { name: "New patient", color: "blue" },
+  { name: "Follow up", color: "amber" },
+  { name: "Needs labs", color: "violet" },
+  { name: "High risk", color: "rose" },
+  { name: "Weight loss", color: "green" },
+  { name: "Hormone therapy", color: "teal" },
+  { name: "VIP", color: "gray" },
 ]
 
-function TagChip({
-  tag,
-  condition,
+function LabelChip({
+  label,
   onRemove,
 }: {
-  tag: string
-  condition: boolean
+  label: PatientLabel
   onRemove?: () => void
 }) {
+  const c = LABEL_COLORS[label.color]
   return (
-    <Badge
-      variant={condition ? "destructive" : "info"}
-      className={cn(onRemove && "h-6 gap-0.5 pr-0")}
+    <span
+      className={cn(
+        "inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-xs font-medium whitespace-nowrap",
+        c.chip,
+        onRemove && "pr-0.5"
+      )}
     >
-      {tag}
+      <span
+        aria-hidden
+        className={cn("size-1.5 shrink-0 rounded-full", c.dot)}
+      />
+      {label.name}
       {onRemove && (
         <Button
           variant="ghost"
           size="icon-xs"
           onClick={onRemove}
-          aria-label={`Remove ${tag}`}
-          className="size-6 text-current opacity-60 hover:bg-transparent hover:text-current hover:opacity-100"
+          aria-label={`Remove ${label.name}`}
+          className="size-5 text-current opacity-60 hover:bg-transparent hover:text-current hover:opacity-100"
         >
           <IconClose />
         </Button>
       )}
-    </Badge>
+    </span>
   )
 }
 
-function TagsDialog({
+function LabelsDialog({
   open,
   onOpenChange,
-  tags,
-  conditionTags,
+  labels,
   onSave,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  tags: string[]
-  conditionTags: string[]
-  onSave: (tags: string[]) => void
+  labels: PatientLabel[]
+  onSave: (labels: PatientLabel[]) => void
 }) {
-  const [draft, setDraft] = React.useState(tags)
+  const [draft, setDraft] = React.useState(labels)
   const [text, setText] = React.useState("")
+  const [color, setColor] = React.useState<LabelColor>("teal")
   const query = text.trim().toLowerCase()
-  const has = (t: string) =>
-    draft.some((d) => d.toLowerCase() === t.toLowerCase())
-  const suggestions = [...new Set([...conditionTags, ...PRESET_TAGS])].filter(
-    (t) => !has(t) && (!query || t.toLowerCase().includes(query))
+  const has = (name: string) =>
+    draft.some((d) => d.name.toLowerCase() === name.trim().toLowerCase())
+  const suggestions = PRESET_LABELS.filter(
+    (l) => !has(l.name) && (!query || l.name.toLowerCase().includes(query))
   )
 
-  function add(tag: string) {
-    const clean = tag.trim().replace(/\s+/g, " ")
-    if (!clean || has(clean)) return
-    setDraft((d) => [...d, clean])
+  function add(label: PatientLabel) {
+    const name = label.name.trim().replace(/\s+/g, " ")
+    if (!name || has(name)) return
+    setDraft((d) => [...d, { ...label, name }])
     setText("")
   }
 
@@ -619,9 +660,9 @@ function TagsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Patient tags</DialogTitle>
+          <DialogTitle>Patient labels</DialogTitle>
           <DialogDescription className="sr-only">
-            Add or remove the tags shown on the patient banner.
+            Add or remove the labels shown on the patient banner.
           </DialogDescription>
         </DialogHeader>
 
@@ -629,60 +670,85 @@ function TagsDialog({
           <span className="text-sm font-medium">Added</span>
           {draft.length ? (
             <div className="flex flex-wrap gap-2">
-              {draft.map((t) => (
-                <TagChip
-                  key={t}
-                  tag={t}
-                  condition={conditionTags.includes(t)}
-                  onRemove={() => setDraft((d) => d.filter((x) => x !== t))}
+              {draft.map((l) => (
+                <LabelChip
+                  key={l.name}
+                  label={l}
+                  onRemove={() => setDraft((d) => d.filter((x) => x !== l))}
                 />
               ))}
             </div>
           ) : (
-            <span className="text-sm text-muted-foreground">No tags</span>
+            <span className="text-sm text-muted-foreground">No labels</span>
           )}
         </div>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="tag-input" className="text-sm font-medium">
-            Add tag
+          <label htmlFor="label-input" className="text-sm font-medium">
+            New label
           </label>
           <form
             className="flex gap-2"
             onSubmit={(e) => {
               e.preventDefault()
-              add(text)
+              add({ name: text, color })
             }}
           >
             <Input
-              id="tag-input"
+              id="label-input"
               value={text}
               maxLength={32}
               autoComplete="off"
-              placeholder="Search or type a custom tag"
+              placeholder="Type a label or pick one below"
               onChange={(e) => setText(e.target.value)}
             />
             <Button
               type="submit"
               variant="outline"
-              disabled={!query || has(text.trim())}
+              disabled={!query || has(text)}
             >
               <IconAdd />
               Add
             </Button>
           </form>
+          {/* The colour the next label takes. */}
+          <div
+            role="radiogroup"
+            aria-label="Label colour"
+            className="flex items-center gap-2"
+          >
+            {(Object.keys(LABEL_COLORS) as LabelColor[]).map((k) => (
+              <button
+                key={k}
+                type="button"
+                role="radio"
+                aria-checked={color === k}
+                aria-label={LABEL_COLORS[k].name}
+                onClick={() => setColor(k)}
+                className={cn(
+                  "grid size-6 place-items-center rounded-full ring-offset-2 ring-offset-popover transition-shadow",
+                  color === k
+                    ? "ring-2 ring-foreground/40"
+                    : "hover:ring-2 hover:ring-border"
+                )}
+              >
+                <span
+                  className={cn("size-4 rounded-full", LABEL_COLORS[k].dot)}
+                />
+              </button>
+            ))}
+          </div>
           {suggestions.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-1">
-              {suggestions.map((t) => (
-                <Badge
-                  key={t}
-                  variant="outline"
-                  render={<button type="button" onClick={() => add(t)} />}
-                  className="h-6 cursor-pointer hover:bg-surface-hover"
+              {suggestions.map((l) => (
+                <button
+                  key={l.name}
+                  type="button"
+                  onClick={() => add(l)}
+                  className="rounded-md opacity-80 transition-opacity hover:opacity-100"
                 >
-                  <IconAdd />
-                  {t}
-                </Badge>
+                  <LabelChip label={l} />
+                </button>
               ))}
             </div>
           )}
@@ -740,6 +806,14 @@ function SyncPanel({
         : syncedWhen(syncedAt)
   const last = model.data.lastVisit
   const next = model.data.nextVisit
+  /* The record's active conditions, shown as CareMap does: one line. */
+  const conditions = [
+    ...new Set(
+      record.conditions
+        .filter((c) => c.status === "Active")
+        .map((c) => c.tag ?? c.name)
+    ),
+  ]
 
   const button = (
     <Button
@@ -769,8 +843,62 @@ function SyncPanel({
         !collapsed && "self-stretch"
       )}
     >
+      {conditions.length > 0 &&
+        (collapsed ? (
+          /* Folded: one line, as CareMap's header. */
+          <FactCard collapsed>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <IconHeartPulse className="size-7 shrink-0 text-primary-tint" />
+              <SyncFact label="Key conditions" full>
+                <span title={conditions.join(", ")}>
+                  {conditions.map((c, i) => (
+                    <React.Fragment key={c}>
+                      {i > 0 && (
+                        <span
+                          aria-hidden
+                          className="mx-1.5 font-normal text-border"
+                        >
+                          |
+                        </span>
+                      )}
+                      {c}
+                    </React.Fragment>
+                  ))}
+                </span>
+              </SyncFact>
+            </div>
+          </FactCard>
+        ) : (
+          /* Open: the icon and label on top, then the conditions one below
+             the other; past three they run into a second column, so the
+             card stays as tall as its neighbours and nothing is cut. */
+          <div className="flex flex-col justify-center gap-1.5 rounded-md border border-border/60 bg-muted/60 px-3 py-2">
+            <span className="flex items-center gap-1.5 text-xs leading-4 text-muted-foreground">
+              <IconHeartPulse className="size-4 shrink-0 text-primary-tint" />
+              Key conditions
+            </span>
+            <ul
+              className={cn(
+                "gap-x-5 text-[13px] leading-5 font-medium whitespace-nowrap text-foreground/85",
+                conditions.length > 3
+                  ? "grid grid-flow-col grid-rows-3"
+                  : "flex flex-col"
+              )}
+            >
+              {conditions.map((c) => (
+                <li key={c} className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden
+                    className="size-1 shrink-0 rounded-full bg-primary-tint/60"
+                  />
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       <FactCard collapsed={collapsed}>
-        <SyncFact label="Last sync" collapsed={collapsed}>
+        <SyncFact label="Last sync">
           <span
             aria-hidden
             className={cn(
@@ -798,10 +926,10 @@ function SyncPanel({
         )}
       </FactCard>
       <FactCard collapsed={collapsed}>
-        <SyncFact label="Last visit" collapsed={collapsed}>
+        <SyncFact label="Last visit">
           {last ? visitWhen(last) : "None"}
         </SyncFact>
-        <SyncFact label="Next visit" collapsed={collapsed}>
+        <SyncFact label="Next visit">
           {next ? visitWhen(next) : "Not booked"}
         </SyncFact>
       </FactCard>
@@ -834,20 +962,23 @@ function FactCard({
 
 function SyncFact({
   label,
-  collapsed,
+  full,
   children,
 }: {
   label: string
-  collapsed: boolean
+  /** Show the whole value: no truncation (Key conditions). */
+  full?: boolean
   children: React.ReactNode
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="text-xs text-muted-foreground">{label}</span>
+      {/* Two levels: a 12px grey label over a 13px semibold value in the
+          softer ink (not black), each on its own line height. */}
+      <span className="text-xs leading-4 text-muted-foreground">{label}</span>
       <span
         className={cn(
-          "flex items-center gap-1.5 truncate font-semibold whitespace-nowrap text-foreground",
-          collapsed ? "text-[13px]" : "text-sm"
+          "flex items-center gap-1.5 text-[13px] leading-5 font-semibold whitespace-nowrap text-foreground/85",
+          !full && "truncate"
         )}
       >
         {children}
