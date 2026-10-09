@@ -11,20 +11,18 @@ import { useMarkers } from "@/lib/experience"
 import { logEvent, useOffer, useShown } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
 import { CADENCES, FREE_STAYS, MEMBER_GETS, TIERS, priceLabel } from "@/lib/plans"
-import type { Biomarker, FocusArea } from "@/lib/record"
+import type { FocusArea } from "@/lib/record"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 import { watchList, type Trend } from "@/lib/trends"
 
 /* The plan showroom (FINAL-SPEC C.14.3, D.4): the one place that tells the
-   whole story of the Optimization membership, told one way in two places,
-   the free Plan tab and the plan page every offer pushes (/plans). In
-   five sections up to the decision (6 Oct 2026 feedback): her
+   whole story of the Optimization membership, on the free Plan tab, where
+   every offer leads. In five sections up to the decision (6 Oct 2026 feedback): her
    health, the numbers her record is watching; what Inlay sees in them;
    what her personalized program would focus on, built from those areas,
    so no two patients see the same page; what membership includes; the
    price. Then one line on what stays free, and "Build my personalized
-   plan" (ShowroomActions), which closes the showroom on the tab and is
-   the plan page's pinned footer. Built from the record kit, as every
+   plan" (ShowroomActions), which closes the showroom. Built from the record kit, as every
    other screen: section labels over stat tiles and grouped rows, so the
    page reads with the app's one hierarchy.
 
@@ -32,29 +30,9 @@ import { watchList, type Trend } from "@/lib/trends"
    role, with no physician's name, photo or quote anywhere near the price
    (B-03). The words are placeholders from lib/plans.ts until Fynn's team
    sends the final copy. The price is read from the one placeholder in
-   lib/plans.ts. `from` says where she came from, and sets the first line
-   and the focus row it highlights. */
+   lib/plans.ts. */
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
-
-/** The first line, by where she came from (C.14.3). A marker id is
-    handled apart: it names the marker. */
-const CONTEXT: Record<string, string> = {
-  allowance: "You've used this week's AI credit. Members get more, and can add more.",
-  assistant: "You asked how to change something. This is what a plan does.",
-  score: "You asked what moves your score. Here's how a plan works on it.",
-  results: "Your new results are in. Here's how a plan would use them.",
-  devices: "Watch and scale sync will come with the plan.",
-}
-
-/** Where she came from, as the first line and the focus it points at. */
-function contextOf(from: string | undefined, markers: Biomarker[]): { line?: string; focus?: FocusArea } {
-  if (!from) return {}
-  if (CONTEXT[from]) return { line: CONTEXT[from] }
-  const marker = markers.find((m) => m.id === from)
-  if (!marker) return {}
-  return { line: `You were looking at your ${marker.short ?? marker.name}. Here's how a plan would work on it.`, focus: marker.focus }
-}
 
 /** "Build my personalized plan", or "Start again" for someone who had a
     plan before. */
@@ -248,51 +226,25 @@ function Prices() {
   )
 }
 
-type ShowroomProps = {
-  /** Where she came from: a marker id, or allowance, assistant, score,
-      results, devices, home, profile. */
-  from?: string
-} & (
-  | {
-      /** On the free Plan tab: the card carries its title and the actions
-          close the showroom. */
-      mode: "tab"
-      /** Opens the checkout sheet, which the screen draws over itself. */
-      onStart: () => void
-    }
-  | {
-      /** On /plans: the page title names it, and the page pins the
-          actions as its footer (ShowroomActions); a member reading the
-          page gets the story alone. */
-      mode: "page"
-      /** Opens the checkout sheet from the pricing card. */
-      onStart?: () => void
-    }
-)
-
-export function PlanShowroom(props: ShowroomProps) {
-  const { mode, from } = props
+export function PlanShowroom() {
   const onboarding = useOnboarding()
   const markers = useMarkers()
-  const offer = useOffer("plan-tab", { key: from ?? mode })
+  const offer = useOffer("plan-tab", { key: "tab" })
   useShown(offer)
   // The plan seen, and from where (D.7), once each time the showroom opens.
   const viewed = React.useRef(false)
   React.useEffect(() => {
     if (viewed.current || !onboarding.loaded) return
     viewed.current = true
-    logEvent(onboarding, "plan_viewed", { from: from ?? mode })
-  }, [onboarding, from, mode])
+    logEvent(onboarding, "plan_viewed", { from: "tab" })
+  }, [onboarding])
 
   const shown = watchList(markers, { improve: onboarding.why?.improve })
     .filter((t) => t.latest)
     .slice(0, 3)
-  const context = contextOf(from, markers)
   return (
     <>
       <UpgradeHero />
-
-      {!!context.line && <Text style={styles.body}>{context.line}</Text>}
 
       <Card style={styles.areas}>
         <View style={styles.lead}>
@@ -326,27 +278,22 @@ export function PlanShowroom(props: ShowroomProps) {
 }
 
 /** The showroom's one action (C.14.3 h): "Build my personalized plan" (the
-    "Ask to Health Agent" button is gone, 8 Oct 2026). On the tab it closes
-    the showroom; on /plans it is the pinned footer. Logged on the same
-    offer as the showroom's view, keyed by where she came from. */
+    "Ask to Health Agent" button is gone, 8 Oct 2026), closing the
+    showroom. Logged on the same offer as the showroom's view. */
 export function ShowroomActions({
-  mode,
-  from,
   onStart,
 }: {
-  mode: "tab" | "page"
-  from?: string
   /** Opens the checkout sheet, which the screen draws over itself. */
   onStart: () => void
 }) {
   const onboarding = useOnboarding()
-  const offer = useOffer("plan-tab", { key: from ?? mode })
+  const offer = useOffer("plan-tab", { key: "tab" })
   return (
     <Button
       trailing={({ color: c }) => <ArrowRight size={18} weight="bold" color={c} />}
       onPress={() => {
         offer.markOpened()
-        logEvent(onboarding, "checkout_started", { from: from ?? mode })
+        logEvent(onboarding, "checkout_started", { from: "tab" })
         onStart()
       }}
     >
@@ -356,7 +303,6 @@ export function ShowroomActions({
 }
 
 const styles = StyleSheet.create({
-  body: { ...type.body },
 
   // The areas card: a lead row, then each marker on its own white row.
   areas: { gap: space.item, padding: space.item },

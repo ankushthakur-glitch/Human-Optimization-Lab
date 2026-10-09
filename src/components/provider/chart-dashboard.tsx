@@ -70,50 +70,41 @@ export function ChartDashboard({
 }) {
   const dash = useDashboard(patient, record)
   const opt = useOptimization(patient.id, dash.model)
-  /* One dashboard for everyone (widgets/charting-dashboard.tsx): the
-     decision band, important updates, results and trends, care and
-     programs, with the detail docked in a sidebar. An active optimization
+  /* One dashboard for everyone (widgets/charting-dashboard.tsx):
+     important updates, results and trends, care and programs, with the
+     detail in a side modal. An active optimization
      member with tracker data reads from the HOLv.9 sheet, everyone else
      from their own record. */
   const optimized =
     patient.membership === "optimization" &&
     (patient.recordState ?? "active") === "active" &&
     Boolean(opt.model)
-  /* The detail sidebar renders into this column, beside the section bar
-     and the body, so it runs the full height of the card. */
-  const [slot, setSlot] = React.useState<HTMLDivElement | null>(null)
   return (
     <Section>
-      <div className="flex min-h-0 flex-1">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <SectionBar
-            title="Dashboard"
-            actions={
-              <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
-                {/* Two kinds of patient only: the badge follows the membership. */}
-                {patient.membership === "optimization" ? (
-                  dash.ready && (
-                    <KitBadge tone="primary">Optimization member</KitBadge>
-                  )
-                ) : (
-                  <DashboardToolbar dash={dash} />
-                )}
-              </div>
-            }
-          />
-          <SectionBody>
-            <ChartingDashboard
-              slot={slot}
-              dash={dash}
-              opt={opt}
-              optimized={optimized}
-              patientName={patient.firstName}
-              onOpen={onOpen}
-            />
-          </SectionBody>
-        </div>
-        <div ref={setSlot} className="flex empty:hidden" />
-      </div>
+      <SectionBar
+        title="Dashboard"
+        actions={
+          <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+            {/* Two kinds of patient only: the badge follows the membership. */}
+            {patient.membership === "optimization" ? (
+              dash.ready && (
+                <KitBadge tone="primary">Optimization member</KitBadge>
+              )
+            ) : (
+              <DashboardToolbar dash={dash} />
+            )}
+          </div>
+        }
+      />
+      <SectionBody className="pt-4">
+        <ChartingDashboard
+          dash={dash}
+          opt={opt}
+          optimized={optimized}
+          patientName={patient.firstName}
+          onOpen={onOpen}
+        />
+      </SectionBody>
     </Section>
   )
 }
@@ -660,7 +651,7 @@ function FaceCard({
   const items = React.Children.toArray(children).filter(Boolean)
   return (
     <section className="group/card min-w-0 overflow-hidden rounded-md border bg-card">
-      <header className="flex h-9 items-center justify-between gap-2 border-b bg-surface-sunken px-2">
+      <header className="flex h-9 items-center justify-between gap-2 border-b bg-[color-mix(in_oklab,var(--primary)_9%,var(--card))] px-2">
         <DragHandle />
         <h3 className="flex min-w-0 flex-1 items-baseline gap-1.5 text-[15px] font-semibold">
           <span className="truncate">{title}</span>

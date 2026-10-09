@@ -196,8 +196,7 @@ const isStartingTest = (id: string) => BASELINE.missing.some((t) => t.id === id)
     booking with a partner all ask here, and nothing else reads the store's
     `bookings` or `booked`. In order: a member's tests this week as her plan
     has them (lib/member.ts thisWeek), with what she paid; a test booked
-    through Inlay, paid, or through her plan's setup (lib/setup.ts
-    bookingsFor); a day she told us (`booked`). */
+    through Inlay, paid, or through her plan; a day she told us (`booked`). */
 export function bookingOf(id: string, s: Snapshot, now: Date = new Date()): Booked | undefined {
   const stored = s.bookings?.[id]
   if (experience(s) === "member") {
@@ -348,14 +347,11 @@ function bookedTest(id: string, title: string, b: Booked, page: Href, now: Date)
 /** "1 question saved", "2 questions saved" */
 const savedNote = (n: number) => (n ? `${n} ${n === 1 ? "question" : "questions"} saved` : undefined)
 
-/** Everything open for the patient, in its groups, with the counts. While
-    the record is still arriving only the practice's appointments are
-    known; with nothing collected, nothing is open. Every count on Home, To
-    do and Record comes from here. */
+/** Everything open for the patient, in its groups, with the counts. Every
+    count on Home, To do and Record comes from here. */
 export function todo(s: Snapshot, now: Date = new Date()): Todo {
   const exp = experience(s)
   const live = exp === "member"
-  const record = exp !== "declined" && exp !== "building"
   const needs: (TodoItem & { rank: number })[] = []
   const coming: TodoItem[] = []
   const visit: TodoItem[] = []
@@ -363,7 +359,7 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
   const done: TodoItem[] = []
 
   /* Orders, each with the care gap that follows it. */
-  for (const o of record ? ORDERS : []) {
+  for (const o of ORDERS) {
     const id = `order:${o.id}`
     const page = orderHref(o.id)
     const due = dayFrom(o.dueAt)
@@ -429,17 +425,16 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
     })
   }
 
-  /* The plan's starting tests she booked in the paid setup (C.27, lib/setup.ts
-     bookingsFor): booked, like an order booked through Inlay, until the
+  /* The plan's starting tests, booked through her plan (C.27): booked, like an order booked through Inlay, until the
      result arrives. To do, Home's Coming up and This week read them from
      here; they have no page of their own (opensPage). */
-  for (const t of record ? BASELINE.missing : []) {
+  for (const t of BASELINE.missing) {
     const b = bookingOf(t.id, s, now)
     if (b) booked.push(bookedTest(`test:${t.id}`, t.name, b, href("/gaps"), now))
   }
 
   /* Care gaps that are not an order's reminders. */
-  for (const g of record ? CARE_GAPS : []) {
+  for (const g of CARE_GAPS) {
     if (followsOrder(g)) continue
     const copy = GAP_COPY[g.id] ?? {}
     const id = `gap:${g.id}`
@@ -504,7 +499,7 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
   }
 
   /* Medicines her records differ on: one item. */
-  const meds = record ? yourMedicines(s) : undefined
+  const meds = yourMedicines(s)
   if (meds?.toCheck)
     needs.push({
       id: "meds",
@@ -523,7 +518,7 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
     })
 
   /* Renewing the permission to share her records. */
-  const ends = record ? sharingEnds(s) : undefined
+  const ends = sharingEnds(s)
   if (ends && daysBetween(now, ends) <= RENEW_DAYS)
     needs.push({
       id: "sharing",
@@ -542,8 +537,8 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
   /* Appointments from the practice's schedule, with the questions saved
      for each (one not tied to a visit goes to the next one). */
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const appts = exp === "declined" ? [] : appointments(s, now, live).filter((a) => a.date.getTime() >= today.getTime())
-  const questions = record ? (s.questions ?? []) : []
+  const appts = appointments(s, now, live).filter((a) => a.date.getTime() >= today.getTime())
+  const questions = s.questions ?? []
   const nextVisit = appts.find((a) => !a.review)
   for (const a of appts) {
     const saved = questions.filter((q) => q.for === a.id || (!q.for && a === nextVisit)).length
@@ -580,7 +575,7 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
     visit: placed(visit),
     booked: placed(booked),
     done: placed(done),
-    newInRecord: record ? placed(newOutside(s, now)) : [],
+    newInRecord: placed(newOutside(s, now)),
     counts,
     summary: summaryOf(counts),
   }
@@ -802,7 +797,6 @@ export function bannerFacts(s: Snapshot, now: Date = new Date()): BannerFacts {
 export function homeBanner(s: Snapshot, opts: { member?: boolean } = {}, now: Date = new Date()): HomeBanner | null {
   const off = sharingOff(s)
   if (off) return { kind: "sharing-off", since: off.on ?? "" }
-  if (experience(s) === "declined") return null
   const state = pickBanner(bannerFacts(s, now))
   // "Dr. Patel is checking your new record" only informs, and the user took
   // it off the home (5 Oct 2026); the review still shows in the record.
@@ -825,9 +819,6 @@ export function bannerTarget(b: HomeBanner): { href: Href } | { tab: "results" |
     case "not-found":
       return { href: href("/tell-us") }
     case "new-results":
-      // The batch's own view (C.6), or the results list when the banner
-      // does not say which batch.
-      return { href: href(b.batch ? `/record/results?batch=${b.batch}` : "/record/results") }
     case "checked":
       return { tab: "results" }
     case "plan-review":
@@ -898,17 +889,16 @@ function batchNotices(s: Snapshot): Notice[] {
     at: localIso(new Date(b.at)),
     when: "",
     day: "Earlier",
-    href: `/record/results?batch=${b.id}`,
+    href: "/results",
   }))
 }
 
 /** The notifications this patient has, newest first: a member's own (a
     live or paused plan), the free record's otherwise, with any new results
-    since, and none before anything was collected. `day` and `when` follow
+    since. `day` and `when` follow
     `at`. */
 export function noticesFor(s: Snapshot, now: Date = new Date()): Notice[] {
   const exp = experience(s)
-  if (exp === "declined" || exp === "building") return []
   const list = [...(exp === "member" || exp === "paused" ? memberNotices(s, now) : freeNotices(s)), ...batchNotices(s)]
   return list.map((n) => ({ ...n, day: dayGroup(n.at, now), when: whenOf(n.at, now) })).sort((a, b) => b.at.localeCompare(a.at))
 }

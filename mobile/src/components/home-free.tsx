@@ -5,7 +5,7 @@ import { keepTogether } from "@/components/care-gap"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, UpgradeBanner, dotted } from "@/components/home-parts"
 import { CheckCircle, Pill, Warning } from "@/components/ph"
-import { Block, Card, Group, NeedsRow, NotConnected, Rise, SmallAction, Status } from "@/components/record-kit"
+import { Block, Group, NeedsRow, Rise, Status } from "@/components/record-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { TrendTiles } from "@/components/trend-tile"
 import { useAllowance } from "@/lib/allowance"
@@ -23,45 +23,30 @@ import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
    about your results banner. The Inlay score, the "checking" banner and
    the plan card left the home on 5 Oct 2026, at the user's word; the AI is metered in tokens now, so no question count.
 
-   The same screen draws every state of the free record (C.1.4, C.28): not
-   connected, the record still arriving, sharing turned off, a paused
-   member (the paused card above the banner) and a cancelled one.
+   The same screen draws every state of the free record (C.1.4, C.28):
+   sharing turned off, a paused member and a cancelled one.
 
    Since 6 Oct 2026 the Needs you banner is red, a rising result out of
    range is drawn red in its tile, and the teal "A healthier you is
    possible" banner after Upcoming opens Upgrade.
 
    RecordSections is the record part on its own (Needs you to Ask), which
-   the member home shows under its setup and review heroes with Needs you
+   the member home shows under its review hero with Needs you
    as a white row, so a screen keeps one gradient on top. */
 
 export function FreeHome() {
   const onboarding = useOnboarding()
-  const exp = useExperience().experience
-  const banner = exp !== "declined" && homeBanner(onboarding)
+  const banner = homeBanner(onboarding)
 
   return (
     <TabScreen tab="home" header={<HomeHeader variant="free" />}>
       <View style={styles.page}>
-        {exp === "declined" ? (
-          <Rise at={0} id="home:declined">
-            <NotConnected onConnect={() => router.push("/connect")} />
+        {!!banner && (
+          <Rise at={0} id="home:banner">
+            <StatusBanner variant="free" tab="home" />
           </Rise>
-        ) : (
-          <>
-            {!!banner && (
-              <Rise at={0} id="home:banner">
-                <StatusBanner variant="free" tab="home" />
-              </Rise>
-            )}
-            {exp === "paused" && (
-              <Rise at={0} id="home:paused">
-                <PausedCard />
-              </Rise>
-            )}
-            <RecordSections />
-          </>
         )}
+        <RecordSections />
       </View>
     </TabScreen>
   )
@@ -70,20 +55,17 @@ export function FreeHome() {
 /** The record part of the free home, from Needs you to Ask about your
     results. `needsAsCard` draws Needs you as a white row instead of the
     red banner, for a screen that has its own hero (the member home's
-    setup and review stages). While the record is still arriving nothing
-    can need her yet: practice appointments, and one line each where
-    trends and medicines will be. */
+    review stage). */
 export function RecordSections({ needsAsCard = false }: { needsAsCard?: boolean }) {
   const exp = useExperience().experience
-  const building = exp === "building"
   return (
     <View style={styles.page}>
-      {!building && <NeedsYou asCard={needsAsCard} />}
-      {building ? <Waiting at={2} id="trends" title="Your trends" line={`Your trends appear once your results${NBSP}arrive.`} /> : <Trends />}
-      {!needsAsCard && !building && exp !== "paused" && <UpgradeCard />}
+      <NeedsYou asCard={needsAsCard} />
+      <Trends />
+      {!needsAsCard && exp !== "paused" && <UpgradeCard />}
       <Upcoming />
-      {!building && <NewInRecord />}
-      {building ? <Waiting at={5} id="medicines" title="Your medicines" line={`Your medicines appear once your records${NBSP}arrive.`} /> : <Medicines />}
+      <NewInRecord />
+      <Medicines />
       <AskRow />
     </View>
   )
@@ -94,8 +76,6 @@ export function RecordSections({ needsAsCard = false }: { needsAsCard?: boolean 
 const openToDo = () => openTab("/gaps", "home")
 
 /* ------------------------------------------------------------- words -- */
-
-const NBSP = "\u00A0"
 
 /** A row's words as they wrap on a narrow phone: the app's one rule
     (care-gap.ts keepTogether), which holds dates, times, names, places and
@@ -111,7 +91,7 @@ const pendingLine = (n: number) => `${n} pending ${n === 1 ? "action" : "actions
     the count as the title, the pending line under it, and the whole banner
     opens To do, where each item has its action. With nothing open, the
     same banner says she is all caught up and opens what is next. As a card
-    (the member home's setup and review stages, which have their own hero)
+    (the member home's review stage, which has its own hero)
     it is one white row. */
 function NeedsYou({ asCard }: { asCard: boolean }) {
   const onboarding = useOnboarding()
@@ -155,7 +135,7 @@ function NeedsYou({ asCard }: { asCard: boolean }) {
 
 /* ------------------------------------------------------- your trends -- */
 
-const openResults = () => router.push({ pathname: "/record/[kind]", params: { kind: "results" } })
+const openResults = () => router.push("/results")
 
 /** Her trends (C.1.2, 6) as the Figma's 2 by 2 grid: a tile for each marker
     worth watching, in the F-26 order with her own "improve" answers
@@ -314,10 +294,10 @@ function Medicines() {
 /* ----------------------------------------------- ask about your results -- */
 
 /** The way into the assistant about her results (C.1.2, 9), the Figma's
-    grey teal banner with the free credits left, as the orb's ring shows
-    them; a member's are never counted, so no line. */
+    grey teal banner with the share of this week's AI credit used, as the
+    orb's ring shows it. */
 function AskRow() {
-  const { member, line } = useAllowance()
+  const { line } = useAllowance()
   return (
     <Rise at={7} id="home:ask">
       <HeroRow
@@ -325,40 +305,9 @@ function AskRow() {
         tile={ASK_TILE}
         muted
         title="Ask about your results"
-        line={member ? undefined : line}
+        line={line}
         onPress={() => router.push({ pathname: "/assistant", params: { topic: "results" } })}
       />
-    </Rise>
-  )
-}
-
-/* ------------------------------------------------------------- states -- */
-
-/** A paused member (C.1.4): her plan waits, the record carries on. Above
-    the Needs you banner, a white card with its one action. */
-function PausedCard() {
-  return (
-    <Card style={styles.paused}>
-      <View style={styles.pausedWords}>
-        <Text style={styles.pausedTitle} accessibilityRole="header">
-          Your plan is paused
-        </Text>
-        <Text style={styles.pausedBody}>Your record, trends and reminders carry on. Every version of your plan is kept.</Text>
-      </View>
-      <SmallAction onPress={() => router.push({ pathname: "/membership", params: { sheet: "resume" } })}>Resume my plan</SmallAction>
-    </Card>
-  )
-}
-
-/** A section whose data is still arriving: its label and one line. */
-function Waiting({ at, id, title, line }: { at: number; id: string; title: string; line: string }) {
-  return (
-    <Rise at={at} id={`home:${id}`}>
-      <Block title={title}>
-        <Card>
-          <Text style={styles.waiting}>{line}</Text>
-        </Card>
-      </Block>
     </Rise>
   )
 }
@@ -371,11 +320,4 @@ const styles = StyleSheet.create({
   footnote: { ...type.label, paddingVertical: space.rowY },
   // The medicines card's last line, at a row's height.
   supplements: { ...type.label, paddingVertical: space.rowY },
-  // A sentence standing in for what is still arriving.
-  waiting: { ...type.label },
-
-  paused: { gap: space.item, alignItems: "flex-start" },
-  pausedWords: { gap: space.stack },
-  pausedTitle: { ...type.title },
-  pausedBody: { ...type.label },
 })

@@ -35,7 +35,6 @@ import {
   CONCERNS,
   FREE_PLAN_ASKS,
   LIMIT,
-  NOT_CONNECTED,
   PLAN_ASKS,
   PROMPTS,
   REVIEW_PLAN_ASKS,
@@ -98,11 +97,12 @@ const ATTACHED = "Thanks, it's in this chat now. What would you like to know abo
    the record shows, what it doesn't tell us and a question to save, each
    folded, with its confidence and the facts behind it.
 
-   The free record counts conversations, not messages (lib/allowance.ts): the
-   first question about a result, a topic or her own words spends one, and
-   follow ups in it are free; opening the chat, opening it about a result
-   and seeing suggestions cost nothing; safety and plan questions never
-   count. At the limit the question waits in the composer beside a calm card.
+   Every patient's AI credit is metered in tokens and shown as the share
+   used (lib/allowance.ts): each question about a result, a topic or her
+   own words spends what it and its answer take, follow ups too; opening
+   the chat, opening it about a result and seeing suggestions cost
+   nothing; safety and plan questions never count. At 100% the question
+   waits in the composer beside a calm card.
    The thread is kept for 30 minutes after its last message, so closing and
    opening carries on; an older one ends with "Start a new chat".
 
@@ -139,7 +139,7 @@ type Msg = { id: string; at: string } & (
   | { kind: "visit" }
   /** A person first: 911, 988 and the clinic. */
   | { kind: "urgent"; picked?: string }
-  /** The free questions are used (never kept: it is not history). */
+  /** The week's AI credit is used (never kept: it is not history). */
   | { kind: "limit"; question: string; about?: string; saved?: boolean; gone?: boolean }
   /** The end of the thread, with "Start a new chat". */
   | { kind: "ended" }
@@ -230,12 +230,11 @@ export default function AssistantScreen() {
   const markers = useMarkers()
   const params = useLocalSearchParams<{ marker?: string; topic?: string; batch?: string; ask?: string }>()
   // Help with today's plan needs a live plan; the counter, any active
-  // membership (C.4.1). Never connected, there is nothing to answer from.
+  // membership (C.4.1).
   const planLive = experience === "member"
   const reviewing = allowance.member && !planLive
-  const declined = experience === "declined"
   const name = onboarding.profile?.preferredName || onboarding.profile?.firstName || PATIENT.firstName
-  const greet = () => greeting(name, planLive, { building: experience === "building", asOf: sharingOff?.on })
+  const greet = () => greeting(name, planLive, { asOf: sharingOff?.on })
 
   const trendFor = (id?: string): Trend | undefined => {
     const b = id ? markers.find((m) => m.id === id) : undefined
@@ -244,8 +243,7 @@ export default function AssistantScreen() {
   const topics = () => topicsFor(planLive).map((t) => TOPICS[t])
   /** After an answer, the next tap: anything else at all. */
   const anythingElse = (): Draft => ({ kind: "ask", text: ELSE, options: topics(), step: "topic" })
-  const notConnected = (): Draft => ({ kind: "answer", answer: NOT_CONNECTED, scope: "connect" })
-  const greetingAsk = (): Draft => (declined ? notConnected() : { kind: "ask", text: greet(), options: topics(), step: "topic" })
+  const greetingAsk = (): Draft => ({ kind: "ask", text: greet(), options: topics(), step: "topic" })
   /** The plan questions she can tap: today's for a live plan, the plan with
       Dr. Patel for a new member, what the plan is for anyone else. */
   const planAsks = (): string[] => (planLive ? [...PLAN_ASKS] : reviewing ? [...REVIEW_PLAN_ASKS] : [...FREE_PLAN_ASKS])
@@ -308,7 +306,6 @@ export default function AssistantScreen() {
 
   /** What the chat opens on: a result, a new batch, a topic, or the greeting. */
   function opening(): Draft[] {
-    if (declined) return [notConnected()]
     if (params.marker) return scopedOpening(params.marker)
     const batch = params.batch ? batchOf(params.batch, onboarding) : undefined
     const explained = batch && batchAnswer(batch.id, markers)
@@ -324,7 +321,6 @@ export default function AssistantScreen() {
       does; general health questions and her own categories wait for her
       words. */
   function categoryOpening(g: ChatGroup): Draft[] {
-    if (declined) return [notConnected()]
     if (STARTER_CATEGORIES.has(g.topic)) return topicOpening(g.topic as Topic)
     const text = g.topic === "other" ? `Hi ${name}. Ask me any health question.` : `Hi ${name}. What would you like to ask about ${g.name}?`
     return [{ kind: "text", from: "assistant", text }]
@@ -346,7 +342,7 @@ export default function AssistantScreen() {
   const [draft, setDraft] = React.useState(params.ask ?? "")
   /** Borrowing or adding AI credit, asked in a sheet first. */
   const [credit, setCredit] = React.useState(false)
-  // This month's AI credit from 75% used, joined to the composer as
+  // This week's AI credit from 75% used, joined to the composer as
   // Claude's session limit is; closed, it stays hidden until it says
   // something new (75% becoming 100%), and the limit card says it alone.
   const creditNotice = useCreditNotice(() => setCredit(true))
@@ -417,14 +413,13 @@ export default function AssistantScreen() {
     return { topic: id, name: categoryName, Icon: ChatText }
   }
 
-  /** A topic tapped on the Ask Inlay opening: as the greeting's own list.
-      Never connected, there is nothing to answer from, as in version 1. */
+  /** A topic tapped on the Ask Inlay opening: as the greeting's own list. */
   function pickTopic(option: string) {
     if (thinking) return
     const topic = (Object.keys(TOPICS) as Topic[]).find((k) => TOPICS[k] === option) ?? "result"
     setThread((t) => ({ ...t, topic: GROUP_OF[topic] }))
     mine(option)
-    reply(declined ? [notConnected()] : topicOpening(topic))
+    reply(topicOpening(topic))
   }
 
   /* ---------------------------------------------------------- writing -- */
@@ -487,15 +482,16 @@ export default function AssistantScreen() {
 
   /* --------------------------------------------------------- counting -- */
 
-  /** Counts the first question of a conversation (a result, a topic or her
-      own words); false at the cap, when nothing is sent. */
+  /** Meters a question's tokens (a result, a topic or her own words);
+      false at 100%, when nothing is sent. */
   function charge(text: string, scope: string, kind: QuestionKind = "record", batch?: string) {
     const threadId = `${thread.id}:${scope}`
-    if (costOf({ text, threadId, kind, batch }, onboarding.allowance) === 0) {
+    const tokens = costOf({ text, threadId, kind, batch }, onboarding.allowance)
+    if (tokens === 0) {
       if (kind === "batch" && batch) allowance.markBatch(batch)
       return true
     }
-    const went = allowance.spend(threadId, thread.id)
+    const went = allowance.spend(threadId, tokens, thread.id)
     if (went === "grace") setThread((t) => append(t, stamp([{ kind: "grace" }])))
     return !!went
   }
@@ -665,11 +661,6 @@ export default function AssistantScreen() {
       return reply([{ kind: "text", from: "assistant", text: ATTACHED }])
     }
     if (!said || thinking || ended) return
-    if (declined && questionKind(said) !== "safety") {
-      setDraft("")
-      mine(said)
-      return reply([notConnected()])
-    }
     if (questionKind(said) === "safety") {
       setDraft("")
       setAwaiting(undefined)

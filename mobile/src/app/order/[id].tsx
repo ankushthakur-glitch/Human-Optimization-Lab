@@ -195,7 +195,7 @@ export default function OrderScreen() {
         footer={
           <>
             <AskButton params={{ ask }} />
-            {done && <PrimaryButton onPress={() => router.push("/record/results")}>See your results</PrimaryButton>}
+            {done && <PrimaryButton onPress={() => router.push("/results")}>See your results</PrimaryButton>}
           </>
         }
       >

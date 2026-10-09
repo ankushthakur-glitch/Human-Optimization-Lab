@@ -184,7 +184,7 @@ export function planLine(versions: { version: number; approved: string }[] = PLA
   return `Version ${live.version}, approved by ${MEMBER.doctorShort} on ${live.approved.replace(/, \d{4}$/, "")}`
 }
 
-export type MemberStage = "setup" | "review" | "live" | "redraft" | "paused"
+export type MemberStage = "review" | "live" | "redraft" | "paused"
 
 /** Whether a membership has ended: cancelled, and the paid month it ran
     to (`endsAt`) is over. Until then she is still a member. */
@@ -199,15 +199,14 @@ export function membershipEnded(m: Snapshot["membership"], now: Date = new Date(
     everywhere on the same day. */
 export const membershipOn = (m: Snapshot["membership"], now: Date = new Date()) => m?.tier === "optimization" && !membershipEnded(m, now)
 
-/** Where a member is: still setting up, version 1 with the doctor, live,
+/** Where a member is: version 1 with the doctor (or not drafted yet), live,
     live with a new version in review, or paused. A cancelled membership
     stays a membership until its paid month runs out (`endsAt`, C.17), then
     reads as the free record. Undefined for a patient on the free record. */
 export function memberStage(s: Snapshot, now: Date = new Date()): MemberStage | undefined {
   if (!s.membership || !membershipOn(s.membership, now)) return undefined
   if (s.membership.paused) return "paused"
-  if (!s.plan) return "setup"
-  if (s.plan.status === "review") return s.plan.versions.length ? "redraft" : "review"
+  if (!s.plan || s.plan.status === "review") return s.plan?.versions.length ? "redraft" : "review"
   return "live"
 }
 

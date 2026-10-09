@@ -353,7 +353,7 @@ function FreeRecord() {
         <Text style={styles.body}>Your record, trends, reminders and care gaps stay free, always.</Text>
       </View>
       <View style={styles.cardLink}>
-        <SeeAllRow label="See the Optimization plan" onPress={() => router.push({ pathname: "/plans", params: { from: "profile" } })} />
+        <SeeAllRow label="See the Optimization plan" onPress={() => router.push("/plan")} />
       </View>
     </Card>
   )

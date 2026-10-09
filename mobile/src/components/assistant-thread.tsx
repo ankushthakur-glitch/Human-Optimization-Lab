@@ -22,7 +22,7 @@ import { chartInput, pointDate, type Trend } from "@/lib/trends"
    chat bubbles in chat.tsx and the record kit: the result a conversation
    is about, the answer with its folded parts, the lists to choose a result
    or a medicine from, the next visit, the urgent message, the card at the
-   free questions' limit, and the facts behind an answer. The screen
+   AI credit's limit, and the facts behind an answer. The screen
    (app/assistant.tsx) decides what is said; these only draw it. */
 
 /* ------------------------------------------------------------ context -- */
@@ -245,7 +245,7 @@ function FollowOn({ offer }: { offer: Offer }) {
       action={FOLLOW_ON.action}
       onAction={() => {
         offer.markOpened()
-        router.push({ pathname: "/plans", params: { from: "assistant" } })
+        router.push("/plan")
       }}
     />
   )
@@ -318,7 +318,7 @@ export function ResultChooser({
           </>
         )}
         {live && (
-          <Pressable onPress={() => router.push({ pathname: "/record/[kind]", params: { kind: "results" } })} accessibilityRole="link" hitSlop={4} style={({ pressed }) => [styles.more, pressed && styles.pressed]}>
+          <Pressable onPress={() => router.push("/results")} accessibilityRole="link" hitSlop={4} style={({ pressed }) => [styles.more, pressed && styles.pressed]}>
             <Text style={styles.moreText}>See all results</Text>
             <CaretRight size={14} color={color.primary} />
           </Pressable>
@@ -517,7 +517,7 @@ export function LimitCard({
       <Text style={styles.savedLineText}>Saved for your next visit</Text>
     </View>
   )
-  const lines = [LIMIT.body(resetsOn), ...(member ? [LIMIT.topUpBody(TOP_UP.conversations, TOP_UP.price)] : [])]
+  const lines = [LIMIT.body(resetsOn), ...(member ? [LIMIT.topUpBody(TOP_UP.share, TOP_UP.price)] : [])]
   const common = { art: "sparkle" as const, title: keepTogether(LIMIT.title), body: lines.map(keepTogether) }
   // A member adds more first, then "Save for my next visit", then the
   // card's ways out.
@@ -547,7 +547,7 @@ export function LimitCard({
       action={LIMIT.more}
       onAction={() => {
         offer.markOpened()
-        router.push({ pathname: "/plans", params: { from: "allowance" } })
+        router.push("/plan")
       }}
       onDismiss={() => {
         offer.notNow()

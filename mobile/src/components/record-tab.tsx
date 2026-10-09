@@ -5,11 +5,10 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 import { StatusBanner } from "@/components/home-header"
 import { Plus } from "@/components/ph"
 import { MedicineConfirm, MedicineSheet } from "@/components/medicines"
-import { ChipRow, EmptyState, Group, Heading, ResultRow } from "@/components/record-kit"
+import { ChipRow, Group, Heading, ResultRow } from "@/components/record-kit"
 import { KindList, RECORD_TITLES, sinceLine } from "@/components/record-lists"
 import { AddToRecordSheet, openItem } from "@/components/record-rows"
 import { TabScreen } from "@/components/tab-bar"
-import { Button } from "@/components/ui"
 import { useExperience, useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
 import { addKindOf } from "@/lib/add-record"
@@ -26,15 +25,14 @@ import { classify, type Status } from "@/lib/trends"
    2. Category pills: each one swaps the section below in place
       (Biomarkers, Medicines, Conditions, Visits, Allergies, Tests and
       orders, Immunizations, Procedures, and Added by you once she has
-      added something); "See all" opens that part on its own page.
-   3. "Biomarkers and results" with See all, body system chips to narrow
+      added something).
+   3. "Biomarkers and results", body system chips to narrow
       it (All first), and every result as a row (record-kit ResultRow):
       out of range first, then borderline, then in range. A member's row
       says how far it has moved since she started.
 
-   Before anything was collected it shows the not connected state, and
-   while the record is still arriving, that; with sharing turned off, the
-   same banner as every tab, over what was collected before. */
+   With sharing turned off, the same banner as every tab, over what was
+   collected before. Opening the tab reads any new results. */
 
 type Category = "biomarkers" | "medicines" | "conditions" | "visits" | "allergies" | "tests" | "immunizations" | "procedures" | "added"
 
@@ -64,31 +62,13 @@ export function RecordTab() {
   const [category, setCategory] = React.useState<Category>("biomarkers")
   const [medicine, setMedicine] = React.useState<Medication | null>(null)
 
-  if (info.experience === "declined")
-    return (
-      <TabScreen tab="results" title="Record">
-        <EmptyState
-          art="folder"
-          artSize={112}
-          title="Your records aren't connected"
-          // The last two words held together, so the line never ends on one.
-          line={"Nothing has been collected. Connect when you're ready and we'll bring your history together."}
-        >
-          <View style={styles.emptyButton}>
-            <Button onPress={() => router.push("/connect")}>Connect my records</Button>
-          </View>
-        </EmptyState>
-      </TabScreen>
-    )
-
-  if (info.experience === "building") {
-    const { got, of } = onboarding.records ?? {}
-    return (
-      <TabScreen tab="results" title="Record">
-        <EmptyState art="record-tube" artSize={96} title="Your record is still arriving" line={of ? `${got ?? 0} of ${of} places so far` : undefined} />
-      </TabScreen>
-    )
-  }
+  // Opening the record reads any new results: the home's "New results are
+  // in" goes.
+  const { save, batches } = onboarding
+  React.useEffect(() => {
+    if (!batches?.some((b) => !b.opened)) return
+    save({ batches: batches.map((b) => ({ ...b, opened: true })) }).catch(() => {})
+  }, [batches, save])
 
   // A member with a plan reads each result against where she started.
   const member = info.experience === "member" || info.experience === "paused"
@@ -125,11 +105,7 @@ export function RecordTab() {
         </View>
       ) : (
         <View style={styles.results}>
-          <Heading
-            title={RECORD_TITLES[category]}
-            variant="title"
-            onSeeAll={() => router.push({ pathname: "/record/[kind]", params: { kind: category } })}
-          />
+          <Heading title={RECORD_TITLES[category]} variant="title" />
           <KindList kind={category} onOpen={openItem} onAdd={() => setAdding(true)} />
         </View>
       )}
@@ -182,7 +158,7 @@ function Results({ member }: { member: boolean }) {
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
   return (
     <View style={styles.results}>
-      <Heading title="Biomarkers and results" variant="title" onSeeAll={() => router.push("/record/results")} />
+      <Heading title="Biomarkers and results" variant="title" />
       <ChipRow options={chips} value={system} onChange={setSystem} label="Body system" />
       <Group>
         {rows.map((t) => (
@@ -205,8 +181,6 @@ function Results({ member }: { member: boolean }) {
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
-  // The empty state's 8, and 8 more before its button: 16.
-  emptyButton: { alignSelf: "stretch", marginTop: space.inline },
 
   add: { flexDirection: "row", alignItems: "center", gap: space.inline },
   addText: { ...type.link },

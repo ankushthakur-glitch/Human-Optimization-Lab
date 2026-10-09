@@ -56,7 +56,7 @@ function FeatureSheet({ onClose, quiet }: { onClose: () => void; quiet: boolean 
             onPress={() => {
               offer.markOpened()
               onClose()
-              router.push({ pathname: "/plans", params: { from: "devices" } })
+              router.push("/plan")
             }}
           >
             See the plan

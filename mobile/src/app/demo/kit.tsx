@@ -732,10 +732,10 @@ function Offers() {
           </Button>
         </Nudge>
       </Sample>
-      <Sample caption="Allowance meter: 8 left, 1 left, none left">
-        <AllowanceMeter left={8} total={8} />
-        <AllowanceMeter left={1} total={8} />
-        <AllowanceMeter left={0} total={8} line="No AI credit left until Mon, Oct 12" />
+      <Sample caption="AI credit meter: 25%, 80%, 100% used">
+        <AllowanceMeter share={0.25} />
+        <AllowanceMeter share={0.8} />
+        <AllowanceMeter share={1} line="No AI credit left until Mon, Oct 12" />
       </Sample>
     </Block>
   )
@@ -785,18 +785,11 @@ const OBJECTS: { name: ArtName; size: number; where: string }[] = [
   { name: "camera", size: 64, where: "Log a meal" },
   { name: "chart-block", size: 64, where: "Progress, history" },
   { name: "watch", size: 64, where: "Devices" },
-  { name: "record-tube", size: 64, where: "Record arriving" },
 ]
 
 function Empties() {
   return (
     <Block title="Empty states and objects">
-      <EmptyState art="folder" artSize={112} title="Your records aren't connected" line="Nothing has been collected. Connect when you're ready and we'll bring your history together.">
-        <View style={styles.emptyButton}>
-          <Button onPress={() => {}}>Connect my records</Button>
-        </View>
-      </EmptyState>
-      <EmptyState art="record-tube" artSize={96} title="Your record is still arriving" line="2 of 3 places so far" />
       <EmptyState art="magnifier" artSize={80} title="Nothing to watch right now" action="See all results" onAction={() => {}} />
       <EmptyState art="calendar" artSize={96} title="Nothing to do right now" />
       <EmptyState art="bell" artSize={96} title="No notifications yet" />
@@ -880,7 +873,6 @@ const styles = StyleSheet.create({
   heroHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   saveRow: { flexDirection: "row", alignItems: "center", gap: space.item },
   bannerSample: { gap: 8 },
-  emptyButton: { alignSelf: "stretch", marginTop: 8 },
   objects: { flexDirection: "row", flexWrap: "wrap", rowGap: 16 },
   object: { width: "33.33%", alignItems: "center", gap: 2, paddingHorizontal: 4 },
   objectArt: { width: 72, height: 72, alignItems: "center", justifyContent: "center" },

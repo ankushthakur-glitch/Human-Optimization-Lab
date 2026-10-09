@@ -813,11 +813,11 @@ function VitalTrends({
     return () => window.clearTimeout(t)
   }, [k.key, range, shown, drawn])
   return (
-    <div className="flex min-h-[420px] min-w-0 flex-1 flex-col rounded-md border bg-surface-sunken/60">
+    <div className="flex min-h-[420px] min-w-0 flex-1 flex-col rounded-md border bg-card">
       <div
         role="tablist"
         aria-label="Vitals"
-        className="grid shrink-0 auto-cols-[minmax(128px,1fr)] grid-flow-col overflow-x-auto rounded-t-md border-b"
+        className="grid shrink-0 auto-cols-[minmax(128px,1fr)] grid-flow-col overflow-x-auto rounded-t-md border-b bg-surface-sunken/60"
       >
         {VITALS.map((x) => {
           const on = x.key === k.key

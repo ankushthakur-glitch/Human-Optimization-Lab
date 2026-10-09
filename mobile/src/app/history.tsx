@@ -90,7 +90,7 @@ export default function HistoryScreen() {
                     icon={<RecordIcon name="labs" size={16} color={HUE.teal.ink} />}
                     title="Your results and trends"
                     meta={counts.toWatch ? `${counts.total} results, ${counts.toWatch} to watch` : `${counts.total} results`}
-                    onPress={() => router.push({ pathname: "/record/[kind]", params: { kind: "results" } })}
+                    onPress={() => router.push("/results")}
                   />
                 </Group>
               )}

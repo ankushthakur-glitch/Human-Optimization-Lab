@@ -27,30 +27,19 @@ export type CreditNotice = { words: string; hue: "amber" | "red"; action?: { lab
 
 export function useCreditNotice(onAsk: () => void): CreditNotice | null {
   const credit = useAllowance()
-  const out = credit.left === 0
-  if (!credit.member) {
-    // The free record counts questions: always shown, and the last one (or
-    // none left) carries the upgrade prompt.
-    const last = credit.left <= 1
-    return {
-      words: credit.line,
-      hue: out ? "red" : "amber",
-      action: last ? { label: "Upgrade", onPress: () => router.push({ pathname: "/plans", params: { from: "allowance" } }) } : undefined,
-    }
-  }
-  if (credit.share < CREDIT_WARN) return null
+  const upgrade = { label: "Upgrade", onPress: () => router.push("/plan") }
+  // The free record's share is always shown, with the upgrade prompt from
+  // 75% used; a member's only from 75%, with adding more.
+  if (credit.member && credit.share < CREDIT_WARN) return null
+  const high = credit.share >= CREDIT_WARN
   return {
-    words: out ? `No AI credit left until ${credit.resetsOn}` : `${Math.round(credit.share * 100)}% of this week's AI credit used`,
-    hue: out ? "red" : "amber",
-    action: credit.member
-      ? { label: "Add more", onPress: onAsk }
-      : out
-        ? { label: "Upgrade", onPress: () => router.push({ pathname: "/plans", params: { from: "allowance" } }) }
-        : undefined,
+    words: credit.line,
+    hue: credit.out ? "red" : "amber",
+    action: credit.member ? { label: "Add more", onPress: onAsk } : high ? upgrade : undefined,
   }
 }
 
-/** Asks once before a member adds more credit for this month. `onDone`
+/** Asks once before a member adds more credit for this week. `onDone`
     runs after it went through, e.g. to send a waiting question. */
 export function CreditSheet({ onClose, onDone }: { onClose: () => void; onDone?: () => void }) {
   const credit = useAllowance()
@@ -58,13 +47,13 @@ export function CreditSheet({ onClose, onDone }: { onClose: () => void; onDone?:
   function go() {
     onClose()
     credit.topUp()
-    toast(`${TOP_UP.conversations} conversations added`)
+    toast(`${TOP_UP.share}% more AI credit added`)
     onDone?.()
   }
 
   return (
     <Sheet title="Add more AI credit?" onClose={onClose}>
-      <SheetText>{`${TOP_UP.conversations} more conversations for this week, ${TOP_UP.price}, charged to your card on file. What you don't use ends on ${credit.resetsOn}.`}</SheetText>
+      <SheetText>{`${TOP_UP.share}% more AI credit for this week, ${TOP_UP.price}, charged to your card on file. What you don't use ends on ${credit.resetsOn}.`}</SheetText>
       <View style={styles.actions}>
         <Button onPress={go}>{`Add for ${TOP_UP.price}`}</Button>
         <Button variant="outline" onPress={onClose}>

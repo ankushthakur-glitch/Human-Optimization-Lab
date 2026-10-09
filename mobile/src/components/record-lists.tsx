@@ -1,23 +1,16 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { StyleSheet, View } from "react-native"
 
 import { keepTogether } from "@/components/care-gap"
-import { FlowScreen } from "@/components/flow"
-import { Eye, Plus, UploadSimple } from "@/components/ph"
-import { Block, Card, EmptyState, Group, Nudge, ResultRow, TextAction, Tile } from "@/components/record-kit"
-import { AddToRecordSheet, AddedOfKind, FilterChips, ItemRow, addedDetail, openItem, RangeSummary, SearchField, type ItemDetail, type RowStatus } from "@/components/record-rows"
-import { Button } from "@/components/ui"
-import { addKindOf } from "@/lib/add-record"
-import { useExperience, useMarkers } from "@/lib/experience"
+import { Eye, UploadSimple } from "@/components/ph"
+import { Block, EmptyState, Group, Tile } from "@/components/record-kit"
+import { FilterChips, ItemRow, addedDetail, type ItemDetail, type RowStatus } from "@/components/record-rows"
 import { clockOf, dateOfAt, dayLabel, shortDay, sinceStart } from "@/lib/member"
-import { useShown, useOffer } from "@/lib/offers"
-import { useOnboarding, type Batch } from "@/lib/onboarding"
+import { useOnboarding } from "@/lib/onboarding"
 import {
-  ACCESS_LOG,
   ALLERGIES,
   APPOINTMENTS,
-  DATA_TYPES,
   DOCUMENTS,
   IMMUNIZATIONS,
   MEDICATIONS,
@@ -35,9 +28,9 @@ import {
   type TimelineEntry,
   type TimelineKind,
 } from "@/lib/record"
-import { color, space, type } from "@/lib/theme"
+import { color, space } from "@/lib/theme"
 import { orderHref, orderStatus, todo, type TodoItem } from "@/lib/todo"
-import { byBodySystem, classify, directionWords, needsReview, pointStatus, timeOf, trendCounts, type Trend } from "@/lib/trends"
+import { timeOf } from "@/lib/trends"
 
 /* The record's own pages (FINAL-SPEC C.6), each a FlowScreen page:
 
@@ -57,10 +50,9 @@ import { byBodySystem, classify, directionWords, needsReview, pointStatus, timeO
    lists stay visible until Dr. Patel settles them (S-12); her answers are
    added to the record as told by her, never written over a list. */
 
-export type RecordKind = "results" | "allergies" | "conditions" | "visits" | "tests" | "documents" | "immunizations" | "procedures" | "added" | "access"
+export type RecordKind = "allergies" | "conditions" | "visits" | "tests" | "documents" | "immunizations" | "procedures" | "added"
 
 export const RECORD_TITLES: Record<RecordKind, string> = {
-  results: "Results",
   allergies: "Allergies",
   conditions: "Conditions",
   visits: "Visits",
@@ -69,11 +61,7 @@ export const RECORD_TITLES: Record<RecordKind, string> = {
   immunizations: "Immunizations",
   procedures: "Procedures",
   added: "Added by you",
-  access: "Who has looked at your record",
 }
-
-/** Own keys only, so a name such as "toString" is never a list. */
-export const isRecordKind = (kind: string | undefined): kind is RecordKind => !!kind && Object.prototype.hasOwnProperty.call(RECORD_TITLES, kind)
 
 /* ------------------------------------------------------------ words -- */
 
@@ -166,31 +154,9 @@ function procedureDetail(p: (typeof PROCEDURES)[number], provenance: ProvenanceO
 /** Allergies the lists differ on: the Record tab's "Records differ on 1". */
 export const allergiesToCheck = () => ALLERGIES.filter((a) => a.difference).length
 
-/* ---------------------------------------------------------- screens -- */
+/* ------------------------------------------------------------ lists -- */
 
-/** One of the record's lists on its own page: rows only, each opening its
-    details page. */
-export function RecordListScreen({ kind }: { kind: Exclude<RecordKind, "results"> }) {
-  const [adding, setAdding] = React.useState(false)
-  // A list she can add to has its own "Add ..." in the header, which opens
-  // the add sheet on its kind (user, 5 Oct 2026).
-  const addable = addKindOf(kind)
-  return (
-    <View style={styles.fill}>
-      <FlowScreen
-        page
-        title={RECORD_TITLES[kind]}
-        action={addable ? { label: addable.action, icon: <Plus size={16} color={color.primary} />, onPress: () => setAdding(true) } : undefined}
-      >
-        {addable && <AddedOfKind kind={addable.kind} />}
-        <KindList kind={kind} onOpen={openItem} onAdd={() => setAdding(true)} />
-      </FlowScreen>
-      {adding && <AddToRecordSheet kind={addable?.kind} onClose={() => setAdding(false)} />}
-    </View>
-  )
-}
-
-export function KindList({ kind, onOpen, onAdd }: { kind: Exclude<RecordKind, "results">; onOpen: (item: ItemDetail) => void; onAdd: () => void }) {
+export function KindList({ kind, onOpen, onAdd }: { kind: RecordKind; onOpen: (item: ItemDetail) => void; onAdd: () => void }) {
   switch (kind) {
     case "allergies":
       return <Allergies onOpen={onOpen} />
@@ -208,8 +174,6 @@ export function KindList({ kind, onOpen, onAdd }: { kind: Exclude<RecordKind, "r
       return <Procedures onOpen={onOpen} />
     case "added":
       return <Added onOpen={onOpen} onAdd={onAdd} />
-    case "access":
-      return <Access />
   }
 }
 
@@ -540,148 +504,6 @@ function Added({ onOpen, onAdd }: Opens & { onAdd: () => void }) {
   )
 }
 
-function Access() {
-  return (
-    <Group>
-      {ACCESS_LOG.map((a, i) => (
-        <ItemRow key={i} icon={<Glyph Icon={Eye} />} title={a.what} meta={`${a.who}, ${a.role}`} when={a.when.replace(/^Today, /, "")} accessibilityLabel={`${a.what}, ${a.who}, ${a.role}, ${a.when}`} />
-      ))}
-    </Group>
-  )
-}
-
-/* ---------------------------------------------------------- results -- */
-
-type Filter = "all" | "watch" | "in"
-
-/** Every result (F-37), or one batch of new results when `batch` names one
-    that has arrived. */
-export function ResultsScreen({ filter, batch }: { filter?: string; batch?: string }) {
-  const onboarding = useOnboarding()
-  const arrived = batch ? onboarding.batches?.find((b) => b.id === batch) : undefined
-  if (arrived) return <BatchScreen batch={arrived} />
-  return <AllResults initial={filter === "watch" ? "watch" : filter === "in" ? "in" : "all"} />
-}
-
-/** "Hemoglobin A1c" or "A1c" both find it. */
-const matches = (t: Trend, q: string) => !q || t.marker.name.toLowerCase().includes(q) || (t.marker.short ?? "").toLowerCase().includes(q)
-
-function AllResults({ initial }: { initial: Filter }) {
-  const onboarding = useOnboarding()
-  const markers = useMarkers()
-  const { experience } = useExperience()
-  const member = experience === "member" || experience === "paused"
-  const [filter, setFilter] = React.useState<Filter>(initial)
-  const [query, setQuery] = React.useState("")
-  const q = query.trim().toLowerCase()
-
-  const counts = trendCounts(markers)
-  const labs = DATA_TYPES.find((d) => d.key === "Observation.lab")!.count + (onboarding.batches ?? []).reduce((n, b) => n + b.count, 0)
-  const vitals = DATA_TYPES.find((d) => d.key === "Observation.vital")!.count
-  const open = (id: string) => router.push({ pathname: "/biomarker/[id]", params: { id } })
-  // "To watch" keeps the results worth a look (lib/trends.ts `watch`), "In
-  // range" the rest, each still grouped by body system.
-  const shown = (t: Trend) => (filter === "all" || (filter === "watch" ? t.watch : t.status === "in")) && matches(t, q)
-
-  const groups = byBodySystem(markers)
-    .map((g) => ({ group: g.group, trends: g.markers.map(classify).filter(shown) }))
-    .filter((g) => g.trends.length)
-
-  return (
-    <FlowScreen page title="Results">
-      <Card style={styles.summary}>
-        <RangeSummary inRange={counts.inRange} borderline={counts.borderline} out={counts.out} total={counts.total} />
-        <Text style={type.label}>{`From ${labs} lab results and ${vitals} visit readings`}</Text>
-      </Card>
-
-      <FilterChips
-        label="Show"
-        options={[
-          { value: "all", label: "All" },
-          { value: "watch", label: "To watch" },
-          { value: "in", label: "In range" },
-        ]}
-        value={filter}
-        onChange={setFilter}
-      />
-      <SearchField value={query} onChange={setQuery} placeholder="Search results" />
-
-      {!groups.length && q ? (
-        <EmptyState title={`No results match “${query.trim()}”`}>
-          <TextAction onPress={() => setQuery("")}>Clear search</TextAction>
-        </EmptyState>
-      ) : !groups.length && filter === "watch" ? (
-        <EmptyState art="magnifier" artSize={80} title="Nothing to watch right now" />
-      ) : !groups.length ? (
-        <EmptyState title="No results yet" />
-      ) : (
-        groups.map((g) => (
-          <Block key={g.group} title={g.group}>
-            <Group>
-              {g.trends.map((t) => (
-                <ResultRow key={t.id} trend={t} since={member ? sinceLine(t.marker) : undefined} onPress={() => open(t.id)} />
-              ))}
-            </Group>
-          </Block>
-        ))
-      )}
-    </FlowScreen>
-  )
-}
-
-/** A new result's words: how it is moving, or "In range" when it has just
-    come back into the range. */
-function batchWords(t: Trend) {
-  const before = t.previous ? pointStatus(t.marker, t.previous) : undefined
-  return t.status === "in" && before && before !== "in" ? "In range" : directionWords(t)
-}
-
-/** One batch of new results: what arrived, the free explanation, and last,
-    only when a result in it is moving away from its range and none needs
-    the doctor first, one quiet line about the plan (touchpoint new-results). */
-function BatchScreen({ batch }: { batch: Batch }) {
-  const onboarding = useOnboarding()
-  const markers = useMarkers()
-  const trends = markers.filter((m) => m.points.some((p) => p.batch === batch.id)).map(classify)
-  const eligible = trends.some((t) => t.meaning === "away") && !trends.some((t) => needsReview(t.marker, t.latest))
-  const offer = useOffer("new-results", { eligible, key: batch.id })
-  useShown(offer)
-
-  // Opening the batch reads it: the home's "New results are in" goes.
-  const { save, batches } = onboarding
-  React.useEffect(() => {
-    if (batch.opened) return
-    save({ batches: (batches ?? []).map((b) => (b.id === batch.id ? { ...b, opened: true } : b)) }).catch(() => {})
-  }, [batch.id, batch.opened, batches, save])
-
-  return (
-    <FlowScreen page title="New results">
-      <Group>
-        <View style={styles.batchHead}>
-          <Text style={type.section}>{`${batch.count} ${batch.count === 1 ? "result" : "results"} from ${batch.source}, ${shortDay(new Date(batch.at))}`}</Text>
-        </View>
-        {trends.map((t) => (
-          <ResultRow key={t.id} trend={t} since={batchWords(t)} onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: t.id } })} />
-        ))}
-      </Group>
-      <View style={styles.batchActions}>
-        <Button onPress={() => router.push({ pathname: "/assistant", params: { batch: batch.id } })}>Explain my new results</Button>
-        {offer.show && (
-          <Nudge
-            variant="link"
-            title="Want to change course?"
-            action="See what a plan would do."
-            onAction={() => {
-              offer.markOpened()
-              router.push({ pathname: "/plans", params: { from: "results" } })
-            }}
-          />
-        )}
-      </View>
-    </FlowScreen>
-  )
-}
-
 /* --------------------------------------------------------- timeline -- */
 
 type TimeFilter = TimelineKind | "all"
@@ -781,18 +603,7 @@ export function TimelineList({ onOpen }: Opens) {
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  flex: { flex: 1 },
-  // Controls and lists inside a page sit closer than the page's own 32.
+  // Lists inside a page sit closer than the page's own 32.
   stack: { gap: space.item },
   groups: { gap: space.section },
-  controls: { gap: space.item },
-
-  summary: { gap: space.item },
-
-
-  // The batch's title on its card: the card's 16 above, a row's 12 to the
-  // rule under it.
-  batchHead: { paddingTop: space.card, paddingBottom: space.rowY },
-  batchActions: { gap: space.card },
 })

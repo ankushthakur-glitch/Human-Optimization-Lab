@@ -73,7 +73,8 @@ export function SectionBar({
   )
 }
 
-/** The section's scrolling body, with room under the last item. */
+/** The section's scrolling body, with room under the last item, on the
+    lab viewer's grey (surface-sunken) so the white cards and tables pop. */
 export function SectionBody({
   className,
   children,
@@ -84,7 +85,7 @@ export function SectionBody({
   return (
     <div
       className={cn(
-        "min-h-0 flex-1 overflow-y-auto px-3 pt-3 pb-6 print:overflow-visible",
+        "min-h-0 flex-1 overflow-y-auto bg-surface-sunken px-3 pt-3 pb-6 print:overflow-visible print:bg-white",
         className
       )}
     >
@@ -143,8 +144,8 @@ export function RecordTable<T>({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border print:overflow-visible">
-      <div className="min-h-0 flex-1 overflow-auto print:overflow-visible [&_td]:py-2.5 [&_td]:align-top [&_th]:h-10 [&_th]:bg-surface-sunken [&_th]:text-[13px] [&_th]:font-medium [&_th]:text-muted-foreground [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&>[data-slot=table-container]]:overflow-visible">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-card print:overflow-visible">
+      <div className="min-h-0 flex-1 overflow-auto print:overflow-visible [&_td]:py-2.5 [&_td]:align-top [&_th]:h-10 [&_th]:bg-[color-mix(in_oklab,var(--primary)_7%,var(--surface-sunken))] [&_th]:text-[13px] [&_th]:font-medium [&_th]:text-muted-foreground [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&>[data-slot=table-container]]:overflow-visible">
         {children}
       </div>
       <TablePager paged={paged} className="print:hidden" />

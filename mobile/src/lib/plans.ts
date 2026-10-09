@@ -1,4 +1,3 @@
-import { FREE_QUESTIONS } from "@/lib/allowance"
 import { MEMBER } from "@/lib/member"
 import type { Plan, useOnboarding } from "@/lib/onboarding"
 import type { FocusArea } from "@/lib/record"
@@ -10,7 +9,7 @@ import type { FocusArea } from "@/lib/record"
    The prices live here and only here (TIERS.optimization.billing): $100
    a month, cancel anytime, or a year paid up front at 15% off, $1,020
    (6 Oct 2026). Written one way by priceLabel(): "$100 a month". They show only on the plan
-   details (the Plan tab and /plans), the checkout and the member's own
+   details (the Plan tab), the checkout and the member's own
    membership page; never in an offer, the assistant, a notification or
    next to a doctor (FINAL-SPEC D.4). */
 
@@ -57,7 +56,7 @@ const INCLUDED = [
   "An exercise program with short videos",
   "Daily monitoring and a score for yesterday's goals",
   "Progress since you start, with a forecast",
-  "Unlimited questions to your assistant",
+  "More AI credit for your assistant, and you can add more",
 ] as const
 
 /** How a member pays: monthly, cancel anytime, or a year up front for
@@ -97,7 +96,7 @@ export const priceOf = (cadence: Cadence = "monthly") => BILLING[cadence].price
 
 /** What stays free, membership or not (S-03), on the same page as the
     price. */
-export const FREE_STAYS = ["Every result and trend", "Reminders and care gaps", "Booking and paying for tests", `${FREE_QUESTIONS} questions a week to your assistant`]
+export const FREE_STAYS = ["Every result and trend", "Reminders and care gaps", "Booking and paying for tests", "Weekly AI credit for your assistant"]
 
 /* The upsell's words (6 Oct 2026). Placeholder copy: Fynn's team is
    sending the final wording; swap it in here when it arrives. */
@@ -116,7 +115,7 @@ export const BENEFITS: { title: string; text: string }[] = [
 export const MEMBER_GETS = [
   "A personalized nutrition and exercise plan",
   "Guidance based on your complete record",
-  "Unlimited Ask Inlay",
+  "More Ask Inlay credit",
   "Physician review every 3 months",
   "Track progress with updated plans",
   "Support for multiple health goals",

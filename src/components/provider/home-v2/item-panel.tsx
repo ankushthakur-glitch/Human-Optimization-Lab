@@ -78,14 +78,6 @@ export function ItemPanel({
 
   if (!current) return null
 
-  const section =
-    current.item.type === "abnormal_result" ? CHART_SECTION[current.item.payload.kind] : CHART_SECTION[current.item.type as keyof typeof CHART_SECTION]
-  const openChart = (
-    <Link href={chartHref(current.patient.id, section)} className={cn(buttonVariants({ variant: "outline" }))}>
-      Open chart
-    </Link>
-  )
-
   return (
     <SidePanel
       open={open}
@@ -97,44 +89,69 @@ export function ItemPanel({
           {fullName(current.patient)}
         </Link>
       }
-      meta={
-        <>
-          <span className="font-medium text-foreground/80">{itemTitle(current.item)}</span>
-          <SyncFailedBadge patient={current.patient} />
-          <span aria-hidden>·</span>
-          <span>{current.patient.id}</span>
-          <span aria-hidden>·</span>
-          <span>{ageSex(current.patient)}</span>
-        </>
-      }
+      meta={<ItemMeta item={current.item} patient={current.patient} />}
       onPrevious={onPrevious}
       onNext={onNext}
-      actions={<PanelActions key={current.item.id} item={current.item} openChart={openChart} onAct={onAct} />}
+      actions={<ItemActions key={current.item.id} item={current.item} patient={current.patient} onAct={onAct} />}
       wide
     >
-      <div key={current.item.id} className="flex flex-col gap-5">
-        <Headline item={current.item} />
-        <AISummary insight={insightFor(current.item)} />
-        {/* Only results and outside visits arrive as documents; the rest show
-            their record plainly. */}
-        {current.item.type === "abnormal_result" || current.item.type === "outside_care" ? (
-          <FullReport paper={paperFor(current.item, current.patient)} patient={current.patient} />
-        ) : (
-          <ItemRecord
-            report={reportFor(current.item, current.patient)}
-            title={
-              current.item.type === "overdue_order"
-                ? "Reminder log"
-                : current.item.type === "medication_change"
-                  ? `${current.item.payload.medication} by source`
-                  : "History"
-            }
-          />
-        )}
-        <PanelBody item={current.item} />
-      </div>
+      <ItemDetail key={current.item.id} item={current.item} patient={current.patient} />
     </SidePanel>
   )
+}
+
+/** The item's line under the patient's name: what it is, the patient's ID, age and sex. */
+export function ItemMeta({ item, patient }: { item: QueueItem; patient: Patient }) {
+  return (
+    <>
+      <span className="font-medium text-foreground/80">{itemTitle(item)}</span>
+      <SyncFailedBadge patient={patient} />
+      <span aria-hidden>·</span>
+      <span>{patient.id}</span>
+      <span aria-hidden>·</span>
+      <span>{ageSex(patient)}</span>
+    </>
+  )
+}
+
+/** The panel's body, overlay or docked: the details, the AI summary, the
+    report or record, then what the decision still needs. */
+export function ItemDetail({ item, patient }: { item: QueueItem; patient: Patient }) {
+  return (
+    <div className="@container flex flex-col gap-5">
+      <Headline item={item} />
+      <AISummary insight={insightFor(item)} />
+      {/* Only results and outside visits arrive as documents; the rest show
+          their record plainly. */}
+      {item.type === "abnormal_result" || item.type === "outside_care" ? (
+        <FullReport paper={paperFor(item, patient)} patient={patient} />
+      ) : (
+        <ItemRecord
+          report={reportFor(item, patient)}
+          title={
+            item.type === "overdue_order"
+              ? "Reminder log"
+              : item.type === "medication_change"
+                ? `${item.payload.medication} by source`
+                : "History"
+          }
+        />
+      )}
+      <PanelBody item={item} />
+    </div>
+  )
+}
+
+/** The panel's footer actions, with Open chart first. */
+export function ItemActions({ item, patient, onAct }: { item: QueueItem; patient: Patient; onAct: Act }) {
+  const section =
+    item.type === "abnormal_result" ? CHART_SECTION[item.payload.kind] : CHART_SECTION[item.type as keyof typeof CHART_SECTION]
+  const openChart = (
+    <Link href={chartHref(patient.id, section)} className={cn(buttonVariants({ variant: "outline" }))}>
+      Open chart
+    </Link>
+  )
+  return <PanelActions item={item} openChart={openChart} onAct={onAct} />
 }
 
 /* ----------------------------------------------------------- actions -- */
@@ -319,7 +336,7 @@ function Headline({ item }: { item: QueueItem }) {
     }
   }
   return (
-    <dl className="grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-3 gap-y-2.5 rounded-[10px] border border-border px-4 py-3.5 text-[13px] sm:grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)]">
+    <dl className="grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-3 gap-y-2.5 rounded-[10px] border border-border px-4 py-3.5 text-[13px] @lg:grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)]">
       {(facts.filter(Boolean) as Fact[]).map(([label, value]) => (
         <React.Fragment key={label}>
           <dt className="text-muted-foreground">{label}:</dt>

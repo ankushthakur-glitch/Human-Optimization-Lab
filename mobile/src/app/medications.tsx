@@ -1,13 +1,11 @@
-import { router, useLocalSearchParams } from "expo-router"
+import { useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { StyleSheet, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
 import { MedicineConfirm, MedicineSheet, type MedicineView } from "@/components/medicines"
 import { Plus } from "@/components/ph"
-import { EmptyState } from "@/components/record-kit"
 import { AddToRecordSheet, AddedOfKind } from "@/components/record-rows"
-import { useExperience } from "@/lib/experience"
 import type { Medication } from "@/lib/record"
 import { color } from "@/lib/theme"
 
@@ -22,7 +20,6 @@ import { color } from "@/lib/theme"
     A clinical page: no offer and no object. */
 export default function MedicationsScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>()
-  const { experience } = useExperience()
   const [view, setView] = React.useState<MedicineView>()
   const [open, setOpen] = React.useState<Medication | null>(null)
   const [adding, setAdding] = React.useState(false)
@@ -31,13 +28,7 @@ export default function MedicationsScreen() {
     <View style={styles.fill}>
       <FlowScreen page title="Your medicines" action={{ label: "Add medicine", icon: <Plus size={16} color={color.primary} />, onPress: () => setAdding(true) }}>
         <AddedOfKind kind="medicines" />
-        {experience === "declined" ? (
-          <EmptyState title="Your medicines appear once your records are connected." action="Connect my records" onAction={() => router.push("/connect")} />
-        ) : experience === "building" ? (
-          <EmptyState title="Your medicines appear once your records arrive." />
-        ) : (
-          <MedicineConfirm focus={id} view={view} onOpen={onOpen} />
-        )}
+        <MedicineConfirm focus={id} view={view} onOpen={onOpen} />
       </FlowScreen>
       {open && (
         <MedicineSheet

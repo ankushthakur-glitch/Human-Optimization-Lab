@@ -49,7 +49,7 @@ export function AskUpgrade({ onPress }: { onPress: () => void }) {
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel="Upgrade for unlimited AI and a personalized plan"
+        accessibilityLabel="Upgrade for more AI credit and a personalized plan"
         style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       >
         <Image source={BACKGROUND} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityIgnoresInvertColors />
@@ -68,7 +68,7 @@ export function AskUpgrade({ onPress }: { onPress: () => void }) {
           </Animated.View>
         </View>
         <Text style={styles.title} numberOfLines={2}>
-          Unlock unlimited AI and a personalized plan
+          Unlock more AI credit and a personalized plan
         </Text>
         <Animated.View style={[styles.button, press]}>
           <Text style={styles.buttonText}>Upgrade</Text>

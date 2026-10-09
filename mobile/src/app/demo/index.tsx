@@ -32,24 +32,20 @@ const VARIANTS: Variant[] = [
   { id: "free", line: "Free Olivia, onboarded 4 days ago, Dr. Patel still checking, readiness Quite" },
   { id: "free-checked", line: "Dr. Patel finished the review 2 days ago" },
   { id: "free-new-results", line: "A new Quest batch arrived today" },
-  { id: "free-capped", line: "8 of 8 free questions used" },
+  { id: "free-capped", line: "All of this week's AI credit used" },
   { id: "free-quiet", line: "Readiness Somewhat, 3 of 5" },
   { id: "free-not-ready", line: "Readiness A little, 2 of 5" },
   { id: "free-first", line: "First session" },
   { id: "free-steady", line: "Nothing to watch" },
   { id: "free-caught-up", line: "Mammogram and follow up booked, medicines answered" },
-  { id: "building", line: "Record still arriving" },
-  { id: "declined", line: "Never connected" },
   { id: "withdrawn", line: "Turned off sharing 2 days ago" },
   { id: "cancelled", line: "Cancelled 20 days ago, back on the free record" },
   { id: "member", line: "Member Olivia, weight, blood sugar and heart, week 23", member: true },
   { id: "member-bone", line: "Member Olivia with a bone plan", member: true },
   { id: "member-nothing-logged", line: "Nothing logged yesterday", member: true },
   { id: "member-partial", line: "Dinner not logged yesterday", member: true },
-  { id: "member-setup", line: "Just joined, step 3 of 5", member: true },
   { id: "member-review", line: "Version 1 with Dr. Patel", member: true },
   { id: "member-redraft", line: "Version 3 with Dr. Patel, version 2 live", member: true },
-  { id: "paused", line: "Member, plan paused", member: true },
 ]
 
 /** Own keys only, so a name such as "toString" is never a seed. */
@@ -112,7 +108,7 @@ export default function ReviewScreen() {
 
   async function returnAll() {
     await giveBackQuestions(onboarding, onboarding.save)
-    toast("This month's AI credit is back")
+    toast("This week's AI credit is back")
   }
 
   function resetLimits() {
@@ -237,7 +233,7 @@ export default function ReviewScreen() {
           <NeedsRow icon={SWITCH} title="Dr. Patel finishes the review" meta="The record shows as checked today" onPress={finishReview} chevron={false} />
           <NeedsRow icon={SWITCH} title="New results arrive" meta="4 results from Quest, today" onPress={newResults} chevron={false} />
           <NeedsRow icon={SWITCH} title="Use all AI credit" meta="The orb turns red, the assistant shows its limit card" onPress={spendAll} chevron={false} />
-          <NeedsRow icon={SWITCH} title="Give back the AI credit" meta="A fresh month, nothing borrowed or added" onPress={returnAll} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Give back the AI credit" meta="A fresh week, nothing borrowed or added" onPress={returnAll} chevron={false} />
           <NeedsRow icon={SWITCH} title="Reset offer limits" meta="Clears every impression, Not now and Not for me" onPress={resetLimits} chevron={false} />
           <NeedsRow icon={SWITCH} title="Dr. Patel approves the plan" meta="The version with Dr. Patel goes live today" onPress={approve} chevron={false} />
           <NeedsRow icon={SWITCH} title="New readings arrive" meta="A new version goes to Dr. Patel, the live one stays" onPress={redraft} chevron={false} />

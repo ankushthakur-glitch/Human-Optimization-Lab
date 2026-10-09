@@ -203,17 +203,15 @@ export default function DietScreen() {
   )
 }
 
-/** Before a plan is live (setup, with the doctor, paused) or on the free
+/** Before a plan is live (with the doctor, paused) or on the free
     record, there are no targets to show yet. */
 function NoPlanYet({ stage }: { stage: ReturnType<typeof memberStage> }) {
   const empty =
     stage === "review"
       ? { title: `Your targets arrive once ${MEMBER.doctorShort} approves your plan`, action: "Log a meal", go: () => router.push("/log-meal") }
-      : stage === "setup"
-        ? { title: "Your diet plan starts once your plan is set up", action: "Continue setup", go: () => router.push("/plan") }
-        : stage === "paused"
-          ? { title: "Your plan is paused", action: "Resume my plan", go: () => router.push({ pathname: "/membership", params: { sheet: "resume" } }) }
-          : { title: "No diet plan yet" }
+      : stage === "paused"
+        ? { title: "Your plan is paused", action: "Resume my plan", go: () => router.push({ pathname: "/membership", params: { sheet: "resume" } }) }
+        : { title: "No diet plan yet" }
   return (
     <FlowScreen page title="Diet plan">
       <EmptyState art="bowl" artSize={64} title={empty.title} action={empty.action} onAction={empty.go} />

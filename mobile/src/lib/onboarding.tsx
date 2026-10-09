@@ -5,7 +5,6 @@ import type { Answers } from "@/lib/conversation"
 import type { ActivityLog, Entry, Meal, SavedQuestion } from "@/lib/member"
 import type { OfferLog } from "@/lib/offers"
 import type { Cadence, ProgramId, Sex, Tier } from "@/lib/plans"
-import type { Intake, SetupStep } from "@/lib/program"
 import type { MedAnswer, Origin } from "@/lib/record"
 import { store } from "@/lib/storage"
 
@@ -210,17 +209,12 @@ export type State = {
   faceId?: boolean
   /** Notifications the patient has opened. */
   seen?: string[]
-  /** Paid setup, step by step. */
-  setupDone?: SetupStep[]
-  intake?: Intake
   devices?: string[]
-  foodLogging?: string
-  tests?: Record<string, string>
   plan?: Plan
   /** Today's ticked actions and check in, by day. */
   log?: Record<string, string[]>
   checkIn?: Record<string, string>
-  /** This month's free conversations with the assistant and the result
+  /** This week's AI credit: tokens used with the assistant and the result
       batches already explained for free (lib/allowance.ts). */
   allowance?: Allowance
   /** The old count of free questions, still written by the assistant
@@ -301,8 +295,9 @@ const OLD_MED_ANSWER: Record<string, MedAnswer> = { not: "not-taking", different
 /** A store saved by an earlier build, brought up to date: setup used to
     end on a plans step (that's on the dashboard now); a medicine answer
     used to be a bare word; the free questions used to be a bare count
-    (`asked`), now a list of this week's conversations (`allowance`), with
-    one placeholder conversation for each question already asked. */
+    (`asked`), now this week's AI credit (`allowance`), with one
+    placeholder conversation for each question already asked; their
+    tokens are estimated on load (lib/allowance.ts). */
 function migrate(parsed: State & Record<string, unknown>): State {
   if ((parsed.step as string) === "plans") parsed.step = "done"
   if (parsed.meds) {

@@ -8,7 +8,7 @@ import { Card, Group, KeyValue, SmallAction, TextAction } from "@/components/rec
 import { Sheet } from "@/components/sheet"
 import { showToast } from "@/components/toast"
 import { Button } from "@/components/ui"
-import { cancelledRecently, useMarkers } from "@/lib/experience"
+import { useMarkers } from "@/lib/experience"
 import { logEvent, planFocus } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
 import { CADENCES, TIERS, priceLabel, type Cadence, type ProgramId } from "@/lib/plans"
@@ -30,8 +30,7 @@ import { space, type } from "@/lib/theme"
    take her to the first step with her choice kept.
 
    On confirm the membership is saved, every earlier plan version is kept,
-   and she lands on the first setup step over the Plan tab, so the swipe
-   back from the questionnaire returns to the tab in its setup state. */
+   her plan goes to Dr. Patel as a draft, and she lands on the Plan tab. */
 
 /** The prototype's sample card, filled by "Add a card". */
 const SAMPLE_CARD = "Visa ending 4242"
@@ -64,9 +63,6 @@ export function CheckoutSheet({ onClose }: { onClose: () => void }) {
     setPending(true)
     await new Promise((done) => setTimeout(done, PAYING_MS))
     const now = new Date()
-    // Back within 90 days of cancelling: her questionnaire answers are kept
-    // and setup opens at the medicines check (C.15).
-    const rejoin = cancelledRecently(onboarding, now)
     // Every version she ever had stays hers (A-45).
     const kept = [...(onboarding.planHistory ?? []), ...(onboarding.plan?.versions ?? [])]
       .filter((v, i, all) => all.findIndex((w) => w.version === v.version) === i)
@@ -74,16 +70,16 @@ export function CheckoutSheet({ onClose }: { onClose: () => void }) {
     const programs = [...new Set(planFocus(onboarding, markers, 3).areas.map((a) => PROGRAM_OF[a]))]
     await onboarding.save({
       membership: { tier: "optimization", programs, startedAt: now.toISOString(), card, billing: cadence, renewalConsentAt: agreedAt },
-      plan: undefined,
+      // A draft with the doctor. After a cancel and a rejoin it takes the
+      // next number after every version she kept, so none is reused.
+      plan: { status: "review", version: Math.max(0, ...kept.map((v) => v.version)) + 1, versions: [] },
       planHistory: kept.length ? kept : undefined,
-      setupDone: rejoin ? ["questionnaire"] : [],
     })
     logEvent(onboarding, "checkout_completed")
     setPending(false)
-    showToast("Welcome in. Let's get to know you.")
+    showToast("Welcome in. Dr. Patel is reviewing your plan.")
     onClose()
     router.dismissTo("/plan")
-    router.push(rejoin ? "/optimize/medicines" : "/optimize/questionnaire")
   }
 
   if (step === "plan")
@@ -118,7 +114,7 @@ export function CheckoutSheet({ onClose }: { onClose: () => void }) {
         <KeyValue label="Price" value={price} />
         <KeyValue label="First charge" value="When your doctor approves your plan" />
         <KeyValue label="Renews" value={cadence === "yearly" ? "Every year, until you cancel" : "Every month, cancel anytime"} />
-        <KeyValue label="Included" value="Your plan, your doctor's reviews, unlimited questions" />
+        <KeyValue label="Included" value="Your plan, your doctor's reviews, more AI credit" />
         <KeyValue label="Not included" value="Tests, imaging and medicines" />
         {card ? (
           <KeyValue label="Payment" value={card} last />

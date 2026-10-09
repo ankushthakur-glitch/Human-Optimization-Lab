@@ -1,15 +1,11 @@
-import { StyleSheet, Text } from "react-native"
-
 import { dayKey } from "@/lib/dates"
 import { membershipEnded } from "@/lib/member"
 import type { Membership } from "@/lib/onboarding"
-import { font, ink } from "@/lib/theme"
 
-/* Pieces the member's account screens share (Membership, Profile and the
-   paid setup, FINAL-SPEC C.17, C.18, C.27): the billing calendar worked
-   out from the membership, and a setup step's count. No price is written
-   here; the price shows only on the member's own billing page. A row's
-   date is lib/dates.ts rowDate. */
+/* Pieces the member's account screens share (Membership and Profile,
+   FINAL-SPEC C.17, C.18): the billing calendar worked out from the
+   membership. No price is written here; the price shows only on the
+   member's own billing page. A row's date is lib/dates.ts rowDate. */
 
 /* ------------------------------------------------------------- billing -- */
 
@@ -82,13 +78,3 @@ export function billingOf(m: Membership | undefined, now: Date = new Date()): Bi
   if (!approved) return { state: "waiting", started, charges, renews }
   return { state: "active", started, charges, next, renews }
 }
-
-/** "Step 2 of 5" on the right of a setup step's header bar (C.27), where
-    the Figma "Hol" page puts its text action, in the label grey. */
-export function SetupStepLabel({ children }: { children: string }) {
-  return <Text style={styles.step}>{children}</Text>
-}
-
-const styles = StyleSheet.create({
-  step: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: ink.secondary },
-})

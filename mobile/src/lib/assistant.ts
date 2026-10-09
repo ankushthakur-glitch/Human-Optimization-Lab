@@ -18,7 +18,7 @@ import { byBodySystem, classify, monthYear, pointDate, pointStatus, questionsOf,
 
    The copy for A1c is the spec's final copy; other markers get the same
    answers in their own words from the same data. Clinical review comes
-   before patients see any of it. Counting the free questions lives in
+   before patients see any of it. Metering the AI credit lives in
    lib/allowance.ts. */
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
@@ -49,18 +49,10 @@ export const topicsFor = (planLive: boolean): Topic[] => (planLive ? ["plan", "r
 export const TOPIC_PARAM: Record<string, Topic> = { results: "result", visit: "visit", medicines: "medicine", concern: "concern", plan: "plan" }
 
 /** The first thing the assistant says, opened from the orb: a member's
-    plan first; while the record arrives, what it can't know yet; with
-    sharing off, the day the record stopped (C.28). */
-export function greeting(name: string, planLive: boolean, opts: { building?: boolean; asOf?: string } = {}) {
+    plan first; with sharing off, the day the record stopped (C.28). */
+export function greeting(name: string, planLive: boolean, opts: { asOf?: string } = {}) {
   if (planLive) return `Hi ${name}. Ask me about your plan, your results or your day.`
-  if (opts.building) return `Hi ${name}, I'm your Inlay assistant. I'll know more once your record arrives.`
   return `Hi ${name}, I'm your Inlay assistant. I answer from your health record${opts.asOf ? ` as of ${opts.asOf}` : ""}.`
-}
-
-/** Never connected: nothing to answer from yet (never counted). */
-export const NOT_CONNECTED: Answer = {
-  text: "I can answer once your records are connected.",
-  link: { label: "Connect my records", href: "/connect" },
 }
 
 /** After "I'm safe, I have a question", or a question it can't answer. */
@@ -134,8 +126,8 @@ export const FOLLOW_ON = {
 export const LIMIT = {
   title: "You've used this week's AI credit",
   body: (resetsOn: string) => `It comes back on ${resetsOn}. Your record, trends and past answers are all still here.`,
-  /** A member: add more for this month. */
-  topUpBody: (n: number, price: string) => `Or add ${n} more conversations for this week, ${price}.`,
+  /** A member: add more for this week, as a share of the member budget. */
+  topUpBody: (share: number, price: string) => `Or add ${share}% more AI credit for this week, ${price}.`,
   topUp: "Add more credit",
   /** The quiet line when a chat in progress finishes on grace. */
   grace: "Your AI credit ran out, so we'll let you finish this chat. It comes off next week's credit.",
@@ -671,7 +663,7 @@ const QUESTION_FOR: Record<string, string> = {
 }
 
 /** A tapped medicine as the question it stands for, kept in the composer
-    when the free questions are used: "Is my atorvastatin dose right?" */
+    when the AI credit is used: "Is my atorvastatin dose right?" */
 export function medicineQuestion(id: string) {
   const m = MEDICATIONS.find((x) => x.id === id)
   return m ? `Is my ${lower(m.name)} dose right?` : "A question about my medicines"
@@ -912,9 +904,9 @@ export function planAnswer(question: string, s: Snapshot, now: Date = new Date()
     : { text: "Your plan is with Dr. Patel. Once it's approved, I can answer anything about it." }
 }
 
-/** The plan page, where its price lives: the assistant never says one (D.4).
+/** The Plan tab, where its price lives: the assistant never says one (D.4).
     An offer: it shows only when the cap service allows it. */
-const PLAN_PAGE = { label: "See the plan", href: "/plans?from=assistant", offer: true }
+const PLAN_PAGE = { label: "See the plan", href: "/plan", offer: true }
 
 /** What a free patient hears when she asks about the plan or its price: the
     Plan tab she can open herself, with the way there when it may show. */

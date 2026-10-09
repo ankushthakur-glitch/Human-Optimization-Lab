@@ -471,7 +471,7 @@ export function changeCourse(b: Biomarker, s: Snapshot = {}) {
         "Weekly progress, with adjustments",
         `${MEMBER.doctorShort} reviews and approves it`,
         `A forecast of where your ${name} ${b.plural ? "are" : "is"} heading`,
-        "Unlimited questions to your assistant",
+        "More AI credit for your assistant",
       ],
       note: "This page stays free.",
       action: "See plans",

@@ -1436,8 +1436,8 @@ export function useDecisionView({
         .slice(0, 10)
     const tracker = optimized ? (opt.model?.data.biomarkers ?? []) : []
     /* Every result judged on its latest reading: outside its range goes
-       to Out of range, inside but within 10% of a limit to Watchful
-       trends (the same edge the status trends draw orange). */
+       to Out of range, inside but within 10% of a limit to Trends to
+       watch (the same edge the status trends draw orange). */
     const markers = (
       optimized
         ? tracker.map((b) => fromBiomarker(b, cutoff))

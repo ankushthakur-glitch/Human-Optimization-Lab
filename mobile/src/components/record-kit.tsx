@@ -3,13 +3,13 @@ import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, Vi
 import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { Art, type ArtName } from "@/components/art"
+import { creditTone } from "@/components/hol"
 import { useEntrance } from "@/components/charts"
 import { RecentDots } from "@/components/recent-dots"
 import { useReducedMotion } from "@/components/chat"
 import { ArrowDownRight, ArrowRight, ArrowUpRight, CaretRight, Check, DotsThree, Minus, ShieldCheck, Warning, X } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
 import { toast } from "@/components/toast"
-import { Button } from "@/components/ui"
 import { withQuestion } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import type { OrderState } from "@/lib/record"
@@ -1364,7 +1364,7 @@ export type NudgeProps = {
   /** Runs once when the nudge first shows, for the offer log and caps. */
   onShow?: () => void
   /** Anything that belongs above the actions, e.g. a "Save for my next
-      visit" button on the free questions limit card. */
+      visit" button on the AI credit limit card. */
   children?: React.ReactNode
 }
 
@@ -1589,19 +1589,17 @@ export function EmptyState({
 
 /* -------------------------------------------------- questions, quotes -- */
 
-/** The free questions as eight 6 pt dots, teal while a question is left and
-    grey once used, with the words beside them: the assistant's header. Pass
-    useAllowance()'s `line` for the words at the cap ("until Nov 1"). */
-export function AllowanceMeter({ left, total, line }: { left: number; total: number; line?: string }) {
-  const words =
-    line ??
-    (left <= 0 ? "No free questions left this month" : left === 1 ? "1 free question left this month" : `${left} of ${total} free questions left this month`)
+/** This week's AI credit as a thin bar filled by the share used, in the
+    orb's colours (green, orange past 60%, red past 90%), with the words
+    beside it. Pass useAllowance()'s `line` for the words at 100% ("until
+    Mon, Oct 12"). */
+export function AllowanceMeter({ share, line }: { share: number; line?: string }) {
+  const used = Math.max(0, Math.min(1, share))
+  const words = line ?? (used >= 1 ? "No AI credit left this week" : `${Math.min(99, Math.round(used * 100))}% of this week's AI credit used`)
   return (
     <View style={styles.meter} accessible accessibilityRole="text" accessibilityLabel={words}>
-      <View style={styles.meterDots}>
-        {Array.from({ length: total }, (_, i) => (
-          <View key={i} style={[styles.meterDot, i < left && styles.meterDotLeft]} />
-        ))}
+      <View style={styles.meterTrack}>
+        <View style={[styles.meterFill, { width: `${used * 100}%`, backgroundColor: creditTone(used) }]} />
       </View>
       <Text style={styles.meterText} maxFontSizeMultiplier={1.3}>
         {words}
@@ -1926,22 +1924,6 @@ export function Rise({ at, id, children }: { at: number; id: string; children: R
   return <Animated.View style={{ opacity: t, transform: [{ translateY: rise }] }}>{children}</Animated.View>
 }
 
-/* ----------------------------------------------------- not connected -- */
-
-/** The one state for a patient who never connected her records, on every
-    tab (C.28): the neutral document object, "Your records aren't
-    connected", one line, and the full width "Connect my records". To do
-    passes its own line. */
-export function NotConnected({ line = "Nothing has been collected. Connect when you're ready and we'll bring your history\u00A0together.", onConnect }: { line?: string; onConnect: () => void }) {
-  return (
-    <EmptyState art="document" artSize={112} title="Your records aren't connected" line={line}>
-      <View style={styles.emptyButton}>
-        <Button onPress={onConnect}>Connect my records</Button>
-      </View>
-    </EmptyState>
-  )
-}
-
 const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   // Figma "Hol" (5 Oct 2026): white at 60% on the page gradient, radius 8,
@@ -2260,14 +2242,10 @@ const styles = StyleSheet.create({
   emptyTitle: { ...type.section, textAlign: "center" },
   emptyLine: { ...type.body, color: ink.secondary, textAlign: "center" },
   emptyAction: { marginTop: space.stack },
-  // A full width button a card's padding under the line, the empty
-  // state's own gap included.
-  emptyButton: { alignSelf: "stretch", marginTop: space.card - space.inline },
 
   meter: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", columnGap: space.inline, rowGap: space.stack },
-  meterDots: { flexDirection: "row", gap: space.stack },
-  meterDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#DDE3EA" },
-  meterDotLeft: { backgroundColor: color.primary },
+  meterTrack: { width: 64, height: 6, borderRadius: 3, backgroundColor: "#DDE3EA", overflow: "hidden" },
+  meterFill: { height: 6, borderRadius: 3 },
   meterText: { ...type.metaStrong },
   saved: { flexDirection: "row", alignItems: "center", gap: space.stack, height: 32, alignSelf: "flex-start" },
   savedText: { ...type.action },

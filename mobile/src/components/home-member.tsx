@@ -64,7 +64,6 @@ import {
 } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { livePlan } from "@/lib/plans"
-import { SETUP, nextSetup } from "@/lib/program"
 import { color, hairline, ink, space, type } from "@/lib/theme"
 import { opensPage, orderHref, weekItems, yourMedicines } from "@/lib/todo"
 import { trendCounts } from "@/lib/trends"
@@ -79,8 +78,8 @@ import { keepEnd } from "@/lib/words"
    and medicines sit one tap away under Your record, never on this screen.
    The weekly card joins on Friday to Tuesday until she answers it.
 
-   The same screen draws a member who has not finished setting up, and one
-   whose first plan is with Dr. Patel (C.2.9): a hero for that stage, then
+   The same screen draws a member whose first plan is with Dr. Patel
+   (C.2.9): a hero for that stage, then
    the record sections from the free home with Needs you as a white card,
    so the screen keeps one hero. Nothing on it sells. It draws its own tab
    screen, so the check in sheets pass over the tab bar. */
@@ -91,7 +90,7 @@ export function MemberHome() {
 
   return (
     <TabScreen tab="home" header={<HomeHeader />} overlay={sheet && <CheckInSheet kind={sheet} onClose={() => setSheet(undefined)} />}>
-      {stage === "member-setup" ? <SetupStage /> : stage === "member-review" ? <ReviewStage /> : <LiveHome onCheckIn={setSheet} />}
+      {stage === "member-review" ? <ReviewStage /> : <LiveHome onCheckIn={setSheet} />}
     </TabScreen>
   )
 }
@@ -673,38 +672,6 @@ function YourRecord() {
 
 /* ------------------------------------------------------------- stages -- */
 
-/** A member who has not finished the paid setup (C.2.9): the next step on
-    the hero, then her record. No Yesterday or progress yet. */
-function SetupStage() {
-  const onboarding = useOnboarding()
-  const done = onboarding.setupDone ?? []
-  const next = nextSetup(done)
-  const step = next ? SETUP.indexOf(next) + 1 : SETUP.length
-  return (
-    <View style={styles.page}>
-      <Rise at={0} id="member:setup">
-        <View style={styles.top}>
-          <StatusBanner variant="member" tab="home" />
-          <Card style={styles.cardBody}>
-            <View style={styles.stageTop}>
-              <View style={styles.stageWords}>
-                <Text style={styles.stageTitle} accessibilityRole="header">
-                  Finish setting up your plan
-                </Text>
-                {next && <Text style={styles.meta}>{`Step ${step} of ${SETUP.length}: ${next.title}`}</Text>}
-              </View>
-              <Art name="key" size={64} />
-            </View>
-            <ProgressBar done={SETUP.filter((x) => done.includes(x.id)).length} total={SETUP.length} />
-            {next && <SmallAction onPress={() => router.push(next.href)}>Continue</SmallAction>}
-          </Card>
-        </View>
-      </Rise>
-      <RecordSections needsAsCard />
-    </View>
-  )
-}
-
 /** "Tue, Oct 6" from a booked slot ("Tue, Oct 6, 7:30 AM" or an ISO time). */
 function slotDay(slot: string) {
   if (/^\d{4}-\d{2}-\d{2}/.test(slot)) return dayLabel(dateOfAt(slot))
@@ -714,10 +681,12 @@ function slotDay(slot: string) {
 /** Words that wrap as one ("DEXA Wed, Oct 7"). */
 const together = (text: string) => text.replace(/ /g, "\u00A0")
 
-/** "Blood panel Tue, Oct 6. DEXA Wed, Oct 7." from the setup's bookings,
-    each test's day kept on one line. */
-function testsLine(tests: Record<string, string> | undefined) {
-  const parts = [tests?.blood && `Blood panel ${together(slotDay(tests.blood))}`, tests?.dexa && together(`DEXA ${slotDay(tests.dexa)}`)].filter(Boolean)
+/** "Blood panel Tue, Oct 6. DEXA Wed, Oct 7." from the starting tests'
+    bookings, each test's day kept on one line. */
+function testsLine(bookings: ReturnType<typeof useOnboarding>["bookings"]) {
+  const blood = bookings?.blood?.when
+  const dexa = bookings?.dexa?.when
+  const parts = [blood && `Blood panel ${together(slotDay(blood))}`, dexa && together(`DEXA ${slotDay(dexa)}`)].filter(Boolean)
   return parts.length ? `${parts.join(". ")}.` : "See them in To do"
 }
 
@@ -746,7 +715,7 @@ function ReviewStage() {
               <NeedsRow
                 icon={<RecordGlyph name="labs" />}
                 title="Your starting tests"
-                meta={testsLine(onboarding.tests)}
+                meta={testsLine(onboarding.bookings)}
                 onPress={() => openTab("/gaps", "home")}
               />
               <NeedsRow

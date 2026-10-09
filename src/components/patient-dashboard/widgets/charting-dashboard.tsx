@@ -1,19 +1,45 @@
 "use client"
 
 import * as React from "react"
-import { createPortal } from "react-dom"
 import {
   ArrowRight01Icon,
   Calendar03Icon,
   ChartLineData01Icon,
-  CheckmarkCircle02Icon,
+  AmbulanceIcon,
+  Apple01Icon,
+  Bone01Icon,
+  BrainIcon,
+  BloodPressureIcon,
+  ClipboardIcon,
+  DentalToothIcon,
+  DropletIcon,
+  EyeIcon,
+  FavouriteIcon,
+  File01Icon,
+  InjectionIcon,
+  KidneysIcon,
+  LiverIcon,
+  LungsIcon,
+  MicroscopeIcon,
+  Moon02Icon,
+  Stethoscope02Icon,
+  WeightScaleIcon,
+  WorkoutRunIcon,
+  XRayIcon,
+  PlusSignIcon,
+  StarIcon,
+  Tick02Icon,
+  Hospital01Icon,
+  Leaf01Icon,
   Notification03Icon,
+  PillIcon,
   Target02Icon,
   TestTube01Icon,
 } from "@hugeicons/core-free-icons"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/ui/button"
+import { toast } from "@/design-system/ui/sonner"
 import {
   HoverCard,
   HoverCardContent,
@@ -23,8 +49,8 @@ import {
 } from "@/design-system/ui/hover-card"
 import {
   FOCUS,
+  type IconDef,
   KitIcon,
-  DockedPanel,
   SidePanel,
   StatusTrace,
   statusSeries,
@@ -57,10 +83,8 @@ import {
 import {
   DotTrend,
   type Marker,
-  ReviewButton,
 } from "@/components/patient-dashboard/widgets/changes-dashboard"
 import {
-  DecisionBand,
   GROUP_TONE,
   type Group,
   type Row,
@@ -70,11 +94,7 @@ import {
   unitText,
   useDecisionView,
 } from "@/components/patient-dashboard/widgets/decision-dashboard"
-import {
-  SUBTLE,
-  TYPE_SCALE,
-  Widget,
-} from "@/components/patient-dashboard/widgets/kit"
+import { SUBTLE, TYPE_SCALE } from "@/components/patient-dashboard/widgets/kit"
 import { type ToneKey } from "@/components/patient-dashboard/widgets/palette"
 import {
   PeekChart,
@@ -84,59 +104,231 @@ import {
 } from "@/components/patient-dashboard/widgets/peek-chart"
 import { Pill } from "@/components/patient-dashboard/widgets/status"
 
-/* Dashboard version 5, the detailed charting dashboard: the client's
-   CareMap reference (7 Oct images) with the changes from the 6 Oct call.
-   - Clicking a row opens its detail as an overlay panel on the right;
-     nothing is docked.
+/* The patient chart's dashboard, from the client's CareMap reference (7
+   and 9 Oct): white cards on the lab viewer's grey, full colour icons,
+   count badges and status pills.
+   - Clicking a row opens its detail in the side modal; nothing is docked.
    - Every graph shows all its dots with their values, and the line takes
      the colour of each reading's band (green in range, amber near the edge,
      red out), so a worsening run reads as a green to red gradient.
-   - Result rows put the graph first, then the status word, with the date of
-     the latest reading under it.
    - Out of range zones are shaded on the panel chart with their limit, as
      the reference marks the CKD stage 3 line.
    - Panels add related markers (a missing one is an amber gap), the events
      that bear on a result, and for a medication change what has not been
      repeated since.
    Medications and orders show only when something changed or is open.
-   Subjects come from version 4 (useDecisionView); the look is ours: no dark
-   header blocks, sentence case, dot status, teal actions. */
+   Subjects come from useDecisionView; sentence case, no dark header
+   blocks, teal actions. */
 
 /* ------------------------------------------------------------- colours -- */
 
 /* The subtle status colours (the charts' SUBTLE set): dots and lines take
    them as they are; words take them a step darker so they stay readable.
-   Nothing on this page uses full strength red or orange. */
-const SOFT_DOT: Record<ToneKey, string> = {
+   The cards and rows use the CareMap colours (POP) below; these stay for
+   the charts, the panel and the peek card. */
+export const SOFT_DOT: Record<ToneKey, string> = {
   red: "bg-[#DE6F68]",
   orange: "bg-[#EB9A52]",
   violet: "bg-[#9C86E6]",
   green: "bg-[#5FB386]",
   blue: "bg-[#6E9CE8]",
 }
-const SOFT_TEXT: Record<ToneKey, string> = {
+export const SOFT_TEXT: Record<ToneKey, string> = {
   red: "text-[color-mix(in_oklab,#DE6F68_72%,var(--foreground))]",
   orange: "text-[color-mix(in_oklab,#EB9A52_68%,var(--foreground))]",
   violet: "text-[color-mix(in_oklab,#9C86E6_72%,var(--foreground))]",
   green: "text-[color-mix(in_oklab,#5FB386_70%,var(--foreground))]",
   blue: "text-[color-mix(in_oklab,#6E9CE8_72%,var(--foreground))]",
 }
-/* A group heading's fill, per tone: the tint mixed into the card so the
-   sticky heading stays opaque over the rows scrolling under it. */
-const HEAD_TINT: Record<ToneKey, string> = {
-  red: "bg-[color-mix(in_oklab,#DE6F68_9%,var(--card))]",
-  orange: "bg-[color-mix(in_oklab,#EB9A52_10%,var(--card))]",
-  violet: "bg-[color-mix(in_oklab,#9C86E6_9%,var(--card))]",
-  green: "bg-[color-mix(in_oklab,#5FB386_9%,var(--card))]",
-  blue: "bg-[color-mix(in_oklab,#6E9CE8_9%,var(--card))]",
-}
-/* The decision band's card, per tone: a 40% border over an 8% tint. */
+/* A panel note's card, per tone: a 40% border over an 8% tint. */
 const SOFT_CARD: Record<ToneKey, string> = {
   red: "border-[#DE6F68]/40 bg-[#DE6F68]/[0.08]",
   orange: "border-[#EB9A52]/40 bg-[#EB9A52]/[0.08]",
   violet: "border-[#9C86E6]/40 bg-[#9C86E6]/[0.08]",
   green: "border-[#5FB386]/40 bg-[#5FB386]/[0.08]",
   blue: "border-[#6E9CE8]/40 bg-[#6E9CE8]/[0.08]",
+}
+
+/* ------------------------------------------------------ CareMap colours -- */
+
+/** The client's CareMap colours (9 Oct): full colour icons, filled count
+    badges and status pills, white cards on the lab viewer's grey. */
+const POP: Record<
+  ToneKey,
+  { tile: string; solid: string; pill: string; text: string; head: string }
+> = {
+  red: {
+    tile: "bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300",
+    solid: "bg-red-500 text-white",
+    pill: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
+    text: "text-red-600 dark:text-red-400",
+    head: "bg-red-50 dark:bg-red-500/10",
+  },
+  orange: {
+    tile: "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300",
+    solid: "bg-amber-500 text-white",
+    pill: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+    text: "text-amber-600 dark:text-amber-400",
+    head: "bg-amber-50 dark:bg-amber-500/10",
+  },
+  blue: {
+    tile: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
+    solid: "bg-blue-500 text-white",
+    pill: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
+    text: "text-blue-600 dark:text-blue-400",
+    head: "bg-blue-50 dark:bg-blue-500/10",
+  },
+  green: {
+    tile: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+    solid: "bg-emerald-500 text-white",
+    pill: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+    text: "text-emerald-600 dark:text-emerald-400",
+    head: "bg-emerald-50 dark:bg-emerald-500/10",
+  },
+  violet: {
+    tile: "bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300",
+    solid: "bg-violet-500 text-white",
+    pill: "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
+    text: "text-violet-600 dark:text-violet-400",
+    head: "bg-violet-50 dark:bg-violet-500/10",
+  },
+}
+
+/** Version 2's ink, in light mode: no pure black. Four levels, each a
+    step lighter: titles and row names (ink 900), sublines (ink 600),
+    dates and quiet meta (ink 400 via muted at 80%), set as the theme's
+    own variables so every text-foreground and text-muted-foreground
+    inside the dashboard and its side modal takes them. */
+const POP_INK =
+  "text-foreground [:root:not(.dark)_&]:[--foreground:#1f2a37] [:root:not(.dark)_&]:[--muted-foreground:#5b6573]"
+
+/** What a subject is about, read from its words, and the icon for it:
+    a weight program gets the scale, a flu shot the syringe, a renal
+    ultrasound the kidneys. First match wins, so the specific comes first. */
+const TOPIC_ICONS: [RegExp, IconDef][] = [
+  [/supplement|creatine|fish oil|vitamin d3? \d/i, Leaf01Icon],
+  [
+    /vaccin|influenza|\bflu\b|covid|shingrix|zoster|tdap|immuni/i,
+    InjectionIcon,
+  ],
+  [
+    /emergency|\bed visit|\ber\b|urgent care|admission|discharge/i,
+    AmbulanceIcon,
+  ],
+  [/weight|obes|\bbmi\b|waist|body fat/i, WeightScaleIcon],
+  [/blood pressure|hypertens|\bbp\b/i, BloodPressureIcon],
+  [/diabet|a1c|glucose|insulin/i, DropletIcon],
+  [/kidney|renal|egfr|creatinine|cystatin|\bacr\b|nephro|urine/i, KidneysIcon],
+  [/liver|\balt\b|\bast\b|hepat/i, LiverIcon],
+  [/bone|dexa|osteo|reclast|vitamin d/i, Bone01Icon],
+  [/sleep|apnea/i, Moon02Icon],
+  [/exercise|fitness|walk|steps|training/i, WorkoutRunIcon],
+  [/diet|nutrition|meal|calorie/i, Apple01Icon],
+  [
+    /heart|cardi|lipid|cholesterol|\bldl\b|\bhdl\b|apolipo|lipoprotein|triglycer|calcium score|\becg\b|\bekg\b|hs-?crp|statin/i,
+    FavouriteIcon,
+  ],
+  [/eye|retina|ophthal|vision/i, EyeIcon],
+  [/dental|tooth|teeth/i, DentalToothIcon],
+  [/lung|pulmon|copd|asthma|spirom/i, LungsIcon],
+  [/brain|neuro|cognit|memory|depress|phq|mood|anxiety/i, BrainIcon],
+  [
+    /mammo|breast|colon|cancer|pap\b|biopsy|patholog|psa\b|skin check|dermat/i,
+    MicroscopeIcon,
+  ],
+  [/ultrasound|x-?ray|\bct\b|\bmri\b|scan|imaging/i, XRayIcon],
+  [/referral|specialist|consult/i, Stethoscope02Icon],
+]
+
+/** A row's icon in Version 2: the topic's icon when the words name one,
+    else one for what kind of subject it is. */
+function kindIcon(s: Subject): IconDef {
+  const words = `${s.title} ${s.short} ${s.heading ?? ""} ${s.line}`
+  const topic = TOPIC_ICONS.find(([re]) => re.test(words))
+  if (topic) return topic[1]
+  switch (s.kind) {
+    case "med":
+      return PillIcon
+    case "order":
+      return ClipboardIcon
+    case "visit":
+      return Hospital01Icon
+    case "report":
+      return File01Icon
+    case "result":
+      return TestTube01Icon
+    case "watch":
+      return ChartLineData01Icon
+    case "program":
+      return Target02Icon
+    default:
+      return Calendar03Icon
+  }
+}
+
+/** A dashboard card: a white card with a coloured icon tile and a filled count badge. A `tint` card
+    (Important updates, as CareMap's) gets a tinted header with the icon
+    bare and the title in the tone's colour. */
+function Box({
+  icon,
+  tone,
+  title,
+  count,
+  action,
+  tint,
+  children,
+}: {
+  icon: IconDef
+  tone: ToneKey
+  title: string
+  count?: number
+  action?: React.ReactNode
+  tint?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <section
+      aria-label={title}
+      className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_1px_3px_rgba(16,24,40,.06)]"
+    >
+      <header
+        className={cn(
+          "flex min-h-12 items-center gap-2.5 border-b px-4 py-2",
+          tint && POP[tone].head
+        )}
+      >
+        <span
+          aria-hidden
+          className={cn(
+            "grid size-7 shrink-0 place-items-center rounded-lg",
+            tint ? POP[tone].text : POP[tone].tile
+          )}
+        >
+          <KitIcon icon={icon} size={tint ? 20 : 16} />
+        </span>
+        <h3
+          className={cn(
+            "flex flex-1 items-center gap-2 text-[15px] font-semibold",
+            tint ? POP[tone].text : "text-foreground"
+          )}
+        >
+          {title}
+          {count !== undefined && (
+            <span
+              className={cn(
+                "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums",
+                POP[tone].solid
+              )}
+            >
+              {count}
+            </span>
+          )}
+        </h3>
+        {action}
+      </header>
+      <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+    </section>
+  )
 }
 
 /** Each reading's band, oldest first: out of range, within a tenth of the
@@ -704,11 +896,9 @@ function Readings({ m }: { m: Marker }) {
 
 /* -------------------------------------------------------------- pieces -- */
 
-/** The hover card: small, soft and borderless, never in the way of a click.
-    It ignores the pointer, so it closes as soon as the pointer leaves the
-    row and never catches a hover meant for the rows under it. */
-const PEEK =
-  "pointer-events-none w-80 rounded-2xl p-4 shadow-[0_16px_40px_rgba(16,24,40,.12)]"
+/** The hover card: small, soft and borderless. The pointer can move into
+    it and hover its graph; it stays open while the pointer is on it. */
+const PEEK = "w-80 rounded-2xl p-4 shadow-[0_16px_40px_rgba(16,24,40,.12)]"
 
 type PeekHandle = ReturnType<typeof createHoverCardHandle<Subject>>
 
@@ -716,19 +906,23 @@ type Peek = {
   handle: PeekHandle
   enter: (s: Subject, id: string) => void
   leave: () => void
+  /** The pointer is on the card: keep it open. */
+  hold: () => void
   close: () => void
 }
 
 /** The dashboard's one hover card: every row opens this same card, so only
     one is ever open. The first card waits a beat, so sweeping across the
-    list opens nothing; once one is open, the next row swaps in at once;
-    leaving the names closes it. */
-const PeekContext = React.createContext<Peek | null>(null)
+    list opens nothing; once one is open, the next row swaps in after a
+    short pause, so crossing a row on the way into the card does not swap
+    it; leaving both the names and the card closes it. */
+export const PeekContext = React.createContext<Peek | null>(null)
 
 const PEEK_OPEN_DELAY = 300
-const PEEK_CLOSE_DELAY = 80
+const PEEK_SWAP_DELAY = 140
+const PEEK_CLOSE_DELAY = 220
 
-function usePeek() {
+export function usePeek() {
   const [handle] = React.useState(() => createHoverCardHandle<Subject>())
   /* The subject stays after closing, so the card animates out with it. */
   const [card, setCard] = React.useState<{
@@ -755,20 +949,22 @@ function usePeek() {
       close,
       enter: (s, id) => {
         window.clearTimeout(timer.current)
-        if (shown.current) show(s, id)
-        else
-          timer.current = window.setTimeout(() => show(s, id), PEEK_OPEN_DELAY)
+        timer.current = window.setTimeout(
+          () => show(s, id),
+          shown.current ? PEEK_SWAP_DELAY : PEEK_OPEN_DELAY
+        )
       },
       leave: () => {
         window.clearTimeout(timer.current)
         timer.current = window.setTimeout(close, PEEK_CLOSE_DELAY)
       },
+      hold: () => window.clearTimeout(timer.current),
     }
   }, [handle])
   return { peek, card }
 }
 
-function SharedPeek({
+export function SharedPeek({
   peek,
   card,
 }: {
@@ -793,6 +989,8 @@ function SharedPeek({
           sideOffset={8}
           followCursor={false}
           className={PEEK}
+          onPointerEnter={peek.hold}
+          onPointerLeave={peek.leave}
         >
           <PeekCard s={card.s} />
         </HoverCardContent>
@@ -802,7 +1000,7 @@ function SharedPeek({
 }
 
 /** A row that selects its subject; the selected one carries a teal edge. */
-function PickRow({
+export function PickRow({
   s,
   selected,
   onPick,
@@ -810,6 +1008,7 @@ function PickRow({
   meta,
   graph,
   status,
+  icon,
 }: {
   s: Subject
   selected: boolean
@@ -818,6 +1017,8 @@ function PickRow({
   meta?: React.ReactNode
   graph?: React.ReactNode
   status?: React.ReactNode
+  /** Drawn in the tone's colour in place of the dot. */
+  icon?: IconDef
 }) {
   /* The peek opens from the name block only, so moving across the graph
      or the status never throws a card over the rows below. */
@@ -825,13 +1026,25 @@ function PickRow({
   const triggerId = React.useId()
   const name = (
     <>
-      {tone && (
+      {icon ? (
         <span
           aria-hidden
-          className={cn("size-2 shrink-0 rounded-full", SOFT_DOT[tone])}
-        />
+          className={cn(
+            "grid size-6 shrink-0 place-items-center",
+            POP[tone ?? "blue"].text
+          )}
+        >
+          <KitIcon icon={icon} size={20} />
+        </span>
+      ) : (
+        tone && (
+          <span
+            aria-hidden
+            className={cn("size-2 shrink-0 rounded-full", SOFT_DOT[tone])}
+          />
+        )
       )}
-      <span className="flex min-w-0 flex-col gap-0.5">
+      <span className={"flex min-w-0 flex-col gap-0.5"}>
         <span className="truncate text-sm font-medium text-foreground">
           {s.title}
         </span>
@@ -854,7 +1067,8 @@ function PickRow({
           onPick(s, e.currentTarget)
         }}
         className={cn(
-          "relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-row-hover",
+          "relative flex w-full items-center gap-3 px-4 text-left transition-colors hover:bg-surface-row-hover",
+          "py-2.5",
           selected &&
             "bg-primary/5 before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-primary",
           FOCUS
@@ -911,7 +1125,7 @@ function MarkerRow({
           <span
             className={cn(
               "font-semibold",
-              tone === "green" ? "text-foreground" : SOFT_TEXT[tone]
+              tone === "green" ? "text-foreground" : POP[tone].text
             )}
           >
             {last.value}
@@ -920,7 +1134,7 @@ function MarkerRow({
         </span>
       }
       graph={
-        <span className="hidden shrink-0 sm:flex">
+        <span className={"-my-1.5 hidden shrink-0 sm:flex"}>
           <DotTrend
             subtle
             points={m.points}
@@ -940,7 +1154,53 @@ function MarkerRow({
 /** The first rows of a list, then a quiet "Show all" at the foot: each
     card stays a glanceable handful (progressive disclosure) without a
     scroll area inside the page. */
-function Preview<T>({
+/** A scroll area cut after its first `rows` rows (the `li`s inside it,
+    with any headings above them), so exactly that many show before it
+    scrolls. Without a cut it falls back to `fallback`. */
+function RowWindow({
+  rows,
+  fallback,
+  children,
+}: {
+  rows: number
+  fallback?: string
+  children: React.ReactNode
+}) {
+  const ref = React.useRef<HTMLDivElement>(null)
+  const [max, setMax] = React.useState<number>()
+  React.useLayoutEffect(() => {
+    const box = ref.current
+    if (!box) return
+    const measure = () => {
+      const cut = box.querySelectorAll("li")[rows] as HTMLElement | undefined
+      setMax(
+        cut
+          ? cut.getBoundingClientRect().top -
+              box.getBoundingClientRect().top +
+              box.scrollTop
+          : undefined
+      )
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(box)
+    return () => ro.disconnect()
+  }, [rows, children])
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "overflow-y-auto overscroll-contain",
+        max == null && fallback
+      )}
+      style={max != null ? { maxHeight: max } : undefined}
+    >
+      {children}
+    </div>
+  )
+}
+
+export function Preview<T>({
   items,
   limit = 5,
   render,
@@ -1141,14 +1401,16 @@ function MedRecords({ c }: { c: MedCase }) {
               </TableCell>
               <TableCell
                 className={cn(
-                  "px-0 py-2.5 pr-4 font-medium tabular-nums",
+                  "px-0 py-2.5 pr-4 font-medium whitespace-normal tabular-nums",
                   r.tone && SOFT_TEXT[r.tone]
                 )}
               >
                 {r.dose}
               </TableCell>
-              <TableCell className="px-0 py-2.5 pr-4">{r.by}</TableCell>
-              <TableCell className="px-0 py-2.5 text-right tabular-nums">
+              <TableCell className="px-0 py-2.5 pr-4 whitespace-normal">
+                {r.by}
+              </TableCell>
+              <TableCell className="px-0 py-2.5 text-right whitespace-nowrap tabular-nums">
                 {r.date}
               </TableCell>
             </TableRow>
@@ -1161,16 +1423,17 @@ function MedRecords({ c }: { c: MedCase }) {
 
 /** The panel body: figure, stats, the clinical note, the chart, the three
     medication lists, then Label : Value facts and the extras. */
-function DetailBody({
+export function DetailBody({
   s,
   model,
   opt,
 }: {
   s: Subject
-  model: DashboardModel
+  /** The patient's record, for the related extras; the provider home has none. */
+  model?: DashboardModel
   opt?: OptimizationModel | null
 }) {
-  const more = extras(s, model, opt)
+  const more = model ? extras(s, model, opt) : []
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
@@ -1251,13 +1514,84 @@ function DetailBody({
 export const SECOND =
   "border-primary/25 bg-primary/8 text-primary-tint hover:bg-primary/12 hover:text-primary-tint"
 
-const panelTitle = (s: Subject) =>
+/** Version 2's panel actions: the subject's own, plus the CareMap set for
+    a result (View original report, Order follow up, Add to watchlist),
+    each with its icon, in CareMap's order. */
+function popActions(
+  s: Subject,
+  onOpen: OpenSection
+): (Subject["actions"][number] & { icon?: IconDef })[] {
+  const own = [...s.actions]
+  if (s.marker) {
+    const has = (l: string) =>
+      own.some((a) => a.label.toLowerCase() === l.toLowerCase())
+    const extra: Subject["actions"] = [
+      ...(has("View original report")
+        ? []
+        : [
+            {
+              label: "View original report",
+              keepOpen: true,
+              run: () => onOpen("labs"),
+            },
+          ]),
+      ...(own.some((a) => /^order /i.test(a.label))
+        ? []
+        : [
+            {
+              label: "Order follow-up",
+              run: () => toast.success(`${s.short} follow-up ordered`),
+            },
+          ]),
+      ...(s.kind === "watch" || has("Add to watchlist")
+        ? []
+        : [
+            {
+              label: "Add to watchlist",
+              run: () => toast.success(`${s.short} added to the watchlist`),
+            },
+          ]),
+    ]
+    own.push(...extra)
+  }
+  /* CareMap's order: trend, report, order, watchlist, plan, then the rest,
+     with Mark reviewed last. */
+  const rank = (l: string) =>
+    [
+      /trend/i,
+      /report|document/i,
+      /^order/i,
+      /watchlist/i,
+      /care plan/i,
+    ].findIndex((r) => r.test(l)) + 1 || (/^mark reviewed$/i.test(l) ? 9 : 6)
+  own.sort((a, b) =>
+    a.primary ? -1 : b.primary ? 1 : rank(a.label) - rank(b.label)
+  )
+  return own.map((a) => ({
+    ...a,
+    icon: /trend/i.test(a.label)
+      ? ChartLineData01Icon
+      : /report|document/i.test(a.label)
+        ? File01Icon
+        : /^order/i.test(a.label)
+          ? PlusSignIcon
+          : /watchlist/i.test(a.label)
+            ? StarIcon
+            : /care plan|program/i.test(a.label)
+              ? Target02Icon
+              : /reviewed|confirm/i.test(a.label)
+                ? Tick02Icon
+                : undefined,
+  }))
+}
+
+export const panelTitle = (s: Subject) =>
   s.heading ??
   (s.title.includes(" · ")
     ? s.title.split(" · ").slice(1).join(" · ")
     : s.title)
 
-const panelTone = (s: Subject): ToneKey =>
+export const panelTone = (s: Subject): ToneKey =>
   s.group
     ? GROUP_TONE[s.group]
     : s.kind === "result"
@@ -1270,51 +1604,31 @@ const panelTone = (s: Subject): ToneKey =>
 
 /* ----------------------------------------------------------- dashboard -- */
 
-/* The docked panel needs room beside the lists; below this width the
-   docked pattern falls back to the click overlay. */
-const WIDE = "(min-width: 1280px)"
-function useWide() {
-  return React.useSyncExternalStore(
-    (notify) => {
-      const list = window.matchMedia(WIDE)
-      list.addEventListener("change", notify)
-      return () => list.removeEventListener("change", notify)
-    },
-    () => window.matchMedia(WIDE).matches,
-    () => false
-  )
-}
-
-/** The patient chart's dashboard. The detail panel sits beside the lists
-    and opens on the top priority subject (the decision band's lead, else
-    the first update, result or trend) every time the dashboard opens.
-    Picking a row swaps it; an action that finishes the subject slides it
-    shut. Below the wide breakpoint a row opens the detail as an overlay. */
+/** The patient chart's dashboard: Important updates (five rows, then it
+    scrolls), Out of range beside Trends to watch, Future care beside the
+    programs, on the lab viewer's grey in the client's CareMap colours.
+    A row opens its detail in the side modal; an action that finishes the
+    subject closes it. (Version 1, with the decision band and the docked
+    sidebar, was deleted on 9 Oct.) */
 export function ChartingDashboard({
   dash,
   opt,
   optimized,
   patientName,
   onOpen,
-  slot,
 }: {
   dash: Dashboard
   opt: Optimization
   optimized: boolean
   patientName: string
   onOpen: OpenSection
-  /** Where the sidebar renders: a column beside the section bar. */
-  slot?: HTMLElement | null
 }) {
-  const dock = useWide()
   const { peek, card } = usePeek()
   const { ready, model } = dash
   const [pick, setPick] = React.useState<{ id: string; list: string[] } | null>(
     null
   )
   const [from, setFrom] = React.useState<HTMLElement | null>(null)
-  /* The subject a finishing action closed the sidebar on. */
-  const [closedId, setClosedId] = React.useState<string | null>(null)
   const close = React.useCallback(() => setPick(null), [])
   const view = useDecisionView({
     dash,
@@ -1333,100 +1647,63 @@ export function ChartingDashboard({
       </div>
     )
 
-  /* The top priority subject and the list it leads, for the docked panel. */
-  const topList = view.lead
-    ? [view.lead, ...view.related]
-    : [...view.updates, ...view.results, ...view.watches]
-  const top = dock ? topList[0] : undefined
-
   /* The open subject and the list it was opened from. */
   const picked = pick ? view.byId.get(pick.id) : undefined
-  const current = picked ?? top
-  /* "Mark reviewed" and the other finishing actions slide the sidebar shut;
-     it keeps what was finished on show while it closes, and picking a row
-     opens it again. */
-  const closed = dock && closedId !== null
-  const shown = closed ? (view.byId.get(closedId) ?? current) : current
-  const list = picked && pick ? pick.list : topList.map((x) => x.id)
-  const at = current ? list.indexOf(current.id) : -1
+  const list = pick ? pick.list : []
+  const at = picked ? list.indexOf(picked.id) : -1
   const go = (i: number) =>
     list[i] ? () => setPick({ id: list[i], list }) : undefined
 
   const choose = (group: Subject[]) => (s: Subject, el: HTMLElement) => {
     setFrom(el)
-    setClosedId(null)
     setPick({ id: s.id, list: group.map((x) => x.id) })
   }
   const act = (a: Subject["actions"][number]) => {
     a.run()
-    if (!a.keepOpen) {
-      if (dock && current) setClosedId(current.id)
-      setPick(null)
-    }
+    if (!a.keepOpen) setPick(null)
   }
-  const isPicked = (s: Subject) => !closed && current?.id === s.id
+  const isPicked = (s: Subject) => picked?.id === s.id
 
   const action = view.updates.filter((s) => s.group === "action")
   const review = view.updates.filter((s) => s.group === "review")
   const pair = (a: React.ReactNode | null, b: React.ReactNode | null) =>
     a || b ? (
-      <div
-        className={cn(
-          "grid grid-cols-1 gap-4",
-          a && b && (dock ? "grid-cols-2" : "2xl:grid-cols-2")
-        )}
-      >
+      <div className={cn("grid grid-cols-1 gap-4", a && b && "lg:grid-cols-2")}>
         {a}
         {b}
       </div>
     ) : null
 
-  const panelHead = shown && (
+  const panelHead = picked && (
     <span className="flex flex-wrap items-center gap-2">
-      {panelTitle(shown)}
-      <Pill tone={panelTone(shown)}>{shown.category}</Pill>
+      {panelTitle(picked)}
+      <Pill tone={panelTone(picked)}>{picked.category}</Pill>
     </span>
   )
-  const panelActions = shown?.actions.map((a, i) => (
-    <Button
-      key={a.label}
-      variant={a.primary ? "default" : i <= 1 ? "outline" : "secondary"}
-      className={cn(!a.primary && i <= 1 && SECOND)}
-      onClick={() => act(a)}
-    >
-      {a.label}
-    </Button>
-  ))
+  /* The CareMap set, with icons: the primary first, the rest outlined. */
+  const panelActions = picked
+    ? popActions(picked, onOpen).map((a) => (
+        <Button
+          key={a.label}
+          variant={a.primary ? "default" : "outline"}
+          onClick={() => act(a)}
+        >
+          {a.icon && <KitIcon icon={a.icon} />}
+          {a.label}
+        </Button>
+      ))
+    : undefined
 
   const lists = (
     <PeekContext.Provider value={peek}>
       <SharedPeek peek={peek} card={card} />
-      <div className={cn("flex min-w-0 flex-col gap-4", TYPE_SCALE)}>
-        {view.lead ? (
-          <DecisionBand
-            lead={view.lead}
-            related={view.related}
-            reviewAt={view.reviewAt}
-            onOpen={choose([view.lead, ...view.related])}
-          />
-        ) : (
-          <div className="flex items-center gap-3 rounded-2xl border bg-card px-5 py-4">
-            <KitIcon
-              icon={CheckmarkCircle02Icon}
-              size={18}
-              className={SOFT_TEXT.green}
-            />
-            <span className="flex-1 text-sm font-medium">
-              Nothing needs a decision today
-            </span>
-            <ReviewButton dash={dash} />
-          </div>
-        )}
-
+      <div className={cn("flex min-w-0 flex-col gap-4", TYPE_SCALE, POP_INK)}>
         {view.updates.length > 0 && (
           <div id="v5-updates" className="scroll-mt-3">
-            <Widget
+            <Box
               icon={Notification03Icon}
+              tone="red"
+              tint
               title="Important updates"
               count={view.updates.length}
               action={
@@ -1436,11 +1713,10 @@ export function ChartingDashboard({
                     : "Last 90 days"}
                 </span>
               }
-              flush
             >
               {/* The list scrolls inside the card, every row under an
                   Action needed or For review heading. */}
-              <div className="max-h-[420px] overflow-y-auto">
+              <RowWindow rows={5}>
                 {(
                   [
                     ["action", action, "Action needed"],
@@ -1454,8 +1730,10 @@ export function ChartingDashboard({
                     >
                       <h4
                         className={cn(
-                          "sticky top-0 z-[1] flex items-center gap-2 border-b px-4 py-2 text-xs font-semibold",
-                          HEAD_TINT[GROUP_TONE[g]],
+                          "sticky top-0 z-[1] flex items-center gap-2 border-b px-4 text-xs font-semibold",
+                          /* A light teal grey behind the group's own
+                             coloured words. */
+                          "bg-[color-mix(in_oklab,var(--primary)_4%,var(--card))] py-1.5",
                           SOFT_TEXT[GROUP_TONE[g]]
                         )}
                       >
@@ -1477,6 +1755,7 @@ export function ChartingDashboard({
                               key={s.id}
                               s={{ ...s, title: t.subject }}
                               tone={GROUP_TONE[g]}
+                              icon={kindIcon(s)}
                               selected={isPicked(s)}
                               onPick={choose(view.updates)}
                               meta={
@@ -1491,7 +1770,7 @@ export function ChartingDashboard({
                                     <span
                                       className={cn(
                                         "ml-1 font-medium",
-                                        SOFT_TEXT[GROUP_TONE[g]]
+                                        POP[GROUP_TONE[g]].text
                                       )}
                                     >
                                       {s.alert}
@@ -1500,11 +1779,25 @@ export function ChartingDashboard({
                                 </>
                               }
                               status={
-                                s.date && (
-                                  <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-                                    {day(s.date)}
+                                <>
+                                  <span
+                                    className={cn(
+                                      "hidden shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap sm:inline-flex",
+                                      POP[GROUP_TONE[g]].pill
+                                    )}
+                                  >
+                                    {label}
                                   </span>
-                                )
+                                  {s.date && (
+                                    <span
+                                      className={cn(
+                                        "w-[76px] shrink-0 text-right text-xs text-muted-foreground/80 tabular-nums"
+                                      )}
+                                    >
+                                      {day(s.date)}
+                                    </span>
+                                  )}
+                                </>
                               }
                             />
                           )
@@ -1513,31 +1806,19 @@ export function ChartingDashboard({
                     </div>
                   ) : null
                 )}
-              </div>
-            </Widget>
+              </RowWindow>
+            </Box>
           </div>
         )}
 
         {pair(
           view.results.length > 0 ? (
             <div id="v5-results" className="h-full scroll-mt-3">
-              <Widget
+              <Box
                 icon={TestTube01Icon}
+                tone="red"
                 title="Out of range"
                 count={view.results.length}
-                action={
-                  <button
-                    type="button"
-                    onClick={() => onOpen("labs")}
-                    className={cn(
-                      "rounded text-[13px] font-medium text-primary hover:underline",
-                      FOCUS
-                    )}
-                  >
-                    View all
-                  </button>
-                }
-                flush
               >
                 <Preview
                   items={view.results}
@@ -1550,14 +1831,15 @@ export function ChartingDashboard({
                     />
                   )}
                 />
-              </Widget>
+              </Box>
             </div>
           ) : null,
           view.watches.length > 0 ? (
             <div id="v5-watch" className="h-full scroll-mt-3">
-              <Widget
+              <Box
                 icon={ChartLineData01Icon}
-                title="Watchful trends"
+                tone="orange"
+                title="Trends to watch"
                 count={view.watches.length}
                 action={
                   <button
@@ -1571,7 +1853,6 @@ export function ChartingDashboard({
                     View all
                   </button>
                 }
-                flush
               >
                 <Preview
                   items={view.watches}
@@ -1584,7 +1865,7 @@ export function ChartingDashboard({
                     />
                   )}
                 />
-              </Widget>
+              </Box>
             </div>
           ) : null
         )}
@@ -1592,11 +1873,11 @@ export function ChartingDashboard({
         {pair(
           view.care.length > 0 ? (
             <div id="v5-care" className="h-full scroll-mt-3">
-              <Widget
+              <Box
                 icon={Calendar03Icon}
+                tone="blue"
                 title="Future care and follow up"
                 count={view.care.length}
-                flush
               >
                 <Preview
                   items={view.care}
@@ -1607,15 +1888,17 @@ export function ChartingDashboard({
                       <PickRow
                         key={s.id}
                         s={s}
+                        tone={gap ? "orange" : "blue"}
+                        icon={kindIcon(s)}
                         selected={isPicked(s)}
                         onPick={choose(view.care)}
                         meta={s.line || undefined}
                         status={
                           <span
                             className={cn(
-                              "w-24 shrink-0 text-right text-xs tabular-nums",
+                              "min-w-24 shrink-0 text-right text-xs whitespace-nowrap tabular-nums",
                               gap
-                                ? cn("font-semibold", SOFT_TEXT.orange)
+                                ? cn("font-semibold", POP.orange.text)
                                 : "text-muted-foreground"
                             )}
                           >
@@ -1626,21 +1909,29 @@ export function ChartingDashboard({
                     )
                   }}
                 />
-              </Widget>
+              </Box>
             </div>
           ) : null,
           view.programs.length > 0 ? (
-            <Widget
+            <Box
               icon={Target02Icon}
+              tone="green"
               title="Optimization programs"
               count={view.programs.length}
-              flush
             >
               <ul className="divide-y">
                 {view.programs.map((s) => (
                   <PickRow
                     key={s.id}
                     s={s}
+                    tone={
+                      s.status === "Active"
+                        ? "green"
+                        : s.status === "Eligible"
+                          ? "blue"
+                          : "orange"
+                    }
+                    icon={kindIcon(s)}
                     selected={isPicked(s)}
                     onPick={choose(view.programs)}
                     meta={s.line}
@@ -1660,7 +1951,7 @@ export function ChartingDashboard({
                   />
                 ))}
               </ul>
-            </Widget>
+            </Box>
           ) : null
         )}
 
@@ -1676,36 +1967,6 @@ export function ChartingDashboard({
     </PeekContext.Provider>
   )
 
-  if (dock && shown && slot)
-    return (
-      <>
-        {lists}
-        {createPortal(
-          /* The width eases to zero when closed, so the lists widen into
-             the space; the panel keeps its own width and slides out. */
-          <div
-            aria-hidden={closed || undefined}
-            inert={closed || undefined}
-            className={cn(
-              "flex h-full justify-end overflow-hidden transition-[width] duration-300 ease-out motion-reduce:transition-none",
-              closed ? "w-0" : "w-[400px]"
-            )}
-          >
-            <DockedPanel
-              title={panelHead}
-              onPrevious={at > 0 ? go(at - 1) : undefined}
-              onNext={at >= 0 ? go(at + 1) : undefined}
-              actions={panelActions}
-              onClose={() => current && setClosedId(current.id)}
-            >
-              <DetailBody s={shown} model={model} opt={opt.model} />
-            </DockedPanel>
-          </div>,
-          slot
-        )}
-      </>
-    )
-
   return (
     <>
       {lists}
@@ -1716,9 +1977,14 @@ export function ChartingDashboard({
           returnFocus={{ current: from }}
           title={panelHead}
           meta={picked.sub}
+          onPrevious={at > 0 ? go(at - 1) : undefined}
+          onNext={at >= 0 ? go(at + 1) : undefined}
           actions={panelActions}
+          stacked
         >
-          <DetailBody s={picked} model={model} opt={opt.model} />
+          <div className={POP_INK}>
+            <DetailBody s={picked} model={model} opt={opt.model} />
+          </div>
         </SidePanel>
       )}
     </>

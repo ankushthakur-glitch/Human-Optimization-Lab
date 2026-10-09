@@ -10,9 +10,6 @@ import { trendCounts } from "@/lib/trends"
    selector, so no screen tests the membership tier on its own. The first
    rule that matches wins:
 
-   declined       she said no to the consent and nothing was ever collected
-   building       her record is still arriving from the places it was found
-   member-setup   a member who has not finished the paid setup (no plan yet)
    member-review  a member whose first plan is with Dr. Patel
    member         a member with a live plan, a newer version possibly with
                   Dr. Patel meanwhile (the live one stays, M-55)
@@ -20,7 +17,10 @@ import { trendCounts } from "@/lib/trends"
    free           everyone else, a cancelled member included (back on the
                   free record, every plan version kept)
 
-   Home draws the member home for member, member-setup and member-review,
+   No patient reaches the app without the consent, so there is no state
+   for a record never connected or still arriving.
+
+   Home draws the member home for member and member-review,
    and the free home for the rest; the Plan tab draws the member's plan for
    any member, paused included, and the showroom for the rest.
 
@@ -32,16 +32,11 @@ import { trendCounts } from "@/lib/trends"
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
 
-export type Experience = "declined" | "building" | "member-setup" | "member-review" | "member" | "paused" | "free"
+export type Experience = "member-review" | "member" | "paused" | "free"
 
 /** The one experience for this state. */
 export function experience(s: Snapshot): Experience {
-  // Signed but later turned off is a modifier (sharingOff), not this state:
-  // her record was collected and stays.
-  if (s.consent !== "signed" && !s.consentAt) return "declined"
-  if (s.records?.status === "building") return "building"
   const stage = memberStage(s)
-  if (stage === "setup") return "member-setup"
   if (stage === "review") return "member-review"
   if (stage === "live" || stage === "redraft") return "member"
   if (stage === "paused") return "paused"
@@ -50,7 +45,7 @@ export function experience(s: Snapshot): Experience {
 
 export type ExperienceInfo = {
   experience: Experience
-  /** memberStage(): setup, review, live, redraft or paused; undefined on
+  /** memberStage(): review, live, redraft or paused; undefined on
       the free record. */
   stage?: MemberStage
   /** The version with the doctor while another is live (member-redraft). */
@@ -107,13 +102,13 @@ export function useInlayScore(): number | undefined {
 type Which = Experience | Pick<ExperienceInfo, "experience">
 const nameOf = (e: Which) => (typeof e === "string" ? e : e.experience)
 
-/** Which home draws an experience: a member setting up, waiting for her
-    first plan or with a live plan starts on the member home; a paused
+/** Which home draws an experience: a member waiting for her first plan
+    or with a live plan starts on the member home; a paused
     member and everyone else on the free home. Takes the experience or
     useExperience()'s result. */
 export function homeFor(e: Which): "free" | "member" {
   const name = nameOf(e)
-  return name === "member" || name === "member-setup" || name === "member-review" ? "member" : "free"
+  return name === "member" || name === "member-review" ? "member" : "free"
 }
 
 /** Which Plan tab draws an experience: any member, paused included, sees
@@ -127,8 +122,7 @@ const DAY_MS = 86400000
 
 /** Sharing turned off after the record was collected (consent withdrawn
     on Access), with the day she did it when the store has it: "Oct 3".
-    Undefined while sharing is on, and for a patient who never connected
-    (that is the declined experience). */
+    Undefined while sharing is on. */
 export function sharingOff(s: Snapshot): { at?: string; on?: string } | undefined {
   if (s.consent !== "declined" || !s.consentAt) return undefined
   const at = s.sharingOffAt

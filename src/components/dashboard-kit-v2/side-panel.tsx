@@ -48,13 +48,34 @@ function PanelFooter({
   walkable,
   actions,
   compact,
+  row,
 }: {
   onPrevious?: () => void
   onNext?: () => void
   walkable?: boolean
   actions?: React.ReactNode
   compact?: boolean
+  /** Up to three actions side by side in one row; more put the primary
+      across the top and the rest two to a row. */
+  row?: boolean
 }) {
+  if (row) {
+    const n = React.Children.count(actions)
+    /* Up to three side by side; more: the primary (first) across the row,
+       the rest two to a row, the last across when it would sit alone. */
+    return (
+      <footer
+        className={cn(
+          "grid gap-2 border-t border-border bg-surface-head/50 px-4 py-3 [&>*]:w-full",
+          n > 3 &&
+            "grid-cols-2 [&>*:first-child]:col-span-2 [&>*:last-child:nth-child(even)]:col-span-2"
+        )}
+        style={n <= 3 ? { gridTemplateColumns: `repeat(${Math.max(n, 1)}, minmax(0, 1fr))` } : undefined}
+      >
+        {actions}
+      </footer>
+    )
+  }
   if (compact)
     return (
       /* Two columns of actions, the primary across the row when the count is
@@ -95,6 +116,7 @@ export function SidePanel({
   onNext,
   actions,
   wide,
+  stacked,
   children,
 }: {
   open: boolean
@@ -111,6 +133,9 @@ export function SidePanel({
   actions?: React.ReactNode
   /** 810px instead of 610px, for a panel with a two column body. */
   wide?: boolean
+  /** Actions as full width buttons side by side: up to three in one row,
+      more two to a row. */
+  stacked?: boolean
   children: React.ReactNode
 }) {
   const walk = useWalk(onPrevious, onNext)
@@ -167,6 +192,7 @@ export function SidePanel({
           onNext={onNext}
           walkable={total !== undefined}
           actions={actions}
+          row={stacked}
         />
       </SheetContent>
     </Sheet>

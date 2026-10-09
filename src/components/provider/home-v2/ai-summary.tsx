@@ -124,7 +124,7 @@ export function AISummary({ insight, showRisks = false }: { insight: Insight; sh
         <div id={bodyId} className="flex flex-col gap-3 px-3 pb-3">
           {(insight.glance.length > 0 || insight.progress) && (
           <Panel icon={ChartLineData01Icon} title="At a glance">
-            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(1, insight.glance.length)}, minmax(0, 1fr))` }}>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
               {insight.glance.map((g) => (
                 <div key={g.label} className="flex min-w-0 flex-col rounded-[5.76px] border border-border px-3 py-2">
                   <span className="text-xs text-muted-foreground">{g.label}</span>

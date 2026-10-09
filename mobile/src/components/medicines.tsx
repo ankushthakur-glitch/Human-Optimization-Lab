@@ -23,21 +23,13 @@ import { cardRadius, color, hairline, ink, space, type } from "@/lib/theme"
    settles a difference (F-69). The words stay neutral and say who settles
    it (F-72); never conflict, error or wrong. Nothing here sells.
 
-   MedicineConfirm is the whole list for Your medicines, and, `compact`,
-   the paid setup's medicines step. Drawn as the Figma "Hol" Your
+   MedicineConfirm is the whole list for Your medicines. Drawn as the Figma "Hol" Your
    medicines (5 Oct 2026): while anything is left to check, the check page
    (To check, Up to date, Past); once everything is checked, Current and
    Past medicines on a segmented control, each opening its details in a
    sheet (MedicineSheet, drawn by the screen over the page). */
 
 export type MedicineConfirmProps = {
-  /** The tighter layout for the paid setup's medicines step: the questions
-      and the rest of her list, without the count card, the answer chips on
-      medicines that agree, or past medicines. */
-  compact?: boolean
-  /** Runs once every medicine to check has an answer (on arrival too, when
-      they were answered before), so setup can go on. */
-  onAnswered?: () => void
   /** A medicine to bring into view on arrival and mark for a moment, by
       id: the one she tapped on Home, the Record tab or the timeline
       (`/medications?id=cetirizine`). On the list it opens its details. */
@@ -143,7 +135,7 @@ const URGENT_ICON = 18
 /** Her medicines. The check page: the ones her lists differ on with a
     question for each, the ones they agree on, and past ones. The list:
     current and past medicines, each opening its details. */
-export function MedicineConfirm({ compact = false, onAnswered, focus, view, onOpen }: MedicineConfirmProps) {
+export function MedicineConfirm({ focus, view, onOpen }: MedicineConfirmProps) {
   const s = useOnboarding()
   const current = MEDICATIONS.filter((m) => !m.resolved)
   const differ = current.filter((m) => medDifference(m))
@@ -153,17 +145,7 @@ export function MedicineConfirm({ compact = false, onAnswered, focus, view, onOp
   // The view is chosen once, as the page opens, so answering the last
   // question never swaps the page from under her.
   const [initial] = React.useState<MedicineView>(open > 0 ? "check" : "list")
-  const shown: MedicineView = compact ? "check" : (view ?? initial)
-
-  // Setup goes on once every difference has an answer, already or now.
-  const told = React.useRef(false)
-  const answered = React.useRef(onAnswered)
-  answered.current = onAnswered
-  React.useEffect(() => {
-    if (open > 0 || told.current) return
-    told.current = true
-    answered.current?.()
-  }, [open])
+  const shown: MedicineView = view ?? initial
 
   // Saved with the medicine's name and the lists she saw, so Dr. Patel
   // reads her answer against the same difference (lib/record
@@ -193,14 +175,14 @@ export function MedicineConfirm({ compact = false, onAnswered, focus, view, onOp
           <Rows>
             {agree.map((m, i) => (
               <InView key={m.id} on={focus === m.id}>
-                <AgreeRow m={m} saved={s.meds?.[m.id]} onAnswer={compact ? undefined : (a) => answer(m, a)} spotlight={focus === m.id ? edgesOf(i, agree.length) : undefined} />
+                <AgreeRow m={m} saved={s.meds?.[m.id]} onAnswer={(a) => answer(m, a)} spotlight={focus === m.id ? edgesOf(i, agree.length) : undefined} />
               </InView>
             ))}
           </Rows>
         </Block>
       )}
 
-      {!compact && past.length > 0 && (
+      {past.length > 0 && (
         <Block title="Past">
           <Rows>
             {past.map((m, i) => (
@@ -214,10 +196,9 @@ export function MedicineConfirm({ compact = false, onAnswered, focus, view, onOp
     </>
   )
 
-  // On Your medicines the sections sit straight on the page, as far apart
-  // as every page's sections; the setup step holds them together under its
-  // title.
-  return compact ? <View style={styles.compact}>{sections}</View> : sections
+  // The sections sit straight on the page, as far apart as every page's
+  // sections.
+  return sections
 }
 
 /** Rows on one white card, 12 either side of a hairline. */
@@ -720,8 +701,6 @@ const SAID_MARK = 18
 const TEXT_ACTION = 32
 
 const styles = StyleSheet.create({
-  // The setup step's sections, a screen's section apart.
-  compact: { gap: space.section },
   grow: { flex: 1 },
   pressed: { opacity: 0.7 },
 

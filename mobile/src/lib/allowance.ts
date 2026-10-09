@@ -5,55 +5,76 @@ import { weekKey, weekStart } from "@/lib/dates"
 import { membershipOn } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 
-/* The free record's questions to the assistant (F-100 to F-104, Q-02): 8 a
-   week, counted per conversation, so a follow up in the same chat is free.
-   Never counted: anything about safety (chest pain, stroke signs, a severe
-   allergic reaction, thoughts of self harm), anything about the plan, the
-   membership, its price, billing or cancelling, and the first explanation
-   of each new batch of results. Opening the chat, opening it about one
-   result or seeing suggested questions costs nothing until she sends one
-   (A-42).
+/* The assistant's AI credit (F-100 to F-104, Q-02), for every patient,
+   free or member: metered in tokens and always shown as the share used,
+   never as a count of questions (user, 9 Oct 2026): "40% of this week's
+   AI credit used". Each message spends what its question and its answer
+   take (tokensFor), follow ups included. Never metered: anything about
+   safety (chest pain, stroke signs, a severe allergic reaction, thoughts
+   of self harm), anything about the plan, the membership, its price,
+   billing or cancelling, and the first explanation of each new batch of
+   results. Opening the chat, opening it about one result or seeing
+   suggested questions costs nothing until she sends one (A-42).
 
    The 5 Oct 2026 call: the free record renews on its own and can't top up; a
-   member has a higher cap and can add more (TOP_UP). A chat in progress
+   member has a higher budget and can add more (TOP_UP). A chat in progress
    when the credit runs out is never cut off (6 Oct 2026, the grace
-   proposal): once a week it finishes on GRACE taken from next week,
-   with no button and no word for it but one quiet line. A new chat at the
-   cap gets no grace: wait for Monday, or upgrade.
+   proposal): once a week it finishes on GRACE tokens taken from next
+   week, with no button and no word for it but one quiet line. A new chat
+   at 100% gets no grace: wait for Monday, or upgrade.
 
    The credit renews weekly (user, 6 Oct 2026), every Monday where she
-   lives (A-40): "Mon, Oct 12". The store keeps this week's counted
+   lives (A-40): "Mon, Oct 12". The store keeps this week's tokens and
    conversations (`allowance`) under the local week key, its Monday; the
    field is still called `month` from when it renewed monthly. */
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
 type Save = ReturnType<typeof useOnboarding>["save"]
 
-/** Free conversations a week (Q-02 default; configurable from 5 to 10).
-    Members have no count. */
-export const FREE_QUESTIONS = 5
+/** The free record's tokens a week. A stand in until the client maps
+    tokens to cost (~$5 a free patient). */
+export const FREE_TOKENS = 60_000
 
-/** A member's conversations a week (5 Oct call: a higher cap). */
-export const MEMBER_QUESTIONS = 40
+/** A member's tokens a week (5 Oct call: a higher budget). */
+export const MEMBER_TOKENS = 480_000
 
-/** Grace: a chat in progress at the cap finishes on one conversation
-    taken off next week's count, once a week. */
-export const GRACE = 1
+/** Grace: a chat in progress at 100% finishes on these tokens, taken off
+    next week's budget, once a week. */
+export const GRACE = 12_000
 
-/** A member's top up: more conversations for this week only. The price
-    is a stand in until the client sets it. */
-export const TOP_UP = { conversations: 20, price: "$5" } as const
+/** A member's top up: more tokens for this week only, shown as the share
+    of the member budget it adds. The price is a stand in until the client
+    sets it. */
+export const TOP_UP = { tokens: 120_000, share: 25, price: "$5" } as const
+
+/** What one message spends: her words (about 4 characters a token), the
+    record the answer reads, and the answer. A stand in for the model's own
+    usage until the API reports it. */
+const CONTEXT_TOKENS = 1_800
+const ANSWER_TOKENS = 1_200
+export function tokensFor(text: string) {
+  return CONTEXT_TOKENS + ANSWER_TOKENS + Math.ceil(text.length / 4)
+}
 
 /** A conversation stays open this long after its last message; a message
     after that starts a new one. */
 export const CONVERSATION_MINUTES = 30
 
-/** This week's conversations (store field `allowance`): the week (its
-    local Monday, "2026-10-05", in `month`), the conversations already
-    counted, the result batches already explained for free (kept from week
-    to week), the grace taken from next week, what last week took from this
-    one, and what a member added. */
-export type Allowance = { month: string; threads: string[]; batches: string[]; borrowed?: number; owed?: number; bought?: number }
+/** This week's credit (store field `allowance`): the week (its local
+    Monday, "2026-10-05", in `month`), the tokens used, the conversations
+    that spent any (for a chat in progress), the result batches already
+    explained for free (kept from week to week), the grace tokens taken
+    from next week, what last week took from this one, and the tokens a
+    member added. */
+export type Allowance = {
+  month: string
+  tokens?: number
+  threads: string[]
+  batches: string[]
+  borrowed?: number
+  owed?: number
+  bought?: number
+}
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -64,36 +85,53 @@ export function resetDate(now: Date = new Date()) {
   return `Mon, ${MONTHS[next.getMonth()]} ${next.getDate()}`
 }
 
-/** The allowance as this week has it: last week's conversations, its
-    grace and its top up drop, its grace is owed now, and the explained
-    batches stay. */
+/** A store from the question count build: each counted conversation as
+    one average conversation's tokens. */
+const OLD_CONVERSATION = tokensFor("") * 3
+
+/** The allowance as this week has it: last week's tokens, its grace and
+    its top up drop, its grace is owed now, and the explained batches
+    stay. */
 function current(a: Allowance | undefined, now: Date): Allowance {
   const week = weekKey(now)
-  if (a?.month === week) return { ...a, threads: a.threads ?? [], batches: a.batches ?? [] }
+  if (a?.month === week)
+    return { ...a, tokens: a.tokens ?? (a.threads ?? []).length * OLD_CONVERSATION, threads: a.threads ?? [], batches: a.batches ?? [] }
   const last = new Date(now)
   last.setDate(last.getDate() - 7)
-  return { month: week, threads: [], batches: a?.batches ?? [], owed: a?.month === weekKey(last) ? (a.borrowed ?? 0) : 0 }
+  return { month: week, tokens: 0, threads: [], batches: a?.batches ?? [], owed: a?.month === weekKey(last) ? (a.borrowed ?? 0) : 0 }
 }
 
-/** This week's cap: the plan's own, less last week's grace, plus this
+/** This week's budget: the plan's own, less last week's grace, plus this
     week's grace and what was added. */
 function capOf(a: Allowance, member: boolean) {
-  return (member ? MEMBER_QUESTIONS : FREE_QUESTIONS) - (a.owed ?? 0) + (a.borrowed ?? 0) + (a.bought ?? 0)
+  return (member ? MEMBER_TOKENS : FREE_TOKENS) - (a.owed ?? 0) + (a.borrowed ?? 0) + (a.bought ?? 0)
 }
 
-/** This week's count and its words. */
+/** The share used as a whole percent, never 100 until it is all used. */
+function percent(used: number, total: number) {
+  if (!total || used >= total) return 100
+  return Math.min(99, Math.round((used / total) * 100))
+}
+
+/** This week's credit and its words. */
 export function allowanceOf(a: Allowance | undefined, now: Date = new Date(), member = false) {
   const mine = current(a, now)
   const total = capOf(mine, member)
-  const used = Math.min(mine.threads.length, total)
+  const used = Math.min(mine.tokens ?? 0, total)
   const left = total - used
   const resetsOn = resetDate(now)
+  const pct = percent(used, total)
   return {
+    /** Tokens: this week's budget, used and left. */
     total,
     used,
     left,
+    /** Nothing left: a new chat gets the limit card. */
+    out: left <= 0,
     /** How much is used, 0 to 1: the orb's arc and the credit bar. */
     share: total ? used / total : 1,
+    /** The same as a whole percent, 0 to 100. */
+    percent: pct,
     borrowed: mine.borrowed ?? 0,
     owed: mine.owed ?? 0,
     bought: mine.bought ?? 0,
@@ -101,17 +139,9 @@ export function allowanceOf(a: Allowance | undefined, now: Date = new Date(), me
     graceLeft: !mine.borrowed,
     /** "Mon, Oct 12" */
     resetsOn,
-    /** The AI is metered in tokens now (user, 5 Oct 2026), so the words
-        speak of credit, not questions: "75% of this week's AI credit
-        left", "No AI credit left until Mon, Oct 12". The orb's ring
-        draws it. */
-    line: member
-      ? left === 0
-        ? `No AI credit left until ${resetsOn}`
-        : `${Math.round((left / total) * 100)}% of this week's AI credit left`
-      : left === 0
-        ? `No questions left until ${resetsOn}`
-        : `${left} of ${total} ${total === 1 ? "question" : "questions"} remaining`,
+    /** The words, for every patient: "40% of this week's AI credit used",
+        "No AI credit left until Mon, Oct 12". The orb's ring draws it. */
+    line: left <= 0 ? `No AI credit left until ${resetsOn}` : `${pct}% of this week's AI credit used`,
   }
 }
 
@@ -141,30 +171,31 @@ export function questionKind(text: string, topic?: string): QuestionKind {
   return "record"
 }
 
-/** What sending costs: 0 for safety, the plan, the membership, billing or
-    cancelling, for a message in a conversation already counted, and for
-    the first explanation of a new batch; 1 for the first counted message
-    of a new conversation. A safety or plan question is never counted,
-    whatever kind the screen passed. */
+/** What sending costs, in tokens: 0 for safety, the plan, the
+    membership, billing or cancelling, and for the first explanation of a
+    new batch; otherwise what the message and its answer take. A safety or
+    plan question is never metered, whatever kind the screen passed. */
 export function costOf(
   input: { text: string; threadId: string; kind: QuestionKind; batch?: string },
   a: Allowance | undefined,
   now: Date = new Date()
-): 0 | 1 {
+): number {
   const said = questionKind(input.text)
   const kind = said === "safety" || said === "plan" ? said : input.kind
   if (kind === "safety" || kind === "plan") return 0
   const mine = current(a, now)
-  if (mine.threads.includes(input.threadId)) return 0
   if (kind === "batch" && input.batch && !mine.batches.includes(input.batch)) return 0
-  return 1
+  return tokensFor(input.text)
 }
 
-/** The allowance with one more counted conversation (unchanged when it is
-    already counted this week). */
-export function spend(a: Allowance | undefined, threadId: string, now: Date = new Date()): Allowance {
+/** The allowance with a message's tokens spent in a conversation. */
+export function spend(a: Allowance | undefined, threadId: string, tokens: number, now: Date = new Date()): Allowance {
   const mine = current(a, now)
-  return mine.threads.includes(threadId) ? mine : { ...mine, threads: [...mine.threads, threadId] }
+  return {
+    ...mine,
+    tokens: (mine.tokens ?? 0) + tokens,
+    threads: mine.threads.includes(threadId) ? mine.threads : [...mine.threads, threadId],
+  }
 }
 
 /** The allowance with a batch's free explanation used. */
@@ -173,20 +204,18 @@ export function markBatch(a: Allowance | undefined, batch: string, now: Date = n
   return mine.batches.includes(batch) ? mine : { ...mine, batches: [...mine.batches, batch] }
 }
 
-/** A paid membership that is on: the higher cap, and a top up. A paused
-    one counts like the free record. */
+/** A paid membership that is on: the higher budget, and a top up. A
+    paused one counts like the free record. */
 const memberOf = (s: Snapshot) => membershipOn(s.membership) && !s.membership?.paused
 
-/** The allowance of the patient on this device, with the two writes the
-    assistant needs. `spend(threadId)` counts a new conversation and says
-    whether the message may go: true when it was counted or is free (a
-    member, a conversation already counted), false at the cap, when the
-    message stays in the composer and the limit card shows. Pass `chat`,
-    the chat's own id: at the cap, a chat that already counted a
-    conversation this week is in progress, and finishes on the week's
-    grace ("grace", which lets the message go). Check `costOf()` first: a
-    message that costs 0 never needs `spend`. `topUp()` adds TOP_UP for a
-    member. */
+/** The credit of the patient on this device, with the writes the
+    assistant needs. `spend(threadId, tokens)` meters a message and says
+    whether it may go: true when there is credit left, false at 100%,
+    when the message stays in the composer and the limit card shows. Pass
+    `chat`, the chat's own id: at 100%, a chat that already spent credit
+    this week is in progress, and finishes on the week's grace ("grace",
+    which lets the message go). Check `costOf()` first: a message that
+    costs 0 never needs `spend`. `topUp()` adds TOP_UP for a member. */
 export function useAllowance() {
   const onboarding = useOnboarding()
   const ref = React.useRef<Writer>({ s: onboarding })
@@ -194,17 +223,17 @@ export function useAllowance() {
   const member = memberOf(onboarding)
   const counts = allowanceOf(onboarding.allowance, new Date(), member)
 
-  const spendThread = React.useCallback((threadId: string, chat?: string): boolean | "grace" => {
+  const spendTokens = React.useCallback((threadId: string, tokens: number, chat?: string): boolean | "grace" => {
     const w = ref.current
     const mine = current(newest(w), new Date())
-    if (mine.threads.includes(threadId)) return true
-    if (mine.threads.length < capOf(mine, memberOf(w.s))) {
-      write(w, spend(mine, threadId))
+    if ((mine.tokens ?? 0) < capOf(mine, memberOf(w.s))) {
+      write(w, spend(mine, threadId, tokens))
       return true
     }
     const inProgress = !!chat && mine.threads.some((t) => t.startsWith(`${chat}:`))
     if (!inProgress || mine.borrowed) return false
-    write(w, { ...spend(mine, threadId), borrowed: GRACE })
+    // The grace starts where the budget ended, so the chat has all of it.
+    write(w, { ...spend(mine, threadId, tokens), tokens: capOf(mine, memberOf(w.s)) + tokens, borrowed: GRACE })
     return "grace"
   }, [])
 
@@ -219,10 +248,10 @@ export function useAllowance() {
     const w = ref.current
     if (!memberOf(w.s)) return
     const mine = current(newest(w), new Date())
-    write(w, { ...mine, bought: (mine.bought ?? 0) + TOP_UP.conversations })
+    write(w, { ...mine, bought: (mine.bought ?? 0) + TOP_UP.tokens })
   }, [])
 
-  return { ...counts, member, spend: spendThread, markBatch: markBatchUsed, topUp }
+  return { ...counts, member, spend: spendTokens, markBatch: markBatchUsed, topUp }
 }
 
 /* Two writes in one moment (a count, then a batch) build on the newer one,
@@ -239,40 +268,32 @@ function write(w: Writer, next: Allowance) {
   w.s.save({ allowance: next }).catch(() => {})
 }
 
-/** The calm card in the thread at the cap (F-104): never shown when the app
-    opens, and it never cuts an answer short. Saving the question for her
-    visit comes first, the membership second and quiet. */
-export function limitCard(now: Date = new Date()) {
-  return {
-    title: "You've used your 5 questions this week",
-    body: `It comes back on ${resetDate(now)}. Your record, trends and past answers are all still here.`,
-    save: "Save for my next visit",
-    more: "See what members get",
-  }
-}
-
 /* ---------------------------------------------------- review controls -- */
 
 /** Review build controls (/demo): use all of this week's AI credit (a
     member's too), or give it all back, borrowing and top ups included. */
 export function spendAllQuestions(s: Snapshot, save: Save, now: Date = new Date()) {
   const mine = current(s.allowance, now)
-  const threads = [...mine.threads]
-  for (let i = threads.length; i < capOf(mine, memberOf(s)); i++) threads.push(`demo-${i + 1}`)
-  return save({ allowance: { ...mine, threads } })
+  return save({ allowance: { ...mine, tokens: capOf(mine, memberOf(s)) } })
+}
+
+/** This week's credit with `share` (0 to 1) of the free budget used: the
+    demo patients' seeds. */
+export function creditUsed(share: number, now: Date = new Date()): Allowance {
+  return { month: weekKey(now), tokens: Math.round(FREE_TOKENS * share), threads: [], batches: [] }
 }
 
 /** A review link's AI credit (/demo/free?credit=out): 75% used (`high`),
     all used (`out`), all used after the week's grace (`borrowed`), on the free record or, with `member` in front, a
-    member's cap ("member-high", "member-out"). */
+    member's budget ("member-high", "member-out"). */
 export const CREDIT_SEEDS = ["high", "out", "borrowed", "member-high", "member-out"] as const
 export function usedUp(how: (typeof CREDIT_SEEDS)[number], now: Date = new Date()): Allowance {
   const borrowed = how === "borrowed" ? GRACE : 0
-  const cap = (how.startsWith("member") ? MEMBER_QUESTIONS : FREE_QUESTIONS) + borrowed
-  const used = how.endsWith("high") ? Math.round(cap * 0.75) : cap
-  return { month: weekKey(now), threads: Array.from({ length: used }, (_, i) => `demo-${i + 1}`), batches: [], borrowed }
+  const cap = (how.startsWith("member") ? MEMBER_TOKENS : FREE_TOKENS) + borrowed
+  const tokens = how.endsWith("high") ? Math.round(cap * 0.75) : cap
+  return { month: weekKey(now), tokens, threads: [], batches: [], borrowed }
 }
 
 export function giveBackQuestions(s: Snapshot, save: Save, now: Date = new Date()) {
-  return save({ allowance: { month: weekKey(now), threads: [], batches: [] } })
+  return save({ allowance: { month: weekKey(now), tokens: 0, threads: [], batches: [] } })
 }

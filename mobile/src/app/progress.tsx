@@ -6,7 +6,7 @@ import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { CountUp, PressureChart, ProgressChart, RangeBar, ScoreHistory, WeekBars, formatNumber } from "@/components/charts"
 import { FlowScreen } from "@/components/flow"
 import { AskButton } from "@/components/hol"
-import { CaretRight, Scan, Trophy } from "@/components/ph"
+import { Scan, Trophy } from "@/components/ph"
 import { HeadCard } from "@/components/plan-tab-pieces"
 import { NothingYet, Readout, SinceStartRows, changeSince, entryDay, lastDays } from "@/components/progress-parts"
 import { RecordIcon } from "@/components/record-icons"
@@ -35,7 +35,7 @@ import {
 import { useOnboarding } from "@/lib/onboarding"
 import { scoreOverTime } from "@/lib/record"
 import { meaningOf, pointStatus, type Movement } from "@/lib/trends"
-import { card, space, type } from "@/lib/theme"
+import { space, type } from "@/lib/theme"
 
 /* Progress since the member started (FINAL-SPEC C.25), Ed's progress layer:
    "I started my weight loss program on May 2026. I'm now September 2026.
@@ -361,8 +361,7 @@ function Milestones({ s }: { s: Store }) {
 
 /** Her Inlay score at each check in, today's from her answers and her
     record, with the change since her first check in, by the one rule Home
-    and the score page follow (lib/record.ts scoreOverTime). Opens the
-    score page. */
+    follows (lib/record.ts scoreOverTime). */
 function ScoreCard({ s }: { s: Store }) {
   const over = scoreOverTime(useInlayScore(), s.scores)
   const checkIns = over.history
@@ -371,17 +370,8 @@ function ScoreCard({ s }: { s: Store }) {
   const tag = over.tag
   return (
     <Block title="Inlay score">
-      <Card style={styles.chartCard} onPress={() => router.push("/score")}>
-        <Readout
-          value={String(latest.value)}
-          unit="out of 100"
-          right={
-            <View style={styles.scoreRight}>
-              {tag && <Tag tone={tag.tone}>{tag.label}</Tag>}
-              <CaretRight size={16} color={card.chevron} />
-            </View>
-          }
-        />
+      <Card style={styles.chartCard}>
+        <Readout value={String(latest.value)} unit="out of 100" right={tag && <Tag tone={tag.tone}>{tag.label}</Tag>} />
         <ScoreHistory checkIns={checkIns} playKey="progress:score" />
       </Card>
     </Block>
@@ -477,7 +467,6 @@ const styles = StyleSheet.create({
   // Where she is now, in the value's weight and ink at the line's size.
   journeyNow: { fontFamily: type.value.fontFamily, color: type.value.color },
 
-  scoreRight: { flexDirection: "row", alignItems: "center", gap: space.inline },
   // On the value's line: the meta's box ends where the stat's does.
   trailing: { ...type.meta, alignSelf: "flex-start", marginTop: type.stat.lineHeight - type.meta.lineHeight },
 

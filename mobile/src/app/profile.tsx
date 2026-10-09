@@ -12,7 +12,6 @@ import {
   Hospital,
   Lock,
   ScanSmiley,
-  ShieldCheck,
   SignOut,
   Stethoscope,
   Watch,
@@ -141,12 +140,6 @@ export default function ProfileScreen() {
         <Block title="Privacy">
           <Rows>
             <Row icon={<Lock size={16} color={color.primary} />} title="Access" meta={access} gap={10} right={<Chevron />} onPress={() => router.push("/access")} accessibilityLabel={`Access, ${access}`} />
-            <Row
-              icon={<ShieldCheck size={16} color={color.primary} />}
-              title="Who has looked at your record"
-              right={<Chevron />}
-              onPress={() => router.push({ pathname: "/record/[kind]", params: { kind: "access" } })}
-            />
             <Row icon={<DownloadSimple size={16} color={color.primary} />} title="Download my record" right={<Chevron />} onPress={() => toast("We'll email you a copy.")} />
           </Rows>
         </Block>
@@ -191,7 +184,7 @@ function MembershipCard({ membership, period }: { membership: ReturnType<typeof 
           </View>
         </View>
         <Pressable
-          onPress={() => router.push({ pathname: "/plans", params: { from: "profile" } })}
+          onPress={() => router.push("/plan")}
           accessibilityRole="button"
           style={({ pressed }) => [styles.planLink, pressed && styles.pressed]}
         >

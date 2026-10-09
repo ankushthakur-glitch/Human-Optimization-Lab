@@ -32,14 +32,13 @@ const FONTS = {
    code accepted         set-password, over activate so Back returns to it
    signed in, new        onboarding/: about you, consent, your why, record builds
    signed in             tabs: home (index), results, to do (gaps), plan;
-                         the assistant, plans, the record's pages (score,
-                         what's open, a test to book,
+                         the assistant, the record's pages (an item, adding
+                         one, what's open, a test to book,
                          notifications), care (booking a test with a
                          partner, an appointment), the member's day
                          (today's exercise and one move, the diet plan,
                          logging a meal, one day, progress, history),
-                         membership, profile, connect later, and the paid
-                         plan's setup
+                         membership, profile and connect later
    signed out for idling session-expired
    The error states (+not-found, and the review index under errors/) and
    the review pages under demo/ (the review controls, a sample patient, the
@@ -116,10 +115,8 @@ function Routes() {
           <Stack.Screen name="plan" options={{ animation: "none" }} />
           <Stack.Screen name="gaps" options={{ animation: "none" }} />
           <Stack.Screen name="assistant" options={{ animation: "slide_from_bottom" }} />
-          <Stack.Screen name="plans" />
           {/* The record, opened from home and Results. */}
           <Stack.Screen name="biomarker/[id]" />
-          <Stack.Screen name="record/[kind]" />
           <Stack.Screen name="record/item" />
           <Stack.Screen name="record/add" />
           <Stack.Screen name="medications" />
@@ -128,7 +125,6 @@ function Routes() {
           <Stack.Screen name="order/[id]" />
           <Stack.Screen name="book/[id]" />
           <Stack.Screen name="visit/[id]" />
-          <Stack.Screen name="score" />
           <Stack.Screen name="notifications" />
           {/* The member's day, opened from the member home's doors and
               cards: today's exercise and each move, the diet plan, logging
@@ -149,12 +145,6 @@ function Routes() {
           <Stack.Screen name="connect" />
           <Stack.Screen name="connect-texts" />
           <Stack.Screen name="building" />
-          {/* The paid plan's setup, straight after subscribing. */}
-          <Stack.Screen name="optimize/questionnaire" />
-          <Stack.Screen name="optimize/medicines" />
-          <Stack.Screen name="optimize/devices" />
-          <Stack.Screen name="optimize/tests" />
-          <Stack.Screen name="optimize/tour" />
         </Stack.Protected>
         <Stack.Protected guard={status === "expired"}>
           <Stack.Screen name="session-expired" options={{ gestureEnabled: false }} />

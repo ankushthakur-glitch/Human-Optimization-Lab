@@ -26,11 +26,11 @@ import { TabScreen } from "@/components/tab-bar"
 import { PrimaryButton } from "@/components/hol"
 import { relativeDay } from "@/lib/dates"
 import { useExperience, useMarkers } from "@/lib/experience"
-import { MEMBER, NEXT_REVIEW, PLAN_DRAFT, WALK, profileOf, progress, shortDay, thisWeek, weekPlan, type WeekItem } from "@/lib/member"
+import { MEMBER, NEXT_REVIEW, PLAN_DRAFT, WALK, profileOf, progress, thisWeek, weekPlan, type WeekItem } from "@/lib/member"
 import { FOCUS_NAME } from "@/lib/offers"
 import { useOnboarding, type Plan } from "@/lib/onboarding"
 import { livePlan } from "@/lib/plans"
-import { BUILD, SETUP, nextSetup } from "@/lib/program"
+import { BUILD } from "@/lib/program"
 import { MARKER_CARE, type Biomarker, type FocusArea } from "@/lib/record"
 import { classify, valueText, withUnit } from "@/lib/trends"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
@@ -43,8 +43,8 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    offer. Nothing on it sells, and there are no prototype controls (they
    live on /demo).
 
-   It also draws the member's other stages (C.16.2): setup still to finish,
-   version 1 with Dr. Patel, and the plan paused. A newer version with the
+   It also draws the member's other stages (C.16.2): version 1 with
+   Dr. Patel, and the plan paused. A newer version with the
    doctor shows over the live plan, which stays in place until it is
    approved (M-55). It renders its own tab screen, so the devices sheet
    passes over the tab bar. */
@@ -61,9 +61,7 @@ export function PlanMember() {
   return (
     <TabScreen tab="plan" title="Plan" overlay={devices ? <DevicesSheet onClose={() => setDevices(false)} /> : undefined}>
       {sharingOff && <ReviewBanner state={{ kind: "sharing-off", since: sharingOff.on ?? "" }} onPress={() => router.push("/connect")} />}
-      {experience === "member-setup" ? (
-        <SetupStage />
-      ) : experience === "member-review" ? (
+      {experience === "member-review" ? (
         <ReviewStage />
       ) : experience === "paused" ? (
         <PausedStage />
@@ -321,35 +319,6 @@ function Versions({ versions }: { versions: Version[] }) {
 }
 
 /* -------------------------------------------------------------- stages -- */
-
-/** Joined, setup not finished: the steps done and the next one. */
-function SetupStage() {
-  const { setupDone = [], membership } = useOnboarding()
-  const next = nextSetup(setupDone)
-  const at = next ? SETUP.findIndex((s) => s.id === next.id) : SETUP.length - 1
-  const started = membership?.startedAt ? new Date(membership.startedAt) : undefined
-  const steps: Step[] = SETUP.map((s) => ({
-    label: s.title,
-    state: setupDone.includes(s.id) ? "done" : s.id === next?.id ? "now" : "next",
-  }))
-  return (
-    <>
-      <HeadCard>
-        <View style={styles.versionLine}>
-          <Text style={[headText.title, styles.flex]}>Optimization membership</Text>
-          <Tag tone="ok">Active</Tag>
-        </View>
-        {started && !Number.isNaN(started.getTime()) && <Text style={headText.meta}>{`Started ${shortDay(started)}`}</Text>}
-      </HeadCard>
-      <Block title="Set up your plan" meta={`Step ${at + 1} of ${SETUP.length}`}>
-        <Card style={styles.steps}>
-          <Steps steps={steps} />
-        </Card>
-      </Block>
-      {next && <PrimaryButton onPress={() => router.push(next.href)}>Continue setup</PrimaryButton>}
-    </>
-  )
-}
 
 /** Version 1 with Dr. Patel: a draft until it is approved. */
 function ReviewStage() {

@@ -88,8 +88,8 @@ function ordersAt(v: Visit) {
 function recordsFrom(v: Visit): { id: string; icon: RecordIconName; title: string; meta: string; href: Href }[] {
   const there = (where: string) => v.where.startsWith(where)
   return [
-    ...DOCUMENTS.filter((d) => d.date === v.date && there(d.where)).map((d) => ({ id: `document-${d.id}`, icon: "documents" as const, title: d.name, meta: "Document", href: "/record/documents" as Href })),
-    ...PROCEDURES.filter((p) => p.date === v.date && there(p.where)).map((p) => ({ id: `procedure-${p.id}`, icon: "procedures" as const, title: p.name, meta: "Procedure", href: "/record/procedures" as Href })),
+    ...DOCUMENTS.filter((d) => d.date === v.date && there(d.where)).map((d) => ({ id: `document-${d.id}`, icon: "documents" as const, title: d.name, meta: "Document", href: "/results" as Href })),
+    ...PROCEDURES.filter((p) => p.date === v.date && there(p.where)).map((p) => ({ id: `procedure-${p.id}`, icon: "procedures" as const, title: p.name, meta: "Procedure", href: "/results" as Href })),
   ]
 }
 

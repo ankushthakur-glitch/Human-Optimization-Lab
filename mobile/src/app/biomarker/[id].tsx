@@ -138,7 +138,7 @@ export default function MarkerScreen() {
           onShow={offer.markShown}
           onPress={() => {
             offer.markOpened()
-            router.push({ pathname: "/plans", params: { from: b.id } })
+            router.push("/plan")
           }}
         />
       )}

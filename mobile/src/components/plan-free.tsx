@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native"
 
 import { CheckoutSheet } from "@/components/checkout-sheet"
 import { PlanShowroom, ShowroomActions } from "@/components/plan-showroom"
-import { Block, Card, EmptyState, Group, NeedsRow, TextAction } from "@/components/record-kit"
+import { Block, Card, Group, NeedsRow, TextAction } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { useExperience } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
@@ -17,23 +17,15 @@ import { space, type } from "@/lib/theme"
 
    States: readiness "Not ready" or "A little" keeps the showroom folded
    behind one quiet link; a cancelled member finds her past plans above it
-   and the button reads "Start again"; while the record is arriving, or when it was
-   never connected, one card says when the plan options appear. It renders
+   and the button reads "Start again". It renders
    its own tab screen, so the checkout sheet passes over the tab bar. */
 
 export function PlanFree() {
   const onboarding = useOnboarding()
-  const { experience, readiness } = useExperience()
+  const { readiness } = useExperience()
   const [checkout, setCheckout] = React.useState(false)
   // At low readiness the showroom waits behind "See what a plan includes".
   const [open, setOpen] = React.useState(false)
-
-  if (experience === "declined" || experience === "building")
-    return (
-      <TabScreen tab="plan" title="Upgrade">
-        <EmptyState title="Your plan options appear once your record is ready." />
-      </TabScreen>
-    )
 
   const past = onboarding.planHistory ?? []
   const showroom = readiness !== "low" || open
@@ -41,7 +33,7 @@ export function PlanFree() {
     <TabScreen
       tab="plan"
       title="Upgrade"
-      footer={showroom ? <ShowroomActions mode="tab" onStart={() => setCheckout(true)} /> : undefined}
+      footer={showroom ? <ShowroomActions onStart={() => setCheckout(true)} /> : undefined}
       overlay={checkout ? <CheckoutSheet onClose={() => setCheckout(false)} /> : undefined}
     >
       {past.length > 0 && (
@@ -54,7 +46,7 @@ export function PlanFree() {
         </Block>
       )}
       {showroom ? (
-        <PlanShowroom mode="tab" onStart={() => setCheckout(true)} />
+        <PlanShowroom />
       ) : (
         <Card style={styles.ready}>
           <View style={styles.readyWords}>
