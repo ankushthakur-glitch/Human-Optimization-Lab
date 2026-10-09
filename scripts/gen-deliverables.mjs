@@ -120,6 +120,9 @@ const WEB_AUTH = [
   ["Reset password", "/screens/login/reset-password"],
 ]
 
+/** One record item as the Record tab opens it (record/item reads it from `d`). */
+const SAMPLE_ITEM = {"title": "Knee arthroscopy, right", "provenance": "clinician", "details": [["Date", "Feb 2019"], ["Where", "Scripps Memorial Hospital"]], "source": [["Source", "Scripps Memorial Hospital"], ["System", "Epic"], ["Last updated", "Feb 2019"]]}
+
 /** Pages that aren't a page.tsx of their own: [portal, feature, sub, url,
     at?]. `at` -1 puts a row above the portal's listed pages; a route puts it
     just after that route's row. */
@@ -180,7 +183,11 @@ const EXTRA = [
   // home sit behind the app's session, so they have no link of their own.
   [PATIENT, AUTH, "Activate account (mobile app)", "/app/activate", -1],
   [PATIENT, AUTH, "Sign in (mobile app)", "/app/sign-in", -1],
-  [PATIENT, "Patient Onboarding", "Consent (mobile app)", "/app/demo/onboarding-consent"],
+  [PATIENT, "Patient Onboarding", "About you (mobile app)", "/app/demo/onboarding-about"],
+  [PATIENT, "Patient Onboarding", "Consent: records (mobile app)", "/app/demo/onboarding-consent"],
+  [PATIENT, "Patient Onboarding", "Consent: texts and signature (mobile app)", "/app/demo/onboarding-consent?to=/onboarding/consent-texts"],
+  [PATIENT, "Patient Onboarding", "Your why conversation (mobile app)", "/app/demo/onboarding-why"],
+  [PATIENT, "Patient Onboarding", "Record building (mobile app)", "/app/demo/onboarding-syncing"],
   [PATIENT, "Patient Onboarding", "Sign in after creating a password (mobile app)", "/app/demo/onboarding-signin"],
   [PATIENT, "Patient Onboarding", "Returning patient sign in (mobile app)", "/app/demo/returning"],
   ...patientApp(),
@@ -216,6 +223,7 @@ function patientApp() {
     [RECORD, "Medicine details", at("free", "/medicine/atorvastatin")],
     [RECORD, "Visit details", at("free", "/visit/annual")],
     [RECORD, "Outside visit (urgent care)", at("free", "/visit/urgent")],
+    [RECORD, "Record item details (procedure)", at("free", `/record/item?d=${encodeURIComponent(JSON.stringify(SAMPLE_ITEM))}`)],
     [RECORD, "Add to your record (medicine form)", at("free", "/record/add?kind=medicines")],
     [RECORD, "Tell us about a difference", at("free", "/tell-us")],
     [TODO, "To do tab", at("free", "/gaps")],
@@ -257,6 +265,9 @@ function patientApp() {
     [PROFILE, "Access (connected records and devices)", at("member", "/access")],
     [PROFILE, "Membership", at("member", "/membership")],
     [PROFILE, "Connect your records", at("withdrawn", "/connect")],
+    [PROFILE, "Connect your records: texts and signature", at("withdrawn", "/connect-texts")],
+    [PROFILE, "Record building after connecting", at("withdrawn", "/building")],
+    [PROFILE, "Renew sharing", at("free", "/access?sheet=renew")],
   ].map(([feature, sub, url]) => [PATIENT, feature, sub, url])
 }
 

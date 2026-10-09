@@ -67,7 +67,10 @@ export default function DemoScreen() {
         }
         const step = patch.step ?? "done"
         const home = to?.startsWith("/") ? (to as Href) : "/"
-        setLanding(step === "done" ? { href: home, status: "signedIn", overHome: home !== "/" } : { href: STEP_ROUTE[step], status: "signedIn" })
+        // A seed still in setup can land on a later page of its step
+        // (?to=/onboarding/consent-texts); any other page waits for setup.
+        const onStep = to?.startsWith("/onboarding/") ? (to as Href) : undefined
+        setLanding(step === "done" ? { href: home, status: "signedIn", overHome: home !== "/" } : { href: onStep ?? STEP_ROUTE[step], status: "signedIn" })
       }
     })()
   }, [id, onboarding, auth, credit, to])

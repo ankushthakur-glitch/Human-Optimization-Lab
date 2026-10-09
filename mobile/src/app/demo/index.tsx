@@ -46,6 +46,10 @@ const VARIANTS: Variant[] = [
   { id: "member-partial", line: "Dinner not logged yesterday", member: true },
   { id: "member-review", line: "Version 1 with Dr. Patel", member: true },
   { id: "member-redraft", line: "Version 3 with Dr. Patel, version 2 live", member: true },
+  { id: "onboarding-about", line: "Setup: About you" },
+  { id: "onboarding-consent", line: "Setup: the consent" },
+  { id: "onboarding-why", line: "Setup: the why conversation" },
+  { id: "onboarding-syncing", line: "Setup: the record building" },
 ]
 
 /** Own keys only, so a name such as "toString" is never a seed. */

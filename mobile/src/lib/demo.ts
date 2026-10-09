@@ -1,5 +1,6 @@
 import type { Answers } from "@/lib/conversation"
 import { creditUsed } from "@/lib/allowance"
+import { DEFAULT_PERIOD } from "@/lib/consent"
 import { dayKey, showDate } from "@/lib/dates"
 import { BONE_SAMPLE_MEALS, BONE_VERSIONS, MEMBER_SCORES, PLAN_VERSIONS, SAMPLE_MEALS, addDays, clock, dayLabel, profileOf, thisWeek } from "@/lib/member"
 import type { PastChat, useOnboarding } from "@/lib/onboarding"
@@ -33,7 +34,10 @@ import { localIso } from "@/lib/todo"
    member-redraft         version 3 with Dr. Patel, version 2 live
    onboarding-activate    a first run: signed out, on activation
    onboarding-signin      password just created, on sign in with her email
+   onboarding-about       signed in, on About you
    onboarding-consent     signed in, on the consent
+   onboarding-why         consent signed, on the why conversation
+   onboarding-syncing     why answered, the record building
 
    Dates that depend on today are worked out from the device date when the
    seed runs (T). Sample data only, never a real patient. */
@@ -60,7 +64,10 @@ export type DemoId =
   | "member-redraft"
   | "onboarding-activate"
   | "onboarding-signin"
+  | "onboarding-about"
   | "onboarding-consent"
+  | "onboarding-why"
+  | "onboarding-syncing"
   | "returning"
 
 /** Her answers from the "your why" conversation, on the app's own scales:
@@ -340,7 +347,11 @@ export const DEMOS: Record<DemoId, () => Patch> = {
   // The free patient, signed out: sign in with her password or Face ID.
   returning: free,
   // Is this you already answered, as that step saves it.
+  "onboarding-about": firstRun,
   "onboarding-consent": () => ({ ...firstRun(), step: "consent", profile: { ...DEMOGRAPHICS } }),
+  // The consent signed for the default period, as its texts page saves it.
+  "onboarding-why": () => ({ ...firstRun(), step: "why", profile: { ...DEMOGRAPHICS }, consent: "signed", consentAt: new Date().toISOString(), consentPeriod: DEFAULT_PERIOD }),
+  "onboarding-syncing": () => ({ ...DEMOS["onboarding-why"](), step: "records", why: { ...WHY }, whyAt: Date.now() }),
 }
 
 /* ------------------------------------------------------ chat history -- */
