@@ -400,3 +400,98 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 
 ## 09-Oct-2026
 
+
+## 10-Oct-2026
+
+- Added: Provider Portal / Dashboard / Version 1: work queue (abnormal results)
+- Added: Provider Portal / Dashboard / Version 1: medication changes
+- Added: Provider Portal / Dashboard / Version 1: overdue orders
+- Added: Provider Portal / Dashboard / Version 1: outside care
+- Added: Provider Portal / Dashboard / Version 1: care gaps
+- Added: Provider Portal / Dashboard / Version 1: reviews due
+- Added: Provider Portal / Dashboard / Version 1: urgent
+- Added: Provider Portal / Dashboard / Version 1: all
+- Added: Provider Portal / Dashboard / Version 2: charting
+- Added: Patient Portal / Patient Onboarding / About you (mobile app)
+- Added: Patient Portal / Patient Onboarding / Consent: records (mobile app)
+- Added: Patient Portal / Patient Onboarding / Consent: texts and signature (mobile app)
+- Added: Patient Portal / Patient Onboarding / Your why conversation (mobile app)
+- Added: Patient Portal / Patient Onboarding / Record building (mobile app)
+- Added: Patient Portal / Patient Onboarding / Returning patient sign in (mobile app)
+- Added: Patient Portal / Mobile App: Home (free) / Home
+- Added: Patient Portal / Mobile App: Home (free) / Home: first session
+- Added: Patient Portal / Mobile App: Home (free) / Home: Dr. Patel finished the review
+- Added: Patient Portal / Mobile App: Home (free) / Home: new results arrived
+- Added: Patient Portal / Mobile App: Home (free) / Home: readiness 3 of 5
+- Added: Patient Portal / Mobile App: Home (free) / Home: readiness 2 of 5
+- Added: Patient Portal / Mobile App: Home (free) / Home: nothing to watch
+- Added: Patient Portal / Mobile App: Home (free) / Home: everything booked and answered
+- Added: Patient Portal / Mobile App: Home (free) / Home: sharing turned off
+- Added: Patient Portal / Mobile App: Home (free) / Home: cancelled member back on the free record
+- Added: Patient Portal / Mobile App: Home (free) / Notifications
+- Added: Patient Portal / Mobile App: Record / Biomarker trend (A1c)
+- Added: Patient Portal / Mobile App: Record / Biomarker trend (LDL)
+- Added: Patient Portal / Mobile App: Record / Your medicines (with dose differences)
+- Added: Patient Portal / Mobile App: Record / Medicine details
+- Added: Patient Portal / Mobile App: Record / Outside visit (urgent care)
+- Added: Patient Portal / Mobile App: Record / Record item details (procedure)
+- Added: Patient Portal / Mobile App: Record / Add to your record (medicine form)
+- Added: Patient Portal / Mobile App: To Do / Upcoming appointment
+- Added: Patient Portal / Mobile App: To Do / Record review by Dr. Patel
+- Added: Patient Portal / Mobile App: Ask Inlay / Ask Inlay
+- Added: Patient Portal / Mobile App: Ask Inlay / AI credit nearly used
+- Added: Patient Portal / Mobile App: Ask Inlay / AI credit used up
+- Added: Patient Portal / Mobile App: Ask Inlay / Borrowed from next week
+- Added: Patient Portal / Mobile App: Ask Inlay / Member AI credit used up
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Upgrade tab
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 1: goals
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 2: goals checked against the record
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 3: health profile
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 4: establish your baseline
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 5: complete your enrollment
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 6: payment method
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / You're enrolled
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Schedule your tests
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Your plan is ready
+- Added: Patient Portal / Mobile App: Optimization Member / Plan version 1 with Dr. Patel
+- Added: Patient Portal / Mobile App: Optimization Member / Exercise move
+- Added: Patient Portal / Mobile App: Profile and Settings / Connect your records: texts and signature
+- Added: Patient Portal / Mobile App: Profile and Settings / Record building after connecting
+- Added: Patient Portal / Mobile App: Profile and Settings / Renew sharing
+- Removed: Provider Portal / Dashboard / Dashboard
+- Removed: Patient Portal / Patient Onboarding / Consent (mobile app)
+- Removed: Patient Portal / Mobile App: Free Record / Home
+- Removed: Patient Portal / Mobile App: Free Record / Home: Dr. Patel finished the review
+- Removed: Patient Portal / Mobile App: Free Record / Home: new results arrived
+- Removed: Patient Portal / Mobile App: Free Record / Home: first session
+- Removed: Patient Portal / Mobile App: Free Record / Home: nothing to watch
+- Removed: Patient Portal / Mobile App: Free Record / Home: everything booked and answered
+- Removed: Patient Portal / Mobile App: Free Record / Home: record still arriving
+- Removed: Patient Portal / Mobile App: Free Record / Home: records never connected
+- Removed: Patient Portal / Mobile App: Free Record / Home: sharing turned off
+- Removed: Patient Portal / Mobile App: Free Record / Home: cancelled member back on the free record
+- Removed: Patient Portal / Mobile App: Free Record / Biomarker trend (A1c)
+- Removed: Patient Portal / Mobile App: Free Record / All trends
+- Removed: Patient Portal / Mobile App: Free Record / Notifications
+- Removed: Patient Portal / Mobile App: Record / Medicines (with dose differences)
+- Removed: Patient Portal / Mobile App: Record / Allergies
+- Removed: Patient Portal / Mobile App: Record / Conditions
+- Removed: Patient Portal / Mobile App: Record / Visits
+- Removed: Patient Portal / Mobile App: Record / Tests and orders
+- Removed: Patient Portal / Mobile App: Record / Documents
+- Removed: Patient Portal / Mobile App: Record / Immunizations
+- Removed: Patient Portal / Mobile App: Record / Procedures
+- Removed: Patient Portal / Mobile App: Record / Added by you
+- Removed: Patient Portal / Mobile App: Record / Add a medicine (form)
+- Removed: Patient Portal / Mobile App: AI Assistant / Assistant
+- Removed: Patient Portal / Mobile App: AI Assistant / Assistant: AI credit nearly used
+- Removed: Patient Portal / Mobile App: AI Assistant / Assistant: AI credit used up
+- Removed: Patient Portal / Mobile App: AI Assistant / Assistant: borrowed from next month
+- Removed: Patient Portal / Mobile App: Upgrade / Upgrade tab
+- Removed: Patient Portal / Mobile App: Upgrade / Plan page with checkout
+- Removed: Patient Portal / Mobile App: Upgrade / Human Flourishing score
+- Removed: Patient Portal / Mobile App: Optimization Member / Setup after joining (step 3 of 5)
+- Removed: Patient Portal / Mobile App: Optimization Member / Plan with Dr. Patel for review
+- Removed: Patient Portal / Mobile App: Optimization Member / Plan paused
+- Removed: Patient Portal / Mobile App: Optimization Member / Assistant: member credit used up
+- Removed: Patient Portal / Mobile App: Profile and Settings / Who has looked at your record
