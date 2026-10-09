@@ -97,6 +97,7 @@ const PAGES = {
   "/screens/practice/locations/[id]": [MANAGER, "Locations", "Location details", { url: "/screens/practice/locations/LOC1001" }],
   "/screens/practice/locations/[id]/edit": [MANAGER, "Locations", "Edit location", { url: "/screens/practice/locations/LOC1001/edit" }],
   // A provider's portal, reached from the provider invite.
+  "/screens/patients/dashboard": [PROVIDER, "Dashboard", "Version 1: work queue (abnormal results)"],
   "/screens/patients": [PROVIDER, "Patients", "Patients (list, health record sync status, bulk import, send invites)"],
   "/screens/patients/new": [PROVIDER, "Patients", "Add patient and send invite"],
   "/screens/patients/[id]": [PROVIDER, "Patient Chart", "Dashboard: free member", { url: "/screens/patients/P10240" }],
@@ -159,6 +160,16 @@ const EXTRA = [
   [MANAGER, "Users", "Users: non-clinical users tab (list, add, view, edit panels)", "/screens/practice/users?tab=staff"],
 
   ...authFor(PROVIDER, "provider", WEB_AUTH),
+  ...[
+    ["Version 1: medication changes", "medications"],
+    ["Version 1: overdue orders", "orders"],
+    ["Version 1: outside care", "outside-care"],
+    ["Version 1: care gaps", "care-gaps"],
+    ["Version 1: reviews due", "reviews"],
+    ["Version 1: urgent", "urgent"],
+    ["Version 1: all", "all"],
+  ].map(([sub, tab]) => [PROVIDER, "Dashboard", sub, `/screens/patients/dashboard?tab=${tab}`, "/screens/patients/dashboard"]),
+  [PROVIDER, "Dashboard", "Version 2: charting", "/screens/patients/dashboard?v=2", "/screens/patients/dashboard"],
 
   // A patient signs in on the mobile app; only the invitation is on the web.
   ...authFor(PATIENT, "patient", [
@@ -171,6 +182,7 @@ const EXTRA = [
   [PATIENT, AUTH, "Sign in (mobile app)", "/app/sign-in", -1],
   [PATIENT, "Patient Onboarding", "Consent (mobile app)", "/app/demo/onboarding-consent"],
   [PATIENT, "Patient Onboarding", "Sign in after creating a password (mobile app)", "/app/demo/onboarding-signin"],
+  [PATIENT, "Patient Onboarding", "Returning patient sign in (mobile app)", "/app/demo/returning"],
   ...patientApp(),
 ]
 
@@ -178,72 +190,73 @@ const EXTRA = [
     (mobile app/demo/[variant].tsx seeds the device), then lands on `to`. */
 function patientApp() {
   const at = (seed, to, query = "") => `/app/demo/${seed}${to || query ? "?" : ""}${[to && `to=${to.includes("?") ? encodeURIComponent(to) : to}`, query].filter(Boolean).join("&")}`
-  const FREE = "Mobile App: Free Record"
+  const HOME = "Mobile App: Home (free)"
   const RECORD = "Mobile App: Record"
   const TODO = "Mobile App: To Do"
-  const AI = "Mobile App: AI Assistant"
-  const UPGRADE = "Mobile App: Upgrade"
+  const AI = "Mobile App: Ask Inlay"
+  const UPGRADE = "Mobile App: Upgrade and Plan Set Up"
   const MEMBER = "Mobile App: Optimization Member"
   const PROFILE = "Mobile App: Profile and Settings"
   return [
-    [FREE, "Home", at("free")],
-    [FREE, "Home: Dr. Patel finished the review", at("free-checked")],
-    [FREE, "Home: new results arrived", at("free-new-results")],
-    [FREE, "Home: first session", at("free-first")],
-    [FREE, "Home: nothing to watch", at("free-steady")],
-    [FREE, "Home: everything booked and answered", at("free-caught-up")],
-    [FREE, "Home: record still arriving", at("building")],
-    [FREE, "Home: records never connected", at("declined")],
-    [FREE, "Home: sharing turned off", at("withdrawn")],
-    [FREE, "Home: cancelled member back on the free record", at("cancelled")],
-    [FREE, "Biomarker trend (A1c)", at("free", "/biomarker/a1c")],
-    [FREE, "All trends", at("free", "/record/results")],
-    [FREE, "Notifications", at("free", "/notifications")],
+    [HOME, "Home", at("free")],
+    [HOME, "Home: first session", at("free-first")],
+    [HOME, "Home: Dr. Patel finished the review", at("free-checked")],
+    [HOME, "Home: new results arrived", at("free-new-results")],
+    [HOME, "Home: readiness 3 of 5", at("free-quiet")],
+    [HOME, "Home: readiness 2 of 5", at("free-not-ready")],
+    [HOME, "Home: nothing to watch", at("free-steady")],
+    [HOME, "Home: everything booked and answered", at("free-caught-up")],
+    [HOME, "Home: sharing turned off", at("withdrawn")],
+    [HOME, "Home: cancelled member back on the free record", at("cancelled")],
+    [HOME, "Notifications", at("free", "/notifications")],
     [RECORD, "Record tab", at("free", "/results")],
-    [RECORD, "Medicines (with dose differences)", at("free", "/medications")],
-    [RECORD, "Allergies", at("free", "/record/allergies")],
-    [RECORD, "Conditions", at("free", "/record/conditions")],
-    [RECORD, "Visits", at("free", "/record/visits")],
+    [RECORD, "Biomarker trend (A1c)", at("free", "/biomarker/a1c")],
+    [RECORD, "Biomarker trend (LDL)", at("free", "/biomarker/ldl")],
+    [RECORD, "Your medicines (with dose differences)", at("free", "/medications")],
+    [RECORD, "Medicine details", at("free", "/medicine/atorvastatin")],
     [RECORD, "Visit details", at("free", "/visit/annual")],
-    [RECORD, "Tests and orders", at("free", "/record/tests")],
-    [RECORD, "Documents", at("free", "/record/documents")],
-    [RECORD, "Immunizations", at("free", "/record/immunizations")],
-    [RECORD, "Procedures", at("free", "/record/procedures")],
-    [RECORD, "Added by you", at("free", "/record/added")],
-    [RECORD, "Add a medicine (form)", at("free", "/record/add?kind=medicines")],
+    [RECORD, "Outside visit (urgent care)", at("free", "/visit/urgent")],
+    [RECORD, "Add to your record (medicine form)", at("free", "/record/add?kind=medicines")],
     [RECORD, "Tell us about a difference", at("free", "/tell-us")],
     [TODO, "To do tab", at("free", "/gaps")],
     [TODO, "Care gap (mammogram)", at("free", "/task/mammogram")],
     [TODO, "Lab order", at("free", "/order/labs-nov")],
     [TODO, "Book with a partner", at("free", "/book/labs-nov")],
-    [AI, "Assistant", at("free", "/assistant")],
-    [AI, "Assistant: AI credit nearly used", at("free", "/assistant", "credit=high")],
-    [AI, "Assistant: AI credit used up", at("free", "/assistant", "credit=out")],
-    [AI, "Assistant: borrowed from next month", at("free", "/assistant", "credit=borrowed")],
+    [TODO, "Upcoming appointment", at("free", "/visit/cardio-follow-up")],
+    [TODO, "Record review by Dr. Patel", at("free", "/visit/review-dec")],
+    [AI, "Ask Inlay", at("free", "/assistant")],
+    [AI, "AI credit nearly used", at("free", "/assistant", "credit=high")],
+    [AI, "AI credit used up", at("free", "/assistant", "credit=out")],
+    [AI, "Borrowed from next week", at("free", "/assistant", "credit=borrowed")],
+    [AI, "Member AI credit used up", at("member", "/assistant", "credit=member-out")],
     [UPGRADE, "Upgrade tab", at("free", "/plan")],
-    [UPGRADE, "Plan page with checkout", at("free", "/plans")],
-    [UPGRADE, "Human Flourishing score", at("free", "/score")],
+    [UPGRADE, "Step 1: goals", at("free", "/goals")],
+    [UPGRADE, "Step 2: goals checked against the record", at("free", "/goals-record")],
+    [UPGRADE, "Step 3: health profile", at("free", "/health-profile")],
+    [UPGRADE, "Step 4: establish your baseline", at("free", "/baseline")],
+    [UPGRADE, "Step 5: complete your enrollment", at("free", "/enrollment")],
+    [UPGRADE, "Step 6: payment method", at("free", "/payment")],
+    [UPGRADE, "You're enrolled", at("member", "/enrolled")],
+    [UPGRADE, "Schedule your tests", at("member", "/schedule-tests")],
+    [UPGRADE, "Your plan is ready", at("member", "/plan-ready")],
     [MEMBER, "Home", at("member")],
     [MEMBER, "Home: bone plan", at("member-bone")],
     [MEMBER, "Home: nothing logged yesterday", at("member-nothing-logged")],
     [MEMBER, "Home: dinner not logged", at("member-partial")],
-    [MEMBER, "Setup after joining (step 3 of 5)", at("member-setup")],
-    [MEMBER, "Plan with Dr. Patel for review", at("member-review")],
+    [MEMBER, "Plan version 1 with Dr. Patel", at("member-review")],
     [MEMBER, "New plan version with Dr. Patel", at("member-redraft")],
-    [MEMBER, "Plan paused", at("paused")],
     [MEMBER, "Plan tab", at("member", "/plan")],
     [MEMBER, "Diet", at("member", "/diet")],
     [MEMBER, "Log a meal", at("member", "/log-meal")],
     [MEMBER, "Exercise", at("member", "/exercise")],
+    [MEMBER, "Exercise move", at("member", "/exercise/sit-to-stand")],
     [MEMBER, "Yesterday", at("member", "/day/yesterday")],
     [MEMBER, "Progress", at("member", "/progress")],
     [MEMBER, "History", at("member", "/history")],
-    [MEMBER, "Assistant: member credit used up", at("member", "/assistant", "credit=member-out")],
     [PROFILE, "Profile", at("free", "/profile")],
-    [PROFILE, "Access (connected records and devices)", at("free", "/access")],
-    [PROFILE, "Who has looked at your record", at("free", "/record/access")],
+    [PROFILE, "Access (connected records and devices)", at("member", "/access")],
     [PROFILE, "Membership", at("member", "/membership")],
-    [PROFILE, "Connect your records", at("declined", "/connect")],
+    [PROFILE, "Connect your records", at("withdrawn", "/connect")],
   ].map(([feature, sub, url]) => [PATIENT, feature, sub, url])
 }
 

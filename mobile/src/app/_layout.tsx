@@ -120,7 +120,17 @@ function Routes() {
           <Stack.Screen name="record/item" />
           <Stack.Screen name="record/add" />
           <Stack.Screen name="medications" />
+          <Stack.Screen name="medicine/[id]" />
           <Stack.Screen name="tell-us" />
+          <Stack.Screen name="goals" />
+          <Stack.Screen name="goals-record" />
+          <Stack.Screen name="health-profile" />
+          <Stack.Screen name="baseline" />
+          <Stack.Screen name="enrollment" />
+          <Stack.Screen name="payment" />
+          <Stack.Screen name="schedule-tests" />
+          <Stack.Screen name="enrolled" options={{ animation: "fade" }} />
+          <Stack.Screen name="plan-ready" options={{ animation: "fade" }} />
           <Stack.Screen name="task/[id]" />
           <Stack.Screen name="order/[id]" />
           <Stack.Screen name="book/[id]" />

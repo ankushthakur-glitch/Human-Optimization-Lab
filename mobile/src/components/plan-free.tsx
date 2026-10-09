@@ -1,7 +1,7 @@
+import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { CheckoutSheet } from "@/components/checkout-sheet"
 import { PlanShowroom, ShowroomActions } from "@/components/plan-showroom"
 import { Block, Card, Group, NeedsRow, TextAction } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
@@ -17,13 +17,12 @@ import { space, type } from "@/lib/theme"
 
    States: readiness "Not ready" or "A little" keeps the showroom folded
    behind one quiet link; a cancelled member finds her past plans above it
-   and the button reads "Start again". It renders
-   its own tab screen, so the checkout sheet passes over the tab bar. */
+   and the button reads "Start again", which opens the goals step
+   (/goals) ahead of the checkout. */
 
 export function PlanFree() {
   const onboarding = useOnboarding()
   const { readiness } = useExperience()
-  const [checkout, setCheckout] = React.useState(false)
   // At low readiness the showroom waits behind "See what a plan includes".
   const [open, setOpen] = React.useState(false)
 
@@ -33,8 +32,7 @@ export function PlanFree() {
     <TabScreen
       tab="plan"
       title="Upgrade"
-      footer={showroom ? <ShowroomActions onStart={() => setCheckout(true)} /> : undefined}
-      overlay={checkout ? <CheckoutSheet onClose={() => setCheckout(false)} /> : undefined}
+      footer={showroom ? <ShowroomActions onStart={() => router.push("/goals")} /> : undefined}
     >
       {past.length > 0 && (
         <Block title="Your past plans">

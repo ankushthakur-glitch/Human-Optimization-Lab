@@ -6,11 +6,11 @@ import { ArrowsClockwise, ChartLine, Target, User, Warning } from "@/components/
 import { Block, Group, NeedsRow, toast } from "@/components/record-kit"
 import { giveBackQuestions, spendAllQuestions } from "@/lib/allowance"
 import { useAuth } from "@/lib/auth"
-import { showDate } from "@/lib/dates"
 import { DEMOS } from "@/lib/demo"
 import { addDays, clockOf, localDay, shortDay } from "@/lib/member"
 import { TOUCHPOINTS, decide, resetOffers, type OfferKind, type Touchpoint } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
+import { proposedPlan } from "@/lib/plans"
 import { color } from "@/lib/theme"
 
 /* Not a product screen, and never linked from one: the review controls
@@ -116,16 +116,13 @@ export default function ReviewScreen() {
     toast("Offer limits reset")
   }
 
-  /** Dr. Patel approves the version with her in the portal: it goes live,
-      dated today, and the one before is kept. */
+  /** Dr. Patel sends the version from the portal: she reads it
+      and accepts it, or asks for a change, on the Plan tab. */
   async function approve() {
     const plan = onboarding.plan
     if (plan?.status !== "review") return toast("No plan is with Dr. Patel")
-    const why = plan.versions.length ? "New readings from home" : "Your first plan"
-    await onboarding.save({
-      plan: { status: "live", version: plan.version, versions: [{ version: plan.version, approved: showDate(), why }, ...plan.versions] },
-    })
-    toast(`Version ${plan.version} approved`)
+    await onboarding.save({ plan: proposedPlan(plan) })
+    toast(`Version ${plan.version} sent for review`)
   }
 
   /** New readings redraft a live plan; the live version stays meanwhile. */
@@ -235,7 +232,7 @@ export default function ReviewScreen() {
           <NeedsRow icon={SWITCH} title="Use all AI credit" meta="The orb turns red, the assistant shows its limit card" onPress={spendAll} chevron={false} />
           <NeedsRow icon={SWITCH} title="Give back the AI credit" meta="A fresh week, nothing borrowed or added" onPress={returnAll} chevron={false} />
           <NeedsRow icon={SWITCH} title="Reset offer limits" meta="Clears every impression, Not now and Not for me" onPress={resetLimits} chevron={false} />
-          <NeedsRow icon={SWITCH} title="Dr. Patel approves the plan" meta="The version with Dr. Patel goes live today" onPress={approve} chevron={false} />
+          <NeedsRow icon={SWITCH} title="Dr. Patel sends the plan" meta="The version with Dr. Patel comes to the patient to accept" onPress={approve} chevron={false} />
           <NeedsRow icon={SWITCH} title="New readings arrive" meta="A new version goes to Dr. Patel, the live one stays" onPress={redraft} chevron={false} />
           <NeedsRow icon={SWITCH} title="Membership ends today" meta="A cancelled member goes back to the free record" onPress={endMembership} chevron={false} />
           <NeedsRow icon={SWITCH} title="Mark yesterday as not logged" meta="Yesterday's meals are cleared" onPress={clearYesterday} chevron={false} />

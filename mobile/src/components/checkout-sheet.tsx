@@ -1,4 +1,4 @@
-import { router } from "expo-router"
+import { router, useNavigation } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
@@ -8,6 +8,7 @@ import { Card, Group, KeyValue, SmallAction, TextAction } from "@/components/rec
 import { Sheet } from "@/components/sheet"
 import { showToast } from "@/components/toast"
 import { Button } from "@/components/ui"
+import { chosenTests } from "@/lib/baseline-tests"
 import { useMarkers } from "@/lib/experience"
 import { logEvent, planFocus } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
@@ -27,10 +28,7 @@ import { space, type } from "@/lib/theme"
 
    Two steps (6 Oct 2026): first she picks how she pays, then the card,
    the summary and her agreement. "Change" on the plan row and "Back"
-   take her to the first step with her choice kept.
-
-   On confirm the membership is saved, every earlier plan version is kept,
-   her plan goes to Dr. Patel as a draft, and she lands on the Plan tab. */
+   take her to the first step with her choice kept. */
 
 /** The prototype's sample card, filled by "Add a card". */
 const SAMPLE_CARD = "Visa ending 4242"
@@ -46,20 +44,18 @@ const PROGRAM_OF: Record<FocusArea, ProgramId> = {
   bone: "bone",
 }
 
-export function CheckoutSheet({ onClose }: { onClose: () => void }) {
+/** Starts the membership, from the checkout sheet or the plan set-up's
+    last step (/enrollment): after the payment's pending second the
+    membership is saved, every earlier plan version kept, her plan goes to
+    Dr. Patel as a draft, and she lands on the Plan tab, or, from the
+    set-up, on the enrolled page over home (/enrolled). */
+export function useStartMembership() {
   const onboarding = useOnboarding()
   const markers = useMarkers()
-  const [cadence, setCadence] = React.useState<Cadence>(onboarding.membership?.billing ?? "monthly")
-  const price = priceLabel(cadence)
-  const [card, setCard] = React.useState(onboarding.membership?.card)
-  // When she ticked the renewal box, kept as her consent (S-70).
-  const [agreedAt, setAgreedAt] = React.useState<string>()
-  const [terms, setTerms] = React.useState(false)
+  const navigation = useNavigation()
   const [pending, setPending] = React.useState(false)
-  const [step, setStep] = React.useState<"plan" | "pay">("plan")
 
-  async function start() {
-    if (!card || !agreedAt) return
+  async function start({ card, billing, agreedAt, enrolled }: { card: string; billing: Cadence; agreedAt: string; enrolled?: boolean }) {
     setPending(true)
     await new Promise((done) => setTimeout(done, PAYING_MS))
     const now = new Date()
@@ -69,17 +65,47 @@ export function CheckoutSheet({ onClose }: { onClose: () => void }) {
       .sort((a, b) => b.version - a.version)
     const programs = [...new Set(planFocus(onboarding, markers, 3).areas.map((a) => PROGRAM_OF[a]))]
     await onboarding.save({
-      membership: { tier: "optimization", programs, startedAt: now.toISOString(), card, billing: cadence, renewalConsentAt: agreedAt },
+      membership: { tier: "optimization", programs, startedAt: now.toISOString(), card, billing, renewalConsentAt: agreedAt },
       // A draft with the doctor. After a cancel and a rejoin it takes the
       // next number after every version she kept, so none is reused.
       plan: { status: "review", version: Math.max(0, ...kept.map((v) => v.version)) + 1, versions: [] },
       planHistory: kept.length ? kept : undefined,
+      // The set-up's baseline tests, paid with the membership, to schedule
+      // from the enrolled page.
+      ...(enrolled ? { startingTests: { ids: chosenTests(onboarding.baselinePicks).map((t) => t.id), at: now.toISOString() } } : {}),
     })
     logEvent(onboarding, "checkout_completed")
     setPending(false)
+    if (enrolled) {
+      // The set-up's steps close; the page says what comes next itself.
+      // One reset, home with the enrolled page over it: a dismissTo then a
+      // push raced, as the Plan tab holds a pop for two frames (drag-back)
+      // and the held pop then took the enrolled page off again.
+      navigation.dispatch({ type: "RESET", payload: { index: 1, routes: [{ name: "index" }, { name: "enrolled" }] } })
+      return
+    }
     showToast("Welcome in. Dr. Patel is reviewing your plan.")
-    onClose()
     router.dismissTo("/plan")
+  }
+
+  return { start, pending }
+}
+
+export function CheckoutSheet({ onClose }: { onClose: () => void }) {
+  const onboarding = useOnboarding()
+  const { start: startMembership, pending } = useStartMembership()
+  const [cadence, setCadence] = React.useState<Cadence>(onboarding.membership?.billing ?? "monthly")
+  const price = priceLabel(cadence)
+  const [card, setCard] = React.useState(onboarding.membership?.card)
+  // When she ticked the renewal box, kept as her consent (S-70).
+  const [agreedAt, setAgreedAt] = React.useState<string>()
+  const [terms, setTerms] = React.useState(false)
+  const [step, setStep] = React.useState<"plan" | "pay">("plan")
+
+  async function start() {
+    if (!card || !agreedAt) return
+    await startMembership({ card, billing: cadence, agreedAt })
+    onClose()
   }
 
   if (step === "plan")

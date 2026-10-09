@@ -25,8 +25,9 @@ import {
   type TabIconProps,
 } from "@/components/icons"
 import { OrbButton, PageGround, PageHeader } from "@/components/hol"
+import { useTopInset } from "@/components/ui"
 import { useAllowance } from "@/lib/allowance"
-import { planFor, useExperience } from "@/lib/experience"
+import { upgradeTab, useExperience } from "@/lib/experience"
 import { color, font, space } from "@/lib/theme"
 
 /* The signed-in app's bottom navigation, from the Figma "Hol" file: a
@@ -78,8 +79,15 @@ export function TabScreen({
   pinned,
   footer,
   overlay,
+  bare,
+  headless,
   children,
 }: {
+  /** No tab bar: a back caret in the header instead. */
+  bare?: boolean
+  /** No header bar at all: the page starts under the status bar and keeps
+      the tab bar, e.g. the plan while the doctor reviews it. */
+  headless?: boolean
   /** Stays above the tab bar while the page scrolls beneath it, e.g. the
       Plan tab's "Build my personalized plan". */
   footer?: React.ReactNode
@@ -97,6 +105,7 @@ export function TabScreen({
   children: React.ReactNode
 }) {
   const { bottom } = useSafeAreaInsets()
+  const top = useTopInset()
   // Record, To do and Plan open over home with no animation; the left edge
   // swipe still drags them back to it.
   useDragBack("none", tab !== "home")
@@ -109,26 +118,32 @@ export function TabScreen({
       {/* On home, the first-run walk through dims all of this but one part. */}
       <TourHost active={tab === "home"}>
         <DarkStatusBar />
-        <PageHeader
-          back={false}
-          title={title}
-          right={headerRight}
-          compact={!!header}
-        >
-          {header}
-        </PageHeader>
+        {headless ? (
+          <View style={{ height: top }} />
+        ) : (
+          <PageHeader
+            back={!!bare}
+            onBack={bare ? () => (router.canGoBack() ? router.back() : router.replace("/")) : undefined}
+            title={title}
+            right={headerRight}
+            compact={!!header}
+          >
+            {header}
+          </PageHeader>
+        )}
         <View style={styles.fill}>
           <PageGround />
           {pinned && <View style={[styles.body, styles.pinned]}>{pinned}</View>}
           {/* The list stops above the bar: nothing scrolls beneath the pill
             or the orb, the strip under them is the page's own ground. */}
           <ScrollView
-            style={{ marginBottom: barSpace + space.inline }}
+            style={{ marginBottom: bare ? 0 : barSpace + space.inline }}
             contentContainerStyle={[
               styles.body,
               styles.content,
               !!pinned && styles.contentPinned,
               !!footer && { paddingBottom: FOOTER_SPACE },
+              bare && { paddingBottom: bottom + space.inline },
             ]}
             showsVerticalScrollIndicator={false}
           >
@@ -137,11 +152,11 @@ export function TabScreen({
           {/* The footer floats at the foot of the list, right above the bar;
             the page scrolls beneath it and clears it at the end. */}
           {footer && (
-            <View style={[styles.footer, { bottom: barSpace + space.inline }]} pointerEvents="box-none">
+            <View style={[styles.footer, { bottom: (bare ? bottom : barSpace) + space.inline }]} pointerEvents="box-none">
               {footer}
             </View>
           )}
-          <TabBar active={tab} bottom={barBottom} />
+          {!bare && <TabBar active={tab} bottom={barBottom} />}
         </View>
         {overlay}
       </TourHost>
@@ -149,10 +164,12 @@ export function TabScreen({
   )
 }
 
-function TabBar({ active, bottom }: { active: TabName; bottom: number }) {
-  // The plan tab reads "Upgrade", with a crown, for everyone who is not a
-  // member (5 Oct call): it holds the showroom, not a plan of her own.
-  const member = planFor(useExperience()) === "member"
+/** The floating pill and the assistant orb, for a page of its own that
+    keeps the tabs (e.g. "Your personalized plan is ready"). */
+export function TabBar({ active, bottom }: { active: TabName; bottom: number }) {
+  // The plan tab reads "Upgrade", with a crown, for everyone who has no
+  // plan to follow yet (5 Oct call), a member in review included.
+  const upgradeLabel = upgradeTab(useExperience())
   // The arc draws this week's AI credit used, as the chat's strip says it.
   const { share } = useAllowance()
   const tabsRef = useTourTarget("tabs")
@@ -168,7 +185,7 @@ function TabBar({ active, bottom }: { active: TabName; bottom: number }) {
           />
           {TABS.map(({ name, label: tabLabel, href, Icon: TabIcon }) => {
             const on = name === active
-            const upgrade = name === "plan" && !member
+            const upgrade = name === "plan" && upgradeLabel
             const label = upgrade ? "Upgrade" : tabLabel
             const Icon = upgrade ? IconUpgrade : TabIcon
             return (
@@ -256,7 +273,7 @@ const TIP_EVERY = 10000
 const TIP_FOR = 3000
 
 /** The bar's height, and how strongly it blurs what scrolls beneath it. */
-const BAR = 54
+export const BAR = 54
 const BLUR = 40
 
 const styles = StyleSheet.create({

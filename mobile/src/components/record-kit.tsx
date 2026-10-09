@@ -843,25 +843,54 @@ export function DateTrack({ dates, late, mini }: { dates: TrackDate[]; late?: bo
   )
 }
 
+/** How far the current step's band reaches past its text. */
+const STEP_BAND = 10
+/** How far the band reaches past the steps on each side. */
+const STEP_BAND_X = 6
+
 /** Dated steps down a line: each done one ticked with its date, the
-    current one ringed, the rest still to come. */
+    current one ringed on a soft teal band, the rest still to come. The
+    line runs teal through what is done and dashed from the current step
+    to the next. */
 export function Steps({ steps }: { steps: Step[] }) {
   return (
     <View>
-      {steps.map((s, i) => (
-        <View key={i} style={styles.step}>
-          <View style={styles.rail}>
-            <View style={[styles.node, s.state === "done" && styles.nodeDone, s.state === "now" && styles.nodeNow, s.state === "alert" && styles.nodeAlert]}>
-              {s.state === "done" && <Check size={10} color={color.onPrimary} weight="bold" />}
+      {steps.map((s, i) => {
+        const now = s.state === "now"
+        const after = i < steps.length - 1
+        const cameFromDone = i > 0 && steps[i - 1].state === "done"
+        return (
+          <View key={i} style={[styles.step, now && styles.stepNow]}>
+            {now && <View style={styles.stepBand} pointerEvents="none" />}
+            <View style={[styles.rail, now && styles.railNow]}>
+              {now && <View style={[styles.lineStub, i === 0 && styles.lineNone, cameFromDone && styles.lineDone]} />}
+              <View style={[styles.node, s.state === "done" && styles.nodeDone, now && styles.nodeNow, s.state === "alert" && styles.nodeAlert]}>
+                {s.state === "done" && <Check size={10} color={color.onPrimary} weight="bold" />}
+                {now && <View style={styles.nodeNowDot} />}
+              </View>
+              {after && (now ? <DashedLine /> : <View style={[styles.line, s.state === "done" && styles.lineDone]} />)}
             </View>
-            {i < steps.length - 1 && <View style={styles.line} />}
+            <View style={[styles.stepBody, now && styles.stepBodyNow]}>
+              <Text style={[styles.stepLabel, (s.state === "next" || s.state === "alert") && styles.stepLater]}>{s.label}</Text>
+              {!!s.date && <Text style={styles.stepDate}>{s.date}</Text>}
+            </View>
           </View>
-          <View style={styles.stepBody}>
-            <Text style={[styles.stepLabel, (s.state === "next" || s.state === "alert") && styles.stepLater]}>{s.label}</Text>
-            {!!s.date && <Text style={styles.stepDate}>{s.date}</Text>}
-          </View>
-        </View>
-      ))}
+        )
+      })}
+    </View>
+  )
+}
+
+/** The line from the current step on: short grey dashes, drawn as views
+    since a one sided dashed border does not draw on iOS. */
+function DashedLine() {
+  return (
+    <View style={styles.dashTrack}>
+      <View style={styles.dashes}>
+        {Array.from({ length: 40 }, (_, i) => (
+          <View key={i} style={styles.dash} />
+        ))}
+      </View>
     </View>
   )
 }
@@ -2001,11 +2030,25 @@ const styles = StyleSheet.create({
   rail: { alignItems: "center", width: 18 },
   node: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.6, borderColor: hairline.outline, alignItems: "center", justifyContent: "center" },
   nodeDone: { backgroundColor: color.primary, borderColor: color.primary },
-  nodeNow: { borderColor: color.primary, borderWidth: 2 },
+  nodeNow: { borderColor: color.primary, borderWidth: 2, backgroundColor: color.background },
+  nodeNowDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.primary },
   // Something late needs attention, in clay, never red.
   nodeAlert: { borderColor: chart.borderline, borderWidth: 2 },
   line: { flex: 1, width: 2, minHeight: 12, backgroundColor: hairline.outline },
-  lineDone: { backgroundColor: hairline.outline },
+  lineDone: { backgroundColor: color.primary },
+  lineNone: { backgroundColor: "transparent" },
+  lineStub: { width: 2, height: STEP_BAND, backgroundColor: hairline.outline },
+  // The dashes fill the rail's height without setting it: they sit
+  // absolutely in a clipped track, so the row keeps its text's height.
+  dashTrack: { flex: 1, minHeight: 12, width: 2, overflow: "hidden" },
+  dashes: { position: "absolute", top: 3, left: 0, gap: 3 },
+  dash: { width: 2, height: 4, borderRadius: 1, backgroundColor: hairline.outline },
+  // The current step sits on a soft teal band, a little wider than the
+  // steps; the rail reaches up through the band's top to meet the line.
+  stepNow: { paddingTop: STEP_BAND },
+  stepBand: { position: "absolute", top: 0, bottom: space.item, left: -STEP_BAND_X, right: -STEP_BAND_X, borderRadius: 12, backgroundColor: color.primaryTint },
+  railNow: { marginTop: -STEP_BAND },
+  stepBodyNow: { paddingBottom: STEP_BAND + space.item },
   stepBody: { flex: 1, paddingBottom: space.item, gap: space.stack },
   stepLabel: { ...type.chip },
   stepLater: { color: ink.secondary },

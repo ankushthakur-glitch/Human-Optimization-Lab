@@ -93,6 +93,7 @@ const BLANK: Patch = {
   why: undefined,
   whyAt: undefined,
   membership: undefined,
+  planReadySeen: undefined,
   consent: undefined,
   consentAt: undefined,
   consentPeriod: undefined,

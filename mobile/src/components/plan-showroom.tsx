@@ -59,10 +59,10 @@ function iconOf(t: Trend): typeof Flask {
 /** The way a result is moving, for its arrow. */
 const directionOf = (t: Trend) => (t.movement === "rising" ? "up" : t.movement === "falling" ? "down" : undefined)
 
-/** One watched marker in the "areas worth working on" card: its icon, the
-    name and the way it is moving, and the value with its arrow; the row
-    opens the marker. */
-function AreaRow({ t }: { t: Trend }) {
+/** One watched marker in the "areas worth working on" card, a plain row
+    with a rule above all but the first: its icon, the name and the way it
+    is moving, and the value with its arrow; the row opens the marker. */
+function AreaRow({ t, rule }: { t: Trend; rule?: boolean }) {
   const hue = STATUS_HUE[t.status]
   const Icon = iconOf(t)
   const Arrow = directionOf(t) === "up" ? ArrowUp : directionOf(t) === "down" ? ArrowDown : undefined
@@ -71,7 +71,7 @@ function AreaRow({ t }: { t: Trend }) {
       onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: t.id } })}
       accessibilityRole="button"
       accessibilityLabel={t.spoken}
-      style={({ pressed }) => [styles.area, pressed && styles.areaPressed]}
+      style={({ pressed }) => [styles.area, rule && styles.areaRule, pressed && styles.areaPressed]}
     >
       <Tile hue={hue} size={40}>
         <Icon size={22} color={HUE[hue].ink} />
@@ -121,15 +121,39 @@ function MemberGets() {
   )
 }
 
+/** The mint and the cream the cards wash down from, to white. */
+const MINT_WASH = "#D9F1EC"
+const CREAM_WASH = "#FBEFD2"
+
+/** A soft top right to bottom left wash behind a card's rows, from `from` to `to`,
+    inside the card's own corners. */
+function Wash({ from, to, radius }: { from: string; to: string; radius: number }) {
+  const id = React.useId().replace(/:/g, "")
+  return (
+    <View style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: "hidden" }]} pointerEvents="none">
+      <Svg style={StyleSheet.absoluteFill} viewBox="0 0 1 1" preserveAspectRatio="none">
+        <Defs>
+          <LinearGradient id={id} x1="1" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={from} />
+            <Stop offset="1" stopColor={to} />
+          </LinearGradient>
+        </Defs>
+        <Rect width="1" height="1" fill={`url(#${id})`} />
+      </Svg>
+    </View>
+  )
+}
+
 /** One icon for each line of FREE_STAYS, in its order. */
 const FREE_ICON = [Heartbeat, Heart, Flask, ChatText] as const
 
-/** What stays free, however she pays (S-03): all the lines in one soft mint
-    card, a row each with a teal icon block and a tick on the right. */
+/** What stays free, however she pays (S-03): all the lines in one card
+    washed from mint to white, a row each with a teal icon block and a dark teal tick on the right. */
 function FreeStays() {
   return (
     <Block title="What stays free">
       <View style={styles.frees}>
+        <Wash from={MINT_WASH} to="#FFFFFF" radius={18} />
         {FREE_STAYS.map((line, i, all) => {
           const Icon = FREE_ICON[i % FREE_ICON.length]
           return (
@@ -139,7 +163,7 @@ function FreeStays() {
               </View>
               <Text style={styles.freeText}>{line}</Text>
               <View style={styles.freeTick}>
-                <Check size={12} weight="bold" color={color.primary} />
+                <Check size={16} weight="bold" color={color.primaryText} />
               </View>
             </View>
           )
@@ -152,13 +176,14 @@ function FreeStays() {
 /** One icon for each line of TIERS.optimization.excluded, in its order. */
 const COST_ICON = [Microscope, Buildings, Pill] as const
 
-/** What is charged apart from the plan (S-66): all the lines in one soft cream
-    card, a row each with a small tan icon block, so it reads as a cost to know
+/** What is charged apart from the plan (S-66): all the lines in one card washed
+    from cream to white, a row each with a small tan icon block, so it reads as a cost to know
     about and not as something the plan includes. */
 function ChargedSeparately() {
   return (
     <Block title="Charged separately">
       <View style={styles.costs}>
+        <Wash from={CREAM_WASH} to="#FFFFFF" radius={16} />
         {TIERS.optimization.excluded.map((line, i, all) => {
           const Icon = COST_ICON[i % COST_ICON.length]
           return (
@@ -181,7 +206,6 @@ function ChargedSeparately() {
     from the pinned "Build my personalized plan". Yearly carries its saving
     on a badge over the edge and a light green to white wash. */
 function Prices() {
-  const gradient = React.useId().replace(/:/g, "")
   return (
     <Block title="Premium plan">
       <View style={styles.prices}>
@@ -195,19 +219,7 @@ function Prices() {
               accessible
               accessibilityLabel={`${b.name}, ${priceLabel(c)}${b.save ? `, ${b.save}` : ""}`}
             >
-              {yearly && (
-                <View style={styles.priceWash} pointerEvents="none">
-                  <Svg style={StyleSheet.absoluteFill} viewBox="0 0 1 1" preserveAspectRatio="none">
-                    <Defs>
-                      <LinearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-                        <Stop offset="0" stopColor="#D9F1EC" />
-                        <Stop offset="1" stopColor="#FFFFFF" />
-                      </LinearGradient>
-                    </Defs>
-                    <Rect width="1" height="1" fill={`url(#${gradient})`} />
-                  </Svg>
-                </View>
-              )}
+              {yearly && <Wash from={MINT_WASH} to="#FFFFFF" radius={14} />}
               <Text style={styles.priceName}>{b.name}</Text>
               <Text style={styles.priceFigure} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
                 {b.price}
@@ -260,9 +272,11 @@ export function PlanShowroom() {
             )}
           </Text>
         </View>
-        {shown.map((t) => (
-          <AreaRow key={t.id} t={t} />
-        ))}
+        <View>
+          {shown.map((t, i) => (
+            <AreaRow key={t.id} t={t} rule={i > 0} />
+          ))}
+        </View>
       </Card>
 
       <MemberGets />
@@ -283,7 +297,7 @@ export function PlanShowroom() {
 export function ShowroomActions({
   onStart,
 }: {
-  /** Opens the checkout sheet, which the screen draws over itself. */
+  /** Opens the goals step, which leads on to the checkout. */
   onStart: () => void
 }) {
   const onboarding = useOnboarding()
@@ -309,15 +323,8 @@ const styles = StyleSheet.create({
   lead: { flexDirection: "row", alignItems: "center", gap: space.lead },
   leadTitle: { ...type.section, flex: 1, fontSize: 14, lineHeight: 20 },
   count: { fontFamily: font.semibold, color: ink.primary },
-  area: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.lead,
-    padding: space.item,
-    borderRadius: 12,
-    backgroundColor: color.background,
-    boxShadow: "0 1px 6px rgba(16, 24, 40, 0.06)",
-  },
+  area: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.item },
+  areaRule: { borderTopWidth: 1, borderTopColor: hairline.rule },
   areaPressed: { opacity: 0.7 },
   areaWords: { flex: 1, gap: space.line },
   areaName: { ...type.title },
@@ -340,18 +347,18 @@ const styles = StyleSheet.create({
   getIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: color.primaryTint },
   getText: { fontFamily: font.semibold, fontSize: 13, lineHeight: 18, color: ink.strong },
 
-  costs: { paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: "#F4ECD6", backgroundColor: "#FFFCF3" },
+  costs: { paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: "#F4ECD6", backgroundColor: "#FFFFFF" },
   cost: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
   costRule: { borderBottomWidth: 1, borderBottomColor: "#F4ECD6" },
-  costIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#F4E5BE" },
+  costIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#F9EFD6" },
   costText: { ...type.body, flex: 1, color: ink.content },
 
-  frees: { paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, borderColor: "#CFE8E3", backgroundColor: "#F3FAF8" },
+  frees: { paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, borderColor: "#CFE8E3", backgroundColor: "#FFFFFF" },
   free: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
   freeRule: { borderBottomWidth: 1, borderBottomColor: "#DCEEEA" },
-  freeIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#D7EFEA" },
+  freeIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#E5F5F2" },
   freeText: { ...type.body, flex: 1, color: ink.content },
-  freeTick: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "#CBEBE5" },
+  freeTick: { width: 22, height: 22, alignItems: "center", justifyContent: "center" },
 
   // The two price cards, level and equal; the badge floats over the top edge.
   prices: { flexDirection: "row", gap: space.item, paddingTop: 10 },
@@ -367,7 +374,6 @@ const styles = StyleSheet.create({
     backgroundColor: color.background,
   },
   priceYearly: { borderWidth: 1.5, borderColor: color.primary },
-  priceWash: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, borderRadius: 14, overflow: "hidden" },
   priceName: { ...type.title },
   priceFigure: { ...type.hero, textAlign: "center" },
   pricePeriod: { ...type.label, fontFamily: font.medium },

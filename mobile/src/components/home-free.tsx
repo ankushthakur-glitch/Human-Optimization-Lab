@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native"
 
 import { keepTogether } from "@/components/care-gap"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
+import { openMedicineByName } from "@/components/medicines"
 import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, UpgradeBanner, dotted } from "@/components/home-parts"
 import { CheckCircle, Pill, Warning } from "@/components/ph"
 import { Block, Group, NeedsRow, Rise, Status } from "@/components/record-kit"
@@ -11,6 +12,7 @@ import { TrendTiles } from "@/components/trend-tile"
 import { useAllowance } from "@/lib/allowance"
 import { useExperience, useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
+import { MEDICATIONS } from "@/lib/record"
 import { color, space, type } from "@/lib/theme"
 import { NEW_IN_RECORD_NOTE, caughtUp, comingUp, homeBanner, markSeen, needsTitle, todo, yourMedicines, type TodoItem } from "@/lib/todo"
 import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
@@ -30,9 +32,9 @@ import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
    range is drawn red in its tile, and the teal "A healthier you is
    possible" banner after Upcoming opens Upgrade.
 
-   RecordSections is the record part on its own (Needs you to Ask), which
-   the member home shows under its review hero with Needs you
-   as a white row, so a screen keeps one gradient on top. */
+   A member whose first plan is with Dr. Patel gets this home too (9 Oct
+   2026), without the upgrade banner: she has upgraded, and the Upgrade
+   tab shows where her plan is. */
 
 export function FreeHome() {
   const onboarding = useOnboarding()
@@ -53,16 +55,15 @@ export function FreeHome() {
 }
 
 /** The record part of the free home, from Needs you to Ask about your
-    results. `needsAsCard` draws Needs you as a white row instead of the
-    red banner, for a screen that has its own hero (the member home's
-    review stage). */
-export function RecordSections({ needsAsCard = false }: { needsAsCard?: boolean }) {
+    results. The upgrade banner only for a patient who can still upgrade:
+    not a paused member, nor one whose plan is with Dr. Patel. */
+export function RecordSections() {
   const exp = useExperience().experience
   return (
     <View style={styles.page}>
-      <NeedsYou asCard={needsAsCard} />
+      <NeedsYou />
       <Trends />
-      {!needsAsCard && exp !== "paused" && <UpgradeCard />}
+      {exp !== "paused" && exp !== "member-review" && <UpgradeCard />}
       <Upcoming />
       <NewInRecord />
       <Medicines />
@@ -90,10 +91,8 @@ const pendingLine = (n: number) => `${n} pending ${n === 1 ? "action" : "actions
 /** What needs her now (C.1.2, 3), as a collapsed muted red banner:
     the count as the title, the pending line under it, and the whole banner
     opens To do, where each item has its action. With nothing open, the
-    same banner says she is all caught up and opens what is next. As a card
-    (the member home's review stage, which has its own hero)
-    it is one white row. */
-function NeedsYou({ asCard }: { asCard: boolean }) {
+    same banner says she is all caught up and opens what is next. */
+function NeedsYou() {
   const onboarding = useOnboarding()
   const needs = todo(onboarding).needs
 
@@ -102,33 +101,21 @@ function NeedsYou({ asCard }: { asCard: boolean }) {
     const open = next.href ? () => router.push(next.href as Href) : openToDo
     return (
       <Rise at={1} id="home:needs">
-        {asCard ? (
-          <Group>
-            <NeedsRow icon={<CheckCircle size={16} color={color.primary} />} title={next.title} meta={together(next.meta)} onPress={open} />
-          </Group>
-        ) : (
-          <HeroRow icon={<CheckCircle size={18} color={color.primary} />} title={next.title} line={next.meta} onPress={open} />
-        )}
+        <HeroRow icon={<CheckCircle size={18} color={color.primary} />} title={next.title} line={next.meta} onPress={open} />
       </Rise>
     )
   }
 
   return (
     <Rise at={1} id="home:needs">
-      {asCard ? (
-        <Group>
-          <NeedsRow icon={<Warning size={16} color={color.primary} />} title={needsTitle(needs.length)} meta={pendingLine(needs.length)} onPress={openToDo} />
-        </Group>
-      ) : (
-        <HeroRow
-          icon={<Warning size={18} color={color.high} />}
-          tile={color.highTint}
-          alert
-          title={needsTitle(needs.length)}
-          line={pendingLine(needs.length)}
-          onPress={openToDo}
-        />
-      )}
+      <HeroRow
+        icon={<Warning size={18} color={color.high} />}
+        tile={color.highTint}
+        alert
+        title={needsTitle(needs.length)}
+        line={pendingLine(needs.length)}
+        onPress={openToDo}
+      />
     </Rise>
   )
 }
@@ -281,7 +268,10 @@ function Medicines() {
                 ) : undefined
               }
               chevron={false}
-              onPress={() => router.push({ pathname: "/medications", params: { id: m.id } })}
+              onPress={() => {
+                const med = MEDICATIONS.find((x) => x.id === m.id)
+                if (med) openMedicineByName(med)
+              }}
             />
           ))}
           {!!meds.supplements && <Text style={styles.supplements}>{meds.supplements}</Text>}

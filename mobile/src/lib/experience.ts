@@ -20,9 +20,11 @@ import { trendCounts } from "@/lib/trends"
    No patient reaches the app without the consent, so there is no state
    for a record never connected or still arriving.
 
-   Home draws the member home for member and member-review,
-   and the free home for the rest; the Plan tab draws the member's plan for
-   any member, paused included, and the showroom for the rest.
+   Home draws the member home for member only, and the free home for the
+   rest: a member whose first plan is with Dr. Patel sees the app as any
+   free patient does (9 Oct 2026), and only the Upgrade tab tells her where
+   her plan is. The Plan tab draws the member's plan for any member, paused
+   and in review included, and the showroom for the rest.
 
    On top of any experience sit the modifiers: sharing turned off in
    Profile (what was collected stays, nothing new arrives, one banner on
@@ -102,19 +104,26 @@ export function useInlayScore(): number | undefined {
 type Which = Experience | Pick<ExperienceInfo, "experience">
 const nameOf = (e: Which) => (typeof e === "string" ? e : e.experience)
 
-/** Which home draws an experience: a member waiting for her first plan
-    or with a live plan starts on the member home; a paused
-    member and everyone else on the free home. Takes the experience or
+/** Which home draws an experience: a member with a live plan starts on
+    the member home; a member waiting for her first plan, a paused member
+    and everyone else on the free home. Takes the experience or
     useExperience()'s result. */
 export function homeFor(e: Which): "free" | "member" {
-  const name = nameOf(e)
-  return name === "member" || name === "member-review" ? "member" : "free"
+  return nameOf(e) === "member" ? "member" : "free"
 }
 
-/** Which Plan tab draws an experience: any member, paused included, sees
-    her own plan; everyone else the showroom. */
+/** Which Plan tab draws an experience: any member, paused and in review
+    included, sees her own plan; everyone else the showroom. */
 export function planFor(e: Which): "free" | "member" {
-  return homeFor(e) === "member" || nameOf(e) === "paused" ? "member" : "free"
+  const name = nameOf(e)
+  return name === "member" || name === "member-review" || name === "paused" ? "member" : "free"
+}
+
+/** Whether the plan tab reads "Upgrade", with a crown: for everyone who has
+    no plan to follow yet, a member whose first plan is with Dr. Patel
+    included, since the rest of her app is the free one. */
+export function upgradeTab(e: Which): boolean {
+  return planFor(e) === "free" || nameOf(e) === "member-review"
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]

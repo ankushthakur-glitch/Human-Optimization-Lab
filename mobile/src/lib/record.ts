@@ -1272,13 +1272,13 @@ export type Order = {
 }
 
 const IMAGING_TIMES = ["10:15 AM", "1:30 PM", "3:45 PM"]
-const IMAGING: Partner[] = [
+export const IMAGING: Partner[] = [
   { name: "Basha Diagnostics, La Jolla", price: "$120", phone: "(858) 555-0163", soonestInDays: 2, times: IMAGING_TIMES },
   { name: "Coastal Imaging, Del Mar", price: "$145", phone: "(858) 555-0131", soonestInDays: 1, times: IMAGING_TIMES },
   { name: "RadNet, Encinitas", price: "$165", phone: "(760) 555-0188", soonestInDays: 4, times: IMAGING_TIMES },
 ]
 const BLOOD_TIMES = ["7:30 AM", "8:15 AM", "9:00 AM"]
-const BLOOD: Partner[] = [
+export const BLOOD: Partner[] = [
   { name: "Quest Diagnostics, Del Mar", price: "$39", phone: "(858) 555-0119", soonestInDays: 1, times: BLOOD_TIMES },
   { name: "Labcorp, Solana Beach", price: "$45", phone: "(858) 555-0127", soonestInDays: 3, times: BLOOD_TIMES },
 ]

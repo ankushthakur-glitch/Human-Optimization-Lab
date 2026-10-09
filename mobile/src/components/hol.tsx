@@ -1,3 +1,4 @@
+import { BlurView } from "expo-blur"
 import { router } from "expo-router"
 import * as React from "react"
 import { Image, Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native"
@@ -57,6 +58,7 @@ export function PageHeader({
   right,
   children,
   compact,
+  floating,
 }: {
   title?: string
   back?: boolean
@@ -68,11 +70,14 @@ export function PageHeader({
   children?: React.ReactNode
   /** 12 above and below instead of 16: the home's greeting row. */
   compact?: boolean
+  /** No bar of its own: the page shows through (put it over a Frost), and
+      the back caret sits in a light grey circle. */
+  floating?: boolean
 }) {
   const top = useTopInset()
   const canBack = back && (!!onBack || router.canGoBack())
   return (
-    <View style={[styles.header, { paddingTop: top + (compact ? 12 : 16) }, compact && styles.headerCompact]}>
+    <View style={[styles.header, { paddingTop: top + (compact ? 12 : 16) }, compact && styles.headerCompact, floating && styles.headerFloating]}>
       <View style={styles.headerInner}>
         {children ?? (
           <View style={styles.headerTitleRow}>
@@ -82,9 +87,9 @@ export function PageHeader({
                 hitSlop={12}
                 accessibilityRole="button"
                 accessibilityLabel="Back"
-                style={({ pressed }) => pressed && styles.pressed}
+                style={({ pressed }) => [floating && styles.backCircle, pressed && styles.pressed]}
               >
-                <CaretLeft size={24} color={ink.detail} />
+                <CaretLeft size={floating ? 20 : 24} color={ink.detail} />
               </Pressable>
             )}
             {!!title && (
@@ -106,11 +111,35 @@ export function PageHeader({
   )
 }
 
-/** The white bar at the foot of a page, holding its actions 8 apart. */
-export function PageFooter({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+/** A see-through bar: the page blurred behind a wash of its own grey, so
+    content that scrolls under a floating header or footer stays readable. */
+export function Frost() {
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
+      <View style={[StyleSheet.absoluteFill, styles.frostWash]} />
+    </View>
+  )
+}
+
+/** The white bar at the foot of a page, holding its actions 8 apart.
+    `floating`: no white bar, pinned to the bottom over the page, which
+    scrolls under it through a Frost; `onLayout` gives its height. */
+export function PageFooter({
+  children,
+  style,
+  floating,
+  onLayout,
+}: {
+  children: React.ReactNode
+  style?: StyleProp<ViewStyle>
+  floating?: boolean
+  onLayout?: (e: LayoutChangeEvent) => void
+}) {
   const { bottom } = useSafeAreaInsets()
   return (
-    <View style={[styles.footer, { paddingBottom: Math.max(bottom, space.gutter) }, style]}>
+    <View style={[styles.footer, floating && styles.footerFloating, { paddingBottom: Math.max(bottom, space.gutter) }, style]} onLayout={onLayout}>
+      {floating && <Frost />}
       <View style={styles.footerInner}>{children}</View>
     </View>
   )
@@ -231,6 +260,22 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerCompact: { paddingBottom: 12 },
+  headerFloating: { backgroundColor: "transparent", borderBottomWidth: 0 },
+  // The floating header's back caret: a light grey circle with a soft shadow.
+  backCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#EEF0F3",
+    shadowColor: "#101828",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  frostWash: { backgroundColor: "rgba(241, 245, 249, 0.72)" },
   headerInner: { flexDirection: "row", alignItems: "center", gap: space.item, width: "100%", maxWidth: 420, alignSelf: "center" },
   headerTitleRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.inline },
   headerTitle: { ...type.tabTitle, flexShrink: 1 },
@@ -244,6 +289,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.gutter,
     paddingTop: space.gutter,
   },
+  footerFloating: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: "transparent", borderTopWidth: 0, overflow: "hidden" },
   footerInner: { gap: space.inline, width: "100%", maxWidth: 420, alignSelf: "center" },
 
   ask: {

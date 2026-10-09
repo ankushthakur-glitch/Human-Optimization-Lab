@@ -3,10 +3,11 @@ import type { Href } from "expo-router"
 import { GAP_ICON, keepTogether } from "@/components/care-gap"
 import type { RecordIconName } from "@/components/record-icons"
 import { pickBanner, type BannerFacts, type BannerState, type Hue, type Tone } from "@/components/record-kit"
+import { BASELINE_TESTS, REMIND_EVERY_DAYS, lastReminderDay, type BaselineTestId } from "@/lib/baseline-tests"
 import { DEFAULT_PERIOD, periodEnd } from "@/lib/consent"
 import { dayOfWords } from "@/lib/dates"
 import { experience, sharingOff } from "@/lib/experience"
-import { NEXT_REVIEW, addDays, clock, dateOfAt, dayFrom, dayLabel, daysBetween, shortDay, thisWeek, weekdayOf, type SavedQuestion } from "@/lib/member"
+import { NEXT_REVIEW, addDays, clock, dateOfAt, dayFrom, dayLabel, daysBetween, localDay, shortDay, thisWeek, weekdayOf, type SavedQuestion } from "@/lib/member"
 import type { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { BASELINE } from "@/lib/program"
@@ -89,7 +90,7 @@ export type TodoItem = {
   tag?: { tone: Tone; label: string }
   /** The row's one action: a pill that opens a page or dials a number, or
       "Remove" for a saved question (removeQuestion). */
-  action?: { label: "Book" | "Call" | "Check" | "Save" | "Ask" | "Renew" | "Remove"; href?: Href; tel?: string; remove?: string }
+  action?: { label: "Book" | "Schedule" | "Call" | "Check" | "Save" | "Ask" | "Renew" | "Remove"; href?: Href; tel?: string; remove?: string }
   /** What the whole row opens: a typed route, ready for router.push. */
   href: Href
   /** When it happens or is due, local ("2026-11-12T23:59"), for sorting. */
@@ -186,9 +187,13 @@ function atTime(day: Date, time?: string) {
     she herself, telling us the day (`told`). */
 export type Booked = { date: Date; time?: string; where?: string; prep?: string; paid?: string; plan?: boolean; told: boolean }
 
-/** The plan's starting tests (lib/program.ts BASELINE), booked in the paid
-    setup through her plan rather than by her. */
-const isStartingTest = (id: string) => BASELINE.missing.some((t) => t.id === id)
+/** The plan's starting tests (lib/program.ts BASELINE, or the baseline
+    tests paid in the set-up, lib/baseline-tests.ts), booked through her
+    plan rather than by her. */
+const isStartingTest = (id: string) => BASELINE.missing.some((t) => t.id === id) || id in BASELINE_TESTS
+
+/** The page that books or moves one of the set-up's paid tests. */
+export const scheduleHref = (id: string) => href(`/schedule-tests?test=${id}`)
 
 /** The one reader of a booking, for a test the doctor ordered, a plan's
     starting test or the visit a care gap asks for: To do, Home's Coming
@@ -428,10 +433,41 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
   /* The plan's starting tests, booked through her plan (C.27): booked, like an order booked through Inlay, until the
      result arrives. To do, Home's Coming up and This week read them from
      here; they have no page of their own (opensPage). */
-  for (const t of BASELINE.missing) {
-    const b = bookingOf(t.id, s, now)
-    if (b) booked.push(bookedTest(`test:${t.id}`, t.name, b, href("/gaps"), now))
-  }
+  /* The baseline tests paid in the plan's set-up (/payment): each booked
+     opens its schedule page to move it; one not booked yet needs her, with
+     a reminder every other day from the day she chose to schedule later. */
+  const paid = s.startingTests
+  if (paid) {
+    const since = dateOfAt(paid.laterAt ?? paid.at)
+    const reminded = lastReminderDay(since, now)
+    for (const id of paid.ids) {
+      const t = BASELINE_TESTS[id as BaselineTestId]
+      if (!t) continue
+      const page = scheduleHref(t.id)
+      const b = bookingOf(t.id, s, now)
+      if (b) {
+        booked.push(bookedTest(`test:${t.id}`, t.name, b, page, now))
+        continue
+      }
+      needs.push({
+        id: `test:${t.id}`,
+        group: "needs",
+        kind: "order",
+        icon: "labs",
+        hue: "teal",
+        title: `Schedule your ${t.name}`,
+        meta: `Paid with your plan. Reminder every ${REMIND_EVERY_DAYS === 2 ? "other day" : `${REMIND_EVERY_DAYS} days`}`,
+        action: { label: "Schedule", href: page },
+        href: page,
+        sortAt: localIso(reminded),
+        rank: 2,
+      })
+    }
+  } else
+    for (const t of BASELINE.missing) {
+      const b = bookingOf(t.id, s, now)
+      if (b) booked.push(bookedTest(`test:${t.id}`, t.name, b, href("/gaps"), now))
+    }
 
   /* Care gaps that are not an order's reminders. */
   for (const g of CARE_GAPS) {
@@ -593,6 +629,19 @@ export function summaryOf(counts: Pick<Record<TodoGroup, number>, "needs" | "com
     .filter(Boolean)
     .map((part) => part.replace(/ /g, " "))
     .join(", ")
+}
+
+/** The set-up's paid tests in a few words: "First on Tue, Oct 13, then 2
+    more" once all are booked; left for later, that they wait in To do;
+    else that they are next. */
+export function startingTestsLine(s: Snapshot, now: Date = new Date()): { booked: boolean; line: string } {
+  const ids = (s.startingTests?.ids ?? []).filter((id) => id in BASELINE_TESTS)
+  const dates = ids.map((id) => bookingOf(id, s, now)?.date)
+  if (!ids.length || dates.some((d) => !d))
+    return { booked: false, line: s.startingTests?.laterAt ? "In To do, reminders every other day" : "Next up, pick a day and time" }
+  const first = Math.min(...dates.map((d) => d!.getTime()))
+  const more = ids.length - 1
+  return { booked: true, line: `First on ${dayLabel(new Date(first))}${more ? `, then ${more} more` : ""}` }
 }
 
 /** Whether a row has a page of its own to open. A plan's starting test
@@ -877,6 +926,29 @@ function memberNotices(s: Snapshot, now: Date): Notice[] {
   return [...booked, ...MEMBER_NOTIFICATIONS]
 }
 
+/** Paid tests left to schedule later: the latest of the reminders sent
+    every other day from the day she chose later, until all are booked. */
+function scheduleNotices(s: Snapshot, now: Date): Notice[] {
+  const paid = s.startingTests
+  if (!paid?.laterAt) return []
+  const open = paid.ids.filter((id) => id in BASELINE_TESTS && !bookingOf(id, s, now))
+  if (!open.length) return []
+  const day = lastReminderDay(dateOfAt(paid.laterAt), now)
+  const first = BASELINE_TESTS[open[0] as BaselineTestId]
+  return [
+    {
+      id: `schedule-tests:${localDay(day)}`,
+      kind: "reminder",
+      title: open.length === 1 ? "Schedule your test" : "Schedule your tests",
+      body: open.length === 1 ? `${first.name} is paid with your plan. Pick a day and time.` : `${open.length} tests are paid with your plan. Pick a day and time for each.`,
+      at: localIso(new Date(day.getFullYear(), day.getMonth(), day.getDate(), 9, 0)),
+      when: "",
+      day: "Earlier",
+      href: open.length === 1 ? String(scheduleHref(first.id)) : "/gaps",
+    },
+  ]
+}
+
 /** New results that reached the record after it was built, one notice a
     batch, opening the batch's own view: the in app twin of the push "New
     results are in your record." */
@@ -899,7 +971,7 @@ function batchNotices(s: Snapshot): Notice[] {
     `at`. */
 export function noticesFor(s: Snapshot, now: Date = new Date()): Notice[] {
   const exp = experience(s)
-  const list = [...(exp === "member" || exp === "paused" ? memberNotices(s, now) : freeNotices(s)), ...batchNotices(s)]
+  const list = [...(exp === "member" || exp === "paused" ? memberNotices(s, now) : freeNotices(s)), ...batchNotices(s), ...scheduleNotices(s, now)]
   return list.map((n) => ({ ...n, day: dayGroup(n.at, now), when: whenOf(n.at, now) })).sort((a, b) => b.at.localeCompare(a.at))
 }
 

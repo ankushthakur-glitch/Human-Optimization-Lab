@@ -20,7 +20,7 @@ import {
 } from "@/components/ph"
 import type { RecordIconName } from "@/components/record-icons"
 import { Hero } from "@/components/record-kit"
-import { color, font, ink, space } from "@/lib/theme"
+import { cardRadius, color, font, ink, space } from "@/lib/theme"
 
 /* The pieces both homes share in the Figma "Hol" language (5 Oct 2026):
    the collapsed teal banner ("3 things need you", "Ask about your
@@ -153,12 +153,13 @@ export function HeroRow({
 
 /** The "A healthier you is possible" banner (8 Oct 2026), drawn in code so
     its words scale with her text size and are read as real text, not a
-    picture: a green gradient (white text on it holds 4.5 to 1 or better), a
+    picture: the Ask banner's teal gradient, a shade deeper, with its soft
+    circles, a
     heart tile, a title, one line and a caret. The whole banner is one
     button, at least 68 tall, and grows with larger text. The gradient is
     one static SVG and the soft circles are plain views, so it costs no
     image to load or decode. */
-const UPGRADE_GREEN = ["#06694A", "#128A5C"] as const
+const UPGRADE_GREEN = ["#2D6F7B", "#468F92"] as const
 
 export const UpgradeBanner = React.memo(function UpgradeBanner({
   title,
@@ -185,7 +186,7 @@ export const UpgradeBanner = React.memo(function UpgradeBanner({
       <View style={styles.upgradeArt} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Svg style={StyleSheet.absoluteFill} viewBox="0 0 1 1" preserveAspectRatio="none">
           <Defs>
-            <LinearGradient id={gradient} x1="0" y1="0" x2="1" y2="0.4">
+            <LinearGradient id={gradient} x1="0.41" y1="0" x2="0.59" y2="1">
               <Stop offset="0" stopColor={UPGRADE_GREEN[0]} />
               <Stop offset="1" stopColor={UPGRADE_GREEN[1]} />
             </LinearGradient>
@@ -194,6 +195,7 @@ export const UpgradeBanner = React.memo(function UpgradeBanner({
         </Svg>
         <View style={[styles.upgradeCircle, styles.upgradeCircleBig]} />
         <View style={[styles.upgradeCircle, styles.upgradeCircleSmall]} />
+        <View style={[styles.upgradeCircle, styles.upgradeCircleDark]} />
       </View>
       <View style={styles.upgradeTile} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
         <Heartbeat size={24} weight="bold" color={UPGRADE_GREEN[0]} />
@@ -229,11 +231,13 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.85 },
   // Full width of the page column, taller with larger text.
-  upgrade: { alignSelf: "stretch", flexDirection: "row", alignItems: "center", gap: 12, minHeight: 68, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16, overflow: "hidden", boxShadow: "0 6px 16px rgba(6, 105, 74, 0.25)" },
+  upgrade: { alignSelf: "stretch", flexDirection: "row", alignItems: "center", gap: 12, minHeight: 68, paddingVertical: 12, paddingHorizontal: 14, borderRadius: cardRadius, overflow: "hidden", boxShadow: "0 6px 16px rgba(45, 111, 123, 0.2)" },
   upgradeArt: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
   upgradeCircle: { position: "absolute", borderRadius: 999, backgroundColor: "rgba(255,255,255,0.08)" },
   upgradeCircleBig: { width: 150, height: 150, right: -30, top: -50 },
   upgradeCircleSmall: { width: 90, height: 90, right: 60, bottom: -50 },
+  // The Ask banner's darker circle, low on the left.
+  upgradeCircleDark: { width: 130, height: 130, left: -40, bottom: -80, backgroundColor: "rgba(0,0,0,0.1)" },
   upgradeTile: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.94)" },
   upgradeWords: { flex: 1, gap: 2 },
   upgradeTitle: { fontFamily: font.semibold, fontSize: 16, lineHeight: 22, color: ink.onColor },

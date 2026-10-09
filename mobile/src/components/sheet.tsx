@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Pressable, StyleSheet, Text, View } from "react-native"
+import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { X } from "@/components/ph"
@@ -42,6 +42,22 @@ export function Sheet({
       </View>
     </View>
   )
+}
+
+/** The on-screen keyboard's height, 0 while it is down: a sheet with a
+    field rides above it. */
+export function useKeyboardHeight() {
+  const [height, setHeight] = React.useState(0)
+  React.useEffect(() => {
+    const ios = Platform.OS === "ios"
+    const show = Keyboard.addListener(ios ? "keyboardWillShow" : "keyboardDidShow", (e) => setHeight(e.endCoordinates.height))
+    const hide = Keyboard.addListener(ios ? "keyboardWillHide" : "keyboardDidHide", () => setHeight(0))
+    return () => {
+      show.remove()
+      hide.remove()
+    }
+  }, [])
+  return height
 }
 
 export const SheetText = ({ children }: { children: React.ReactNode }) => <Text style={styles.text}>{children}</Text>

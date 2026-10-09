@@ -1,3 +1,4 @@
+import { showDate } from "@/lib/dates"
 import { MEMBER } from "@/lib/member"
 import type { Plan, useOnboarding } from "@/lib/onboarding"
 import type { FocusArea } from "@/lib/record"
@@ -12,6 +13,24 @@ import type { FocusArea } from "@/lib/record"
    details (the Plan tab), the checkout and the member's own
    membership page; never in an offer, the assistant, a notification or
    next to a doctor (FINAL-SPEC D.4). */
+
+/** Dr. Patel sends the version to her, to read through. */
+export const proposedPlan = (plan: Plan): Plan => ({ ...plan, status: "proposed" })
+
+/** She asks for a change: the version goes back to Dr. Patel with her
+    words, and comes back to her once it is updated. */
+export const changeRequested = (plan: Plan, text: string): Plan => ({
+  ...plan,
+  status: "review",
+  requests: [...(plan.requests ?? []), { at: new Date().toISOString(), text }],
+})
+
+/** She accepts the version Dr. Patel sent: it goes live, dated today,
+    and the one before is kept. */
+export function acceptedPlan(plan: Plan): Plan {
+  const why = plan.versions.length ? "New readings from home" : "Your first plan"
+  return { status: "live", version: plan.version, versions: [{ version: plan.version, approved: showDate(), why }, ...plan.versions] }
+}
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
 
@@ -150,6 +169,6 @@ export function livePlan(s: Snapshot) {
     why: live.why,
     by: MEMBER.doctorShort,
     /** The version with the doctor, while one is. */
-    reviewing: s.plan.status === "review" && s.plan.version > live.version ? s.plan.version : undefined,
+    reviewing: s.plan.status !== "live" && s.plan.version > live.version ? s.plan.version : undefined,
   }
 }

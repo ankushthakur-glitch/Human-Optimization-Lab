@@ -1,11 +1,13 @@
+import { router } from "expo-router"
 import * as React from "react"
-import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native"
+import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native"
 
+import { ChoiceRow, SheetRows } from "@/components/care-orders-rows"
 import { useReducedMotion } from "@/components/chat"
 import { PageGround } from "@/components/hol"
 import { Check, Info, Phone, Pill } from "@/components/ph"
-import { Banner, Block, Card, Chip, Dot, HUE, KeyValue, SmallAction, Tag, TextAction, toast, type Choice } from "@/components/record-kit"
-import { FilterChips } from "@/components/record-rows"
+import { Banner, Card, Chip, Dot, Group, HUE, KeyValue, SmallAction, Tag, TextAction, toast, type Choice } from "@/components/record-kit"
+import { FilterChips, ItemRow } from "@/components/record-rows"
 import { Sheet } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
 import { questionKind } from "@/lib/allowance"
@@ -24,25 +26,16 @@ import { cardRadius, color, hairline, ink, space, type } from "@/lib/theme"
    settles a difference (F-69). The words stay neutral and say who settles
    it (F-72); never conflict, error or wrong. Nothing here sells.
 
-   MedicineConfirm is the whole list for Your medicines. Drawn as the Figma "Hol" Your
-   medicines (5 Oct 2026): while anything is left to check, the check page
-   (To check, Up to date, Past); once everything is checked, Current and
-   Past medicines on filter chips, each opening its details in a
-   sheet (MedicineSheet, drawn by the screen over the page). */
+   MedicineConfirm is the whole list: Action needed, Active and Past on
+   filter chips, each row opening the medicine's own page
+   (app/medicine/[id], MedicineDetails). */
 
 export type MedicineConfirmProps = {
   /** A medicine to bring into view on arrival and mark for a moment, by
       id: the one she tapped on Home, the Record tab or the timeline
       (`/medications?id=cetirizine`). On the list it opens its details. */
   focus?: string
-  /** Which view shows: the check page or the list. Unset, the check page
-      while anything is left to check, else the list. */
-  view?: MedicineView
-  /** Opens a medicine's details (the list's rows). */
-  onOpen?: (m: Medication) => void
 }
-
-export type MedicineView = "check" | "list"
 
 /** What she says about one medicine; the time is added on saving. */
 type Answer = Omit<MedRecord, "at" | "medication" | "shown">
@@ -133,20 +126,31 @@ const TAKING: Choice<"taking" | "not-taking">[] = [
 /** The urgent message's icon, which its pills line up after. */
 const URGENT_ICON = 18
 
-/** Her medicines. The check page: the ones her lists differ on with a
-    question for each, the ones they agree on, and past ones. The list:
-    current and past medicines, each opening its details. */
-export function MedicineConfirm({ focus, view, onOpen }: MedicineConfirmProps) {
+/** Her medicines, one list on three filter chips: Action needed (the
+    ones her lists differ on, each with its question), Active and Past. Rows open their details. Which medicines
+    need her is fixed as the list opens, so answering one never moves it
+    from under her. */
+export function MedicineConfirm({ focus }: MedicineConfirmProps) {
+  const onOpen = openMedicine
   const s = useOnboarding()
   const current = MEDICATIONS.filter((m) => !m.resolved)
-  const differ = current.filter((m) => medDifference(m))
-  const agree = current.filter((m) => !medDifference(m))
   const past = MEDICATIONS.filter((m) => m.resolved)
-  const open = differ.filter((m) => !s.meds?.[m.id]).length
-  // The view is chosen once, as the page opens, so answering the last
-  // question never swaps the page from under her.
-  const [initial] = React.useState<MedicineView>(open > 0 ? "check" : "list")
-  const shown: MedicineView = view ?? initial
+  const [needs] = React.useState(() => current.filter((m) => medDifference(m) && !s.meds?.[m.id]).map((m) => m.id))
+  const action = current.filter((m) => needs.includes(m.id))
+  const active = current.filter((m) => !action.includes(m))
+  const [shelf, setShelf] = React.useState<Shelf>(() => (past.some((m) => m.id === focus) ? "past" : action.length ? "action" : "active"))
+  // Each medicine opened by name opens once, on its own chip; one waiting
+  // on her answer shows its question instead of its details.
+  const opened = React.useRef<string | undefined>(undefined)
+  React.useEffect(() => {
+    if (!focus || opened.current === focus) return
+    opened.current = focus
+    const m = MEDICATIONS.find((x) => x.id === focus)
+    if (!m) return
+    if (needs.includes(m.id)) return setShelf("action")
+    setShelf(m.resolved ? "past" : "active")
+    onOpen(m)
+  }, [focus, needs])
 
   // Saved with the medicine's name and the lists she saw, so Dr. Patel
   // reads her answer against the same difference (lib/record
@@ -157,49 +161,32 @@ export function MedicineConfirm({ focus, view, onOpen }: MedicineConfirmProps) {
     toast("Saved")
   }
 
-  if (shown === "list") return <MedicineList current={current} past={past} focus={focus} onOpen={onOpen} />
-
-  const sections = (
+  const shelves = SHELVES.filter((o) => o.value !== "action" || action.length > 0)
+  const differ = action.filter((m) => medDifference(m))
+  const agree = action.filter((m) => !medDifference(m))
+  return (
     <>
-      {differ.length > 0 && (
-        <Block title={open ? "To check" : "Checked"}>
+      <FilterChips options={shelves} value={shelf} onChange={setShelf} label="Medicines" />
+      {shelf === "action" ? (
+        <>
           {differ.map((m) => (
             <InView key={m.id} on={focus === m.id}>
               <CheckCard m={m} saved={s.meds?.[m.id]} onAnswer={(a) => answer(m, a)} spotlight={focus === m.id} />
             </InView>
           ))}
-        </Block>
-      )}
-
-      {agree.length > 0 && (
-        <Block title="Up to date">
-          <Rows>
-            {agree.map((m, i) => (
-              <InView key={m.id} on={focus === m.id}>
-                <AgreeRow m={m} saved={s.meds?.[m.id]} onAnswer={(a) => answer(m, a)} spotlight={focus === m.id ? edgesOf(i, agree.length) : undefined} />
-              </InView>
-            ))}
-          </Rows>
-        </Block>
-      )}
-
-      {past.length > 0 && (
-        <Block title="Past">
-          <Rows>
-            {past.map((m, i) => (
-              <InView key={m.id} on={focus === m.id}>
-                <PastRow m={m} spotlight={focus === m.id ? edgesOf(i, past.length) : undefined} />
-              </InView>
-            ))}
-          </Rows>
-        </Block>
+          {agree.length > 0 && (
+            <Rows>
+              {agree.map((m) => (
+                <AgreeRow key={m.id} m={m} saved={s.meds?.[m.id]} onAnswer={(a) => answer(m, a)} />
+              ))}
+            </Rows>
+          )}
+        </>
+      ) : (
+        <MedicineRows list={shelf === "past" ? past : active} past={shelf === "past"} />
       )}
     </>
   )
-
-  // The sections sit straight on the page, as far apart as every page's
-  // sections.
-  return sections
 }
 
 /** Rows on one white card, 12 either side of a hairline. */
@@ -232,53 +219,24 @@ const lineOf = (m: Medication) => {
 
 /* ------------------------------------------------------------ list -- */
 
-type Shelf = "current" | "past"
+type Shelf = "action" | "active" | "past"
 
 const SHELVES: { value: Shelf; label: string }[] = [
-  { value: "current", label: "Current" },
+  { value: "action", label: "Action needed" },
+  { value: "active", label: "Active" },
   { value: "past", label: "Past" },
 ]
 
-/** Once everything is checked: current and past medicines on filter
-    chips, each row opening its details. Opened by name, the medicine's
-    details open as the page arrives. */
-function MedicineList({ current, past, focus, onOpen }: { current: Medication[]; past: Medication[]; focus?: string; onOpen?: (m: Medication) => void }) {
-  const [shelf, setShelf] = React.useState<Shelf>(past.some((m) => m.id === focus) ? "past" : "current")
-  // Each medicine opened by name opens once, on its shelf, also when the
-  // page is already open and only the name changes.
-  const opened = React.useRef<string | undefined>(undefined)
-  React.useEffect(() => {
-    if (!focus || opened.current === focus) return
-    opened.current = focus
-    const m = MEDICATIONS.find((x) => x.id === focus)
-    if (!m) return
-    setShelf(m.resolved ? "past" : "current")
-    onOpen?.(m)
-  }, [focus, onOpen])
-  const list = shelf === "current" ? current : past
+/** Active or past medicines on one card, as every Record list draws its
+    rows (ItemRow, chevron included), each opening its own page. */
+function MedicineRows({ list, past }: { list: Medication[]; past: boolean }) {
+  if (!list.length) return null
   return (
-    <>
-      <FilterChips options={SHELVES} value={shelf} onChange={setShelf} label="Medicines" />
-      {list.length > 0 && (
-        <Rows>
-          {list.map((m) => (
-            <Pressable
-              key={m.id}
-              onPress={() => onOpen?.(m)}
-              accessibilityRole="button"
-              accessibilityLabel={[m.name, lineOf(m), m.resolved].filter(Boolean).join(". ")}
-              style={({ pressed }) => [styles.listRow, pressed && styles.pressed]}
-            >
-              <PillTile />
-              <View style={styles.words}>
-                <Text style={styles.name}>{m.name}</Text>
-                <Text style={styles.meta}>{shelf === "past" ? pastLine(m) : lineOf(m)}</Text>
-              </View>
-            </Pressable>
-          ))}
-        </Rows>
-      )}
-    </>
+    <Group>
+      {list.map((m) => (
+        <ItemRow key={m.id} icon={<PillTile />} title={m.name} meta={past ? pastLine(m) : lineOf(m)} onPress={() => openMedicine(m)} />
+      ))}
+    </Group>
   )
 }
 
@@ -296,10 +254,10 @@ const endedOf = (resolved: string) => {
   return how.charAt(0).toUpperCase() + how.slice(1)
 }
 
-/** A medicine's details, in the sheet the list opens: its badge, then each
-    fact on an inset card. A current medicine offers to update what she
-    takes, which opens the check page. */
-export function MedicineSheet({ m, onClose, onUpdate }: { m: Medication; onClose: () => void; onUpdate: () => void }) {
+/** A medicine's details, on its own page: its badge, then each fact on
+    one card. A current medicine offers to update what she takes, which
+    opens UpdateSheet over the page. */
+export function MedicineDetails({ m, onUpdate }: { m: Medication; onUpdate: () => void }) {
   const s = useOnboarding()
   const saved = s.meds?.[m.id]
   const line = m.lists.find((l) => l.origin === "doctor") ?? m.lists[0]
@@ -314,7 +272,10 @@ export function MedicineSheet({ m, onClose, onUpdate }: { m: Medication; onClose
     ...(m.resolved ? [{ label: "Ended", value: endedOf(m.resolved) }] : []),
   ]
   return (
-    <Sheet title={m.name} titleRight={<Tag tone={m.resolved ? "muted" : "ok"}>{m.resolved ? "Past" : "Active"}</Tag>} onClose={onClose}>
+    <>
+      <View style={styles.badge}>
+        <Tag tone={m.resolved ? "muted" : "ok"}>{m.resolved ? "Past" : "Active"}</Tag>
+      </View>
       <Card style={styles.facts}>
         {rows.map((r, i) => (
           <KeyValue key={r.label} label={r.label} value={r.value} last={i === rows.length - 1} />
@@ -325,6 +286,105 @@ export function MedicineSheet({ m, onClose, onUpdate }: { m: Medication; onClose
           Update what you take
         </Button>
       )}
+    </>
+  )
+}
+
+/** Opens a medicine's own page. */
+export const openMedicine = (m: Medication) => router.push({ pathname: "/medicine/[id]", params: { id: m.id } })
+
+/** A medicine tapped by name elsewhere (Home, the timeline): its own page,
+    or, where her lists differ, Your medicines on it, which shows its
+    question while unanswered and its page once answered. */
+export const openMedicineByName = (m: Medication) => (medDifference(m) ? router.push({ pathname: "/medications", params: { id: m.id } }) : openMedicine(m))
+
+type Now = "taking" | "another" | "stopped" | "never"
+
+/** What she takes now, from a medicine's details. */
+const NOW: Choice<Now>[] = [
+  { value: "taking", label: "I take it" },
+  { value: "another", label: "Another dose" },
+  { value: "stopped", label: "I stopped it" },
+  { value: "never", label: "I never started it" },
+]
+
+/** "Update what you take": a bottom sheet with one choice, picked from
+    radio rows as the "Pay with" sheet picks a card. Another dose asks for
+    the dose and I stopped it asks why, in place under the choice; Save
+    sends her answer, for her doctor to see. A side effect also shows the
+    practice's number. */
+export function UpdateSheet({ m, onClose }: { m: Medication; onClose: () => void }) {
+  const s = useOnboarding()
+  const [now, setNow] = React.useState<Now>()
+  const [why, setWhy] = React.useState<NonNullable<MedRecord["why"]>>()
+  const [dose, setDose] = React.useState("")
+  const [note, setNote] = React.useState("")
+
+  const answer: Answer | undefined =
+    now === "taking" || now === "never"
+      ? { answer: now }
+      : now === "another"
+        ? dose.trim()
+          ? { answer: "dose", dose: dose.trim() }
+          : undefined
+        : now === "stopped" && why
+          ? { answer: "stopped", why, ...(why === "other" && note.trim() ? { note: note.trim() } : {}) }
+          : undefined
+
+  const save = () => {
+    if (!answer) return
+    const record: MedRecord = { medication: m.name, shown: m.lists, ...answer, at: new Date().toISOString() }
+    void s.save({ meds: { ...s.meds, [m.id]: record } })
+    toast("Saved")
+    onClose()
+  }
+
+  return (
+    <Sheet title={m.name} titleRight={<Tag tone="ok">Active</Tag>} onClose={onClose}>
+      <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <Text style={styles.ask}>What do you take now?</Text>
+        <View accessibilityRole="radiogroup" accessibilityLabel="What do you take now?">
+          <SheetRows>
+            {NOW.map((o) => (
+              <ChoiceRow key={o.value} title={o.label} selected={now === o.value} onPress={() => setNow(o.value)} />
+            ))}
+          </SheetRows>
+        </View>
+
+        {now === "another" && <TextField label="Your dose" value={dose} onChangeText={setDose} autoFocus returnKeyType="done" onSubmitEditing={save} />}
+
+        {now === "stopped" && (
+          <>
+            <Text style={styles.ask}>Why did you stop?</Text>
+            <View accessibilityRole="radiogroup" accessibilityLabel="Why did you stop?">
+              <SheetRows>
+                {WHY_STOPPED.map((o) => (
+                  <ChoiceRow key={o.value} title={o.label} selected={why === o.value} onPress={() => setWhy(o.value)} />
+                ))}
+              </SheetRows>
+            </View>
+          </>
+        )}
+
+        {now === "stopped" && why === "other" && (
+          <TextField label="What made you stop?" value={note} onChangeText={setNote} autoFocus returnKeyType="done" onSubmitEditing={save} />
+        )}
+
+        {now === "stopped" && why === "side-effect" && (
+          <Banner
+            hue="teal"
+            icon={<Phone size={16} color={HUE.teal.ink} />}
+            title={`If you have symptoms now, call ${PRACTICE} at ${PHONE}.`}
+            action="Call"
+            onPress={() => call(PATIENT.practicePhone)}
+          />
+        )}
+
+        <Button onPress={save} disabled={!answer}>
+          Save
+        </Button>
+        <Text style={[type.meta, styles.centered]}>{`${DOCTOR} will see this.`}</Text>
+      </ScrollView>
     </Sheet>
   )
 }
@@ -400,7 +460,6 @@ function InView({ on, children }: { on: boolean; children: React.ReactNode }) {
 /** Which corners of its Group a row's mark rounds: the first row's top
     ones, the last row's bottom ones. */
 type Edges = { first: boolean; last: boolean }
-const edgesOf = (i: number, count: number): Edges => ({ first: i === 0, last: i === count - 1 })
 
 /** The mark holds while the page glides to the medicine and a moment after
     it lands, then fades. */
@@ -679,22 +738,6 @@ function AgreeRow({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: Me
   )
 }
 
-/** A medicine she no longer takes, with how it ended. */
-function PastRow({ m, spotlight }: { m: Medication; spotlight?: Edges }) {
-  return (
-    <View style={styles.pastRow}>
-      {spotlight && <Spotlight style={rowSpotlight(spotlight)} />}
-      <PillTile />
-      <View style={styles.words}>
-        <Text style={styles.name}>{m.name}</Text>
-        {/* Where and when stay together: "400 mg when needed," then
-            "Scripps Memorial, Jun 3" on a narrow phone. */}
-        <Text style={styles.pastMeta}>{pastLine(m)}</Text>
-      </View>
-    </View>
-  )
-}
-
 /** The "You said" check, centred on the first line of her answer. */
 const SAID_MARK = 18
 
@@ -768,10 +811,12 @@ const styles = StyleSheet.create({
   // A medicine and its answer chips: the row, then the chips 12 under it.
   agree: { gap: space.item },
   // A past medicine: the tile beside its name and two lines.
-  pastRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  pastMeta: { ...type.label },
 
   // The details sheet's facts: rows edge to edge on the inset card.
+  badge: { flexDirection: "row" },
+  centered: { textAlign: "center" },
+  sheetScroll: { flexGrow: 0 },
+  sheetBody: { gap: space.gutter },
   facts: { paddingVertical: 0 },
 
   // The medicine opened by name: the selected surface's tint behind it.

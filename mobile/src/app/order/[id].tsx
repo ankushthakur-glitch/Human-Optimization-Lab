@@ -3,7 +3,7 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { keepTogether, reminderSteps } from "@/components/care-gap"
-import { BookedSheet, BookIt, BookSheet, UpdateSheet, contactFor, placeShort, withTold, type TestAnswer } from "@/components/care-orders-book"
+import { BookedSheet, BookIt, BookSheet, ElsewhereSheet, UpdateSheet, contactFor, elsewhereSave, placeShort, withTold, type Report, type TestAnswer } from "@/components/care-orders-book"
 import { HeadCard, IconAction, Reminders } from "@/components/care-orders-rows"
 import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
@@ -103,7 +103,7 @@ function factOf(o: Order, stage: Stage, overdue: boolean, told: boolean, doneOn?
 }
 
 /** The sheets this page opens. */
-const SHEETS = ["booked", "update", "book"] as const
+const SHEETS = ["booked", "update", "book", "elsewhere"] as const
 type Sheet = (typeof SHEETS)[number]
 
 export default function OrderScreen() {
@@ -176,10 +176,17 @@ export default function OrderScreen() {
 
   const onAnswer = (a: TestAnswer) => {
     if (a === "booked") return setSheet("booked")
+    if (a === "elsewhere") return setSheet("elsewhere")
     setSheet(undefined)
     if (a === "help" || a === "change") return call(contact.phone)
     onboarding.save({ testAnswers: { ...onboarding.testAnswers, [o.id]: { answer: a, at: new Date().toISOString() } } }).catch(() => {})
     toast("Saved")
+  }
+
+  const saveElsewhere = (day: Date, where?: string, report?: Report) => {
+    setSheet(undefined)
+    onboarding.save(elsewhereSave(onboarding, o, day, where, report)).catch(() => {})
+    toast(report ? "Saved. Your report is being checked." : "Saved. We'll add the result when it arrives.")
   }
 
   // The test named, so the assistant answers at once rather than asking
@@ -225,7 +232,7 @@ export default function OrderScreen() {
           <DateTrack dates={track} late={overdue} />
         </HeadCard>
 
-        {stage === "open" && <BookIt order={o} onBooked={() => setSheet("booked")} onPartner={() => setSheet("book")} />}
+        {stage === "open" && <BookIt order={o} onBooked={() => setSheet("booked")} onPartner={() => setSheet("book")} onElsewhere={() => setSheet("elsewhere")} />}
 
         <Block title="Details">
           <Card style={styles.details}>
@@ -248,6 +255,7 @@ export default function OrderScreen() {
       {sheet === "booked" && <BookedSheet withWhere onSave={saveBooked} onClose={() => setSheet(undefined)} />}
       {sheet === "update" && <UpdateSheet booked={booked} contact={contact} onAnswer={onAnswer} onClose={() => setSheet(undefined)} />}
       {sheet === "book" && <BookSheet order={o} onClose={() => setSheet(undefined)} />}
+      {sheet === "elsewhere" && <ElsewhereSheet onSave={saveElsewhere} onClose={() => setSheet(undefined)} />}
     </View>
   )
 }

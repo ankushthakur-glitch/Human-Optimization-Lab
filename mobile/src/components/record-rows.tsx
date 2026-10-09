@@ -353,13 +353,8 @@ export function AddToRecordSheet({ kind: fixed, onClose }: { kind?: AddKind; onC
       </View>
     )
 
-  type Option = { key: string; title: string; icon: React.ReactNode; onPress: () => void }
-  const glyph = (Icon: typeof Camera) => (
-    <Tile>
-      <Icon size={16} color={color.primary} />
-    </Tile>
-  )
-  const options: Option[] =
+  const glyph = optionIcon
+  const options: SheetOption[] =
     stage === "kind"
       ? ADD_KINDS.map((k) => ({
           key: k.kind,
@@ -395,24 +390,42 @@ export function AddToRecordSheet({ kind: fixed, onClose }: { kind?: AddKind; onC
   const title = stage === "kind" ? "Add to your record" : info ? info.action : "Add to your record"
   return (
     <Sheet title={title} onClose={onClose}>
-      <ScrollView style={styles.sheetList} showsVerticalScrollIndicator={false}>
-        {options.map(({ key, title: words, icon, onPress }, i) => (
-          <Pressable
-            key={key}
-            onPress={onPress}
-            accessibilityRole="button"
-            accessibilityLabel={words}
-            style={({ pressed }) => [styles.option, i > 0 && styles.optionRule, pressed && styles.pressed]}
-          >
-            {icon}
-            <Text style={styles.optionTitle}>{words}</Text>
-            <CaretRight size={16} color={card.chevron} />
-          </Pressable>
-        ))}
-      </ScrollView>
+      <SheetOptions options={options} />
     </Sheet>
   )
 }
+
+/** One choice in a sheet: its icon on a tile, its words and a chevron. */
+export type SheetOption = { key: string; title: string; icon: React.ReactNode; onPress: () => void }
+
+/** A sheet's choices, one per row with a rule between, as "Add to your
+    record" and "Update what you take" list them. */
+export function SheetOptions({ options }: { options: SheetOption[] }) {
+  return (
+    <ScrollView style={styles.sheetList} showsVerticalScrollIndicator={false}>
+      {options.map(({ key, title, icon, onPress }, i) => (
+        <Pressable
+          key={key}
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={title}
+          style={({ pressed }) => [styles.option, i > 0 && styles.optionRule, pressed && styles.pressed]}
+        >
+          {icon}
+          <Text style={styles.optionTitle}>{title}</Text>
+          <CaretRight size={16} color={card.chevron} />
+        </Pressable>
+      ))}
+    </ScrollView>
+  )
+}
+
+/** A sheet option's icon on its teal tile. */
+export const optionIcon = (Icon: typeof Camera) => (
+  <Tile>
+    <Icon size={16} color={color.primary} />
+  </Tile>
+)
 
 /** What she added to one list, under its own label, each opening its
     details page. Nothing added, nothing shown. */

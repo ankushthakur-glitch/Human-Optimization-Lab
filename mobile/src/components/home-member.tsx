@@ -5,9 +5,8 @@ import { Animated, Platform, Pressable, StyleSheet, Text, View, useWindowDimensi
 import { Art } from "@/components/art"
 import { CountUp, GoalRows, ProgressChart, ScoreRing, WeekBars } from "@/components/charts"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
-import { RecordSections } from "@/components/home-free"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
-import { RecordGlyph, SparkleGlyph, dotted } from "@/components/home-parts"
+import { RecordGlyph, dotted } from "@/components/home-parts"
 import { Barbell, BowlFood, Camera, Clock, Heartbeat, PersonSimpleWalk, Scales } from "@/components/ph"
 import {
   Block,
@@ -28,7 +27,7 @@ import {
   toast,
 } from "@/components/record-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
-import { useExperience, useMarkers } from "@/lib/experience"
+import { useMarkers } from "@/lib/experience"
 import {
   CHECK_IN,
   DEXA_SCANS,
@@ -39,9 +38,7 @@ import {
   adherence,
   clockOf,
   datedOf,
-  dateOfAt,
   dayFrom,
-  dayLabel,
   dayOfAt,
   dayScore,
   daysBetween,
@@ -78,19 +75,16 @@ import { keepEnd } from "@/lib/words"
    and medicines sit one tap away under Your record, never on this screen.
    The weekly card joins on Friday to Tuesday until she answers it.
 
-   The same screen draws a member whose first plan is with Dr. Patel
-   (C.2.9): a hero for that stage, then
-   the record sections from the free home with Needs you as a white card,
-   so the screen keeps one hero. Nothing on it sells. It draws its own tab
-   screen, so the check in sheets pass over the tab bar. */
+   A member whose first plan is with Dr. Patel gets the free home instead
+   (9 Oct 2026); her plan's progress lives on the Upgrade tab. The screen
+   draws its own tab screen, so the check in sheets pass over the tab bar. */
 
 export function MemberHome() {
-  const stage = useExperience().experience
   const [sheet, setSheet] = React.useState<CheckInKind>()
 
   return (
     <TabScreen tab="home" header={<HomeHeader />} overlay={sheet && <CheckInSheet kind={sheet} onClose={() => setSheet(undefined)} />}>
-      {stage === "member-review" ? <ReviewStage /> : <LiveHome onCheckIn={setSheet} />}
+      <LiveHome onCheckIn={setSheet} />
     </TabScreen>
   )
 }
@@ -670,75 +664,6 @@ function YourRecord() {
   )
 }
 
-/* ------------------------------------------------------------- stages -- */
-
-/** "Tue, Oct 6" from a booked slot ("Tue, Oct 6, 7:30 AM" or an ISO time). */
-function slotDay(slot: string) {
-  if (/^\d{4}-\d{2}-\d{2}/.test(slot)) return dayLabel(dateOfAt(slot))
-  return slot.split(",").slice(0, 2).join(",").trim()
-}
-
-/** Words that wrap as one ("DEXA Wed, Oct 7"). */
-const together = (text: string) => text.replace(/ /g, "\u00A0")
-
-/** "Blood panel Tue, Oct 6. DEXA Wed, Oct 7." from the starting tests'
-    bookings, each test's day kept on one line. */
-function testsLine(bookings: ReturnType<typeof useOnboarding>["bookings"]) {
-  const blood = bookings?.blood?.when
-  const dexa = bookings?.dexa?.when
-  const parts = [blood && `Blood panel ${together(slotDay(blood))}`, dexa && together(`DEXA ${slotDay(dexa)}`)].filter(Boolean)
-  return parts.length ? `${parts.join(". ")}.` : "See them in To do"
-}
-
-/** Version 1 with Dr. Patel (C.2.9): what happens next and what she can do
-    meanwhile, then her record. Billing starts with the approval. */
-function ReviewStage() {
-  const onboarding = useOnboarding()
-  return (
-    <View style={styles.page}>
-      <Rise at={0} id="member:review">
-        <View style={styles.top}>
-          <StatusBanner variant="member" tab="home" />
-          <Card>
-            <View style={styles.stageTop}>
-              <View style={styles.stageWords}>
-                <Text style={styles.stageTitle} accessibilityRole="header">
-                  Your plan is with Dr. Patel
-                </Text>
-                <Text style={styles.meta}>{bySentence("It starts once it's approved. Billing starts then too.")}</Text>
-              </View>
-              <Art name="document" size={64} />
-            </View>
-          </Card>
-          <Block title="While you wait">
-            <Group>
-              <NeedsRow
-                icon={<RecordGlyph name="labs" />}
-                title="Your starting tests"
-                meta={testsLine(onboarding.bookings)}
-                onPress={() => openTab("/gaps", "home")}
-              />
-              <NeedsRow
-                icon={<Camera size={16} color={iconInk} />}
-                title="Try logging a meal"
-                meta={keepEnd("Your totals show once your targets arrive")}
-                onPress={() => router.push("/log-meal")}
-              />
-              <NeedsRow
-                icon={<SparkleGlyph size={16} tone={iconInk} />}
-                title="Ask about your plan"
-                meta={keepEnd("How it was built and what happens next")}
-                onPress={() => router.push({ pathname: "/assistant", params: { topic: "plan" } } as Href)}
-              />
-            </Group>
-          </Block>
-        </View>
-      </Rise>
-      <RecordSections needsAsCard />
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   // Sections a tab screen's section apart; the plan line, a banner and the
   // hero an item apart.
@@ -788,9 +713,4 @@ const styles = StyleSheet.create({
   chips: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
   safety: { ...type.title },
 
-  // Setup and review: the words, then their object.
-  stageTop: { flexDirection: "row", alignItems: "center", gap: space.lead },
-  stageWords: { flex: 1, gap: space.stack },
-  // A white card's title, as the free home's plan card.
-  stageTitle: { ...type.section },
 })

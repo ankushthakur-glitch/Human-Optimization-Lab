@@ -9,7 +9,7 @@ import {
 } from "react-native"
 import Svg, { Path } from "react-native-svg"
 
-import { planFor, useExperience } from "@/lib/experience"
+import { upgradeTab, useExperience } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
 import { color, font, ink, space, type } from "@/lib/theme"
 
@@ -76,7 +76,7 @@ export function TourHost({
   children: React.ReactNode
 }) {
   const onboarding = useOnboarding()
-  const member = planFor(useExperience()) === "member"
+  const member = !upgradeTab(useExperience())
   const root = React.useRef<View>(null)
   const views = React.useRef<Partial<Record<TourTarget, View>>>({})
   const [size, setSize] = React.useState<{ width: number; height: number }>()

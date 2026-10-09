@@ -16,8 +16,6 @@ import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
    SmallLink    a 12 medium text button in Primary/08: "Change", "Remove"
    InfoNote     the blue note at the top of a booking sheet
    SheetRows    rows on a sheet's white, split by rules, no card
-   QuietRow     the partner offer on a test: optional, under the main ways
-                to book, in smaller grey words (F-51)
    ChoiceRow    one place in a single choice list, with a round mark */
 
 /** The tinted card at the top of a detail page: Primary/00 with a
@@ -115,25 +113,6 @@ export function SheetRows({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** A quiet choice under the main ones: smaller grey words, a chevron, no
-    tile. The partner offer on a test (F-51) is the one use. */
-export function QuietRow({ title, meta, onPress }: { title: string; meta?: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={[title, meta].filter(Boolean).join(", ")}
-      style={({ pressed }) => [styles.quiet, pressed && styles.pressed]}
-    >
-      <View style={styles.body}>
-        <Text style={styles.quietTitle}>{title}</Text>
-        {!!meta && <Text style={styles.quietMeta}>{meta}</Text>}
-      </View>
-      <CaretRight size={16} color={card.chevron} />
-    </Pressable>
-  )
-}
-
 /** One option in a single choice list (a place to book): the name, its
     facts, and a 16 round mark, a grey ring until chosen, then teal with a
     check. Put them in a Group inside a View with accessibilityRole
@@ -224,9 +203,6 @@ const styles = StyleSheet.create({
   title: { ...type.title },
   meta: { ...type.label },
 
-  quiet: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY, paddingHorizontal: space.rowX },
-  quietTitle: { ...type.label },
-  quietMeta: { ...type.meta },
 
   radio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: hairline.outline, alignItems: "center", justifyContent: "center" },
   radioOn: { backgroundColor: color.primary, borderColor: color.primary },

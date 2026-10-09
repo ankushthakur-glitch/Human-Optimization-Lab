@@ -352,7 +352,8 @@ export function Checkbox({
 }: {
   checked: boolean
   onChange: (checked: boolean) => void
-  children: string
+  /** Words, or Text with links nested in it. */
+  children: React.ReactNode
 }) {
   return (
     <Pressable

@@ -3,7 +3,7 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { GAP_ICON, keepTogether, reminderLine, reminderSteps } from "@/components/care-gap"
-import { BookedSheet, BookIt, BookSheet, withTold } from "@/components/care-orders-book"
+import { BookedSheet, BookIt, BookSheet, ElsewhereSheet, elsewhereSave, withTold, type Report } from "@/components/care-orders-book"
 import { HeadCard, KindLine, Reminders } from "@/components/care-orders-rows"
 import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
@@ -36,7 +36,7 @@ import { bookingOf } from "@/lib/todo"
 export default function CareGapScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const onboarding = useOnboarding()
-  const [sheet, setSheet] = React.useState<"booked" | "book">()
+  const [sheet, setSheet] = React.useState<"booked" | "book" | "elsewhere">()
 
   const gap = CARE_GAPS.find((g) => g.id === id)
   if (!gap) return <PageNotFoundState />
@@ -49,6 +49,8 @@ export default function CareGapScreen() {
   const doneAt = onboarding.gapsDone?.[gap.id]
   const booking = testBooking ?? visitBooking
   const booked = !doneAt && !!booking
+  // Done somewhere else, as she told us: waiting for the result.
+  const elsewhere = !doneAt && !booked && !!test && onboarding.testAnswers?.[test.id]?.answer === "elsewhere"
   // Said once, at the top; the rows under it change it rather than say it
   // again.
   const bookedWords = booking ? `Booked for ${dayLabel(booking.date)}${booking.time ? `, ${booking.time}` : ""}` : "Booked"
@@ -65,6 +67,13 @@ export default function CareGapScreen() {
       onboarding.save({ bookings }).catch(() => {})
     } else onboarding.save({ booked: { ...onboarding.booked, [gap.id]: localDay(day) } }).catch(() => {})
     toast(test ? "Saved. We'll mark it done when the result arrives." : "Saved")
+  }
+
+  const saveElsewhere = (day: Date, where?: string, report?: Report) => {
+    setSheet(undefined)
+    if (!test) return
+    onboarding.save(elsewhereSave(onboarding, test, day, where, report)).catch(() => {})
+    toast(report ? "Saved. Your report is being checked." : "Saved. We'll add the result when it arrives.")
   }
 
   // The assistant opens on this gap: its question, or what it is.
@@ -91,14 +100,14 @@ export default function CareGapScreen() {
           )}
         </HeadCard>
 
-        {!doneAt && gap.action === "book" && test && !booked && <BookIt order={test} onBooked={() => setSheet("booked")} onPartner={() => setSheet("book")} />}
+        {!doneAt && gap.action === "book" && test && !booked && !elsewhere && <BookIt order={test} onBooked={() => setSheet("booked")} onPartner={() => setSheet("book")} onElsewhere={() => setSheet("elsewhere")} />}
 
-        {!doneAt && gap.action === "book" && test && booked && (
+        {!doneAt && gap.action === "book" && test && (booked || elsewhere) && (
           <Group>
             <NeedsRow
               icon={<RecordIcon name="labs" size={16} color={HUE.teal.ink} />}
               title={test.name}
-              meta={testBooking?.where || PROVENANCE_LABEL.patient}
+              meta={elsewhere ? "Done somewhere else. Waiting for the result" : testBooking?.where || PROVENANCE_LABEL.patient}
               onPress={() => router.push({ pathname: "/order/[id]", params: { id: test.id } })}
             />
           </Group>
@@ -132,6 +141,7 @@ export default function CareGapScreen() {
 
       {sheet === "booked" && <BookedSheet withWhere={!!test} onSave={save} onClose={() => setSheet(undefined)} />}
       {sheet === "book" && test && <BookSheet order={test} onClose={() => setSheet(undefined)} />}
+      {sheet === "elsewhere" && test && <ElsewhereSheet onSave={saveElsewhere} onClose={() => setSheet(undefined)} />}
     </View>
   )
 }

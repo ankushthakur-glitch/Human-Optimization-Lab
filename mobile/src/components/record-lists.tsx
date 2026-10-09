@@ -3,6 +3,7 @@ import * as React from "react"
 import { StyleSheet, View } from "react-native"
 
 import { keepTogether } from "@/components/care-gap"
+import { openMedicineByName } from "@/components/medicines"
 import { Eye, UploadSimple } from "@/components/ph"
 import { Block, EmptyState, Group, Tile } from "@/components/record-kit"
 import { FilterChips, ItemRow, addedDetail, type ItemDetail, type RowStatus } from "@/components/record-rows"
@@ -550,7 +551,7 @@ function timelineOpen(e: TimelineEntry, onOpen: (item: ItemDetail) => void, prov
     }
     case "medicines": {
       const m = MEDICATIONS.find((x) => x.name === splitMedicine(e.title)[0])
-      return () => router.push(m ? { pathname: "/medications", params: { id: m.id } } : "/medications")
+      return () => (m ? openMedicineByName(m) : router.push("/medications"))
     }
     case "documents": {
       const d = DOCUMENTS.find((x) => same(x.name, x.date))

@@ -1,57 +1,54 @@
 import * as React from "react"
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native"
+import * as DocumentPicker from "expo-document-picker"
+import * as ImagePicker from "expo-image-picker"
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native"
 
 import { Art } from "@/components/art"
 import { keepTogether } from "@/components/care-gap"
-import { ChoiceRow, IconAction, InfoNote, QuietRow, SheetRows, SmallLink } from "@/components/care-orders-rows"
+import { ChoiceRow, IconAction, InfoNote, SheetRows, SmallLink } from "@/components/care-orders-rows"
 import { PageGround, PrimaryButton } from "@/components/hol"
-import { CalendarBlank, CalendarCheck, CreditCard, MapPin, Microscope, Phone, ShieldPlus } from "@/components/ph"
-import { Block, ChipRow, Group, HUE, NeedsRow } from "@/components/record-kit"
+import { CalendarBlank, CalendarCheck, CalendarPlus, Camera, CreditCard, FileText, Images, MapPin, Microscope, Phone, ShieldPlus, UploadSimple } from "@/components/ph"
+import { Block, ChipRow, Group, HUE, NeedsRow, toast } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
 import { dayOfWords, showDate } from "@/lib/dates"
-import { addToCalendar, call, directions } from "@/lib/links"
-import { addDays, dayFrom, dayLabel, localDay, shortDay } from "@/lib/member"
-import type { Booking } from "@/lib/onboarding"
+import { addToCalendar, directions } from "@/lib/links"
+import { addDays, dayLabel, localDay, shortDay } from "@/lib/member"
+import type { Added, Booking, State } from "@/lib/onboarding"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
-import { phoneOf, type Order, type Partner } from "@/lib/record"
-import { hairline, ink, space, type } from "@/lib/theme"
+import { BLOOD, IMAGING, phoneOf, type Order, type Partner } from "@/lib/record"
+import { color, font, hairline, ink, space, touchRadius, type } from "@/lib/theme"
 import { bookingOf, localIso } from "@/lib/todo"
 
 /* Booking a test the doctor ordered, shared by the test's page and the care
    gap that follows it (FINAL-SPEC C.8, C.9):
 
-   BookIt       the ways to book: call the place the order names (never a
-                partner in its place, F-46), or the clinic when it names
-                none; "I booked it"; and, only when no place is named, the
-                quiet partner row (F-51)
-   BookedSheet  "When is it booked?": the next 14 days, "Later" for a day
-                after them (she types it), an optional place, Save. Saying
-                so never closes the test (F-43)
+   BookIt       the three ways forward on every test (user, 9 Oct 2026):
+                "Book through the app" (a partner), "I booked it", and
+                "Done somewhere else"
+   BookedSheet  "When is it booked?": a date and a location she types,
+                Save once the date reads. Saying so never closes the test
+                (F-43)
+   ElsewhereSheet  "Done somewhere else": when and where it was done, and
+                the report to upload (a photo or a file)
    UpdateSheet  "Update test", the other answers: to an open test (Q-22),
                 or to a booked one, which can be changed or cancelled but
                 never booked again over itself (F-41)
-   BookSheet    booking with a partner that takes cash (C.8.2, F-44, F-45),
-                only for a test whose order names no place (F-46): the
+   BookSheet    booking with a partner that takes cash (C.8.2, F-44, F-45): the
                 places with their price and first opening, a time, the
                 card, and one button with the amount in it (S-69); paid,
                 the booking, and Done back to the test, now booked
 
    Plus the words for a partner's price and first opening, worked out from
-   today so an opening is never in the past, and who to call. */
+   today so an opening is never in the past, and who to call about a
+   booking. */
 
 /** "Pacific Heart, La Jolla" as "Pacific Heart". */
 export const placeShort = (where: string) => where.split(",")[0].trim()
 
 /** "Harborview Longevity Clinic" as "Harborview". */
 export const CLINIC = PATIENT.practice.split(" ")[0]
-
-/** Who to call to book a test: the place the order names (its number from
-    the record), or the clinic. */
-export function bookingPhone(o: Pick<Order, "at">): string | undefined {
-  return o.at ? phoneOf(o.at) : PATIENT.practicePhone
-}
 
 /** A place to call, as a row names it. */
 export type Contact = { name: string; phone: string }
@@ -83,35 +80,22 @@ export function openingOf(p: Partner, now: Date = new Date()) {
 /** A partner's price, then "first opening Wed, Oct 7". */
 export const partnerLine = (p: Partner, now: Date = new Date()) => `${p.price}, first opening ${openingOf(p, now).words}`
 
-/** The ways to book a test, for a test not booked yet: call the place
-    (or the clinic), "I booked it", and the quiet partner row, which opens
-    the booking sheet (`onPartner`). */
-export function BookIt({ order: o, onBooked, onPartner }: { order: Order; onBooked: () => void; onPartner: () => void }) {
-  const named = o.at ? placeShort(o.at) : undefined
-  const phone = bookingPhone(o)
-  // Only an order that names no place may go to a partner, and then only
-  // as the quiet last choice, from the lowest price.
-  const partner = named ? undefined : byPrice(o.partners ?? [])[0]
+/** The ways forward on a test not booked yet, the same on every page:
+    "Book through the app" opens the partner booking sheet (`onPartner`),
+    "I booked it" asks the day and place (`onBooked`), and "Done somewhere
+    else" asks when and where and takes the report (`onElsewhere`). */
+export function BookIt({ order: o, onBooked, onPartner, onElsewhere }: { order: Order; onBooked: () => void; onPartner: () => void; onElsewhere: () => void }) {
+  const partner = partnersFor(o)[0]
+  const teal = HUE.teal.ink
   return (
     <Block title="Book it">
       <Group>
-        <NeedsRow
-          icon={<Phone size={16} color={HUE.teal.ink} />}
-          title={named ? `Call ${named}` : `Call ${CLINIC} to book`}
-          meta={phone}
-          onPress={phone ? () => call(phone) : undefined}
-        />
-        <NeedsRow icon={<CalendarCheck size={16} color={HUE.teal.ink} />} title="I booked it" onPress={onBooked} />
+        {partner && (
+          <NeedsRow icon={<CalendarPlus size={16} color={teal} />} title="Book through the app" meta={`From ${partnerLine(partner)}`} onPress={onPartner} />
+        )}
+        <NeedsRow icon={<CalendarCheck size={16} color={teal} />} title="I booked it" meta="Add the date and location" onPress={onBooked} />
+        <NeedsRow icon={<Microscope size={16} color={teal} />} title="Done somewhere else" meta="Upload the report" onPress={onElsewhere} />
       </Group>
-      {partner && (
-        <QuietRow
-          // The last three words kept together, so the line never ends on a
-          // lone "partner".
-          title={"Let Inlay arrange this with a partner"}
-          meta={`From ${partnerLine(partner)}`}
-          onPress={onPartner}
-        />
-      )}
     </Block>
   )
 }
@@ -135,55 +119,150 @@ export function withTold(bookings: Record<string, Booking> | undefined, id: stri
     2027". */
 const sayDay = (d: Date, now: Date = new Date()) => (d.getFullYear() === now.getFullYear() ? dayLabel(d) : `${dayLabel(d)}, ${d.getFullYear()}`)
 
-/** The chip for a day after the next 14. */
-const LATER = "later"
-
-/** "When is it booked?": a chip for each of the next 14 days, "Later" for
-    any day after them, which she types ("Nov 12") and sees read back in
-    the field ("Thu, Nov 12"), where (for a test, optional), and Save once
-    there is a day. A mammogram or a visit booked by phone is often weeks
-    out, so no booking is left without a day to give. */
-export function BookedSheet({ withWhere = false, onSave, onClose }: { withWhere?: boolean; onSave: (day: Date, where?: string) => void; onClose: () => void }) {
-  const [days] = React.useState(() => Array.from({ length: 14 }, (_, i) => addDays(new Date(), i + 1)))
-  const [day, setDay] = React.useState("")
-  const [later, setLater] = React.useState("")
-  const [where, setWhere] = React.useState("")
-  const options = [...days.map((d, i) => ({ value: localDay(d), label: i === 0 ? "Tomorrow" : dayLabel(d) })), { value: LATER, label: "Later" }]
-  const typed = day === LATER ? dayOfWords(later) : undefined
-  const chosen = day === LATER ? typed : day ? dayFrom(day) : undefined
+/** A date field: she types the day ("Nov 12", "11/12") and sees it read
+    back inside the field ("Thu, Nov 12"). `year` as dayOfWords reads it:
+    "next" for a day ahead, "nearest" for one gone by. */
+function DateField({ label, value, onChange, year, example }: { label: string; value: string; onChange: (t: string) => void; year: "next" | "nearest"; example: string }) {
+  const read = dayOfWords(value, new Date(), year)
   return (
-    // The sheet rises with the keyboard while she types the day or the
-    // place.
+    <TextField
+      label={label}
+      placeholder={example}
+      value={value}
+      onChangeText={onChange}
+      autoCapitalize="words"
+      autoCorrect={false}
+      returnKeyType="done"
+      trailing={
+        // Kept in place while empty, so a screen reader hears the day as
+        // soon as it reads.
+        <Text style={styles.readBack} accessibilityLiveRegion="polite">
+          {read ? sayDay(read) : ""}
+        </Text>
+      }
+    />
+  )
+}
+
+/** "When is it booked?": the date she types (read back in the field) and
+    the location, for a test (optional), then Save once the date reads. A
+    mammogram or a visit booked by phone is often weeks out, so any day
+    ahead can be given. */
+export function BookedSheet({ withWhere = false, onSave, onClose }: { withWhere?: boolean; onSave: (day: Date, where?: string) => void; onClose: () => void }) {
+  const [date, setDate] = React.useState("")
+  const [where, setWhere] = React.useState("")
+  // An example two weeks from today, so it is never a day gone by.
+  const [example] = React.useState(() => shortDay(addDays(new Date(), 14)))
+  const chosen = dayOfWords(date)
+  return (
+    // The sheet rises with the keyboard while she types.
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <Sheet title="When is it booked?" onClose={onClose}>
-        <ChipRow options={options} value={day} onChange={setDay} />
-        {day === LATER && (
-          <TextField
-            label="Which day?"
-            // An example a month from today, so it is never a day gone by.
-            placeholder={shortDay(addDays(days[0], 29))}
-            value={later}
-            onChangeText={setLater}
-            autoFocus
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="done"
-            trailing={
-              // Kept in place while empty, so a screen reader hears the day
-              // as soon as it reads.
-              <Text style={styles.readBack} accessibilityLiveRegion="polite">
-                {typed ? sayDay(typed) : ""}
-              </Text>
-            }
-          />
-        )}
-        {withWhere && <TextField label="Where" placeholder="Optional" value={where} onChangeText={setWhere} autoCapitalize="words" returnKeyType="done" />}
+        <DateField label="Date" value={date} onChange={setDate} year="next" example={example} />
+        {withWhere && <TextField label="Location" placeholder="Clinic or lab, optional" value={where} onChangeText={setWhere} autoCapitalize="words" returnKeyType="done" />}
         <Button disabled={!chosen} onPress={() => chosen && onSave(chosen, where.trim() || undefined)}>
           Save
         </Button>
       </Sheet>
     </KeyboardAvoidingView>
   )
+}
+
+/** A report she picked: a photo or a file, by name. */
+export type Report = { uri: string; name: string }
+
+/** "Done somewhere else": when it was done (a day gone by), where, and
+    the report, from the camera, her photos or a file; Save once the date
+    reads. The report is optional: the result may still come in from the
+    place itself. */
+export function ElsewhereSheet({ onSave, onClose }: { onSave: (day: Date, where?: string, report?: Report) => void; onClose: () => void }) {
+  const [date, setDate] = React.useState("")
+  const [where, setWhere] = React.useState("")
+  const [report, setReport] = React.useState<Report>()
+  const [picking, setPicking] = React.useState(false)
+  const [example] = React.useState(() => shortDay(addDays(new Date(), -7)))
+  const read = dayOfWords(date, new Date(), "nearest")
+  // A day still ahead was not done yet.
+  const chosen = read && read.getTime() <= Date.now() ? read : undefined
+  const teal = HUE.teal.ink
+
+  const pick = (how: "camera" | "photos" | "file") => async () => {
+    setPicking(false)
+    try {
+      if (how === "file") {
+        const r = await DocumentPicker.getDocumentAsync({ type: ["application/pdf", "image/*"], copyToCacheDirectory: true })
+        if (!r.canceled) setReport({ uri: r.assets[0].uri, name: r.assets[0].name })
+        return
+      }
+      if (how === "camera") {
+        const allowed = await ImagePicker.requestCameraPermissionsAsync()
+        if (!allowed.granted) return toast("Allow the camera in Settings to take a photo")
+      }
+      const r = await (how === "camera" ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync)({ mediaTypes: ["images"], quality: 0.8 })
+      if (!r.canceled) setReport({ uri: r.assets[0].uri, name: r.assets[0].fileName ?? "Photo of the report" })
+    } catch {
+      toast("That couldn't be added")
+    }
+  }
+
+  if (picking)
+    return (
+      <Sheet title="Upload report" onClose={() => setPicking(false)}>
+        <SheetRows>
+          {/* A browser opens its file chooser for the camera too; no camera row there. */}
+          {Platform.OS !== "web" && <NeedsRow icon={<Camera size={16} color={teal} />} title="Take a photo" onPress={pick("camera")} />}
+          <NeedsRow icon={<Images size={16} color={teal} />} title="Choose from photos" onPress={pick("photos")} />
+          <NeedsRow icon={<FileText size={16} color={teal} />} title="Upload a file" onPress={pick("file")} />
+        </SheetRows>
+      </Sheet>
+    )
+
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Sheet title="Done somewhere else" onClose={onClose}>
+        <DateField label="Date" value={date} onChange={setDate} year="nearest" example={example} />
+        <TextField label="Location" placeholder="Clinic or lab" value={where} onChangeText={setWhere} autoCapitalize="words" returnKeyType="done" />
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>Report</Text>
+          {report ? (
+            <View style={[styles.upload, styles.uploaded]}>
+              <FileText size={18} color={teal} />
+              <Text style={styles.uploadName} numberOfLines={1}>
+                {report.name}
+              </Text>
+              <SmallLink onPress={() => setReport(undefined)} accessibilityLabel={`Remove ${report.name}`}>
+                Remove
+              </SmallLink>
+            </View>
+          ) : (
+            <Pressable onPress={() => setPicking(true)} accessibilityRole="button" accessibilityLabel="Upload report" style={({ pressed }) => [styles.upload, pressed && styles.pressed]}>
+              <UploadSimple size={18} color={teal} />
+              <Text style={styles.uploadWords}>Upload a photo or file</Text>
+            </Pressable>
+          )}
+        </View>
+        <Button disabled={!chosen} onPress={() => chosen && onSave(chosen, where.trim() || undefined, report)}>
+          Save
+        </Button>
+      </Sheet>
+    </KeyboardAvoidingView>
+  )
+}
+
+/** What saving "Done somewhere else" keeps: the answer on the test, and the
+    report, when there is one, added to her record to be checked. */
+export function elsewhereSave(state: Pick<State, "testAnswers" | "added">, o: Order, day: Date, where?: string, report?: Report): Partial<State> {
+  const testAnswers = { ...state.testAnswers, [o.id]: { answer: "elsewhere" as const, at: new Date().toISOString() } }
+  if (!report) return { testAnswers }
+  const added: Added = {
+    id: `added-${Date.now()}`,
+    title: o.name,
+    detail: report.name,
+    at: showDate(),
+    report: { where: where ?? "", date: showDate(day), values: [] },
+    via: "photo",
+  }
+  return { testAnswers, added: [...(state.added ?? []), added] }
 }
 
 /** What she can tell us about a test: about an open one (Q-22), and
@@ -259,9 +338,10 @@ function doctorOf(by: string) {
   return parts[0] === "Dr." && parts.length > 2 ? `Dr. ${parts[parts.length - 1]}` : parts.join(" ")
 }
 
-/** The partners a test may be booked with: none when its order names a
-    place, which is never swapped for a partner (F-46). */
-export const partnersFor = (o: Order) => (o.at ? [] : byPrice(o.partners ?? []))
+/** The partners a test may be booked with: its own, or the imaging or
+    blood partners for its kind, so every test can be booked through the
+    app (user, 9 Oct 2026). */
+export const partnersFor = (o: Order) => byPrice(o.partners ?? (o.kind === "imaging" ? IMAGING : BLOOD))
 
 /** "Book your blood test" (Figma), open to every patient, free or member.
     The sheet's middle sits on the page gradient between its header and a
@@ -438,5 +518,27 @@ const styles = StyleSheet.create({
   pair: { flexDirection: "row", gap: space.item },
   // The day as it was read, in teal words at 12 pt, inside the field on the
   // right, in the field's own 14 pt inset (the TextField in ui.tsx).
+  // The report, as a field beside Date and Location: its label, then a
+  // dashed box of the same height, edge and corners as theirs.
+  field: { gap: 6 },
+  fieldLabel: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: color.text },
+  upload: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space.inline,
+    height: 52,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: color.inputBorder,
+    borderRadius: touchRadius,
+    backgroundColor: color.background,
+  },
+  // Picked: a plain edge, the name on the left and Remove on the right.
+  uploaded: { borderStyle: "solid", justifyContent: "flex-start" },
+  uploadWords: { fontFamily: font.medium, fontSize: 14, color: ink.primary },
+  uploadName: { flex: 1, fontFamily: font.regular, fontSize: 16, color: color.text },
+  pressed: { opacity: 0.6 },
   readBack: { ...type.metaStrong, color: ink.primary, paddingRight: 14 },
 })

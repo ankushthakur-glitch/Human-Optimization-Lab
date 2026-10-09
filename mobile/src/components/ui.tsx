@@ -18,6 +18,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import Svg, { Circle } from "react-native-svg"
 
 import { IconEye, IconEyeOff } from "@/components/icons"
+import { CaretDown } from "@/components/ph"
 import { buttonRadius, color, font, gutter, radius, touchRadius } from "@/lib/theme"
 
 /* The few building blocks the patient app's screens share, built to the web
@@ -221,6 +222,52 @@ export const TextField = React.forwardRef<TextInput, FieldProps>(function TextFi
   )
 })
 
+/** A field that opens a list rather than taking typing (a day, a time):
+    the same label and box as TextField, the chosen value or a grey
+    placeholder, and a caret on the right. `onPress` opens the list,
+    usually a sheet of choices. */
+export function SelectField({
+  label,
+  value,
+  placeholder,
+  icon: Icon,
+  hideLabel,
+  onPress,
+}: {
+  /** Shown over the box, unless the box already says enough (`hideLabel`);
+      a screen reader always hears it. */
+  label: string
+  hideLabel?: boolean
+  value?: string
+  placeholder: string
+  icon?: React.ComponentType<{ color: string }>
+  onPress: () => void
+}) {
+  return (
+    <View style={styles.field}>
+      {!hideLabel && <Text style={styles.label}>{label}</Text>}
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}, ${value ?? "not chosen"}`}
+        style={({ pressed }) => [styles.inputBox, !!value && styles.selectChosen, pressed && styles.togglePressed]}
+      >
+        {Icon && (
+          <View style={styles.leading}>
+            <Icon color={value ? color.primary : color.muted} />
+          </View>
+        )}
+        <Text style={[styles.input, styles.select, !!Icon && styles.inputWithIcon, !value && styles.selectEmpty, !!value && styles.selectValue]} numberOfLines={1}>
+          {value ?? placeholder}
+        </Text>
+        <View style={styles.caret}>
+          <CaretDown size={16} color={color.muted} />
+        </View>
+      </Pressable>
+    </View>
+  )
+}
+
 /** A text field with the portal's eye toggle to show or hide what's typed. */
 export const PasswordField = React.forwardRef<TextInput, Omit<FieldProps, "trailing" | "secureTextEntry">>(
   function PasswordField(props, ref) {
@@ -418,6 +465,13 @@ const styles = StyleSheet.create({
     ...Platform.select({ web: { outlineStyle: "none" } as unknown as TextStyle }),
   },
   leading: { paddingLeft: 14 },
+  // A select's value sits where typed text would, centred in the box.
+  select: { height: undefined, lineHeight: 22, alignSelf: "center" },
+  selectEmpty: { color: color.placeholder },
+  // Chosen: the value in medium weight on a teal edge.
+  selectChosen: { borderColor: color.primaryEdge },
+  selectValue: { fontFamily: font.medium },
+  caret: { paddingRight: 14 },
   inputWithIcon: { paddingLeft: 10 },
   error: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.error },
   toggle: {

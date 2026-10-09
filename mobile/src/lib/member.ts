@@ -206,7 +206,7 @@ export const membershipOn = (m: Snapshot["membership"], now: Date = new Date()) 
 export function memberStage(s: Snapshot, now: Date = new Date()): MemberStage | undefined {
   if (!s.membership || !membershipOn(s.membership, now)) return undefined
   if (s.membership.paused) return "paused"
-  if (!s.plan || s.plan.status === "review") return s.plan?.versions.length ? "redraft" : "review"
+  if (!s.plan || s.plan.status !== "live") return s.plan?.versions.length ? "redraft" : "review"
   return "live"
 }
 

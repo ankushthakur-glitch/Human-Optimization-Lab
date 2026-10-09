@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { StatusBanner } from "@/components/home-header"
 import { Plus } from "@/components/ph"
-import { MedicineConfirm, MedicineSheet, type MedicineView } from "@/components/medicines"
+import { MedicineConfirm } from "@/components/medicines"
 import { ChipRow, Group, Heading, ResultRow } from "@/components/record-kit"
 import { KindList, RECORD_TITLES, sinceLine } from "@/components/record-lists"
 import { AddToRecordSheet, openItem } from "@/components/record-rows"
@@ -12,7 +12,7 @@ import { TabScreen } from "@/components/tab-bar"
 import { useExperience, useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
 import { addKindOf } from "@/lib/add-record"
-import { BODY_SYSTEMS, type Medication } from "@/lib/record"
+import { BODY_SYSTEMS } from "@/lib/record"
 import { color, space, type } from "@/lib/theme"
 import { homeBanner } from "@/lib/todo"
 import { classify, type Status } from "@/lib/trends"
@@ -23,8 +23,8 @@ import { classify, type Status } from "@/lib/trends"
    1. The header names the tab and holds "+ Add to your record" (a photo of
       a record, or something she tells us).
    2. Category pills: each one swaps the section below in place
-      (Biomarkers, Medicines, Conditions, Visits, Allergies, Tests and
-      orders, Immunizations, Procedures, and Added by you once she has
+      (Biomarkers, Tests and orders, Medicines, Conditions, Visits,
+      Allergies, Immunizations, Procedures, and Added by you once she has
       added something).
    3. "Biomarkers and results", body system chips to narrow
       it (All first), and every result as a row (record-kit ResultRow):
@@ -38,11 +38,11 @@ type Category = "biomarkers" | "medicines" | "conditions" | "visits" | "allergie
 
 const CATEGORIES: { value: Category; label: string }[] = [
   { value: "biomarkers", label: "Biomarkers" },
+  { value: "tests", label: "Tests and orders" },
   { value: "medicines", label: "Medicines" },
   { value: "conditions", label: "Conditions" },
   { value: "visits", label: "Visits" },
   { value: "allergies", label: "Allergies" },
-  { value: "tests", label: "Tests and orders" },
   { value: "immunizations", label: "Immunizations" },
   { value: "procedures", label: "Procedures" },
 ]
@@ -60,9 +60,6 @@ export function RecordTab() {
   const info = useExperience()
   const [adding, setAdding] = React.useState(false)
   const [category, setCategory] = React.useState<Category>("biomarkers")
-  const [medicine, setMedicine] = React.useState<Medication | null>(null)
-  // Medicines are checked and updated here, on the Record tab itself.
-  const [medView, setMedView] = React.useState<MedicineView>()
 
   // Opening the record reads any new results: the home's "New results are
   // in" goes.
@@ -81,29 +78,20 @@ export function RecordTab() {
       tab="results"
       title="Record"
       headerRight={<AddAction onPress={() => setAdding(true)} />}
-      overlay={
-        adding ? (
-          <AddToRecordSheet kind={addKind} onClose={() => setAdding(false)} />
-        ) : medicine ? (
-          <MedicineSheet
-            m={medicine}
-            onClose={() => setMedicine(null)}
-            onUpdate={() => {
-              setMedicine(null)
-              setMedView("check")
-            }}
-          />
-        ) : undefined
+      pinned={
+        <>
+          <RecordBanner />
+          <Categories value={category} onChange={setCategory} />
+        </>
       }
+      overlay={adding ? <AddToRecordSheet kind={addKind} onClose={() => setAdding(false)} /> : undefined}
     >
-      <RecordBanner />
-      <Categories value={category} onChange={setCategory} />
       {category === "biomarkers" ? (
         <Results member={member} />
       ) : category === "medicines" ? (
         <View style={styles.results}>
           <Heading title="Medicines" variant="title" />
-          <MedicineConfirm view={medView} onOpen={setMedicine} />
+          <MedicineConfirm />
         </View>
       ) : (
         <View style={styles.results}>

@@ -69,12 +69,17 @@ export type Membership = {
   pastCards?: { card: string; until: string }[]
 }
 
-/** The plan is a draft until the doctor approves it; each approved
-    version replaces the last, which is kept. */
+/** The plan is with the doctor ("review") until the doctor sends it to her
+    ("proposed"); she reads it and accepts it, or asks for a change, which
+    sends it back, round after round until she accepts. Each
+    accepted version replaces the last, which is kept. */
 export type Plan = {
-  status: "review" | "live"
+  status: "review" | "proposed" | "live"
   version: number
   versions: { version: number; approved: string; why: string }[]
+  /** The changes she asked for on this version, oldest first; cleared once
+      she accepts it. */
+  requests?: { at: string; text: string }[]
 }
 
 /** A test booked with a cash partner: where, when, what it cost, and the
@@ -259,6 +264,25 @@ export type State = {
   /** Every approved plan version, kept through a cancel and a rejoin
       (A-45). */
   planHistory?: Plan["versions"]
+  /** What she wants her plan to improve, chosen on /goals before checkout
+      (Journey_7 screen 2): the goals' labels, hers included. */
+  goals?: string[]
+  /** Goals she wrote herself under "Other", oldest first. */
+  ownGoals?: string[]
+  /** What she changed on /health-profile (Journey_7 screen 4), by field;
+      everything else stays as her record has it. */
+  healthProfile?: Record<string, string>
+  /** The baseline tests she left ticked on /baseline (Journey_7 screen
+      5); unset means all three. (Renamed from baselineTests, which held
+      only the optional extras, so old saves start fresh.) */
+  baselinePicks?: string[]
+  /** The baseline tests her membership paid for (/payment), and when she
+      chose to schedule them later (/schedule-tests): until each is booked
+      it waits in To do, brought up every other day. */
+  startingTests?: { ids: string[]; at: string; laterAt?: string }
+  /** She has seen "Your personalized plan is ready" (/plan-ready), shown
+      once after her first plan is approved. */
+  planReadySeen?: boolean
   /** The plan's sample profile (lib/member.ts PROFILES): weight, blood
       sugar and heart, or bone. Weight when unset. */
   memberFocus?: "weight" | "bone"
