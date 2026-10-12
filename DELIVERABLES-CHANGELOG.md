@@ -495,3 +495,9 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Removed: Patient Portal / Mobile App: Optimization Member / Plan paused
 - Removed: Patient Portal / Mobile App: Optimization Member / Assistant: member credit used up
 - Removed: Patient Portal / Mobile App: Profile and Settings / Who has looked at your record
+
+## 13-Oct-2026
+
+- Upcoming lists only the next two appointments; rebuild web app
+- Revert "feat(app): upcoming lists only the next two appointments; rebuild web app"
+- Drop the portal access question from add patient; reset saved customizer themes
