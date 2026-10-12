@@ -576,7 +576,8 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
   const appts = appointments(s, now, live).filter((a) => a.date.getTime() >= today.getTime())
   const questions = s.questions ?? []
   const nextVisit = appts.find((a) => !a.review)
-  for (const a of appts) {
+  // Only the next two appointments are listed as coming up.
+  for (const a of appts.slice(0, 2)) {
     const saved = questions.filter((q) => q.for === a.id || (!q.for && a === nextVisit)).length
     coming.push({
       id: `appointment:${a.id}`,
