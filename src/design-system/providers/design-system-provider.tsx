@@ -39,9 +39,10 @@ export const DEFAULT_CONFIG: DesignSystemConfig = {
  *
  * The trade that buys back: a screenshot or a review link carries whatever
  * theme the person viewing it last chose, not the brand. Reset in the
- * customizer puts a browser back to DEFAULT_CONFIG.
+ * customizer puts a browser back to DEFAULT_CONFIG. The "-v2" suffix dropped
+ * every choice saved before 12 Oct 2026, putting all browsers back on it.
  */
-const STORAGE_KEY = `${BRAND_SLUG}-design-system`
+const STORAGE_KEY = `${BRAND_SLUG}-design-system-v2`
 
 /**
  * Stamped on every save. The whole config is stored, so a browser that only

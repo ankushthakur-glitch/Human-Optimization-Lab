@@ -1,13 +1,14 @@
 import * as React from "react"
 
 import { FreeHome } from "@/components/home-free"
-import { MemberHome } from "@/components/home-member"
+import { OptimizedHome } from "@/components/home-optimized"
 import { homeFor, useExperience } from "@/lib/experience"
 
 /* Home: one of two first screens, chosen by the one selector screens use
    to tell the patients apart (lib/experience.ts, FINAL-SPEC A.3). A member
-   setting up, waiting for version 1 or with a live plan starts the day on
-   the member home: today, yesterday, this week, since you started.
+   with a live plan gets the free home with her plan woven in (12 Oct
+   2026): what needs her, yesterday's score and goals, today's plan, then
+   her record. The previous member home is kept at /home-previous.
    Everyone else gets the free home (free, building, declined, paused, and
    a cancelled member or one who turned sharing off, both on the free
    record), which also draws the not connected, record arriving and paused
@@ -16,5 +17,5 @@ import { homeFor, useExperience } from "@/lib/experience"
 
 export default function HomeScreen() {
   const { experience } = useExperience()
-  return homeFor(experience) === "member" ? <MemberHome /> : <FreeHome />
+  return homeFor(experience) === "member" ? <OptimizedHome /> : <FreeHome />
 }

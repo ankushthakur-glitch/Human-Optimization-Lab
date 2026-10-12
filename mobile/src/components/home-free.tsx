@@ -92,7 +92,7 @@ const pendingLine = (n: number) => `${n} pending ${n === 1 ? "action" : "actions
     the count as the title, the pending line under it, and the whole banner
     opens To do, where each item has its action. With nothing open, the
     same banner says she is all caught up and opens what is next. */
-function NeedsYou() {
+export function NeedsYou() {
   const onboarding = useOnboarding()
   const needs = todo(onboarding).needs
 
@@ -130,7 +130,7 @@ const openResults = () => router.push("/results")
     Fewer than four worth watching, the grid fills with results that are in
     range, the ones with the longest history first, so the section always
     shows her data and never an empty cell. See all opens Results. */
-function Trends() {
+export function Trends() {
   const onboarding = useOnboarding()
   const markers = useMarkers()
   const list = watchList(markers, { improve: onboarding.why?.improve })
@@ -160,7 +160,7 @@ function Trends() {
     that are not due yet, by date (C.1.2, 4). A date block only for
     something that happens on that day; an open order keeps its glyph and
     says its due date in words, its facts split by a dot as in the Figma. */
-function Upcoming() {
+export function Upcoming() {
   const onboarding = useOnboarding()
   // One row, so the home fits a screen without scrolling; See all has the rest.
   const coming = comingUp(onboarding).slice(0, 1)
@@ -211,7 +211,7 @@ function UpgradeCard() {
 /** Visits outside her clinic that arrived with the record or since, two
     at most, each until she opens it (C.1.2, 5), and the reassurance that
     her doctor sees them too. */
-function NewInRecord() {
+export function NewInRecord() {
   const onboarding = useOnboarding()
   const items = todo(onboarding).newInRecord.slice(0, 2)
   if (!items.length) return null
@@ -246,7 +246,7 @@ function NewInRecord() {
 /** Her medicines by name, the ones her records differ on first (C.1.2,
     7), and her supplements in one line. Once she answers for a medicine
     its mark goes: Dr. Patel settles the difference. */
-function Medicines() {
+export function Medicines() {
   const onboarding = useOnboarding()
   const meds = yourMedicines(onboarding)
   if (!meds.total) return null
@@ -286,7 +286,7 @@ function Medicines() {
 /** The way into the assistant about her results (C.1.2, 9), the Figma's
     grey teal banner with the share of this week's AI credit used, as the
     orb's ring shows it. */
-function AskRow() {
+export function AskRow() {
   const { line } = useAllowance()
   return (
     <Rise at={7} id="home:ask">

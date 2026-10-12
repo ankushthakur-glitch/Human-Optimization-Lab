@@ -81,7 +81,6 @@ import {
 } from "@/components/practice/duplicates"
 import { Button } from "@/design-system/ui/button"
 import { Checkbox } from "@/design-system/ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "@/design-system/ui/radio-group"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -249,13 +248,13 @@ function PatientForm({ patient }: { patient?: Patient }) {
       middleName: values.middleName.trim(),
       lastName: values.lastName.trim(),
       email: values.noEmail ? "" : values.email.trim(),
-      portalAccess: values.portalAccess && !values.noEmail,
+      portalAccess: !values.noEmail,
       /* Rows left blank are dropped rather than saved empty. */
       emergencyContacts: values.emergencyContacts.filter(
         (c) => c.name.trim() || c.phone || c.email.trim() || c.relationship
       ),
     }
-    /* Portal access "Yes" sends the invite on save, unless it went already. */
+    /* A patient with an email is invited on save, unless it went already. */
     const invite = (id: string, status: Patient["status"]) => {
       if (clean.portalAccess && status === "Not invited")
         sendPatientInvites([id])
@@ -444,7 +443,6 @@ function PatientForm({ patient }: { patient?: Patient }) {
                         ...prev,
                         noEmail: checked,
                         email: checked ? "" : prev.email,
-                        portalAccess: checked ? false : prev.portalAccess,
                         preferredContacts: checked
                           ? prev.preferredContacts.filter((c) => c !== "Email")
                           : prev.preferredContacts,
@@ -557,37 +555,6 @@ function PatientForm({ patient }: { patient?: Patient }) {
             <PhotoField value={values.photo} onChange={set("photo")} />
           </div>
         </RecordCard>
-
-        <RecordCard
-          title="Patient portal access"
-          action={
-            <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-sm sm:flex-nowrap">
-              <span
-                id="patient-portalAccess-label"
-                className="sm:whitespace-nowrap"
-              >
-                Give this patient access to the patient portal?
-                <Required />
-              </span>
-              <RadioGroup
-                aria-labelledby="patient-portalAccess-label"
-                value={values.portalAccess ? "yes" : "no"}
-                onValueChange={(next) => set("portalAccess")(next === "yes")}
-                className="flex items-center gap-4"
-              >
-                {(["yes", "no"] as const).map((option) => (
-                  <label key={option} className="flex items-center gap-2">
-                    <RadioGroupItem
-                      value={option}
-                      disabled={option === "yes" && values.noEmail}
-                    />
-                    {option === "yes" ? "Yes" : "No"}
-                  </label>
-                ))}
-              </RadioGroup>
-            </div>
-          }
-        />
 
         <RecordCard title="Care team">
           <div className={GRID}>
@@ -919,10 +886,6 @@ export function PatientDetails({ patient: p }: { patient: Patient }) {
             { label: "Pronoun", value: p.pronoun },
             { label: "Marital status", value: p.maritalStatus },
             { label: "SSN", value: maskSsn(p.ssn) },
-            {
-              label: "Portal access",
-              value: p.portalAccess ? "Yes" : "No",
-            },
           ]}
         />
       </RecordCard>

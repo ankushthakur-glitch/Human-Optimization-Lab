@@ -291,6 +291,8 @@ export default function ReviewScreen() {
       <Block title="Review pages">
         <Group>
           <NeedsRow icon={<ChartLine size={16} color={color.primary} />} title="Kit" meta="Every kit piece and chart in every state" onPress={() => router.push("/demo/kit")} />
+          <NeedsRow icon={<Target size={16} color={color.primary} />} title="Fifty data elements" meta="Ways to show plan data, numbered to pick from" onPress={() => router.push("/elements")} />
+          <NeedsRow icon={<Target size={16} color={color.primary} />} title="Previous member home" meta="The member home before the 12 Oct Daily review" onPress={() => router.push("/home-previous")} />
           <NeedsRow icon={<Warning size={16} color={color.primary} />} title="Error states" meta="Not found, offline, session expired, crash" onPress={() => router.push("/errors")} />
         </Group>
       </Block>

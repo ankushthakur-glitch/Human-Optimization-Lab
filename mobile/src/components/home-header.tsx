@@ -39,7 +39,7 @@ export function greetingFor(now: Date = new Date()) {
 
 /** Both homes' pinned header, for TabScreen's `header`. `variant` is not
     needed (the store says who she is); early callers still pass it. */
-export function HomeHeader(_: { variant?: "free" | "member" } = {}) {
+export function HomeHeader({ line = "Here's what's important today." }: { variant?: "free" | "member"; line?: string } = {}) {
   const onboarding = useOnboarding()
   const name =
     onboarding.profile?.preferredName?.trim() ||
@@ -74,7 +74,7 @@ export function HomeHeader(_: { variant?: "free" | "member" } = {}) {
           {`${greetingFor()}, ${name}`}
         </Text>
         <Text style={styles.greeting} maxFontSizeMultiplier={1.3}>
-          Here's what's important today.
+          {line}
         </Text>
       </View>
       <Pressable
