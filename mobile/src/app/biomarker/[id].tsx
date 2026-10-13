@@ -20,11 +20,13 @@ import {
   classify,
   directionWords,
   formatNumber,
+  isGrowth,
   needsReview,
   pointDate,
   pointStatus,
   pointTime,
   precisionOf,
+  sourceName,
   spokenValue,
   valueText,
   type Trend,
@@ -79,8 +81,10 @@ function spokenDay(p: Point) {
 const referenceOf = (t: Trend) => t.series[0]?.method ?? ""
 
 /** Where a result came from, with its method when it is not the one the
-    line follows: "Quest Diagnostics", "You, home finger prick kit". */
+    line follows: "Quest Diagnostics", "You, home finger prick kit". A scan
+    names its study and the place that ran it: "Echo, Pacific Heart". */
 function sourceLine(p: Point, t: Trend) {
+  if (p.study) return p.study
   const place = PLACE_NAME[p.origin]
   return (p.method ?? "") !== referenceOf(t) && p.method ? `${place}, ${lowerFirst(p.method)}` : place
 }
@@ -168,7 +172,7 @@ function Readout({ b, t, member, review }: { b: Biomarker; t: Trend; member: boo
         {latest ? (
           <View style={styles.head}>
             <View style={styles.badges}>
-              <Status level={t.status} tinted>{zone ? `${zone.name} range` : undefined}</Status>
+              <Status level={t.status} tinted>{zone ? `${zone.name} range` : isGrowth(b) ? t.statusWord : undefined}</Status>
               <View style={styles.trend}>
                 {Arrow && <Arrow size={12} color={color.primaryText} />}
                 <Text style={styles.trendText}>{directionWords(t)}</Text>
@@ -177,13 +181,13 @@ function Readout({ b, t, member, review }: { b: Biomarker; t: Trend; member: boo
             <View
               style={styles.figure}
               accessible
-              accessibilityLabel={`Latest result, ${spokenValue(b, latest)}, ${lowerFirst(STATUS_WORD[t.status])}. ${spokenDay(latest)}, ${PLACE_NAME[latest.origin]}.`}
+              accessibilityLabel={`Latest result, ${spokenValue(b, latest)}, ${lowerFirst(STATUS_WORD[t.status])}. ${spokenDay(latest)}, ${sourceName(latest)}.`}
             >
               <View style={styles.value}>
                 <Text style={[styles.valueText, { color: LEVEL_TEXT[t.status] }]}>{t.value}</Text>
                 <Text style={type.unit}>{b.unit}</Text>
               </View>
-              <Text style={type.label}>{`Latest, ${pointDate(latest)}, ${PLACE_NAME[latest.origin]}`}</Text>
+              <Text style={type.label}>{`Latest, ${pointDate(latest)}, ${sourceName(latest)}`}</Text>
               {!!since && <Text style={type.label}>{since.words}</Text>}
             </View>
           </View>
@@ -201,6 +205,9 @@ function Readout({ b, t, member, review }: { b: Biomarker; t: Trend; member: boo
               <PressureBars b={b} latest={latest} />
             ) : b.zones && zone ? (
               <ZoneBar zones={b.zones} value={latest.value} at={zone} status={t.status} />
+            ) : isGrowth(b) ? (
+              // A size has no normal range to draw: what the scans show is the change.
+              <Text style={type.label}>{b.target}</Text>
             ) : (
               <RangeBar
                 value={latest.value}

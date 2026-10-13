@@ -14,7 +14,7 @@ import { withQuestion } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import type { OrderState } from "@/lib/record"
 import { card, cardRadius, chart, color, font, gutter, hairline, ink, outOfRangeColor, space, type } from "@/lib/theme"
-import { monthYear, type Trend as MarkerTrend } from "@/lib/trends"
+import { isGrowth, monthYear, type Trend as MarkerTrend } from "@/lib/trends"
 import { keepEnd } from "@/lib/words"
 
 /* The signed-in record's pieces, built to the Frontline patient app's
@@ -918,16 +918,17 @@ export function spokenDate(date: DateLike, now: Date = new Date()): string | und
     over the day for a date within six days of today ("Wed" over "7"), the
     month over the day for one further off ("Oct" over "21"), so a date
     weeks away never reads as a day this week. */
-export function DateBlock({ date, hue = "teal" }: { date: DateLike | { weekday: string; day: string | number }; hue?: Hue }) {
+export function DateBlock({ date, hue = "teal", size = "md" }: { date: DateLike | { weekday: string; day: string | number }; hue?: Hue; size?: "md" | "lg" }) {
   const given = typeof date === "string" || date instanceof Date ? undefined : date
   const day = given ? undefined : dayOfRow(date as DateLike)
   const near = !!day && Math.abs(daysFrom(toDay(new Date())!, day)) <= 6
   const top = day ? (near ? WEEKDAYS[day.getDay()] : MONTHS[day.getMonth()]) : (given?.weekday ?? "")
   const num = day ? day.getDate() : (given?.day ?? "")
+  const lg = size === "lg"
   return (
-    <View style={[styles.tile, styles.dateBlock, { backgroundColor: HUE[hue].tint }]}>
-      <Text style={styles.dateWeekday}>{top}</Text>
-      <Text style={[styles.dateDay, hue === "teal" && { color: ink.primary }]}>{num}</Text>
+    <View style={[styles.tile, styles.dateBlock, lg && styles.dateBlockLg, { backgroundColor: HUE[hue].tint }]}>
+      <Text style={[styles.dateWeekday, lg && [styles.dateWeekdayLg, { color: HUE[hue].ink }]]}>{top}</Text>
+      <Text style={[styles.dateDay, lg && styles.dateDayLg, hue === "teal" && { color: ink.primary }]}>{num}</Text>
     </View>
   )
 }
@@ -1694,7 +1695,8 @@ export function ResultRow({ trend: t, since, onPress }: { trend: MarkerTrend; si
   const tone = t.status === "out" ? outOfRangeColor() : chart.borderline
   const Arrow = t.side === "below" ? ArrowDownRight : ArrowUpRight
   // Out of range says which side ("Above target"), as the client's reference does.
-  const status = t.status === "out" ? (t.side === "below" ? "Below target" : "Above target") : LEVEL_WORD[t.status]
+  // A size with no range says stable, growing or growing fast.
+  const status = isGrowth(t.marker) ? t.statusWord : t.status === "out" ? (t.side === "below" ? "Below target" : "Above target") : LEVEL_WORD[t.status]
   return (
     <Pressable
       onPress={onPress}
@@ -2198,6 +2200,11 @@ const styles = StyleSheet.create({
   dateBlock: { width: 32, height: 40, alignSelf: "flex-start", borderRadius: 6, gap: space.line },
   dateWeekday: { ...type.caption, color: ink.detail },
   dateDay: { fontFamily: font.semibold, fontSize: 13, lineHeight: 17, color: ink.strong, fontVariant: ["tabular-nums"] },
+  // The appointment card's larger block (AppointmentCard): 44 by 52, the
+  // weekday 12 medium over the day 20 semibold.
+  dateBlockLg: { width: 44, height: 52, borderRadius: 10 },
+  dateWeekdayLg: { fontFamily: font.medium, fontSize: 12, lineHeight: 16 },
+  dateDayLg: { fontSize: 20, lineHeight: 24 },
 
   seeAll: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: space.rowY },
   seeAllHero: { flexDirection: "row", alignItems: "center", alignSelf: "flex-end", gap: space.line, minHeight: 24 },

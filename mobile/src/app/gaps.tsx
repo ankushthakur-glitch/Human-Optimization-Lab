@@ -85,7 +85,7 @@ export default function ToDoScreen() {
   }
 
   return (
-    <TabScreen tab="todo" title="To do">
+    <TabScreen tab="todo" title="Today’s To-Do">
       <View style={styles.page}>
         {off && <ReviewBanner state={{ kind: "sharing-off", since: off.on ?? "" }} onPress={() => router.push("/connect")} />}
 

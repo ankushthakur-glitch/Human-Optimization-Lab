@@ -180,6 +180,8 @@ function LivePlan({ onDevices }: { onDevices: () => void }) {
         </View>
       )}
 
+      {live && <PlanSummary version={live.version} approved={live.on} by={live.by} />}
+
       <PlanSections />
 
       {live && (
@@ -206,6 +208,53 @@ function LivePlan({ onDevices }: { onDevices: () => void }) {
         <NeedsRow icon={<CreditCard size={16} color={color.primary} />} hue="teal" title="Membership and billing" onPress={() => router.push("/membership")} />
       </Group>
     </>
+  )
+}
+
+/** The live plan at a glance, on top: its name, who approved it and when,
+    then three figures she checks most (weight against her goal, today's
+    session, the next test) and a bar for how far she is to her goal. */
+function PlanSummary({ version, approved, by }: { version: number; approved: string; by: string }) {
+  const onboarding = useOnboarding()
+  const now = new Date()
+  const p = progress(onboarding, now)
+  const week = thisWeek(onboarding, now)
+  const test = week.find((w) => w.kind === "test")
+  const session = weekPlan(onboarding).find((d) => d.today)?.session
+  const start = p.weight.series[0]?.value ?? p.weight.now
+  const span = start - MEMBER.goalWeight
+  const done = span > 0 ? Math.min(1, Math.max(0, (start - p.weight.now) / span)) : 0
+  return (
+    <HeadCard>
+      <View style={styles.summaryTop}>
+        <View style={styles.headerWords}>
+          <Text style={headText.title}>{planName(onboarding.goals)}</Text>
+          <Text style={headText.meta}>{`Version ${version}, approved by ${by} on ${approved}`}</Text>
+        </View>
+        <Tag tone="ok">Active</Tag>
+      </View>
+      <View style={styles.stats}>
+        <Stat label="Weight" value={`${p.weight.now.toFixed(1)} lb`} note={`Goal ${MEMBER.goalWeight}`} />
+        <Stat label="Today" value={session ? `${session.minutes} min` : "Rest"} note={session ? session.title : "Walk only"} />
+        <Stat label="Next test" value={test?.day ?? "None"} note={test ? "Booked" : "Nothing due"} />
+      </View>
+      <View style={styles.track} accessibilityRole="progressbar" accessibilityLabel={`${Math.round(done * 100)} percent of the way to your goal weight`}>
+        <View style={[styles.fill, { width: `${Math.round(done * 100)}%` }]} />
+      </View>
+      <Text style={headText.meta}>{`${Math.round(done * 100)}% of the way to ${MEMBER.goalWeight} lb`}</Text>
+    </HeadCard>
+  )
+}
+
+function Stat({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={headText.meta}>{label}</Text>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={headText.meta} numberOfLines={1}>
+        {note}
+      </Text>
+    </View>
   )
 }
 
@@ -653,6 +702,14 @@ const styles = StyleSheet.create({
   card: { gap: space.item },
 
   headerWords: { flex: 1, gap: space.stack },
+
+  // The plan summary: figures side by side over a goal bar.
+  summaryTop: { flexDirection: "row", alignItems: "flex-start", gap: space.item },
+  stats: { flexDirection: "row", gap: space.item },
+  stat: { flex: 1, gap: 2, padding: space.inline, borderRadius: 8, backgroundColor: color.background, borderWidth: 1, borderColor: color.primaryEdge },
+  statValue: { ...type.stat },
+  track: { height: 6, borderRadius: 3, backgroundColor: color.primaryEdge, overflow: "hidden" },
+  fill: { height: 6, borderRadius: 3, backgroundColor: color.primary },
 
   // The version with the doctor and what it changes read as one group.
   redraft: { gap: space.item },

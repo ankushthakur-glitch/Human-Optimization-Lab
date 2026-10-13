@@ -160,13 +160,13 @@ export function Trends() {
     that are not due yet, by date (C.1.2, 4). A date block only for
     something that happens on that day; an open order keeps its glyph and
     says its due date in words, its facts split by a dot as in the Figma. */
-export function Upcoming() {
+export function Upcoming({ at = 3 }: { at?: number }) {
   const onboarding = useOnboarding()
   // One row, so the home fits a screen without scrolling; See all has the rest.
   const coming = comingUp(onboarding).slice(0, 1)
   if (!coming.length) return null
   return (
-    <Rise at={3} id="home:coming">
+    <Rise at={at} id="home:coming">
       <Block title="Upcoming" onSeeAll={openToDo}>
         <Group>
           {coming.map((item) => (

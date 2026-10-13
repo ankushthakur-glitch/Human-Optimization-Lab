@@ -5,7 +5,7 @@ import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, Vi
 import { ChoiceRow, SheetRows } from "@/components/care-orders-rows"
 import { useReducedMotion } from "@/components/chat"
 import { PageGround } from "@/components/hol"
-import { Check, Info, Phone, Pill } from "@/components/ph"
+import { CaretRight, Check, Info, Phone, Pill } from "@/components/ph"
 import { Banner, Card, Chip, Dot, Group, HUE, KeyValue, SmallAction, Tag, TextAction, toast, type Choice } from "@/components/record-kit"
 import { FilterChips, ItemRow } from "@/components/record-rows"
 import { Sheet } from "@/components/sheet"
@@ -15,8 +15,8 @@ import { URGENT } from "@/lib/assistant"
 import { call } from "@/lib/links"
 import { useOnboarding, type MedRecord } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
-import { MEDICATIONS, ORIGIN_LABEL, REVIEW, medDifference, type Medication, type Origin } from "@/lib/record"
-import { cardRadius, color, hairline, ink, space, type } from "@/lib/theme"
+import { MEDICATIONS, ORIGIN_LABEL, REVIEW, answeredOn, confirmedOn, medDifference, medHow, type MedAnswer, type Medication, type Origin } from "@/lib/record"
+import { card, cardRadius, color, hairline, ink, space, type } from "@/lib/theme"
 
 /* Your medicines (FINAL-SPEC C.10): one list the patient and Dr. Patel both
    trust. Dr. Patel's list is the true one (F-65). Where another place lists
@@ -26,15 +26,25 @@ import { cardRadius, color, hairline, ink, space, type } from "@/lib/theme"
    settles a difference (F-69). The words stay neutral and say who settles
    it (F-72); never conflict, error or wrong. Nothing here sells.
 
+   Every medicine and supplement is confirmed the same way (user, 13 Oct
+   2026, Dr. Blanchard): "Taking as listed", or "Taking differently" with
+   how she takes it in her own words, which Dr. Patel reads as she wrote
+   it. Stopped and never started sit inside "Taking differently". Each
+   answer is dated: "Confirmed 12 Oct 2026". A month after the last full
+   confirmation To do and the bell ask again (lib/todo confirmDue).
+
    MedicineConfirm is the whole list: Action needed, Active and Past on
-   filter chips, each row opening the medicine's own page
-   (app/medicine/[id], MedicineDetails). */
+   filter chips, medicines and Supplements on Active, each row opening the
+   medicine's own page (app/medicine/[id], MedicineDetails). */
 
 export type MedicineConfirmProps = {
   /** A medicine to bring into view on arrival and mark for a moment, by
       id: the one she tapped on Home, the Record tab or the timeline
       (`/medications?id=cetirizine`). On the list it opens its details. */
   focus?: string
+  /** Adds a supplement (the Supplements section's "Add"); without it the
+      section lists them and offers no add. */
+  onAddSupplement?: () => void
 }
 
 /** What she says about one medicine; the time is added on saving. */
@@ -83,12 +93,14 @@ function onDay(date: string, now = new Date()) {
 /** Her answer in her own words, for "You said: ...". */
 function saidOf(r: MedRecord): string {
   switch (r.answer) {
-    case "dose":
-      return r.dose ?? "Another dose"
+    case "dose": {
+      const how = medHow(r)
+      return how ? `I take it differently: ${how}` : "I take it differently"
+    }
     case "stopped":
       return r.why === "other" && r.note ? `${STOPPED_SAID.other}: ${r.note}` : r.why ? STOPPED_SAID[r.why] : "I stopped it"
     case "taking":
-      return "I take it"
+      return "I take it as listed"
     case "never":
       return "I never started it"
     case "not-taking":
@@ -103,13 +115,6 @@ const STOPPED_SAID: Record<NonNullable<MedRecord["why"]>, string> = {
   other: "I stopped it for another reason",
 }
 
-/** The answers on a medicine that only another place lists. */
-const OFF_LIST: Choice<"taking" | "stopped" | "never">[] = [
-  { value: "taking", label: "I take it" },
-  { value: "stopped", label: "I stopped it" },
-  { value: "never", label: "I never started it" },
-]
-
 const WHY_STOPPED: Choice<NonNullable<MedRecord["why"]>>[] = [
   { value: "side-effect", label: "A side effect" },
   { value: "doctor", label: "A doctor told me to" },
@@ -117,11 +122,14 @@ const WHY_STOPPED: Choice<NonNullable<MedRecord["why"]>>[] = [
   { value: "other", label: "Something else" },
 ]
 
-/** The optional answers on a medicine her lists agree on. */
-const TAKING: Choice<"taking" | "not-taking">[] = [
-  { value: "taking", label: "Taking it" },
-  { value: "not-taking", label: "Not taking it" },
+/** The two clear choices on every medicine and supplement. */
+const CONFIRM: Choice<"listed" | "differently">[] = [
+  { value: "listed", label: "Taking as listed" },
+  { value: "differently", label: "Taking differently" },
 ]
+
+/** What the "How do you take it?" field suggests. */
+const HOW_PLACEHOLDER = "Dose, how often, time of day"
 
 /** The urgent message's icon, which its pills line up after. */
 const URGENT_ICON = 18
@@ -130,7 +138,7 @@ const URGENT_ICON = 18
     ones her lists differ on, each with its question), Active and Past. Rows open their details. Which medicines
     need her is fixed as the list opens, so answering one never moves it
     from under her. */
-export function MedicineConfirm({ focus }: MedicineConfirmProps) {
+export function MedicineConfirm({ focus, onAddSupplement }: MedicineConfirmProps) {
   const onOpen = openMedicine
   const s = useOnboarding()
   const current = MEDICATIONS.filter((m) => !m.resolved)
@@ -162,30 +170,58 @@ export function MedicineConfirm({ focus }: MedicineConfirmProps) {
   }
 
   const shelves = SHELVES.filter((o) => o.value !== "action" || action.length > 0)
-  const differ = action.filter((m) => medDifference(m))
-  const agree = action.filter((m) => !medDifference(m))
+  const medicines = active.filter((m) => m.kind === "medicine")
+  const supplements = current.filter((m) => m.kind === "supplement")
   return (
     <>
       <FilterChips options={shelves} value={shelf} onChange={setShelf} label="Medicines" />
-      {shelf === "action" ? (
+      {shelf === "action" && (
         <>
-          {differ.map((m) => (
+          {action.map((m) => (
             <InView key={m.id} on={focus === m.id}>
               <CheckCard m={m} saved={s.meds?.[m.id]} onAnswer={(a) => answer(m, a)} spotlight={focus === m.id} />
             </InView>
           ))}
-          {agree.length > 0 && (
+        </>
+      )}
+      {shelf === "active" && medicines.length > 0 && (
+        <Section title="Medicines">
+          <Rows>
+            {medicines.map((m) => (
+              <ConfirmRow key={m.id} m={m} saved={s.meds?.[m.id]} onAnswer={(a) => answer(m, a)} />
+            ))}
+          </Rows>
+        </Section>
+      )}
+      {shelf === "past" && <MedicineRows list={past} />}
+      {shelf !== "past" && (supplements.length > 0 || onAddSupplement) && (
+        <Section title="Supplements" action={onAddSupplement ? { label: "Add", onPress: onAddSupplement } : undefined}>
+          {supplements.length > 0 && (
             <Rows>
-              {agree.map((m) => (
-                <AgreeRow key={m.id} m={m} saved={s.meds?.[m.id]} onAnswer={(a) => answer(m, a)} />
+              {supplements.map((m) => (
+                <ConfirmRow key={m.id} m={m} saved={s.meds?.[m.id]} onAnswer={(a) => answer(m, a)} />
               ))}
             </Rows>
           )}
-        </>
-      ) : (
-        <MedicineRows list={shelf === "past" ? past : active} past={shelf === "past"} />
+        </Section>
       )}
     </>
+  )
+}
+
+/** A heading over a card: "Medicines", "Supplements", with an optional
+    action at its end. */
+function Section({ title, action, children }: { title: string; action?: { label: string; onPress: () => void }; children: React.ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHead}>
+        <Text style={styles.sectionTitle} accessibilityRole="header">
+          {title}
+        </Text>
+        {action && <TextAction onPress={action.onPress}>{action.label}</TextAction>}
+      </View>
+      {children}
+    </View>
   )
 }
 
@@ -227,14 +263,14 @@ const SHELVES: { value: Shelf; label: string }[] = [
   { value: "past", label: "Past" },
 ]
 
-/** Active or past medicines on one card, as every Record list draws its
-    rows (ItemRow, chevron included), each opening its own page. */
-function MedicineRows({ list, past }: { list: Medication[]; past: boolean }) {
+/** Past medicines on one card, as every Record list draws its rows
+    (ItemRow, chevron included), each opening its own page. */
+function MedicineRows({ list }: { list: Medication[] }) {
   if (!list.length) return null
   return (
     <Group>
       {list.map((m) => (
-        <ItemRow key={m.id} icon={<PillTile />} title={m.name} meta={past ? pastLine(m) : lineOf(m)} onPress={() => openMedicine(m)} />
+        <ItemRow key={m.id} icon={<PillTile />} title={m.name} meta={pastLine(m)} onPress={() => openMedicine(m)} />
       ))}
     </Group>
   )
@@ -268,7 +304,7 @@ export function MedicineDetails({ m, onUpdate }: { m: Medication; onUpdate: () =
     { label: "Listed by", value: LIST_NAME[line.origin] },
     { label: "Date", value: line.date },
     ...others.map((l) => ({ label: LIST_NAME[l.origin], value: `${l.dose}, ${onDay(l.date)}` })),
-    ...(saved ? [{ label: "You said", value: saidOf(saved) }] : []),
+    ...(saved ? [{ label: "You said", value: saidOf(saved) }, { label: "Confirmed", value: answeredOn(saved.at) }] : []),
     ...(m.resolved ? [{ label: "Ended", value: endedOf(m.resolved) }] : []),
   ]
   return (
@@ -298,38 +334,40 @@ export const openMedicine = (m: Medication) => router.push({ pathname: "/medicin
     question while unanswered and its page once answered. */
 export const openMedicineByName = (m: Medication) => (medDifference(m) ? router.push({ pathname: "/medications", params: { id: m.id } }) : openMedicine(m))
 
-type Now = "taking" | "another" | "stopped" | "never"
+type Now = "listed" | "differently" | "stopped" | "never"
 
 /** What she takes now, from a medicine's details. */
 const NOW: Choice<Now>[] = [
-  { value: "taking", label: "I take it" },
-  { value: "another", label: "Another dose" },
+  { value: "listed", label: "Taking as listed" },
+  { value: "differently", label: "Taking differently" },
   { value: "stopped", label: "I stopped it" },
   { value: "never", label: "I never started it" },
 ]
 
 /** "Update what you take": a bottom sheet with one choice, picked from
-    radio rows as the "Pay with" sheet picks a card. Another dose asks for
-    the dose and I stopped it asks why, in place under the choice; Save
-    sends her answer, for her doctor to see. A side effect also shows the
-    practice's number. */
+    radio rows as the "Pay with" sheet picks a card. Taking differently asks
+    "How do you take it?" and I stopped it asks why, in place under the
+    choice; Save sends her answer, dated, for her doctor to see. A side
+    effect also shows the practice's number. */
 export function UpdateSheet({ m, onClose }: { m: Medication; onClose: () => void }) {
   const s = useOnboarding()
   const [now, setNow] = React.useState<Now>()
   const [why, setWhy] = React.useState<NonNullable<MedRecord["why"]>>()
-  const [dose, setDose] = React.useState("")
+  const [how, setHow] = React.useState("")
   const [note, setNote] = React.useState("")
 
   const answer: Answer | undefined =
-    now === "taking" || now === "never"
-      ? { answer: now }
-      : now === "another"
-        ? dose.trim()
-          ? { answer: "dose", dose: dose.trim() }
-          : undefined
-        : now === "stopped" && why
-          ? { answer: "stopped", why, ...(why === "other" && note.trim() ? { note: note.trim() } : {}) }
-          : undefined
+    now === "listed"
+      ? { answer: "taking" }
+      : now === "never"
+        ? { answer: "never" }
+        : now === "differently"
+          ? how.trim()
+            ? { answer: "dose", note: how.trim() }
+            : undefined
+          : now === "stopped" && why
+            ? { answer: "stopped", why, ...(why === "other" && note.trim() ? { note: note.trim() } : {}) }
+            : undefined
 
   const save = () => {
     if (!answer) return
@@ -351,7 +389,9 @@ export function UpdateSheet({ m, onClose }: { m: Medication; onClose: () => void
           </SheetRows>
         </View>
 
-        {now === "another" && <TextField label="Your dose" value={dose} onChangeText={setDose} autoFocus returnKeyType="done" onSubmitEditing={save} />}
+        {now === "differently" && (
+          <TextField label="How do you take it?" value={how} onChangeText={setHow} placeholder={HOW_PLACEHOLDER} autoFocus returnKeyType="done" onSubmitEditing={save} />
+        )}
 
         {now === "stopped" && (
           <>
@@ -457,10 +497,6 @@ function InView({ on, children }: { on: boolean; children: React.ReactNode }) {
   )
 }
 
-/** Which corners of its Group a row's mark rounds: the first row's top
-    ones, the last row's bottom ones. */
-type Edges = { first: boolean; last: boolean }
-
 /** The mark holds while the page glides to the medicine and a moment after
     it lands, then fades. */
 const SPOTLIGHT_HOLD_MS = 1600
@@ -491,64 +527,55 @@ function Spotlight({ style }: { style: StyleProp<ViewStyle> }) {
   return <Animated.View pointerEvents="none" style={[styles.spotlight, style, { opacity: fade }]} />
 }
 
-/** A row's mark reaches its Group's edges, rounded where the Group is. */
-function rowSpotlight({ first, last }: Edges): StyleProp<ViewStyle> {
-  return [styles.spotRow, first && styles.spotRowFirst, last && styles.spotRowLast]
-}
-
 /* --------------------------------------------------------- to check -- */
 
-/** One medicine her lists differ on: each list's line, who settles it, and
-    the question, until she answers; then what she said, with Change. A dose
-    that differs asks which dose she takes; a medicine only another place
-    lists asks whether she takes it, and why she stopped if she did. */
-function CheckCard({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: MedRecord; onAnswer: (a: Answer) => void; spotlight?: boolean }) {
-  const onList = m.lists.some((l) => l.origin === "doctor")
-  const doses = [...new Set(m.lists.map((l) => l.dose))]
-  const typed = saved?.answer === "dose" && saved.dose && !doses.includes(saved.dose) ? saved.dose : ""
-  const [asking, setAsking] = React.useState(!saved)
-  const [another, setAnother] = React.useState(false)
-  const [dose, setDose] = React.useState(typed)
-  const [note, setNote] = React.useState(saved?.note ?? "")
-  const urgent = note.trim().length > 0 && questionKind(note) === "safety"
-  const stopped = saved?.answer === "stopped"
+/** Where a saved answer puts her on the control. */
+type Mode = "listed" | "differently" | "stopped" | "ended"
 
-  const done = (a: Answer) => {
-    onAnswer(a)
-    setAnother(false)
-    setAsking(false)
+const modeOf = (a?: MedAnswer): Mode | undefined =>
+  a === "taking" ? "listed" : a === "dose" ? "differently" : a === "stopped" ? "stopped" : a === "never" || a === "not-taking" ? "ended" : undefined
+
+/** The one way a medicine or supplement is confirmed: "Taking as listed"
+    saves at once; "Taking differently" asks "How do you take it?" and
+    saves what she writes, as she wrote it. Inside it, "I stopped it" asks
+    why and "I never started it" saves at once. Once saved, the row says
+    "Confirmed 12 Oct 2026" and that Dr. Patel will see it. A side effect
+    shows the practice's number; words that sound urgent show the same
+    three calls the assistant offers. */
+function ConfirmControl({ m, saved, onAnswer, ask }: { m: Medication; saved?: MedRecord; onAnswer: (a: Answer) => void; ask?: string }) {
+  const [mode, setMode] = React.useState(() => modeOf(saved?.answer))
+  const [how, setHow] = React.useState(saved?.answer === "dose" ? (medHow(saved) ?? "") : "")
+  const [note, setNote] = React.useState(saved?.answer === "stopped" ? (saved.note ?? "") : "")
+  const text = mode === "differently" ? how : mode === "stopped" && saved?.why === "other" ? note : ""
+  const urgent = text.trim().length > 0 && questionKind(text) === "safety"
+  const sideEffect = mode === "stopped" && saved?.answer === "stopped" && saved.why === "side-effect"
+
+  const pick = (v: "listed" | "differently") => {
+    if (v === "listed") {
+      setMode("listed")
+      return onAnswer({ answer: "taking" })
+    }
+    if (mode === "listed" || !mode) setMode("differently")
   }
 
-  const doseChoices: Choice<string>[] = [
-    ...doses.map((d) => ({ value: `dose:${d}`, label: d })),
-    { value: "another", label: "Another dose" },
-    { value: "not-taking", label: "I don't take it" },
-  ]
-  const doseValue = another
-    ? "another"
-    : saved?.answer === "dose"
-      ? typed
-        ? "another"
-        : `dose:${saved.dose}`
-      : saved?.answer === "not-taking"
-        ? "not-taking"
-        : undefined
-
-  const pickDose = (v: string) => {
-    if (v.startsWith("dose:")) return done({ answer: "dose", dose: v.slice(5) })
-    if (v === "not-taking") return done({ answer: "not-taking" })
-    setAnother(true)
+  const saveHow = () => {
+    const h = how.trim()
+    if (h) onAnswer({ answer: "dose", note: h })
   }
 
-  const pickTaking = (v: (typeof OFF_LIST)[number]["value"]) => {
-    if (v !== "stopped") return done({ answer: v })
-    // Saved at once; why she stopped is the next question.
-    if (!stopped) onAnswer({ answer: "stopped" })
+  // Saved at once; why she stopped is the next question.
+  const stop = () => {
+    setMode("stopped")
+    if (saved?.answer !== "stopped") onAnswer({ answer: "stopped" })
+  }
+
+  const never = () => {
+    setMode("ended")
+    onAnswer({ answer: "never" })
   }
 
   const pickWhy = (why: NonNullable<MedRecord["why"]>) => {
-    if (why !== "other") return done({ answer: "stopped", why })
-    if (saved?.why !== "other") onAnswer({ answer: "stopped", why })
+    if (why !== "other" || saved?.why !== "other") onAnswer({ answer: "stopped", why })
   }
 
   // What she typed under "Something else" is kept with her answer, for the
@@ -556,16 +583,126 @@ function CheckCard({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: M
   const saveNote = () => {
     const n = note.trim()
     if (n && n !== saved?.note) onAnswer({ answer: "stopped", why: "other", note: n })
-    setAsking(false)
   }
 
-  const saveDose = () => {
-    const d = dose.trim()
-    if (d) done({ answer: "dose", dose: d })
-  }
+  return (
+    <View style={styles.confirm}>
+      <View style={styles.question}>
+        {!!ask && <Text style={styles.ask}>{ask}</Text>}
+        <Chips label={ask ?? `Do you take ${m.name} as listed?`} options={CONFIRM} value={mode === "listed" ? "listed" : mode ? "differently" : undefined} onChange={pick} />
+      </View>
 
-  const sideEffect = stopped && saved?.why === "side-effect"
+      {mode === "differently" && (
+        <>
+          <TextField
+            label="How do you take it?"
+            value={how}
+            onChangeText={setHow}
+            placeholder={HOW_PLACEHOLDER}
+            autoFocus={saved?.answer !== "dose"}
+            returnKeyType="done"
+            onSubmitEditing={saveHow}
+            trailing={
+              <View style={styles.fieldAction}>
+                <TextAction tone={how.trim() ? "primary" : "muted"} onPress={saveHow}>
+                  Save
+                </TextAction>
+              </View>
+            }
+          />
+          <View style={styles.also}>
+            <TextAction tone="muted" onPress={stop}>
+              I stopped it
+            </TextAction>
+            <TextAction tone="muted" onPress={never}>
+              I never started it
+            </TextAction>
+          </View>
+        </>
+      )}
 
+      {mode === "stopped" && (
+        <>
+          <View style={styles.question}>
+            <Text style={styles.ask}>Why did you stop?</Text>
+            <Chips label="Why did you stop?" options={WHY_STOPPED} value={saved?.why} onChange={pickWhy} />
+          </View>
+          {saved?.why === "other" && (
+            <TextField
+              label="What made you stop?"
+              value={note}
+              onChangeText={setNote}
+              returnKeyType="done"
+              onSubmitEditing={saveNote}
+              trailing={
+                <View style={styles.fieldAction}>
+                  <TextAction onPress={saveNote}>Done</TextAction>
+                </View>
+              }
+            />
+          )}
+        </>
+      )}
+
+      {mode === "ended" && saved && <Text style={type.body}>{`${saidOf(saved)}.`}</Text>}
+
+      {(mode === "stopped" || mode === "ended") && (
+        <View style={styles.also}>
+          <TextAction tone="muted" onPress={() => setMode("differently")}>
+            Say how I take it instead
+          </TextAction>
+        </View>
+      )}
+
+      {saved && modeOf(saved.answer) === mode && (
+        <View style={styles.said}>
+          <View style={styles.saidMark}>
+            <Check size={10} color={color.onPrimary} weight="bold" />
+          </View>
+          <View style={styles.grow}>
+            <Text style={[type.meta, styles.saidLead]}>{confirmedOn(saved.at)}</Text>
+            <Text style={type.meta}>{`${DOCTOR} will see this.`}</Text>
+          </View>
+        </View>
+      )}
+
+      {sideEffect && (
+        <Banner
+          hue="teal"
+          icon={<Phone size={16} color={HUE.teal.ink} />}
+          title={`If you have symptoms now, call ${PRACTICE} at ${PHONE}.`}
+          action="Call"
+          onPress={() => call(PATIENT.practicePhone)}
+        />
+      )}
+
+      {urgent && (
+        <View style={styles.urgent} accessibilityRole="alert">
+          <View style={styles.urgentTop}>
+            <View style={styles.urgentIcon}>
+              <Info size={URGENT_ICON} color={color.amber} />
+            </View>
+            <Text style={[type.body, styles.grow]}>{URGENT.page.replace(PATIENT.practicePhone, PHONE)}</Text>
+          </View>
+          {/* The same three calls the assistant offers, in the same order. */}
+          <View style={styles.urgentActions}>
+            {URGENT.calls.map((c) => (
+              <SmallAction key={c.tel} tone="outline" onPress={() => call(c.tel)} accessibilityLabel={c.spoken ?? c.label}>
+                {c.label}
+              </SmallAction>
+            ))}
+          </View>
+        </View>
+      )}
+    </View>
+  )
+}
+
+/** One medicine her lists differ on: each list's line and who settles it,
+    then the control to say what she takes. The question names whose list
+    "as listed" means: Dr. Patel's, where she has one. */
+function CheckCard({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: MedRecord; onAnswer: (a: Answer) => void; spotlight?: boolean }) {
+  const onList = m.lists.some((l) => l.origin === "doctor")
   return (
     <Card style={styles.check}>
       {spotlight && <Spotlight style={styles.spotCard} />}
@@ -597,109 +734,8 @@ function CheckCard({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: M
         ))}
       </View>
 
-      {asking ? (
-        <>
-          <View style={styles.rule} />
-          <View style={styles.question}>
-            <Text style={styles.ask}>{onList ? "Which dose do you take?" : "Do you take it?"}</Text>
-            {onList ? (
-              <Chips label="Which dose do you take?" options={doseChoices} value={doseValue} onChange={pickDose} />
-            ) : (
-              <Chips label="Do you take it?" options={OFF_LIST} value={saved?.answer as (typeof OFF_LIST)[number]["value"] | undefined} onChange={pickTaking} />
-            )}
-          </View>
-
-          {onList && doseValue === "another" && (
-            <TextField
-              label="Your dose"
-              value={dose}
-              onChangeText={setDose}
-              autoFocus={another}
-              returnKeyType="done"
-              onSubmitEditing={saveDose}
-              trailing={
-                <View style={styles.fieldAction}>
-                  <TextAction tone={dose.trim() ? "primary" : "muted"} onPress={saveDose}>
-                    Save
-                  </TextAction>
-                </View>
-              }
-            />
-          )}
-
-          {stopped && (
-            <View style={[styles.question, styles.followUp]}>
-              <Text style={styles.ask}>Why did you stop?</Text>
-              <Chips label="Why did you stop?" options={WHY_STOPPED} value={saved?.why} onChange={pickWhy} />
-            </View>
-          )}
-
-          {stopped && saved?.why === "other" && (
-            <TextField
-              label="What made you stop?"
-              value={note}
-              onChangeText={setNote}
-              returnKeyType="done"
-              onSubmitEditing={saveNote}
-              trailing={
-                <View style={styles.fieldAction}>
-                  <TextAction onPress={saveNote}>Done</TextAction>
-                </View>
-              }
-            />
-          )}
-        </>
-      ) : (
-        saved && (
-          <>
-            <View style={styles.rule} />
-            <View style={styles.said}>
-              <View style={styles.saidMark}>
-                <Check size={10} color={color.onPrimary} weight="bold" />
-              </View>
-              <View style={styles.grow}>
-                <Text style={type.body}>
-                  <Text style={styles.saidLead}>You said: </Text>
-                  {`${saidOf(saved)}.`}
-                </Text>
-                <Text style={type.meta}>{`${DOCTOR} will see this.`}</Text>
-              </View>
-              <View style={styles.change}>
-                <TextAction onPress={() => setAsking(true)}>Change</TextAction>
-              </View>
-            </View>
-          </>
-        )
-      )}
-
-      {sideEffect && (
-        <Banner
-          hue="teal"
-          icon={<Phone size={16} color={HUE.teal.ink} />}
-          title={`If you have symptoms now, call ${PRACTICE} at ${PHONE}.`}
-          action="Call"
-          onPress={() => call(PATIENT.practicePhone)}
-        />
-      )}
-
-      {urgent && (
-        <View style={styles.urgent} accessibilityRole="alert">
-          <View style={styles.urgentTop}>
-            <View style={styles.urgentIcon}>
-              <Info size={URGENT_ICON} color={color.amber} />
-            </View>
-            <Text style={[type.body, styles.grow]}>{URGENT.page.replace(PATIENT.practicePhone, PHONE)}</Text>
-          </View>
-          {/* The same three calls the assistant offers, in the same order. */}
-          <View style={styles.urgentActions}>
-            {URGENT.calls.map((c) => (
-              <SmallAction key={c.tel} tone="outline" onPress={() => call(c.tel)} accessibilityLabel={c.spoken ?? c.label}>
-                {c.label}
-              </SmallAction>
-            ))}
-          </View>
-        </View>
-      )}
+      <View style={styles.rule} />
+      <ConfirmControl m={m} saved={saved} onAnswer={onAnswer} ask={onList ? `Do you take it as ${DOCTOR} lists it?` : "Do you take it as listed?"} />
     </Card>
   )
 }
@@ -718,22 +754,25 @@ function Chips<T extends string>({ options, value, onChange, label }: { options:
   )
 }
 
-/** A medicine her lists agree on: its line and who it comes from, with an
-    optional "Taking it" or "Not taking it". */
-function AgreeRow({ m, saved, onAnswer, spotlight }: { m: Medication; saved?: MedRecord; onAnswer?: (a: Answer) => void; spotlight?: Edges }) {
-  const value = saved?.answer === "taking" || saved?.answer === "not-taking" ? saved.answer : undefined
+/** A medicine or supplement on the Active list: its line and who it comes
+    from (opening its page), then the control to confirm it. */
+function ConfirmRow({ m, saved, onAnswer }: { m: Medication; saved?: MedRecord; onAnswer: (a: Answer) => void }) {
   return (
     <View style={styles.agree}>
-      {spotlight && <Spotlight style={rowSpotlight(spotlight)} />}
-      <View style={styles.listRow}>
+      <Pressable
+        onPress={() => openMedicine(m)}
+        accessibilityRole="button"
+        accessibilityLabel={`${m.name}, ${lineOf(m)}`}
+        style={({ pressed }) => [styles.listRow, pressed && styles.pressed]}
+      >
         <PillTile />
         <View style={styles.words}>
           <Text style={styles.name}>{m.name}</Text>
           <Text style={styles.meta}>{lineOf(m)}</Text>
         </View>
-      </View>
-      {onAnswer && <Chips label={`Are you taking ${m.name}?`} options={TAKING} value={value} onChange={(v) => onAnswer({ answer: v })} />}
-      {onAnswer && value === "not-taking" && <Text style={type.meta}>{`${DOCTOR} will see this.`}</Text>}
+        <CaretRight size={16} color={card.chevron} />
+      </Pressable>
+      <ConfirmControl m={m} saved={saved} onAnswer={onAnswer} />
     </View>
   )
 }
@@ -810,6 +849,14 @@ const styles = StyleSheet.create({
 
   // A medicine and its answer chips: the row, then the chips 12 under it.
   agree: { gap: space.item },
+  // The confirm control: chips, then what follows from them, 12 apart.
+  confirm: { gap: space.item },
+  // "I stopped it" and "I never started it", quiet under the field.
+  also: { flexDirection: "row", flexWrap: "wrap", columnGap: space.gutter },
+  // A section over its card: the heading, with its action at the end.
+  section: { gap: space.item },
+  sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  sectionTitle: { ...type.sectionLabel },
   // A past medicine: the tile beside its name and two lines.
 
   // The details sheet's facts: rows edge to edge on the inset card.
@@ -824,8 +871,4 @@ const styles = StyleSheet.create({
   // A card's whole inside, with the halo just inside its edge and its
   // corners.
   spotCard: { top: 0, left: 0, right: 0, bottom: 0, borderRadius: cardRadius - 1, borderWidth: 1.5, borderColor: color.primaryHalo },
-  // A row's band, out to its card's sides and up to its rules.
-  spotRow: { top: -space.card, bottom: -space.card, left: -space.card, right: -space.card },
-  spotRowFirst: { borderTopLeftRadius: cardRadius - 1, borderTopRightRadius: cardRadius - 1 },
-  spotRowLast: { borderBottomLeftRadius: cardRadius - 1, borderBottomRightRadius: cardRadius - 1 },
 })

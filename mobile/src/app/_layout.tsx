@@ -155,6 +155,14 @@ function Routes() {
           <Stack.Screen name="connect" />
           <Stack.Screen name="connect-texts" />
           <Stack.Screen name="building" />
+          {/* The paid plan's setup, straight after subscribing. */}
+          <Stack.Screen name="optimize/goals" />
+          <Stack.Screen name="optimize/insights" />
+          <Stack.Screen name="optimize/about" />
+          <Stack.Screen name="optimize/medicines" />
+          <Stack.Screen name="optimize/devices" />
+          <Stack.Screen name="optimize/tests" />
+          <Stack.Screen name="optimize/tour" />
         </Stack.Protected>
         <Stack.Protected guard={status === "expired"}>
           <Stack.Screen name="session-expired" options={{ gestureEnabled: false }} />

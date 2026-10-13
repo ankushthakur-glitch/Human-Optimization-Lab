@@ -4,7 +4,7 @@ import type { RecordIconName } from "@/components/record-icons"
    in (user, 5 Oct 2026): one entry per kind of record, with the fields its
    form asks for and what the prototype "reads" from a photo of one. */
 
-export type AddKind = "medicines" | "allergies" | "conditions" | "visits" | "tests" | "immunizations" | "procedures"
+export type AddKind = "medicines" | "supplements" | "allergies" | "conditions" | "visits" | "tests" | "immunizations" | "procedures"
 
 export type AddField = { id: string; label: string; placeholder: string; required?: boolean }
 
@@ -33,6 +33,20 @@ export const ADD_KINDS: AddKindInfo[] = [
       { id: "by", label: "Prescribed by", placeholder: "Dr. Patel" },
     ],
     sample: { title: "Metformin", fields: [["Dose", "500 mg"], ["How often", "Twice a day, with meals"], ["Prescribed by", "Dr. Lee"]] },
+  },
+  {
+    kind: "supplements",
+    name: "Supplement",
+    action: "Add supplement",
+    icon: "medications",
+    fields: [
+      { id: "name", label: "Supplement", placeholder: "Magnesium", required: true },
+      { id: "dose", label: "Dose", placeholder: "400 mg" },
+      { id: "often", label: "How often", placeholder: "Once a day" },
+    ],
+    // What a photo of the bottle reads as. Calcium, so the check on it has
+    // something to say against her Vitamin D3.
+    sample: { title: "Calcium", fields: [["Dose", "600 mg"], ["How often", "Once a day, with food"]] },
   },
   {
     kind: "allergies",
@@ -117,3 +131,7 @@ export const ADD_KINDS: AddKindInfo[] = [
 ]
 
 export const addKindOf = (kind: unknown) => ADD_KINDS.find((k) => k.kind === kind)
+
+/** The kinds she says how she takes, in her own words, as she adds them:
+    the doctor sees that with the medicine or supplement. */
+export const asksHowTaken = (kind: unknown) => kind === "medicines" || kind === "supplements"

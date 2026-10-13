@@ -91,23 +91,27 @@ export type Plan = {
     whoever lists payments skips it. */
 export type Booking = { where: string; when: string; price?: string; paid?: string; at?: string; time?: string }
 
-/** What she says about a medicine on her lists (FINAL-SPEC C.10): she
-    takes it, at another dose (what she typed in `dose`), she stopped it
-    (and why), she never started it, or she does not take it. Dr. Patel's
-    list is never overwritten. Each answer keeps the medicine's name and
-    the lists she saw when she answered, so Dr. Patel reads it against the
-    same difference she did (lib/record providerAnswer). */
+/** What she says about a medicine or supplement on her lists (FINAL-SPEC
+    C.10): she takes it as listed, she takes it differently (how, in her own
+    words, in `note`; an earlier build kept a `dose`), she stopped it (and
+    why), she never started it, or she does not take it. Dr. Patel's list
+    is never overwritten. Each answer keeps the name and the lists she saw
+    when she answered, so Dr. Patel reads it against the same difference
+    she did (lib/record providerAnswer), and `at` dates it ("Confirmed 12
+    Oct 2026"). */
 export type MedRecord = {
   /** "Atorvastatin". Missing on answers saved by an earlier build. */
   medication?: string
   /** Each list's line as she saw it, the doctor's first. */
   shown?: { origin: Origin; dose: string; date: string }[]
   answer: MedAnswer
-  /** "10 mg once a day", or what she typed. */
+  /** "10 mg once a day", or what she typed. Answers saved before "How do
+      you take it?" only; new ones use `note`. */
   dose?: string
   why?: "side-effect" | "doctor" | "ran-out" | "other"
-  /** What she typed under "Something else" when she says why she stopped:
-      what the practice's review of her answer carries (Q-23). */
+  /** What she typed: how she takes it ("15 mg at night") under "Taking
+      differently", or what made her stop under "Something else". The
+      practice's review carries it word for word (Q-23). */
   note?: string
   /** When she answered (ISO). */
   at: string

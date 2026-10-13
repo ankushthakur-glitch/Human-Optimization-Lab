@@ -7,7 +7,8 @@ import { CountUp, GoalRows, ProgressChart, ScoreRing, WeekBars } from "@/compone
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { RecordGlyph, dotted } from "@/components/home-parts"
-import { Barbell, BowlFood, Camera, Clock, Heartbeat, PersonSimpleWalk, Scales } from "@/components/ph"
+import { AppointmentCard } from "@/components/appointment-card"
+import { Barbell, BowlFood, Camera, ChatText, Clock, Flask, Heartbeat, MapPin, PersonSimpleWalk, Scales } from "@/components/ph"
 import {
   Block,
   Card,
@@ -15,7 +16,6 @@ import {
   ChipRow,
   Group,
   NeedsRow,
-  PlanLine,
   ProgressBar,
   Rise,
   SmallAction,
@@ -60,7 +60,6 @@ import {
   type TodayAction,
 } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { livePlan } from "@/lib/plans"
 import { color, hairline, ink, space, type } from "@/lib/theme"
 import { opensPage, orderHref, weekItems, yourMedicines } from "@/lib/todo"
 import { trendCounts } from "@/lib/trends"
@@ -94,13 +93,10 @@ export function MemberHome() {
 /* ---------------------------------------------------------- live plan -- */
 
 function LiveHome({ onCheckIn }: { onCheckIn: (kind: CheckInKind) => void }) {
-  const onboarding = useOnboarding()
-  const plan = livePlan(onboarding)
   return (
     <View style={styles.page}>
       <Rise at={0} id="member:today">
         <View style={styles.top}>
-          {plan && <PlanLine version={plan.version} by={plan.by} on={plan.on} reviewing={plan.reviewing} onPress={() => openTab("/plan", "home")} />}
           <StatusBanner variant="member" tab="home" />
           <TodayHero onCheckIn={onCheckIn} />
         </View>
@@ -387,34 +383,80 @@ function Yesterday() {
 
 /* ---------------------------------------------------------- this week -- */
 
+/** A booked item's facts line ("7:30 AM, Quest Diagnostics, Del Mar") as its
+    time and its place; a line that opens with no clock ("Told by you") is
+    all place. */
+function timeAndPlace(meta: string): [string | undefined, string | undefined] {
+  const m = /^(\d{1,2}:\d{2} [AP]M)(?:, (.+))?$/.exec(meta)
+  return m ? [m[1], m[2]] : [undefined, meta]
+}
+
+/** The card's labelled facts: a lab's test type ("Repeat A1c and lipid
+    panel" as "A1c & Lipid Panel") and where it is. */
+function detailsOf(title: string, lab: boolean, where: string | undefined) {
+  const mark = ink.secondary
+  const details = []
+  if (lab) {
+    const name = title.replace(/^Repeat /i, "").replace(/\band\b/gi, "&").replace(/\b[a-z]/g, (c) => c.toUpperCase())
+    details.push({ icon: <Flask size={18} color={mark} />, label: "Test type", value: name })
+  }
+  if (lab && where) details.push({ icon: <MapPin size={18} color={mark} />, label: "Location", value: where })
+  return details
+}
+
 /** Booked tests and visits in the next seven days, then at most one thing
     that needs her (C.2.5); the rest lives in To do. */
 function ThisWeek() {
   const onboarding = useOnboarding()
   const items = weekItems(onboarding)
   const openToDo = () => openTab("/gaps", "home")
+  // A booked test or visit is a card of its own; the one open thing that
+  // needs her has no date and stays a row.
+  const booked = items.filter((i) => i.date)
+  const open = items.filter((i) => !i.date)
   return (
     <Block title="This week" onSeeAll={openToDo}>
       {items.length ? (
-        <Group>
-          {items.map((i) => (
-            <NeedsRow
-              key={i.id}
-              date={i.date}
-              icon={i.date ? undefined : <RecordGlyph name={i.icon} />}
-              title={i.title}
-              meta={dotted(i.meta, keepEnd)}
-              // The fasting note whole in its two lines, its last sentence
-              // ("Water is fine.") never split.
-              note={i.note && bySentence(i.note)}
-              tag={i.tag}
-              // A starting test booked in setup has no page of its own, as on
-              // To do: its row is all there is, so it is not a button.
-              onPress={opensPage(i) ? () => router.push(i.href) : undefined}
-              chevron={false}
-            />
-          ))}
-        </Group>
+        <>
+          {booked.map((i) => {
+            const [time, where] = timeAndPlace(i.meta)
+            const lab = i.icon === "labs"
+            return (
+              <AppointmentCard
+                key={i.id}
+                date={i.date!}
+                title={i.title}
+                tag={i.tag}
+                time={time}
+                where={where}
+                // The fasting note whole in its two lines, its last sentence
+                // ("Water is fine.") never split.
+                prep={i.note && bySentence(i.note)}
+                prepIcon={lab ? undefined : <ChatText size={18} color={color.primary} />}
+                details={detailsOf(i.title, lab, where)}
+                // A starting test booked in setup has no page of its own, as
+                // on To do: its card is all there is, so it is not a button.
+                onPress={opensPage(i) ? () => router.push(i.href) : undefined}
+              />
+            )
+          })}
+          {!!open.length && (
+            <Group>
+              {open.map((i) => (
+                <NeedsRow
+                  key={i.id}
+                  icon={<RecordGlyph name={i.icon} />}
+                  title={i.title}
+                  meta={dotted(i.meta, keepEnd)}
+                  note={i.note && bySentence(i.note)}
+                  tag={i.tag}
+                  onPress={opensPage(i) ? () => router.push(i.href) : undefined}
+                  chevron={false}
+                />
+              ))}
+            </Group>
+          )}
+        </>
       ) : (
         <Card style={styles.cardBody}>
           <View style={styles.emptyRow}>

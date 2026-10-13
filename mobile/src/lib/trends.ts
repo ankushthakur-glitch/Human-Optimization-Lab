@@ -18,7 +18,13 @@ import { BIOMARKERS, BODY_SYSTEMS, PLACE_NAME, type Biomarker, type Point } from
    Blanchard: borderline is inside the range and within 10% of its width
    from an edge, or within 5% of a one sided limit; moving is a change of
    at least 10% of the range width (5% of a one sided limit) across the
-   last three comparable results, every step going the same way. */
+   last three comparable results, every step going the same way.
+
+   Scans and home measurements (kind "imaging" and "measurement") follow
+   the rule on the marker instead, where it has one (Biomarker.rule, Q-08
+   placeholders): ejection fraction and valve area by direction, peak flow
+   against her own best, and aneurysm and nodule size by growth since the
+   last scan, with no normal range. */
 
 export type Status = "in" | "borderline" | "out"
 export type Movement = "rising" | "falling" | "steady" | "unknown"
@@ -49,6 +55,20 @@ export const MOVEMENT_WORD: Record<Movement, string> = {
   falling: "Trending down",
   steady: "Steady",
   unknown: "Not enough results yet",
+}
+
+/** A size with no normal range says stable, growing or growing fast. */
+export const GROWTH_STATUS_WORD: Record<Status, string> = {
+  in: "Stable",
+  borderline: "Growing",
+  out: "Growing fast",
+}
+
+export const GROWTH_MOVEMENT_WORD: Record<Movement, string> = {
+  rising: "Growing",
+  falling: "Shrinking",
+  steady: "Stable",
+  unknown: "Not enough scans yet",
 }
 
 export const MEANING_WORD: Record<Meaning, string> = {
@@ -149,6 +169,10 @@ export function timeOf(date: string): number {
   return new Date(year, month, day || 15, 12).getTime()
 }
 
+/** Where a result came from, by name: its study when it has one ("Echo,
+    Pacific Heart"), else the place its origin names ("Quest Diagnostics"). */
+export const sourceName = (p: Point) => p.study ?? PLACE_NAME[p.origin]
+
 /** When a result was taken: its ISO day when the record has one. */
 export const pointTime = (p: Point) => timeOf(p.at ?? p.date)
 
@@ -216,6 +240,10 @@ const SPOKEN_UNIT: Record<string, string> = {
   "mmol/L": "millimoles per liter",
   "mL/min/1.73m²": "milliliters per minute",
   "thousand/µL": "thousand per microliter",
+  cm: "centimeters",
+  "cm²": "square centimeters",
+  mm: "millimeters",
+  "L/min": "liters per minute",
 }
 
 /** A result for a screen reader: "5.9 percent", "134 over 86 millimeters of mercury". */
@@ -251,8 +279,53 @@ function nearEdge(low: number | undefined, high: number | undefined, v: number) 
   return false
 }
 
+/** A result as pointStatus reads it: its value, and for a growth marker
+    which result it is (its day), so it can be set against the one before. */
+type StatusInput = Pick<Point, "value" | "value2"> & Partial<Pick<Point, "at" | "date">>
+
+/* ------------------------------------------------------------- growth -- */
+
+const YEAR_MS = 365.25 * 86400000
+
+export const isGrowth = (b: Biomarker) => b.rule?.by === "growth"
+
+/** How much a size changed between two scans, per year. A gap under a year
+    counts as a year, so a short gap never makes a small change look fast. */
+export function growthRate(from: { value: number; t: number }, to: { value: number; t: number }): number {
+  return (to.value - from.value) / Math.max((to.t - from.t) / YEAR_MS, 1)
+}
+
+/** Stable, growing or growing fast, from a yearly rate. */
+function growthStatus(rule: { growing: number; fast: number }, rate: number): Status {
+  if (rate >= rule.fast - EPS) return "out"
+  return rate >= rule.growing - EPS ? "borderline" : "in"
+}
+
+/** A result and the one before it, by day. The first scan has no growth to
+    judge, so it reads as the baseline. */
+function scanBefore(b: Biomarker, p: StatusInput): { prev?: TrendPoint; cur?: TrendPoint } {
+  const key = p.at ?? p.date
+  if (key === undefined) return {}
+  const sorted = b.points.map((q) => ({ ...q, t: pointTime(q) })).sort((x, y) => x.t - y.t)
+  const i = sorted.findIndex((q) => (q.at ?? q.date) === key && q.value === p.value)
+  return i < 0 ? {} : { prev: sorted[i - 1], cur: sorted[i] }
+}
+
 /** In range, Borderline or Out of range, for one result. */
-export function pointStatus(b: Biomarker, p: Pick<Point, "value" | "value2">): Status {
+export function pointStatus(b: Biomarker, p: StatusInput): Status {
+  const rule = b.rule
+  if (rule?.by === "growth") {
+    const { prev, cur } = scanBefore(b, p)
+    return prev && cur ? growthStatus(rule, growthRate(prev, cur)) : "in"
+  }
+  if (rule) {
+    // Higher is better: against the floor, or against her own best.
+    const v = rule.by === "best" ? p.value / rule.best : p.value
+    if (rule.by === "floor" && b.high !== undefined && p.value > b.high + EPS) return "out"
+    const strict = rule.by === "floor" && rule.strict
+    if (strict ? v > rule.inFrom + EPS : v >= rule.inFrom - EPS) return "in"
+    return v >= rule.borderlineFrom - EPS ? "borderline" : "out"
+  }
   // Clinical ranges (A1c): the first is in range, the last out of range,
   // anything between is borderline.
   if (b.zones && b.zones.length > 1) {
@@ -349,6 +422,11 @@ export function resultsOf(b: Biomarker): { series: TrendPoint[]; others: TrendPo
     threshold; steady otherwise; unknown with fewer than two. */
 export function movementOf(b: Biomarker, series: TrendPoint[]): Movement {
   if (series.length < 2) return "unknown"
+  // A size is moving when the last scan grew (or shrank) it fast enough to count.
+  if (b.rule?.by === "growth") {
+    const rate = growthRate(series[series.length - 2], series[series.length - 1])
+    return rate >= b.rule.growing - EPS ? "rising" : rate <= -b.rule.growing + EPS ? "falling" : "steady"
+  }
   const window = series.slice(-THRESHOLDS.window)
   const change = window[window.length - 1].value - window[0].value
   if (Math.abs(change) < movingThreshold(b) - EPS || Math.abs(change) <= EPS) return "steady"
@@ -365,6 +443,8 @@ export function meaningOf(b: Biomarker, movement: Movement, latest?: Point): Mea
   if (movement === "unknown" || movement === "steady" || !latest) return movement === "unknown" ? "unknown" : "steady"
   const up = movement === "rising"
   const v = latest.value
+  // A growing size is moving away from where she wants it; a shrinking one, toward.
+  if (b.rule?.by === "growth") return up ? "away" : "improving"
   if (b.low !== undefined && b.high !== undefined) {
     if (v > b.high) return up ? "away" : "improving"
     if (v < b.low) return up ? "improving" : "away"
@@ -401,7 +481,33 @@ function distanceShare(b: Biomarker, p?: Point) {
 
 /* -------------------------------------------------------------- words -- */
 
-export const nounOf = (b: Biomarker): Trend["noun"] => (b.id === "bp" ? "readings" : b.id === "bmi" ? "measurements" : "results")
+export const nounOf = (b: Biomarker): Trend["noun"] =>
+  b.id === "bp" || b.kind === "measurement" ? "readings" : b.id === "bmi" ? "measurements" : "results"
+
+/** The words for a size's change, as the Record row and the marker page
+    say them: "Grew 3 mm in 1 year", "Shrank 2 mm in 6 months", or "Stable
+    since Mar 2025" (where the run of scans that did not change began). */
+export function growthWords(b: Biomarker, series: TrendPoint[]): string {
+  const rule = b.rule
+  if (rule?.by !== "growth" || series.length < 2) return ""
+  const steps = series.slice(1).map((to, i) => ({ from: series[i], to, rate: growthRate(series[i], to) }))
+  const last = steps[steps.length - 1]
+  if (Math.abs(last.rate) >= rule.growing - EPS) {
+    const amount = `${formatNumber(Math.abs(last.to.value - last.from.value), precisionOf(b))} ${b.unit}`
+    return `${last.rate > 0 ? "Grew" : "Shrank"} ${amount} in ${gapWords(last.from.t, last.to.t)}`
+  }
+  let i = steps.length
+  while (i > 0 && Math.abs(steps[i - 1].rate) < rule.growing - EPS) i--
+  return `Stable since ${monthYear(series[i].t)}`
+}
+
+/** The time between two scans: "6 months", "1 year", "14 months". */
+function gapWords(from: number, to: number) {
+  const months = Math.max(Math.round((to - from) / (YEAR_MS / 12)), 1)
+  const years = months / 12
+  if (months >= 12 && Number.isInteger(years)) return `${years} ${years === 1 ? "year" : "years"}`
+  return `${months} ${months === 1 ? "month" : "months"}`
+}
 
 const RANK: Record<Status, Partial<Record<Meaning, number>>> = {
   out: { away: 1, steady: 2, unknown: 2, improving: 3 },
@@ -428,7 +534,10 @@ export function changeOf(b: Biomarker, series: TrendPoint[]): Change | undefined
 function takeawayOf(b: Biomarker, t: Omit<Trend, "takeaway" | "spoken">): string {
   const { series, latest, first, movement, status, side, noun } = t
   if (!latest || !first) return "No results yet"
+  // Against her own best: "89% of your best, 520 L/min".
+  if (b.rule?.by === "best") return `${Math.round((latest.value / b.rule.best) * 100)}% of your best, ${formatNumber(b.rule.best)} ${b.unit}`
   if (series.length === 1) return "One result so far"
+  if (isGrowth(b)) return growthWords(b, series)
   const window = series.slice(-THRESHOLDS.window)
   if (movement === "rising" || movement === "falling") {
     const sign = movement === "rising" ? 1 : -1
@@ -448,7 +557,9 @@ function spokenOf(b: Biomarker, t: Omit<Trend, "takeaway" | "spoken">): string {
   const { latest, first, count, movement, noun } = t
   if (!latest || !first) return `${b.name}, no results yet.`
   const where = t.statusWord.toLowerCase()
+  if (count === 1 && isGrowth(b)) return `${b.name}, ${spokenValue(b, latest)}, first scan.`
   if (count === 1) return `${b.name}, ${spokenValue(b, latest)}, ${where}, one result so far.`
+  if (isGrowth(b)) return `${b.name}, ${spokenValue(b, latest)}, ${where}, ${count} ${noun} since ${monthYearLong(first.t)}.`
   const how = movement === "steady" ? "steady" : t.movementWord.toLowerCase()
   return `${b.name}, ${spokenValue(b, latest)}, ${where}, ${how} across ${count} ${noun} since ${monthYearLong(first.t)}.`
 }
@@ -489,8 +600,8 @@ export function classify(b: Biomarker): Trend {
     noun: nounOf(b),
     change: changeOf(b, series),
     band: bandOf(b),
-    statusWord: STATUS_WORD[status],
-    movementWord: MOVEMENT_WORD[movement],
+    statusWord: isGrowth(b) ? (series.length < 2 ? "First scan" : GROWTH_STATUS_WORD[status]) : STATUS_WORD[status],
+    movementWord: isGrowth(b) ? GROWTH_MOVEMENT_WORD[movement] : MOVEMENT_WORD[movement],
     meaningWord: MEANING_WORD[meaning],
     value,
     valueWithUnit: latest ? withUnit(b, value) : "",
@@ -512,6 +623,7 @@ export const trendOf = (id: string, markers: Biomarker[] = BIOMARKERS) => {
 export function directionWords(t: Trend): string {
   if (t.count === 0) return "No results yet"
   if (t.count === 1) return "One result so far"
+  if (isGrowth(t.marker)) return t.movementWord
   if (t.movement !== "rising" && t.movement !== "falling") return MOVEMENT_WORD.steady
   return t.meaning === "improving" ? `${t.movementWord}, improving` : t.movementWord
 }
@@ -573,7 +685,7 @@ export function chartSeries(t: Trend) {
         at: p.at,
         value: p.value,
         shown: p.shown,
-        source: PLACE_NAME[p.origin],
+        source: sourceName(p),
         other: others.has(p),
         method: p.method,
         status: pointStatus(b, p),

@@ -4,14 +4,16 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, typ
 
 import { keepTogether } from "@/components/care-gap"
 import { Art } from "@/components/art"
-import { Camera, CaretRight, ImageSquare, MagnifyingGlass, PencilSimple, UploadSimple, X } from "@/components/ph"
+import { Camera, CaretRight, ImageSquare, MagnifyingGlass, PencilSimple, Sparkle, UploadSimple, X } from "@/components/ph"
 import { RecordIcon, type RecordIconName } from "@/components/record-icons"
-import { Card, DateBlock, DateTrack, Dot, Group, KeyValue, LiveDot, Tag, Tile, spokenDate, type DateLike, type Level, type Mark, type Tone, type TrackDate } from "@/components/record-kit"
+import { Banner, Card, DateBlock, DateTrack, Dot, Group, HUE, KeyValue, LiveDot, Tag, Tile, spokenDate, type DateLike, type Level, type Mark, type Tone, type TrackDate } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
-import { ADD_KINDS, addKindOf, type AddKind } from "@/lib/add-record"
+import { Button, TextField } from "@/components/ui"
+import { ADD_KINDS, addKindOf, asksHowTaken, type AddKind } from "@/lib/add-record"
 import { showDate } from "@/lib/dates"
 import { useOnboarding, type Added } from "@/lib/onboarding"
 import { PROVENANCE_LABEL, type Provenance } from "@/lib/record"
+import { checkSupplement } from "@/lib/supplement-check"
 import { card, chart, color, font, hairline, ink, outOfRangeColor, space, surface, type } from "@/lib/theme"
 
 /* The rows, controls and sheets the Record tab and its lists share, in the
@@ -304,18 +306,51 @@ export function addedDetail(a: Added): ItemDetail {
 /** The page for one added record. */
 export const addedHref = (a: Added) => ({ pathname: "/record/item" as const, params: { d: JSON.stringify(addedDetail(a)) } })
 
-type AddStage = "kind" | "how" | "photo" | "reading"
+type AddStage = "kind" | "how" | "photo" | "reading" | "take"
+
+/** The photo option's words: a medicine or supplement is photographed from
+    its prescription or its bottle. */
+const PHOTO_TITLE: Partial<Record<AddKind, string>> = {
+  medicines: "Take a photo of the prescription or bottle",
+  supplements: "Take a photo of the bottle",
+}
+
+/** The sample "How do you take it?" starts from: what the photo read. */
+const takenFrom = (fields: [string, string][]) =>
+  fields
+    .filter(([label]) => label === "Dose" || label === "How often")
+    .map(([, value]) => value)
+    .join(", ")
 
 /** "Add to your record": which kind of record (unless the list it was
     opened from says), then by photo or typed in (user, 5 Oct 2026). A
     photo asks how (take one, choose one, upload a file), a centred card
-    reads it, and the record opens on its own page, added. Typed in opens
-    the kind's form. The prototype reads a sample of the kind. */
+    reads it, and the record opens on its own page, added. A medicine or
+    supplement read from a photo first asks "How do you take it?" in her
+    own words, which the doctor sees, and a supplement is checked against
+    her record (lib/supplement-check). Typed in opens the kind's form. The
+    prototype reads a sample of the kind. */
 export function AddToRecordSheet({ kind: fixed, onClose }: { kind?: AddKind; onClose: () => void }) {
   const onboarding = useOnboarding()
   const [kind, setKind] = React.useState<AddKind | undefined>(fixed)
   const [stage, setStage] = React.useState<AddStage>(fixed ? "how" : "kind")
+  const [read, setRead] = React.useState<Added>()
+  const [taken, setTaken] = React.useState("")
   const info = addKindOf(kind)
+
+  const finish = async (added: Added, how?: string) => {
+    const now = new Date().toISOString()
+    // How she takes it is her answer for this medicine, dated now, so Dr.
+    // Patel reads it with the rest (lib/record providerAnswer).
+    await onboarding
+      .save({
+        added: [...(onboarding.added ?? []), added],
+        ...(how ? { meds: { ...onboarding.meds, [added.id]: { medication: added.title, shown: [], answer: "taking" as const, note: how, at: now } } } : {}),
+      })
+      .catch(() => {})
+    onClose()
+    router.push(addedHref(added))
+  }
 
   React.useEffect(() => {
     if (stage !== "reading" || !info) return
@@ -329,13 +364,45 @@ export function AddToRecordSheet({ kind: fixed, onClose }: { kind?: AddKind; onC
         fields: info.sample.fields,
         via: "photo",
       }
-      await onboarding.save({ added: [...(onboarding.added ?? []), added] }).catch(() => {})
-      onClose()
-      router.push(addedHref(added))
+      if (asksHowTaken(info.kind)) {
+        setRead(added)
+        setTaken(takenFrom(info.sample.fields))
+        return setStage("take")
+      }
+      await finish(added)
     }, READ_MS)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage])
+
+  if (stage === "take" && read && info) {
+    const how = taken.trim()
+    const warning = info.kind === "supplements" ? checkSupplement(read.title) : undefined
+    return (
+      <Sheet title={info.action} onClose={onClose}>
+        <ScrollView style={styles.sheetList} contentContainerStyle={styles.takeBody} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <Card style={styles.detail}>
+            {[["Read from your photo", read.title] as [string, string], ...(read.fields ?? [])].map(([label, value], i, all) => (
+              <KeyValue key={label} label={label} value={value} last={i === all.length - 1} />
+            ))}
+          </Card>
+          {warning && (
+            <View accessibilityLiveRegion="polite">
+              <Banner hue="amber" icon={<Sparkle size={16} color={HUE.amber.ink} weight="fill" />} title={warning.title} meta={warning.why} />
+            </View>
+          )}
+          <TextField label="How do you take it?" value={taken} onChangeText={setTaken} placeholder="Dose, how often, time of day" autoFocus />
+          <Button
+            disabled={!how}
+            onPress={() => finish({ ...read, fields: [...(read.fields ?? []), ["How you take it", how]] }, how)}
+          >
+            Add to my record
+          </Button>
+          <Text style={[type.meta, styles.takeNote]}>Dr. Patel will see this.</Text>
+        </ScrollView>
+      </Sheet>
+    )
+  }
 
   if (stage === "reading")
     return (
@@ -371,7 +438,7 @@ export function AddToRecordSheet({ kind: fixed, onClose }: { kind?: AddKind; onC
         }))
       : stage === "how"
         ? [
-            { key: "photo", title: "Add a photo", icon: glyph(Camera), onPress: () => setStage("photo") },
+            { key: "photo", title: (kind && PHOTO_TITLE[kind]) || "Add a photo", icon: glyph(Camera), onPress: () => setStage("photo") },
             {
               key: "typed",
               title: "Type it in",
@@ -567,6 +634,10 @@ const styles = StyleSheet.create({
 
   // The kind list can run past a short phone: it scrolls inside the sheet.
   sheetList: { maxHeight: 460 },
+  // "How do you take it?": what was read, the check, the field and Add, in
+  // the sheet's own spacing.
+  takeBody: { gap: space.gutter },
+  takeNote: { textAlign: "center" },
   option: { flexDirection: "row", alignItems: "center", gap: space.lead },
   // Rows 16 apart across a rule, as the Figma's sheet sets them.
   optionRule: { marginTop: space.gutter, paddingTop: space.gutter, borderTopWidth: 1, borderTopColor: hairline.rule },
