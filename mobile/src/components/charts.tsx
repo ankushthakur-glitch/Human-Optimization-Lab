@@ -252,17 +252,6 @@ export function formatNumber(v: number, decimals = decimalsOf(v)) {
   return `${sign}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${part ? `.${part}` : ""}`
 }
 
-/** Familiar tick values (1, 2, 2.5 or 5 times a power of ten) inside a range. */
-export function niceTicks(min: number, max: number, count = 3): number[] {
-  if (!(max > min)) return []
-  const raw = (max - min) / count
-  const mag = 10 ** Math.floor(Math.log10(raw))
-  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? 10 * mag
-  const out: number[] = []
-  for (let v = Math.ceil(min / step) * step; v <= max + 1e-9; v += step) out.push(Number(v.toFixed(10)))
-  return out
-}
-
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi)
 const clampIndex = (i: number, n: number) => clamp(Math.round(i), 0, Math.max(n - 1, 0))
 
@@ -434,21 +423,6 @@ function seriesFrom(input: SeriesInput): MarkerSeries {
 
 /** Results only measured different ways, under a chart (C.3). */
 const OTHER_METHODS = "Measured with different methods, so there is no trend yet."
-
-/** The words before a marker's chart: "Up from 5.3 in Apr 2022, across 5
-    results." Facts only; what they mean is for the doctor. */
-export function trendTakeaway(input: SeriesInput): string {
-  const s = seriesFrom(input)
-  const all = sortByTime(s.readings)
-  const same = all.filter((r) => !r.other)
-  if (!all.length) return "No results yet."
-  if (all.length === 1) return "One result so far. A trend needs two from the same test."
-  if (same.length < 2) return OTHER_METHODS
-  const first = same[0]
-  const trend = s.trend ?? trendOf(same)
-  if (trend === "flat") return `Steady since ${showWhen(first.date)}, across ${same.length} results.`
-  return `${trend === "up" ? "Up" : "Down"} from ${first.shown ?? formatNumber(first.value)} in ${showWhen(first.date)}, across ${same.length} results.`
-}
 
 /** The value scale of a marker chart, so a change looks as large as it is.
     It holds the results and the range's edge nearest the latest; the whole
@@ -1404,93 +1378,6 @@ export function TrendTile(props: TrendTileProps) {
   )
 }
 
-/** The fourth cell when three markers are worth watching: the record at a
-    glance, "All results" with how many are steady and a 6 pt composition
-    bar, the size of a trend tile. Opens Results. */
-export function AllResultsTile({
-  steady,
-  inRange,
-  borderline,
-  out,
-  onPress,
-  style,
-}: {
-  /** Markers in range and not moving: "19 steady". */
-  steady: number
-  inRange: number
-  borderline: number
-  out: number
-  onPress: () => void
-  style?: StyleProp<ViewStyle>
-}) {
-  const total = inRange + borderline + out
-  const parts = [`${inRange} in range`, borderline ? `${borderline} borderline` : "", out ? `${out} out of range` : ""].filter(Boolean)
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`All results, ${total} in all, ${steady} steady. ${parts.join(", ")}.`}
-      accessibilityHint="Opens your results"
-      style={({ pressed }) => [styles.tile, pressed && styles.tilePressed, style]}
-    >
-      <View style={styles.allHead}>
-        <Text style={styles.allTitle} numberOfLines={1} maxFontSizeMultiplier={1.3}>
-          All results
-        </Text>
-        <Svg width={16} height={16} viewBox="0 0 16 16">
-          <Path d="M6 3.5 L10.5 8 L6 12.5" stroke={ink.tertiary} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        </Svg>
-      </View>
-      <Text style={styles.allLine} maxFontSizeMultiplier={1.3}>{`${formatNumber(steady)} steady`}</Text>
-      {/* The count where a tile has its value, the bar where it has its
-          graph, so the row reads as one. */}
-      <View style={styles.allFoot}>
-        <Text style={styles.tileValue} numberOfLines={1} maxFontSizeMultiplier={1.3}>
-          {formatNumber(total)}
-          <Text style={styles.tileUnit}>{total === 1 ? " result" : " results"}</Text>
-        </Text>
-        <CompositionBar inRange={inRange} borderline={borderline} out={out} height={6} legend={false} />
-      </View>
-    </Pressable>
-  )
-}
-
-/** Trend tiles two to a row, 12 apart, at most four; an odd last tile spans
-    its row (catalog F-26). `last` fills the cell after the tiles, such as
-    the All results tile beside three. "See all" below it is the screen's. */
-export function TrendGrid({ tiles, max = 4, last }: { tiles: (TrendTileProps & { id: string })[]; max?: number; last?: React.ReactNode }) {
-  const shown = tiles.slice(0, max)
-  const cells: { key: string; node: (wide: boolean, at: number) => React.ReactNode }[] = shown.map((tile) => ({
-    key: tile.id,
-    node: (wide, at) => <TrendTile key={tile.id} {...tile} wide={wide} index={at} style={[styles.gridCell, tile.style]} />,
-  }))
-  // The last cell takes the grid's cell style itself, so it fills its half
-  // of the row, as tall as the tile beside it.
-  if (last)
-    cells.push({
-      key: "last",
-      node: () =>
-        React.isValidElement<{ style?: StyleProp<ViewStyle> }>(last) ? (
-          React.cloneElement(last, { key: "last", style: [styles.gridCell, last.props.style] })
-        ) : (
-          <View key="last" style={styles.gridCell}>
-            {last}
-          </View>
-        ),
-    })
-  const rows: (typeof cells)[] = []
-  for (let i = 0; i < cells.length; i += 2) rows.push(cells.slice(i, i + 2))
-  return (
-    <View style={styles.grid}>
-      {rows.map((row, r) => (
-        <View key={r} style={styles.gridRow}>
-          {row.map((cell, i) => cell.node(row.length === 1, r * 2 + i))}
-        </View>
-      ))}
-    </View>
-  )
-}
-
 /* ------------------------------------------------------ marker trend -- */
 
 export type BiomarkerTrendProps = SeriesInput & {
@@ -2023,9 +1910,6 @@ export function GoalRows({
     </View>
   )
 }
-
-/** The design proposals' name for the same rows. */
-export const GoalBars = GoalRows
 
 function GoalBar({
   row,
@@ -2989,15 +2873,6 @@ export type PressureReading = {
   source?: string
   /** Against the target; above either number is out of range by default. */
   status?: Standing
-}
-
-/** A record's blood pressure as readings: the top number is the value, the
-    bottom one its second value (or, in older data, how it was shown:
-    "134/86"). */
-export function pressureOf(b: Biomarker): PressureReading[] {
-  return b.points
-    .map((p) => ({ date: p.date, at: p.at, systolic: p.value, diastolic: p.value2 ?? Number(p.shown?.split("/")[1]), source: ORIGIN_LABEL[p.origin] }))
-    .filter((r) => Number.isFinite(r.diastolic))
 }
 
 export type PressureChartProps = {

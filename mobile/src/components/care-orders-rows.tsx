@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native"
 
-import { CaretRight, Check, Info } from "@/components/ph"
+import { Check, Info } from "@/components/ph"
 import type { Step } from "@/components/record-kit"
 import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
 
@@ -202,7 +202,6 @@ const styles = StyleSheet.create({
   body: { flex: 1, gap: space.stack },
   title: { ...type.title },
   meta: { ...type.label },
-
 
   radio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: hairline.outline, alignItems: "center", justifyContent: "center" },
   radioOn: { backgroundColor: color.primary, borderColor: color.primary },

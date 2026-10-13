@@ -1,6 +1,5 @@
 import * as DocumentPicker from "expo-document-picker"
 import * as ImagePicker from "expo-image-picker"
-import * as React from "react"
 import { Platform } from "react-native"
 
 import { toast } from "@/components/record-kit"

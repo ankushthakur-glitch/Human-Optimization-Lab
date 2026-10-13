@@ -27,7 +27,7 @@ import {
   type Notice,
   type Order,
 } from "@/lib/record"
-import { timeOf, valueText } from "@/lib/trends"
+import { timeOf } from "@/lib/trends"
 
 /* Everything open for the patient, worked out in one place so Home, the To
    do tab and the Record tab count the same things the same way (A-48,
@@ -230,7 +230,7 @@ export function bookingOf(id: string, s: Snapshot, now: Date = new Date()): Book
 
 /** A booking whose day has gone by: the test was done, or the visit
     happened, and the record has not caught up yet. */
-export const bookingPast = (b: Pick<Booked, "date">, now: Date = new Date()) => daysBetween(b.date, now) > 0
+const bookingPast = (b: Pick<Booked, "date">, now: Date = new Date()) => daysBetween(b.date, now) > 0
 
 /** The day an order's results came in with a batch of new results: a
     batch dated after the order that holds every marker it measures
@@ -789,11 +789,6 @@ export function removeQuestion(s: Snapshot, save: Save, id: string) {
   return save({ questions: (s.questions ?? []).filter((q) => q.id !== id) })
 }
 
-/* ---------------------------------------------------- home sections -- */
-
-/** Home's "Needs you", most urgent first; the hero shows the first three. */
-export const needsYou = (s: Snapshot, now: Date = new Date()) => todo(s, now).needs
-
 /** Home's "Coming up": tests booked and appointments in the next 30 days,
     and tests ordered that are not due yet, by date. The record review and
     anything further off stay in To do. */
@@ -823,21 +818,6 @@ export function caughtUp(s: Snapshot, now: Date = new Date()) {
     meta: next ? `Next: ${next.title}${when ? `, ${when}` : ""}` : undefined,
     href: next?.href,
   }
-}
-
-/** A member's "This week": tests booked and appointments in the next seven
-    days, then at most one thing that needs her (catalog 3.2). Empty when
-    nothing is booked and nothing needs her. */
-export function weekItems(s: Snapshot, now: Date = new Date()): TodoItem[] {
-  const t = todo(s, now)
-  const inWeek = (i: TodoItem) => Boolean(i.date) && daysBetween(now, fromLocal(i.date!)) >= 0 && daysBetween(now, fromLocal(i.date!)) <= 7
-  const dated = [...t.booked.filter(inWeek), ...t.coming.filter((i) => i.kind === "appointment" && inWeek(i))].sort((a, b) => a.sortAt.localeCompare(b.sortAt))
-  const need = t.needs[0]
-  if (!need) return dated
-  // On this week's list an order says where it stands, not who ordered it,
-  // on the calm grey of an open test (C.0.3), as Coming up draws one.
-  const order = need.kind === "order" ? ORDERS.find((o) => need.id === `order:${o.id}`) : undefined
-  return [...dated, order ? { ...need, hue: "neutral", meta: keepTogether(`Not booked yet. Ordered ${short(order.ordered)}`), tag: undefined } : need]
 }
 
 /* ----------------------------------------------------------- banner -- */

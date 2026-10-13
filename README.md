@@ -16,7 +16,7 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-Other scripts: `npm run build`, `npm run typecheck`, `npm run format`, `npm test`.
+Other scripts: `npm run build`, `npm run typecheck`, `npm run format`.
 
 ## The gallery
 
@@ -25,9 +25,6 @@ Other scripts: `npm run build`, `npm run typecheck`, `npm run format`, `npm test
 | `/` | Overview, principles, component index |
 | `/foundations` | Color, typography, radius, spacing, elevation, icon sizes |
 | `/icons` | Stroke weights, sizes, the design-system set, full icon search |
-| `/patterns/navigation` | 11 navigation patterns, from app shells to steppers |
-| `/patterns/data` | 15 data segregation patterns for dense clinical data |
-| `/layouts` | Screen assembler — 6 shells × 4 content layouts, live |
 | `/components/[slug]` | One page per component: description, guidance, every variant |
 
 ## Structure
@@ -47,7 +44,7 @@ src/
     theme-customizer.tsx  The Customize panel
 
   app/
-    (design-system)/      The gallery — /, /foundations, /icons, /patterns, /layouts, /components
+    (design-system)/      The gallery — /, /foundations, /icons, /components
     layout.tsx            Root: fonts + providers only
     globals.css           Hand-written tokens
     themes.css            GENERATED palettes — do not edit
@@ -152,8 +149,6 @@ These are produced by `scripts/` and should not be hand-edited:
 | --- | --- |
 | `gen-all.mjs` | `scripts/.cache/themes-all.json` (calls the shadcn registry) |
 | `gen-css.mjs` | `src/app/themes.css`, `src/design-system/tokens/themes.ts` |
-| `map-icons.mjs` | `scripts/.cache/icon-map.json` |
-| `gen-icons.mjs` | `src/design-system/icons.tsx` |
 | `gen-component-icons.mjs` | `src/design-system/component-icons.ts` |
 
 Run with `node scripts/<name>.mjs`. Paths resolve relative to the repo, so the

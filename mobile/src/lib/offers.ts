@@ -389,17 +389,6 @@ export function useShown(offer: Pick<Offer, "show" | "markShown">) {
   }, [show, markShown])
 }
 
-/** Records a readiness check in (every 90 days, or six months after a low
-    answer): the new answer replaces the why conversation's. */
-export function useReadinessCheckIn() {
-  const onboarding = useOnboarding()
-  const ref = React.useRef(onboarding)
-  ref.current = onboarding
-  return React.useCallback((value: number, outOf: 5 | 10 = 5) => {
-    write(ref.current.save, ref.current.offers, (l) => ({ ...l, readiness: { value, outOf, at: new Date().toISOString() } }))
-  }, [])
-}
-
 /** Starts a new app session in memory (a review seed opening the app as
     someone else): no prompt shown yet, and the launch counted again. */
 export function newSession() {

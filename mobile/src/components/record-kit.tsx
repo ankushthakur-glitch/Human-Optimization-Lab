@@ -12,7 +12,6 @@ import { RecordIcon } from "@/components/record-icons"
 import { toast } from "@/components/toast"
 import { withQuestion } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import type { OrderState } from "@/lib/record"
 import { card, cardRadius, chart, color, font, gutter, hairline, ink, outOfRangeColor, space, type } from "@/lib/theme"
 import { isGrowth, monthYear, type Trend as MarkerTrend } from "@/lib/trends"
 import { keepEnd } from "@/lib/words"
@@ -168,22 +167,6 @@ export function patientWord(word: string) {
 /** "See all", or "See all 6", or "See all 7 to watch". */
 export function seeAllLabel(count?: number, what?: string) {
   return count ? `See all ${count}${what ? ` ${what}` : ""}` : "See all"
-}
-
-/** At most three rows in a home section; the rest sit behind "See all"
-    (catalog F-10). */
-export const ROW_LIMIT = 3
-
-/** How each state of a test ordered reads: neutral before it is due, clay
-    once it is due or overdue (never red), teal booked, green done
-    (FINAL-SPEC C.0.4). */
-export const ORDER_TONE: Record<OrderState, Tone> = {
-  overdue: "low",
-  due: "low",
-  "due-soon": "muted",
-  planned: "muted",
-  booked: "primary",
-  done: "ok",
 }
 
 /* --------------------------------------------------------- surfaces -- */
@@ -1237,13 +1220,6 @@ export function StatRow({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** The home's one summary sentence: "2 things need you this week", or
-    "You're all caught up" at zero. */
-export function summaryText(count: number, when = "this week") {
-  if (count <= 0) return "You're all caught up"
-  return `${count} ${count === 1 ? "thing needs" : "things need"} you ${when}`
-}
-
 /** The member's plan line for the home header: "Version 2, approved by Dr.
     Patel", and while a newer version is with the doctor a second line,
     "Version 3 is with Dr. Patel", with a breathing dot (M-55). The current
@@ -1845,15 +1821,6 @@ export function ChipRow<T extends string>({
     >
       {chips}
     </ScrollView>
-  )
-}
-
-/** A section's link, e.g. "See all". */
-export function SectionLink({ children, onPress }: { children: string; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} hitSlop={8} accessibilityRole="link">
-      <Text style={styles.link}>{children}</Text>
-    </Pressable>
   )
 }
 

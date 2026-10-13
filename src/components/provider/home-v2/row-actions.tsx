@@ -1,6 +1,4 @@
 "use client"
-
-import * as React from "react"
 import { useRouter } from "next/navigation"
 import { MoreVerticalIcon, Tick02Icon } from "@hugeicons/core-free-icons"
 

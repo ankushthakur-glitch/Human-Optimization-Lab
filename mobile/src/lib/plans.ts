@@ -1,7 +1,6 @@
 import { showDate } from "@/lib/dates"
 import { MEMBER } from "@/lib/member"
 import type { Plan, useOnboarding } from "@/lib/onboarding"
-import type { FocusArea } from "@/lib/record"
 
 /* The membership catalogue: a free record for everyone and one paid
    Optimization membership. Every practice gets every program; a program
@@ -63,8 +62,6 @@ export const PROGRAMS: { id: ProgramId; name: string; only?: Sex }[] = [
   { id: "male-hormone", name: "Male hormone", only: "male" },
 ]
 
-export const programName = (id: ProgramId) => PROGRAMS.find((p) => p.id === id)?.name ?? id
-
 export type Tier = "free" | "optimization"
 
 /** What the membership includes, in this order (the checkout and the
@@ -117,18 +114,6 @@ export const priceOf = (cadence: Cadence = "monthly") => BILLING[cadence].price
     price. */
 export const FREE_STAYS = ["Every result and trend", "Reminders and care gaps", "Booking and paying for tests", "Weekly AI credit for your assistant"]
 
-/* The upsell's words (6 Oct 2026). Placeholder copy: Fynn's team is
-   sending the final wording; swap it in here when it arrives. */
-
-/** What membership includes, in the showroom's grid: a title and a few
-    words each, her doctor first. */
-export const BENEFITS: { title: string; text: string }[] = [
-  { title: "Your physician", text: "Reviews and approves your plan" },
-  { title: "Meals and exercise", text: "Made for your goals" },
-  { title: "Daily check in", text: "Your numbers, watched" },
-  { title: "Retesting", text: "See if it is working" },
-]
-
 /** "What you get as a member", the upgrade page's checklist (6 Oct 2026
     reference). */
 export const MEMBER_GETS = [
@@ -139,14 +124,6 @@ export const MEMBER_GETS = [
   "Track progress with updated plans",
   "Support for multiple health goals",
 ] as const
-
-/** What a personalized program would do for each area it focuses on. */
-export const FOCUS_DOES: Record<FocusArea, string> = {
-  "blood sugar": "Meals built to help lower your A1c, retested in 3 months",
-  heart: "Diet, exercise and blood pressure targets, with your physician reviewing medicine",
-  weight: "Calorie and protein targets with a strength program",
-  bone: "Calcium, vitamin D and strength work, with a repeat scan",
-}
 
 /** The newest approved version among a plan's versions. */
 function newest(versions: Plan["versions"]) {

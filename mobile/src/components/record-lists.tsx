@@ -1,11 +1,8 @@
-import { router } from "expo-router"
+
 import * as React from "react"
 import { StyleSheet, View } from "react-native"
-
-import { keepTogether } from "@/components/care-gap"
-import { openMedicineByName } from "@/components/medicines"
 import { Eye, UploadSimple } from "@/components/ph"
-import { Block, EmptyState, Group, Tile } from "@/components/record-kit"
+import { EmptyState, Group, Tile } from "@/components/record-kit"
 import { FilterChips, ItemRow, addedDetail, type ItemDetail, type RowStatus } from "@/components/record-rows"
 import { clockOf, dateOfAt, dayLabel, shortDay, sinceStart } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
@@ -14,23 +11,19 @@ import {
   APPOINTMENTS,
   DOCUMENTS,
   IMMUNIZATIONS,
-  MEDICATIONS,
   ORDERS,
   PROBLEMS,
   PROCEDURES,
   PROVENANCE_OF,
   SOURCES,
   VISITS,
-  timeline,
   type Biomarker,
   type Order,
   type Origin,
   type Provenance,
-  type TimelineEntry,
-  type TimelineKind,
 } from "@/lib/record"
 import { color, space } from "@/lib/theme"
-import { orderHref, orderStatus, todo, type TodoItem } from "@/lib/todo"
+import { orderStatus, todo, type TodoItem } from "@/lib/todo"
 import { timeOf } from "@/lib/trends"
 
 /* The record's own pages (FINAL-SPEC C.6), each a FlowScreen page:
@@ -149,11 +142,6 @@ function procedureDetail(p: (typeof PROCEDURES)[number], provenance: ProvenanceO
     source: sourceRows([p.origin], p.date),
   }
 }
-
-/* ------------------------------------------------------- allergies -- */
-
-/** Allergies the lists differ on: the Record tab's "Records differ on 1". */
-export const allergiesToCheck = () => ALLERGIES.filter((a) => a.difference).length
 
 /* ------------------------------------------------------------ lists -- */
 
@@ -502,104 +490,6 @@ function Added({ onOpen, onAdd }: Opens & { onAdd: () => void }) {
         />
       ))}
     </Group>
-  )
-}
-
-/* --------------------------------------------------------- timeline -- */
-
-type TimeFilter = TimelineKind | "all"
-
-const TIME_FILTERS: { value: TimeFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "results", label: "Results" },
-  { value: "visits", label: "Visits" },
-  { value: "medicines", label: "Medicines" },
-  { value: "procedures", label: "Procedures" },
-  { value: "documents", label: "Documents" },
-]
-
-/** "Atorvastatin, 20 mg once a day" as the name and the dose. */
-function splitMedicine(title: string): [string, string | undefined] {
-  const at = title.indexOf(", ")
-  return at < 0 ? [title, undefined] : [title.slice(0, at), title.slice(at + 2)]
-}
-
-/** An entry's place in a row: her own doctor's list is "Dr. Patel". After
-    a medicine's dose the place is held whole, so a wrapped line never
-    splits it ("10 mg once a day," then "Scripps Memorial"). */
-function placeLine(where: string, dose?: string) {
-  const place = where === "Your doctor" ? "Dr. Patel" : where
-  return dose ? `${dose}, ${place.replace(/ /g, "\u00A0")}` : keepTogether(place)
-}
-
-const TIME_ICON = { results: "labs", visits: "visits", medicines: "medications", procedures: "procedures", documents: "documents" } as const
-
-/** What an entry opens: a visit or a test on its own page, a medicine
-    brought into view on the medicines page, or a document or a procedure
-    in the sheet its own list opens. The entry is found in the record by
-    its kind, name and day, as timeline() builds it from these lists. */
-function timelineOpen(e: TimelineEntry, onOpen: (item: ItemDetail) => void, provenance: ProvenanceOf): (() => void) | undefined {
-  const same = (name: string, date?: string) => name === e.title && date === e.date
-  switch (e.kind) {
-    case "visits": {
-      const v = VISITS.find((x) => same(x.name, x.date))
-      return v && (() => router.push({ pathname: "/visit/[id]", params: { id: v.id } }))
-    }
-    case "results": {
-      const o = ORDERS.find((x) => same(x.name, x.completed))
-      return o && (() => router.push(orderHref(o.id)))
-    }
-    case "medicines": {
-      const m = MEDICATIONS.find((x) => x.name === splitMedicine(e.title)[0])
-      return () => (m ? openMedicineByName(m) : router.push("/medications"))
-    }
-    case "documents": {
-      const d = DOCUMENTS.find((x) => same(x.name, x.date))
-      return d && (() => onOpen(documentDetail(d, provenance)))
-    }
-    case "procedures": {
-      const p = PROCEDURES.find((x) => same(x.name, x.date))
-      return p && (() => onOpen(procedureDetail(p, provenance)))
-    }
-  }
-}
-
-/** The whole record by date, newest first, across every kind of entry,
-    with a filter for one kind at a time (S-15). Visits outside her clinic
-    say so. Every entry opens, as it does from its own list. */
-export function TimelineList({ onOpen }: Opens) {
-  const provenance = useProvenance()
-  const [filter, setFilter] = React.useState<TimeFilter>("all")
-  const entries = timeline().filter((e) => filter === "all" || e.kind === filter)
-  const years = [...new Set(entries.map((e) => e.year))]
-  return (
-    <View style={styles.stack}>
-      <FilterChips scroll options={TIME_FILTERS} value={filter} onChange={setFilter} />
-      <View style={styles.groups}>
-        {years.map((year) => (
-          <Block key={year} title={year}>
-            <Group>
-              {entries
-                .filter((e) => e.year === year)
-                .map((e, i) => {
-                  const [name, dose] = e.kind === "medicines" ? splitMedicine(e.title) : [e.title, undefined]
-                  return (
-                    <ItemRow
-                      key={`${e.kind}-${e.title}-${i}`}
-                      icon={TIME_ICON[e.kind]}
-                      title={name}
-                      tag={e.outside ? { tone: "muted", label: "Outside your clinic" } : undefined}
-                      meta={placeLine(e.where, dose) || undefined}
-                      when={shortDate(e.date).replace(/,?\s*\d{4}$/, "")}
-                      onPress={timelineOpen(e, onOpen, provenance)}
-                    />
-                  )
-                })}
-            </Group>
-          </Block>
-        ))}
-      </View>
-    </View>
   )
 }
 

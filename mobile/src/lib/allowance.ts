@@ -56,10 +56,6 @@ export function tokensFor(text: string) {
   return CONTEXT_TOKENS + ANSWER_TOKENS + Math.ceil(text.length / 4)
 }
 
-/** A conversation stays open this long after its last message; a message
-    after that starts a new one. */
-export const CONVERSATION_MINUTES = 30
-
 /** This week's credit (store field `allowance`): the week (its local
     Monday, "2026-10-05", in `month`), the tokens used, the conversations
     that spent any (for a chat in progress), the result batches already

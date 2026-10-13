@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 /* The patient's photo when there is one; otherwise initials in a white
    circle with the build's border, the way the Patients list shows them. */
 
-export function initialsOf(name: string) {
+function initialsOf(name: string) {
   return name
     .split(/\s+/)
     .filter(Boolean)

@@ -5,29 +5,15 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  ComposedChart,
-  Line,
   Rectangle,
-  ReferenceLine,
   ResponsiveContainer,
-  XAxis,
   YAxis,
 } from "recharts"
 
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/design-system/ui/skeleton"
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/design-system/ui/chart"
 import { Card } from "@/components/dashboard-kit-v2/card"
 import { DIVIDER, FOCUS } from "@/components/dashboard-kit-v2/icon"
-import {
-  StatusDefs,
-  statusColors,
-} from "@/components/dashboard-kit-v2/status-trend"
 
 /* The kit's chart layer: shadcn/ui Chart on Recharts, the build's one chart
    stack. Colours are build tokens read as CSS variables, so charts follow
@@ -123,79 +109,6 @@ export function ChartCard({
         </footer>
       )}
     </Card>
-  )
-}
-
-export function ChartFooter({
-  lead,
-  trail,
-  sub,
-  className,
-}: {
-  lead: React.ReactNode
-  /** An icon after the lead line. */
-  trail?: React.ReactNode
-  sub?: React.ReactNode
-  className?: string
-}) {
-  return (
-    <>
-      <p
-        className={cn(
-          "flex items-center gap-1.5 text-sm font-semibold",
-          className
-        )}
-      >
-        {lead}
-        {trail}
-      </p>
-      {sub && (
-        <p className="truncate text-[13px] text-muted-foreground tabular-nums">
-          {sub}
-        </p>
-      )}
-    </>
-  )
-}
-
-/** shadcn's interactive header cells: a 12px label over a bold value.
-    Pressing a cell selects its series. */
-export function StatCells<T extends string>({
-  label,
-  value,
-  cells,
-  onChange,
-}: {
-  label: string
-  value: T
-  cells: { key: T; label: string; value: number }[]
-  onChange: (key: T) => void
-}) {
-  return (
-    <div role="group" aria-label={label} className="flex">
-      {cells.map((cell) => (
-        <button
-          key={cell.key}
-          type="button"
-          aria-pressed={cell.key === value}
-          onClick={() => onChange(cell.key)}
-          className={cn(
-            "flex min-w-24 flex-col justify-center gap-0.5 border-l px-4 py-3 text-left transition-colors sm:min-w-28",
-            DIVIDER,
-            cell.key === value
-              ? "bg-surface-sunken"
-              : "hover:bg-surface-row-hover",
-            FOCUS,
-            "focus-visible:ring-inset"
-          )}
-        >
-          <span className="text-xs text-muted-foreground">{cell.label}</span>
-          <span className="text-[22px] leading-7 font-semibold tabular-nums">
-            {cell.value.toLocaleString("en-US")}
-          </span>
-        </button>
-      ))}
-    </div>
   )
 }
 
@@ -396,144 +309,6 @@ export function AreaSpark({
           />
         </AreaChart>
       </ResponsiveContainer>
-    </div>
-  )
-}
-
-/* --------------------------------------------------------- trend chart -- */
-
-const shortDate = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(8, 10)}`
-
-/** A result over time in status colour: each reading's dot, the line
-    into it and the fading area under it green inside the reference range,
-    orange at its edge and red outside (status-trend.tsx). */
-export function TrendChart({
-  points,
-  low,
-  high,
-  unit,
-  latestOut,
-  label,
-  height = 220,
-}: {
-  points: { date: string; value: number }[]
-  low?: number
-  high?: number
-  unit?: string
-  latestOut: boolean
-  label: string
-  height?: number
-}) {
-  const id = `tc${React.useId().replace(/:/g, "")}`
-  const reduced = useReducedMotion()
-  const last = points.length - 1
-  const colors = statusColors(
-    points.map((p) => p.value),
-    low,
-    high,
-    points.map((_, i) => i === last && latestOut)
-  )
-  const data = points.map((p, i) => ({
-    day: shortDate(p.date),
-    value: p.value,
-    color: colors[i],
-    /* The tooltip's swatch reads the row's fill. */
-    fill: colors[i],
-  }))
-  /* One colour paints plainly: a gradient over a flat line has no height. */
-  const paint = colors.every((c) => c === colors[0])
-    ? colors[0]
-    : `url(#${id}-c)`
-  const values = points.map((p) => p.value)
-  const lo = Math.min(...values, ...(low !== undefined ? [low] : []))
-  const hi = Math.max(...values, ...(high !== undefined ? [high] : []))
-  const span = hi - lo || 1
-  const step =
-    [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100].find((s) => span / s <= 4) ?? 100
-  const yMin = Math.max(0, Math.floor((lo - span * 0.08) / step) * step)
-  const yMax = Math.ceil((hi + span * 0.08) / step) * step
-  const ticks = Array.from(
-    { length: Math.round((yMax - yMin) / step) + 1 },
-    (_, i) => +(yMin + i * step).toFixed(2)
-  )
-  const config = {
-    value: {
-      label: unit ? `Value (${unit})` : "Value",
-      color: colors[last],
-    },
-  } satisfies ChartConfig
-
-  return (
-    <div role="img" aria-label={label}>
-      <ChartContainer
-        config={config}
-        className="aspect-auto w-full"
-        style={{ height }}
-      >
-        <ComposedChart
-          data={data}
-          margin={{ top: 8, right: 12, bottom: 0, left: -12 }}
-        >
-          <defs>
-            <StatusDefs
-              id={id}
-              xs={data.map((_, i) => i)}
-              colors={colors}
-            />
-          </defs>
-          <Grid />
-          {[low, high].map((l) =>
-            l === undefined ? null : (
-              <ReferenceLine
-                key={l}
-                y={l}
-                stroke="var(--border)"
-                strokeDasharray="3 3"
-              />
-            )
-          )}
-          <XAxis dataKey="day" {...AXIS_PROPS} interval="preserveStartEnd" />
-          <YAxis
-            {...AXIS_PROPS}
-            domain={[yMin, yMax]}
-            ticks={ticks}
-            tickFormatter={(v: number) => v.toFixed(step < 1 ? 1 : 0)}
-          />
-          <ChartTooltip
-            cursor={false}
-            content={<ChartTooltipContent indicator="dot" />}
-          />
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke="none"
-            fill={paint}
-            mask={`url(#${id}-f)`}
-            isAnimationActive={!reduced}
-            activeDot={false}
-            tooltipType="none"
-          />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke={paint}
-            strokeWidth={2}
-            isAnimationActive={!reduced}
-            activeDot={{ r: 5 }}
-            dot={(p: { cx?: number; cy?: number; index?: number }) => (
-              <circle
-                key={p.index}
-                cx={p.cx}
-                cy={p.cy}
-                r={p.index === last ? 4.5 : 3.5}
-                fill="var(--card)"
-                stroke={colors[p.index ?? 0]}
-                strokeWidth={2}
-              />
-            )}
-          />
-        </ComposedChart>
-      </ChartContainer>
     </div>
   )
 }

@@ -1,5 +1,4 @@
 import { router, type Href } from "expo-router"
-import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"

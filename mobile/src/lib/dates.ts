@@ -12,9 +12,6 @@ export const showDate = (d: Date = new Date()) => `${MONTHS[d.getMonth()]} ${d.g
 /** The key a day is kept under, in local time: "2026-10-01". */
 export const dayKey = (d: Date = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
-/** The key a month is kept under, in local time: "2026-10". */
-export const monthKey = (d: Date = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`
-
 /** The Monday a local week starts on, at midnight. */
 export const weekStart = (d: Date = new Date()) => {
   const day = new Date(d.getFullYear(), d.getMonth(), d.getDate())

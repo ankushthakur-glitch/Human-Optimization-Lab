@@ -1,9 +1,7 @@
 import * as React from "react"
-import { ArrowExpand01Icon } from "@hugeicons/core-free-icons"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/design-system/ui/button"
-import { DIVIDER, KitIcon } from "@/components/dashboard-kit-v2/icon"
+import { DIVIDER } from "@/components/dashboard-kit-v2/icon"
 
 /* TailAdmin's widget card on the build's tokens. White, one border, 7.2px
    radius. The header carries a 15/600 title, an optional count badge after
@@ -83,20 +81,5 @@ export function CardFooter({ className, ...props }: React.ComponentProps<"div">)
       className={cn("flex items-center gap-3 border-t px-4 py-2.5", DIVIDER, className)}
       {...props}
     />
-  )
-}
-
-/** The header's expand button: opens the full list the card previews. */
-export function ExpandButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <Button
-      variant="outline"
-      size="icon-sm"
-      aria-label={label}
-      onClick={onClick}
-      className="rounded-lg text-muted-foreground"
-    >
-      <KitIcon icon={ArrowExpand01Icon} />
-    </Button>
   )
 }

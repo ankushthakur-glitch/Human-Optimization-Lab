@@ -1,6 +1,4 @@
 "use client"
-
-import * as React from "react"
 import { Bar, BarChart, Cell, Label, LabelList, Pie, PieChart, XAxis, YAxis } from "recharts"
 
 import { cn } from "@/lib/utils"
@@ -135,7 +133,6 @@ export function PriorityCard({
 }
 
 /* ---------------------------------------------------------- time open -- */
-
 
 export function TimeOpenCard({
   open,

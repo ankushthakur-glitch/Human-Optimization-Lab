@@ -81,7 +81,6 @@ const PAGES = {
 
   // The clinic manager's practice portal.
   "/screens/practice": [MANAGER, "", "", { skip: true }],
-  "/screens/practice/providers": [MANAGER, "", "", { skip: true }],
   "/screens/practice/users": [MANAGER, "Users", "Users: providers tab (list, bulk import)"],
   "/screens/practice/users/providers/new": [MANAGER, "Users", "Add provider"],
   "/screens/practice/users/providers/[id]": [MANAGER, "Users", "Provider profile", { url: "/screens/practice/users/providers/PR3132" }],

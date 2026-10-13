@@ -80,7 +80,7 @@
     },
     {
       "file": "src/components/practice/patients.tsx",
-      "line": 703,
+      "line": 679,
       "routes": [
         "/screens/practice/patients",
         "/screens/patients"
@@ -120,7 +120,7 @@
     },
     {
       "file": "src/components/practice/patient-record.tsx",
-      "line": 1017,
+      "line": 980,
       "routes": [
         "/screens/practice/patients/P10240"
       ]
@@ -157,38 +157,22 @@
   "biomarkers-in-range": [],
   "no-conditions": [],
   "no-medications": [],
-  "no-encounters": [
-    {
-      "file": "src/app/(design-system)/patterns/data/page.tsx",
-      "line": 1650,
-      "routes": [
-        "/patterns/data"
-      ]
-    }
-  ],
+  "no-encounters": [],
   "plan-sent": [],
   "single-reading": [],
   "sync-requested": [],
-  "load-failed": [
-    {
-      "file": "src/app/(design-system)/patterns/data/page.tsx",
-      "line": 1670,
-      "routes": [
-        "/patterns/data"
-      ]
-    }
-  ],
+  "load-failed": [],
   "no-emergency-contact": [
     {
       "file": "src/components/practice/patient-record.tsx",
-      "line": 655,
+      "line": 622,
       "routes": [
         "/screens/practice/patients/P10240"
       ]
     },
     {
       "file": "src/components/practice/patient-record.tsx",
-      "line": 976,
+      "line": 939,
       "routes": [
         "/screens/practice/patients/P10240"
       ]
@@ -231,14 +215,14 @@
   "deactivate-person": [
     {
       "file": "src/components/practice/patient-record.tsx",
-      "line": 822,
+      "line": 789,
       "routes": [
         "/screens/practice/patients/P10240"
       ]
     },
     {
       "file": "src/components/practice/patients.tsx",
-      "line": 725,
+      "line": 701,
       "routes": [
         "/screens/practice/patients",
         "/screens/patients"

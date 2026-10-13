@@ -1,5 +1,4 @@
 import { router } from "expo-router"
-import * as React from "react"
 import { StyleSheet, View } from "react-native"
 
 import { toast } from "@/components/record-kit"

@@ -226,17 +226,6 @@ export function TrendTiles({ trends, onOpen }: { trends: Trend[]; onOpen?: (t: T
   )
 }
 
-/** The rows stacked, one to a line. */
-export function TrendRows({ trends, onOpen }: { trends: Trend[]; onOpen?: (t: Trend) => void }) {
-  return (
-    <View style={styles.list}>
-      {trends.map((t) => (
-        <TrendTile key={t.id} trend={t} onPress={onOpen ? () => onOpen(t) : undefined} />
-      ))}
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   list: { gap: space.item },
   pressed: { opacity: 0.8 },

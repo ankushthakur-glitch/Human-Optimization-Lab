@@ -53,38 +53,3 @@ export function SegmentedControl<T extends string>({
     </Tabs>
   )
 }
-
-export function UnderlineTabs<T extends string>({
-  label,
-  value,
-  items,
-  onChange,
-  className,
-}: {
-  label: string
-  value: T
-  items: TabItem<T>[]
-  onChange: (value: T) => void
-  className?: string
-}) {
-  return (
-    <Tabs value={value} onValueChange={(v) => onChange(v as T)} className={cn("gap-0", className)}>
-      <TabsList
-        variant="line"
-        aria-label={label}
-        className="h-auto! w-full justify-start gap-6 rounded-none border-b border-border/60 p-0 px-4"
-      >
-        {items.map((item) => (
-          <TabsTrigger
-            key={item.value}
-            value={item.value}
-            className="h-auto flex-none gap-2 rounded-none px-0 py-3 text-sm font-medium text-muted-foreground not-data-active:hover:bg-transparent hover:text-foreground data-active:text-primary-tint after:bg-primary group-data-horizontal/tabs:after:bottom-[-1px] dark:not-data-active:hover:bg-transparent dark:data-active:text-primary-tint"
-          >
-            {item.label}
-            {item.count !== undefined && <CountPill n={item.count} active={item.value === value} />}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
-  )
-}

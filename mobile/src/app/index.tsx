@@ -1,4 +1,4 @@
-import * as React from "react"
+
 
 import { FreeHome } from "@/components/home-free"
 import { OptimizedHome } from "@/components/home-optimized"
@@ -8,7 +8,7 @@ import { homeFor, useExperience } from "@/lib/experience"
    to tell the patients apart (lib/experience.ts, FINAL-SPEC A.3). A member
    with a live plan gets the free home with her plan woven in (12 Oct
    2026): what needs her, yesterday's score and goals, today's plan, then
-   her record. The previous member home is kept at /home-previous.
+   her record.
    Everyone else gets the free home (free, building, declined, paused, and
    a cancelled member or one who turned sharing off, both on the free
    record), which also draws the not connected, record arriving and paused

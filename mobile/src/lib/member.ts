@@ -1,7 +1,6 @@
 import { dayKey } from "@/lib/dates"
 import type { useOnboarding } from "@/lib/onboarding"
-import { DEVICES } from "@/lib/program"
-import { BIOMARKERS, ORDERS, STEADY_RECORD, withBatches, type Biomarker, type FocusArea, type Point } from "@/lib/record"
+import { BIOMARKERS, STEADY_RECORD, withBatches, type Biomarker, type FocusArea, type Point } from "@/lib/record"
 import { formatNumber, pointTime, resultsOf, valueText } from "@/lib/trends"
 
 /* The Optimization member's day, for the sample patient Olivia: what to do
@@ -118,7 +117,7 @@ export const MEMBER = {
 } as const
 
 /** Week 1 is the week the membership started. */
-export const weekNumber = (now: Date = new Date()) => Math.floor(daysBetween(dayFrom(MEMBER.start), now) / 7) + 1
+const weekNumber = (now: Date = new Date()) => Math.floor(daysBetween(dayFrom(MEMBER.start), now) / 7) + 1
 
 export type PlanVersion = {
   version: number
@@ -228,15 +227,6 @@ export const NUTRIENTS: Record<NutrientId, { name: string; unit: "kcal" | "g" | 
   calcium: { name: "Calcium", unit: "mg" },
 }
 
-/** Which nutrients a focus area tracks (M-07). Weight also tracks the energy
-    deficit, worked out from intake and burn rather than logged. */
-export const FOCUS_NUTRIENTS: Record<FocusArea, NutrientId[]> = {
-  weight: ["calories", "protein"],
-  "blood sugar": ["fiber", "addedSugar"],
-  heart: ["sodium", "satFat"],
-  bone: ["calcium", "protein"],
-}
-
 export type Goal = {
   id: NutrientId
   name: string
@@ -288,10 +278,6 @@ export const GOALS: Goal[] = [
     "Fresh chicken or turkey instead of deli meat",
   ]),
 ]
-
-/** The energy deficit the plan aims for, shown beside the goals but not
-    scored: without a device it rests on estimates. */
-export const DEFICIT_AIM = 300
 
 /** The diet plan as daily targets and food ideas (M-13, Q-13 default). */
 export const DIET_PLAN = {
@@ -1280,7 +1266,7 @@ export type ActivityLog = {
 export const moveDone = (log: ActivityLog | undefined, e: Exercise) => Boolean(log) && (log!.sets ?? e.sets) >= e.sets
 
 /** The session done on a day: marked done as a whole, or every move done. */
-export function sessionDone(s: Snapshot, d: Date): Session | undefined {
+function sessionDone(s: Snapshot, d: Date): Session | undefined {
   const session = profileOf(s).sessionOn(d)
   const log = s.exercises?.[localDay(d)]
   if (!session || !log) return undefined
@@ -1553,10 +1539,6 @@ export const MANUAL_ENTRIES = [
   { id: "stands", title: "Chair stands", unit: "stands", how: "Arms crossed, stand up and sit down as many times as you can in 30 seconds." },
 ] as const
 
-/** Devices connect through Terra in a later release (M-68 to M-70): shown,
-    never faked as connected. */
-export const DEVICE_STATUS = DEVICES.map((d) => ({ ...d, status: "coming-soon" as const, label: "Coming soon" }))
-
 /** The frozen baseline from May 3 (M-43). Never overwritten. */
 export const BASELINE = Object.freeze({
   at: MEMBER.start,
@@ -1615,7 +1597,7 @@ const STANDS: [string, number][] = [
 ]
 
 /** The chair stand goal for the bone plan. */
-export const STANDS_GOAL = 15
+const STANDS_GOAL = 15
 
 /** Home blood pressure: Sunday evenings under version 1, every evening
     from version 2 (Sep 12), as [day, top, bottom]. */
@@ -1996,95 +1978,6 @@ function boneMilestones(s: Snapshot, now: Date): Milestone[] {
   return found.filter((m): m is Milestone => Boolean(m) && m!.at <= localDay(now)).sort((a, b) => b.at.localeCompare(a.at))
 }
 
-/* ------------------------------------------------------------- streaks -- */
-
-/** Days in a row with something logged, and evening walks in a row, counted
-    back from today when today already counts, else from yesterday. Shown as
-    encouragement; a broken run never shows as zero. */
-export function streaks(s: Snapshot, now: Date = new Date()) {
-  const logged = (d: Date) => (daysBetween(now, d) === 0 ? mealsOn(s, localDay(d)).length > 0 : dayScore(s, d, now).status !== "none")
-  const walked = (d: Date) => {
-    const offset = daysBetween(now, d)
-    const own = s.exercises?.[localDay(d)]?.walk
-    if (own || offset === 0) return Boolean(own)
-    const sample = offset < -1 ? profileOf(s).sampleDays.find((x) => x.day === offset) : undefined
-    return sample ? sample.walk !== false && sample.status !== "none" : false
-  }
-  const run = (test: (d: Date) => boolean) => {
-    let start = test(now) ? 0 : -1
-    let count = 0
-    while (count < 60 && test(addDays(now, start - count))) count++
-    return count
-  }
-  const loggingRun = run(logged)
-  const walkRun = run(walked)
-  const month = scoreHistory(s, 30, now)
-  return {
-    logging: { count: loggingRun, words: `${loggingRun} ${loggingRun === 1 ? "day" : "days"} of logging in a row` },
-    walks: { count: walkRun, words: `${walkRun} evening ${walkRun === 1 ? "walk" : "walks"} in a row` },
-    /** "27 of the last 30 days logged" */
-    month: { logged: month.filter((d) => d.status !== "none").length, of: 30, words: `${month.filter((d) => d.status !== "none").length} of the last 30 days logged` },
-  }
-}
-
-/* ------------------------------------------------------------ check in -- */
-
-/** The weekly check in (M-64, M-65): one question, then what got in the
-    way, never "you failed". Answers live in the store's `checkIn` under
-    "week:<Monday>" and "week:<Monday>:why". */
-export const CHECK_IN = {
-  question: "How did this week go?",
-  options: ["Went well", "Partly", "It was a hard week"],
-  barrierQuestion: "What got in the way?",
-  barriers: ["Time", "Energy", "Plans changed", "Pain or discomfort", "Something else"],
-  /** After a hard week, lower the bar. */
-  reassurance: "You do not need to be perfect. Next week starts fresh.",
-} as const
-
-/** The check in that is due: this week's from Friday, last week's still on
-    Monday and Tuesday until answered. With a summary of that week. */
-export function weekCheckIn(s: Snapshot, now: Date = new Date()) {
-  const w = now.getDay()
-  const monday = dayFrom(weekOf(w === 1 || w === 2 ? addDays(now, -7) : now))
-  const key = `week:${localDay(monday)}`
-  const answer = s.checkIn?.[key]
-  const due = !answer && (w === 0 || w >= 5 || w === 1 || w === 2)
-  const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i)).filter((d) => daysBetween(d, now) >= 1)
-  const scores = days.map((d) => dayScore(s, d, now))
-  const { average, logged } = averageOf(scores)
-  return {
-    key,
-    due,
-    answer,
-    why: s.checkIn?.[`${key}:why`],
-    /** "Sep 28 to Oct 4" */
-    range: `${shortDay(monday)} to ${shortDay(addDays(monday, 6))}`,
-    summary: { daysLogged: logged, days: days.length, average },
-  }
-}
-
-/* ---------------------------------------------------- plan and markers -- */
-
-/** What the plan does for a marker, for the marker page's "In your plan"
-    row (FINAL-SPEC E.3, sample data). */
-export const PLAN_LINES: Record<string, string> = {
-  a1c: "Fiber, added sugar and a walk after dinner.",
-  ldl: "A sodium limit and a walk after dinner.",
-  tg: "An added sugar limit and a walk after dinner.",
-  bmi: "Calories, protein and six short strength sessions a week.",
-  bp: "An evening blood pressure check, a sodium limit and a daily walk.",
-}
-
-/** The "In your plan" line for a marker, with "Next test Tue, Oct 6." when
-    a test booked this week measures it; undefined when the plan does not
-    work on it. */
-export function planLineFor(markerId: string, s: Snapshot = {}, now: Date = new Date()): string | undefined {
-  const line = PLAN_LINES[markerId]
-  if (!line) return undefined
-  const test = thisWeek(s, now).find((i) => i.kind === "test" && (i.orders ?? []).some((id) => ORDERS.find((o) => o.id === id)?.markers?.includes(markerId)))
-  return test ? `${line} Next test ${test.day}.` : line
-}
-
 /** The last `days` days for Progress (FINAL-SPEC C.25): days with something
     logged, the average score of the scored days (rounded down), and the
     strength sessions and walks done of those planned. Counts only, never a
@@ -2116,14 +2009,6 @@ export function adherence(s: Snapshot, days = 30, now: Date = new Date()) {
     walks,
   }
 }
-
-/* The Inlay score's change since her first check in, its history and the
-   check in before today are worked out in one place for Home, the score
-   page and Progress: lib/record.ts scoreOverTime, beside the score. */
-
-/** The next Inlay score check in: three months after today's, as a month
-    ("January" in October). */
-export const nextCheckIn = (now: Date = new Date()) => MONTHS_LONG[(now.getMonth() + 3) % 12]
 
 /** The member's Inlay score check ins before today (FINAL-SPEC E.3): May 3,
     66; Aug 3, 69. Today's score is worked out from her answers. */

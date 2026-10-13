@@ -1,4 +1,4 @@
-import * as React from "react"
+
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 
 import { ORB_GROUND } from "@/components/hol"

@@ -15,9 +15,3 @@ export function keepEnd(text: string | undefined): string | undefined
 export function keepEnd(text?: string): string | undefined {
   return text?.replace(/(\d) (?=\S)/g, `$1${NBSP}`).replace(/ (\S+)$/, `${NBSP}$1`)
 }
-
-/** Place names of two words held whole wherever they sit in a line of
-    facts ("La Jolla", "Del Mar", "Pacific Heart", "Coastal Imaging"): a
-    pair of capitalised words that ends a part of the line, before a comma,
-    a full stop or the end. */
-export const keepPlaces = (text: string) => text.replace(/\b([A-Z][a-z]+) ([A-Z][a-z]+)\b(?=[,.]|$)/g, `$1${NBSP}$2`)

@@ -29,7 +29,7 @@ import { BIOMARKERS, BODY_SYSTEMS, PLACE_NAME, type Biomarker, type Point } from
 export type Status = "in" | "borderline" | "out"
 export type Movement = "rising" | "falling" | "steady" | "unknown"
 export type Meaning = "improving" | "away" | "steady" | "unknown"
-export type Side = "above" | "below"
+type Side = "above" | "below"
 
 export const THRESHOLDS = {
   /** Inside a two sided range, within this share of its width from an edge. */
@@ -364,27 +364,6 @@ export function movingThreshold(b: Biomarker): number {
 export function needsReview(b: Biomarker, p?: Pick<Point, "value">): boolean {
   if (!p || !b.review) return false
   return (b.review.above !== undefined && p.value > b.review.above) || (b.review.below !== undefined && p.value < b.review.below)
-}
-
-/** The values a chart's y axis should cover: every result plus the band edge
-    nearest the latest one, padded (18% of the span by default) so dots never
-    touch the edge. Never below zero for a measure that cannot be negative. */
-export function domainOf(b: Biomarker, points: Point[] = b.points, pad = 0.18): [number, number] {
-  const values = points.flatMap((p) => (p.value2 !== undefined ? [p.value, p.value2] : [p.value]))
-  const edges = [b.low, b.high].filter((e): e is number => e !== undefined)
-  if (!values.length) values.push(...edges)
-  if (!values.length) return [0, 1]
-  let lo = Math.min(...values)
-  let hi = Math.max(...values)
-  const latest = points.at(-1)?.value
-  if (latest !== undefined && edges.length) {
-    const nearest = edges.reduce((a, e) => (Math.abs(e - latest) < Math.abs(a - latest) ? e : a))
-    lo = Math.min(lo, nearest)
-    hi = Math.max(hi, nearest)
-  }
-  const room = Math.max((hi - lo) * pad, Math.abs(hi) * 0.02, EPS)
-  const floor = values.every((v) => v >= 0) ? 0 : -Infinity
-  return [Math.max(lo - room, floor), hi + room]
 }
 
 /* -------------------------------------------------------- comparable -- */

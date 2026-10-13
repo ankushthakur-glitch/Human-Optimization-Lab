@@ -19,7 +19,6 @@ import {
   VALIDATE,
   DateField,
   MultiSelectField,
-  Required,
   SelectField,
   TextField,
   digits,

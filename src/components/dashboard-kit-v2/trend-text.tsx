@@ -1,9 +1,6 @@
 import {
   ArrowDown02Icon,
-  ArrowDownRight01Icon,
-  ArrowRight02Icon,
   ArrowUp02Icon,
-  ArrowUpRight01Icon,
 } from "@hugeicons/core-free-icons"
 
 import { cn } from "@/lib/utils"
@@ -22,7 +19,7 @@ const TONE: Record<TrendTone, string> = {
   better: "text-success",
 }
 
-export function TrendText({
+function TrendText({
   icon,
   tone = "neutral",
   children,
@@ -43,52 +40,6 @@ export function TrendText({
     >
       <KitIcon icon={icon} size={14} />
       {children}
-    </span>
-  )
-}
-
-/** "↗ Worse", "→ Stable", "↘ Better" or "New", judged by the rules and
-    pointed by the value's direction. */
-export function TrendWord({
-  trend,
-  rising,
-  urgent,
-  className,
-}: {
-  trend: "worsening" | "improving" | "stable" | "new"
-  rising?: boolean
-  /** The one row that may be red. */
-  urgent?: boolean
-  className?: string
-}) {
-  const diagonal = rising === false ? ArrowDownRight01Icon : ArrowUpRight01Icon
-  if (trend === "worsening")
-    return (
-      <TrendText
-        icon={diagonal}
-        tone={urgent ? "urgent" : "neutral"}
-        className={className}
-      >
-        Worse
-      </TrendText>
-    )
-  if (trend === "improving")
-    return (
-      <TrendText icon={diagonal} tone="better" className={className}>
-        Better
-      </TrendText>
-    )
-  if (trend === "stable")
-    return (
-      <TrendText icon={ArrowRight02Icon} className={className}>
-        Stable
-      </TrendText>
-    )
-  return (
-    <span
-      className={cn("text-xs font-medium text-muted-foreground", className)}
-    >
-      New
     </span>
   )
 }

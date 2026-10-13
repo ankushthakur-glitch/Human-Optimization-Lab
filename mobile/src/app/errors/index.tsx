@@ -1,5 +1,4 @@
 import { router, type Href } from "expo-router"
-import * as React from "react"
 
 import { FlowScreen } from "@/components/flow"
 import { Group, NeedsRow } from "@/components/record-kit"

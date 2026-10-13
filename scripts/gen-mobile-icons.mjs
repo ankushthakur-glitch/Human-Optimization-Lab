@@ -23,7 +23,6 @@ const appIcon = read("app-icon.svg")
 const mark = read("mark-light.svg")
 // One porcelain silhouette of the symbol, for the petrol header in the app.
 const markWhite = mark.replace(/fill="#[0-9A-Fa-f]{6}"/g, 'fill="#F7F4EE"')
-const lockup = read("lockup-light.svg")
 const PETROL = "#173E45"
 
 /* Each asset: canvas size, background, how much of the canvas the art fills,
@@ -39,8 +38,6 @@ const ASSETS = [
   { file: "favicon.png", w: 48, h: 48, scale: 1, svg: appIcon },
   // The porcelain symbol, shown on petrol inside the app.
   { file: "logo-mark-white.png", w: 160, h: 192, scale: 1, svg: markWhite },
-  // The lockup for the sign-in header, at 3x its 220pt on-screen width.
-  { file: "logo-lockup.png", w: 660, h: 165, scale: 1, svg: lockup },
   // The web build's install icons (public/ is copied to the site as is).
   { file: "../public/icon-192.png", w: 192, h: 192, scale: 1, svg: appIcon },
   { file: "../public/icon-512.png", w: 512, h: 512, scale: 1, svg: appIcon },

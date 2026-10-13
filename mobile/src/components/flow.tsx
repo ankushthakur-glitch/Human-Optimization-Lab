@@ -1,8 +1,6 @@
 import { router } from "expo-router"
 import * as React from "react"
 import {
-  Animated,
-  Easing,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,7 +10,6 @@ import {
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import Svg, { Circle, Defs, Ellipse, RadialGradient, Stop } from "react-native-svg"
 
 import { DarkStatusBar } from "@/components/error-state"
 import { IconChevronLeft } from "@/components/icons"
@@ -313,42 +310,6 @@ export function Card({
   )
 }
 
-/** Two or three options as the Figma's option cards side by side, the
-    chosen one on the teal tint with a teal edge. */
-export function Segmented<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string
-  options: { value: T; label: string }[]
-  value?: T
-  onChange: (value: T) => void
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.track} accessibilityRole="radiogroup" accessibilityLabel={label}>
-        {options.map((o) => {
-          const on = o.value === value
-          return (
-            <Pressable
-              key={o.value}
-              onPress={() => onChange(o.value)}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: on }}
-              style={[styles.option, on && styles.optionOn]}
-            >
-              <Text style={[styles.optionText, on && styles.optionTextOn]}>{o.label}</Text>
-            </Pressable>
-          )
-        })}
-      </View>
-    </View>
-  )
-}
-
 export function Checkbox({
   checked,
   onChange,
@@ -412,81 +373,6 @@ export function Row({ label, value, last }: { label: string; value: string; last
     <View style={[styles.row, !last && styles.rowRule]}>
       <Text style={styles.rowLabel}>{label}</Text>
       <Text style={styles.rowValue}>{value}</Text>
-    </View>
-  )
-}
-
-/* ------------------------------------------------------------------ art -- */
-
-/** The flow's one object: a soft pearl sphere with a teal ring and a small
-    teal moon, on white with a contact shadow. With `orbit` the moon circles,
-    for the screen where the record is being built. */
-export function SoftOrb({ size = 168, orbit = false }: { size?: number; orbit?: boolean }) {
-  const spin = React.useRef(new Animated.Value(0)).current
-  React.useEffect(() => {
-    if (!orbit) return
-    const loop = Animated.loop(
-      Animated.timing(spin, { toValue: 1, duration: 2600, easing: Easing.linear, useNativeDriver: Platform.OS !== "web" })
-    )
-    loop.start()
-    return () => loop.stop()
-  }, [orbit, spin])
-  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] })
-
-  return (
-    <View style={{ width: size, height: size }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <Svg width={size} height={size} viewBox="0 0 200 200">
-        <Defs>
-          <RadialGradient id="orbShadow" cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor="#1B2B2A" stopOpacity={0.18} />
-            <Stop offset="1" stopColor="#1B2B2A" stopOpacity={0} />
-          </RadialGradient>
-          <RadialGradient id="orbBody" cx="38%" cy="32%" r="72%">
-            <Stop offset="0" stopColor="#FFFFFF" />
-            <Stop offset="0.45" stopColor="#F1F3F2" />
-            <Stop offset="0.85" stopColor="#D8DEDC" />
-            <Stop offset="1" stopColor="#C9D2CF" />
-          </RadialGradient>
-          <RadialGradient id="orbGlow" cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor={color.primary} stopOpacity={0.22} />
-            <Stop offset="1" stopColor={color.primary} stopOpacity={0} />
-          </RadialGradient>
-          <RadialGradient id="moon" cx="35%" cy="30%" r="75%">
-            <Stop offset="0" stopColor="#5FC2BC" />
-            <Stop offset="0.6" stopColor={color.primary} />
-            <Stop offset="1" stopColor="#015E5A" />
-          </RadialGradient>
-        </Defs>
-        <Circle cx="100" cy="98" r="92" fill="url(#orbGlow)" />
-        <Ellipse cx="100" cy="176" rx="54" ry="9" fill="url(#orbShadow)" />
-        <Circle cx="100" cy="98" r="58" fill="url(#orbBody)" />
-        <Ellipse
-          cx="100"
-          cy="104"
-          rx="84"
-          ry="22"
-          fill="none"
-          stroke={color.primary}
-          strokeOpacity={0.35}
-          strokeWidth={2}
-          transform="rotate(-14 100 104)"
-        />
-        {!orbit && <Circle cx="170" cy="78" r="11" fill="url(#moon)" />}
-      </Svg>
-      {orbit && (
-        <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ rotate }] }]}>
-          <Svg width={size} height={size} viewBox="0 0 200 200">
-            <Defs>
-              <RadialGradient id="moonSpin" cx="35%" cy="30%" r="75%">
-                <Stop offset="0" stopColor="#5FC2BC" />
-                <Stop offset="0.6" stopColor={color.primary} />
-                <Stop offset="1" stopColor="#015E5A" />
-              </RadialGradient>
-            </Defs>
-            <Circle cx="100" cy="14" r="9" fill="url(#moonSpin)" />
-          </Svg>
-        </Animated.View>
-      )}
     </View>
   )
 }

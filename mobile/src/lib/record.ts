@@ -1,22 +1,6 @@
 import { dayKey } from "@/lib/dates"
 import type { MedRecord } from "@/lib/onboarding"
 
-/* The sample health record the prototype "pulls" once the patient signs the
-   authorization. It follows what Health Gorilla's Patient360 retrieve returns
-   (the "Health Gorilla: Networks, EHRs and Data Access" sheet in the client
-   Drive): the national networks it searches, the organisations it finds, and
-   the FHIR resources it brings back, normalised and de-duplicated.
-   Invented values for the sample patient, never a real person's. */
-
-/** Searched in this order while the record builds. */
-export const NETWORKS = [
-  { name: "Carequality", reaches: "Epic, athenahealth, eClinicalWorks" },
-  { name: "CommonWell", reaches: "Oracle Health, MEDITECH, Veradigm" },
-  { name: "eHealth Exchange", reaches: "Regional HIEs, VA, DoD" },
-  { name: "TEFCA", reaches: "Epic Nexus, Kno2, KONZA" },
-  { name: "Lab network", reaches: "Quest Diagnostics, Labcorp" },
-] as const
-
 /** Where records were found: the organisation and the system it runs. */
 export const SOURCES = [
   { name: "Harborview Longevity Clinic", kind: "clinic", label: "Your clinic", system: "athenahealth", network: "Carequality" },
@@ -116,15 +100,6 @@ export const FINDINGS: Finding[] = [
   },
 ]
 
-/** On the problem list from the EHR (ICD-10). */
-export const CONDITIONS = [
-  { name: "Obesity, class 1", code: "E66.811" },
-  { name: "Prediabetes", code: "R73.03" },
-  { name: "Hyperlipidemia", code: "E78.5" },
-  { name: "Elevated blood pressure", code: "R03.0" },
-  { name: "Seasonal allergic rhinitis", code: "J30.2" },
-] as const
-
 /** The Inlay score: half from how the patient says they are flourishing
     (the index, 1 to 5), half from what her own record says: 6 points off
     for each marker whose latest result is out of range. The record half
@@ -187,14 +162,6 @@ export function scoreOverTime(today: number | undefined, checkIns: readonly Scor
     }
   }
   return { score, history, previous: earlier[earlier.length - 1]?.value, tag }
-}
-
-/** Lab results in range: every lab the record holds less the flagged ones.
-    Removed at integration once only the frozen onboarding screens read it;
-    lib/trends.ts trendCounts() counts the record's markers. */
-export const LABS_IN_RANGE = {
-  inRange: DATA_TYPES.find((t) => t.key === "Observation.lab")!.count - FINDINGS.filter((f) => f.kind === "lab").length,
-  total: DATA_TYPES.find((t) => t.key === "Observation.lab")!.count,
 }
 
 /* ------------------------------------------------------------------------
@@ -263,14 +230,6 @@ export const REVIEW = {
     stopped it, never started it, or does not take it (store field `meds`,
     lib/onboarding.tsx MedRecord). */
 export type MedAnswer = "taking" | "dose" | "stopped" | "never" | "not-taking"
-
-export const MED_ANSWER_LABEL: Record<MedAnswer, string> = {
-  taking: "Taking as listed",
-  dose: "Taking differently",
-  stopped: "I stopped it",
-  never: "I never started it",
-  "not-taking": "Not taking it",
-}
 
 /** How she says she takes it, in her own words: the note she wrote, or the
     dose an earlier build kept. */
@@ -348,14 +307,6 @@ export function providerAnswer(id: string, r: MedRecord): ProviderMedAnswer | un
   }
 }
 
-/** Every answer she saved, for the provider, newest first. */
-export function providerAnswers(meds: Record<string, MedRecord> | undefined): ProviderMedAnswer[] {
-  return Object.entries(meds ?? {})
-    .map(([id, r]) => providerAnswer(id, r))
-    .filter((a): a is ProviderMedAnswer => !!a)
-    .sort((a, b) => b.date.localeCompare(a.date))
-}
-
 export type Medication = {
   id: string
   name: string
@@ -409,12 +360,6 @@ export const MEDICATIONS: Medication[] = [
     resolved: "Dr. Patel marked this as a short course, finished",
   },
 ]
-
-/** Prescribed medicines only, without supplements. */
-export const MEDICINES = MEDICATIONS.filter((m) => m.kind === "medicine")
-
-/** Supplements, which the patient confirms the same way as medicines. */
-export const SUPPLEMENTS = MEDICATIONS.filter((m) => m.kind === "supplement")
 
 /** The doctor's list is the true one: anything only elsewhere, or with a
     different dose, is a difference the doctor settles. */
@@ -1437,15 +1382,6 @@ export const DOCUMENTS = [
 
 export type OrderState = "planned" | "due-soon" | "due" | "overdue" | "booked" | "done"
 
-export const ORDER_LABEL: Record<OrderState, string> = {
-  planned: "Planned",
-  "due-soon": "Due soon",
-  due: "Due",
-  overdue: "Overdue",
-  booked: "Booked",
-  done: "Done",
-}
-
 /** A place that takes cash for a test, with its phone number (to change or
     cancel a booking there). Its soonest opening is counted in days from
     today, so it is never in the past. */
@@ -1621,11 +1557,6 @@ export const CARE_GAPS: CareGap[] = [
   },
 ]
 
-/* -------------------------------------------------------- dashboard -- */
-
-/** When the record last took in something new. */
-export const UPDATED = "Today, 8:47 AM"
-
 /* ------------------------------------------------------ notifications -- */
 
 export type NoticeKind = "result" | "reminder" | "review" | "record" | "ai"
@@ -1700,13 +1631,3 @@ export function timeline(): TimelineEntry[] {
   ]
   return entries.map((e) => ({ ...e, year: yearOf(e.date) })).sort((a, b) => sortKey(b.date) - sortKey(a.date))
 }
-
-/* --------------------------------------------------------- access log -- */
-
-/** Who looked at what, and when. */
-export const ACCESS_LOG = [
-  { who: "Dr. Maya Patel", role: "Physician", what: "Viewed your lab results", when: "Today, 10:14 AM" },
-  { who: "Sam Ortiz", role: "Care coordinator", what: "Viewed your care gaps", when: "Today, 9:02 AM" },
-  { who: "Inlay Health", role: "Record check", what: "Matched your records from 3 providers", when: "Today, 8:47 AM" },
-  { who: "You", role: "Patient", what: "Signed the authorization", when: "Today, 8:45 AM" },
-]

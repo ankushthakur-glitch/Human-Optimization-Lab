@@ -45,7 +45,6 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/design-system/ui/select"

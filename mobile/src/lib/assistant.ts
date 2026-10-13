@@ -23,11 +23,6 @@ import { byBodySystem, classify, isGrowth, monthYear, pointDate, pointStatus, qu
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
 
-/* ------------------------------------------------------------ opening -- */
-
-/** Once per thread, under the day: the chat is not watched live (S-35, L-32). */
-export const SAFETY_LINE = "Your care team doesn't watch this chat in real time. In an emergency, call 911."
-
 /** Once per conversation, after its first answer. */
 export const FOOTER_LINE = "This is educational and based on your record. Dr. Patel can confirm what applies to you."
 

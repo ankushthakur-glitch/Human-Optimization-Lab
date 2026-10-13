@@ -1,5 +1,4 @@
 import { router } from "expo-router"
-import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { goalOf, type Goal } from "@/components/goal-list"

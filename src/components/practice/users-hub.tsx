@@ -1,6 +1,4 @@
 "use client"
-
-import * as React from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 import { SUB_TAB, SUB_TABS_LIST } from "@/components/practice/directory"

@@ -79,7 +79,6 @@ export const dotTone = (t: Trend, p: Parameters<typeof pointStatus>[1]) => {
   return { ...base, line: c, fill: c, edge: c }
 }
 
-
 const MOST = 5
 /** The graph's height, as the Figma's. */
 const PLOT = 52
@@ -96,11 +95,6 @@ export const recentWords = (t: Trend) => {
   if (recent.length < 2) return ""
   return `Last ${recent.length} ${t.noun}: ${recent.map((p) => valueText(t.marker, p)).join(", ")}`
 }
-
-/** A rising result out of its range: its line and area are red instead
-    of teal, wherever the graph is drawn (6 Oct 2026). */
-export const risingAway = (t: Trend) => t.movement === "rising" && t.status !== "in"
-
 
 /** `plain` draws just the line, its area and the latest mark: no bands, no
     dots along the way (the results row). */

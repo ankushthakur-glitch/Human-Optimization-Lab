@@ -57,7 +57,7 @@ function distance(v: number, low?: number, high?: number) {
 
 /** Whether going from `from` to `to` moved toward the range, or deeper
     into it. */
-export function movedToward(
+function movedToward(
   from: number,
   to: number,
   low?: number,
@@ -92,13 +92,6 @@ export const statusColors = (
   high?: number,
   outs?: (boolean | undefined)[]
 ) => statusSeries(values, low, high, outs).map((k) => STATUS_COLOR[k])
-
-export const statusColor = (
-  v: number,
-  low?: number,
-  high?: number,
-  out?: boolean
-) => STATUS_COLOR[resultStatus(v, low, high, out)]
 
 /** Halfway points between readings whose status differs, where the
     colour changes and the chart draws its dashed divider. */

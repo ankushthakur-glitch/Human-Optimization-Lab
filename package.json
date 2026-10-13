@@ -11,9 +11,6 @@
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report",
     "deliverables": "node scripts/gen-deliverables.mjs"
   },
   "dependencies": {

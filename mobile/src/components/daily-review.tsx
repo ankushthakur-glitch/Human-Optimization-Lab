@@ -17,9 +17,7 @@ import { chart, color, hairline, ink, space, type } from "@/lib/theme"
    - PlanCard, on the member home: yesterday's score, each goal at a
      glance, the one fix, and today's plan as the action;
    - DailyReviewPage (/review): the whole of a day, one score, one insight
-     and a card per goal, with arrows back through earlier days.
-   The previous member home stays in components/home-member.tsx
-   (/home-previous). */
+     and a card per goal, with arrows back through earlier days. */
 
 const openToday = () => router.push(`/day/${localDay(new Date())}`)
 

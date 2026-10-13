@@ -1,5 +1,4 @@
 import { router } from "expo-router"
-import * as React from "react"
 import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 
 import { useTourTarget } from "@/components/app-tour"

@@ -1,10 +1,10 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextStyle } from "react-native"
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextStyle } from "react-native"
 
 import { keepTogether } from "@/components/care-gap"
 import { Art } from "@/components/art"
-import { Camera, CaretRight, ImageSquare, MagnifyingGlass, PencilSimple, Sparkle, UploadSimple, X } from "@/components/ph"
+import { Camera, CaretRight, ImageSquare, PencilSimple, Sparkle, UploadSimple } from "@/components/ph"
 import { RecordIcon, type RecordIconName } from "@/components/record-icons"
 import { Banner, Card, DateBlock, DateTrack, Dot, Group, HUE, KeyValue, LiveDot, Tag, Tile, spokenDate, type DateLike, type Level, type Mark, type Tone, type TrackDate } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
@@ -14,7 +14,7 @@ import { showDate } from "@/lib/dates"
 import { useOnboarding, type Added } from "@/lib/onboarding"
 import { PROVENANCE_LABEL, type Provenance } from "@/lib/record"
 import { checkSupplement } from "@/lib/supplement-check"
-import { card, chart, color, font, hairline, ink, outOfRangeColor, space, surface, type } from "@/lib/theme"
+import { card, chart, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
 /* The rows, controls and sheets the Record tab and its lists share, in the
    Figma "Hol" language (5 Oct 2026). A row is a round 28 tile with a 16
@@ -141,40 +141,6 @@ export function ItemRow({ icon, date, title, tag, status, meta, note, track, cou
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [...look, pressed && styles.pressed]}>
       {body}
     </Pressable>
-  )
-}
-
-/* -------------------------------------------------------- summary -- */
-
-/** "20 of 27 in range": the record's results as one 8 pt bar split in
-    range (teal), borderline (Warning/07) and out of range, white hairlines
-    between the parts, and a legend of dots and counts, so nothing rests on
-    colour alone (Figma "Results" card). */
-export function RangeSummary({ inRange, borderline, out, total }: { inRange: number; borderline: number; out: number; total: number }) {
-  const parts = [
-    { key: "in", n: inRange, tone: color.primary, label: `${inRange} in range` },
-    { key: "borderline", n: borderline, tone: color.amber, label: `${borderline} borderline` },
-    { key: "out", n: out, tone: outOfRangeColor(), label: `${out} out of range` },
-  ].filter((p) => p.n > 0)
-  return (
-    <View style={styles.summary} accessible accessibilityRole="summary" accessibilityLabel={`${inRange} of ${total} in range. ${parts.map((p) => p.label).join(", ")}.`}>
-      <View style={styles.summaryTop}>
-        <Text style={styles.summaryTitle}>{`${inRange} of ${total} in range`}</Text>
-        <View style={styles.bar}>
-          {parts.map((p, i) => (
-            <View key={p.key} style={[{ flexGrow: p.n, flexBasis: 0, backgroundColor: p.tone }, i > 0 && styles.barSplit]} />
-          ))}
-        </View>
-      </View>
-      <View style={styles.legend}>
-        {parts.map((p) => (
-          <View key={p.key} style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: p.tone }]} />
-            <Text style={styles.legendText}>{p.label}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
   )
 }
 
@@ -517,48 +483,6 @@ export function AddedOfKind({ kind }: { kind: AddKind }) {
     </View>
   )
 }
-
-/* ----------------------------------------------------------- search -- */
-
-/** Figma's search field: the magnifier and the words on Grey/01 with a
-    hairline, radius 8, and a clear button once something is typed. Its
-    label is spoken, not shown. */
-export function SearchField({ value, onChange, placeholder }: { value: string; onChange: (text: string) => void; placeholder: string }) {
-  const [focused, setFocused] = React.useState(false)
-  return (
-    <View style={[styles.search, focused && styles.searchFocused]}>
-      <MagnifyingGlass size={20} color={focused ? color.primary : ink.detail} />
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={PLACEHOLDER}
-        accessibilityLabel={placeholder}
-        autoCorrect={false}
-        autoCapitalize="none"
-        returnKeyType="search"
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        style={styles.searchInput}
-        maxFontSizeMultiplier={1.3}
-      />
-      {!!value && (
-        <Pressable
-          onPress={() => onChange("")}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel="Clear search"
-          style={({ pressed }) => [styles.clear, pressed && styles.pressed]}
-        >
-          <X size={12} color={color.onPrimary} />
-        </Pressable>
-      )}
-    </View>
-  )
-}
-
-/** Figma's Grey/05 placeholder and Grey/01 field. */
-const PLACEHOLDER = "#B7B7B7"
 const FIELD = "#FBFBFB"
 
 const styles = StyleSheet.create({
