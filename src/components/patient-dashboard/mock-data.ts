@@ -9,6 +9,7 @@ import type {
   ControlMarker,
   DashboardData,
   LabResult,
+  OutsideEncounter,
 } from "@/components/patient-dashboard/types"
 import { MARCUS_CORE } from "@/components/patient-dashboard/optimization/mock-data"
 import { backfillLabs } from "@/components/patient-dashboard/backfill"
@@ -174,6 +175,10 @@ const MARKER_BY_CODE: [prefix: string, marker: ControlMarker][] = [
   ["E66", "weight"],
 ]
 
+/** Chart encounters that are care outside the practice: hospital
+    admissions, urgent care and specialist visits go to Important updates. */
+const OUTSIDE_EVENTS: string[] = ["ED visit", "Admission", "Discharge", "Urgent care", "Specialist visit"] satisfies OutsideEncounter["event"][]
+
 /** A patient's dashboard data read off their synced chart record. */
 function fromRecord(patient: Patient, record: HealthRecord): DashboardData {
   const outside = (id: string) => id !== PRACTICE_SOURCE
@@ -232,7 +237,18 @@ function fromRecord(patient: Patient, record: HealthRecord): DashboardData {
     answers: [],
     orders: [],
     gaps: [],
-    encounters: [],
+    encounters: record.encounters
+      .filter((e): e is typeof e & { type: OutsideEncounter["event"] } => OUTSIDE_EVENTS.includes(e.type))
+      .map((e) => ({
+        event: e.type,
+        facility: e.where,
+        clinician: e.clinician || undefined,
+        reason: e.reason,
+        date: e.date,
+        documents: ["C-CDA"],
+        reviewed: false,
+        source: source(e.sourceId),
+      })),
     reports: [],
     reviewLog: patient.lastReviewAt ? [{ at: patient.lastReviewAt, by: "Dr. Reyes", kind: "review" }] : [],
     lastVisit: patient.lastVisitAt,

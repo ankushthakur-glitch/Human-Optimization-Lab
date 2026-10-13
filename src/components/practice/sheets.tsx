@@ -140,6 +140,7 @@ export function DeactivateDialog({
   target,
   message,
   illustration,
+  verb = "Deactivate",
   onConfirm,
   onCancel,
 }: {
@@ -148,6 +149,8 @@ export function DeactivateDialog({
   message: string
   /** Art for what is being deactivated; the lock icon when left out. */
   illustration?: IllustrationName
+  /** The action's word in the title and button, e.g. "Discharge". */
+  verb?: string
   onConfirm: () => void
   onCancel: () => void
 }) {
@@ -167,13 +170,13 @@ export function DeactivateDialog({
               <IconLock />
             </AlertDialogMedia>
           )}
-          <AlertDialogTitle>Deactivate {target}?</AlertDialogTitle>
+          <AlertDialogTitle>{verb} {target}?</AlertDialogTitle>
           <AlertDialogDescription>{message}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={onConfirm}>
-            Deactivate
+            {verb}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

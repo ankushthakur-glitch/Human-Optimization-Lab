@@ -383,6 +383,10 @@ export type Patient = {
   invitedAt: string
   /** When the patient answered the invite (enrolled or declined). */
   respondedAt?: string
+  /** Local "2026-10-12" of the patient's last activity in the app. */
+  lastEngagedAt?: string
+  /** When the practice discharged the patient. */
+  dischargedAt?: string
   source: "Manual" | "Bulk import"
   /** Set when a closed record was reopened; fresh consent was requested. */
   reactivatedAt?: string
@@ -1429,6 +1433,16 @@ function enrollRoll(i: number) {
   return (Math.imul(i + 1, 2_654_435_761) >>> 0) % 100
 }
 
+/* Days since an active patient last opened the app: most within the week,
+   a tail drifting off over a month or two, counted back from today so the
+   list always reads current. */
+function engagedDaysAgo(i: number) {
+  const roll = enrollRoll(i * 7 + 3)
+  const days = roll < 55 ? roll % 7 : roll < 85 ? 7 + (roll % 24) : 31 + roll
+  const d = new Date(Date.now() - days * 86_400_000)
+  return d.toISOString().slice(0, 10)
+}
+
 /* 131 patients, matching the count the admin console shows for the practice.
    Every value is derived from the row's position, so the list is stable. */
 const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
@@ -1501,6 +1515,10 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
       respondedAt: isoDaysAgo(Math.max(0, Math.floor(i / 3) - 1 - (i % 4))),
     }),
     source: i % 5 === 2 ? "Bulk import" : "Manual",
+    ...(status === "Active" && { lastEngagedAt: engagedDaysAgo(i) }),
+    ...(status === "Discharged" && {
+      dischargedAt: isoDaysAgo(Math.floor(i / 4)),
+    }),
   }
 })
 
@@ -1523,6 +1541,7 @@ PATIENTS[0] = {
   status: "Active",
   invitedAt: isoDaysAgo(30),
   registrationDate: isoDaysAgo(30),
+  lastEngagedAt: engagedDaysAgo(1),
 }
 
 /* The signed-in provider, Dr. Daniel Reyes (the header's chip). He joins the
@@ -1601,6 +1620,9 @@ PANEL_ROWS.forEach((row, n) => {
     status: recordState === "invited_not_joined" ? "Invited" : "Active",
     invitedAt: isoDaysAgo(20 + n),
     respondedAt: undefined,
+    dischargedAt: undefined,
+    lastEngagedAt:
+      recordState === "invited_not_joined" ? undefined : engagedDaysAgo(n + 40),
     recordState,
     membership,
     ...(recordState === "active" && { lastSyncAt: NIGHTLY }),
@@ -1623,14 +1645,21 @@ const PANEL_EXISTING: Record<string, Partial<Patient>> = {
 PATIENTS.forEach((p, i) => {
   const extra = PANEL_EXISTING[p.id]
   if (extra)
-    PATIENTS[i] = { ...p, ...extra, providerId: HARRINGTON_ID, locationId: "LOC1001" }
+    PATIENTS[i] = {
+      ...p,
+      ...extra,
+      providerId: HARRINGTON_ID,
+      locationId: "LOC1001",
+      lastEngagedAt: p.lastEngagedAt ?? engagedDaysAgo(i),
+      dischargedAt: undefined,
+    }
 })
 
 /* -------------------------------------------------------------------------- */
 /*  Stores                                                                     */
 /* -------------------------------------------------------------------------- */
 
-const VERSION = "v17"
+const VERSION = "v18"
 
 /** The sample patients, before any session edits: the duplicate queue seeds from them. */
 export const PATIENT_SEED = PATIENTS
@@ -1767,6 +1796,12 @@ export function sendPatientInvites(ids: string[]) {
   for (const id of ids) {
     patients.patch(id, { status: "Invited", invitedAt: today(), respondedAt: "" })
   }
+}
+
+/* Discharging ends the practice's care: the physician loses access to the
+   record, while the patient keeps the app and can join another physician. */
+export function dischargePatient(id: string) {
+  patients.patch(id, { status: "Discharged", dischargedAt: today() })
 }
 
 /* Lookups the lists use to show names for stored ids. */

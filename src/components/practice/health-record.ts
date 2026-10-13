@@ -978,7 +978,52 @@ function fullRecord(p: Patient, base: HealthRecord): HealthRecord {
         report: "Coronary calcium scan report",
       }
 
+  /* Care outside the practice that the hospital system sends: these are
+     what reach the dashboard's Important updates. */
+  const outsideCare: Encounter[] = [
+    {
+      id: "ENC-H1",
+      date: d(-6),
+      start: "11:20 PM",
+      end: "10:00 AM",
+      kind: "In person",
+      type: "Admission",
+      where: "Scripps Memorial Hospital La Jolla",
+      clinician: "Dr. Hannah Ortiz",
+      reason: "Chest pain, admitted for observation",
+      diagnoses: ["R07.9"],
+      sourceId: "SRC-EPIC",
+    },
+    {
+      id: "ENC-H2",
+      date: d(-18),
+      start: "6:10 PM",
+      end: "7:05 PM",
+      kind: "In person",
+      type: "Urgent care",
+      where: "Scripps Urgent Care Carmel Valley",
+      clinician: "Dr. Mark Ellis",
+      reason: "Acute bronchitis",
+      diagnoses: ["J20.9"],
+      sourceId: "SRC-EPIC",
+    },
+    {
+      id: "ENC-H3",
+      date: d(-31),
+      start: "3:00 PM",
+      end: "3:40 PM",
+      kind: "In person",
+      type: "Specialist visit",
+      where: "Scripps Clinic Cardiology",
+      clinician: "Dr. Alan Jones",
+      reason: "Hyperlipidemia follow-up",
+      diagnoses: ["E78.5"],
+      sourceId: "SRC-EPIC",
+    },
+  ]
+
   const encounters: Encounter[] = [
+    ...outsideCare,
     {
       id: "ENC-1",
       date: d(-DRAWS[3]),
@@ -1515,6 +1560,7 @@ function fullRecord(p: Patient, base: HealthRecord): HealthRecord {
     },
   ]
 
+  const encounter = (id: string) => encounters.find((e) => e.id === id)!
   const noteSections = (e: Encounter) =>
     e.note
       ? [
@@ -1536,7 +1582,7 @@ function fullRecord(p: Patient, base: HealthRecord): HealthRecord {
       date: d(-DRAWS[3]),
       author: clinician,
       sourceId: "SRC-EPIC",
-      sections: noteSections(encounters[0]),
+      sections: noteSections(encounter("ENC-1")),
     },
     {
       id: "DOC-2",
@@ -1567,7 +1613,7 @@ function fullRecord(p: Patient, base: HealthRecord): HealthRecord {
       date: d(-120),
       author: clinician,
       sourceId: "SRC-EPIC",
-      sections: noteSections(encounters[2]),
+      sections: noteSections(encounter("ENC-3")),
     },
     {
       id: "DOC-4",
@@ -1578,7 +1624,7 @@ function fullRecord(p: Patient, base: HealthRecord): HealthRecord {
       date: d(-DRAWS[2]),
       author: clinician,
       sourceId: "SRC-EPIC",
-      sections: noteSections(encounters[3]),
+      sections: noteSections(encounter("ENC-4")),
     },
     {
       id: "DOC-5",
