@@ -501,3 +501,6 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Upcoming lists only the next two appointments; rebuild web app
 - Revert "feat(app): upcoming lists only the next two appointments; rebuild web app"
 - Drop the portal access question from add patient; reset saved customizer themes
+
+## 14-Oct-2026
+
