@@ -41,6 +41,7 @@ export function FlowScreen({
   page = false,
   hol = false,
   action,
+  fixed,
 }: {
   /** A setup screen from the consent on: the Figma "Hol" look. Without it
       (and without `page`) the classic look, classic buttons included. */
@@ -55,6 +56,8 @@ export function FlowScreen({
   bar?: React.ReactNode
   /** A page's text action on the right of its header ("Update test"). */
   action?: { label: string; onPress: () => void; icon?: React.ReactNode }
+  /** A page's own top, pinned under the header while the content below scrolls (a step's bar and question). */
+  fixed?: React.ReactNode
   title: string
   /** Sits above the title, centred. */
   art?: React.ReactNode
@@ -71,6 +74,7 @@ export function FlowScreen({
         <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={styles.fill}>
             <PageGround />
+            {fixed && <View style={[styles.body, styles.bodyPage, styles.fixed]}>{fixed}</View>}
             <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <View style={[styles.body, styles.bodyPage]}>
                 {art && <View style={styles.art}>{art}</View>}
@@ -531,6 +535,7 @@ const styles = StyleSheet.create({
   },
   // Figma "Hol": 16 around the content, 20 between its sections.
   bodyPage: { maxWidth: 420 + space.gutter * 2, paddingHorizontal: space.gutter, paddingTop: space.gutter, gap: space.section },
+  fixed: { paddingBottom: space.item },
   art: { alignItems: "center", marginBottom: -12 },
   title: {
     fontFamily: font.semibold,

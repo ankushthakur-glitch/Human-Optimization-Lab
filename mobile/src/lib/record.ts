@@ -257,18 +257,35 @@ export const REVIEW = {
 
 /* ------------------------------------------------------------ medicines -- */
 
-/** What she says about a medicine (FINAL-SPEC C.10): she takes it, at
-    another dose, she stopped it, never started it, or does not take it
-    (store field `meds`, lib/onboarding.tsx MedRecord). */
+/** What she says about a medicine or supplement (FINAL-SPEC C.10): she
+    takes it as listed ("taking"), she takes it differently and says how in
+    her own words ("dose", which folds in the old "another dose"), she
+    stopped it, never started it, or does not take it (store field `meds`,
+    lib/onboarding.tsx MedRecord). */
 export type MedAnswer = "taking" | "dose" | "stopped" | "never" | "not-taking"
 
 export const MED_ANSWER_LABEL: Record<MedAnswer, string> = {
-  taking: "Taking it",
-  dose: "Taking a different dose",
+  taking: "Taking as listed",
+  dose: "Taking differently",
   stopped: "I stopped it",
   never: "I never started it",
   "not-taking": "Not taking it",
 }
+
+/** How she says she takes it, in her own words: the note she wrote, or the
+    dose an earlier build kept. */
+export const medHow = (r: Pick<MedRecord, "note" | "dose">) => r.note?.trim() || r.dose?.trim() || undefined
+
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+/** The local day she answered, as the stamp reads it: "12 Oct 2026". */
+export function answeredOn(at: string): string {
+  const d = new Date(at)
+  return `${d.getDate()} ${MONTH_ABBR[d.getMonth()]} ${d.getFullYear()}`
+}
+
+/** The stamp on a row: "Confirmed 12 Oct 2026". */
+export const confirmedOn = (at: string) => `Confirmed ${answeredOn(at)}`
 
 /** Her answer as the provider's chart reads it: the portal's
     PatientMedAnswer (src/components/patient-dashboard/types.ts), which its
@@ -307,11 +324,16 @@ export function providerAnswer(id: string, r: MedRecord): ProviderMedAnswer | un
   const medication = r.medication ?? m?.name
   if (!medication) return undefined
   const lists = r.shown ?? m?.lists ?? []
-  const date = r.at.slice(0, 10)
+  // The local day she answered, the day the app stamps on the row.
+  const date = dayKey(new Date(r.at))
   switch (r.answer) {
     case "taking":
-      return { medication, answer: "Taking", date }
+      // Her own words, when she gave them (a medicine added from a photo).
+      return { medication, answer: "Taking", note: medHow(r), date }
     case "dose": {
+      // What she wrote is what the doctor reads, word for word. An answer
+      // saved before the free text kept only a dose, set against the lists.
+      if (r.note?.trim()) return { medication, answer: "Taking differently", note: r.note.trim(), date }
       const match = lists.find((l) => l.dose === r.dose)
       const note = r.dose ? `Takes ${r.dose}${match ? `, matching ${SOURCE_NOTE[match.origin]}` : ""}` : undefined
       // The practice's own dose is no change to its list.
@@ -388,8 +410,11 @@ export const MEDICATIONS: Medication[] = [
   },
 ]
 
-/** Prescribed medicines only, without supplements: what the patient confirms. */
+/** Prescribed medicines only, without supplements. */
 export const MEDICINES = MEDICATIONS.filter((m) => m.kind === "medicine")
+
+/** Supplements, which the patient confirms the same way as medicines. */
+export const SUPPLEMENTS = MEDICATIONS.filter((m) => m.kind === "supplement")
 
 /** The doctor's list is the true one: anything only elsewhere, or with a
     different dose, is a difference the doctor settles. */
@@ -440,6 +465,10 @@ export type Point = {
   value2?: number
   /** The batch of new results it arrived in ("quest-new"). */
   batch?: string
+  /** The study a scan or measurement came from, with the place that ran
+      it: "Echo, Pacific Heart", "CT chest, Scripps Memorial". It names the
+      result's source in place of the origin's own place. */
+  study?: string
 }
 
 /** Where the Record tab lists a marker, in this order. */
@@ -447,10 +476,13 @@ export const BODY_SYSTEMS = [
   "Blood sugar",
   "Cholesterol",
   "Blood pressure and weight",
+  "Heart",
+  "Lungs",
   "Kidney and liver",
   "Vitamins and minerals",
   "Thyroid",
   "Blood count",
+  "Scans",
 ] as const
 
 export type BodySystem = (typeof BODY_SYSTEMS)[number]
@@ -474,8 +506,13 @@ export type Biomarker = {
   short?: string
   /** The short name takes "have": "Your triglycerides have gone up". */
   plural?: boolean
-  /** Measured at a lab, or at a visit (blood pressure, BMI). */
-  kind?: "lab" | "vital"
+  /** Measured at a lab, at a visit (blood pressure, BMI), on a scan read by
+      a doctor (echo, CT, ultrasound, MRI), or by the patient at home with a
+      device (peak flow). */
+  kind?: "lab" | "vital" | "imaging" | "measurement"
+  /** How a result's status is worked out where the target band alone does
+      not say it. Placeholders until Dr. Blanchard sets the rules (Q-08). */
+  rule?: StatusRule
   group?: BodySystem
   focus?: FocusArea
   /** "What this measures", in plain words. */
@@ -506,6 +543,23 @@ export type Biomarker = {
 
 /** One clinical range on a marker's bar: "Prediabetes", "5.7 to 6.4". */
 export type Zone = { name: string; range: string; below?: number }
+
+/** How a status is worked out for the markers whose direction matters
+    (Q-08 placeholders, to confirm with Dr. Blanchard):
+    - floor   higher is better: in range from `inFrom` up (above it with
+              `strict`), borderline from `borderlineFrom`, low below that
+              (ejection fraction, aortic valve area);
+    - best    against her own best (`best`, the marker's unit): in range at
+              `inFrom` of it or more, borderline from `borderlineFrom`, low
+              below that (peak flow);
+    - growth  no normal range; the status comes from growth since the last
+              scan, in the marker's unit per year (a gap under a year counts
+              as a year): `growing` or more is orange, `fast` or more red,
+              anything less stable (aneurysm and nodule size). */
+export type StatusRule =
+  | { by: "floor"; inFrom: number; borderlineFrom: number; strict?: boolean }
+  | { by: "best"; best: number; inFrom: number; borderlineFrom: number }
+  | { by: "growth"; growing: number; fast: number }
 
 /* Every marker in the record, one entry per marker with every dated result
    from every source. Labs are Quest panels drawn on Apr 19 2022, May 9 2023,
@@ -1027,6 +1081,157 @@ export const BIOMARKERS: Biomarker[] = [
       { date: "Aug 2026", at: "2026-08-14", value: 248, origin: "lab" },
     ],
   },
+
+  /* Scans and home measurements Dr. Blanchard asked to trend (12 Oct 2026
+     call). Their status rules are Q-08 placeholders until she sets them
+     (see StatusRule). Echoes are yearly from Pacific Heart (her uploaded
+     reports); CT, ultrasound and MRI come from the hospital or clinic that
+     ran them; peak flow is her own weekly reading. Invented values for the
+     sample patient, never a real person's. */
+  {
+    id: "aneurysm",
+    name: "Aortic aneurysm size",
+    short: "aortic aneurysm",
+    unit: "cm",
+    target: "No normal range, watched for growth",
+    kind: "imaging",
+    group: "Heart",
+    rule: { by: "growth", growing: 0.2, fast: 0.5 },
+    about: "This is the widest part of your aorta, the main artery from your heart, measured on a scan. There is no normal number for you: what matters is whether it grows between scans.",
+    questions: [
+      "Has my aortic aneurysm changed since my last scan?",
+      "My aneurysm measured {first} cm in {since} and {latest} cm on my last scan. How often should I have it checked?",
+      "Is a CT or an echo better for following it?",
+    ],
+    points: [
+      { date: "Mar 2023", at: "2023-03-07", value: 4.1, origin: "report", study: "Echo, Pacific Heart" },
+      { date: "Mar 2024", at: "2024-03-12", value: 4.2, origin: "report", study: "Echo, Pacific Heart" },
+      { date: "Sep 2024", at: "2024-09-24", value: 4.2, origin: "hospital", study: "CT chest, Scripps Memorial" },
+      { date: "Mar 2025", at: "2025-03-11", value: 4.2, origin: "report", study: "Echo, Pacific Heart" },
+      { date: "Mar 2026", at: "2026-03-10", value: 4.3, origin: "report", study: "Echo, Pacific Heart" },
+    ],
+  },
+  {
+    id: "ava",
+    name: "Aortic valve area",
+    short: "aortic valve area",
+    unit: "cm²",
+    low: 1.5,
+    target: "Above 1.5",
+    kind: "imaging",
+    group: "Heart",
+    rule: { by: "floor", inFrom: 1.5, borderlineFrom: 1, strict: true },
+    about: "Valve area is how wide your aortic valve opens, measured on an echo. A larger opening lets blood leave your heart more easily. Your range is above 1.5.",
+    questions: [
+      "My valve area has gone from {first} to {latest} cm² since {since}. How fast is that?",
+      "What would make us act on my aortic valve?",
+    ],
+    points: [
+      { date: "Mar 2023", at: "2023-03-07", value: 1.9, origin: "report", study: "Echo, Pacific Heart" },
+      { date: "Mar 2024", at: "2024-03-12", value: 1.8, origin: "report", study: "Echo, Pacific Heart" },
+      { date: "Mar 2025", at: "2025-03-11", value: 1.6, origin: "report", study: "Echo, Pacific Heart" },
+      { date: "Mar 2026", at: "2026-03-10", value: 1.4, origin: "report", study: "Echo, Pacific Heart" },
+    ],
+  },
+  {
+    id: "ef",
+    name: "Ejection fraction",
+    short: "ejection fraction",
+    unit: "%",
+    low: 50,
+    high: 70,
+    target: "50 to 70",
+    kind: "imaging",
+    group: "Heart",
+    rule: { by: "floor", inFrom: 50, borderlineFrom: 41 },
+    about: "Ejection fraction is the share of blood your heart pumps out with each beat, measured on an echo. Your range is 50 to 70.",
+    questions: ["Has my ejection fraction changed since my last echo?", "When should I have my next echo?"],
+    points: [
+      { date: "Mar 2023", at: "2023-03-07", value: 62, origin: "report", study: "Echo, Pacific Heart" },
+      { date: "Mar 2024", at: "2024-03-12", value: 60, origin: "report", study: "Echo, Pacific Heart" },
+      { date: "Mar 2025", at: "2025-03-11", value: 60, origin: "report", study: "Echo, Pacific Heart" },
+      { date: "Mar 2026", at: "2026-03-10", value: 59, origin: "report", study: "Echo, Pacific Heart" },
+    ],
+  },
+  {
+    id: "lung-nodule",
+    name: "Lung nodule size",
+    short: "lung nodule",
+    unit: "mm",
+    target: "No normal range, watched for growth",
+    kind: "imaging",
+    group: "Lungs",
+    rule: { by: "growth", growing: 2, fast: 5 },
+    about: "A lung nodule is a small spot seen on a CT scan. There is no normal size for it: what matters is whether it grows between scans.",
+    questions: [
+      "Has my lung nodule changed since my last CT?",
+      "My nodule measured {first} mm in {since} and {latest} mm on my last CT. When is the next scan?",
+      "What would make us do more than watch it?",
+    ],
+    points: [
+      { date: "Mar 2025", at: "2025-03-11", value: 6, origin: "hospital", study: "CT chest, Scripps Memorial" },
+      { date: "Sep 2025", at: "2025-09-16", value: 6, origin: "hospital", study: "CT chest, Scripps Memorial" },
+      { date: "Sep 2026", at: "2026-09-15", value: 7, origin: "hospital", study: "CT chest, Scripps Memorial" },
+    ],
+  },
+  {
+    id: "peak-flow",
+    name: "Peak flow",
+    short: "peak flow",
+    unit: "L/min",
+    low: 416,
+    target: "80% or more of your best, 520 L/min",
+    kind: "measurement",
+    group: "Lungs",
+    rule: { by: "best", best: 520, inFrom: 0.8, borderlineFrom: 0.5 },
+    about: "Peak flow is how fast you can blow air out, read from your home peak flow meter. Your own best is 520 L/min, and your range is 80% of it or more.",
+    questions: ["My peak flow was {latest} L/min at my last check, and it dipped in September. Should I change my asthma plan?", "Is my best of 520 L/min still the right number to compare with?"],
+    points: [
+      { date: "Sep 2026", at: "2026-09-15", value: 440, origin: "you", study: "Home peak flow meter" },
+      { date: "Sep 2026", at: "2026-09-22", value: 405, origin: "you", study: "Home peak flow meter" },
+      { date: "Sep 2026", at: "2026-09-29", value: 430, origin: "you", study: "Home peak flow meter" },
+      { date: "Oct 2026", at: "2026-10-06", value: 450, origin: "you", study: "Home peak flow meter" },
+      { date: "Oct 2026", at: "2026-10-13", value: 465, origin: "you", study: "Home peak flow meter" },
+    ],
+  },
+  {
+    id: "thyroid-nodule",
+    name: "Thyroid nodule size",
+    short: "thyroid nodule",
+    unit: "mm",
+    target: "No normal range, watched for growth",
+    kind: "imaging",
+    group: "Thyroid",
+    rule: { by: "growth", growing: 2, fast: 5 },
+    about: "A thyroid nodule is a small lump in your thyroid seen on an ultrasound. There is no normal size for it: what matters is whether it grows between scans.",
+    questions: [
+      "Has my thyroid nodule changed since my last ultrasound?",
+      "My nodule measured {first} mm in {since} and {latest} mm on my last ultrasound. Do we need a biopsy?",
+    ],
+    points: [
+      { date: "May 2024", at: "2024-05-21", value: 9, origin: "doctor", study: "Thyroid ultrasound, Harborview" },
+      { date: "May 2025", at: "2025-05-20", value: 10, origin: "doctor", study: "Thyroid ultrasound, Harborview" },
+      { date: "May 2026", at: "2026-05-19", value: 13, origin: "doctor", study: "Thyroid ultrasound, Harborview" },
+    ],
+  },
+  {
+    id: "brain-mass",
+    name: "Brain mass size",
+    short: "brain mass",
+    unit: "mm",
+    target: "No normal range, watched for growth",
+    kind: "imaging",
+    group: "Scans",
+    rule: { by: "growth", growing: 2, fast: 5 },
+    about: "This is the size of a mass seen on a brain MRI. There is no normal size for it: what matters is whether it grows between scans.",
+    questions: ["Has my brain mass changed since my last MRI?", "My mass measured {first} mm in {since} and {latest} mm on my last MRI. How often do I need an MRI?"],
+    points: [
+      { date: "Apr 2024", at: "2024-04-16", value: 8, origin: "hospital", study: "MRI brain, Scripps Memorial" },
+      { date: "Oct 2024", at: "2024-10-15", value: 8, origin: "hospital", study: "MRI brain, Scripps Memorial" },
+      { date: "Oct 2025", at: "2025-10-14", value: 9, origin: "hospital", study: "MRI brain, Scripps Memorial" },
+      { date: "Apr 2026", at: "2026-04-14", value: 9, origin: "hospital", study: "MRI brain, Scripps Memorial" },
+    ],
+  },
 ]
 
 // Every "What this measures" names its source; MedlinePlus unless set.
@@ -1062,8 +1267,10 @@ const STEADY_VALUES: Record<string, (number | [number, number])[]> = {
   ferritin: [60, 62, 61, 61],
 }
 
-/** The record with every result steady and in range (sample data). */
-export const STEADY_RECORD: Biomarker[] = BIOMARKERS.map((b) => {
+/** The record with every result steady and in range (sample data). It holds
+    the labs and visit vitals only: the scans and home measurements keep
+    their own sample history, which has things to watch. */
+export const STEADY_RECORD: Biomarker[] = BIOMARKERS.filter((b) => b.kind === "lab" || b.kind === "vital").map((b) => {
   const values = STEADY_VALUES[b.id]
   if (!values) return b
   return {

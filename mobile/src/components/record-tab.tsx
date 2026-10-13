@@ -49,7 +49,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
 
 /** The chips' short names for the record's body systems. */
 const SYSTEM_LABEL: Record<string, string> = {
-  "Blood pressure and weight": "Heart and weight",
+  "Blood pressure and weight": "Pressure and weight",
   "Vitamins and minerals": "Vitamins",
 }
 
@@ -59,6 +59,8 @@ export function RecordTab() {
   const onboarding = useOnboarding()
   const info = useExperience()
   const [adding, setAdding] = React.useState(false)
+  // The Supplements section's own "Add" opens the sheet on supplements.
+  const [addingSupplement, setAddingSupplement] = React.useState(false)
   const [category, setCategory] = React.useState<Category>("biomarkers")
 
   // Opening the record reads any new results: the home's "New results are
@@ -84,14 +86,24 @@ export function RecordTab() {
           <Categories value={category} onChange={setCategory} />
         </>
       }
-      overlay={adding ? <AddToRecordSheet kind={addKind} onClose={() => setAdding(false)} /> : undefined}
+      overlay={
+        adding || addingSupplement ? (
+          <AddToRecordSheet
+            kind={addingSupplement ? "supplements" : addKind}
+            onClose={() => {
+              setAdding(false)
+              setAddingSupplement(false)
+            }}
+          />
+        ) : undefined
+      }
     >
       {category === "biomarkers" ? (
         <Results member={member} />
       ) : category === "medicines" ? (
         <View style={styles.results}>
           <Heading title="Medicines" variant="title" />
-          <MedicineConfirm />
+          <MedicineConfirm onAddSupplement={() => setAddingSupplement(true)} />
         </View>
       ) : (
         <View style={styles.results}>
@@ -155,7 +167,7 @@ function Results({ member }: { member: boolean }) {
           <ResultRow
             key={t.id}
             trend={t}
-            since={member ? sinceLine(t.marker) : undefined}
+            since={t.marker.rule && t.marker.rule.by !== "floor" ? t.takeaway : member ? sinceLine(t.marker) : undefined}
             onPress={() =>
               router.push({
                 pathname: "/biomarker/[id]",

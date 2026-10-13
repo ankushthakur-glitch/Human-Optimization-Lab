@@ -3,7 +3,7 @@ import type { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { FREE_STAYS, TIERS } from "@/lib/plans"
 import { APPOINTMENTS, CARE_GAPS, DOCUMENTS, MARKER_CARE, MEDICATIONS, NEW_RESULTS, ORDERS, PROBLEMS, PROCEDURES, VISITS, medDifference, type Biomarker, type Medication, type Origin, type Point } from "@/lib/record"
-import { byBodySystem, classify, monthYear, pointDate, pointStatus, questionsOf, valueText, watchList, withUnit, type Status, type Trend } from "@/lib/trends"
+import { byBodySystem, classify, isGrowth, monthYear, pointDate, pointStatus, questionsOf, valueText, watchList, withUnit, type Status, type Trend } from "@/lib/trends"
 
 /* The assistant's script for the prototype (no model behind it yet), from
    FINAL-SPEC C.4: what it says when it opens, the questions it suggests
@@ -171,7 +171,7 @@ export type Answer = {
 }
 
 /** What she can ask about one result. */
-export type Ask = "meaning" | "why" | "diagnosis" | "help" | "doctor"
+export type Ask = "meaning" | "why" | "diagnosis" | "help" | "doctor" | "changed"
 
 export type Suggestion = { ask: Ask; label: string }
 
@@ -195,8 +195,12 @@ const they = (b: Biomarker) => (b.plural ? { it: "they", is: "are", has: "have" 
 /** The range as a sentence carries it: "below 5.7", "30 to 100". */
 const rangeIn = (b: Biomarker) => lower(b.target)
 
-/** Labs have the lab's range; blood pressure and BMI come from visits. */
-const rangeOwner = (b: Biomarker) => (b.kind === "vital" ? "the range" : "the lab's range")
+/** Labs have the lab's range; blood pressure and BMI come from visits, and
+    scans and home measurements have their own. */
+const rangeOwner = (b: Biomarker) => (b.kind === "lab" ? "the lab's range" : "the range")
+
+/** A scan or a home measurement: asked about as a change, not as a number. */
+const isScan = (b: Biomarker) => b.kind === "imaging" || b.kind === "measurement"
 
 /** Where each result came from, as a row's meta and as a short name. */
 const SOURCE: Record<Origin, { long: string; short: string }> = {
@@ -207,17 +211,20 @@ const SOURCE: Record<Origin, { long: string; short: string }> = {
   report: { long: "Your report", short: "your report's" },
 }
 
-const sourceOf = (p: Point) => (p.origin === "you" && p.method ? `You, ${lower(p.method)}` : SOURCE[p.origin].long)
+const sourceOf = (p: Point) => p.study ?? (p.origin === "you" && p.method ? `You, ${lower(p.method)}` : SOURCE[p.origin].long)
 
 const yearOf = (p: { t: number }) => new Date(p.t).getFullYear()
 
 /** "2022 to 2026", or "2026" when the results share a year. */
 const years = (first: { t: number }, last: { t: number }) => (yearOf(first) === yearOf(last) ? `${yearOf(last)}` : `${yearOf(first)} to ${yearOf(last)}`)
 
+/** A place worth naming in a sentence: not her own entry or her own upload. */
+const named = (o: Origin) => o !== "you" && o !== "report"
+
 /** "5 Quest results", "4 readings", "one Quest result". */
 function countWords(t: Trend) {
   const origins = [...new Set(t.series.map((p) => p.origin))]
-  const from = origins.length === 1 && origins[0] !== "you" ? `${SOURCE[origins[0]].short} ` : ""
+  const from = origins.length === 1 && named(origins[0]) ? `${SOURCE[origins[0]].short} ` : ""
   const noun = t.count === 1 ? t.noun.replace(/s$/, "") : t.noun
   return `${t.count === 1 ? "one" : t.count} ${from}${noun}`
 }
@@ -226,7 +233,8 @@ function countWords(t: Trend) {
 const valuesOf = (t: Trend) => list(t.series.map((p) => valueText(t.marker, p)))
 
 /** Values with when: "5.3 in Apr 2022, 5.4 in May 2023 ... and 5.9 in Aug 2026". */
-const datedValues = (t: Trend) => list(t.series.map((p) => `${valueText(t.marker, p)} in ${monthYear(p.t)}`))
+const datedValues = (t: Trend) =>
+  list(t.series.map((p) => `${valueText(t.marker, p)} ${t.marker.kind === "measurement" ? `on ${pointDate(p)}` : `in ${monthYear(p.t)}`}`))
 
 /** Every comparable result higher (or lower) than the one before. */
 function stepwise(t: Trend): "up" | "down" | undefined {
@@ -253,6 +261,7 @@ function runOf(t: Trend) {
 function spanWords(t: Trend) {
   if (!t.first || !t.latest) return ""
   const n = Math.floor((t.latest.t - t.first.t) / (365.25 * 86400000))
+  if (n < 1 && t.latest.t - t.first.t < 60 * 86400000) return "over the past few weeks"
   return n < 1 ? "over the past year" : `over ${NUMBER_WORDS[n] ?? n} ${n === 1 ? "year" : "years"}`
 }
 
@@ -300,7 +309,12 @@ const FACTORS: Record<string, string> = {
   bmi: "Food, activity, sleep, stress and some medicines can all move weight.",
   vitd: "Time in the sun, the season, skin tone, weight and supplements can all move vitamin D.",
   ferritin: "Iron in food, blood loss and some conditions can all move ferritin.",
+  "peak-flow": "Colds, allergens, smoke, the weather and how hard you blow into the meter can all move peak flow.",
 }
+const FACTORS_SCAN = "A scan measures on one day, and different machines and readers can read a little differently, so only your doctor can say what a change means."
+const FACTORS_HOME = "A home reading depends on effort and technique as well as your lungs, so only your doctor can say what a change means."
+/** What a scan or a home reading can't tell, in its own words. */
+const limitsOf = (b: Biomarker) => (b.kind === "measurement" ? FACTORS_HOME : FACTORS_SCAN)
 const FACTORS_ANY = "Many things can move a result, from food and activity to sleep, stress and some medicines."
 
 /** Habits that often help, for "What can I do about it?". */
@@ -355,6 +369,12 @@ export function suggestionsFor(t: Trend): Suggestion[] {
   const b = t.marker
   const w = they(b)
   if (!t.latest) return [{ ask: "doctor", label: "What should I ask Dr. Patel?" }]
+  // A scan or a home measurement is asked about as a change: "Has my nodule changed?"
+  if (isScan(b)) {
+    const changed: Suggestion = { ask: "changed", label: `Has my ${nameIn(b)} changed?` }
+    const means: Suggestion = { ask: "meaning", label: `What does ${withUnit(b, t.value)} mean?` }
+    return [changed, means, { ask: "doctor", label: "What should I ask Dr. Patel?" }]
+  }
   const meaning: Suggestion = { ask: "meaning", label: `What does ${t.value} mean?` }
   const why: Suggestion =
     t.movement === "rising"
@@ -390,6 +410,7 @@ function confidence(level: "high" | "medium" | "low", basis: string) {
 function meaningAnswer(t: Trend, s: Snapshot): Answer {
   const b = t.marker
   const latest = t.latest!
+  if (isGrowth(b)) return sizeAnswer(t, `${firstSentence(b.about)} Your latest, ${t.valueWithUnit} on ${pointDate(latest)} (${sourceOf(latest)}), has no normal range to sit in.`)
   const lead = MEANS[b.id]
   const text = lead
     ? `Your ${nameIn(b)} of ${t.valueWithUnit} means ${lead} was ${placement(t)}.`
@@ -413,7 +434,7 @@ function meaningAnswer(t: Trend, s: Snapshot): Answer {
   // A member's change since her starting tests in May.
   const started = membershipOn(s.membership) ? sinceStart(b) : undefined
   const origins = [...new Set(t.series.map((p) => p.origin))]
-  const from = origins.length === 1 && origins[0] !== "you" ? ` from ${SOURCE[origins[0]].short}` : ""
+  const from = origins.length === 1 && named(origins[0]) ? ` from ${SOURCE[origins[0]].short}` : ""
   const history =
     t.count < 2
       ? `One result${from}, ${monthYear(latest.t)}: ${t.value}.`
@@ -446,16 +467,73 @@ function meaningAnswer(t: Trend, s: Snapshot): Answer {
   }
 }
 
+/** The answer about a size with no normal range (aneurysm, nodule, mass):
+    the measurements, how they changed, and that a scan is one day's size. */
+function sizeAnswer(t: Trend, lead: string): Answer {
+  const b = t.marker
+  const latest = t.latest!
+  const withLead = (rest: string) => `${lead} ${rest}`.trim()
+  if (t.count < 2) {
+    return {
+      text: withLead("It is the only scan so far, so there is no change to show yet."),
+      shows: `One scan, ${pointDate(latest)}, ${sourceOf(latest)}: ${t.valueWithUnit}.`,
+      limits: "A change needs two scans of the same kind to compare.",
+      ask: questionsOf(t)[0] ?? `When should I have my next ${nameIn(b)} scan?`,
+      about: b.id,
+      confidence: confidence("medium", countWords(t)),
+      facts: resultFacts(t),
+    }
+  }
+  return {
+    text: withLead(`${t.takeaway}. Across ${t.count} scans it went from ${withUnit(b, valueText(b, t.first!))} in ${monthYear(t.first!.t)} to ${t.valueWithUnit} in ${monthYear(latest.t)}.`),
+    shows: `${datedValues(t)}.`,
+    limits: limitsOf(b),
+    ask: questionsOf(t)[0] ?? `Has my ${nameIn(b)} changed since my last scan?`,
+    about: b.id,
+    confidence: confidence(t.count >= 3 ? "high" : "medium", `${countWords(t)} from ${years(t.first!, latest)}`),
+    facts: resultFacts(t),
+  }
+}
+
+/** "Has my nodule changed?": a size by its growth, a number by how it moved. */
+function changedAnswer(t: Trend): Answer {
+  const b = t.marker
+  if (isGrowth(b)) return sizeAnswer(t, "")
+  const latest = t.latest!
+  if (t.count < 2) {
+    return {
+      text: `Your ${nameIn(b)} has one result so far, ${t.valueWithUnit} on ${pointDate(latest)}, so there is no change to show yet.`,
+      shows: `One result, ${pointDate(latest)}, ${sourceOf(latest)}: ${t.valueWithUnit}.`,
+      limits: "A change needs two results measured the same way.",
+      ask: questionsOf(t)[0] ?? `When should I have my next ${nameIn(b)} check?`,
+      about: b.id,
+      confidence: confidence("medium", countWords(t)),
+      facts: resultFacts(t),
+    }
+  }
+  return {
+    text: `Your ${nameIn(b)} went from ${withUnit(b, valueText(b, t.first!))} in ${monthYear(t.first!.t)} to ${t.valueWithUnit} in ${monthYear(latest.t)}. Your latest is ${placement(t)}.`,
+    shows: `${datedValues(t)}.`,
+    limits: isScan(b) ? limitsOf(b) : "One result is a snapshot of a single day. It can't show what happens between tests.",
+    ask: questionsOf(t)[0] ?? `Has my ${nameIn(b)} changed since my last check?`,
+    about: b.id,
+    confidence: confidence(t.count >= 3 ? "high" : "medium", `${countWords(t)} from ${years(t.first!, latest)}`),
+    facts: resultFacts(t),
+  }
+}
+
 /** "Why might it be going up?" (or down, low, close to the edge, steady). */
 function whyAnswer(t: Trend, markers: Biomarker[]): Answer {
   const b = t.marker
+  // A size has no range to be in or out of: what changed, and that a scan can't say why.
+  if (isGrowth(b)) return { ...sizeAnswer(t, ""), limits: `Your record shows what changed, not why it changed. ${limitsOf(b)}` }
   const latest = t.latest!
   const w = they(b)
   const pairId = ALONGSIDE[b.id]
   const pair = pairId ? markers.find((m) => m.id === pairId) : undefined
   const p = pair ? classify(pair) : undefined
   const along = p && p.movement === t.movement && t.movement !== "steady" && p.count > 1 ? p : undefined
-  const factors = FACTORS[b.id] ?? FACTORS_ANY
+  const factors = FACTORS[b.id] ?? (isScan(b) ? limitsOf(b) : FACTORS_ANY)
   const moving = t.movement === "rising" || t.movement === "falling"
 
   let text: string
@@ -500,6 +578,17 @@ function whyAnswer(t: Trend, markers: Biomarker[]): Answer {
     lab's range and what her record lists, never a verdict. */
 function diagnosisAnswer(t: Trend): Answer {
   const b = t.marker
+  // A size has no range to sit in: say what the record shows, never what it is.
+  if (isGrowth(b))
+    return {
+      text: `I can't tell you what this is or whether it needs treatment. That's for Dr. Patel and the doctor who read your scan. Here's what your record shows: your ${nameIn(b)} measured ${t.valueWithUnit} on ${pointDate(t.latest!)}. ${t.takeaway}.`,
+      limits: "A scan can't say what something is, and only your doctor can say what applies to you.",
+      ask: `Based on my scans, how would you describe my ${nameIn(b)}, and what should I watch?`,
+      about: b.id,
+      confidence: confidence("high", `${countWords(t)} from ${years(t.first!, t.latest!)}`),
+      facts: resultFacts(t),
+      askOpen: true,
+    }
   const w = they(b)
   const where = t.status === "out" ? (t.side === "below" ? "below" : "above") : "inside"
   const step = stepwise(t)
@@ -612,6 +701,8 @@ export function answerFor(ask: Ask, t: Trend, ctx: { s: Snapshot; markers: Bioma
       return helpAnswer(t, ctx.s, now)
     case "doctor":
       return doctorAnswer(t)
+    case "changed":
+      return changedAnswer(t)
   }
 }
 
@@ -1037,6 +1128,13 @@ export const CANT_ANSWER = "I can answer questions about your record: your resul
     "AST" sit inside other words ("salt", "breakfast"), so every pattern
     keeps to whole words. */
 const MARKER_WORDS: [string, RegExp][] = [
+  ["aneurysm", /aneurysm/i],
+  ["ava", /valve area|aortic valve/i],
+  ["ef", /ejection fraction|\bef\b/i],
+  ["lung-nodule", /lung nodule|nodule (in|on) (my )?lung/i],
+  ["thyroid-nodule", /thyroid nodule|nodule (in|on) (my )?thyroid/i],
+  ["brain-mass", /brain (mass|tumou?r|lesion)/i],
+  ["peak-flow", /peak flow/i],
   ["a1c", /\ba1c\b|hemoglobin a1c|blood sugar|prediabet|diabet/i],
   ["glucose", /\bglucose\b/i],
   ["ldl", /\bldl\b|cholesterol/i],
@@ -1085,11 +1183,13 @@ export function readQuestion(text: string, opts: { markerId?: string; planLive?:
       ? "why"
       : /what can i do|how can i|improve|bring (it )?down|lower it|reduce|keep it/i.test(text)
         ? "help"
-        : /\bask\b|question/i.test(text)
-          ? "doctor"
-          : /\bmean|what is|what's|explain|normal|okay|ok\b|good|bad/i.test(text)
-            ? "meaning"
-            : undefined
+        : /\bchang|\bgrow|\bgrew|bigger|larger|smaller|shrink|\bsize\b/i.test(text)
+          ? "changed"
+          : /\bask\b|question/i.test(text)
+            ? "doctor"
+            : /\bmean|what is|what's|explain|normal|okay|ok\b|good|bad/i.test(text)
+              ? "meaning"
+              : undefined
   // A marker named in the question, or the one this conversation is about
   // when the question clearly asks something of it.
   if (named) return { kind: "marker", id: named, ask: ask ?? "meaning" }

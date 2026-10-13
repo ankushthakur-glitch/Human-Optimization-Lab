@@ -322,6 +322,30 @@ export function yourMedicines(s: Snapshot, rows = 3) {
   }
 }
 
+/** She is asked to confirm her medicines and supplements again this many
+    days after she last did, all of them. */
+export const CONFIRM_EVERY_DAYS = 30
+
+/** When she last confirmed every medicine and supplement still on her
+    lists: the oldest of their answers, so one answered again does not
+    count until the rest are. Undefined while one has no answer yet. */
+export function medsConfirmedAt(s: Snapshot): Date | undefined {
+  const current = MEDICATIONS.filter((m) => !m.resolved)
+  const times = current.map((m) => s.meds?.[m.id]?.at)
+  if (!current.length || times.some((at) => !at)) return undefined
+  return new Date(Math.min(...times.map((at) => Date.parse(at!))))
+}
+
+/** Whether it is time to confirm again, and the day the count runs from:
+    her last full confirmation, or the day her record came together while
+    she has not yet confirmed everything. No record, no reminder. */
+export function confirmDue(s: Snapshot, now: Date = new Date()): { since: Date; confirmed: boolean } | undefined {
+  const confirmedAt = medsConfirmedAt(s)
+  const since = confirmedAt ?? recordArrived(s)
+  if (!since || daysBetween(since, now) < CONFIRM_EVERY_DAYS) return undefined
+  return { since, confirmed: !!confirmedAt }
+}
+
 /* ------------------------------------------------------------- lists -- */
 
 const endOfDay = (d: Date) => localIso(new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59))
@@ -547,6 +571,23 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
       // "differ on 2" held as one, so a narrow phone wraps "Your records /
       // differ on 2", never leaving "on 2" alone.
       meta: `Your records differ on ${meds.toCheck}`,
+      action: { label: "Check", href: href("/medications") },
+      href: href("/medications"),
+      sortAt: localIso(new Date(now.getFullYear(), now.getMonth(), now.getDate())),
+      rank: 4,
+    })
+
+  /* A month since she confirmed every medicine and supplement: one item. */
+  const confirm = confirmDue(s, now)
+  if (confirm)
+    needs.push({
+      id: "meds-confirm",
+      group: "needs",
+      kind: "meds",
+      icon: "medications",
+      hue: "teal",
+      title: "Confirm your medicines",
+      meta: confirm.confirmed ? `Last confirmed on ${shortDay(confirm.since)}` : "Tell Dr. Patel what you take",
       action: { label: "Check", href: href("/medications") },
       href: href("/medications"),
       sortAt: localIso(new Date(now.getFullYear(), now.getMonth(), now.getDate())),
@@ -949,6 +990,28 @@ function scheduleNotices(s: Snapshot, now: Date): Notice[] {
   ]
 }
 
+/** A month after she confirmed her medicines: "Please confirm your
+    medicines", opening Your medicines. Its id carries the day the count
+    runs from, so confirming and letting a month pass again brings a new,
+    unread one. */
+function confirmNotices(s: Snapshot, now: Date): Notice[] {
+  const due = confirmDue(s, now)
+  if (!due) return []
+  const day = addDays(due.since, CONFIRM_EVERY_DAYS)
+  return [
+    {
+      id: `meds-confirm:${localDay(due.since)}`,
+      kind: "reminder",
+      title: "Please confirm your medicines",
+      body: "Tell Dr. Patel if anything about your medicines or supplements has changed.",
+      at: localIso(new Date(day.getFullYear(), day.getMonth(), day.getDate(), 9, 0)),
+      when: "",
+      day: "Earlier",
+      href: "/medications",
+    },
+  ]
+}
+
 /** New results that reached the record after it was built, one notice a
     batch, opening the batch's own view: the in app twin of the push "New
     results are in your record." */
@@ -971,7 +1034,7 @@ function batchNotices(s: Snapshot): Notice[] {
     `at`. */
 export function noticesFor(s: Snapshot, now: Date = new Date()): Notice[] {
   const exp = experience(s)
-  const list = [...(exp === "member" || exp === "paused" ? memberNotices(s, now) : freeNotices(s)), ...batchNotices(s), ...scheduleNotices(s, now)]
+  const list = [...(exp === "member" || exp === "paused" ? memberNotices(s, now) : freeNotices(s)), ...batchNotices(s), ...scheduleNotices(s, now), ...confirmNotices(s, now)]
   return list.map((n) => ({ ...n, day: dayGroup(n.at, now), when: whenOf(n.at, now) })).sort((a, b) => b.at.localeCompare(a.at))
 }
 

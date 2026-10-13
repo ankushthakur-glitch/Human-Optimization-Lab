@@ -5,7 +5,7 @@ import Svg, { Circle, Defs, LinearGradient, Mask, Path, Rect, Stop } from "react
 import { ArrowDown, ArrowRight, ArrowUp, CaretRight } from "@/components/ph"
 import { dotTone, recentPoints, recentWords, severityColor, statusStops, TONE } from "@/components/recent-dots"
 import { card, cardRadius, font, ink, space } from "@/lib/theme"
-import { monthYear, movingThreshold, type Trend } from "@/lib/trends"
+import { isGrowth, monthYear, movingThreshold, type Trend } from "@/lib/trends"
 
 /* The home's trend list, from the 7 Oct 2026 reference: one row for each
    marker, stacked. The name over its latest value and unit with a mark
@@ -23,7 +23,7 @@ const PILL = {
 /** The status word: which side of the range an out of range result is on
     ("Above target"), else the status's own word. */
 const statusWord = (t: Trend) =>
-  t.status === "in" ? TONE.in.word : t.side === "above" ? "Above target" : t.side === "below" ? "Below target" : TONE[t.status].word
+  isGrowth(t.marker) ? t.statusWord : t.status === "in" ? TONE.in.word : t.side === "above" ? "Above target" : t.side === "below" ? "Below target" : TONE[t.status].word
 
 const SPARK_W = 72
 const SPARK_H = 32

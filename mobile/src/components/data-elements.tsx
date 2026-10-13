@@ -1414,7 +1414,7 @@ const styles = StyleSheet.create({
   num: { width: 26, height: 26, borderRadius: 13, backgroundColor: color.primary, alignItems: "center", justifyContent: "center" },
   numText: { ...type.metaStrong, color: ink.onColor },
   kept: { backgroundColor: chart.inRange },
-  keptGrid: { flexDirection: "row", flexWrap: "wrap", gap: space.item },
+  keptGrid: { gap: space.item },
 
   fill: { flex: 1 },
   center: { textAlign: "center" },

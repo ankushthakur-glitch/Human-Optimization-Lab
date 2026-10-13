@@ -21,7 +21,8 @@ import {
 } from "@/components/charts"
 import { TheirBubble, bubbleText } from "@/components/chat"
 import { FlowScreen } from "@/components/flow"
-import { Barbell, BowlFood, Camera, Check, Clock, Heartbeat, PersonSimpleWalk } from "@/components/ph"
+import { AppointmentCard } from "@/components/appointment-card"
+import { Barbell, BowlFood, Camera, Check, Clock, Flask, Heartbeat, MapPin, PersonSimpleWalk } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
 import {
   AllowanceMeter,
@@ -542,6 +543,24 @@ function Rows() {
           <DateBlock date="2026-10-06" />
           <DateBlock date="2026-10-08" />
           <DateBlock date="2026-10-21" hue="blue" />
+        </View>
+      </Sample>
+      <Sample caption="Appointment card: a booked test with its fasting note and details, then a visit" bare>
+        <View style={{ gap: space.item }}>
+          <AppointmentCard
+            date="2026-10-14"
+            title="Repeat A1c and lipid panel"
+            tag={{ tone: "primary", label: "Booked" }}
+            time="7:30 AM"
+            where="Quest Diagnostics, Del Mar"
+            prep="Nothing to eat after 9:30 PM the night before. Water is fine."
+            details={[
+              { icon: <Flask size={18} color={ink.secondary} />, label: "Test type", value: "A1c & Lipid Panel" },
+              { icon: <MapPin size={18} color={ink.secondary} />, label: "Location", value: "Quest Diagnostics, Del Mar" },
+            ]}
+            onClose={() => {}}
+          />
+          <AppointmentCard date="2026-10-21" title="Cardiology follow up" tag={{ tone: "primary", label: "Booked" }} time="10:30 AM" where="Dr. Lee, Pacific Heart" onPress={() => {}} />
         </View>
       </Sample>
       <Sample caption="Needs you, coming up and new in your record" bare>
