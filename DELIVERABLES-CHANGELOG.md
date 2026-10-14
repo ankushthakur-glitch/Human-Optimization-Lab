@@ -504,3 +504,8 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 
 ## 14-Oct-2026
 
+- Epic read-only patient chart, care plan review and practice updates
+- Exercise flow, meal photo sheet, to-do card and optimize screens
+- Merge P1: exercise flow, meal photo sheet, to-do card and optimize screens
+- Exercise videos, energy balance card and home/medicines updates
+- Merge P1: exercise videos, energy balance card and home/medicines updates
