@@ -106,6 +106,24 @@
           border-radius: 3px;
           background: #1f1f1f;
         }
+        /* A move's video (components/exercise-video.tsx): the popup dims the
+           clock bar and home bar with the rest of the screen, and the full
+           view, which fills the phone, blacks them out. */
+        #device.video-popup .status-bar {
+          filter: brightness(0.3);
+        }
+        #device.video-popup .home-indicator {
+          background: #4d4d4d;
+        }
+        #device.video-full .status-bar {
+          display: none;
+        }
+        #device.video-full .home-indicator {
+          background: #000000;
+        }
+        #device.video-full .home-indicator span {
+          background: #ffffff;
+        }
       }
     </style>
   </head>

@@ -118,3 +118,7 @@ export { CigaretteIcon as Cigarette } from "phosphor-react-native/src/icons/Ciga
 export { SunIcon as Sun } from "phosphor-react-native/src/icons/Sun"
 export { FlameIcon as Flame } from "phosphor-react-native/src/icons/Flame"
 export { TagIcon as PriceTag } from "phosphor-react-native/src/icons/Tag"
+export { PauseIcon as Pause } from "phosphor-react-native/src/icons/Pause"
+export { ArrowsInSimpleIcon as ArrowsInSimple } from "phosphor-react-native/src/icons/ArrowsInSimple"
+export { ArrowClockwiseIcon as ArrowClockwise } from "phosphor-react-native/src/icons/ArrowClockwise"
+export { ArrowCounterClockwiseIcon as ArrowCounterClockwise } from "phosphor-react-native/src/icons/ArrowCounterClockwise"
