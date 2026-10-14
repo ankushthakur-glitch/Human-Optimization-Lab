@@ -26,7 +26,7 @@ import {
      Exact match      name + date of birth + email or mobile
        Invited / Not invited   reuse the record, no second invite
        Active                  keep the record, no second invite
-       Discharged, Consent withdrawn, Inactive
+       Consent withdrawn, Inactive
                                reactivate the record, fresh consent
      Possible match   two of name, date of birth and contact agree, or the
                       surname, first initial and date of birth do

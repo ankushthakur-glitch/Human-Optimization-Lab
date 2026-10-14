@@ -5,10 +5,9 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
-  IconCalendar,
+  IconChat,
   IconDashboard,
-  IconFileText,
-  IconLab,
+  IconFileList,
   IconLogout,
   IconNotification,
   IconPalette,
@@ -59,7 +58,7 @@ import {
 /* ------------------------------------------------------------------- nav -- */
 
 export type ModuleId =
-  "dashboard" | "patients" | "schedule" | "orders" | "results"
+  "dashboard" | "patients" | "tasks" | "communication" | "settings"
 
 export type NavItem = {
   id: string
@@ -77,9 +76,9 @@ const PRIMARY_NAV: NavItem[] = [
     icon: IconUser,
     href: "/screens/patients",
   },
-  { id: "schedule", label: "Schedule", icon: IconCalendar, count: 31 },
-  { id: "orders", label: "Orders", icon: IconFileText, count: 7 },
-  { id: "results", label: "Results", icon: IconLab, count: 18 },
+  { id: "tasks", label: "Tasks", icon: IconFileList },
+  { id: "communication", label: "Communication", icon: IconChat },
+  { id: "settings", label: "Settings", icon: IconSettings },
 ]
 
 /* The top bar is global — identity, search, inbox, account. The sidebar is

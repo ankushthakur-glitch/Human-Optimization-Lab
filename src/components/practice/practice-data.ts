@@ -32,20 +32,35 @@ export const PRACTICE = {
 /* -------------------------------------------------------------------------- */
 
 export type PersonStatus = "Not invited" | "Invited" | "Active" | "Inactive"
-/* A patient's record can also be closed by the practice (discharged) or by
-   the patient (consent withdrawn); both come back only with fresh consent.
+/* A patient's record can also be closed by the patient (consent
+   withdrawn); it comes back only with fresh consent.
    Declined is not closed: the patient got the invite and turned it down in
    the app, so they stay eligible and can be invited again. */
 export type PatientStatus =
   | PersonStatus
   | "Declined"
-  | "Discharged"
   | "Consent withdrawn"
 export const REACTIVATABLE: readonly PatientStatus[] = [
   "Inactive",
-  "Discharged",
   "Consent withdrawn",
 ]
+
+/* A patient's clinical risk, read from their record. Every patient on the
+   list has one; the sample panel spreads it by ID, most of it low, so the
+   list's first page holds a few high, some moderate and then low. */
+export const RISK_LEVELS = ["High", "Moderate", "Low"] as const
+export type RiskLevel = (typeof RISK_LEVELS)[number]
+
+/* Marcus Hale and Olivia Bennett, the patients the dashboard and the app
+   are built around, lead the list as high risk. */
+export const PINNED_PATIENTS = ["P10318", "P10240"]
+
+export function riskLevel(p: { id: string }): RiskLevel {
+  if (PINNED_PATIENTS.includes(p.id)) return "High"
+  const n = [...p.id].reduce((sum, c) => sum * 31 + c.charCodeAt(0), 7) % 100
+  return n < 5 ? "High" : n < 10 ? "Moderate" : "Low"
+}
+
 export type LocationStatus = "Active" | "Inactive"
 
 export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"]
@@ -385,8 +400,6 @@ export type Patient = {
   respondedAt?: string
   /** Local "2026-10-12" of the patient's last activity in the app. */
   lastEngagedAt?: string
-  /** When the practice discharged the patient. */
-  dischargedAt?: string
   source: "Manual" | "Bulk import"
   /** Set when a closed record was reopened; fresh consent was requested. */
   reactivatedAt?: string
@@ -1452,19 +1465,17 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
   const provider = active[i % active.length]
   const locationId = provider.locationIds[i % provider.locationIds.length]
   const status: PatientStatus =
-    i % 9 === 4
+    i % 9 === 4 || i % 23 === 7
       ? "Inactive"
-      : i % 23 === 7
-        ? "Discharged"
-        : i % 29 === 12
-          ? "Consent withdrawn"
-          : enrollRoll(i) < (provider.id === LAGGING_PROVIDER ? 85 : 30)
-            ? enrollRoll(i * 3 + 1) < 25
-              ? "Not invited"
-              : enrollRoll(i * 5 + 2) < 14
-                ? "Declined"
-                : "Invited"
-            : "Active"
+      : i % 29 === 12
+        ? "Consent withdrawn"
+        : enrollRoll(i) < (provider.id === LAGGING_PROVIDER ? 85 : 30)
+          ? enrollRoll(i * 3 + 1) < 25
+            ? "Not invited"
+            : enrollRoll(i * 5 + 2) < 14
+              ? "Declined"
+              : "Invited"
+          : "Active"
   const area = locationId === "LOC1003" ? "760" : "858"
   return {
     id: `P${pad(10_240 + i * 17, 5)}`,
@@ -1516,8 +1527,9 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
     }),
     source: i % 5 === 2 ? "Bulk import" : "Manual",
     ...(status === "Active" && { lastEngagedAt: engagedDaysAgo(i) }),
-    ...(status === "Discharged" && {
-      dischargedAt: isoDaysAgo(Math.floor(i / 4)),
+    /* A closed record used the app before it closed, so it keeps the date. */
+    ...((status === "Inactive" || status === "Consent withdrawn") && {
+      lastEngagedAt: isoDaysAgo(40 + ((i * 13) % 120)),
     }),
   }
 })
@@ -1620,7 +1632,6 @@ PANEL_ROWS.forEach((row, n) => {
     status: recordState === "invited_not_joined" ? "Invited" : "Active",
     invitedAt: isoDaysAgo(20 + n),
     respondedAt: undefined,
-    dischargedAt: undefined,
     lastEngagedAt:
       recordState === "invited_not_joined" ? undefined : engagedDaysAgo(n + 40),
     recordState,
@@ -1651,7 +1662,6 @@ PATIENTS.forEach((p, i) => {
       providerId: HARRINGTON_ID,
       locationId: "LOC1001",
       lastEngagedAt: p.lastEngagedAt ?? engagedDaysAgo(i),
-      dischargedAt: undefined,
     }
 })
 
@@ -1745,7 +1755,7 @@ export function addPatients(inputs: PatientInput[], source: Patient["source"]) {
   return created
 }
 
-/* Reopening a discharged or withdrawn record keeps its history and sends a
+/* Reopening an inactive or withdrawn record keeps its history and sends a
    fresh consent request with the portal invite. */
 export function reactivatePatient(
   id: string,
@@ -1796,12 +1806,6 @@ export function sendPatientInvites(ids: string[]) {
   for (const id of ids) {
     patients.patch(id, { status: "Invited", invitedAt: today(), respondedAt: "" })
   }
-}
-
-/* Discharging ends the practice's care: the physician loses access to the
-   record, while the patient keeps the app and can join another physician. */
-export function dischargePatient(id: string) {
-  patients.patch(id, { status: "Discharged", dischargedAt: today() })
 }
 
 /* Lookups the lists use to show names for stored ids. */

@@ -423,9 +423,7 @@ function ReactivateBody({
   const state =
     patient.status === "Consent withdrawn"
       ? "withdrew consent"
-      : patient.status === "Discharged"
-        ? "was discharged"
-        : "is inactive"
+      : "is inactive"
   return (
     <>
       <DialogHeader>
@@ -474,7 +472,7 @@ function matchedTextFor(patient: Patient) {
   return `name, date of birth and ${patient.email ? "email" : "mobile number"}`
 }
 
-/** Reopens a discharged, withdrawn or inactive record from the list or profile. */
+/** Reopens a withdrawn or inactive record from the list or profile. */
 export function ReactivateDialog({
   patient,
   onClose,

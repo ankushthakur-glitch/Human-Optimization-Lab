@@ -561,7 +561,6 @@ function visitSubject(ctx: Ctx, e: OutsideEncounter): Subject {
         },
       },
       { label: "Open encounters", run: () => ctx.onOpen("encounters") },
-      { label: "Open documents", run: () => ctx.onOpen("documents") },
     ],
   }
 }
@@ -619,7 +618,7 @@ function reportSubject(ctx: Ctx, r: ClinicalReport): Subject {
           toast.success(`${r.report} marked reviewed`)
         },
       },
-      { label: "Open documents", run: () => ctx.onOpen("documents") },
+      { label: "Open lab results", run: () => ctx.onOpen("labs") },
     ],
   }
 }

@@ -2,11 +2,11 @@
 
 import * as React from "react"
 import {
-  IconCalendar,
+  IconChat,
   IconDashboard,
-  IconFileText,
+  IconFileList,
   IconFileUpload,
-  IconLab,
+  IconSettings,
   IconUser,
   IconUserAdd,
 } from "@/design-system/icons"
@@ -33,9 +33,9 @@ const PROVIDER_NAV: NavItem[] = [
     href: `${BASE}/dashboard`,
   },
   { id: "patients", label: "Patients", icon: IconUser, href: BASE },
-  { id: "schedule", label: "Schedule", icon: IconCalendar, count: 31 },
-  { id: "orders", label: "Orders", icon: IconFileText, count: 7 },
-  { id: "results", label: "Results", icon: IconLab, count: 18 },
+  { id: "tasks", label: "Tasks", icon: IconFileList },
+  { id: "communication", label: "Communication", icon: IconChat },
+  { id: "settings", label: "Settings", icon: IconSettings },
 ]
 
 const PROVIDER_ACTIONS: ShellAction[] = [

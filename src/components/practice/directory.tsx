@@ -87,7 +87,6 @@ const STATUS_VARIANT: Record<
   Invited: "warning",
   Declined: "destructive",
   Inactive: "destructive",
-  Discharged: "info",
   "Consent withdrawn": "outline",
 }
 

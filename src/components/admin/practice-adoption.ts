@@ -47,7 +47,7 @@ export type ProviderAdoption = {
   status: PersonStatus
   photo: string
   patients: AdoptionPatient[]
-  /** Open records: closed ones (inactive, discharged, withdrawn) left out.
+  /** Open records: closed ones (inactive, withdrawn) left out.
       Declined stays in: those patients were eligible and said no. */
   open: number
   enrolled: number
@@ -269,13 +269,11 @@ function derivedRoster(practice: Practice): Roster {
     const at = Math.floor(rand() * pool.length)
     const r = rand()
     let status: PatientStatus =
-      r < 0.06
+      r < 0.09
         ? "Inactive"
-        : r < 0.09
-          ? "Discharged"
-          : rand() < tendency[at]
-            ? "Active"
-            : "Invited"
+        : rand() < tendency[at]
+          ? "Active"
+          : "Invited"
     /* About one in ten invited patients turned the invite down. */
     if (status === "Invited" && rand() < 0.1) status = "Declined"
     /* Every patient is invited as they are added. */

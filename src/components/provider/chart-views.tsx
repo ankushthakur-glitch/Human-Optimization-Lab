@@ -1,11 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { IconDownload, IconEdit, IconPrint } from "@/design-system/icons"
+import { IconDownload, IconPrint } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
 import {
-  type ChartDocument,
   type HealthRecord,
   SOURCES,
 } from "@/components/practice/health-record"
@@ -18,12 +17,14 @@ import {
   matches,
 } from "@/components/provider/chart-layout"
 import {
-  DocumentPaper,
   EncounterPaper,
   LabReportPaper,
 } from "@/components/provider/chart-papers"
-import { PracticeTag, useEntryDialog } from "@/components/provider/chart-forms"
-import { isPractice } from "@/components/provider/chart-entries"
+import {
+  type Updated,
+  atLabel,
+  updatedOf,
+} from "@/components/provider/chart-epic"
 import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
 
@@ -123,14 +124,14 @@ function download(name: string, lines: string[]) {
 function Viewer({
   title,
   badge,
-  action,
+  updated,
   children,
   onDownload,
 }: {
   title: string
   badge?: React.ReactNode
-  /** Edit, for a record the practice entered. */
-  action?: React.ReactNode
+  /** Who last changed it in Epic, and when. */
+  updated: Updated
   children: React.ReactNode
   onDownload: () => void
 }) {
@@ -139,7 +140,15 @@ function Viewer({
       <div className="flex h-12 shrink-0 items-center gap-2 border-b px-3 print:hidden">
         <h2 className="truncate text-[15px] font-semibold">{title}</h2>
         {badge}
-        {action && <div className="ml-auto">{action}</div>}
+        <div className="ml-auto flex shrink-0 gap-x-4 text-xs text-muted-foreground tabular-nums max-sm:hidden">
+          <span>
+            Updated by : <span className="text-foreground">{updated.by}</span>
+          </span>
+          <span>
+            Updated on :{" "}
+            <span className="text-foreground">{atLabel(updated.at)}</span>
+          </span>
+        </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto bg-surface-sunken px-4 py-6 print:overflow-visible print:bg-white print:p-0">
         {children}
@@ -155,15 +164,6 @@ function Viewer({
         </Button>
       </div>
     </>
-  )
-}
-
-function EditButton({ onClick }: { onClick: () => void }) {
-  return (
-    <Button variant="outline" size="sm" onClick={onClick}>
-      <IconEdit />
-      Edit
-    </Button>
   )
 }
 
@@ -246,6 +246,7 @@ export function EncountersView({
           current ? (
             <Viewer
               title={current.note ? `${current.type} note` : current.type}
+              updated={updatedOf(current.id, current.date, current.clinician)}
               badge={
                 <Badge variant="success" className={PILL}>
                   Completed
@@ -294,7 +295,6 @@ export function LabsView({
   selected: string
   onSelect: (id: string) => void
 }) {
-  const entry = useEntryDialog(record)
   const [query, setQuery] = React.useState("")
   const [from, setFrom] = React.useState("all")
   const rows = record.labReports.filter(
@@ -321,7 +321,6 @@ export function LabsView({
               onChange={setFrom}
               noun="labs"
             />
-            {entry.addButton("lab")}
           </>
         }
       />
@@ -344,7 +343,7 @@ export function LabsView({
                         {flagged} flagged
                       </Badge>
                     )) ||
-                    (isPractice(r) && <PracticeTag item={r} />)
+                    undefined
                   }
                   meta={
                     <span className="truncate">
@@ -361,11 +360,7 @@ export function LabsView({
           current ? (
             <Viewer
               title={current.name}
-              action={
-                isPractice(current) && (
-                  <EditButton onClick={() => entry.edit("lab", current.id)} />
-                )
-              }
+              updated={updatedOf(current.id, current.date, current.reviewer)}
               badge={
                 <Badge variant="success" className={PILL}>
                   {current.status}
@@ -390,244 +385,6 @@ export function LabsView({
           )
         }
       />
-      {entry.dialog}
-    </Section>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Documents                                                                  */
-/* -------------------------------------------------------------------------- */
-
-export function DocumentsView({
-  patient,
-  record,
-  selected,
-  onSelect,
-}: {
-  patient: Patient
-  record: HealthRecord
-  selected: string
-  onSelect: (id: string) => void
-}) {
-  const entry = useEntryDialog(record)
-  const [query, setQuery] = React.useState("")
-  const [from, setFrom] = React.useState("all")
-  const rows = record.documents.filter(
-    (d) =>
-      (from === "all" || d.sourceId === from) &&
-      matches(
-        query,
-        d.title,
-        d.author,
-        d.format,
-        source(d.sourceId)?.name ?? ""
-      )
-  )
-  const current = rows.find((d) => d.id === selected) ?? rows[0]
-
-  return (
-    <Section>
-      <SectionBar
-        title={`Documents (${record.documents.length})`}
-        actions={
-          <>
-            <SearchBox
-              value={query}
-              onChange={setQuery}
-              label="Search documents"
-            />
-            <SourceSelect
-              items={record.documents}
-              value={from}
-              onChange={setFrom}
-              noun="sources"
-            />
-            {entry.addButton("document")}
-          </>
-        }
-      />
-      <Split
-        list={
-          rows.length === 0 ? (
-            <EmptyList>No documents match</EmptyList>
-          ) : (
-            rows.map((d) => (
-              <ListItem
-                key={d.id}
-                title={d.title}
-                selected={d.id === current?.id}
-                onClick={() => onSelect(d.id)}
-                badge={<FormatBadge doc={d} />}
-                meta={
-                  <span className="truncate">
-                    Received on and by: {usDate(d.date)},{" "}
-                    {source(d.sourceId)?.name}
-                  </span>
-                }
-              />
-            ))
-          )
-        }
-        viewer={
-          current ? (
-            <Viewer
-              title={current.title}
-              action={
-                isPractice(current) && (
-                  <EditButton
-                    onClick={() =>
-                      entry.edit(
-                        current.id.endsWith("-DOC") ? "imaging" : "document",
-                        current.id.endsWith("-DOC")
-                          ? current.id.slice(0, -4)
-                          : current.id
-                      )
-                    }
-                  />
-                )
-              }
-              badge={<FormatBadge doc={current} />}
-              onDownload={() =>
-                download(`${current.title} ${current.date}`, [
-                  current.title,
-                  `Date: ${usDate(current.date)}`,
-                  `Author: ${current.author}`,
-                  ...current.sections.map((s) => `${s.heading}: ${s.text}`),
-                ])
-              }
-            >
-              <DocumentPaper patient={patient} record={record} d={current} />
-            </Viewer>
-          ) : (
-            <EmptyList>Select a document</EmptyList>
-          )
-        }
-      />
-      {entry.dialog}
-    </Section>
-  )
-}
-
-function FormatBadge({ doc }: { doc: ChartDocument }) {
-  return (
-    <Badge
-      variant={doc.format === "C-CDA" ? "info" : "warning"}
-      className={PILL}
-    >
-      {doc.format}
-    </Badge>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Imaging and pathology (DiagnosticReport)                                   */
-/* -------------------------------------------------------------------------- */
-
-export function StudiesView({
-  patient,
-  record,
-  selected,
-  onSelect,
-}: {
-  patient: Patient
-  record: HealthRecord
-  selected: string
-  onSelect: (id: string) => void
-}) {
-  const entry = useEntryDialog(record)
-  const [query, setQuery] = React.useState("")
-  const rows = record.studies
-    .filter((s) => matches(query, s.name, s.performer, s.conclusion))
-    .sort((a, b) => b.date.localeCompare(a.date))
-  const current = rows.find((s) => s.id === selected) ?? rows[0]
-  const doc = current
-    ? record.documents.find((d) => d.id === current.documentId)
-    : undefined
-
-  return (
-    <Section>
-      <SectionBar
-        title={`Imaging (${record.studies.length})`}
-        actions={
-          <>
-            <SearchBox
-              value={query}
-              onChange={setQuery}
-              label="Search imaging"
-            />
-            {entry.addButton("imaging")}
-          </>
-        }
-      />
-      <Split
-        list={
-          rows.length === 0 ? (
-            <EmptyList>No imaging on record</EmptyList>
-          ) : (
-            rows.map((s) => (
-              <ListItem
-                key={s.id}
-                title={s.name}
-                selected={s.id === current?.id}
-                onClick={() => onSelect(s.id)}
-                badge={
-                  isPractice(s) ? (
-                    <PracticeTag item={s} />
-                  ) : (
-                    <Badge variant="success" className={PILL}>
-                      {s.status}
-                    </Badge>
-                  )
-                }
-                meta={
-                  <span className="truncate">
-                    Resulted on and by: {usDate(s.date)},{" "}
-                    {source(s.sourceId)?.name}
-                  </span>
-                }
-              />
-            ))
-          )
-        }
-        viewer={
-          current ? (
-            <Viewer
-              title={current.name}
-              action={
-                isPractice(current) && (
-                  <EditButton
-                    onClick={() => entry.edit("imaging", current.id)}
-                  />
-                )
-              }
-              badge={
-                <Badge variant="success" className={PILL}>
-                  {current.status}
-                </Badge>
-              }
-              onDownload={() =>
-                download(`${current.name} ${current.date}`, [
-                  current.name,
-                  `Date: ${usDate(current.date)}`,
-                  `CPT: ${current.code}`,
-                  `Read by: ${current.performer}`,
-                  `Impression: ${current.conclusion}`,
-                ])
-              }
-            >
-              {doc ? (
-                <DocumentPaper patient={patient} record={record} d={doc} />
-              ) : (
-                <EmptyList>The full report was not sent</EmptyList>
-              )}
-            </Viewer>
-          ) : (
-            <EmptyList>Select a study</EmptyList>
-          )
-        }
-      />
-      {entry.dialog}
     </Section>
   )
 }

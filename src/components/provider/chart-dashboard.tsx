@@ -16,7 +16,6 @@ import {
   type Allergy,
   type Condition,
   type HealthRecord,
-  type Immunization,
   type Medication,
   SOURCES,
   type VitalSet,
@@ -26,6 +25,7 @@ import {
 } from "@/components/practice/health-record"
 import { type Patient, usDate } from "@/components/practice/practice-data"
 import type { ChartSection } from "@/components/provider/patient-chart"
+import type { Appointment } from "@/components/provider/chart-epic"
 import {
   DashboardToolbar,
   useDashboard,
@@ -111,11 +111,13 @@ export function ChartDashboard({
 
 export function ChartOverview({
   record,
+  appointments,
   tab,
   onTab,
   onOpen,
 }: {
   record: HealthRecord
+  appointments: Appointment[]
   tab: OverviewTab
   onTab: (tab: OverviewTab) => void
   onOpen: (section: ChartSection, item?: string, tab?: string) => void
@@ -146,7 +148,12 @@ export function ChartOverview({
         {tab === "timeline" ? (
           <Timeline record={record} filter={filter} />
         ) : (
-          <FaceSheet record={record} onOpen={onOpen} layout={layout} />
+          <FaceSheet
+            record={record}
+            appointments={appointments}
+            onOpen={onOpen}
+            layout={layout}
+          />
         )}
       </SectionBody>
     </Section>
@@ -169,16 +176,15 @@ type CardKey =
   | "diagnosis"
   | "medications"
   | "encounters"
-  | "vaccines"
+  | "appointments"
   | "vitals"
   | "labs"
-  | "documents"
 
 /** The frame's arrangement: three columns, top to bottom. */
 const DEFAULT_LAYOUT: CardKey[][] = [
   ["allergies", "diagnosis", "medications"],
-  ["encounters", "vaccines", "vitals"],
-  ["labs", "documents"],
+  ["encounters", "appointments", "vitals"],
+  ["labs"],
 ]
 const ALL_CARDS = DEFAULT_LAYOUT.flat()
 const LAYOUT_KEY = "hol.chart.faceSheetLayout"
@@ -268,18 +274,19 @@ const CARD_TITLES: Record<CardKey, string> = {
   diagnosis: "Diagnosis",
   medications: "Medications",
   encounters: "Encounters",
-  vaccines: "Vaccines",
+  appointments: "Appointments",
   vitals: "Vitals",
   labs: "Lab results",
-  documents: "Documents",
 }
 
 function FaceSheet({
   record,
+  appointments,
   onOpen,
   layout,
 }: {
   record: HealthRecord
+  appointments: Appointment[]
   onOpen: (section: ChartSection, item?: string, tab?: string) => void
   layout: Layout
 }) {
@@ -351,16 +358,24 @@ function FaceSheet({
       ),
     },
     {
-      key: "vaccines",
+      key: "appointments",
       node: (
         <FaceCard
-          title="Vaccines"
-          onViewAll={() => onOpen("vaccines")}
-          empty="No vaccines on record"
+          title="Appointments"
+          onViewAll={() => onOpen("appointments")}
+          empty="No upcoming appointments"
         >
-          {record.immunizations.slice(0, 3).map((v) => (
-            <VaccineItem key={v.id} v={v} />
-          ))}
+          {appointments
+            .filter((a) => a.status === "Booked")
+            .slice(0, 3)
+            .map((a) => (
+              <Item key={a.id} onClick={() => onOpen("appointments")}>
+                <Line aside={a.type}>{a.reason}</Line>
+                <Meta>
+                  {usDate(a.date)}, {a.time} with {a.practitioner}
+                </Meta>
+              </Item>
+            ))}
         </FaceCard>
       ),
     },
@@ -405,23 +420,6 @@ function FaceSheet({
               </Item>
             )
           })}
-        </FaceCard>
-      ),
-    },
-    {
-      key: "documents",
-      node: (
-        <FaceCard
-          title="Documents"
-          onViewAll={() => onOpen("documents")}
-          empty="No documents on record"
-        >
-          {record.documents.slice(0, 2).map((d) => (
-            <Item key={d.id} onClick={() => onOpen("documents", d.id)}>
-              <Line aside={d.format}>{d.title}</Line>
-              <Meta>Received {usDate(d.date)}</Meta>
-            </Item>
-          ))}
         </FaceCard>
       ),
     },
@@ -835,36 +833,6 @@ function MedicationItem({ m, full }: { m: Medication; full?: boolean }) {
   )
 }
 
-function VaccineItem({ v, full }: { v: Immunization; full?: boolean }) {
-  return (
-    <Item>
-      <Line
-        aside={
-          <span
-            className={cn(
-              v.status === "Refused" && "font-medium text-destructive"
-            )}
-          >
-            {v.status}
-          </span>
-        }
-      >
-        {v.vaccine}
-      </Line>
-      <Pair label="Dose">
-        {v.dose}, {v.route.toLowerCase()}
-      </Pair>
-      <Meta>{v.date ? `Given ${usDate(v.date)}` : "Not given"}</Meta>
-      {full && (
-        <>
-          <Pair label="Performer">{v.performer}</Pair>
-          <Pair label="Source">{sourceLabel(v.sourceId)}</Pair>
-        </>
-      )}
-    </Item>
-  )
-}
-
 function vitalRows(v: VitalSet) {
   return [
     ["Blood pressure", `${v.systolic}/${v.diastolic} mmHg`],
@@ -904,14 +872,11 @@ function VitalsGrid({ v }: { v: VitalSet }) {
 /*  Timeline                                                                   */
 /* -------------------------------------------------------------------------- */
 
-type EventKind = "encounter" | "lab" | "vaccine" | "procedure" | "document"
+type EventKind = "encounter" | "lab"
 
 const EVENT_LABELS: Record<EventKind, string> = {
   encounter: "Encounters",
   lab: "Lab results",
-  vaccine: "Vaccines",
-  procedure: "Procedures",
-  document: "Documents",
 }
 
 type ChartEvent = {
@@ -956,49 +921,6 @@ function eventsOf(record: HealthRecord): ChartEvent[] {
         where: source(r.sourceId),
       }
     }),
-    ...record.immunizations
-      .filter((v) => v.date)
-      .map((v) => ({
-        id: v.id,
-        kind: "vaccine" as const,
-        date: v.date,
-        title: `Vaccine : ${v.vaccine}`,
-        status: v.status,
-        tone:
-          v.status === "Administered"
-            ? ("success" as const)
-            : ("secondary" as const),
-        text:
-          v.status === "Historical"
-            ? `${v.vaccine}, ${v.dose}, recorded from the patient's history.`
-            : `${v.vaccine}, ${v.dose}, administered at ${v.performer}.`,
-        where: source(v.sourceId),
-      })),
-    ...record.procedures.map((p) => ({
-      id: p.id,
-      kind: "procedure" as const,
-      date: p.date,
-      title: `Procedure : ${p.name}`,
-      status: "Completed",
-      tone: "success" as const,
-      text: p.note,
-      who: `${p.performer} (Performer)`,
-      where: p.where,
-    })),
-    ...record.documents.map((d) => ({
-      id: d.id,
-      kind: "document" as const,
-      date: d.date,
-      title: `Document : ${d.title}`,
-      status: d.format,
-      tone: "info" as const,
-      text: `${d.format === "C-CDA" ? "Structured summary" : "PDF"} received from ${source(d.sourceId)} through Health Gorilla.`,
-      who:
-        d.author && d.author !== source(d.sourceId)
-          ? `${d.author} (Author)`
-          : undefined,
-      where: source(d.sourceId),
-    })),
   ]
   return events.sort((a, b) => b.date.localeCompare(a.date))
 }

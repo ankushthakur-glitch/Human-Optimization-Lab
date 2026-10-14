@@ -156,7 +156,7 @@ export function toSubject(item: QueueItem, ctx: Ctx): Subject {
         figure: { label: "Finding", value: r.value ?? r.flag, tone: "red" },
         note,
         sections: [{ title: "Report", rows: facts }, ...recommended],
-        actions: [markReviewed, chart("documents")],
+        actions: [markReviewed, chart("labs")],
       }
     }
 

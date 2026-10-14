@@ -10,7 +10,6 @@ import {
   IconClose,
   IconChevronDown,
   IconChevronUp,
-  IconFileText,
   IconHome,
   IconFileList,
   IconLab,
@@ -26,8 +25,8 @@ import {
   IconPill,
   IconShieldAlert,
   IconHeartPulse,
-  IconImage,
-  IconInjection,
+  IconTarget,
+  IconTeam,
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
@@ -40,7 +39,6 @@ import {
   healthRecordFor,
   recordSyncs,
 } from "@/components/practice/health-record"
-import { chartEntries, withEntries } from "@/components/provider/chart-entries"
 import {
   PatientActions,
   PatientDetails,
@@ -61,16 +59,20 @@ import {
   type OverviewTab,
 } from "@/components/provider/chart-dashboard"
 import {
-  DocumentsView,
   EncountersView,
   LabsView,
-  StudiesView,
 } from "@/components/provider/chart-views"
+import {
+  AppointmentsView,
+  FamilyHistoryView,
+  ProfileEpicCards,
+  useEpicExtras,
+} from "@/components/provider/chart-epic-views"
+import { CarePlanView } from "@/components/provider/chart-care-plan"
 import {
   AllergiesView,
   DiagnosesView,
   MedicationsView,
-  VaccinesView,
   VitalsView,
 } from "@/components/provider/chart-records"
 import {
@@ -108,29 +110,30 @@ import { Illustration } from "@/components/illustrations/illustration"
 
 /* The provider's patient chart, laid out like the Solid EHR "Patient
    Charting" frames: a patient banner that collapses, a chart nav on the left
-   and the section on the right. Every clinical value comes from Health
-   Gorilla once the patient has consented in the app; the chart reads it and
-   never edits it. The provider can pull a fresh copy at any time with
+   and the section on the right. Every clinical value comes from the Epic
+   sync once the patient has consented in the app; the chart reads it and
+   never adds to it. The care plan is the one thing reviewed here. The provider can pull a fresh copy at any time with
    Sync now, on top of the nightly refresh. */
 
 export type ChartSection =
   | "dashboard"
   | "overview"
+  | "care-plan"
   | "encounters"
+  | "appointments"
   | "diagnoses"
   | "medications"
   | "allergies"
   | "vitals"
   | "labs"
-  | "imaging"
-  | "vaccines"
-  | "documents"
+  | "family"
   | "profile"
 
-/* One section per kind of record in the Health Gorilla feed (the EHR data
-   sheet): Encounter, Condition, MedicationStatement, AllergyIntolerance,
-   Observation (vitals, labs), DiagnosticReport (lab, imaging, pathology),
-   Procedure, Immunization, DocumentReference, and Patient for the profile. */
+/* One section per Epic read in the "EHR Integration" sheet: Encounter,
+   Appointment, Condition, MedicationRequest, AllergyIntolerance, Observation
+   (vitals, labs), FamilyMemberHistory, and Patient, Consent, Practitioner and Location for the
+   profile. Epic sends no Immunization or imaging DiagnosticReport, so
+   Vaccines and Imaging are gone. */
 const SECTIONS: {
   id: ChartSection
   label: string
@@ -138,15 +141,15 @@ const SECTIONS: {
 }[] = [
   { id: "dashboard", label: "Dashboard", icon: IconHome },
   { id: "overview", label: "Overview", icon: IconFileList },
+  { id: "care-plan", label: "Care plan", icon: IconTarget },
   { id: "encounters", label: "Encounters", icon: IconStethoscope },
+  { id: "appointments", label: "Appointments", icon: IconCalendar },
   { id: "diagnoses", label: "Diagnoses", icon: IconClipboard },
   { id: "medications", label: "Medications", icon: IconPill },
   { id: "allergies", label: "Allergies", icon: IconShieldAlert },
   { id: "vitals", label: "Vitals", icon: IconHeartPulse },
   { id: "labs", label: "Lab results", icon: IconLab },
-  { id: "imaging", label: "Imaging", icon: IconImage },
-  { id: "vaccines", label: "Vaccines", icon: IconInjection },
-  { id: "documents", label: "Documents", icon: IconFileText },
+  { id: "family", label: "Family history", icon: IconTeam },
   { id: "profile", label: "Profile", icon: IconUserCircle },
 ]
 
@@ -220,15 +223,9 @@ export function useChartRecord(patient: Patient) {
     base.state === "Awaiting consent"
       ? base.state
       : (saved?.state ?? base.state)
-  const { items: entries } = chartEntries.use()
-  /* The synced record, with anything the practice entered by hand on top. */
   const record: HealthRecord = React.useMemo(
-    () =>
-      withEntries(
-        state === base.state ? base : builtRecordFor(patient),
-        entries
-      ),
-    [base, entries, patient, state]
+    () => (state === base.state ? base : builtRecordFor(patient)),
+    [base, patient, state]
   )
   const syncedAt =
     state === "Awaiting consent"
@@ -254,7 +251,7 @@ export function useChartRecord(patient: Patient) {
         description:
           state === "Active"
             ? `Checked ${sources} sources through the EHR connection. Nothing new since the last sync.`
-            : `All ${sources} sources reported: ${built.encounters.length} encounters, ${built.labReports.length} lab reports and ${built.documents.length} documents.`,
+            : `All ${sources} sources reported: ${built.encounters.length} encounters and ${built.labReports.length} lab reports.`,
       })
     }, SYNC_MS)
   }, [patient, state, syncing])
@@ -269,6 +266,7 @@ export function useChartRecord(patient: Patient) {
 export function PatientChart({ patient }: { patient: Patient }) {
   const { section, tab, item, go } = useChartParams()
   const chart = useChartRecord(patient)
+  const extras = useEpicExtras(patient, chart.record)
   /* Folded to one line on every section; the chevron opens or folds it for
      all sections at once, so moving between sections keeps its state. */
   const [collapsed, setCollapsed] = React.useState(true)
@@ -288,7 +286,13 @@ export function PatientChart({ patient }: { patient: Patient }) {
         <ChartNav active={section} onSelect={(s) => go({ section: s })} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {section === "profile" ? (
-            <ProfileSection patient={patient} />
+            <ProfileSection patient={patient} extras={extras} />
+          ) : section === "care-plan" ? (
+            <CarePlanView
+              patient={patient}
+              tab={tab === "history" ? "history" : "plan"}
+              onTab={(t) => go({ tab: t === "plan" ? "" : t })}
+            />
           ) : chart.state !== "Active" ? (
             <RecordNotReady patient={patient} chart={chart} />
           ) : section === "dashboard" ? (
@@ -300,6 +304,7 @@ export function PatientChart({ patient }: { patient: Patient }) {
           ) : section === "overview" ? (
             <ChartOverview
               record={chart.record}
+              appointments={extras.appointments}
               tab={(tab as OverviewTab) || "face-sheet"}
               onTab={(t) => go({ tab: t === "face-sheet" ? "" : t })}
               onOpen={(s, i, t) => go({ section: s, item: i, tab: t })}
@@ -318,39 +323,32 @@ export function PatientChart({ patient }: { patient: Patient }) {
               selected={item}
               onSelect={(i) => go({ item: i })}
             />
+          ) : section === "appointments" ? (
+            <AppointmentsView
+              extras={extras}
+              tab={tab === "past" ? "past" : "upcoming"}
+              onTab={(t) => go({ tab: t === "upcoming" ? "" : t })}
+            />
+          ) : section === "family" ? (
+            <FamilyHistoryView extras={extras} />
           ) : section === "diagnoses" ? (
             <DiagnosesView record={chart.record} />
           ) : section === "medications" ? (
             <MedicationsView
+              patient={patient}
               record={chart.record}
               tab={tab === "past" ? "past" : "active"}
               onTab={(t) => go({ tab: t === "active" ? "" : t })}
             />
           ) : section === "allergies" ? (
             <AllergiesView record={chart.record} />
-          ) : section === "vitals" ? (
+          ) : (
             <VitalsView
               record={chart.record}
               tab={tab === "table" || tab === "trends" ? tab : "cards"}
               onTab={(t) => go({ tab: t === "cards" ? "" : t, item })}
               selected={item}
               onSelect={(i) => go({ tab: "trends", item: i })}
-            />
-          ) : section === "imaging" ? (
-            <StudiesView
-              patient={patient}
-              record={chart.record}
-              selected={item}
-              onSelect={(i) => go({ item: i })}
-            />
-          ) : section === "vaccines" ? (
-            <VaccinesView patient={patient} record={chart.record} />
-          ) : (
-            <DocumentsView
-              patient={patient}
-              record={chart.record}
-              selected={item}
-              onSelect={(i) => go({ item: i })}
             />
           )}
         </div>
@@ -1061,7 +1059,13 @@ function ChartNav({
 /*  Profile                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function ProfileSection({ patient }: { patient: Patient }) {
+function ProfileSection({
+  patient,
+  extras,
+}: {
+  patient: Patient
+  extras: ReturnType<typeof useEpicExtras>
+}) {
   return (
     <Section>
       <SectionBar
@@ -1070,6 +1074,7 @@ function ProfileSection({ patient }: { patient: Patient }) {
       />
       <SectionBody className="flex flex-col gap-4 *:shrink-0">
         <PatientDetails patient={patient} />
+        <ProfileEpicCards extras={extras} />
       </SectionBody>
     </Section>
   )

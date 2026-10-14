@@ -46,7 +46,7 @@ export type Act = (kind: ActionKind, opts?: ActionOptions) => void
 
 const CHART_SECTION = {
   lab: "labs",
-  report: "documents",
+  report: "labs",
   medication_change: "medications",
   overdue_order: "encounters",
   outside_care: "encounters",

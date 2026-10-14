@@ -38,7 +38,19 @@ import {
   matches,
   useBarFilters,
 } from "@/components/provider/chart-layout"
-import { PracticeTag, useEntryDialog } from "@/components/provider/chart-forms"
+import {
+  UpdatedCells,
+  UpdatedHeads,
+  useRowDetails,
+} from "@/components/provider/chart-details"
+import {
+  atLabel,
+  medReviewFor,
+  updatedOf,
+} from "@/components/provider/chart-epic"
+import { dashboardState } from "@/components/patient-dashboard/model"
+import { dashboardDataFor } from "@/components/patient-dashboard/mock-data"
+import type { MedAnswer } from "@/components/patient-dashboard/types"
 import { usePaged } from "@/components/table-pager"
 import { Badge } from "@/design-system/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
@@ -84,7 +96,7 @@ function Empty({ cols, children }: { cols: number; children: string }) {
 /* -------------------------------------------------------------------------- */
 
 export function DiagnosesView({ record }: { record: HealthRecord }) {
-  const entry = useEntryDialog(record)
+  const entry = useRowDetails()
   const [status, setStatus] = React.useState("all")
   const bar = useBarFilters()
   const rows = record.conditions.filter(
@@ -120,7 +132,6 @@ export function DiagnosesView({ record }: { record: HealthRecord }) {
                 { label: "Historical", value: "Resolved" },
               ]}
             />
-            {entry.addButton("condition")}
           </>
         }
       />
@@ -133,16 +144,18 @@ export function DiagnosesView({ record }: { record: HealthRecord }) {
                 <TableHead>Diagnosis</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Onset date</TableHead>
-                <TableHead>Recorded date</TableHead>
                 <TableHead>Resolved date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="min-w-56">Note</TableHead>
+                <UpdatedHeads />
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length === 0 && <Empty cols={9}>No diagnoses match</Empty>}
-              {paged.visible.map((c, i) => (
+              {rows.length === 0 && <Empty cols={10}>No diagnoses match</Empty>}
+              {paged.visible.map((c, i) => {
+                const updated = updatedOf(c.id, c.recorded)
+                return (
                 <TableRow key={c.id}>
                   <TableCell className="text-muted-foreground">
                     {no(pageOffset(paged) + i)}
@@ -150,14 +163,10 @@ export function DiagnosesView({ record }: { record: HealthRecord }) {
                   <TableCell>
                     <span className="font-medium tabular-nums">{c.code}</span>{" "}
                     {c.name}
-                    <PracticeTag item={c} />
                   </TableCell>
                   <TableCell>{c.type}</TableCell>
                   <TableCell className="tabular-nums">
                     {usDate(c.onset)}
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {usDate(c.recorded)}
                   </TableCell>
                   <TableCell className="tabular-nums">
                     {c.abated ? usDate(c.abated) : "Not resolved"}
@@ -173,8 +182,9 @@ export function DiagnosesView({ record }: { record: HealthRecord }) {
                   <TableCell className="whitespace-normal text-muted-foreground">
                     {c.note || "None"}
                   </TableCell>
+                  <UpdatedCells updated={updated} />
                   <TableCell className="py-1.5!">
-                    {entry.rowAction("condition", c, {
+                    {entry.rowAction({
                       title: c.name,
                       codes: [
                         `ICD-10 ${c.code}`,
@@ -201,10 +211,12 @@ export function DiagnosesView({ record }: { record: HealthRecord }) {
                       ],
                       note: c.note,
                       source: sourceName(c.sourceId),
+                      updated,
                     })}
                   </TableCell>
                 </TableRow>
-              ))}
+                )
+              })}
             </TableBody>
           </Table>
         </RecordTable>
@@ -215,20 +227,36 @@ export function DiagnosesView({ record }: { record: HealthRecord }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Medications (MedicationStatement)                                          */
+/*  Medications (MedicationRequest)                                            */
 /* -------------------------------------------------------------------------- */
 
+const ANSWER_TONE: Record<MedAnswer, "success" | "warning" | "destructive"> = {
+  Taking: "success",
+  "Taking differently": "warning",
+  "Not taking": "destructive",
+}
+
 export function MedicationsView({
+  patient,
   record,
   tab,
   onTab,
 }: {
+  patient: Patient
   record: HealthRecord
   tab: "active" | "past"
   onTab: (tab: "active" | "past") => void
 }) {
-  const entry = useEntryDialog(record)
+  const entry = useRowDetails()
   const bar = useBarFilters()
+  /* The patient's answers and the provider's decisions live with the
+     dashboard's Important updates; the chart only reads them. */
+  const { items: states } = dashboardState.use()
+  const dash = React.useMemo(
+    () => dashboardDataFor(patient, record),
+    [patient, record]
+  )
+  const recon = states.find((s) => s.id === patient.id)?.recon ?? []
   const active = record.medications.filter((m) => !m.ended)
   const past = record.medications.filter((m) => m.ended)
   const rows = (tab === "past" ? past : active).filter(
@@ -262,7 +290,6 @@ export function MedicationsView({
               value={bar.from}
               onChange={bar.setFrom}
             />
-            {entry.addButton("medication")}
           </>
         }
       />
@@ -271,81 +298,116 @@ export function MedicationsView({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-64">Medicines</TableHead>
-                <TableHead>Sig</TableHead>
-                <TableHead>Dispense</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Prescriber</TableHead>
-                <TableHead>RxNorm</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="min-w-48">Medicines</TableHead>
+                <TableHead className="min-w-56">Sig</TableHead>
+                <TableHead className="min-w-52">Patient confirmation</TableHead>
+                <TableHead className="min-w-40">Approved by</TableHead>
+                <UpdatedHeads />
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 && (
-                <Empty cols={8}>
+                <Empty cols={6}>
                   {tab === "past"
                     ? "No past medications"
                     : "No active medications"}
                 </Empty>
               )}
-              {paged.visible.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell className="whitespace-normal">
-                    <span className="font-medium">{m.name}</span>
-                    <PracticeTag item={m} />
-                  </TableCell>
-                  <TableCell className="min-w-56 whitespace-normal">
-                    {m.sig}
-                  </TableCell>
-                  <TableCell>{m.quantity}</TableCell>
-                  <TableCell className="tabular-nums">
-                    {usDate(m.recorded)}
-                  </TableCell>
-                  <TableCell>{m.prescriber || "Not recorded"}</TableCell>
-                  <TableCell className="tabular-nums">{m.rxnorm}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={m.ended ? "secondary" : "success"}
-                      className={PILL}
-                    >
-                      {m.ended ? "Completed" : "Active"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-1.5!">
-                    {entry.rowAction("medication", m, {
-                      title: m.name,
-                      codes: [`RxNorm ${m.rxnorm}`],
-                      status: m.ended
-                        ? { label: "Completed", tone: "secondary" }
-                        : { label: "Active", tone: "success" },
-                      lead: ["Sig", m.sig],
-                      sections: [
-                        {
-                          title: "Prescription",
-                          fields: [
-                            ["Dispense", m.quantity],
-                            ["Route", m.route],
-                            ["Frequency", m.frequency],
-                            ["Prescriber", m.prescriber],
-                            ["For", `${m.dx} ${dxName(m.dx)}`.trim()],
-                          ],
-                        },
-                        {
-                          title: "Dates",
-                          fields: [
-                            ["Start", usDate(m.started)],
-                            ["End", m.ended ? usDate(m.ended) : "Ongoing"],
-                            ["Recorded", usDate(m.recorded)],
-                          ],
-                        },
-                      ],
-                      note: m.note,
-                      source: sourceName(m.sourceId),
-                    })}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {paged.visible.map((m) => {
+                const review = medReviewFor(m.name, dash, recon)
+                const a = review.answer
+                const updated = updatedOf(m.id, m.recorded, m.prescriber)
+                return (
+                  <TableRow key={m.id}>
+                    <TableCell className="whitespace-normal">
+                      <span className="font-medium">{m.name}</span>
+                    </TableCell>
+                    <TableCell className="whitespace-normal">{m.sig}</TableCell>
+                    <TableCell className="whitespace-normal">
+                      {a ? (
+                        <>
+                          <Badge variant={ANSWER_TONE[a.answer]} className={PILL}>
+                            {a.answer}
+                          </Badge>
+                          {a.note && (
+                            <div className="mt-1 text-[13px] text-muted-foreground">
+                              {a.note}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground tabular-nums">
+                            {usDate(a.date)}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">Not asked</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {review.by ? (
+                        <>
+                          <div>{review.by}</div>
+                          <div className="text-xs text-muted-foreground tabular-nums">
+                            {review.status === "Not current"
+                              ? "Marked not current, "
+                              : ""}
+                            {atLabel(review.at)}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {review.status}
+                        </span>
+                      )}
+                    </TableCell>
+                    <UpdatedCells updated={updated} />
+                    <TableCell className="py-1.5!">
+                      {entry.rowAction({
+                        title: m.name,
+                        codes: [`RxNorm ${m.rxnorm}`],
+                        status: m.ended
+                          ? { label: "Completed", tone: "secondary" }
+                          : { label: "Active", tone: "success" },
+                        lead: ["Sig", m.sig],
+                        sections: [
+                          {
+                            title: "Prescription",
+                            fields: [
+                              ["Dispense", m.quantity],
+                              ["Route", m.route],
+                              ["Frequency", m.frequency],
+                              ["Prescriber", m.prescriber],
+                              ["For", `${m.dx} ${dxName(m.dx)}`.trim()],
+                            ],
+                          },
+                          {
+                            title: "Dates",
+                            fields: [
+                              ["Start", usDate(m.started)],
+                              ["End", m.ended ? usDate(m.ended) : "Ongoing"],
+                              ["Recorded", usDate(m.recorded)],
+                            ],
+                          },
+                          {
+                            title: "Patient confirmation",
+                            fields: [
+                              ["Patient says", a?.answer ?? "Not asked"],
+                              ["Note", a?.note],
+                              ["Answered on", a ? usDate(a.date) : ""],
+                              ["Review", review.status],
+                              ["Approved by", review.by],
+                              ["Approved on", atLabel(review.at)],
+                            ],
+                          },
+                        ],
+                        note: m.note,
+                        source: sourceName(m.sourceId),
+                        updated,
+                      })}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </RecordTable>
@@ -365,7 +427,7 @@ const SEVERITY: Record<
 > = { Mild: "secondary", Moderate: "warning", Severe: "destructive" }
 
 export function AllergiesView({ record }: { record: HealthRecord }) {
-  const entry = useEntryDialog(record)
+  const entry = useRowDetails()
   const [type, setType] = React.useState("all")
   const bar = useBarFilters()
   const rows = record.allergies.filter(
@@ -402,7 +464,6 @@ export function AllergiesView({ record }: { record: HealthRecord }) {
                 { label: "Environmental", value: "Environmental" },
               ]}
             />
-            {entry.addButton("allergy")}
           </>
         }
       />
@@ -417,15 +478,16 @@ export function AllergiesView({ record }: { record: HealthRecord }) {
                 <TableHead>Reaction</TableHead>
                 <TableHead>Severity</TableHead>
                 <TableHead>Onset date</TableHead>
-                <TableHead>Recorded date</TableHead>
-                <TableHead>Recorded by</TableHead>
                 <TableHead>Status</TableHead>
+                <UpdatedHeads />
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 && <Empty cols={10}>No known allergies</Empty>}
-              {paged.visible.map((a, i) => (
+              {paged.visible.map((a, i) => {
+                const updated = updatedOf(a.id, a.recorded, a.recordedBy)
+                return (
                 <TableRow key={a.id}>
                   <TableCell className="text-muted-foreground">
                     {no(pageOffset(paged) + i)}
@@ -433,7 +495,6 @@ export function AllergiesView({ record }: { record: HealthRecord }) {
                   <TableCell>{a.category}</TableCell>
                   <TableCell className="font-medium">
                     {a.substance}
-                    <PracticeTag item={a} />
                   </TableCell>
                   <TableCell className="whitespace-normal">
                     {a.reaction}
@@ -446,13 +507,10 @@ export function AllergiesView({ record }: { record: HealthRecord }) {
                   <TableCell className="tabular-nums">
                     {usDate(a.onset)}
                   </TableCell>
-                  <TableCell className="tabular-nums">
-                    {usDate(a.recorded)}
-                  </TableCell>
-                  <TableCell>{a.recordedBy}</TableCell>
                   <TableCell>{a.status}</TableCell>
+                  <UpdatedCells updated={updated} />
                   <TableCell className="py-1.5!">
-                    {entry.rowAction("allergy", a, {
+                    {entry.rowAction({
                       title: a.substance,
                       codes: [a.category],
                       status: { label: a.severity, tone: SEVERITY[a.severity] },
@@ -475,10 +533,12 @@ export function AllergiesView({ record }: { record: HealthRecord }) {
                       ],
                       note: a.note,
                       source: sourceName(a.sourceId),
+                      updated,
                     })}
                   </TableCell>
                 </TableRow>
-              ))}
+                )
+              })}
             </TableBody>
           </Table>
         </RecordTable>
@@ -925,7 +985,7 @@ export function VitalsView({
   selected: string
   onSelect: (key: string) => void
 }) {
-  const entry = useEntryDialog(record)
+  const entry = useRowDetails()
   const bar = useBarFilters()
   const sets = record.vitals.filter(
     (v) =>
@@ -955,7 +1015,6 @@ export function VitalsView({
               value={bar.from}
               onChange={bar.setFrom}
             />
-            {entry.addButton("vitals")}
           </>
         }
       />
@@ -1045,7 +1104,7 @@ export function VitalsView({
                       {k.unit ? ` (${k.unit})` : ""}
                     </TableHead>
                   ))}
-                  <TableHead>Recorded by</TableHead>
+                  <UpdatedHeads />
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
@@ -1066,14 +1125,9 @@ export function VitalsView({
                         {k.value(v)}
                       </TableCell>
                     ))}
-                    <TableCell>{v.recordedBy}</TableCell>
+                    <UpdatedCells updated={updatedOf(v.date, v.date, v.recordedBy)} />
                     <TableCell className="py-1.5!">
                       {entry.rowAction(
-                        "vitals",
-                        {
-                          id: (v as { id?: string }).id ?? v.date,
-                          sourceId: v.sourceId,
-                        },
                         {
                           title: `Vitals on ${usDate(v.date)}`,
                           codes: [v.time],
@@ -1111,6 +1165,7 @@ export function VitalsView({
                           ],
                           note: v.note,
                           source: sourceName(v.sourceId),
+                          updated: updatedOf(v.date, v.date, v.recordedBy),
                         }
                       )}
                     </TableCell>
@@ -1120,183 +1175,6 @@ export function VitalsView({
             </Table>
           </RecordTable>
         )}
-      </SectionBody>
-      {entry.dialog}
-    </Section>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Vaccines (Immunization)                                                    */
-/* -------------------------------------------------------------------------- */
-
-function ageOn(dob: string, date: string) {
-  const [by, bm, bd] = dob.split("-").map(Number)
-  const [y, m, d] = date.split("-").map(Number)
-  return y - by - (m < bm || (m === bm && d < bd) ? 1 : 0)
-}
-
-export function VaccinesView({
-  patient,
-  record,
-}: {
-  patient: Patient
-  record: HealthRecord
-}) {
-  const entry = useEntryDialog(record)
-  const [status, setStatus] = React.useState("all")
-  const bar = useBarFilters()
-  const rows = record.immunizations.filter(
-    (v) =>
-      (status === "all" || v.status === status) &&
-      bar.fromOk(v) &&
-      matches(bar.query, v.vaccine, v.manufacturer, v.lot, v.by, v.performer)
-  )
-  const paged = usePaged(rows)
-  return (
-    <Section>
-      <SectionBar
-        title={`Vaccines (${record.immunizations.length})`}
-        actions={
-          <>
-            <SearchBox
-              value={bar.query}
-              onChange={bar.setQuery}
-              label="Search vaccines"
-            />
-            <SourceSelect
-              items={record.immunizations}
-              value={bar.from}
-              onChange={bar.setFrom}
-            />
-            <FilterSelect
-              label="Filter by status"
-              value={status}
-              onChange={setStatus}
-              options={[
-                { label: "All statuses", value: "all" },
-                { label: "Administered", value: "Administered" },
-                { label: "Historical", value: "Historical" },
-                { label: "Refused", value: "Refused" },
-              ]}
-            />
-            {entry.addButton("vaccine")}
-          </>
-        }
-      />
-      <SectionBody className="flex flex-col pb-3">
-        <RecordTable paged={paged}>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-14">No.</TableHead>
-                <TableHead className="min-w-72">Vaccine name</TableHead>
-                <TableHead>Administered date</TableHead>
-                <TableHead>Age</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Lot</TableHead>
-                <TableHead>Manufacturer</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 && <Empty cols={8}>No vaccines match</Empty>}
-              {paged.visible.map((v, i) => (
-                <TableRow key={v.id}>
-                  <TableCell className="text-muted-foreground">
-                    {no(pageOffset(paged) + i)}
-                  </TableCell>
-                  <TableCell className="whitespace-normal">
-                    <div className="font-medium">
-                      {v.vaccine}
-                      <PracticeTag item={v} />
-                    </div>
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {v.date ? usDate(v.date) : "Not given"}
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {v.date && patient.dob ? ageOn(patient.dob, v.date) : ""}
-                  </TableCell>
-                  <TableCell className="whitespace-normal">
-                    <span
-                      className={cn(
-                        v.status === "Refused" && "text-destructive"
-                      )}
-                    >
-                      {v.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {v.lot || "Not recorded"}
-                  </TableCell>
-                  <TableCell>{v.manufacturer || "Not recorded"}</TableCell>
-                  <TableCell className="py-1.5!">
-                    {entry.rowAction("vaccine", v, {
-                      title: v.vaccine,
-                      codes: [v.ndc && `NDC ${v.ndc}`],
-                      status: {
-                        label: v.status,
-                        tone:
-                          v.status === "Refused"
-                            ? "destructive"
-                            : v.status === "Administered"
-                              ? "success"
-                              : "secondary",
-                      },
-                      lead:
-                        v.status === "Refused"
-                          ? ["Reason refused", v.reason]
-                          : undefined,
-                      sections: [
-                        {
-                          title: "Dose",
-                          fields: [
-                            ["Dosage", v.dose],
-                            ["Route", v.route],
-                            ["Site", v.site],
-                            ["Reaction", v.reaction],
-                          ],
-                        },
-                        {
-                          title: "Given",
-                          fields: [
-                            ["Date", v.date ? usDate(v.date) : ""],
-                            ["Time", v.time],
-                            [
-                              "Age",
-                              v.date && patient.dob
-                                ? ageOn(patient.dob, v.date)
-                                : "",
-                            ],
-                            [
-                              v.status === "Refused"
-                                ? "Recorded by"
-                                : "Given by",
-                              v.by,
-                            ],
-                            ["Ordered by", v.orderedBy],
-                            ["Reported by", v.infoSource],
-                          ],
-                        },
-                        {
-                          title: "Product",
-                          fields: [
-                            ["Manufacturer", v.manufacturer],
-                            ["Lot", v.lot],
-                            ["Expiry", v.expiry ? usDate(v.expiry) : ""],
-                          ],
-                        },
-                      ],
-                      note: v.note,
-                      source: sourceName(v.sourceId),
-                    })}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </RecordTable>
       </SectionBody>
       {entry.dialog}
     </Section>

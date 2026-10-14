@@ -14,6 +14,7 @@ import {
   ArrowDataTransferHorizontalIcon,
   ArrowDown01Icon,
   ArrowDown02Icon,
+  ArrowDownDoubleIcon,
   ArrowLeft01Icon,
   ArrowLeft02Icon,
   ArrowRight01Icon,
@@ -21,6 +22,7 @@ import {
   ArrowTurnForwardIcon,
   ArrowUp01Icon,
   ArrowUp02Icon,
+  ArrowUpDoubleIcon,
   ArrowUpRight01Icon,
   AtIcon,
   AttachmentIcon,
@@ -62,6 +64,7 @@ import {
   FavouriteIcon,
   File01Icon,
   FileAttachmentIcon,
+  EqualSignIcon,
   FileEditIcon,
   FileRemoveIcon,
   FileUploadIcon,
@@ -191,6 +194,8 @@ export const IconArrowDown = createIcon(ArrowDown02Icon)
 export const IconArrowLeft = createIcon(ArrowLeft02Icon)
 export const IconArrowRight = createIcon(ArrowRight02Icon)
 export const IconArrowUp = createIcon(ArrowUp02Icon)
+export const IconArrowUpDouble = createIcon(ArrowUpDoubleIcon)
+export const IconArrowDownDouble = createIcon(ArrowDownDoubleIcon)
 export const IconArrowUpRight = createIcon(ArrowUpRight01Icon)
 export const IconAt = createIcon(AtIcon)
 export const IconAttachment = createIcon(FileAttachmentIcon)
@@ -233,6 +238,7 @@ export const IconDna = createIcon(DnaIcon)
 export const IconDownload = createIcon(Download01Icon)
 export const IconDraft = createIcon(FileEditIcon)
 export const IconEdit = createIcon(PencilEdit01Icon)
+export const IconEqual = createIcon(EqualSignIcon)
 export const IconExpandVertical = createIcon(UnfoldMoreIcon)
 export const IconExternalLink = createIcon(LinkSquare01Icon)
 export const IconEye = createIcon(ViewIcon)
@@ -358,6 +364,9 @@ export const ICON_CATALOG: { name: string; source: string; Icon: (props: IconPro
   { name: "IconArrowLeft", source: "ArrowLeft02Icon", Icon: IconArrowLeft },
   { name: "IconArrowRight", source: "ArrowRight02Icon", Icon: IconArrowRight },
   { name: "IconArrowUp", source: "ArrowUp02Icon", Icon: IconArrowUp },
+  { name: "IconArrowUpDouble", source: "ArrowUpDoubleIcon", Icon: IconArrowUpDouble },
+  { name: "IconArrowDownDouble", source: "ArrowDownDoubleIcon", Icon: IconArrowDownDouble },
+  { name: "IconEqual", source: "EqualSignIcon", Icon: IconEqual },
   { name: "IconArrowUpRight", source: "ArrowUpRight01Icon", Icon: IconArrowUpRight },
   { name: "IconAt", source: "AtIcon", Icon: IconAt },
   { name: "IconAttachment", source: "FileAttachmentIcon", Icon: IconAttachment },

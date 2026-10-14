@@ -4,7 +4,10 @@ import * as React from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "@/design-system/ui/sonner"
 import {
+  IconArrowDownDouble,
+  IconArrowUpDouble,
   IconEdit,
+  IconEqual,
   IconEye,
   IconFileUpload,
   IconLock,
@@ -43,7 +46,11 @@ import {
   patients,
   providerName,
   REACTIVATABLE,
+  PINNED_PATIENTS,
+  RISK_LEVELS,
+  type RiskLevel,
   reactivatePatient,
+  riskLevel,
   shortDate,
   useLocationLookup,
   useProviderLookup,
@@ -162,6 +169,27 @@ function SyncBadge({
   status: ReturnType<ReturnType<typeof useSyncLookup>>
 }) {
   return <Badge variant={SYNC_VARIANT[status.state]}>{status.label}</Badge>
+}
+
+/* Risk reads as an arrow, not another badge: red up for High, orange equals
+   for Moderate, green down for Low. */
+const RISK_ICON: Record<RiskLevel, { Icon: typeof IconEqual; className: string }> = {
+  High: { Icon: IconArrowUpDouble, className: "text-[#E5484D]" },
+  Moderate: { Icon: IconEqual, className: "text-[#F08C2E]" },
+  Low: { Icon: IconArrowDownDouble, className: "text-[#3E9B5F]" },
+}
+
+/* High sorts first, then Moderate, then Low. */
+const riskRank = (p: Patient) => RISK_LEVELS.indexOf(riskLevel(p))
+
+function RiskIcon({ patient }: { patient: Patient }) {
+  const r = riskLevel(patient)
+  const { Icon, className } = RISK_ICON[r]
+  return (
+    <span title={`${r} risk`} className="flex [--icon-stroke-width:2.5]">
+      <Icon className={`size-[18px] ${className}`} aria-label={`${r} risk`} />
+    </span>
+  )
 }
 
 /** The selection's bulk action for patients added without the portal invite. */
@@ -468,11 +496,30 @@ export function PatientsScreen() {
   const openCreate = precheck.open
   useImportParam(() => setImporting(true))
 
+  /* Marcus Hale and Olivia Bennett first, then high risk patients, until
+     another column is sorted. */
+  const byRisk = React.useMemo(() => {
+    const pin = (p: Patient) => {
+      const i = PINNED_PATIENTS.indexOf(p.id)
+      return i < 0 ? PINNED_PATIENTS.length : i
+    }
+    return [...items].sort(
+      (a, b) => pin(a) - pin(b) || riskRank(a) - riskRank(b)
+    )
+  }, [items])
+
   const columns: Column<Patient>[] = [
+    {
+      id: "risk",
+      header: "Risk",
+      className: "w-px !pr-0",
+      sortValue: riskRank,
+      cell: (p) => <RiskIcon patient={p} />,
+    },
     {
       id: "id",
       header: "Patient ID",
-      className: ID_CELL,
+      className: `${ID_CELL} !pl-3`,
       sortValue: (p) => p.id,
       cell: (p) => p.id,
     },
@@ -611,7 +658,7 @@ export function PatientsScreen() {
       <Directory
         title="Patients"
         noun="patients"
-        rows={items}
+        rows={byRisk}
         columns={columns}
         search={(p) => [p.id, fullName(p), p.email, p.phone, usDate(p.dob)]}
         filters={[
@@ -628,6 +675,13 @@ export function PatientsScreen() {
             all: "All providers",
             options: prov.all.map(providerName),
             match: (p, v) => prov.name(p.providerId) === v,
+          },
+          {
+            id: "risk",
+            label: "Risk level",
+            all: "All risk levels",
+            options: [...RISK_LEVELS],
+            match: (p, v) => riskLevel(p) === v,
           },
           {
             id: "record",
@@ -672,6 +726,7 @@ export function PatientsScreen() {
           Location: loc.name(p.locationId),
           "Primary provider": prov.name(p.providerId),
           Status: p.status,
+          "Risk level": riskLevel(p),
           "Last interacted": shortDate(p.lastEngagedAt ?? ""),
           "Health record": syncOf(p).label,
           "Last sync": syncOf(p).at ? syncedAt(syncOf(p).at) : "",
