@@ -3,6 +3,8 @@ import * as React from "react"
 import type { Allowance } from "@/lib/allowance"
 import type { Answers } from "@/lib/conversation"
 import type { ActivityLog, Entry, Meal, SavedQuestion } from "@/lib/member"
+import { dayKey } from "@/lib/dates"
+import { dayOfAt } from "@/lib/member"
 import type { OfferLog } from "@/lib/offers"
 import type { Cadence, ProgramId, Sex, Tier } from "@/lib/plans"
 import type { MedAnswer, Origin } from "@/lib/record"
@@ -346,6 +348,16 @@ function migrate(parsed: State & Record<string, unknown>): State {
   return parsed
 }
 
+/** For now a refresh starts today over: what was ticked off today (meals,
+    exercises, the walk, weigh ins and blood pressure) is cleared, so the
+    to-do reads as not done. Earlier days stay for the trends. */
+function startToday(state: State): State {
+  const today = dayKey()
+  const { [today]: _meals, ...meals } = state.meals ?? {}
+  const { [today]: _exercises, ...exercises } = state.exercises ?? {}
+  return { ...state, meals, exercises, entries: state.entries?.filter((e) => dayOfAt(e.at) !== today) }
+}
+
 const OnboardingContext = React.createContext<Onboarding | null>(null)
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
@@ -359,7 +371,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       .getItemAsync(KEY)
       .then((saved) => {
         if (!saved) return
-        setState(migrate(JSON.parse(saved)))
+        const fresh = startToday(migrate(JSON.parse(saved)))
+        current.current = fresh
+        setState(fresh)
+        return store.setItemAsync(KEY, JSON.stringify(fresh))
       })
       .catch(() => {})
       .finally(() => setLoaded(true))

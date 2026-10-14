@@ -10,6 +10,7 @@ import {
   CalendarCheck,
   CheckCircle,
   Clock,
+  Drop,
   Flame,
   Heartbeat,
   Lightbulb,
@@ -57,6 +58,7 @@ export const GOAL_HUE: Record<ReviewGoalId, string> = {
   protein: "#2a78d6",
   calcium: "#4a3aa7",
   exercise: "#1baf7a",
+  water: "#0e7fa8",
 }
 export const tint = (hex: string, alpha = "1A") => `${hex}${alpha}`
 
@@ -79,9 +81,10 @@ export const GOAL_ICON: Record<ReviewGoalId, React.ComponentType<{ size?: number
   protein: BowlFood,
   calcium: Bone,
   exercise: PersonSimpleRun,
+  water: Drop,
 }
-export const GOAL_NAME: Record<ReviewGoalId, string> = { energy: "Calorie deficit", protein: "Protein", calcium: "Calcium", exercise: "Exercise" }
-export const SHORT: Record<ReviewGoalId, string> = { energy: "Deficit", protein: "Protein", calcium: "Calcium", exercise: "Exercise" }
+export const GOAL_NAME: Record<ReviewGoalId, string> = { energy: "Calorie deficit", protein: "Protein", calcium: "Calcium", exercise: "Exercise", water: "Water" }
+export const SHORT: Record<ReviewGoalId, string> = { energy: "Deficit", protein: "Protein", calcium: "Calcium", exercise: "Exercise", water: "Water" }
 
 export const levelOf = (g: GoalDay): Level => (g.value === undefined || g.state === "under" || g.state === "none" ? "out" : g.state === "close" ? "borderline" : "in")
 export const shareOf = (g: GoalDay) => (g.value !== undefined ? Math.max(0, Math.min(g.value / g.goal.target, 1)) : 0)

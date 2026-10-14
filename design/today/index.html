@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Today · Inlay (standalone design)</title>
+<style>
+  /* Tokens mirror mobile/src/lib/theme.ts. Standalone: nothing here is imported by the app. */
+  :root {
+    --primary:#01837E; --primary-text:#015D59;
+    --tint:#F2F7F7; --soft:#E6F3F2; --edge:#C2E1E0; --track:#CEF4F1;
+    --ink:#2B2B2B; --content:#393939; --detail:#505050; --secondary:#606060; --tertiary:#707070;
+    --hair:#EAECF0; --chev:#818181;
+    --amber:#C8641B; --amber-tint:#FEF4E5; --blue:#3056D3; --blue-tint:#E8EEFF;
+    --violet:#7A3FD1; --violet-tint:#F3EBFF; --ok:#2F7F4D; --ok-tint:#E9FAEF;
+    --page-from:#F8F8F8; --page:#F1F5F9;
+    --shadow-xs:0 1px 2px rgba(16,24,40,.05);
+    --stage:#E4E9EE;
+  }
+  * { box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body { font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--stage); color:var(--ink); display:grid; place-items:center; -webkit-font-smoothing:antialiased; }
+  button { font:inherit; color:inherit; background:none; border:0; cursor:pointer; text-align:inherit; }
+  svg { display:block; }
+
+  .phone { position:relative; width:390px; height:844px; background:linear-gradient(158deg,var(--page-from),var(--page)); border-radius:44px; overflow:hidden; box-shadow:0 0 0 10px #101418, 0 30px 80px rgba(16,24,40,.28); }
+  @media (max-width:430px) { body { display:block; background:var(--page); } .phone { width:100%; height:100dvh; border-radius:0; box-shadow:none; } }
+  .scroll { position:absolute; inset:0; overflow-y:auto; padding:0 16px 130px; scrollbar-width:none; }
+  .scroll::-webkit-scrollbar { display:none; }
+
+  .status { height:50px; display:flex; align-items:flex-end; justify-content:space-between; margin:0 -16px; background:#fff; border-bottom:1px solid var(--hair); padding:0 26px 6px; font-weight:600; font-size:15px; }
+  .status .r { display:flex; gap:6px; align-items:center; }
+
+  /* Section heads, as in the reference */
+  .block { padding-top:20px; }
+  .head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .head h2 { font-size:16px; line-height:24px; font-weight:500; color:var(--detail); }
+  .head p { font-size:12px; line-height:16px; color:var(--secondary); margin-top:2px; }
+  .head a { white-space:nowrap; font-size:12px; line-height:16px; font-weight:500; color:var(--primary-text); text-decoration:none; display:flex; align-items:center; gap:2px; padding-top:4px; }
+  .count { font-size:12px; line-height:16px; font-weight:500; color:var(--primary-text); background:var(--soft); border:1px solid var(--edge); padding:4px 12px; border-radius:999px; }
+  .progress { height:8px; border-radius:4px; background:#E2E6EA; margin:10px 0 14px; overflow:hidden; }
+  .progress i { display:block; height:100%; width:25%; background:var(--primary); border-radius:4px; transform-origin:left; animation:grow .9s .2s cubic-bezier(.3,.7,.2,1) both; }
+  @keyframes grow { from { transform:scaleX(0); } }
+
+  /* To-do rows */
+  .list { display:grid; gap:10px; }
+  .item { display:flex; align-items:center; gap:12px; width:100%; padding:12px; background:#fff; border:1px solid var(--hair); border-radius:10px; box-shadow:var(--shadow-xs); transition:transform .12s; }
+  .item:active { transform:scale(.99); }
+  .ic { width:40px; height:40px; border-radius:50%; background:var(--soft); color:var(--primary); display:grid; place-items:center; flex:none; }
+  .item .t { flex:1; min-width:0; }
+  .item h3 { font-size:14px; line-height:20px; font-weight:500; color:var(--content); }
+  .item p { font-size:12px; line-height:16px; color:var(--secondary); margin-top:1px; }
+  .chev { color:var(--chev); flex:none; }
+  .start { font-size:12px; line-height:16px; font-weight:500; color:#fff; background:var(--primary); padding:8px 16px; border-radius:999px; flex:none; box-shadow:0 4px 10px rgba(1,131,126,.25); }
+  .item.done { background:rgba(255,255,255,.55); box-shadow:none; }
+  .item.done .ic { background:#EFEFF2; color:#8A8A92; }
+  .item.done h3, .item.done p { color:var(--tertiary); text-decoration:line-through; }
+
+  /* Goals grid */
+  .goals { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+  .goal { background:#fff; border:1px solid var(--hair); border-radius:10px; box-shadow:var(--shadow-xs); padding:12px; }
+  .goal .top { display:flex; align-items:center; justify-content:space-between; }
+  .goal .ic { width:32px; height:32px; }
+  .goal .st { font-size:12px; line-height:16px; color:var(--secondary); }
+  .goal .nm { font-size:12px; line-height:16px; color:var(--secondary); margin-top:10px; }
+  .goal .v { font-size:20px; line-height:28px; font-weight:600; color:var(--ink); }
+  .goal .v small { font-size:12px; font-weight:400; color:var(--secondary); }
+  .bar { height:6px; border-radius:3px; background:#EEF1F4; margin-top:8px; overflow:hidden; }
+  .bar i { display:block; height:100%; width:var(--p); border-radius:3px; background:var(--primary); }
+
+  /* Log row */
+  .log { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px; }
+  .log button { display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 4px 10px; border-radius:10px; background:#fff; border:1px solid var(--hair); box-shadow:var(--shadow-xs); font-size:12px; line-height:16px; font-weight:500; color:var(--content); text-align:center; }
+  .log .ic { width:36px; height:36px; }
+
+  /* Tab bar + orb */
+  .tabs { position:absolute; left:16px; right:16px; bottom:22px; height:64px; display:flex; align-items:center; gap:10px; }
+  .pillbar { flex:1; height:64px; border-radius:999px; background:rgba(255,255,255,.9); backdrop-filter:blur(14px); border:1px solid var(--hair); box-shadow:0 10px 30px rgba(16,24,40,.12); display:grid; grid-template-columns:repeat(4,1fr); align-items:center; padding:0 6px; }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:2px; font-size:11px; line-height:14px; color:var(--secondary); height:52px; justify-content:center; border-radius:999px; }
+  .tab.on { background:var(--soft); color:var(--primary-text); font-weight:600; }
+  .tab svg { stroke:currentColor; }
+  .orb { width:60px; height:60px; border-radius:50%; flex:none; box-shadow:0 10px 24px rgba(16,24,40,.2); background:url(orb.png) center/cover; border:2px solid #fff; }
+  .home-ind { position:absolute; left:50%; bottom:7px; width:120px; height:4px; margin-left:-60px; border-radius:2px; background:#0A0A0A; opacity:.85; }
+
+  .reveal { opacity:0; transform:translateY(10px); animation:up .5s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes up { to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion:reduce) { .reveal, .progress i { animation:none; opacity:1; transform:none; } }
+  :focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+
+  /* Page header + insight */
+  .title { display:flex; align-items:baseline; justify-content:space-between; }
+  .title h1 { font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.01em; color:var(--ink); }
+  .title span { font-size:14px; line-height:20px; color:var(--secondary); }
+  .insight { display:flex; gap:10px; align-items:flex-start; margin-top:12px; padding:12px; background:var(--tint); border:1px solid var(--edge); border-radius:10px; }
+  .insight svg { flex:none; margin-top:2px; color:var(--amber); }
+  .insight b { display:block; font-size:14px; line-height:20px; font-weight:600; color:var(--primary-text); }
+  .insight p { font-size:14px; line-height:21px; color:var(--detail); margin-top:2px; }
+
+  /* Goals: one calm card, four rings */
+  .gcard { background:#fff; border:1px solid var(--hair); border-radius:10px; box-shadow:var(--shadow-xs); padding:16px 8px 14px; margin-top:12px; display:grid; grid-template-columns:repeat(4,1fr); }
+  .g { display:flex; flex-direction:column; align-items:center; text-align:center; position:relative; }
+  .g + .g::before { content:""; position:absolute; left:0; top:6px; bottom:6px; width:1px; background:var(--hair); }
+  .gr { position:relative; width:56px; height:56px; }
+  .gr svg { transform:rotate(-90deg); }
+  .gr b { position:absolute; inset:0; display:grid; place-items:center; font-size:14px; font-weight:600; color:var(--ink); }
+  .g .nm { font-size:12px; line-height:16px; font-weight:500; color:var(--content); margin-top:8px; }
+  .g .tg { font-size:11px; line-height:14px; color:var(--secondary); margin-top:1px; }
+
+  /* Exercise */
+  .ex { background:#fff; border:1px solid var(--hair); border-radius:10px; box-shadow:var(--shadow-xs); padding:12px; margin-top:12px; }
+  .ex .row1 { display:flex; gap:12px; }
+  .thumb { position:relative; width:76px; height:76px; border-radius:8px; background:url(wall-pushup.jpg) center/cover; flex:none; overflow:hidden; }
+  .thumb::after { content:""; position:absolute; inset:0; background:rgba(0,0,0,.18); }
+  .play { position:absolute; z-index:1; left:50%; top:50%; width:32px; height:32px; margin:-16px 0 0 -16px; border-radius:50%; background:rgba(255,255,255,.92); color:var(--primary); display:grid; place-items:center; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+  .play svg { margin-left:2px; }
+  .ex h3 { font-size:16px; line-height:24px; font-weight:500; color:var(--ink); }
+  .ex .est { font-size:12px; line-height:16px; color:var(--secondary); margin-top:2px; }
+  .checks { list-style:none; padding:0; margin-top:8px; display:grid; gap:4px; }
+  .checks li { display:flex; align-items:center; gap:6px; font-size:12px; line-height:16px; color:var(--detail); }
+  .checks svg { color:var(--primary); flex:none; }
+  .btn { width:100%; height:48px; border-radius:999px; background:var(--primary); color:#fff; font-weight:500; font-size:14px; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:12px; box-shadow:0 8px 18px rgba(1,131,126,.25); }
+  .btn:active { transform:scale(.98); }
+
+  /* Meals */
+  .opts { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+  .opt { display:flex; flex-direction:column; gap:10px; padding:12px; background:#fff; border:1px solid var(--hair); border-radius:10px; box-shadow:var(--shadow-xs); }
+  .opt .ic { width:36px; height:36px; }
+  .opt h3 { font-size:14px; line-height:20px; font-weight:500; color:var(--content); }
+  .opt p { font-size:12px; line-height:16px; color:var(--secondary); margin-top:2px; }
+  .plan { margin-top:12px; background:#fff; border:1px solid var(--hair); border-radius:10px; box-shadow:var(--shadow-xs); overflow:hidden; }
+  .plan .ph { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--tint); border-bottom:1px solid var(--hair); font-size:12px; line-height:16px; font-weight:500; color:var(--secondary); }
+  .plan .ph a { color:var(--primary-text); text-decoration:none; display:flex; align-items:center; gap:2px; }
+  .pr { display:flex; justify-content:space-between; gap:8px; padding:12px; font-size:14px; line-height:20px; }
+  .pr + .pr { border-top:1px solid #F2F2F7; }
+  .pr b { font-weight:500; color:var(--content); }
+  .pr span { font-size:12px; color:var(--secondary); text-align:right; }
+</style>
+</head>
+<body>
+<main class="phone">
+  <div class="scroll">
+    <div class="status"><span>9:41</span><span class="r">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#0A0A0A"><rect y="7" width="3" height="4" rx=".8"/><rect x="4.7" y="4.7" width="3" height="6.3" rx=".8"/><rect x="9.4" y="2.3" width="3" height="8.7" rx=".8"/><rect x="14" width="3" height="11" rx=".8"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="#0A0A0A" opacity=".4"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#0A0A0A"/><rect x="23" y="4" width="1.6" height="4" rx=".8" fill="#0A0A0A" opacity=".4"/></svg>
+    </span></div>
+
+    <div class="title reveal" style="padding-top:20px"><h1>Today</h1><span>Tuesday, Oct 6, 2026</span></div>
+    <div class="insight reveal" style="animation-delay:.03s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg><div><b>Inlay Insight</b><p>You have a strength workout today. Your meal plan is higher in protein to support your workout and recovery.</p></div></div>
+    <section class="block reveal" style="animation-delay:.05s" aria-label="Today's to-do">
+      <div class="head">
+        <div><h2>Today's To-do</h2><p>Small steps toward your daily health goals.</p></div>
+        <span class="count">1/4</span>
+      </div>
+      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="1"><i></i></div>
+
+      <div class="list">
+        <button class="item">
+          <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg></span>
+          <span class="t"><h3>Upper body + Zone 2</h3><p>55 min · 3–4 exercises, 30 min cardio</p></span>
+          <span class="start">Start</span>
+        </button>
+        <button class="item">
+          <span class="ic" style="background:var(--ok-tint);color:var(--ok)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4 0-7-3-7-7 5 0 8 2 9 6M12 21c4 0 7-3 7-7-5 0-8 2-9 6M12 14V4M12 8c-2 0-3-1-3-3M12 10c2 0 3-1 3-3"/></svg></span>
+          <span class="t"><h3>Log lunch</h3><p>12:30 PM · Salmon grain bowl, 510 kcal</p></span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <button class="item">
+          <span class="ic" style="background:var(--violet-tint);color:var(--violet)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2.5 1-4 4-4 8h4"/></svg></span>
+          <span class="t"><h3>Log dinner</h3><p>7:00 PM · Chicken, greens &amp; rice, 620 kcal</p></span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <button class="item done">
+          <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
+          <span class="t"><h3>Log breakfast</h3><p>Greek yoghurt, oats &amp; berries, 420 kcal</p></span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <section class="block reveal" style="animation-delay:.08s" aria-label="Today's goals">
+      <div class="head"><div><h2>Today's goals</h2><p>Your targets for today.</p></div><a href="#">Edit</a></div>
+      <div class="gcard"><div class="g"><div class="gr"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="#CEF4F1" stroke-width="5"/><circle cx="28" cy="28" r="24" fill="none" stroke="#01837E" stroke-width="5" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="108.6"/></svg><b>420</b></div><div class="nm">Calories</div><div class="tg">of 1,500</div></div><div class="g"><div class="gr"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="#CEF4F1" stroke-width="5"/><circle cx="28" cy="28" r="24" fill="none" stroke="#01837E" stroke-width="5" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="105.6"/></svg><b>45</b></div><div class="nm">Protein</div><div class="tg">of 150 g</div></div><div class="g"><div class="gr"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="#CEF4F1" stroke-width="5"/><circle cx="28" cy="28" r="24" fill="none" stroke="#01837E" stroke-width="5" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="108.6"/></svg><b>280</b></div><div class="nm">Calcium</div><div class="tg">of 1,000 mg</div></div><div class="g"><div class="gr"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="#CEF4F1" stroke-width="5"/><circle cx="28" cy="28" r="24" fill="none" stroke="#01837E" stroke-width="5" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8"/></svg><b>0</b></div><div class="nm">Exercise</div><div class="tg">of 45 min</div></div></div>
+    </section>
+
+    <section class="block reveal" style="animation-delay:.12s" aria-label="Today's exercise">
+      <div class="head"><h2>Today's exercise</h2><a href="#">View full plan <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></a></div>
+      <div class="ex">
+        <div class="row1"><div class="thumb" role="img" aria-label="Workout video: wall push-up"><span class="play" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></span></div>
+          <div><h3>Upper Body + 30-Min Zone 2</h3><div class="est">Estimated time: 55 minutes</div>
+            <ul class="checks"><li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Strength training (3–4 exercises)</li><li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>30 min Zone 2 cardio</li></ul></div></div>
+        <button class="btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M7 4.5v15l13-7.5z"/></svg>Start workout</button>
+      </div>
+    </section>
+
+    <section class="block reveal" style="animation-delay:.16s" aria-label="Today's meals">
+      <div class="head"><div><h2>Today's meals</h2><p>Plan or log today's food, any one way.</p></div><a href="#">Nutrition targets</a></div>
+      <div class="opts">
+        <button class="opt"><span class="ic" style="background:var(--blue-tint);color:var(--blue)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><span><h3>Meal database</h3><p>Pre-planned meals, one tap to add</p></span></button>
+        <button class="opt"><span class="ic" style="background:var(--violet-tint);color:var(--violet)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span><span><h3>Today's plan</h3><p>Three meals built for your targets</p></span></button>
+        <button class="opt"><span class="ic" style="background:var(--soft);color:var(--primary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></span><span><h3>Photograph it</h3><p>Snap your meal and we'll log it</p></span></button>
+        <button class="opt"><span class="ic" style="background:var(--amber-tint);color:var(--amber)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11 12 15.5 16.5 11M5 19h14"/></svg></span><span><h3>Import</h3><p>Bring meals in from another app</p></span></button>
+      </div>
+      <div class="plan">
+        <div class="ph"><span>IF YOU USE TODAY'S PLAN</span><a href="#">Swap any meal <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></a></div>
+        <div class="pr"><b>Breakfast</b><span>420 cal · 32 g · 320 mg</span></div>
+        <div class="pr"><b>Lunch</b><span>510 cal · 45 g · 280 mg</span></div>
+        <div class="pr"><b>Dinner</b><span>620 cal · 55 g · 430 mg</span></div>
+      </div>
+    </section>
+  </div>
+
+  <nav class="tabs" aria-label="Main">
+    <div class="pillbar">
+      <button class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6.5 8 6.5V20H4z"/></svg>Home</button>
+      <button class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Record</button>
+      <button class="tab on" aria-current="page"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4.5" width="15" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>To do</button>
+      <button class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/></svg>Plan</button>
+    </div>
+    <button class="orb" aria-label="Ask Inlay"></button>
+  </nav>
+  <div class="home-ind"></div>
+</main>
+</body>
+</html>

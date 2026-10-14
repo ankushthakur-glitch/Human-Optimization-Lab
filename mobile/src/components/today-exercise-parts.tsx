@@ -37,12 +37,18 @@ export function goBack(fallback: "/" | "/exercise") {
     beside it centres on it with (MARK_SIZE - lineHeight) / 2 above. */
 export const MARK_SIZE = 28
 
-/** A move's or a step's number on the teal tint; a green check once the
-    move is done. */
+/** A move's or a step's number on the teal tint; a small light green check
+    once the move is done. */
 export function NumberMark({ n, done }: { n: number; done?: boolean }) {
   return (
     <View style={[styles.mark, done && styles.markDone]}>
-      {done ? <Check size={14} color={color.onPrimary} weight="bold" /> : <Text style={styles.markText}>{n}</Text>}
+      {done ? (
+        <View style={styles.doneDot}>
+          <Check size={10} color={color.ok} weight="bold" />
+        </View>
+      ) : (
+        <Text style={styles.markText}>{n}</Text>
+      )}
     </View>
   )
 }
@@ -78,7 +84,10 @@ export function TickCircle({ done }: { done: boolean }) {
 const styles = StyleSheet.create({
   pressed: { opacity: 0.6 },
   mark: { width: MARK_SIZE, height: MARK_SIZE, borderRadius: MARK_SIZE / 2, alignItems: "center", justifyContent: "center", backgroundColor: HUE.teal.tint },
-  markDone: { backgroundColor: chart.inRange },
+  // Done: the tile stays 28 so the words keep their place, with a small 20
+  // light green circle and a green check at its centre.
+  markDone: { backgroundColor: "transparent" },
+  doneDot: { width: 20, height: 20, borderRadius: 10, backgroundColor: color.okTint, alignItems: "center", justifyContent: "center" },
   // Frontline's step number: 12 medium in the text teal.
   markText: { ...type.metaStrong, color: ink.primary, fontVariant: ["tabular-nums"] },
   // The kit row's metrics (NeedsRow), so the moves and the walk sit alike:

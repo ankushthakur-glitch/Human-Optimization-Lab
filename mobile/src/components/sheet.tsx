@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from "react-native"
+import { Animated, Easing, Keyboard, Platform, Pressable, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { X } from "@/components/ph"
@@ -23,10 +23,24 @@ export function Sheet({
   children: React.ReactNode
 }) {
   const { bottom } = useSafeAreaInsets()
+  // Slides up from the bottom as it opens.
+  const [height, setHeight] = React.useState(0)
+  const progress = React.useRef(new Animated.Value(0)).current
+  React.useEffect(() => {
+    if (!height) return
+    const run = Animated.timing(progress, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" })
+    run.start()
+    return () => run.stop()
+  }, [height, progress])
+  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [height, 0] })
   return (
     <View style={StyleSheet.absoluteFill}>
       <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Close" />
-      <View style={styles.sheet} accessibilityViewIsModal>
+      <Animated.View
+        style={[styles.sheet, { opacity: height ? 1 : 0, transform: [{ translateY }] }]}
+        onLayout={(e) => setHeight(e.nativeEvent.layout.height)}
+        accessibilityViewIsModal
+      >
         <View style={styles.head}>
           <View style={styles.titleRow}>
             <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
@@ -39,7 +53,7 @@ export function Sheet({
           </Pressable>
         </View>
         <View style={[styles.body, { paddingBottom: Math.max(bottom, 24) }]}>{children}</View>
-      </View>
+      </Animated.View>
     </View>
   )
 }

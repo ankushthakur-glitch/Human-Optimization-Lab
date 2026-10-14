@@ -1749,12 +1749,16 @@ export function Tabs<T extends string>({
   value,
   onChange,
   scroll = false,
+  snug = false,
 }: {
   options: { value: T; label: string }[]
   value: T
   onChange: (value: T) => void
   /** Many tabs: the track scrolls sideways, to the screen's edges. */
   scroll?: boolean
+  /** Short words in equal cells (a meal's four slots): the chip's text size
+      and a narrow inset, so every label fits on one line. */
+  snug?: boolean
 }) {
   const track = (
     <View style={styles.tabs} accessibilityRole="tablist">
@@ -1767,9 +1771,9 @@ export function Tabs<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             aria-selected={on}
-            style={[styles.tab, scroll && styles.tabScroll, on && styles.tabOn, i === options.length - 1 && styles.tabLast]}
+            style={[styles.tab, scroll && styles.tabScroll, snug && styles.tabSnug, on && styles.tabOn, i === options.length - 1 && styles.tabLast]}
           >
-            <Text style={[styles.tabText, on && styles.tabTextOn]} numberOfLines={1}>
+            <Text style={[styles.tabText, snug && styles.tabTextSnug, on && styles.tabTextOn]} numberOfLines={1}>
               {o.label}
             </Text>
           </Pressable>
@@ -1790,7 +1794,7 @@ export function Tabs<T extends string>({
     (a checkbox, for picking several); ChipRow sets `radio` for one choice
     of many. Onboarding keeps flow's Chip as it is; the signed-in screens
     use this one. */
-export function Chip({ label, selected, onPress, radio }: { label: string; selected: boolean; onPress: () => void; radio?: boolean }) {
+export function Chip({ label, selected, onPress, radio, tick = true }: { label: string; selected: boolean; onPress: () => void; radio?: boolean; tick?: boolean }) {
   return (
     <Pressable
       onPress={onPress}
@@ -1799,7 +1803,7 @@ export function Chip({ label, selected, onPress, radio }: { label: string; selec
       aria-checked={selected}
       style={({ pressed }) => [styles.chip, selected && styles.chipOn, pressed && styles.chipPressed]}
     >
-      {selected && <Check size={14} color={color.primary} weight="bold" />}
+      {selected && tick && <Check size={14} color={color.primary} weight="bold" />}
       <Text style={[styles.chipText, selected && styles.chipTextOn]}>{label}</Text>
     </Pressable>
   )
@@ -1820,14 +1824,17 @@ export function ChipRow<T extends string>({
   onChange,
   wrap,
   label,
+  tick,
 }: {
   options: Choice<T>[]
   value?: T
   onChange: (value: T) => void
   wrap?: boolean
   label?: string
+  /** `false` leaves the check off the chosen chip (the fill and edge still mark it). */
+  tick?: boolean
 }) {
-  const chips = options.map((o) => <Chip key={o.value} label={o.label} selected={o.value === value} onPress={() => onChange(o.value)} radio />)
+  const chips = options.map((o) => <Chip key={o.value} label={o.label} selected={o.value === value} onPress={() => onChange(o.value)} radio tick={tick} />)
   if (wrap)
     return (
       <View style={styles.chipsWrap} accessibilityRole="radiogroup" accessibilityLabel={label}>
@@ -2097,6 +2104,8 @@ const styles = StyleSheet.create({
   // signed-in page (space.gutter) and in a sheet alike they run to the
   // screen's edges, and the first one still lines up with the content.
   tabsScroll: { paddingHorizontal: gutter },
+  tabSnug: { paddingHorizontal: 4 },
+  tabTextSnug: { ...type.chip, color: ink.secondary },
   tabOn: { backgroundColor: color.primaryTint },
   tabLast: { borderRightWidth: 0 },
   tabText: { ...type.title, color: ink.secondary },

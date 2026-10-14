@@ -28,12 +28,12 @@ import { formatNumber } from "@/lib/trends"
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
 
-export type ReviewGoalId = "energy" | "protein" | "calcium" | "exercise"
+export type ReviewGoalId = "energy" | "protein" | "calcium" | "exercise" | "water"
 
 export type ReviewGoal = {
   id: ReviewGoalId
   name: string
-  unit: "kcal" | "g" | "mg" | "min"
+  unit: "kcal" | "g" | "mg" | "min" | "ml"
   target: number
   /** The words on the card under the number: "Goal 500 kcal deficit". */
   targetWords: string
@@ -70,12 +70,23 @@ const GOALS: Record<ReviewGoalId, ReviewGoal> = {
     ],
   },
   exercise: { id: "exercise", name: "Exercise", unit: "min", target: 45, targetWords: "Goal: 45 min" },
+  water: {
+    id: "water",
+    name: "Water",
+    unit: "ml",
+    target: 2000,
+    targetWords: "Goal: at least 2,000 ml",
+    fixes: [
+      { what: "a large glass of water with each meal", adds: 750 },
+      { what: "a bottle of water on your walk", adds: 500 },
+    ],
+  },
 }
 
 /** The goals each plan scores, in the order the screen numbers them. */
 const PLAN_GOALS: Record<MemberFocus, ReviewGoal[]> = {
-  weight: [GOALS.energy, GOALS.protein, GOALS.calcium, GOALS.exercise],
-  bone: [{ ...GOALS.calcium }, { ...GOALS.protein, target: 100, targetWords: "Goal: at least 100 g" }, { ...GOALS.exercise, target: 30, targetWords: "Goal: 30 min" }],
+  weight: [GOALS.energy, GOALS.protein, GOALS.calcium, GOALS.exercise, GOALS.water],
+  bone: [{ ...GOALS.calcium }, { ...GOALS.protein, target: 100, targetWords: "Goal: at least 100 g" }, { ...GOALS.exercise, target: 30, targetWords: "Goal: 30 min" }, GOALS.water],
 }
 
 export type GoalState = "met" | "close" | "under" | "none"
@@ -134,23 +145,23 @@ export type ReviewDay = {
 
 /** One sample day: food, protein, calcium, exercise minutes and the
     watch's active burn. Weekday pattern, then a few days that differ. */
-type Sample = { food: number; protein: number; calcium: number; minutes: number; active: number; status?: "partial" | "none" }
+type Sample = { food: number; protein: number; calcium: number; minutes: number; active: number; water: number; status?: "partial" | "none" }
 
 const PATTERN: Sample[] = [
-  { food: 1480, protein: 102, calcium: 1080, minutes: 45, active: 390 },
-  { food: 1520, protein: 114, calcium: 960, minutes: 50, active: 410 },
-  { food: 1450, protein: 108, calcium: 1020, minutes: 30, active: 300 },
-  { food: 1430, protein: 118, calcium: 1100, minutes: 45, active: 380 },
-  { food: 1560, protein: 96, calcium: 880, minutes: 40, active: 360 },
-  { food: 1500, protein: 112, calcium: 1040, minutes: 60, active: 470 },
-  { food: 1490, protein: 105, calcium: 990, minutes: 45, active: 400 },
+  { food: 1480, protein: 102, calcium: 1080, minutes: 45, active: 390, water: 1800 },
+  { food: 1520, protein: 114, calcium: 960, minutes: 50, active: 410, water: 2100 },
+  { food: 1450, protein: 108, calcium: 1020, minutes: 30, active: 300, water: 2300 },
+  { food: 1430, protein: 118, calcium: 1100, minutes: 45, active: 380, water: 1600 },
+  { food: 1560, protein: 96, calcium: 880, minutes: 40, active: 360, water: 2000 },
+  { food: 1500, protein: 112, calcium: 1040, minutes: 60, active: 470, water: 2200 },
+  { food: 1490, protein: 105, calcium: 990, minutes: 45, active: 400, water: 1900 },
 ]
 
 /** Days before today that differ from the pattern. */
 const EXCEPTIONS: Record<number, Partial<Sample>> = {
-  [-4]: { status: "partial", food: 1010, protein: 70, calcium: 640 },
+  [-4]: { status: "partial", food: 1010, protein: 70, calcium: 640, water: 900 },
   [-10]: { status: "none" },
-  [-15]: { status: "partial", food: 1040, protein: 64, calcium: 700 },
+  [-15]: { status: "partial", food: 1040, protein: 64, calcium: 700, water: 1000 },
   [-20]: { status: "none" },
 }
 
@@ -206,6 +217,7 @@ function valueOf(goal: ReviewGoal, a: ReturnType<typeof amountsOn>, energy?: Ene
   if (goal.id === "energy") return energy?.deficit
   if (goal.id === "protein") return a.protein
   if (goal.id === "calcium") return a.calcium
+  if (goal.id === "water") return a.water
   return a.minutes
 }
 
