@@ -1,20 +1,18 @@
-import { router } from "expo-router"
+import { router, useFocusEffect } from "expo-router"
 import * as React from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
-import Svg, { Circle } from "react-native-svg"
 
 import { formatNumber } from "@/components/charts"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { Upcoming } from "@/components/home-free"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
-import { Barbell, BowlFood, Bone, CaretRight, Check, Clock, Flame, Heartbeat, PersonSimpleRun, PersonSimpleWalk, Scales } from "@/components/ph"
+import { Barbell, BowlFood, Bone, CaretRight, Check, Drop, Flame, Heartbeat, PersonSimpleRun, PersonSimpleWalk, Scales } from "@/components/ph"
 import {
   Block,
   Card,
   HUE,
-  Hero,
+  ProgressBar,
   Rise,
-  heroText,
   type Hue,
 } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
@@ -28,14 +26,12 @@ import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
 import { keepEnd } from "@/lib/words"
 
 /* An Optimization member's home, four sections in this order (13 Oct 2026):
-   1. To do: today's tracker, a teal hero with how many of today's tasks are
-      done as a ring, the next one, and the three doors (Exercise, Diet plan,
-      Log a meal); then the checklist she works through: the walk, the meal,
-      the exercise, the weigh in and the blood pressure each open their
-      screen or sheet;
-   2. Your trends: her results as a sideways strip of graphs;
-   3. Yesterday's goals: the score and the four goal tiles the client
+   1. To do: the checklist she works through: the walk, the meal, the
+      exercise, the weigh in and the blood pressure each open their screen
+      or sheet (the tracker hero was removed 14 Oct 2026);
+   2. Yesterday's goals: the score and the four goal tiles the client
       approved (12 Oct 2026), which open the full review;
+   3. Your trends: her results as a sideways strip of graphs;
    4. Upcoming: what is coming next, last because it is the furthest ahead.
    Only what the care plan decisions cover: no step counts, no wearables
    (a later phase). Medicines and new visits live on the Record tab. */
@@ -43,32 +39,35 @@ import { keepEnd } from "@/lib/words"
 export function OptimizedHome() {
   const onboarding = useOnboarding()
   const [sheet, setSheet] = React.useState<CheckInKind>()
+  // The to-do reads the clock (what is next, what is late), so it is redone on
+  // every pull down and every time the home comes back into view.
+  const [, setTick] = React.useState(0)
+  const refresh = React.useCallback(() => setTick((n) => n + 1), [])
+  useFocusEffect(refresh)
   const t = today(onboarding)
   const day = reviewDay(onboarding, 1)
 
   return (
     <TabScreen
       tab="home"
+      onRefresh={refresh}
       header={<HomeHeader line="Here's your day." />}
       overlay={sheet && <CheckInSheet kind={sheet} onClose={() => setSheet(undefined)} />}
     >
       <View style={styles.page}>
         <StatusBanner variant="member" tab="home" />
-        <Rise at={1} id="home:tracker">
-          <TodayTracker t={t} />
-        </Rise>
-        <Rise at={2} id="home:todo">
+        <Rise at={1} id="home:todo">
           <TodoList t={t} onCheckIn={setSheet} />
+        </Rise>
+        <Rise at={2} id="home:goals">
+          <YesterdayGoals day={day} />
         </Rise>
         <Rise at={3} id="home:trends">
           <Block title="Your trends" onSeeAll={() => router.push("/results")}>
             <TrendStrip />
           </Block>
         </Rise>
-        <Rise at={4} id="home:goals">
-          <YesterdayGoals day={day} />
-        </Rise>
-        <Upcoming at={5} />
+        <Upcoming at={4} />
       </View>
     </TabScreen>
   )
@@ -76,76 +75,7 @@ export function OptimizedHome() {
 
 type TodayPlan = ReturnType<typeof today>
 
-const openToday = () => router.push(`/day/${localDay(new Date())}`)
 const openReview = () => router.push("/review")
-
-/* ---------------------------------------------------- today's tracker -- */
-
-/** Today's tracker: the hero alone (13 Oct 2026: the Exercise, Diet plan and
-    Log a meal tiles left the home; their screens open from the to-do cards
-    and the Plan tab). */
-function TodayTracker({ t }: { t: TodayPlan }) {
-  const next = t.actions.filter((a) => a.counts).find((a) => a.status !== "done")
-  const percent = t.of ? Math.round((t.done / t.of) * 100) : 0
-  const line = next ? `Next: ${next.title}, ${next.time}` : "Everything is done for today"
-  return (
-    <View style={styles.tracker}>
-      <Hero>
-        <View style={styles.heroBody}>
-          <Pressable
-            onPress={openToday}
-            accessibilityRole="button"
-            accessibilityLabel={`Today's tracker, ${t.done} of ${t.of} done. ${line}. Opens today's plan`}
-            style={({ pressed }) => [styles.heroPanel, pressed && styles.pressed]}
-          >
-            <TrackerRing percent={percent} />
-            <View style={styles.fill}>
-              <Text style={styles.heroLabel}>{`Today, ${t.label}`}</Text>
-              <Text style={heroText.title}>{`${t.done} of ${t.of} done`}</Text>
-              <Text style={heroText.line}>{line}</Text>
-            </View>
-            <CaretRight size={18} color={ink.onColor} />
-          </Pressable>
-        </View>
-      </Hero>
-    </View>
-  )
-}
-
-/** Tasks done as a white ring on the hero's teal, the percent in its centre. */
-function TrackerRing({ percent }: { percent: number }) {
-  const size = 68
-  const sw = 7
-  const r = (size - sw) / 2
-  const c = 2 * Math.PI * r
-  const share = Math.min(Math.max(percent, 0), 100) / 100
-  return (
-    <View style={{ width: size, height: size }}>
-      <Svg width={size} height={size}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.25)" strokeWidth={sw} fill="none" />
-        {share > 0 && (
-          <Circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            stroke={ink.onColor}
-            strokeWidth={sw}
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={`${c * share} ${c}`}
-            transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          />
-        )}
-      </Svg>
-      <View style={styles.ringCenter}>
-        <Text style={styles.ringNumber}>
-          {percent}
-          <Text style={styles.ringUnit}>%</Text>
-        </Text>
-      </View>
-    </View>
-  )
-}
 
 /* ------------------------------------------------------ today's to-do -- */
 
@@ -155,20 +85,10 @@ function todayEntry(s: ReturnType<typeof useOnboarding>, kind: "weight" | "bp") 
   return (s.entries ?? []).filter((e) => e.kind === kind && dayOfAt(e.at) === day).at(-1)
 }
 
-/** "Labs tomorrow at 7:30 AM" and what to do tonight, from the plan's one
-    line. */
-function prepParts(prep: string): [string, string | undefined] {
-  const at = prep.indexOf(": ")
-  if (at < 0) return [prep, undefined]
-  const rest = prep.slice(at + 2)
-  return [prep.slice(0, at), rest.charAt(0).toUpperCase() + rest.slice(1)]
-}
-
 function TodoList({ t, onCheckIn }: { t: TodayPlan; onCheckIn: (kind: CheckInKind) => void }) {
   const onboarding = useOnboarding()
   const tasks = t.actions.filter((a) => a.counts)
   const walk = onboarding.exercises?.[t.day]?.walk
-  const [prepTitle, prepLine] = t.prep ? prepParts(t.prep) : []
 
   const card = (a: TodayAction) => {
     const facts = keepEnd(`${a.time} · ${a.detail}`)
@@ -225,21 +145,26 @@ function TodoList({ t, onCheckIn }: { t: TodayPlan; onCheckIn: (kind: CheckInKin
       <View style={styles.todoHead}>
         <View style={styles.fill}>
           <Text style={styles.todoTitle} accessibilityRole="header">
-            Today's To-Do
+            Today's To-do
           </Text>
+          <Text style={styles.todoSub}>Small steps toward your daily health goals.</Text>
+        </View>
+        <View style={styles.todoCount} accessibilityLabel={`${t.done} of ${t.of} tasks done`}>
+          <Text style={styles.todoCountText}>{`${t.done}/${t.of}`}</Text>
         </View>
       </View>
+      <ProgressBar done={t.done} total={t.of} />
       {/* Done tasks sink to the bottom; Array.sort is stable, so each group
           keeps its day order. */}
       <View style={styles.list}>{tasks.map(card).sort((x, y) => Number(!!x.props.done) - Number(!!y.props.done))}</View>
-      {!!prepTitle && <TaskCard title={prepTitle} meta={prepLine && keepEnd(prepLine)} icon={<Clock size={18} color={color.primary} />} onPress={() => router.push("/gaps")} />}
     </View>
   )
 }
 
 /** One task as a card in a list: a round icon tile, the title and its
     facts, and a chevron on the right (13 Oct 2026: no radio button). A done
-    task tints its card teal and says when in its facts. Every card opens its
+    task keeps the neutral card (14 Oct 2026): its tile shows a smaller tick,
+    the title is struck through and its facts say when. Every card opens its
     screen or sheet, the walk's included, and the task is done once logged
     there. */
 function TaskCard({
@@ -262,9 +187,9 @@ function TaskCard({
       accessibilityLabel={[title, meta, done === undefined ? undefined : done ? "done" : "to do"].filter(Boolean).join(", ")}
       style={({ pressed }) => [styles.task, done && styles.taskDone, pressed && styles.pressed]}
     >
-      <View style={[styles.taskTile, done && styles.taskTileDone]}>{done ? <Check size={18} weight="bold" color={color.primary} /> : icon}</View>
+      <View style={[styles.taskTile, done && styles.taskTileDone]}>{done ? <Check size={15} weight="bold" color={ink.tertiary} /> : icon}</View>
       <View style={styles.fill}>
-        <Text style={[styles.taskTitle, done && styles.struck]} numberOfLines={2}>
+        <Text style={[styles.taskTitle, done && styles.taskTitleDone, done && styles.struck]} numberOfLines={2}>
           {title}
         </Text>
         {!!meta && (
@@ -280,11 +205,15 @@ function TaskCard({
 
 /* ------------------------------------------------------ yesterday's goals -- */
 
+/** The four cards on the home, in this order (14 Oct 2026). */
+const HOME_GOALS: ReviewGoalId[] = ["calcium", "protein", "exercise", "water"]
+
 function YesterdayGoals({ day }: { day: ReviewDay }) {
+  const goals = HOME_GOALS.map((id) => day.goals.find((g) => g.goal.id === id)).filter((g): g is GoalDay => !!g)
   return (
     <Block title="Yesterday's goals" link={{ label: "Details", onPress: openReview }}>
       <View style={styles.tiles}>
-        {day.goals.map((g) => (
+        {goals.map((g) => (
           <GoalTile key={g.goal.id} goal={g} />
         ))}
       </View>
@@ -296,18 +225,21 @@ function YesterdayGoals({ day }: { day: ReviewDay }) {
 
 /** Each goal's colour and icon, as the client's screen gives every goal
     its own. */
-const GOAL_LOOK: Record<ReviewGoalId, { hue: Hue; Icon: React.ComponentType<{ size?: number; color?: string }>; name: string }> = {
+const WATER_HUE = { ink: "#0E7FA8", tint: "#E3F4FA" }
+
+const GOAL_LOOK: Record<ReviewGoalId, { hue: Hue | "water"; Icon: React.ComponentType<{ size?: number; color?: string }>; name: string }> = {
   energy: { hue: "amber", Icon: Flame, name: "Calorie deficit" },
   protein: { hue: "blue", Icon: BowlFood, name: "Protein" },
   calcium: { hue: "violet", Icon: Bone, name: "Calcium" },
   exercise: { hue: "teal", Icon: PersonSimpleRun, name: "Exercise" },
+  water: { hue: "water", Icon: Drop, name: "Water" },
 }
 
 const STATE_WORD = { met: "Met", close: "Close", under: "Short", none: "No log" } as const
 
 /** The colours of a goal's progress bar and day bars: green when the day's
     goal is complete or very near (90% or more), red when it is incomplete; the day in view, still in progress, is blue in the bars. */
-const PROGRESS = { done: "#1E9E5A", short: "#E34948", current: "#2A78D6" } as const
+const PROGRESS = { done: "#16A85A", short: "#E8504F", current: "#2A78D6" } as const
 
 function progressColor(value: number | undefined, target: number) {
   const s = value === undefined || target <= 0 ? 0 : value / target
@@ -318,7 +250,7 @@ function progressColor(value: number | undefined, target: number) {
     loved this element, keep it"): leave its look as it is. */
 export function GoalTile({ goal }: { goal: GoalDay }) {
   const look = GOAL_LOOK[goal.goal.id]
-  const hue = HUE[look.hue]
+  const hue = look.hue === "water" ? WATER_HUE : HUE[look.hue]
   const unit = goal.goal.unit
   const share = goal.value !== undefined ? Math.max(0, Math.min(goal.value / goal.goal.target, 1)) : 0
   const max = Math.max(goal.goal.target, ...goal.week.map((w) => w.value ?? 0))
@@ -361,9 +293,9 @@ export function GoalTile({ goal }: { goal: GoalDay }) {
               style={[
                 styles.microBar,
                 {
-                  height: w.value !== undefined ? Math.max(3, (24 * w.value) / max) : 3,
+                  height: w.value !== undefined ? Math.max(3, (28 * w.value) / max) : 3,
                   backgroundColor: w.selected ? PROGRESS.current : progressColor(w.value, goal.goal.target),
-                  opacity: w.value === undefined ? 0.15 : i === goal.week.length - 1 ? 1 : w.partial ? 0.3 : 0.6,
+                  opacity: w.value === undefined ? 0.15 : i === goal.week.length - 1 ? 1 : w.partial ? 0.4 : 0.8,
                 },
               ]}
             />
@@ -404,50 +336,36 @@ function TrendStrip() {
 
 /* ------------------------------------------------------------- styles -- */
 
-const WHITE_SOFT = "rgba(255, 255, 255, 0.82)"
-
 const styles = StyleSheet.create({
   page: { gap: space.section, paddingBottom: space.section },
   fill: { flex: 1 },
   pressed: { opacity: 0.7 },
 
-  // Today's tracker: the hero's gradient with the summary sitting straight on it,
-  // then the three doors on white cards.
-  tracker: { gap: space.item },
-  heroBody: { marginHorizontal: -4, marginVertical: -2 },
-  heroPanel: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.item,
-    padding: space.item,
-    borderRadius: 14,
-  },
-  heroLabel: { ...type.label, color: WHITE_SOFT },
-  ringCenter: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, alignItems: "center", justifyContent: "center" },
-  ringNumber: { ...type.hero, fontSize: 22, lineHeight: 28, color: ink.onColor },
-  ringUnit: { ...type.unit, fontSize: 14, color: WHITE_SOFT },
-
   // Today's to-do: a heading with its count, then one card per task, a done
   // one tinted teal with its check filled.
-  todo: { gap: space.item },
+  // One card holds the heading, the count, the bar and every task; the
+  // tasks are rows in it, a hairline between each.
+  todo: { gap: space.item, padding: space.card, borderRadius: 12, backgroundColor: card.fill, boxShadow: card.shadow },
   todoHead: { flexDirection: "row", alignItems: "flex-start", gap: space.item },
-  todoTitle: { ...type.tabTitle, fontSize: 20, lineHeight: 28, color: ink.strong },
-  list: { gap: space.item },
+  todoTitle: { ...type.sectionLabel },
+  todoSub: { ...type.label, marginTop: 2 },
+  todoCount: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: color.primarySoft, borderWidth: 1, borderColor: color.primaryEdge },
+  todoCountText: { ...type.metaStrong, color: ink.strong },
+  list: {},
   task: {
     flexDirection: "row",
     alignItems: "center",
     gap: space.lead,
-    padding: space.item,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: hairline.edge,
-    backgroundColor: color.background,
-    boxShadow: card.shadow,
+    paddingVertical: space.item,
+    borderTopWidth: 1,
+    borderTopColor: hairline.rule,
   },
-  taskDone: { backgroundColor: color.primarySoft, borderColor: color.primaryEdge },
   taskTile: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: color.primarySoft },
-  taskTileDone: { backgroundColor: color.background },
+  // Done: the disabled look, the card and its words faded, the tile grey.
+  taskDone: { opacity: 0.6 },
+  taskTileDone: { backgroundColor: hairline.edge },
   taskTitle: { ...type.title, color: ink.strong },
+  taskTitleDone: { color: ink.tertiary },
   taskMeta: { ...type.label, marginTop: space.line },
   struck: { textDecorationLine: "line-through" },
 
@@ -463,8 +381,8 @@ const styles = StyleSheet.create({
   value: { ...type.hero },
   bar: { height: 6, borderRadius: 3, overflow: "hidden" },
   barFill: { height: 6, borderRadius: 3 },
-  micro: { flexDirection: "row", alignItems: "flex-end", gap: 4, height: 24 },
-  microBar: { flex: 1, borderRadius: 2 },
+  micro: { flexDirection: "row", alignItems: "flex-end", gap: 4, height: 28 },
+  microBar: { flex: 1, borderRadius: 3 },
 
   bleed: { marginHorizontal: -space.gutter },
   strip: { gap: space.item, paddingHorizontal: space.gutter },

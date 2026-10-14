@@ -41,6 +41,13 @@
           "faceIDPermission": "Inlay Health uses Face ID to unlock the app."
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Inlay Health uses your photos so you can log a meal from a picture.",
+          "cameraPermission": "Inlay Health uses the camera so you can photograph a meal to log it."
+        }
+      ],
       "expo-font",
       [
         "expo-splash-screen",
@@ -50,7 +57,8 @@
           "backgroundColor": "#FFFFFF"
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

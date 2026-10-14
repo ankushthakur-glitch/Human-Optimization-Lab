@@ -172,10 +172,12 @@ type FieldProps = TextInputProps & {
   icon?: React.ComponentType<{ color: string }>
   /** Rendered inside the input's box, on the right. */
   trailing?: React.ReactNode
+  /** A 44 pt box in place of 52, for dense forms. */
+  compact?: boolean
 }
 
 export const TextField = React.forwardRef<TextInput, FieldProps>(function TextField(
-  { label, required, error, icon: Icon, trailing, style, onFocus, onBlur, multiline, ...input },
+  { label, required, error, icon: Icon, trailing, style, onFocus, onBlur, multiline, compact, ...input },
   ref
 ) {
   const [focused, setFocused] = React.useState(false)
@@ -188,6 +190,7 @@ export const TextField = React.forwardRef<TextInput, FieldProps>(function TextFi
       <View
         style={[
           styles.inputBox,
+          compact && styles.inputBoxCompact,
           multiline && styles.inputBoxMultiline,
           focused && styles.inputBoxFocused,
           !!error && styles.inputBoxInvalid,
@@ -444,6 +447,8 @@ const styles = StyleSheet.create({
     borderRadius: touchRadius,
     backgroundColor: color.background,
   },
+  // A shorter box (44) where a form is dense, e.g. a set's reps and weight.
+  inputBoxCompact: { height: 44 },
   // A few lines of free text: grows from three lines, text from the top.
   inputBoxMultiline: { height: undefined, minHeight: 112, alignItems: "stretch" },
   inputMultiline: { height: undefined, minHeight: 110, paddingTop: 13, paddingBottom: 13, lineHeight: 22, textAlignVertical: "top" },

@@ -6,6 +6,7 @@ import {
   Easing,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -81,6 +82,7 @@ export function TabScreen({
   overlay,
   bare,
   headless,
+  onRefresh,
   children,
 }: {
   /** No tab bar: a back caret in the header instead. */
@@ -91,6 +93,8 @@ export function TabScreen({
   /** Stays above the tab bar while the page scrolls beneath it, e.g. the
       Plan tab's "Build my personalized plan". */
   footer?: React.ReactNode
+  /** Pull down to refresh: the page redoes what it shows (home's to-do). */
+  onRefresh?: () => void | Promise<void>
   /** Drawn over everything, tab bar included, e.g. a detail panel. */
   overlay?: React.ReactNode
   tab: TabName
@@ -106,12 +110,22 @@ export function TabScreen({
 }) {
   const { bottom } = useSafeAreaInsets()
   const top = useTopInset()
+  const [refreshing, setRefreshing] = React.useState(false)
+  const pull = async () => {
+    setRefreshing(true)
+    try {
+      await onRefresh?.()
+    } finally {
+      setRefreshing(false)
+    }
+  }
   // Record, To do and Plan open over home with no animation; the left edge
   // swipe still drags them back to it.
   useDragBack("none", tab !== "home")
   // The bar sits in the home indicator's area, as iOS's own floating bars
-  // do; the content keeps clear of it when scrolled to the end.
-  const barBottom = Math.max(bottom - 8, 12)
+  // do, 8 above the screen edge (more over a home indicator) and 8 under the
+  // list, so the strip hugs the pill; the list ends clear of it.
+  const barBottom = Math.max(bottom - 16, 8)
   const barSpace = barBottom + BAR
   return (
     <View style={styles.screen}>
@@ -134,18 +148,18 @@ export function TabScreen({
         <View style={styles.fill}>
           <PageGround />
           {pinned && <View style={[styles.body, styles.pinned]}>{pinned}</View>}
-          {/* The list stops above the bar: nothing scrolls beneath the pill
-            or the orb, the strip under them is the page's own ground. */}
+          {/* The list runs the full height of the page, with no strip under
+            it: it scrolls beneath the floating pill and orb, and its last
+            card ends clear of them by the padding at its foot. */}
           <ScrollView
-            style={{ marginBottom: bare ? 0 : barSpace + space.inline }}
             contentContainerStyle={[
               styles.body,
               styles.content,
               !!pinned && styles.contentPinned,
-              !!footer && { paddingBottom: FOOTER_SPACE },
-              bare && { paddingBottom: bottom + space.inline },
+              { paddingBottom: (bare ? bottom : barSpace) + space.inline + (footer ? FOOTER_SPACE : 0) },
             ]}
             showsVerticalScrollIndicator={false}
+            refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={pull} /> : undefined}
           >
             {children}
           </ScrollView>

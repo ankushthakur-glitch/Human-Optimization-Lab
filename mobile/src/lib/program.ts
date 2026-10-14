@@ -4,6 +4,29 @@
    new version whenever new information arrives). Sample content for the
    prototype; the real plan is drafted from the patient's own record. */
 
+/* ------------------------------------------------------------- setup -- */
+
+export type SetupStep = "goals" | "insights" | "about"
+
+/** The set-up's steps in order: goals, what her data shows, then a few
+    questions about her. Finishing the last hands the plan to the doctor. */
+export const SETUP: { id: SetupStep; title: string; href: `/optimize/${SetupStep}` }[] = [
+  { id: "goals", title: "Your goals", href: "/optimize/goals" },
+  { id: "insights", title: "Your data insights", href: "/optimize/insights" },
+  { id: "about", title: "Tell us about you", href: "/optimize/about" },
+]
+
+/** Answers from the set-up, by question. */
+export type Intake = Record<string, string | string[]>
+
+/** The short tour at the end of set-up, one card at a time. */
+export const TOUR = [
+  { title: "One thing to do today", body: "Your plan turns into a short list each morning: food, movement and anything to check." },
+  { title: "Log what you actually did", body: "Tick it off, or tell us what you did instead. Busy days are part of it." },
+  { title: "See it move", body: "Progress is measured against where you started, from your own results." },
+  { title: "Your doctor stays in the loop", body: "Every version of your plan is approved by Dr. Patel before it reaches you." },
+]
+
 /** The fuller questionnaire, one page per topic. */
 export type IntakePage = {
   id: string

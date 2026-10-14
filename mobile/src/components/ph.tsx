@@ -88,6 +88,7 @@ export { PencilSimpleIcon as PencilSimple } from "phosphor-react-native/src/icon
 export { RulerIcon as Ruler } from "phosphor-react-native/src/icons/Ruler"
 export { ScanIcon as Scan } from "phosphor-react-native/src/icons/Scan"
 export { PlayIcon as Play } from "phosphor-react-native/src/icons/Play"
+export { ArrowsOutSimpleIcon as ArrowsOutSimple } from "phosphor-react-native/src/icons/ArrowsOutSimple"
 export { MicrophoneIcon as Microphone } from "phosphor-react-native/src/icons/Microphone"
 export { PaperPlaneRightIcon as PaperPlaneRight } from "phosphor-react-native/src/icons/PaperPlaneRight"
 export { MinusIcon as Minus } from "phosphor-react-native/src/icons/Minus"

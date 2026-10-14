@@ -1257,6 +1257,8 @@ export type ActivityLog = {
   sets?: number
   reps?: number
   weightLb?: number
+  /** Each set's own reps and weight, in order; `sets` counts those filled. */
+  entries?: { reps?: number; weightLb?: number }[]
   minutes?: number
   note?: string
 }

@@ -6,7 +6,7 @@ import { FlowScreen } from "@/components/flow"
 import { AskButton, PrimaryButton } from "@/components/hol"
 import { PersonSimpleWalk } from "@/components/ph"
 import { HeadCard, headText } from "@/components/plan-tab-pieces"
-import { Block, Chip, ChipRow, Group, HUE, NeedsRow, Tag, TextAction, type Tone } from "@/components/record-kit"
+import { Block, Chip, ChipRow, Group, HUE, NeedsRow, Tag, type Tone } from "@/components/record-kit"
 import { Sheet, SheetText } from "@/components/sheet"
 import { toast } from "@/components/toast"
 import { ExerciseRow, TickCircle, goBack, saveLog } from "@/components/today-exercise-parts"
@@ -95,7 +95,6 @@ export default function TodayExerciseScreen() {
      go?", with its stop rule and the practice's number, is never skipped. */
   const finished = log[session.id]
   const moved = session.exercises.filter((e) => moveDone(log[e.id], e)).length
-  const allMoved = moved === session.exercises.length
   // One set ticked, or reps typed, is a start ("0 of 5 done"), never "Not
   // started" over a row that reads "1 of 2 sets done".
   const started = session.exercises.some((e) => log[e.id])
@@ -113,13 +112,6 @@ export default function TodayExerciseScreen() {
   const footer = finished ? <AskButton params={{ topic: "plan" }} /> : (
     <>
       <PrimaryButton onPress={() => setSheet("finish")}>Finish workout</PrimaryButton>
-      {!allMoved && (
-        <View style={styles.other}>
-          <TextAction tone="muted" onPress={() => setSheet("other")}>
-            I did something else
-          </TextAction>
-        </View>
-      )}
     </>
   )
 
@@ -259,7 +251,6 @@ const styles = StyleSheet.create({
   titleLine: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: space.inline, rowGap: space.stack },
   // Sets the effort apart from the line about the session.
   effort: { marginTop: space.stack },
-  other: { alignItems: "center" },
   // A link inside the sheet's sentence: the link's weight and teal, at the
   // sentence's size.
   phone: { fontFamily: type.link.fontFamily, color: type.link.color },

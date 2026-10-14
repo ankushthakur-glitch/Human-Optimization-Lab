@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-10-14T10:08:07.472Z",
+        "reason": "Inter is the app's brand typeface (mobile/src/lib/theme.ts); the page must match the existing app, per Claude's reading of the user's brief"
+      }
+    ]
+  }
+}
