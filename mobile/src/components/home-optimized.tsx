@@ -4,16 +4,15 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 
 import { formatNumber } from "@/components/charts"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
+import { EnergyBalance } from "@/components/energy-balance"
 import { Upcoming } from "@/components/home-free"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { Barbell, BowlFood, Bone, CaretRight, Check, Drop, Flame, Heartbeat, PersonSimpleRun, PersonSimpleWalk, Scales } from "@/components/ph"
 import {
   Block,
   Card,
-  HUE,
   ProgressBar,
   Rise,
-  type Hue,
 } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { TrendCard } from "@/components/trend-tile"
@@ -21,18 +20,20 @@ import { reviewDay, type GoalDay, type ReviewDay, type ReviewGoalId } from "@/li
 import { useMarkers } from "@/lib/experience"
 import { clockOf, dayOfAt, localDay, today, type TodayAction } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { card, color, hairline, ink, space, type } from "@/lib/theme"
+import { card, chart, color, hairline, ink, space, type } from "@/lib/theme"
 import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
 import { keepEnd } from "@/lib/words"
 
-/* An Optimization member's home, four sections in this order (13 Oct 2026):
+/* An Optimization member's home, five sections in this order (13 Oct 2026):
    1. To do: the checklist she works through: the walk, the meal, the
       exercise, the weigh in and the blood pressure each open their screen
       or sheet (the tracker hero was removed 14 Oct 2026);
-   2. Yesterday's goals: the score and the four goal tiles the client
+   2. Energy balance: energy out minus food in, and the past seven days
+      (added 14 Oct 2026; every paid plan, shown once yesterday is fully logged);
+   3. Yesterday's goals: the score and the four goal tiles the client
       approved (12 Oct 2026), which open the full review;
-   3. Your trends: her results as a sideways strip of graphs;
-   4. Upcoming: what is coming next, last because it is the furthest ahead.
+   4. Your trends: her results as a sideways strip of graphs;
+   5. Upcoming: what is coming next, last because it is the furthest ahead.
    Only what the care plan decisions cover: no step counts, no wearables
    (a later phase). Medicines and new visits live on the Record tab. */
 
@@ -59,15 +60,20 @@ export function OptimizedHome() {
         <Rise at={1} id="home:todo">
           <TodoList t={t} onCheckIn={setSheet} />
         </Rise>
-        <Rise at={2} id="home:goals">
+        {day.energy && (
+          <Rise at={2} id="home:energy">
+            <EnergyBalance day={day} onDetails={openReview} />
+          </Rise>
+        )}
+        <Rise at={3} id="home:goals">
           <YesterdayGoals day={day} />
         </Rise>
-        <Rise at={3} id="home:trends">
+        <Rise at={4} id="home:trends">
           <Block title="Your trends" onSeeAll={() => router.push("/results")}>
             <TrendStrip />
           </Block>
         </Rise>
-        <Upcoming at={4} />
+        <Upcoming at={5} />
       </View>
     </TabScreen>
   )
@@ -223,22 +229,20 @@ function YesterdayGoals({ day }: { day: ReviewDay }) {
 
 /* -------------------------------------------------------------- goals -- */
 
-/** Each goal's colour and icon, as the client's screen gives every goal
-    its own. */
-const WATER_HUE = { ink: "#0E7FA8", tint: "#E3F4FA" }
-
-const GOAL_LOOK: Record<ReviewGoalId, { hue: Hue | "water"; Icon: React.ComponentType<{ size?: number; color?: string }>; name: string }> = {
-  energy: { hue: "amber", Icon: Flame, name: "Calorie deficit" },
-  protein: { hue: "blue", Icon: BowlFood, name: "Protein" },
-  calcium: { hue: "violet", Icon: Bone, name: "Calcium" },
-  exercise: { hue: "teal", Icon: PersonSimpleRun, name: "Exercise" },
-  water: { hue: "water", Icon: Drop, name: "Water" },
+/** Each goal's icon (all in the primary colour) and name. */
+const GOAL_LOOK: Record<ReviewGoalId, { Icon: React.ComponentType<{ size?: number; color?: string }>; name: string }> = {
+  energy: { Icon: Flame, name: "Calorie deficit" },
+  protein: { Icon: BowlFood, name: "Protein" },
+  calcium: { Icon: Bone, name: "Calcium" },
+  exercise: { Icon: PersonSimpleRun, name: "Exercise" },
+  water: { Icon: Drop, name: "Water" },
 }
 
 const STATE_WORD = { met: "Met", close: "Close", under: "Short", none: "No log" } as const
 
 /** The colours of a goal's progress bar and day bars: green when the day's
-    goal is complete or very near (90% or more), red when it is incomplete; the day in view, still in progress, is blue in the bars. */
+    goal is complete or very near (90% or more), red when it is incomplete; the day in view, still in progress, is blue in the bars.
+    One red only: bars are drawn solid, never faded, so no second shade appears. */
 const PROGRESS = { done: "#16A85A", short: "#E8504F", current: "#2A78D6" } as const
 
 function progressColor(value: number | undefined, target: number) {
@@ -250,7 +254,6 @@ function progressColor(value: number | undefined, target: number) {
     loved this element, keep it"): leave its look as it is. */
 export function GoalTile({ goal }: { goal: GoalDay }) {
   const look = GOAL_LOOK[goal.goal.id]
-  const hue = look.hue === "water" ? WATER_HUE : HUE[look.hue]
   const unit = goal.goal.unit
   const share = goal.value !== undefined ? Math.max(0, Math.min(goal.value / goal.goal.target, 1)) : 0
   const max = Math.max(goal.goal.target, ...goal.week.map((w) => w.value ?? 0))
@@ -273,8 +276,8 @@ export function GoalTile({ goal }: { goal: GoalDay }) {
     >
       <Card style={styles.tile}>
         <View style={styles.tileHead}>
-          <View style={[styles.icon, { backgroundColor: hue.tint }]}>
-            <look.Icon size={16} color={hue.ink} />
+          <View style={[styles.icon, { backgroundColor: color.primarySoft }]}>
+            <look.Icon size={16} color={color.primary} />
           </View>
           <Text style={[styles.stateWord, { color: stateInk }]}>{STATE_WORD[goal.state]}</Text>
         </View>
@@ -283,7 +286,7 @@ export function GoalTile({ goal }: { goal: GoalDay }) {
           {goal.value === undefined ? "No log" : formatNumber(goal.value)}
           {goal.value !== undefined && <Text style={type.unit}>{` / ${formatNumber(goal.goal.target)} ${unit}`}</Text>}
         </Text>
-        <View style={[styles.bar, { backgroundColor: `${tone}26` }]}>
+        <View style={[styles.bar, { backgroundColor: chart.track }]}>
           <View style={[styles.barFill, { width: `${share * 100}%`, backgroundColor: tone }]} />
         </View>
         <View style={styles.micro}>
@@ -294,8 +297,7 @@ export function GoalTile({ goal }: { goal: GoalDay }) {
                 styles.microBar,
                 {
                   height: w.value !== undefined ? Math.max(3, (28 * w.value) / max) : 3,
-                  backgroundColor: w.selected ? PROGRESS.current : progressColor(w.value, goal.goal.target),
-                  opacity: w.value === undefined ? 0.15 : i === goal.week.length - 1 ? 1 : w.partial ? 0.4 : 0.8,
+                  backgroundColor: w.value === undefined ? chart.track : w.selected ? PROGRESS.current : progressColor(w.value, goal.goal.target),
                 },
               ]}
             />

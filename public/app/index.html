@@ -106,6 +106,24 @@
           border-radius: 3px;
           background: #1f1f1f;
         }
+        /* A move's video (components/exercise-video.tsx): the popup dims the
+           clock bar and home bar with the rest of the screen, and the full
+           view, which fills the phone, blacks them out. */
+        #device.video-popup .status-bar {
+          filter: brightness(0.3);
+        }
+        #device.video-popup .home-indicator {
+          background: #4d4d4d;
+        }
+        #device.video-full .status-bar {
+          display: none;
+        }
+        #device.video-full .home-indicator {
+          background: #000000;
+        }
+        #device.video-full .home-indicator span {
+          background: #ffffff;
+        }
       }
     </style>
   <meta name="theme-color" content="#01837E">
@@ -125,6 +143,6 @@
       <div id="root"></div>
       <div class="device-chrome home-indicator" aria-hidden="true"><span></span></div>
     </div>
-  <script src="/app/_expo/static/js/web/entry-52e9321fc316d0a081651954e32abd40.js" defer></script>
+  <script src="/app/_expo/static/js/web/entry-27ccf0e4bab65381cb9127cbbed294e8.js" defer></script>
 </body>
 </html>

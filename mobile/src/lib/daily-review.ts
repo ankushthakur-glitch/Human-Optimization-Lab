@@ -41,7 +41,7 @@ export type ReviewGoal = {
   fixes?: { what: string; adds: number }[]
 }
 
-const GOALS: Record<ReviewGoalId, ReviewGoal> = {
+export const GOALS: Record<ReviewGoalId, ReviewGoal> = {
   // Olivia burns about 1,420 kcal at rest, so her plan aims for 300 under
   // (the deck's 500 was Ed's own example).
   energy: { id: "energy", name: "Energy balance", unit: "kcal", target: 300, targetWords: "Goal: 300 kcal deficit" },
@@ -128,6 +128,9 @@ export type ReviewDay = {
   total: number
   goals: GoalDay[]
   energy?: EnergyDay
+  /** The deficit of each of the seven days ending here, oldest first, whatever
+      the plan (the home's energy card shows it on every paid plan). */
+  energyWeek: { date: Date; deficit?: number }[]
   /** The one fact and the one fix, never a grade. */
   insight: string
   /** The scored days in the seven ending here, averaged and rounded down. */
@@ -251,7 +254,7 @@ function basicDay(s: Snapshot, focus: MemberFocus, date: Date, now: Date): Basic
   const resting = restingEnergy(weightOn(s, date), date)
   const energy: EnergyDay | undefined =
     // Only a fully logged day has a balance: half a day's food is not a deficit.
-      a.status !== "complete" || !goals.some((g) => g.id === "energy")
+      a.status !== "complete"
       ? undefined
       : { food: a.food, resting, active: a.active, out: resting + a.active, deficit: resting + a.active - a.food, source: "From your watch, synced at midnight" }
   const scored = a.status === "complete"
@@ -296,6 +299,7 @@ export function reviewDay(s: Snapshot, back = 1, now: Date = new Date()): Review
     total: goals.length,
     goals,
     energy: day.energy,
+    energyWeek: weekDays.map((w) => ({ date: w.date, deficit: w.energy?.deficit })),
     insight: insightOf(goals, day.status, dateWords, weekCalcium),
     weekAverage,
     weekScored: scoredDays.length,

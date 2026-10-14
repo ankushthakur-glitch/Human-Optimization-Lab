@@ -2,7 +2,6 @@ import * as React from "react"
 import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native"
 import Svg, { Circle, Defs, LinearGradient, Mask, Path, Rect, Stop } from "react-native-svg"
 
-import { inRange } from "@/lib/record"
 import { movingThreshold, pointStatus, valueText, type Status, type Trend } from "@/lib/trends"
 
 /* The trend tile's graph (Figma "Hol" component 40024605:199273): three
@@ -37,36 +36,10 @@ export function severityColor(t: Trend, p: Parameters<typeof pointStatus>[1]): s
   return mix(YELLOW, RED, k)
 }
 
-/** The graph line's colour by the patient's progress against their
-    baseline, the first result (13 Oct 2026): red when they are further from
-    their target than at the baseline, orange when they have closed less than
-    half the gap, green when they have closed half or more, blue once the
-    goal is reached (the latest result is in range). Undefined with no
-    baseline to compare, one result only. */
-export const PROGRESS = { below: "#E5484D", slight: "#F28C28", well: "#2FAE6B", goal: "#2F6FED" } as const
-
-export function progressColor(t: Trend): string | undefined {
-  const first = t.series[0]
-  const latest = t.series[t.series.length - 1]
-  if (!first || !latest || t.series.length < 2) return undefined
-  const b = t.marker
-  if (inRange(b, latest.value)) return PROGRESS.goal
-  const above = b.high !== undefined && latest.value >= b.high
-  // The gap to close at the baseline, and how much of it is closed now.
-  const gap = above ? first.value - b.high! : b.low !== undefined ? b.low - first.value : 0
-  // Already in range at the baseline and out now: further away.
-  if (gap <= 0) return PROGRESS.below
-  const closed = (above ? first.value - latest.value : latest.value - first.value) / gap
-  return closed < 0 ? PROGRESS.below : closed < 0.5 ? PROGRESS.slight : PROGRESS.well
-}
-
 /** A line's colour across the graph: each result's own status colour at its
     x, so a run that worsens turns from green through orange to red (the
     line, the dots and the area under it all read this one gradient). */
 export function statusStops(t: Trend, xs: readonly number[]) {
-  const progress = progressColor(t)
-  if (progress)
-    return [<Stop key="from" offset={0} stopColor={progress} />, <Stop key="to" offset={1} stopColor={progress} />]
   const from = xs[0]
   const span = Math.max(xs[xs.length - 1] - from, 1)
   return recentPoints(t).map((p, i) => <Stop key={p.t} offset={(xs[i] - from) / span} stopColor={severityColor(t, p)} />)
@@ -75,7 +48,7 @@ export function statusStops(t: Trend, xs: readonly number[]) {
 /** One result's status colour, for its dot. */
 export const dotTone = (t: Trend, p: Parameters<typeof pointStatus>[1]) => {
   const base = TONE[pointStatus(t.marker, p)]
-  const c = progressColor(t) ?? severityColor(t, p)
+  const c = severityColor(t, p)
   return { ...base, line: c, fill: c, edge: c }
 }
 

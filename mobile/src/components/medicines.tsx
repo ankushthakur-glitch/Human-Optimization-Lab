@@ -5,7 +5,7 @@ import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, Vi
 import { ChoiceRow, SheetRows } from "@/components/care-orders-rows"
 import { useReducedMotion } from "@/components/chat"
 import { PageGround } from "@/components/hol"
-import { CaretRight, Check, Info, Phone, Pill } from "@/components/ph"
+import { CaretRight, Info, Phone, Pill } from "@/components/ph"
 import { Banner, Card, Chip, Dot, Group, HUE, KeyValue, SmallAction, Tag, TextAction, toast, type Choice } from "@/components/record-kit"
 import { FilterChips, ItemRow } from "@/components/record-rows"
 import { Sheet } from "@/components/sheet"
@@ -15,7 +15,7 @@ import { URGENT } from "@/lib/assistant"
 import { call } from "@/lib/links"
 import { useOnboarding, type MedRecord } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
-import { MEDICATIONS, ORIGIN_LABEL, REVIEW, answeredOn, confirmedOn, medDifference, medHow, type MedAnswer, type Medication, type Origin } from "@/lib/record"
+import { MEDICATIONS, ORIGIN_LABEL, REVIEW, answeredOn, medDifference, medHow, type MedAnswer, type Medication, type Origin } from "@/lib/record"
 import { card, cardRadius, color, hairline, ink, space, type } from "@/lib/theme"
 
 /* Your medicines (FINAL-SPEC C.10): one list the patient and Dr. Patel both
@@ -654,18 +654,6 @@ function ConfirmControl({ m, saved, onAnswer, ask }: { m: Medication; saved?: Me
         </View>
       )}
 
-      {saved && modeOf(saved.answer) === mode && (
-        <View style={styles.said}>
-          <View style={styles.saidMark}>
-            <Check size={10} color={color.onPrimary} weight="bold" />
-          </View>
-          <View style={styles.grow}>
-            <Text style={[type.meta, styles.saidLead]}>{confirmedOn(saved.at)}</Text>
-            <Text style={type.meta}>{`${DOCTOR} will see this.`}</Text>
-          </View>
-        </View>
-      )}
-
       {sideEffect && (
         <Banner
           hue="teal"
@@ -777,9 +765,6 @@ function ConfirmRow({ m, saved, onAnswer }: { m: Medication; saved?: MedRecord; 
   )
 }
 
-/** The "You said" check, centred on the first line of her answer. */
-const SAID_MARK = 18
-
 /** The kit's TextAction is a 32 pt touch target with its word centred. */
 const TEXT_ACTION = 32
 
@@ -827,18 +812,6 @@ const styles = StyleSheet.create({
   // "Save" and "Done" inside the field's box, clear of its edge (a metric
   // of the field, not a gap between pieces).
   fieldAction: { paddingRight: 12 },
-
-  said: { flexDirection: "row", alignItems: "flex-start", gap: space.inline },
-  saidMark: {
-    width: SAID_MARK,
-    height: SAID_MARK,
-    borderRadius: SAID_MARK / 2,
-    marginTop: (type.body.lineHeight - SAID_MARK) / 2,
-    backgroundColor: color.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  saidLead: { color: ink.detail },
 
   urgent: { gap: space.item, padding: space.compact, borderRadius: 8, borderWidth: 1, borderColor: color.amberEdge, backgroundColor: color.amberTint },
   urgentTop: { flexDirection: "row", alignItems: "flex-start", gap: space.inline },
