@@ -253,11 +253,6 @@ function PatientForm({ patient }: { patient?: Patient }) {
         (c) => c.name.trim() || c.phone || c.email.trim() || c.relationship
       ),
     }
-    /* A patient with an email is invited on save, unless it went already. */
-    const invite = (id: string, status: Patient["status"]) => {
-      if (clean.portalAccess && status === "Not invited")
-        sendPatientInvites([id])
-    }
     if (patient) {
       const status: Patient["status"] =
         recordStatus === "Inactive"
@@ -265,15 +260,22 @@ function PatientForm({ patient }: { patient?: Patient }) {
           : patient.status === "Inactive"
             ? "Active"
             : patient.status
-      patients.patch(patient.id, { ...clean, status })
-      if (recordStatus === "Active") invite(patient.id, status)
+      patients.patch(patient.id, {
+        ...clean,
+        status,
+        ...(status === "Inactive" &&
+          patient.status !== "Inactive" && { inactiveReason: "Deactivated" }),
+      })
       toast.success("Patient updated", { description: fullName(clean) })
       router.push(patientHref(patient.id))
     } else {
+      /* Adding a patient invites them at once (addPatients). */
       const [created] = addPatients([clean], "Manual")
       if (recordStatus === "Inactive")
-        patients.patch(created.id, { status: "Inactive" })
-      else invite(created.id, created.status)
+        patients.patch(created.id, {
+          status: "Inactive",
+          inactiveReason: "Deactivated",
+        })
       toast.success("Patient added", {
         description:
           clean.portalAccess && recordStatus === "Active"
@@ -729,7 +731,7 @@ export function PatientActions({ patient: p }: { patient: Patient }) {
 
   return (
     <div className="flex items-center gap-2">
-      {(p.status === "Not invited" || p.status === "Declined") && (
+      {p.status === "Declined" && (
         <Button
           variant="outline"
           onClick={() => {
@@ -740,7 +742,7 @@ export function PatientActions({ patient: p }: { patient: Patient }) {
           }}
         >
           <IconMail />
-          Send invite
+          Invite again
         </Button>
       )}
       <Button
@@ -790,7 +792,10 @@ export function PatientActions({ patient: p }: { patient: Patient }) {
         message="They can no longer sign in to the patient app. Their record stays with the practice."
         onCancel={() => setDeactivating(false)}
         onConfirm={() => {
-          patients.patch(p.id, { status: "Inactive" })
+          patients.patch(p.id, {
+            status: "Inactive",
+            inactiveReason: "Deactivated",
+          })
           toast.success(`${fullName(p)} is deactivated`)
           setDeactivating(false)
         }}
@@ -913,15 +918,13 @@ export function PatientDetails({ patient: p }: { patient: Patient }) {
               {
                 label: "Invite",
                 value:
-                  p.status === "Not invited"
-                    ? "Not sent"
-                    : p.status === "Invited"
+                  p.status === "Invited"
                       ? "Pending"
                       : p.status === "Declined"
                         ? "Declined"
                         : p.status === "Active"
                           ? "Accepted"
-                          : "Inactive",
+                          : (p.inactiveReason ?? "Inactive"),
               },
               { label: "Invited", value: shortDate(p.invitedAt) },
               ...(p.status === "Declined" && p.respondedAt

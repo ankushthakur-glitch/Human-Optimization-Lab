@@ -12,7 +12,10 @@ import {
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
-import type { PatientStatus } from "@/components/practice/practice-data"
+import type {
+  PatientStatus,
+  PersonStatus,
+} from "@/components/practice/practice-data"
 import { TablePager, usePaged } from "@/components/table-pager"
 import { Avatar, AvatarFallback, AvatarImage } from "@/design-system/ui/avatar"
 import { Badge } from "@/design-system/ui/badge"
@@ -78,19 +81,24 @@ import {
 /*  Small shared pieces                                                        */
 /* -------------------------------------------------------------------------- */
 
+/* Patients: Invited, Active, Declined, Inactive. Providers and staff can
+   also be Not invited. */
 const STATUS_VARIANT: Record<
-  PatientStatus,
+  PatientStatus | PersonStatus,
   "success" | "warning" | "destructive" | "secondary" | "info" | "outline"
 > = {
   "Not invited": "secondary",
   Active: "success",
   Invited: "warning",
   Declined: "destructive",
-  Inactive: "destructive",
-  "Consent withdrawn": "outline",
+  Inactive: "secondary",
 }
 
-export function StatusBadge({ status }: { status: PatientStatus }) {
+export function StatusBadge({
+  status,
+}: {
+  status: PatientStatus | PersonStatus
+}) {
   return <Badge variant={STATUS_VARIANT[status]}>{status}</Badge>
 }
 
@@ -130,7 +138,7 @@ export function BulkResend({
   rows,
   onDone,
 }: {
-  rows: { status: PatientStatus }[]
+  rows: { status: PatientStatus | PersonStatus }[]
   onDone: () => void
 }) {
   const pending = rows.filter((row) => row.status === "Invited").length
@@ -299,6 +307,8 @@ export function Directory<T extends { id: string }>({
   exportRow,
   emptyIllustration,
   initialFilters,
+  aside,
+  activeRowId,
 }: {
   /** The page's name, for screen readers: the toolbar carries no title. */
   title: string
@@ -322,6 +332,10 @@ export function Directory<T extends { id: string }>({
   emptyIllustration: IllustrationName
   /** Filter values to open with, keyed by filter id (e.g. from a link). */
   initialFilters?: Record<string, string>
+  /** A panel joined to the table's right edge, e.g. the open row's details. */
+  aside?: React.ReactNode
+  /** The row the aside shows, highlighted in the table. */
+  activeRowId?: string | null
 }) {
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState("all")
@@ -575,86 +589,102 @@ export function Directory<T extends { id: string }>({
         )}
       </div>
 
-      <Card className="min-h-0 flex-1 gap-0 rounded-md border border-border py-0 shadow-[0_0_5px_rgb(0_0_0/0.08)] ring-0">
-        <div className="min-h-0 flex-1 overflow-auto [&>[data-slot=table-container]]:overflow-visible">
-          {visible.length === 0 ? (
-            <Empty className="h-full">
-              <EmptyHeader>
-                <EmptyMedia>
-                  <Illustration
-                    name={rows.length === 0 ? emptyIllustration : "no-results"}
-                  />
-                </EmptyMedia>
-                <EmptyTitle>
-                  {rows.length === 0 ? `No ${noun} yet` : `No ${noun} match`}
-                </EmptyTitle>
-                {rows.length > 0 && (
-                  <EmptyDescription>
-                    Try a different search or clear a filter.
-                  </EmptyDescription>
-                )}
-              </EmptyHeader>
-              {rows.length === 0 && <EmptyContent>{addControl}</EmptyContent>}
-            </Empty>
-          ) : (
-            <Table>
-              <TableHeader className="sticky top-0 z-10 bg-surface-head [&_th]:h-9 [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
-                <TableRow>
-                  <TableHead className="w-10">
-                    <Checkbox
-                      checked={allOnPageSelected}
-                      onCheckedChange={toggleAll}
-                      aria-label="Select all on this page"
-                    />
-                  </TableHead>
-                  {columns.map((column) =>
-                    column.sortValue ? (
-                      <TableSortHead
-                        key={column.id}
-                        className={column.className}
-                        {...sorting.headProps(column.id)}
-                      >
-                        {column.header}
-                      </TableSortHead>
-                    ) : (
-                      <TableHead key={column.id} className={column.className}>
-                        {column.header}
-                      </TableHead>
-                    )
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody className="[&_td]:px-4 [&_td]:py-2">
-                {visible.map((row) => {
-                  const isSelected = selected.includes(row.id)
-                  return (
-                    <TableRow
-                      key={row.id}
-                      data-state={isSelected ? "selected" : undefined}
-                      className={cn(isSelected && "bg-surface-selected")}
-                    >
-                      <TableCell>
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleOne(row.id)}
-                          aria-label="Select row"
-                        />
-                      </TableCell>
-                      {columns.map((column) => (
-                        <TableCell key={column.id} className={column.className}>
-                          {column.cell(row)}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+      <div className="flex min-h-0 flex-1 rounded-md shadow-[0_0_5px_rgb(0_0_0/0.08)]">
+        <Card
+          className={cn(
+            "min-h-0 min-w-0 flex-1 gap-0 rounded-md border border-border py-0 shadow-none ring-0",
+            aside && "rounded-r-none"
           )}
-        </div>
+        >
+          <div className="min-h-0 flex-1 overflow-auto [&>[data-slot=table-container]]:overflow-visible">
+            {visible.length === 0 ? (
+              <Empty className="h-full">
+                <EmptyHeader>
+                  <EmptyMedia>
+                    <Illustration
+                      name={
+                        rows.length === 0 ? emptyIllustration : "no-results"
+                      }
+                    />
+                  </EmptyMedia>
+                  <EmptyTitle>
+                    {rows.length === 0 ? `No ${noun} yet` : `No ${noun} match`}
+                  </EmptyTitle>
+                  {rows.length > 0 && (
+                    <EmptyDescription>
+                      Try a different search or clear a filter.
+                    </EmptyDescription>
+                  )}
+                </EmptyHeader>
+                {rows.length === 0 && <EmptyContent>{addControl}</EmptyContent>}
+              </Empty>
+            ) : (
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-surface-head [&_th]:h-9 [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allOnPageSelected}
+                        onCheckedChange={toggleAll}
+                        aria-label="Select all on this page"
+                      />
+                    </TableHead>
+                    {columns.map((column) =>
+                      column.sortValue ? (
+                        <TableSortHead
+                          key={column.id}
+                          className={column.className}
+                          {...sorting.headProps(column.id)}
+                        >
+                          {column.header}
+                        </TableSortHead>
+                      ) : (
+                        <TableHead key={column.id} className={column.className}>
+                          {column.header}
+                        </TableHead>
+                      )
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="[&_td]:px-4 [&_td]:py-2">
+                  {visible.map((row) => {
+                    const isSelected = selected.includes(row.id)
+                    return (
+                      <TableRow
+                        key={row.id}
+                        data-state={isSelected ? "selected" : undefined}
+                        className={cn(
+                          (isSelected || row.id === activeRowId) &&
+                            "bg-surface-selected"
+                        )}
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleOne(row.id)}
+                            aria-label="Select row"
+                          />
+                        </TableCell>
+                        {columns.map((column) => (
+                          <TableCell
+                            key={column.id}
+                            className={column.className}
+                          >
+                            {column.cell(row)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </div>
 
-        <TablePager paged={paged} />
-      </Card>
+          <TablePager paged={paged} />
+        </Card>
+        {aside}
+      </div>
     </div>
   )
 }

@@ -765,10 +765,9 @@ const PANEL_STATE: Record<NonNullable<Patient["recordState"]>, RecordState> = {
 export function stateFor(p: Patient): RecordState {
   if (p.recordState) return PANEL_STATE[p.recordState]
   if (
-    p.status === "Not invited" ||
     p.status === "Invited" ||
     p.status === "Declined" ||
-    p.status === "Consent withdrawn"
+    p.inactiveReason === "Consent withdrawn"
   )
     return "Awaiting consent"
   if (p.id === OLIVIA_ID) return "Active"

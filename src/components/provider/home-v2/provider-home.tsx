@@ -36,7 +36,6 @@ import {
 } from "@/components/provider/home-v2/selectors"
 import type { ActionKind, Priority, QueueItem, WorkItem } from "@/components/provider/home-v2/types"
 import { Worklist, type WorklistTab } from "@/components/provider/home-v2/worklist"
-import { VersionSwitch } from "@/components/provider/home-v2/version-switch"
 
 /* The provider home (/screens/patients/dashboard): a start-of-day work
    queue read top to bottom. The AI Daily Brief; how much work and is it
@@ -245,7 +244,6 @@ export function ProviderHomeV2() {
               {greeting(NOW)}, Dr. {me ? fullName({ firstName: me.firstName, lastName: me.lastName }) : "Daniel Reyes"}
             </h1>
             <div className="ml-auto flex flex-wrap items-center gap-2.5">
-              <VersionSwitch />
               {!ready ? (
                 <Skeleton className="h-4 w-48 rounded-sm" />
               ) : (

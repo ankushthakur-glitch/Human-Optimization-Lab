@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
-import { ProviderDashboard } from "@/components/provider/home-v2/provider-dashboard"
+import { ProviderHomeV2 } from "@/components/provider/home-v2/provider-home"
 import { LogoLoader } from "@/design-system/ui/logo-loader"
 
 export const metadata: Metadata = { title: "Dashboard" }
@@ -17,7 +17,7 @@ export default function Page() {
         </div>
       }
     >
-      <ProviderDashboard />
+      <ProviderHomeV2 />
     </Suspense>
   )
 }

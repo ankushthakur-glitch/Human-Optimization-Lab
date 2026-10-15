@@ -32,18 +32,87 @@ export const PRACTICE = {
 /* -------------------------------------------------------------------------- */
 
 export type PersonStatus = "Not invited" | "Invited" | "Active" | "Inactive"
-/* A patient's record can also be closed by the patient (consent
-   withdrawn); it comes back only with fresh consent.
-   Declined is not closed: the patient got the invite and turned it down in
-   the app, so they stay eligible and can be invited again. */
-export type PatientStatus =
-  | PersonStatus
-  | "Declined"
-  | "Consent withdrawn"
-export const REACTIVATABLE: readonly PatientStatus[] = [
+/* A patient is invited the moment they're added (14 Oct call): Invited
+   until they join, Active once consented, Declined when they turn the
+   invite down (the link is only in the final reminder), Inactive when the
+   record is closed. Declined patients stay eligible and can be invited
+   again; an Inactive record comes back only with fresh consent. */
+export const PATIENT_STATUSES = [
+  "Invited",
+  "Active",
+  "Declined",
   "Inactive",
-  "Consent withdrawn",
-]
+] as const
+export type PatientStatus = (typeof PATIENT_STATUSES)[number]
+/** Why an Inactive record closed: the patient withdrew consent, left the
+    practice, or staff deactivated it. */
+export type InactiveReason = "Consent withdrawn" | "Discharged" | "Deactivated"
+export const REACTIVATABLE: readonly PatientStatus[] = ["Inactive"]
+
+/* -------------------------------------------------------------------------- */
+/*  Invite reminders                                                           */
+/* -------------------------------------------------------------------------- */
+
+/* The invite goes on the day the patient is added, then four reminders
+   over 30 days. Only the final one carries the decline link. SMS goes
+   first when there's a mobile number, then email. */
+export const INVITE_STEPS = [
+  { day: 0, label: "Invite sent" },
+  { day: 7, label: "Reminder 1" },
+  { day: 14, label: "Reminder 2" },
+  { day: 21, label: "Reminder 3" },
+  { day: 30, label: "Final reminder", decline: true },
+] as const
+
+export type InviteStep = {
+  label: string
+  /** Local "2026-10-12" the message goes or went. */
+  date: string
+  channels: string[]
+  decline: boolean
+  state: "sent" | "next" | "scheduled" | "skipped"
+}
+
+function addDays(iso: string, days: number) {
+  const d = new Date(`${iso}T12:00:00`)
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+/** The invite and its reminders for one patient, with where each stands. */
+export function inviteTimeline(p: Patient): InviteStep[] {
+  if (!p.invitedAt) return []
+  const now = new Date().toISOString().slice(0, 10)
+  /* An answer stops the reminders that hadn't gone yet. */
+  const stop = p.status === "Invited" ? undefined : p.respondedAt || now
+  const channels = p.phone ? ["SMS", "email"] : ["Email"]
+  let nextSet = false
+  return INVITE_STEPS.map((step) => {
+    const date = addDays(p.invitedAt, step.day)
+    let state: InviteStep["state"]
+    if (date <= now && (!stop || date <= stop)) state = "sent"
+    else if (stop) state = "skipped"
+    else if (!nextSet) {
+      state = "next"
+      nextSet = true
+    } else state = "scheduled"
+    return {
+      label: step.label,
+      date,
+      channels,
+      decline: "decline" in step && step.decline,
+      state,
+    }
+  })
+}
+
+/** "Reminder 2 of 4 sent" style progress for an Invited patient. */
+export function remindersSent(p: Patient) {
+  return Math.max(
+    0,
+    inviteTimeline(p).filter((s) => s.state === "sent").length - 1
+  )
+}
 
 /* A patient's clinical risk, read from their record. Every patient on the
    list has one; the sample panel spreads it by ID, most of it low, so the
@@ -401,6 +470,8 @@ export type Patient = {
   /** Local "2026-10-12" of the patient's last activity in the app. */
   lastEngagedAt?: string
   source: "Manual" | "Bulk import"
+  /** Why an Inactive record closed. */
+  inactiveReason?: InactiveReason
   /** Set when a closed record was reopened; fresh consent was requested. */
   reactivatedAt?: string
   /** Set when a duplicate was merged into this record. */
@@ -1465,17 +1536,17 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
   const provider = active[i % active.length]
   const locationId = provider.locationIds[i % provider.locationIds.length]
   const status: PatientStatus =
-    i % 9 === 4 || i % 23 === 7
+    i % 9 === 4 || i % 23 === 7 || i % 29 === 12
       ? "Inactive"
-      : i % 29 === 12
-        ? "Consent withdrawn"
-        : enrollRoll(i) < (provider.id === LAGGING_PROVIDER ? 85 : 30)
-          ? enrollRoll(i * 3 + 1) < 25
-            ? "Not invited"
-            : enrollRoll(i * 5 + 2) < 14
-              ? "Declined"
-              : "Invited"
-          : "Active"
+      : enrollRoll(i) < (provider.id === LAGGING_PROVIDER ? 85 : 30)
+        ? enrollRoll(i * 5 + 2) < 14
+          ? "Declined"
+          : "Invited"
+        : "Active"
+  /* Decline is only offered in the final reminder, so a declined patient
+     was invited over 30 days ago and answered on day 30. */
+  const invitedDaysAgo =
+    status === "Declined" ? 31 + (i % 20) : Math.floor(i / 3)
   const area = locationId === "LOC1003" ? "760" : "858"
   return {
     id: `P${pad(10_240 + i * 17, 5)}`,
@@ -1521,14 +1592,21 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
             },
           ],
     status,
-    invitedAt: status === "Not invited" ? "" : isoDaysAgo(Math.floor(i / 3)),
+    invitedAt: isoDaysAgo(invitedDaysAgo),
     ...(status === "Declined" && {
-      respondedAt: isoDaysAgo(Math.max(0, Math.floor(i / 3) - 1 - (i % 4))),
+      respondedAt: isoDaysAgo(invitedDaysAgo - 30),
+    }),
+    ...(status === "Inactive" && {
+      inactiveReason: (i % 29 === 12
+        ? "Consent withdrawn"
+        : i % 2
+          ? "Discharged"
+          : "Deactivated") as InactiveReason,
     }),
     source: i % 5 === 2 ? "Bulk import" : "Manual",
     ...(status === "Active" && { lastEngagedAt: engagedDaysAgo(i) }),
     /* A closed record used the app before it closed, so it keeps the date. */
-    ...((status === "Inactive" || status === "Consent withdrawn") && {
+    ...(status === "Inactive" && {
       lastEngagedAt: isoDaysAgo(40 + ((i * 13) % 120)),
     }),
   }
@@ -1736,16 +1814,16 @@ export function inviteUser(input: StaffUserInput) {
   return user
 }
 
-/* Adding a patient never emails them: the portal invite is always sent by
-   hand afterwards, from the list or the profile (sendPatientInvites). */
+/* Adding a patient invites them at once, however they come in; the
+   reminders follow on their own (INVITE_STEPS). */
 export function addPatients(inputs: PatientInput[], source: Patient["source"]) {
   const taken = [...patients.get()]
   const created = inputs.map((input) => {
     const patient: Patient = {
       ...input,
       id: nextId("P", taken),
-      status: "Not invited",
-      invitedAt: "",
+      status: "Invited",
+      invitedAt: today(),
       source,
     }
     taken.push(patient)
@@ -1765,6 +1843,8 @@ export function reactivatePatient(
     ...assign,
     status: "Invited",
     invitedAt: today(),
+    respondedAt: "",
+    inactiveReason: undefined,
     reactivatedAt: today(),
   })
 }

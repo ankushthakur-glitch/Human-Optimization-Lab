@@ -6,6 +6,7 @@ import { toast } from "@/design-system/ui/sonner"
 import {
   IconArrowDownDouble,
   IconArrowUpDouble,
+  IconClock,
   IconEdit,
   IconEqual,
   IconEye,
@@ -45,6 +46,7 @@ import {
   sendPatientInvites,
   patients,
   providerName,
+  PATIENT_STATUSES,
   REACTIVATABLE,
   PINNED_PATIENTS,
   RISK_LEVELS,
@@ -63,6 +65,8 @@ import {
   syncStatusFor,
 } from "@/components/practice/health-record"
 import { DeactivateDialog } from "@/components/practice/sheets"
+import { InviteTimelineSheet } from "@/components/practice/invite-timeline"
+import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
 import {
   checkDuplicate,
   matchedText,
@@ -75,14 +79,13 @@ import {
   portalUser,
 } from "@/components/practice/duplicates"
 import { Button } from "@/design-system/ui/button"
-import { Badge } from "@/design-system/ui/badge"
 import { DropdownMenuItem } from "@/design-system/ui/dropdown-menu"
 
 /* The patient list, in the clinic manager's portal and a provider's (see
    portal.tsx). Onboarding a patient and their profile are full pages (see
    patient-record.tsx). */
 
-function sendInvite(p: Patient) {
+function inviteAgain(p: Patient) {
   sendPatientInvites([p.id])
   toast.success("Invite sent", {
     description: `${fullName(p)} will get an email to join the patient portal.`,
@@ -90,14 +93,16 @@ function sendInvite(p: Patient) {
 }
 
 function resend(p: Patient) {
+  sendPatientInvites([p.id])
   toast.success("Invite resent", {
     description: `A fresh link went to ${p.email}.`,
   })
 }
 
-/* Where each chart stands with Health Gorilla: the same state and last
-   sync the chart's banner shows. The provider and the clinic manager see
-   the same list. */
+/* Where each chart stands with the EHR: the same state and last sync the
+   chart's banner shows. A synced record reads as its last sync; any other
+   reads as the reason it isn't syncing. The provider and the clinic
+   manager see the same list. */
 
 const SYNC_LABEL: Record<RecordState, string> = {
   Active: "Synced",
@@ -106,23 +111,16 @@ const SYNC_LABEL: Record<RecordState, string> = {
   "Awaiting consent": "Waiting for consent",
 }
 
-const SYNC_VARIANT: Record<
-  RecordState,
-  "success" | "warning" | "destructive" | "secondary"
-> = {
-  Active: "success",
-  Building: "warning",
-  "Source exception": "destructive",
-  "Awaiting consent": "secondary",
-}
-
 const SYNC_FILTER = [
   "Synced",
   "Record building",
   "Sync failed",
   "Waiting for consent",
   "Invited, not joined",
+  "Invite declined",
   "Consent withdrawn",
+  "Discharged",
+  "Deactivated",
 ]
 
 /** "Today, 5:00 AM" from a local "2026-09-28T05:00"; older days by date. */
@@ -149,26 +147,65 @@ function useSyncLookup() {
       p,
       items.find((r) => r.id === p.id)
     )
-    /* Before consent: enrolled and not yet consented, or invited and not
-       yet joined (the dashboard's record states). */
+    /* A closed record stops syncing for its reason; before consent the
+       patient is invited and not yet joined, declined the invite, or
+       enrolled and not yet consented (the dashboard's record states). */
     const label =
-      p.status === "Consent withdrawn"
-        ? "Consent withdrawn"
-        : s.state === "Awaiting consent"
-          ? p.status === "Active"
-            ? "Waiting for consent"
-            : "Invited, not joined"
-          : SYNC_LABEL[s.state]
-    return { ...s, label }
+      p.status === "Inactive"
+        ? (p.inactiveReason ?? "Deactivated")
+        : p.status === "Declined"
+          ? "Invite declined"
+          : s.state === "Awaiting consent"
+            ? p.status === "Active"
+              ? "Waiting for consent"
+              : "Invited, not joined"
+            : SYNC_LABEL[s.state]
+    const synced = label === "Synced"
+    return { ...s, label, synced, text: synced && s.at ? syncedAt(s.at) : label }
   }
 }
 
-function SyncBadge({
+/** The last sync's date and time, or the reason the record isn't syncing. */
+function SyncCell({
   status,
 }: {
   status: ReturnType<ReturnType<typeof useSyncLookup>>
 }) {
-  return <Badge variant={SYNC_VARIANT[status.state]}>{status.label}</Badge>
+  if (status.synced)
+    return <span className="text-foreground tabular-nums">{status.text}</span>
+  if (status.label === "Sync failed")
+    return (
+      <span className="flex items-center gap-1.5 text-muted-foreground">
+        <span
+          className="size-1.5 shrink-0 rounded-full"
+          style={{ background: SUBTLE.red }}
+        />
+        {status.text}
+      </span>
+    )
+  return <span className="text-muted-foreground">{status.text}</span>
+}
+
+/* Invited and Declined chips open the invite timeline. */
+function StatusCell({
+  patient: p,
+  onTimeline,
+}: {
+  patient: Patient
+  onTimeline: (p: Patient) => void
+}) {
+  if (p.status !== "Invited" && p.status !== "Declined")
+    return <StatusBadge status={p.status} />
+  return (
+    <button
+      type="button"
+      title="View invite timeline"
+      className="flex items-center gap-2 rounded-sm text-left focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+      onClick={() => onTimeline(p)}
+    >
+      <StatusBadge status={p.status} />
+    </button>
+  )
 }
 
 /* Risk reads as an arrow, not another badge: red up for High, orange equals
@@ -192,33 +229,33 @@ function RiskIcon({ patient }: { patient: Patient }) {
   )
 }
 
-/** The selection's bulk action for patients added without the portal invite. */
-function BulkSendInvite({
+/** The selection's bulk action for patients who declined the invite. */
+function BulkInviteAgain({
   rows,
   onDone,
 }: {
   rows: Patient[]
   onDone: () => void
 }) {
-  const pending = rows.filter((p) => p.status === "Not invited")
-  if (pending.length === 0) return null
+  const declined = rows.filter((p) => p.status === "Declined")
+  if (declined.length === 0) return null
   return (
     <Button
       variant="outline"
       size="sm"
       className="rounded-md"
       onClick={() => {
-        sendPatientInvites(pending.map((p) => p.id))
+        sendPatientInvites(declined.map((p) => p.id))
         toast.success(
-          pending.length === 1
+          declined.length === 1
             ? "Invite sent"
-            : `${pending.length} invites sent`
+            : `${declined.length} invites sent`
         )
         onDone()
       }}
     >
       <IconMail />
-      Send invites ({pending.length})
+      Invite again ({declined.length})
     </Button>
   )
 }
@@ -245,7 +282,7 @@ function rowOutcome(
           {
             ...e.value,
             id: "",
-            status: "Not invited",
+            status: "Invited",
             invitedAt: "",
             source: "Bulk import",
           },
@@ -491,6 +528,7 @@ export function PatientsScreen() {
   const [importing, setImporting] = React.useState(false)
   const [deactivating, setDeactivating] = React.useState<Patient | null>(null)
   const [reactivating, setReactivating] = React.useState<Patient | null>(null)
+  const [timeline, setTimeline] = React.useState<Patient | null>(null)
 
   const precheck = usePatientPrecheck()
   const openCreate = precheck.open
@@ -582,7 +620,7 @@ export function PatientsScreen() {
       id: "status",
       header: "Status",
       sortValue: (p) => p.status,
-      cell: (p) => <StatusBadge status={p.status} />,
+      cell: (p) => <StatusCell patient={p} onTimeline={setTimeline} />,
     },
     {
       id: "engaged",
@@ -593,20 +631,14 @@ export function PatientsScreen() {
     },
     {
       id: "record",
-      header: "Health record",
-      className: "hidden md:table-cell",
-      sortValue: (p) => syncOf(p).label,
-      cell: (p) => <SyncBadge status={syncOf(p)} />,
-    },
-    {
-      id: "synced",
       header: "Last sync",
-      className: "hidden text-muted-foreground tabular-nums xl:table-cell",
-      sortValue: (p) => syncOf(p).at,
-      cell: (p) => {
-        const { at } = syncOf(p)
-        return at ? syncedAt(at) : ""
+      className: "hidden md:table-cell",
+      /* Synced records by time, newest last; the reasons after them. */
+      sortValue: (p) => {
+        const s = syncOf(p)
+        return s.synced ? `0 ${s.at}` : `1 ${s.label}`
       },
+      cell: (p) => <SyncCell status={syncOf(p)} />,
     },
     {
       id: "actions",
@@ -624,10 +656,16 @@ export function PatientsScreen() {
             <IconEdit />
             Edit
           </DropdownMenuItem>
-          {(p.status === "Not invited" || p.status === "Declined") && (
-            <DropdownMenuItem onClick={() => sendInvite(p)}>
+          {(p.status === "Invited" || p.status === "Declined") && (
+            <DropdownMenuItem onClick={() => setTimeline(p)}>
+              <IconClock />
+              Invite timeline
+            </DropdownMenuItem>
+          )}
+          {p.status === "Declined" && (
+            <DropdownMenuItem onClick={() => inviteAgain(p)}>
               <IconMail />
-              Send invite
+              Invite again
             </DropdownMenuItem>
           )}
           {p.status === "Invited" && (
@@ -685,17 +723,15 @@ export function PatientsScreen() {
           },
           {
             id: "record",
-            label: "Health record",
+            label: "Last sync",
             all: "All records",
             options: SYNC_FILTER,
             match: (p, v) => syncOf(p).label === v,
           },
         ]}
         statusTabs={{
-          options: ["Active", "Inactive"],
-          /* Only Active patients count as active; every other status sits
-             under Inactive, told apart by its badge. */
-          value: (p) => (p.status === "Active" ? "Active" : "Inactive"),
+          options: PATIENT_STATUSES,
+          value: (p) => p.status,
         }}
         primaryAction={{
           label: "Add patient",
@@ -711,7 +747,7 @@ export function PatientsScreen() {
         ]}
         bulkActions={(rows, clear) => (
           <>
-            <BulkSendInvite rows={rows} onDone={clear} />
+            <BulkInviteAgain rows={rows} onDone={clear} />
             <BulkResend rows={rows} onDone={clear} />
           </>
         )}
@@ -728,8 +764,7 @@ export function PatientsScreen() {
           Status: p.status,
           "Risk level": riskLevel(p),
           "Last interacted": shortDate(p.lastEngagedAt ?? ""),
-          "Health record": syncOf(p).label,
-          "Last sync": syncOf(p).at ? syncedAt(syncOf(p).at) : "",
+          "Last sync": syncOf(p).text,
         })}
         emptyIllustration="patients-empty"
         initialFilters={
@@ -752,6 +787,11 @@ export function PatientsScreen() {
         onClose={() => setReactivating(null)}
       />
 
+      <InviteTimelineSheet
+        patient={timeline}
+        onClose={() => setTimeline(null)}
+      />
+
       <DeactivateDialog
         illustration="deactivate-person"
         target={deactivating ? fullName(deactivating) : null}
@@ -759,7 +799,10 @@ export function PatientsScreen() {
         onCancel={() => setDeactivating(null)}
         onConfirm={() => {
           if (!deactivating) return
-          patients.patch(deactivating.id, { status: "Inactive" })
+          patients.patch(deactivating.id, {
+            status: "Inactive",
+            inactiveReason: "Deactivated",
+          })
           toast.success(`${fullName(deactivating)} is deactivated`)
           setDeactivating(null)
         }}

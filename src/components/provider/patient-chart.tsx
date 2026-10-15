@@ -1098,7 +1098,7 @@ function RecordNotReady({
           art: "consent-pending" as const,
           title: "No record yet",
           text:
-            patient.status === "Consent withdrawn"
+            patient.inactiveReason === "Consent withdrawn"
               ? `${patient.firstName} withdrew consent. Nothing new is pulled from the EHR.`
               : `The chart fills in once ${patient.firstName} consents in the HOL app and the EHR returns the record.`,
         }
@@ -1125,7 +1125,7 @@ function RecordNotReady({
       </EmptyHeader>
       <EmptyContent>
         {state === "Awaiting consent" ? (
-          patient.status === "Not invited" && (
+          patient.status === "Declined" && (
             <Button
               variant="outline"
               size="sm"
@@ -1137,7 +1137,7 @@ function RecordNotReady({
               }}
             >
               <IconMail />
-              Send invite
+              Invite again
             </Button>
           )
         ) : (

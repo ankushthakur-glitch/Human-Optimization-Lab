@@ -33,8 +33,13 @@ const PROVIDER_NAV: NavItem[] = [
     href: `${BASE}/dashboard`,
   },
   { id: "patients", label: "Patients", icon: IconUser, href: BASE },
-  { id: "tasks", label: "Tasks", icon: IconFileList },
-  { id: "communication", label: "Communication", icon: IconChat },
+  { id: "tasks", label: "Tasks", icon: IconFileList, href: `${BASE}/tasks` },
+  {
+    id: "communication",
+    label: "Communication",
+    icon: IconChat,
+    href: `${BASE}/communication`,
+  },
   { id: "settings", label: "Settings", icon: IconSettings },
 ]
 

@@ -181,7 +181,7 @@ function RecordSummary({ patient: p }: { patient: Patient }) {
     ["Mobile number", p.phone],
     ["Primary provider", prov.name(p.providerId)],
   ]
-  if (p.invitedAt && p.status !== "Not invited")
+  if (p.invitedAt)
     lines.push(["Invited", shortDate(p.invitedAt)])
   return (
     <div className="rounded-lg border bg-card p-4">
@@ -421,7 +421,7 @@ function ReactivateBody({
     locationId: initial?.locationId || patient.locationId,
   }))
   const state =
-    patient.status === "Consent withdrawn"
+    patient.inactiveReason === "Consent withdrawn"
       ? "withdrew consent"
       : "is inactive"
   return (
