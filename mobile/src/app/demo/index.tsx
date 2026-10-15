@@ -48,6 +48,7 @@ const VARIANTS: Variant[] = [
   { id: "member-redraft", line: "Version 3 with Dr. Patel, version 2 live", member: true },
   { id: "onboarding-about", line: "Setup: About you" },
   { id: "onboarding-consent", line: "Setup: the consent" },
+  { id: "onboarding-life", line: "Setup: the eight life questions" },
   { id: "onboarding-why", line: "Setup: the why conversation" },
   { id: "onboarding-syncing", line: "Setup: the record building" },
 ]

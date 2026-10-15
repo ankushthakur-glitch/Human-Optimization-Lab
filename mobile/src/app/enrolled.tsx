@@ -25,7 +25,9 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    and the buttons rise in turn (all still under Reduce Motion). The steps
    are the kit's track: enrolled done today, scheduling the paid tests now,
    the rest to come. "Schedule my tests" opens the day and time for each
-   (/schedule-tests); "Schedule later" leaves them in To do, brought up
+   test (/schedule-tests); "Confirm schedule" there then opens the health
+   questions (/complete-profile, the assistant's conversation; no chat shows
+   before that tap). "Schedule later" leaves them in To do, brought up
    every other day. Either way she walks on to her plan with Dr. Patel
    (/plan?walk=1), which this build approves after a moment, so the
    set-up plays through to "Your personalized plan is ready". */
@@ -91,6 +93,10 @@ export default function EnrolledScreen() {
 
   const viewPlan = () => router.replace("/plan?walk=1")
 
+  // The schedule comes first; the assistant's chat opens only once she
+  // confirms it (app/schedule-tests.tsx).
+  const schedule = () => router.push("/schedule-tests")
+
   // Left for later: the tests wait in To do, brought up every other day.
   async function later() {
     const paid = onboarding.startingTests
@@ -107,15 +113,17 @@ export default function EnrolledScreen() {
     <View style={styles.screen}>
       <DarkStatusBar />
       <PageGround />
-      <Svg style={styles.wash} pointerEvents="none">
-        <Defs>
-          <LinearGradient id="enrolledWash" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={WASH.from} stopOpacity={1} />
-            <Stop offset="1" stopColor={WASH.from} stopOpacity={0} />
-          </LinearGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill="url(#enrolledWash)" />
-      </Svg>
+      <View style={styles.wash} pointerEvents="none">
+        <Svg width="100%" height="100%" preserveAspectRatio="none" style={styles.washSvg}>
+          <Defs>
+            <LinearGradient id="enrolledWash" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={WASH.from} stopOpacity={1} />
+              <Stop offset="1" stopColor={WASH.from} stopOpacity={0} />
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#enrolledWash)" />
+        </Svg>
+      </View>
       <ScrollView contentContainerStyle={[styles.body, { paddingTop: top + space.section }]} showsVerticalScrollIndicator={false}>
         <View style={styles.head}>
           <View style={styles.stage} accessible={false}>
@@ -191,7 +199,7 @@ export default function EnrolledScreen() {
             </Button>
           ) : (
             <>
-              <Button onPress={() => router.push("/schedule-tests")} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
+              <Button onPress={schedule} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
                 Schedule my tests
               </Button>
               <View style={styles.later}>
@@ -210,7 +218,10 @@ export default function EnrolledScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   // The teal wash behind the top of the page, fading into the ground.
+  // The Svg fills this box explicitly: left alone it keeps the 300px
+  // default width on web, tinting only the left side of a wider screen.
   wash: { position: "absolute", top: 0, left: 0, right: 0, height: "55%" },
+  washSvg: { width: "100%", height: "100%" },
   // Centred in the space above the button; scrolls on a short phone.
   body: { flexGrow: 1, justifyContent: "center", paddingHorizontal: space.gutter, paddingBottom: space.section, gap: space.item },
   footer: { backgroundColor: "transparent", borderTopWidth: 0, paddingTop: 0 },

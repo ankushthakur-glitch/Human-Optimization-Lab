@@ -30,7 +30,7 @@ const FONTS = {
 /* Which screens exist depends on the account state:
    signed out            activate, sign-in
    code accepted         set-password, over activate so Back returns to it
-   signed in, new        onboarding/: about you, consent, your why, record builds
+   signed in, new        onboarding/: about you, consent, record builds
    signed in             tabs: home (index), results, to do (gaps), plan;
                          the assistant, the record's pages (an item, adding
                          one, what's open, a test to book,
@@ -105,6 +105,9 @@ function Routes() {
           <Stack.Screen name="onboarding/about-you" />
           <Stack.Screen name="onboarding/consent" />
           <Stack.Screen name="onboarding/consent-texts" />
+          <Stack.Screen name="onboarding/life" />
+          <Stack.Screen name="onboarding/life-question" />
+          <Stack.Screen name="onboarding/life-focus" />
           <Stack.Screen name="onboarding/why" />
           <Stack.Screen name="onboarding/syncing" />
         </Stack.Protected>
@@ -122,6 +125,7 @@ function Routes() {
           <Stack.Screen name="medications" />
           <Stack.Screen name="medicine/[id]" />
           <Stack.Screen name="tell-us" />
+          <Stack.Screen name="complete-profile" />
           <Stack.Screen name="goals" />
           <Stack.Screen name="goals-record" />
           <Stack.Screen name="health-profile" />

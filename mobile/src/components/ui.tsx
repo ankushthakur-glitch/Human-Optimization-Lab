@@ -253,17 +253,19 @@ export function SelectField({
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${value ?? "not chosen"}`}
-        style={({ pressed }) => [styles.inputBox, !!value && styles.selectChosen, pressed && styles.togglePressed]}
+        style={({ pressed }) => [styles.inputBox, styles.selectBox, !!value && styles.selectChosen, pressed && styles.togglePressed]}
       >
+        {/* Icon, text and chevron on one line: a fixed 18 slot each side, an
+            even 8 between, the text taking the rest. */}
         {Icon && (
-          <View style={styles.leading}>
+          <View style={styles.selectSlot}>
             <Icon color={value ? color.primary : color.muted} />
           </View>
         )}
-        <Text style={[styles.input, styles.select, !!Icon && styles.inputWithIcon, !value && styles.selectEmpty, !!value && styles.selectValue]} numberOfLines={1}>
+        <Text style={[styles.selectText, !value && styles.selectEmpty, !!value && styles.selectValue]} numberOfLines={1}>
           {value ?? placeholder}
         </Text>
-        <View style={styles.caret}>
+        <View style={styles.selectSlot}>
           <CaretDown size={16} color={color.muted} />
         </View>
       </Pressable>
@@ -311,6 +313,7 @@ export function Button({
   variant = "primary",
   icon: Icon,
   trailing: Trailing,
+  oneLine = false,
 }: {
   children: string
   onPress: () => void
@@ -325,6 +328,9 @@ export function Button({
   icon?: React.ComponentType<{ color: string }>
   /** Drawn after the label, e.g. an arrow on a button that moves on. */
   trailing?: React.ComponentType<{ color: string }>
+  /** The label stays on one line, with less side padding, so two buttons
+      sharing a row keep the standard height (Request a change / Accept plan). */
+  oneLine?: boolean
 }) {
   const classic = React.useContext(ButtonLook) === "classic"
   const primary = variant === "primary"
@@ -361,6 +367,7 @@ export function Button({
       accessibilityState={{ disabled: pending || disabled, busy: pending }}
       style={({ pressed }) => [
         styles.hol,
+        oneLine && styles.holOneLine,
         primary ? styles.holPrimary : styles.holOutline,
         destructive && styles.holDestructive,
         pressed && (primary ? styles.holPrimaryPressed : destructive ? styles.holDestructivePressed : styles.holOutlinePressed),
@@ -370,7 +377,12 @@ export function Button({
     >
       {pending && <ActivityIndicator color={primary ? color.onPrimary : destructive ? color.error : color.primary} size="small" />}
       {!pending && Icon && <Icon color={primary ? color.onPrimary : destructive ? color.error : "#015D59"} />}
-      <Text style={[styles.holText, !primary && styles.holTextOutline, destructive && styles.holTextDestructive]}>{children}</Text>
+      <Text
+        numberOfLines={oneLine ? 1 : undefined}
+        style={[styles.holText, !primary && styles.holTextOutline, destructive && styles.holTextDestructive]}
+      >
+        {children}
+      </Text>
       {!pending && Trailing && <Trailing color={primary ? color.onPrimary : destructive ? color.error : "#015D59"} />}
     </Pressable>
   )
@@ -471,12 +483,22 @@ const styles = StyleSheet.create({
   },
   leading: { paddingLeft: 14 },
   // A select's value sits where typed text would, centred in the box.
-  select: { height: undefined, lineHeight: 22, alignSelf: "center" },
-  selectEmpty: { color: color.placeholder },
+  selectBox: { height: 48, paddingHorizontal: 12, gap: 8 },
+  selectSlot: { width: 18, height: 18, alignItems: "center", justifyContent: "center" },
+  selectText: {
+    flex: 1,
+    minWidth: 0,
+    fontFamily: font.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: color.text,
+    textAlignVertical: "center",
+    includeFontPadding: false,
+  },
+  selectEmpty: { fontSize: 13, color: color.placeholder },
   // Chosen: the value in medium weight on a teal edge.
   selectChosen: { borderColor: color.primaryEdge },
   selectValue: { fontFamily: font.medium },
-  caret: { paddingRight: 14 },
   inputWithIcon: { paddingLeft: 10 },
   error: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.error },
   toggle: {
@@ -535,6 +557,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     boxShadow: "0 1px 2px rgba(16, 24, 40, 0.05)",
   },
+  holOneLine: { paddingHorizontal: 12, gap: 6 },
   holPrimary: { backgroundColor: color.primary, borderColor: color.primary },
   holPrimaryPressed: { backgroundColor: color.primaryPressed, borderColor: color.primaryPressed },
   // The secondary button: the teal tint with its edge, as the ask button.

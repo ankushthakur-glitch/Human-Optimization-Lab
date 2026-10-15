@@ -328,11 +328,18 @@ export function ChatBar({
     [inputRef]
   )
   const [height, setHeight] = React.useState(FIELD_MIN)
-  const grow = (h: number) => setHeight(Math.min(FIELD_MAX, Math.max(FIELD_MIN, Math.ceil(h))))
+  // A pixel or two of rounding over one line is still one line.
+  const grow = (h: number) => setHeight(h <= FIELD_MIN + 2 ? FIELD_MIN : Math.min(FIELD_MAX, Math.ceil(h)))
   // The web textarea never reports a smaller size on its own: measure it
   // collapsed so the bar shrinks back as text is deleted or sent.
   React.useLayoutEffect(() => {
     if (Platform.OS !== "web" || !multiline) return
+    // Empty: one line, the same height as the send button, whatever the
+    // placeholder measures.
+    if (!value) {
+      setHeight(FIELD_MIN)
+      return
+    }
     const node = own.current as unknown as HTMLTextAreaElement | null
     if (!node?.style) return
     const prev = node.style.height

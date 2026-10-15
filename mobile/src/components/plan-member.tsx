@@ -398,13 +398,13 @@ function ReviewActions({ onRequest }: { onRequest: () => void }) {
   }
   return (
     <View style={styles.actions}>
-      <View style={styles.flex}>
-        <Button variant="outline" onPress={onRequest}>
+      <View style={styles.actionWide}>
+        <Button variant="outline" oneLine onPress={onRequest}>
           Request a change
         </Button>
       </View>
       <View style={styles.flex}>
-        <Button pending={saving} onPress={accept}>
+        <Button pending={saving} oneLine onPress={accept}>
           Accept plan
         </Button>
       </View>
@@ -690,6 +690,8 @@ const BULLET = 6
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  // The longer label gets the wider half, so both stay on one line.
+  actionWide: { flex: 1.25 },
   // Request a change and Accept plan, side by side over the tab bar.
   actions: { flexDirection: "row", gap: space.item },
   pressed: { opacity: 0.8 },
