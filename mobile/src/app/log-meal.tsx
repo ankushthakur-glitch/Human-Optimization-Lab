@@ -58,13 +58,20 @@ const RETAKE: Record<Meal["how"], string> = { photo: "Retake", voice: "Say it ag
 
 const newId = () => `m-${Date.now().toString(36)}`
 
+/* The meal tabs offer breakfast, lunch and dinner only; a snack already
+   logged keeps its own tab while it is edited. A snack hour opens on
+   dinner. */
+const slotTabs = (slot: MealSlot) =>
+  MEAL_SLOTS.filter((m) => m.main || m.id === slot).map((m) => ({ value: m.id, label: m.name }))
+const mainSlot = (slot: MealSlot): MealSlot => (slot === "snack" ? "dinner" : slot)
+
 export default function LogMealScreen() {
   const s = useOnboarding()
   const params = useLocalSearchParams<{ slot?: string; day?: string; edit?: string }>()
   const [now] = React.useState(() => new Date())
   const day = React.useMemo(() => logDay(params.day, now), [params.day, now])
   const [editing] = React.useState(() => (params.edit ? s.meals?.[day.key]?.find((m) => m.id === params.edit) : undefined))
-  const [slot, setSlot] = React.useState<MealSlot>(() => editing?.slot ?? (isSlot(params.slot) ? params.slot : slotAt(now)))
+  const [slot, setSlot] = React.useState<MealSlot>(() => editing?.slot ?? mainSlot(isSlot(params.slot) ? params.slot : slotAt(now)))
   const [step, setStep] = React.useState<Step>(() =>
     editing ? { at: "check", reading: readingOf(editing, mealName(editing)), n: 0 } : { at: "capture" }
   )
@@ -144,7 +151,7 @@ export default function LogMealScreen() {
       <FlowScreen page title="Log a meal">
       <View style={styles.slots}>
         {!day.today && <Text style={styles.metaStrong}>{day.yesterday ? `For yesterday, ${day.label}` : `For ${day.label}`}</Text>}
-        <Tabs snug options={MEAL_SLOTS.map((m) => ({ value: m.id, label: m.name }))} value={slot} onChange={setSlot} />
+        <Tabs snug options={slotTabs(slot)} value={slot} onChange={setSlot} />
       </View>
 
       {/* Three ways in, as rows: a photo first, then her voice, then
@@ -345,7 +352,7 @@ function CheckStep({
           </PrimaryButton>
         }
       >
-        {onSlot && <Tabs snug options={MEAL_SLOTS.map((m) => ({ value: m.id, label: m.name }))} value={slot} onChange={onSlot} />}
+        {onSlot && <Tabs snug options={slotTabs(slot)} value={slot} onChange={onSlot} />}
 
         <View style={styles.section}>
           <Block

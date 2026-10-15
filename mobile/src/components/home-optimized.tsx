@@ -2,7 +2,7 @@ import { router, useFocusEffect } from "expo-router"
 import * as React from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 
-import { formatNumber } from "@/components/charts"
+import { ScoreRing, formatNumber } from "@/components/charts"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { EnergyBalance } from "@/components/energy-balance"
 import { Upcoming } from "@/components/home-free"
@@ -155,9 +155,7 @@ function TodoList({ t, onCheckIn }: { t: TodayPlan; onCheckIn: (kind: CheckInKin
           </Text>
           <Text style={styles.todoSub}>Small steps toward your daily health goals.</Text>
         </View>
-        <View style={styles.todoCount} accessibilityLabel={`${t.done} of ${t.of} tasks done`}>
-          <Text style={styles.todoCountText}>{`${t.done}/${t.of}`}</Text>
-        </View>
+        <ScoreRing percent={t.of ? (t.done / t.of) * 100 : 0} size={52} stroke={5} of="Today's To-do done" />
       </View>
       <ProgressBar done={t.done} total={t.of} />
       {/* Done tasks sink to the bottom; Array.sort is stable, so each group
@@ -351,8 +349,6 @@ const styles = StyleSheet.create({
   todoHead: { flexDirection: "row", alignItems: "flex-start", gap: space.item },
   todoTitle: { ...type.sectionLabel },
   todoSub: { ...type.label, marginTop: 2 },
-  todoCount: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: color.primarySoft, borderWidth: 1, borderColor: color.primaryEdge },
-  todoCountText: { ...type.metaStrong, color: ink.strong },
   list: {},
   task: {
     flexDirection: "row",
