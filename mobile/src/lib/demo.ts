@@ -36,6 +36,7 @@ import { localIso } from "@/lib/todo"
    onboarding-signin      password just created, on sign in with her email
    onboarding-about       signed in, on About you
    onboarding-consent     signed in, on the consent
+   onboarding-life        consent signed, on the eight life questions
    onboarding-why         consent signed, on the why conversation
    onboarding-syncing     why answered, the record building
 
@@ -66,6 +67,7 @@ export type DemoId =
   | "onboarding-signin"
   | "onboarding-about"
   | "onboarding-consent"
+  | "onboarding-life"
   | "onboarding-why"
   | "onboarding-syncing"
   | "returning"
@@ -350,6 +352,7 @@ export const DEMOS: Record<DemoId, () => Patch> = {
   "onboarding-about": firstRun,
   "onboarding-consent": () => ({ ...firstRun(), step: "consent", profile: { ...DEMOGRAPHICS } }),
   // The consent signed for the default period, as its texts page saves it.
+  "onboarding-life": () => ({ ...firstRun(), step: "life", profile: { ...DEMOGRAPHICS }, consent: "signed", consentAt: new Date().toISOString(), consentPeriod: DEFAULT_PERIOD }),
   "onboarding-why": () => ({ ...firstRun(), step: "why", profile: { ...DEMOGRAPHICS }, consent: "signed", consentAt: new Date().toISOString(), consentPeriod: DEFAULT_PERIOD }),
   "onboarding-syncing": () => ({ ...DEMOS["onboarding-why"](), step: "records", why: { ...WHY }, whyAt: Date.now() }),
 }

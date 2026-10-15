@@ -522,9 +522,9 @@ export const TURNS: Turn[] = [
     say: () => [
       "Thank you. Here's where you are today.",
       { card: "flourish" },
-      "We'll track this alongside your record over time as part of your Inlay score, so you can watch it move. Next, your record.",
+      "We'll track this alongside your record over time as part of your Inlay score, so you can watch it move.",
     ],
-    input: () => ({ type: "reply", options: ["See my record"] }),
+    input: () => ({ type: "reply", options: ["Done"] }),
     save: () => ({}),
   },
 ]

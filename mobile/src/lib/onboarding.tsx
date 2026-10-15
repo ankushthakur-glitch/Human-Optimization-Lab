@@ -2,6 +2,7 @@ import * as React from "react"
 
 import type { Allowance } from "@/lib/allowance"
 import type { Answers } from "@/lib/conversation"
+import type { Life } from "@/lib/wellbeing"
 import type { ActivityLog, Entry, Meal, SavedQuestion } from "@/lib/member"
 import { dayKey } from "@/lib/dates"
 import { dayOfAt } from "@/lib/member"
@@ -16,6 +17,7 @@ import { store } from "@/lib/storage"
 
    about     basic demographics, needed to match them in the national networks
    consent   the one HIPAA authorization
+   life      eight 0 to 10 questions about her life, while the record arrives
    why       the "your why" conversation and the flourishing index
    records   the record builds
    done      the dashboard, where suggested plans are offered
@@ -29,7 +31,7 @@ import { store } from "@/lib/storage"
    A prototype with no backend: when the API exists, `save` posts each step
    and the server holds the state. */
 
-export type Step = "about" | "consent" | "why" | "records" | "done"
+export type Step = "about" | "consent" | "life" | "why" | "records" | "done"
 
 export type Profile = {
   firstName: string
@@ -189,6 +191,8 @@ export type State = {
   /** The conversation's answers so far, and the turn the patient is on. */
   why?: Partial<Answers>
   whyAt?: number
+  /** Her answers to the eight life questions (lib/wellbeing.ts). */
+  life?: Life
   membership?: Membership
   /** The one authorization: signed, or not now. */
   consent?: "signed" | "declined"
@@ -417,6 +421,7 @@ export function useOnboarding() {
 export const STEP_ROUTE = {
   about: "/onboarding/about-you",
   consent: "/onboarding/consent",
+  life: "/onboarding/life",
   why: "/onboarding/why",
   records: "/onboarding/syncing",
 } as const

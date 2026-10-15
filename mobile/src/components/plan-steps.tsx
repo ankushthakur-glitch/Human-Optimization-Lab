@@ -25,12 +25,12 @@ function backFrom(step?: number) {
 
 /** "1 of 5" in the header's corner, the steps as short dashes under it,
     those done in teal. */
-export function PlanSteps({ step }: { step: number }) {
+export function PlanSteps({ step, total = PLAN_STEPS }: { step: number; total?: number }) {
   return (
-    <View style={styles.steps} accessibilityRole="progressbar" accessibilityLabel={`Step ${step} of ${PLAN_STEPS}`}>
-      <Text style={styles.stepText}>{`${step} of ${PLAN_STEPS}`}</Text>
+    <View style={styles.steps} accessibilityRole="progressbar" accessibilityLabel={`Step ${step} of ${total}`}>
+      <Text style={styles.stepText}>{`${step} of ${total}`}</Text>
       <View style={styles.dashes}>
-        {Array.from({ length: PLAN_STEPS }, (_, i) => (
+        {Array.from({ length: total }, (_, i) => (
           <View key={i} style={[styles.dash, i < step && styles.dashOn]} />
         ))}
       </View>
@@ -49,6 +49,10 @@ export function PlanSteps({ step }: { step: number }) {
     steps in the header. */
 export function PlanStepPage({
   step,
+  total,
+  onBack,
+  skip,
+  noBack,
   headerTitle = "Your plan",
   title,
   lead,
@@ -61,6 +65,14 @@ export function PlanStepPage({
   children,
 }: {
   step?: number
+  /** How many steps there are, when not the plan's six (the life questions: eight). */
+  total?: number
+  /** Replaces going back a screen, e.g. to the previous question. */
+  onBack?: () => void
+  /** A "Skip" beside Back, for a step she may leave unanswered. */
+  skip?: () => void
+  /** No "Back" in the foot (the header's caret and the swipe still go back). */
+  noBack?: boolean
   /** The header's words: "Your plan", or "Payment method" on the last step. */
   headerTitle?: string
   /** The heading over the list; none on the last step, whose header names it. */
@@ -75,11 +87,12 @@ export function PlanStepPage({
   children: React.ReactNode
 }) {
   const { bottom } = useSafeAreaInsets()
+  const back = onBack ?? (() => backFrom(step))
   return (
     <View style={styles.screen}>
       <DarkStatusBar />
       <PageGround />
-      <PageHeader title={headerTitle} onBack={() => backFrom(step)} right={step ? <PlanSteps step={step} /> : undefined} />
+      <PageHeader title={headerTitle} onBack={back} right={step ? <PlanSteps step={step} total={total} /> : undefined} />
       {!!title && (
         <View style={styles.head}>
           <Text style={styles.title} accessibilityRole="header">
@@ -103,10 +116,19 @@ export function PlanStepPage({
       >
         <View style={styles.footer}>
           {!nextWide && (
-            <Pressable onPress={() => backFrom(step)} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
-              <CaretLeft size={16} color={ink.secondary} />
-              <Text style={styles.backText}>Back</Text>
-            </Pressable>
+            <View style={styles.backs}>
+              {!noBack && (
+                <Pressable onPress={back} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
+                  <CaretLeft size={16} color={ink.secondary} />
+                  <Text style={styles.backText}>Back</Text>
+                </Pressable>
+              )}
+              {skip && (
+                <Pressable onPress={skip} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
+                  <Text style={styles.backText}>Skip</Text>
+                </Pressable>
+              )}
+            </View>
           )}
           <View style={nextWide ? styles.fill : styles.next}>
             <Button onPress={onNext} disabled={nextDisabled} pending={nextPending} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
@@ -136,6 +158,7 @@ const styles = StyleSheet.create({
   list: { gap: space.inline, paddingHorizontal: space.gutter, paddingTop: space.line, paddingBottom: space.item },
 
   footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.section },
+  backs: { flexDirection: "row", alignItems: "center", gap: space.section },
   back: { flexDirection: "row", alignItems: "center", gap: space.line, paddingVertical: space.inline },
   backText: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: ink.secondary },
   next: { width: "52%" },

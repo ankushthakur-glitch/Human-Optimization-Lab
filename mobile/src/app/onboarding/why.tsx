@@ -24,7 +24,14 @@ import { color, font, ink, space } from "@/lib/theme"
    question. A question lists its options inside its message; tap one or
    type an answer: the chat bar stays on screen at every step, even while
    the assistant is still writing (it sends once the question lands). Free text can be skipped. No going back: like any conversation, it moves forward, and the
-   plan it ends on can be changed later. */
+   plan it ends on can be changed later.
+
+   Since 15 Oct 2026 setup no longer comes here, and neither does the home:
+   the conversation opens from "Confirm schedule" on the schedule page
+   (app/complete-profile.tsx), never before the tests are booked. The chat
+   itself is unchanged; every answer is saved, so she comes back to the
+   question she stopped at, and the last one walks on to her plan
+   (/plan?walk=1). */
 
 /* How long the assistant "types" before its first line after an answer,
    on arrival, and between two lines of the same turn. */
@@ -38,6 +45,8 @@ export default function WhyScreen() {
   const { bottom } = useSafeAreaInsets()
   const onboarding = useOnboarding()
   const name = onboarding.profile?.preferredName || onboarding.profile?.firstName || PATIENT.firstName
+  // Setup is done: opened after "Confirm schedule", not as a step of setup.
+  const profile = onboarding.step === "done"
 
   const [a, setAnswers] = React.useState<Answers>({ ...EMPTY, ...onboarding.why })
   const [at, setAt] = React.useState(() => nextTurn(onboarding.whyAt ?? 0, { ...EMPTY, ...onboarding.why }))
@@ -83,6 +92,11 @@ export default function WhyScreen() {
     justAnswered.current = turn.id
 
     if (last) {
+      if (profile) {
+        await onboarding.save({ why: next, whyAt: at })
+        router.replace("/plan?walk=1")
+        return
+      }
       await onboarding.save({ why: next, whyAt: at, step: "records" })
       router.push("/onboarding/syncing")
       return

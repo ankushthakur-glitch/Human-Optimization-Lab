@@ -17,7 +17,8 @@ import { bookingOf, localIso } from "@/lib/todo"
 /* "Schedule your tests": opens from "Schedule my tests" on the enrolled
    page (/enrolled), once payment goes through. Each paid test with its
    place, a Date and a Time field; "Confirm schedule" books
-   them all and walks on to her plan. "Schedule later" stays on the
+   them all and only then opens the health questions (/complete-profile,
+   the assistant's "your why" chat), whose last answer walks on to her plan. "Schedule later" stays on the
    enrolled page, which leaves them in To do (lib/todo.ts).
 
    Each test's day and time are two fields: Date opens the calendar
@@ -85,7 +86,7 @@ export default function ScheduleTestsScreen() {
         toast(`${single.name} scheduled`)
         return router.canGoBack() ? router.back() : router.replace("/gaps")
       }
-      router.replace("/plan?walk=1")
+      router.replace("/complete-profile")
     } finally {
       setSaving(false)
     }
@@ -173,7 +174,7 @@ function TestSlots({ test, slot, onPick, named }: { test: BaselineTest; slot: Sl
           <SelectField
             label={`Date for ${test.name}`}
             hideLabel
-            placeholder="Select a day"
+            placeholder="Select date"
             value={slot.day ? dayLabel(dayFrom(slot.day)) : undefined}
             icon={({ color: c }) => <CalendarBlank size={18} color={c} />}
             onPress={() => onPick("day")}
@@ -183,7 +184,7 @@ function TestSlots({ test, slot, onPick, named }: { test: BaselineTest; slot: Sl
           <SelectField
             label={`Time for ${test.name}`}
             hideLabel
-            placeholder="Select a time"
+            placeholder="Select time"
             value={slot.time}
             icon={({ color: c }) => <Clock size={18} color={c} />}
             onPress={() => onPick("time")}
