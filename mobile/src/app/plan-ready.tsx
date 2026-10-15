@@ -219,7 +219,9 @@ export default function PlanReadyScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   // The teal wash behind the top of the page, fading into the ground.
-  wash: { position: "absolute", top: 0, left: 0, right: 0, height: "55%" },
+  // An SVG is a replaced element: left/right alone don't stretch it on web
+  // (it falls back to ~300px, washing only the left side), so give it a width.
+  wash: { position: "absolute", top: 0, left: 0, right: 0, width: "100%", height: "55%" },
   // Centred in the space above the button; scrolls on a short phone.
   body: { flexGrow: 1, justifyContent: "center", paddingHorizontal: space.gutter, paddingBottom: space.section, gap: space.item },
   // "View my plan", right above the tab bar.

@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router"
-import { useVideoPlayer } from "expo-video"
+import { VideoView, useVideoPlayer } from "expo-video"
 import * as React from "react"
-import { Image, Pressable, StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { PageNotFoundState } from "@/components/error-state"
 import { ExerciseVideoModal } from "@/components/exercise-video"
@@ -29,32 +29,18 @@ export default function ExerciseScreen() {
   return <Move key={move.id} move={move} />
 }
 
-/* The card's photo: the move's own where there is one, else the shared one. */
-const DEMO_PHOTO = require("../../../assets/images/exercise-demo.jpg")
-/* The clips, by move id: every move has one. They are Wikimedia Commons
-   videos. Sit to stand and single leg stand are the CDC's fall-prevention
-   demonstrations (the 30-Second Chair Stand Test and the 4-Stage Balance
-   Test) and the forward lunge, push press and push up are U.S. military
-   training videos, all public domain; the overhead press (a shoulder
-   press) is FitnessScape's "exercise demonstration video", CC BY 3.0. They
-   are WebMs: they play on the web
-   build; a phone's build needs MP4s. */
-const MOVE_VIDEO: Record<string, string> = {
-  "sit-to-stand": "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/d5/30-Second_Chair_Stand_Test.webm/30-Second_Chair_Stand_Test.webm.480p.vp9.webm",
-  "forward-lunge": "https://upload.wikimedia.org/wikipedia/commons/transcoded/5/57/Strength_Training_Circuit-_Forward_Lunge.webm/Strength_Training_Circuit-_Forward_Lunge.webm.480p.vp9.webm",
-  "push-press": "https://upload.wikimedia.org/wikipedia/commons/transcoded/b/ba/Strength_Training_Circuit-_Overhead_Push_Press.webm/Strength_Training_Circuit-_Overhead_Push_Press.webm.480p.vp9.webm",
-  "push-up": "https://upload.wikimedia.org/wikipedia/commons/transcoded/0/0c/Army_Combat_Fitness_Test-_Hand-Release_Push-Up_%28HRP%29_%28Event_3%29.webm/Army_Combat_Fitness_Test-_Hand-Release_Push-Up_%28HRP%29_%28Event_3%29.webm.480p.vp9.webm",
-  "overhead-press": "https://upload.wikimedia.org/wikipedia/commons/transcoded/6/69/Shoulder_press_-_exercise_demonstration_video.webm/Shoulder_press_-_exercise_demonstration_video.webm.480p.vp9.webm",
-  "single-leg-stand": "https://upload.wikimedia.org/wikipedia/commons/transcoded/3/39/4-Stage_Balance_Test.webm/4-Stage_Balance_Test.webm.480p.vp9.webm",
+/* The reference clips, MP4s bundled with the app so they play on the web
+   build and on a phone alike. The push up has its own; a move without one
+   plays the shared clip. */
+const DEMO_VIDEO = require("../../../assets/videos/exercise-demo.mp4")
+const MOVE_VIDEO: Record<string, number> = {
+  "push-up": require("../../../assets/videos/push-up.mp4"),
 }
-/* Each card's photo is a frame from its own clip. */
-const MOVE_PHOTO: Record<string, number> = {
-  "sit-to-stand": require("../../../assets/images/exercise-sit-to-stand.jpg"),
-  "forward-lunge": require("../../../assets/images/exercise-forward-lunge.jpg"),
-  "push-press": require("../../../assets/images/exercise-push-press.jpg"),
-  "push-up": require("../../../assets/images/exercise-push-up.jpg"),
-  "overhead-press": require("../../../assets/images/exercise-overhead-press.jpg"),
-  "single-leg-stand": require("../../../assets/images/exercise-single-leg-stand.jpg"),
+/* Each clip's width over height, so its box is the clip's own shape and the
+   picture fills it edge to edge with nothing cropped and no bars. */
+const DEMO_RATIO = 16 / 9
+const MOVE_RATIO: Record<string, number> = {
+  "push-up": 1092 / 576,
 }
 
 /* Only digits, for the reps; digits and one point, for a weight. */
@@ -70,8 +56,15 @@ function Move({ move }: { move: Exercise }) {
   const day = localDay()
   const log = s.exercises?.[day]?.[move.id]
   const [watching, setWatching] = React.useState(false)
-  const player = useVideoPlayer(MOVE_VIDEO[move.id] ?? null, (p) => {
+  const clip = MOVE_VIDEO[move.id] ?? DEMO_VIDEO
+  const ratio = MOVE_RATIO[move.id] ?? DEMO_RATIO
+  const player = useVideoPlayer(clip, (p) => {
     p.loop = true
+  })
+  // The card's picture is the clip's own first moment, held still.
+  const still = useVideoPlayer(clip, (p) => {
+    p.muted = true
+    p.currentTime = 0.5
   })
   // Each set has its own reps and weight; a log from before holds one.
   const [rows, setRows] = React.useState<{ reps: string; weight: string }[]>(() => {
@@ -153,9 +146,9 @@ function Move({ move }: { move: Exercise }) {
           }}
           accessibilityRole="button"
           accessibilityLabel={`Watch how: ${move.name}`}
-          style={({ pressed }) => [styles.stage, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.stage, { aspectRatio: ratio }, pressed && styles.pressed]}
         >
-          <Image source={MOVE_PHOTO[move.id] ?? DEMO_PHOTO} style={styles.photo} resizeMode="cover" accessibilityIgnoresInvertColors />
+          <VideoView player={still} style={styles.photo} contentFit="cover" nativeControls={false} pointerEvents="none" />
           <View style={styles.scrim} />
           <View style={styles.play}>
             <Play size={20} color={color.primary} weight="fill" />
@@ -251,7 +244,7 @@ function Move({ move }: { move: Exercise }) {
           )}
         </Block>
       </FlowScreen>
-      <ExerciseVideoModal visible={watching} player={player} title={move.name} poster={MOVE_PHOTO[move.id] ?? DEMO_PHOTO} onClose={() => setWatching(false)} />
+      <ExerciseVideoModal visible={watching} player={player} title={move.name} ratio={ratio} onClose={() => setWatching(false)} />
     </View>
   )
 }
@@ -263,13 +256,12 @@ const FIELD_INSET = 14
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   pressed: { opacity: 0.7 },
-  // The video's place: 16:9 on the teal tint inside its edge.
+  // The video's place, in the clip's own shape, inside its edge.
   stage: {
-    aspectRatio: 16 / 9,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: color.primaryEdge,
-    backgroundColor: color.primaryTint,
+    backgroundColor: "#000",
     alignItems: "center",
     justifyContent: "center",
     gap: space.inline,

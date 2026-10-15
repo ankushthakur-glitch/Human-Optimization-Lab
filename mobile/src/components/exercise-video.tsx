@@ -1,7 +1,7 @@
 import { useEvent } from "expo"
 import { VideoView, type VideoPlayer } from "expo-video"
 import * as React from "react"
-import { BackHandler, Image, PanResponder, Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native"
+import { BackHandler, PanResponder, Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native"
 
 import { ArrowsInSimple, ArrowsOutSimple, ArrowClockwise, ArrowCounterClockwise, Pause, Play, X } from "@/components/ph"
 import { color, font, space } from "@/lib/theme"
@@ -25,7 +25,7 @@ const clock = (seconds: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
 }
 
-export function ExerciseVideoModal({ visible, player, title, poster, onClose }: { visible: boolean; player: VideoPlayer; title: string; poster: number; onClose: () => void }) {
+export function ExerciseVideoModal({ visible, player, title, ratio, onClose }: { visible: boolean; player: VideoPlayer; title: string; ratio: number; onClose: () => void }) {
   const [full, setFull] = React.useState(false)
   // Switching views draws the picture afresh, which would restart it paused;
   // where it was and whether it was playing are put back once it is up.
@@ -88,9 +88,9 @@ export function ExerciseVideoModal({ visible, player, title, poster, onClose }: 
   return (
     <View style={StyleSheet.absoluteFill} accessibilityViewIsModal>
       {full ? (
-        <FullView player={player} title={title} poster={poster} onCollapse={() => switchTo(false)} onClose={close} />
+        <FullView player={player} title={title} ratio={ratio} onCollapse={() => switchTo(false)} onClose={close} />
       ) : (
-        <Popup player={player} title={title} poster={poster} onExpand={() => switchTo(true)} onClose={close} />
+        <Popup player={player} title={title} ratio={ratio} onExpand={() => switchTo(true)} onClose={close} />
       )}
     </View>
   )
@@ -131,7 +131,7 @@ function useProgress(player: VideoPlayer) {
   return { time: tick.currentTime, buffered: tick.bufferedPosition, duration: player.duration }
 }
 
-function Popup({ player, title, poster, onExpand, onClose }: { player: VideoPlayer; title: string; poster: number; onExpand: () => void; onClose: () => void }) {
+function Popup({ player, title, ratio, onExpand, onClose }: { player: VideoPlayer; title: string; ratio: number; onExpand: () => void; onClose: () => void }) {
   const { isPlaying, toggle } = usePlayback(player)
   return (
     <View style={styles.backdrop}>
@@ -145,9 +145,8 @@ function Popup({ player, title, poster, onExpand, onClose }: { player: VideoPlay
             <X size={16} color={color.background} weight="bold" />
           </RoundButton>
         </View>
-        <View style={styles.frame}>
-          <Image source={poster} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityIgnoresInvertColors />
-          <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
+        <View style={[styles.frame, { aspectRatio: ratio }]}>
+          <VideoView player={player} style={styles.video} contentFit="cover" nativeControls={false} />
           <Pressable onPress={toggle} accessibilityRole="button" accessibilityLabel={isPlaying ? `Pause: ${title}` : `Play: ${title}`} style={styles.center}>
             <View style={[styles.play, isPlaying && styles.playHint]}>
               {isPlaying ? <Pause size={22} color={color.primary} weight="fill" /> : <Play size={22} color={color.primary} weight="fill" />}
@@ -167,20 +166,20 @@ function Popup({ player, title, poster, onExpand, onClose }: { player: VideoPlay
 /** The full view: the phone's whole screen, with the picture laid on its
     side. The inner layer is as wide as the screen is tall and as tall as it
     is wide, turned a quarter, so everything in it is drawn landscape. */
-function FullView({ player, title, poster, onCollapse, onClose }: { player: VideoPlayer; title: string; poster: number; onCollapse: () => void; onClose: () => void }) {
+function FullView({ player, title, ratio, onCollapse, onClose }: { player: VideoPlayer; title: string; ratio: number; onCollapse: () => void; onClose: () => void }) {
   const [box, setBox] = React.useState({ w: 0, h: 0 })
   return (
     <View style={styles.full} onLayout={(e: LayoutChangeEvent) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
       {box.w > 0 && (
         <View style={[styles.turned, { width: box.h, height: box.w, left: (box.w - box.h) / 2, top: (box.h - box.w) / 2 }]}>
-          <Landscape player={player} title={title} poster={poster} onCollapse={onCollapse} onClose={onClose} />
+          <Landscape player={player} title={title} ratio={ratio} onCollapse={onCollapse} onClose={onClose} />
         </View>
       )}
     </View>
   )
 }
 
-function Landscape({ player, title, poster, onCollapse, onClose }: { player: VideoPlayer; title: string; poster: number; onCollapse: () => void; onClose: () => void }) {
+function Landscape({ player, title, ratio, onCollapse, onClose }: { player: VideoPlayer; title: string; ratio: number; onCollapse: () => void; onClose: () => void }) {
   const { isPlaying, toggle } = usePlayback(player)
   const { time, buffered, duration } = useProgress(player)
   const [shown, setShown] = React.useState(true)
@@ -210,8 +209,7 @@ function Landscape({ player, title, poster, onCollapse, onClose }: { player: Vid
 
   return (
     <View style={styles.fill}>
-      <Image source={poster} style={StyleSheet.absoluteFill} resizeMode="contain" accessibilityIgnoresInvertColors />
-      <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} />
+      <VideoView player={player} style={styles.video} contentFit="contain" nativeControls={false} />
       <Pressable
         style={StyleSheet.absoluteFill}
         onPress={() => (shown ? setShown(false) : wake())}
@@ -356,6 +354,9 @@ function RoundButton({ label, onPress, dim, children }: { label: string; onPress
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  // An explicit size as well as the fill: on the web the picture is otherwise
+  // drawn at the clip's own pixels (1920 by 1080), cropped to a corner.
+  video: { ...StyleSheet.absoluteFill, width: "100%", height: "100%" },
   pressed: { opacity: 0.7 },
 
   // Popup: the clip on a dimmed screen, 16 in from the phone's sides.
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
   card: { width: "100%", maxWidth: 560, backgroundColor: "#000", borderRadius: 12, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" },
   cardHead: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingLeft: space.card, paddingRight: space.inline, paddingVertical: space.inline },
   cardTitle: { flex: 1, fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: color.background },
-  frame: { aspectRatio: 16 / 9, backgroundColor: "#000", alignItems: "center", justifyContent: "center" },
+  frame: { backgroundColor: "#000", alignItems: "center", justifyContent: "center" },
   center: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
   play: { width: 52, height: 52, borderRadius: 26, backgroundColor: color.background, alignItems: "center", justifyContent: "center" },
   // While it plays the button stays but fades back, so the picture shows.
