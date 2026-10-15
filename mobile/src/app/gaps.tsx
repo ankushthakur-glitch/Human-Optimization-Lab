@@ -6,13 +6,13 @@ import { SmallLink } from "@/components/care-orders-rows"
 import { CaretRight } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
 import { FilterChips } from "@/components/record-rows"
-import { DateBlock, EmptyState, Group, HUE, ReviewBanner, SmallAction, Tile, spokenDate } from "@/components/record-kit"
+import { DateBlock, EmptyState, HUE, ReviewBanner, SmallAction, Tile, spokenDate } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { sharingOff } from "@/lib/experience"
 import { dateOfAt, shortDay } from "@/lib/member"
 import { call } from "@/lib/links"
 import { useOnboarding } from "@/lib/onboarding"
-import { card, font, ink, space, type } from "@/lib/theme"
+import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
 import { opensPage, removeQuestion, todo, type TodoItem } from "@/lib/todo"
 
 /* To do, a tab: everything open for the patient in one guided list,
@@ -27,8 +27,10 @@ import { opensPage, removeQuestion, todo, type TodoItem } from "@/lib/todo"
    Booked               tests and visits she booked, until the result
    Done recently        results in over the last 90 days
 
-   Every row is a teal tile (or a date block), the title, and an action or
-   a chevron. An empty group is left out. With nothing open, one calm
+   Each group is one white card drawn as the Today page's to-do card (15
+   Oct 2026): its title inside, rows split by rules, a round 44 tile (or a
+   date block), the title, and an action or a chevron. No day strip and no
+   count pill, as the Today page has. An empty group is left out. With nothing open, one calm
    empty state; with sharing turned off, the same banner as every tab,
    over what was collected before.
 
@@ -114,8 +116,8 @@ export default function ToDoScreen() {
   )
 }
 
-/** A group's label and its rows on one card: Figma's 14 medium in Grey/08,
-    16 above the card. */
+/** A group on one card, as the Today page's to-do: the title inside on
+    the left, the overdue mark on the right, and the rows split by rules. */
 function Section({ title, badge, children }: { title: string; badge?: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
@@ -130,7 +132,13 @@ function Section({ title, badge, children }: { title: string; badge?: string; ch
           </View>
         )}
       </View>
-      <Group>{children}</Group>
+      {React.Children.toArray(children)
+        .filter(Boolean)
+        .map((row, i) => (
+          <View key={i} style={i > 0 && styles.rule}>
+            {row}
+          </View>
+        ))}
     </View>
   )
 }
@@ -172,10 +180,10 @@ function TodoRow({
   const body = (
     <>
       {item.date ? (
-        <DateBlock date={item.date} />
+        <DateBlock date={item.date} size="lg" />
       ) : (
-        <Tile hue={urgent ? "red" : "teal"}>
-          <RecordIcon name={item.icon} size={16} color={urgent ? HUE.red.ink : HUE.teal.ink} />
+        <Tile hue={urgent ? "red" : "teal"} size={44}>
+          <RecordIcon name={item.icon} size={20} color={urgent ? HUE.red.ink : color.primary} />
         </Tile>
       )}
       <View style={styles.words}>
@@ -210,7 +218,7 @@ function TodoRow({
       )}
     </>
   )
-  const look = [styles.row, !!item.date && styles.rowDated]
+  const look = styles.row
   if (!onPress)
     return (
       <View style={look} accessible={!action} accessibilityLabel={action ? undefined : label}>
@@ -226,7 +234,7 @@ function TodoRow({
       accessibilityLabel={label}
       accessibilityActions={action ? [{ name: "activate" }, { name: "action", label: action.label }] : undefined}
       onAccessibilityAction={action ? (e) => (e.nativeEvent.actionName === "action" ? action.onPress() : onPress()) : undefined}
-      style={({ pressed }) => [...look, pressed && styles.pressed]}
+      style={({ pressed }) => [look, pressed && styles.pressed]}
     >
       {body}
     </Pressable>
@@ -236,21 +244,29 @@ function TodoRow({
 const styles = StyleSheet.create({
   // Sections sit space.section apart, as on every tab.
   page: { gap: space.section },
-  section: { gap: space.gutter },
-  sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  sectionTitle: { ...type.title, color: ink.detail },
+  section: {
+    paddingHorizontal: space.gutter,
+    paddingTop: space.gutter,
+    paddingBottom: 4,
+    borderRadius: 16,
+    backgroundColor: color.background,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+    boxShadow: card.shadowXs,
+  },
+  sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item, marginBottom: 4 },
+  sectionTitle: { ...type.section, color: ink.detail },
+  rule: { borderTopWidth: 1, borderTopColor: hairline.edge },
   badge: { flexDirection: "row", alignItems: "center", gap: 6 },
   badgeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: HUE.red.ink },
   badgeText: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: HUE.red.ink },
 
-  row: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
-  // A date block stands 10 from its words.
-  rowDated: { gap: 10 },
-  pressed: { opacity: 0.6 },
-  words: { flex: 1, gap: space.stack },
-  title: { ...type.title, color: ink.detail },
-  late: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: HUE.red.ink },
-  fact: { ...type.label },
+  row: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 14 },
+  pressed: { opacity: 0.7 },
+  words: { flex: 1, gap: 2 },
+  title: { ...type.title, fontSize: 15, lineHeight: 21, color: ink.strong },
+  late: { fontFamily: font.regular, fontSize: 13, lineHeight: 18, color: HUE.red.ink },
+  fact: { fontFamily: type.body.fontFamily, fontSize: 13, lineHeight: 18, color: ink.secondary },
   factDot: { color: card.chevron },
   note: { ...type.metaStrong, color: ink.primary },
 })
