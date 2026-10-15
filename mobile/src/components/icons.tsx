@@ -2,7 +2,9 @@ import Analytics01Icon from "@hugeicons/core-free-icons/Analytics01Icon"
 import AngryIcon from "@hugeicons/core-free-icons/AngryIcon"
 import ArrowLeft01Icon from "@hugeicons/core-free-icons/ArrowLeft01Icon"
 import Calendar03Icon from "@hugeicons/core-free-icons/Calendar03Icon"
+import ChartUpIcon from "@hugeicons/core-free-icons/ChartUpIcon"
 import CheckmarkSquare02Icon from "@hugeicons/core-free-icons/CheckmarkSquare02Icon"
+import CircleArrowLeft01Icon from "@hugeicons/core-free-icons/CircleArrowLeft01Icon"
 import CrownIcon from "@hugeicons/core-free-icons/CrownIcon"
 import FaceIdIcon from "@hugeicons/core-free-icons/FaceIdIcon"
 import HappyIcon from "@hugeicons/core-free-icons/HappyIcon"
@@ -50,9 +52,9 @@ export function IconCheck({ size = 16, color, strokeWidth = 2 }: IconProps & { s
 
 export type TabIconProps = IconProps & { active?: boolean; cut?: string }
 
-function tabIcon(icon: typeof Home09Icon, body: readonly number[]) {
+function tabIcon(icon: typeof Home09Icon, body: readonly number[], keep?: readonly number[]) {
   return function TabIcon({ size = 22, color, active, cut }: TabIconProps) {
-    return <HugeIcon icon={icon} size={size} color={color} solid={active ? body : undefined} cut={cut} />
+    return <HugeIcon icon={icon} size={size} color={color} solid={active ? body : undefined} cut={cut} keep={keep} />
   }
 }
 
@@ -61,3 +63,8 @@ export const IconResults = tabIcon(Analytics01Icon, [3])
 export const IconPlan = tabIcon(Task01Icon, [0, 2])
 export const IconUpgrade = tabIcon(CrownIcon, [2])
 export const IconToDo = tabIcon(CheckmarkSquare02Icon, [0])
+/* The plan's own tabs (Back, Today, Progress): Back is never selected.
+   Progress fills its three bars and keeps its arrow as a line. */
+export const IconBack = tabIcon(CircleArrowLeft01Icon, [0])
+export const IconToday = tabIcon(Calendar03Icon, [1])
+export const IconProgress = tabIcon(ChartUpIcon, [0, 3, 4], [1, 2])

@@ -6,9 +6,7 @@ import { ScoreRing, formatNumber } from "@/components/charts"
 import { CaretRight } from "@/components/ph"
 import { Block, EmptyState, Group, NeedsRow, ResultRow } from "@/components/record-kit"
 import { useMarkers } from "@/lib/experience"
-import { BASELINE, PLAN_START_RESULTS, clockOf, dateOfAt, dayOfAt, daysBetween, shortDay, sinceStart, thisWeek, type DayScore, type Measure } from "@/lib/member"
-import { useOnboarding } from "@/lib/onboarding"
-import { ORDERS } from "@/lib/record"
+import { BASELINE, PLAN_START_RESULTS, clockOf, dateOfAt, dayOfAt, daysBetween, shortDay, sinceStart, type DayScore, type Measure } from "@/lib/member"
 import { classify } from "@/lib/trends"
 import { card, font, ink, space, type } from "@/lib/theme"
 
@@ -18,7 +16,6 @@ import { card, font, ink, space, type } from "@/lib/theme"
    against her starting tests, and the one empty state. Private to the two
    screens; everything they draw with comes from the record and chart kits. */
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 /** A card's readout: the value in the stat size with its unit beside it,
     the words under it, and an action or a status on the right. A value
@@ -137,40 +134,23 @@ export function changeSince(from: { at: string; value: number }, to: number) {
   return `${formatNumber(Math.abs(diff), Number.isInteger(diff) ? 0 : 1)} lb ${diff < 0 ? "down" : "up"} ${since}`
 }
 
-/** The test booked this week that measures a marker, from the plan's
-    orders: "Tue, Oct 6". */
-function nextTestFor(markerId: string, week: ReturnType<typeof thisWeek>) {
-  const measures = (orderId: string) => ORDERS.find((o) => o.id === orderId)?.markers?.includes(markerId) ?? false
-  return week.find((w) => w.kind === "test" && (w.orders ?? []).some(measures))?.day
-}
-
-/** The member's results with a starting test, each against where she
-    started: "6.0 at your start, 5.9 in Aug." The next test is said once,
-    on the first row it measures, since one blood draw covers them all.
+/** The member's results with a starting test, each as its value, trend
+    and status (15 Oct 2026: no "at your start" line under the value).
     Nothing at all when she has no starting tests. */
 export function SinceStartRows({ title }: { title: string }) {
-  const s = useOnboarding()
   const markers = useMarkers()
-  const week = thisWeek(s)
-  let toldNext = false
   const rows = Object.keys(PLAN_START_RESULTS).flatMap((id) => {
     const b = markers.find((m) => m.id === id)
-    const start = b && sinceStart(b)
-    if (!b || !start) return []
+    if (!b || !sinceStart(b)) return []
     const t = classify(b)
-    if (!t.latest) return []
-    const latest = new Date(t.latest.t)
-    const when = latest.getFullYear() === new Date().getFullYear() ? MONTHS[latest.getMonth()] : `${MONTHS[latest.getMonth()]} ${latest.getFullYear()}`
-    const next = toldNext ? undefined : nextTestFor(id, week)
-    if (next) toldNext = true
-    return [{ t, since: `${start.from} at your start, ${t.value} in ${when}.${next ? ` Next test ${next}.` : ""}` }]
+    return t.latest ? [t] : []
   })
   if (!rows.length) return null
   return (
     <Block title={title}>
       <Group>
-        {rows.map(({ t, since }) => (
-          <ResultRow key={t.id} trend={t} since={since} onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: t.id } })} />
+        {rows.map((t) => (
+          <ResultRow key={t.id} trend={t} onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: t.id } })} />
         ))}
       </Group>
     </Block>

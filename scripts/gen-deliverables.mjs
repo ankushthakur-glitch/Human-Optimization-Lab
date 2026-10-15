@@ -252,6 +252,7 @@ function patientApp() {
     [MEMBER, "Home: dinner not logged", at("member-partial")],
     [MEMBER, "Plan version 1 with Dr. Patel", at("member-review")],
     [MEMBER, "New plan version with Dr. Patel", at("member-redraft")],
+    [MEMBER, "Today (plan tab bar)", at("member", "/today")],
     [MEMBER, "Plan tab", at("member", "/plan")],
     [MEMBER, "Diet", at("member", "/diet")],
     [MEMBER, "Log a meal", at("member", "/log-meal")],

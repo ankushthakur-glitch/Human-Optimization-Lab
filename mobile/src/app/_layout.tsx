@@ -117,6 +117,7 @@ function Routes() {
           <Stack.Screen name="results" options={{ animation: "none" }} />
           <Stack.Screen name="plan" options={{ animation: "none" }} />
           <Stack.Screen name="gaps" options={{ animation: "none" }} />
+          <Stack.Screen name="today" options={{ animation: "none" }} />
           <Stack.Screen name="assistant" options={{ animation: "slide_from_bottom" }} />
           {/* The record, opened from home and Results. */}
           <Stack.Screen name="biomarker/[id]" />
@@ -148,7 +149,7 @@ function Routes() {
           <Stack.Screen name="diet" />
           <Stack.Screen name="log-meal" />
           <Stack.Screen name="day/[date]" />
-          <Stack.Screen name="progress" />
+          <Stack.Screen name="progress" options={{ animation: "none" }} />
           <Stack.Screen name="history" />
           {/* The member's own billing page: pause, resume and cancel. */}
           <Stack.Screen name="membership" />

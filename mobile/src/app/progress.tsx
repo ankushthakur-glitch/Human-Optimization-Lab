@@ -10,6 +10,7 @@ import { Scan, Trophy } from "@/components/ph"
 import { HeadCard } from "@/components/plan-tab-pieces"
 import { NothingYet, Readout, SinceStartRows, changeSince, entryDay, lastDays } from "@/components/progress-parts"
 import { RecordIcon } from "@/components/record-icons"
+import { TabScreen } from "@/components/tab-bar"
 import { Block, Card, Group, HUE, NeedsRow, SmallAction, StatRow, StatTile, Status, TREND_WORD, Tabs, Tag, TextAction, TrendPill, type Trend } from "@/components/record-kit"
 import { useExperience, useInlayScore, useMarkers } from "@/lib/experience"
 import {
@@ -60,6 +61,18 @@ import { space, type } from "@/lib/theme"
     never counted; the answer points to the repeat test. */
 const ASK = "Did losing body fat move my A1c?"
 
+function ProgressFrame({ tab, footer, children }: { tab: boolean; footer: React.ReactNode; children: React.ReactNode }) {
+  return tab ? (
+    <TabScreen tab="progress" title="Progress" footer={footer}>
+      {children}
+    </TabScreen>
+  ) : (
+    <FlowScreen page title="Progress" footer={footer}>
+      {children}
+    </FlowScreen>
+  )
+}
+
 type Progress = ReturnType<typeof progress>
 type Store = ReturnType<typeof useOnboarding>
 
@@ -74,7 +87,8 @@ export default function ProgressScreen() {
 
   return (
     <View style={styles.fill}>
-      <FlowScreen page title="Progress" footer={started ? <AskButton params={{ ask: ASK }} /> : <AskButton params={{ topic: "plan" }} />}>
+      {/* A plan that has started keeps Progress as one of its tabs. */}
+      <ProgressFrame tab={started} footer={started ? <AskButton params={{ ask: ASK }} /> : <AskButton params={{ topic: "plan" }} />}>
         {!started ? (
           <NothingYet />
         ) : bone ? (
@@ -104,7 +118,7 @@ export default function ProgressScreen() {
             <HistoryLink />
           </>
         )}
-      </FlowScreen>
+      </ProgressFrame>
       {sheet && <CheckInSheet kind={sheet} onClose={() => setSheet(undefined)} />}
     </View>
   )

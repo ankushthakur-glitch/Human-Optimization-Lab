@@ -67,7 +67,7 @@ const mainSlot = (slot: MealSlot): MealSlot => (slot === "snack" ? "dinner" : sl
 
 export default function LogMealScreen() {
   const s = useOnboarding()
-  const params = useLocalSearchParams<{ slot?: string; day?: string; edit?: string }>()
+  const params = useLocalSearchParams<{ slot?: string; day?: string; edit?: string; via?: string }>()
   const [now] = React.useState(() => new Date())
   const day = React.useMemo(() => logDay(params.day, now), [params.day, now])
   const [editing] = React.useState(() => (params.edit ? s.meals?.[day.key]?.find((m) => m.id === params.edit) : undefined))
@@ -85,8 +85,9 @@ export default function LogMealScreen() {
     return () => clearTimeout(done)
   }, [step])
 
-  const [adding, setAdding] = React.useState(false)
-  const [sheet, setSheet] = React.useState<"voice" | "type">()
+  // The plan's Today tab opens straight on a way in: "photo" or "type".
+  const [adding, setAdding] = React.useState(() => !editing && params.via === "photo")
+  const [sheet, setSheet] = React.useState<"voice" | "type" | undefined>(() => (!editing && params.via === "type" ? "type" : undefined))
 
   // The photo's source is asked in a sheet, then she sees it before it is read.
   // Retaking or choosing another replaces it; cancelling keeps the one she has.

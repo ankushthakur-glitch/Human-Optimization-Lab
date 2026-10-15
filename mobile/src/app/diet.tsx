@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from "react-native"
 
 import { GoalRows, type GoalRow } from "@/components/charts"
 import { FlowScreen } from "@/components/flow"
-import { AskButton, PrimaryButton } from "@/components/hol"
+import { PrimaryButton } from "@/components/hol"
 import { BowlFood, Lightbulb, Sparkle } from "@/components/ph"
 import { HeadCard, headText } from "@/components/plan-tab-pieces"
 import { Block, Card, EmptyState, Group, HUE, NeedsRow, SmallAction, Tile } from "@/components/record-kit"
@@ -102,10 +102,7 @@ export default function DietScreen() {
   return (
     <View style={styles.fill}>
       <FlowScreen page title="Diet plan" footer={
-          <>
-            <AskButton params={{ topic: "plan" }} />
-            <PrimaryButton onPress={() => (nextSlot ? logSlot(nextSlot) : router.push("/log-meal"))}>Log a meal</PrimaryButton>
-          </>
+          <PrimaryButton onPress={() => (nextSlot ? logSlot(nextSlot) : router.push("/log-meal"))}>Log a meal</PrimaryButton>
         }>
         <HeadCard>
           <Text style={headText.title} accessibilityRole="header">
@@ -155,6 +152,9 @@ export default function DietScreen() {
               // A logged meal: the same row as a day's, with its check; it
               // opens the meal.
               if (logged.length) return logged.map((m) => <MealRow key={m.id} meal={m} plan={profile} right={<LoggedCheck />} onPress={() => setOpen(m.id)} />)
+              // No snack row to log (15 Oct 2026); a snack already logged
+              // still shows above.
+              if (slot.id === "snack") return []
               const line = profile.diet.slots.find((x) => x.slot === slot.id)?.line
               // The whole row logs the slot, as its pill does. The pill sits
               // on the title line, so the line on what fits the meal takes
