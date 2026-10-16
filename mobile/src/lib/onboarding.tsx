@@ -284,6 +284,9 @@ export type State = {
   goals?: string[]
   /** Goals she wrote herself under "Other", oldest first. */
   ownGoals?: string[]
+  /** Her answers to the flourishing assessment on /goals, by question key
+      ("physical.0"): 0 to 10, or "na" where she chose not to answer. */
+  assessment?: Record<string, number | "na">
   /** What she changed on /health-profile (Journey_7 screen 4), by field;
       everything else stays as her record has it. */
   healthProfile?: Record<string, string>
@@ -291,6 +294,9 @@ export type State = {
       5); unset means all three. (Renamed from baselineTests, which held
       only the optional extras, so old saves start fresh.) */
   baselinePicks?: string[]
+  /** How she chose to pay on /enrollment, before any membership exists;
+      unset means yearly. */
+  billingPick?: Cadence
   /** The baseline tests her membership paid for (/payment), and when she
       chose to schedule them later (/schedule-tests): until each is booked
       it waits in To do, brought up every other day. */

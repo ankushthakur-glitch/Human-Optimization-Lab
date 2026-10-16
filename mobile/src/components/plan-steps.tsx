@@ -9,21 +9,21 @@ import { CaretLeft, CaretRight } from "@/components/ph"
 import { Button } from "@/components/ui"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
-/** The plan set-up's six steps (/goals, /goals-record, /health-profile,
-    /baseline, /enrollment, /payment). */
-export const PLAN_STEPS = 6
+/** The plan set-up's four steps (/goals, /baseline,
+    /enrollment, /payment). */
+export const PLAN_STEPS = 4
 
 /** Where Back goes from each step when there is no screen behind it (the
     step opened from a link): the Plan tab before step 1, else the step
     before. */
-const BEFORE = ["/plan", "/goals", "/goals-record", "/health-profile", "/baseline", "/enrollment"] as const
+const BEFORE = ["/plan", "/goals", "/baseline", "/enrollment"] as const
 
 function backFrom(step?: number) {
   if (router.canGoBack()) router.back()
   else router.replace(step ? (BEFORE[step - 1] ?? "/plan") : "/")
 }
 
-/** "1 of 5" in the header's corner, the steps as short dashes under it,
+/** "1 of 4" in the header's corner, the steps as short dashes under it,
     those done in teal. */
 export function PlanSteps({ step, total = PLAN_STEPS }: { step: number; total?: number }) {
   return (
@@ -51,6 +51,7 @@ export function PlanStepPage({
   step,
   total,
   onBack,
+  later,
   skip,
   noBack,
   headerTitle = "Your plan",
@@ -69,6 +70,8 @@ export function PlanStepPage({
   total?: number
   /** Replaces going back a screen, e.g. to the previous question. */
   onBack?: () => void
+  /** Words and action that stand in for "Back" in the foot (the header's caret still goes back). */
+  later?: { label: string; onPress: () => void }
   /** A "Skip" beside Back, for a step she may leave unanswered. */
   skip?: () => void
   /** No "Back" in the foot (the header's caret and the swipe still go back). */
@@ -117,11 +120,17 @@ export function PlanStepPage({
         <View style={styles.footer}>
           {!nextWide && (
             <View style={styles.backs}>
-              {!noBack && (
+              {later ? (
+                <Pressable onPress={later.onPress} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
+                  <Text style={styles.backText}>{later.label}</Text>
+                </Pressable>
+              ) : (
+                !noBack && (
                 <Pressable onPress={back} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
                   <CaretLeft size={16} color={ink.secondary} />
                   <Text style={styles.backText}>Back</Text>
                 </Pressable>
+                )
               )}
               {skip && (
                 <Pressable onPress={skip} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>

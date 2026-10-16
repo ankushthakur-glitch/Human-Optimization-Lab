@@ -3,37 +3,61 @@ import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import {
+  BillingToggle,
   IncludedSheet,
   MoneyRow,
   PlanCard,
   TotalBand,
   firstMonth,
+  priceNumber,
 } from "@/components/enrollment-kit"
-import { Check } from "@/components/ph"
+import { Check, Drop, Flask, Info, Monitor } from "@/components/ph"
 import { PlanStepPage } from "@/components/plan-steps"
 import {
   BASELINE_TESTS,
   chosenTests,
   dollars,
+  dollarsExact,
   toggleTest,
   type BaselineTest,
+  type BaselineTestId,
 } from "@/lib/baseline-tests"
 import { useOnboarding } from "@/lib/onboarding"
+import { YEARLY_TEST_DISCOUNT, type Cadence } from "@/lib/plans"
 import { color, hairline, ink, space, type } from "@/lib/theme"
 
-/* Step 5 of the plan's set-up, "Complete your enrollment" (Journey_7
+/* Step 3 of the plan's set-up, "Complete your enrollment" (Journey_7
    screen 6): opens after the tests her record is missing (/baseline). The
-   plan named from her goals with its price and what it includes, then
-   every baseline test with its price, ticked as she left them on step 4,
-   and the first month's total under them.
-   "Continue to payment" opens step 6 (/payment). */
+   Monthly or yearly (yearly the default, saving 10% and taking 10% off
+   the tests), the plan named from her goals with its price and what it
+   includes, then every baseline test with its icon and price, ticked as
+   she left them on step 2, and what she pays today under them, with one
+   quiet line on what paying the other way would cost.
+   "Continue to payment" opens step 4 (/payment). */
+
+/** The order the tests are listed in, and each one's mark: an ink on its
+    tint, as the record's category tiles are. */
+const LIST: {
+  id: BaselineTestId
+  Icon: typeof Monitor
+  ink: string
+  tint: string
+}[] = [
+  { id: "dexa", Icon: Monitor, ink: color.high, tint: color.highTint },
+  { id: "rmr", Icon: Drop, ink: color.high, tint: color.highTint },
+  { id: "panel", Icon: Flask, ink: color.amber, tint: color.amberTint },
+]
 
 export default function EnrollmentScreen() {
   const onboarding = useOnboarding()
-  const billing = onboarding.membership?.billing ?? "monthly"
+  const billing = onboarding.billingPick ?? "yearly"
   const [included, setIncluded] = React.useState(false)
   const chosen = new Set(chosenTests(onboarding.baselinePicks).map((t) => t.id))
   const cost = firstMonth(onboarding.baselinePicks, billing)
+
+  function pay(next: Cadence) {
+    onboarding.save({ billingPick: next })
+  }
 
   function toggle(test: BaselineTest) {
     onboarding.save({ baselinePicks: toggleTest(onboarding.baselinePicks, test.id) })
@@ -41,59 +65,86 @@ export default function EnrollmentScreen() {
 
   return (
     <PlanStepPage
-      step={5}
+      step={3}
       title="Complete your enrollment"
       onNext={() => router.push("/payment")}
       nextLabel="Continue to payment"
       nextWide
       overlay={included && <IncludedSheet onClose={() => setIncluded(false)} />}
     >
-      <PlanCard
-        goals={onboarding.goals}
-        billing={billing}
-        onIncluded={() => setIncluded(true)}
-      />
+      <BillingToggle billing={billing} onChange={pay} />
+
+      <View style={styles.plan}>
+        <PlanCard
+          goals={onboarding.goals}
+          billing={billing}
+          onIncluded={() => setIncluded(true)}
+        />
+      </View>
 
       <View style={styles.section}>
         <Text style={styles.heading} accessibilityRole="header">
-          Select your tests
+          Your baseline tests
         </Text>
         <View style={styles.card}>
-          {Object.values(BASELINE_TESTS).map((t, i) => (
+          {LIST.map((row, i) => (
             <TestRow
-              key={t.id}
-              test={t}
-              checked={chosen.has(t.id)}
+              key={row.id}
+              test={BASELINE_TESTS[row.id]}
+              mark={row}
+              checked={chosen.has(row.id)}
               first={i === 0}
-              onPress={() => toggle(t)}
+              onPress={() => toggle(BASELINE_TESTS[row.id])}
             />
           ))}
         </View>
       </View>
 
-      <View style={[styles.card, styles.summary]}>
+      <View style={[styles.summaryCard, styles.summary]}>
         <MoneyRow
-          label={`${cost.tests.length} tests selected`}
-          value={dollars(cost.subtotal)}
-        />
-        <MoneyRow
-          label="Membership (first month)"
+          label={
+            billing === "yearly"
+              ? "Membership, 12 months"
+              : "Membership, first month"
+          }
           value={dollars(cost.membership)}
         />
+        <MoneyRow
+          label={`${cost.tests.length} ${cost.tests.length === 1 ? "test" : "tests"} selected`}
+          value={dollarsExact(cost.subtotal)}
+        />
+        {cost.discount > 0 && (
+          <MoneyRow
+            label={`Annual member discount, ${YEARLY_TEST_DISCOUNT}% off tests`}
+            value={`−${dollarsExact(cost.discount)}`}
+            good
+          />
+        )}
         <TotalBand total={cost.total} />
+      </View>
+
+      <View style={styles.note}>
+        <Info size={14} color={ink.tertiary} />
+        <Text style={styles.noteText}>
+          {billing === "yearly"
+            ? `Paying monthly instead is ${dollars(priceNumber("monthly"))} a month${cost.subtotal ? ` plus ${dollars(cost.subtotal)} of tests` : ""} — ${dollars(cost.monthlyToday)} today, and ${dollars(cost.yearlySaving)} more across the year.`
+            : `Paying yearly instead is ${dollars(priceNumber("yearly"))} up front with ${YEARLY_TEST_DISCOUNT}% off your tests, and saves ${dollars(cost.yearlySaving)} across the year.`}
+        </Text>
       </View>
     </PlanStepPage>
   )
 }
 
-/** One test: its box, the name and the price. */
+/** One test: its box, its mark, the name and the price. */
 function TestRow({
   test,
+  mark,
   checked,
   first,
   onPress,
 }: {
   test: BaselineTest
+  mark: (typeof LIST)[number]
   checked: boolean
   first: boolean
   onPress: () => void
@@ -113,6 +164,9 @@ function TestRow({
       <View style={[styles.box, checked && styles.boxOn]}>
         {checked && <Check size={12} color={color.onPrimary} weight="bold" />}
       </View>
+      <View style={[styles.tile, { backgroundColor: mark.tint }]}>
+        <mark.Icon size={16} color={mark.ink} />
+      </View>
       <Text style={styles.name} numberOfLines={1}>
         {test.name}
       </Text>
@@ -123,6 +177,8 @@ function TestRow({
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
+
+  plan: { marginTop: space.item },
 
   section: { gap: space.inline, marginTop: space.section },
   heading: { ...type.section },
@@ -146,9 +202,16 @@ const styles = StyleSheet.create({
     borderTopColor: hairline.rule,
   },
   name: { ...type.title, flex: 1, color: ink.strong },
+  tile: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   // Digits of one width, so the prices line up down the column.
   price: { ...type.value, fontVariant: ["tabular-nums"] },
-  // The consent's checkbox at 20, as on step 4: one teal for every tick.
+  // The consent's checkbox at 20, as on step 2: one teal for every tick.
   box: {
     width: 20,
     height: 20,
@@ -161,10 +224,24 @@ const styles = StyleSheet.create({
   },
   boxOn: { backgroundColor: color.primary, borderColor: color.primary },
 
+  // The sums on the soft grey ground the onboarding cards use.
+  summaryCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+    backgroundColor: color.canvas,
+  },
   summary: {
     gap: space.inline,
     paddingHorizontal: space.card,
     paddingTop: space.card,
     marginTop: space.item,
   },
+  note: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: space.mark,
+    marginTop: space.item,
+  },
+  noteText: { ...type.meta, flex: 1 },
 })
