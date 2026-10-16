@@ -114,7 +114,7 @@ type Seed = [
 const SEEDS: Seed[] = [
   [7842, "Lab result review", "Review LDL-C above target", "LDL-C 162 mg/dL (H, range 0-99) from Quest, resulted Oct 2. Up from 138 in July while on atorvastatin 20 mg.", "P10318", ME, "High", "Open", 2, -20],
   [3159, "Medication review", "Confirm metformin dose change", "Patient says they take metformin 500 mg once daily; the Epic list says twice daily. Confirm the change or keep as prescribed.", "P10411", ME, "High", "Open", 4, -26],
-  [9284, "Care plan review", "Revise care plan after change request", "Patient asked to swap the 5 day strength goal for 3 days and add a sleep goal. Revise and send version 3.", "P10318", ME, "Medium", "Open", 26, -30],
+  [9284, "Care plan review", "Review care plan changes", "Patient asked for strength training 2 days a week with a hotel gym option. Revise the Muscle building plan and send version 3.", "P10318", ME, "Medium", "Open", 26, -30],
   [1476, "Order follow up", "Chase HbA1c ordered Sep 14", "HbA1c ordered by Dr. Reyes on Sep 14 has no result after 19 days. Call the patient and confirm the draw.", "P10422", GRAHAM, "Medium", "Open", -6, -52],
   [5621, "Outside care review", "ER visit at Scripps Mercy", "ER visit on Oct 1 for chest pain, discharged the same day. Troponin normal. Review the discharge summary and decide on follow up.", "P10433", ME, "High", "Open", -2, -18],
   [8735, "Care gap outreach", "Colorectal screening overdue", "No colonoscopy or FIT on record, patient is 57. Offer FIT kit or referral.", "P10411", DANTE, "Low", "Open", 72, -40],
@@ -123,7 +123,7 @@ const SEEDS: Seed[] = [
   [4502, "Record sync", "Epic pull failed twice", "The nightly pull failed on Oct 2 and Oct 3 with an expired consent token. Ask the patient to reconnect Epic in the app.", "P10665", BRYCE, "Medium", "Open", 8, -28],
   [9186, "Quarterly review", "Book Q4 optimization review", "Quarterly review due Oct 17. Book a 30 minute visit and order the baseline repeat panel.", "P10422", LIAM, "Medium", "Open", 50, -10],
   [3764, "Medication review", "Patient stopped vitamin D", "Patient says they stopped vitamin D3 2000 IU in September. Mark as not current or keep on the plan.", "P10240", HARRINGTON, "Low", "Open", 98, -15],
-  [8051, "Care plan review", "Approve first care plan", "Patient sent goals and a plan from the app: weight 8 lb down in 12 weeks, steps 8,000 a day, sleep 7 hours.", "P10240", HARRINGTON, "Medium", "Open", 22, -6],
+  [8051, "Care plan review", "Review care plan", "4 optimization plans (3 from the record, 1 patient selected) and 5 proposed baseline tests waiting for approval.", "P10240", ME, "High", "Open", 22, -6],
   [5390, "Order follow up", "Lipid panel ordered Sep 10", "Lipid panel ordered Sep 10 has no result after 23 days. Patient reported a scheduling problem in the app.", "P10477", GRAHAM, "High", "Open", -26, -70],
   [6624, "Patient call back", "Call back about fatigue", "Patient asked Ask Inlay about fatigue after the new dose and was routed to the care team. Call back today.", "P10455", BRYCE, "High", "Open", 3, -2],
   [7108, "Lab result review", "TSH slightly high", "TSH 4.9 mIU/L (H, range 0.4-4.5) from Quest, resulted Sep 30. First reading on record.", "P10444", HARRINGTON, "Low", "Completed", -30, -80],
@@ -154,7 +154,7 @@ const SEED_COMMENTS: Record<
     [BRYCE, -6, "Sent the reconnect link by SMS, waiting for the patient."],
   ],
   "TSK-9284": [
-    [ME, -8, "Sleep goal looks reasonable, revising the strength goal now."],
+    [ME, -8, "Sleep plan looks reasonable, revising the strength training now."],
   ],
 }
 
@@ -198,7 +198,7 @@ function seedTask([n, type, title, description, patientId, assigneeId, priority,
   }
 }
 
-export const tasks = createCollection("hol-provider-tasks", SEEDS.map(seedTask), "v4")
+export const tasks = createCollection("hol-provider-tasks", SEEDS.map(seedTask), "v5")
 
 export type TaskInput = Pick<
   Task,

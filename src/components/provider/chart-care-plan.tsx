@@ -6,8 +6,11 @@ import {
   IconCheck,
   IconEdit,
   IconEye,
+  IconHelp,
   IconSend,
+  IconSparkles,
   IconTrash,
+  IconUser,
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
@@ -17,14 +20,25 @@ import {
   today,
 } from "@/components/practice/collection-store"
 import { type Patient, fullName } from "@/components/practice/practice-data"
+import {
+  SOFT_DOT,
+  SOFT_TEXT,
+} from "@/components/patient-dashboard/widgets/charting-dashboard"
+import { type ToneKey } from "@/components/patient-dashboard/widgets/palette"
+import {
+  PeekChart,
+  monthYear,
+} from "@/components/patient-dashboard/widgets/peek-chart"
 import { ME, atLabel, nowAt } from "@/components/provider/chart-epic"
 import {
   Section,
   SectionBar,
   SectionBody,
 } from "@/components/provider/chart-layout"
+import { setTaskStatus, tasks } from "@/components/provider/tasks/tasks-data"
 import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
+import { Checkbox } from "@/design-system/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -38,6 +52,20 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/design-system/ui/empty"
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardSection,
+  HoverCardTrigger,
+} from "@/design-system/ui/hover-card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/design-system/ui/dropdown-menu"
 import { Input } from "@/design-system/ui/input"
 import {
   Select,
@@ -57,20 +85,28 @@ import {
   TableRow,
 } from "@/design-system/ui/table"
 
-/* The care plan's review loop. The patient picks goals in the app and
-   sends them with the plan for review. The provider reads it here, changes
-   what needs changing and approves it, which sends it back. The patient
-   accepts it, or asks for changes with a note, and the provider revises and
-   sends it again. Every version is kept with who made it and when. */
+/* The care plan's review loop (15 Oct call). AI checks the patient's record
+   against Dr. Blanchard's plans and proposes up to five optimization plans;
+   the patient can add their own. Each plan carries its Why: the biomarkers
+   that led to it with their trend, or "Patient selected". Then the tests each
+   plan needs that the record doesn't have yet, the proposed baseline. The
+   physician reads it here, approves or deselects each test, edits what needs
+   editing and approves, which sends it to the patient. The patient accepts it
+   or asks for changes, and the physician revises. Every version is kept.
+   Built to be read in about a minute: Why on the left, what to do on the
+   right, tests ticked by default. */
 
 /* -------------------------------------------------------------- model -- */
 
-export type PlanGoal = {
-  id: string
+export type Evidence = {
   name: string
-  baseline: string
-  target: string
-  timeframe: string
+  unit: string
+  /** Oldest first; the last one is the latest reading. */
+  values: number[]
+  low?: number
+  high?: number
+  /** "Under 5.7", "60-100": the target range in words. */
+  range: string
 }
 
 const AREAS = [
@@ -90,13 +126,48 @@ export type PlanAction = {
   often: string
 }
 
+export type OptimizationPlan = {
+  id: string
+  name: string
+  /** AI matched it from the record; the patient or the physician added
+      it. Only AI plans carry evidence. */
+  source: "AI" | "Patient" | "Physician"
+  evidence: Evidence[]
+  /** The patient's own words, for a plan they added. */
+  note?: string
+  actions: PlanAction[]
+}
+
+/** Plans the physician can add, from Dr. Blanchard's list (sample). */
+const PLAN_CATALOG = [
+  "Weight loss",
+  "Muscle building",
+  "Bone health",
+  "Diabetes and A1C",
+  "Heart health",
+  "Kidney health",
+  "Metabolic health",
+  "Healthy aging",
+  "Better sleep",
+  "Maintenance",
+] as const
+
+export type BaselineTest = {
+  id: string
+  name: string
+  /** Plan ids that need it. */
+  for: string[]
+  why: string
+  approved: boolean
+}
+
 type PlanVersion = {
   version: number
   by: string
   role: "Patient" | "Provider"
   at: string
-  goals: PlanGoal[]
-  actions: PlanAction[]
+  plans: OptimizationPlan[]
+  tests: BaselineTest[]
 }
 
 type PlanEvent = {
@@ -130,142 +201,121 @@ function shift(days: number, time: string) {
 
 /* --------------------------------------------------------------- seed -- */
 
-const OLIVIA_GOALS: PlanGoal[] = [
+const OLIVIA_PLANS: OptimizationPlan[] = [
   {
-    id: "G-1",
-    name: "Lower my A1c",
-    baseline: "5.9%",
-    target: "Under 5.7%",
-    timeframe: "6 months",
+    id: "OP-1",
+    name: "Diabetes and A1C",
+    source: "AI",
+    evidence: [
+      { name: "HbA1c", unit: "%", values: [5.5, 5.6, 5.8, 5.9], high: 5.6, range: "Under 5.7" },
+      { name: "Fasting glucose", unit: "mg/dL", values: [96, 99, 104, 108], low: 70, high: 99, range: "70-99" },
+    ],
+    actions: [
+      { id: "A-1", area: "Nutrition", text: "Keep added sugar under 25 g a day", often: "Daily" },
+      { id: "A-2", area: "Exercise", text: "Brisk walk after dinner, 20 minutes", often: "5 days a week" },
+      { id: "A-3", area: "Tests", text: "Repeat HbA1c", often: "In 12 weeks" },
+    ],
   },
   {
-    id: "G-2",
-    name: "Lower LDL cholesterol",
-    baseline: "132 mg/dL",
-    target: "Under 100 mg/dL",
-    timeframe: "3 months",
+    id: "OP-2",
+    name: "Heart health",
+    source: "AI",
+    evidence: [
+      { name: "LDL-C", unit: "mg/dL", values: [112, 118, 126, 132], high: 99, range: "Under 100" },
+      { name: "Blood pressure", unit: "mmHg", values: [126, 129, 131, 134], high: 129, range: "Under 130/80" },
+    ],
+    actions: [
+      { id: "A-1", area: "Medication", text: "Atorvastatin 10 mg at bedtime, as prescribed", often: "Daily" },
+      { id: "A-2", area: "Nutrition", text: "Fibre 30 g a day, oats or beans at breakfast", often: "Daily" },
+      { id: "A-3", area: "Tests", text: "Repeat lipid panel", often: "In 12 weeks" },
+    ],
   },
   {
-    id: "G-3",
-    name: "Lose weight",
-    baseline: "78 kg",
-    target: "72 kg",
-    timeframe: "6 months",
+    id: "OP-3",
+    name: "Weight loss",
+    source: "AI",
+    evidence: [
+      { name: "Weight", unit: "kg", values: [74, 75.5, 77, 78], high: 72, range: "Goal 72" },
+      { name: "BMI", unit: "", values: [26.4, 27.0, 27.5, 27.9], low: 18.5, high: 24.9, range: "18.5-24.9" },
+    ],
+    actions: [
+      { id: "A-1", area: "Nutrition", text: "Protein at every meal, 90 g a day", often: "Daily" },
+      { id: "A-2", area: "Exercise", text: "Strength training, full body", often: "2 days a week" },
+    ],
   },
   {
-    id: "G-4",
-    name: "Bring blood pressure down",
-    baseline: "134/86 mmHg",
-    target: "Under 130/80 mmHg",
-    timeframe: "3 months",
-  },
-]
-const OLIVIA_ACTIONS: PlanAction[] = [
-  {
-    id: "A-1",
-    area: "Nutrition",
-    text: "Keep added sugar under 25 g a day",
-    often: "Daily",
-  },
-  {
-    id: "A-2",
-    area: "Nutrition",
-    text: "Protein at every meal, 90 g a day",
-    often: "Daily",
-  },
-  {
-    id: "A-3",
-    area: "Exercise",
-    text: "Brisk walk, 30 minutes",
-    often: "5 days a week",
-  },
-  {
-    id: "A-4",
-    area: "Exercise",
-    text: "Strength training, full body",
-    often: "1 day a week",
-  },
-  {
-    id: "A-5",
-    area: "Sleep",
-    text: "In bed by 10:30 PM, 7 to 8 hours",
-    often: "Daily",
-  },
-  {
-    id: "A-6",
-    area: "Medication",
-    text: "Atorvastatin 10 mg at bedtime, as prescribed",
-    often: "Daily",
-  },
-  {
-    id: "A-7",
-    area: "Tests",
-    text: "Repeat HbA1c and lipid panel",
-    often: "In 12 weeks",
+    id: "OP-4",
+    name: "Better sleep",
+    source: "Patient",
+    evidence: [],
+    note: "I wake up tired most days and want to sleep through the night.",
+    actions: [
+      { id: "A-1", area: "Sleep", text: "In bed by 10:30 PM, 7 to 8 hours", often: "Daily" },
+      { id: "A-2", area: "Sleep", text: "No screens 30 minutes before bed", often: "Daily" },
+    ],
   },
 ]
 
-const MARCUS_GOALS: PlanGoal[] = [
+const OLIVIA_TESTS: BaselineTest[] = [
+  { id: "T-1", name: "Fasting insulin", for: ["OP-1"], why: "Not on record, shows insulin resistance", approved: true },
+  { id: "T-2", name: "ApoB", for: ["OP-2"], why: "Not on record, sharper risk than LDL-C", approved: true },
+  { id: "T-3", name: "hs-CRP", for: ["OP-2"], why: "Not on record", approved: true },
+  { id: "T-4", name: "DEXA scan", for: ["OP-3"], why: "No body composition on record", approved: true },
+  { id: "T-5", name: "RMR test", for: ["OP-3"], why: "Sets the daily calorie target", approved: true },
+]
+
+const MARCUS_V1: OptimizationPlan[] = [
   {
-    id: "G-1",
-    name: "Build muscle",
-    baseline: "58 kg lean mass",
-    target: "61 kg lean mass",
-    timeframe: "6 months",
+    id: "OP-1",
+    name: "Muscle building",
+    source: "AI",
+    evidence: [
+      { name: "Lean mass", unit: "kg", values: [59.6, 59.1, 58.4, 58], low: 61, range: "Goal 61" },
+    ],
+    actions: [
+      { id: "A-1", area: "Exercise", text: "Strength training, full body", often: "4 days a week" },
+      { id: "A-2", area: "Nutrition", text: "Protein 1.6 g per kg a day, about 130 g", often: "Daily" },
+      { id: "A-3", area: "Supplements", text: "Creatine 5 g", often: "Daily" },
+    ],
   },
   {
-    id: "G-2",
-    name: "Protect bone health",
-    baseline: "T-score -1.2",
-    target: "No further loss",
-    timeframe: "12 months",
+    id: "OP-2",
+    name: "Bone health",
+    source: "AI",
+    evidence: [
+      { name: "T-score, spine", unit: "", values: [-0.8, -1.0, -1.2], low: -1, range: "Above -1.0" },
+      { name: "Vitamin D", unit: "ng/mL", values: [34, 29, 24], low: 30, high: 100, range: "30-100" },
+    ],
+    actions: [
+      { id: "A-1", area: "Supplements", text: "Vitamin D3 2,000 IU with calcium 600 mg", often: "Daily" },
+      { id: "A-2", area: "Tests", text: "Repeat DEXA scan", often: "In 6 months" },
+    ],
   },
   {
-    id: "G-3",
-    name: "Sleep better",
-    baseline: "CPAP 4 h a night",
-    target: "CPAP 6 h a night",
-    timeframe: "2 months",
+    id: "OP-3",
+    name: "Better sleep",
+    source: "Patient",
+    evidence: [],
+    note: "My CPAP use is low and I want to fix that.",
+    actions: [
+      { id: "A-1", area: "Sleep", text: "Wear CPAP all night", often: "Nightly" },
+    ],
   },
 ]
-const MARCUS_V1: PlanAction[] = [
-  {
-    id: "A-1",
-    area: "Exercise",
-    text: "Strength training, full body",
-    often: "4 days a week",
-  },
-  {
-    id: "A-2",
-    area: "Nutrition",
-    text: "Protein 1.6 g per kg a day, about 130 g",
-    often: "Daily",
-  },
-  { id: "A-3", area: "Supplements", text: "Creatine 5 g", often: "Daily" },
-  { id: "A-4", area: "Sleep", text: "Wear CPAP all night", often: "Nightly" },
-]
-const MARCUS_V2: PlanAction[] = [
-  {
-    id: "A-1",
-    area: "Exercise",
-    text: "Strength training, full body",
-    often: "3 days a week",
-  },
-  {
-    id: "A-2",
-    area: "Nutrition",
-    text: "Protein 1.6 g per kg a day, about 130 g",
-    often: "Daily",
-  },
-  { id: "A-3", area: "Supplements", text: "Creatine 5 g", often: "Daily" },
-  { id: "A-4", area: "Sleep", text: "Wear CPAP all night", often: "Nightly" },
-  {
-    id: "A-5",
-    area: "Supplements",
-    text: "Vitamin D3 2,000 IU with calcium 600 mg",
-    often: "Daily",
-  },
-  { id: "A-6", area: "Tests", text: "Repeat DEXA scan", often: "In 6 months" },
+const MARCUS_V2: OptimizationPlan[] = MARCUS_V1.map((p) =>
+  p.id === "OP-1"
+    ? {
+        ...p,
+        actions: p.actions.map((a) =>
+          a.id === "A-1" ? { ...a, often: "3 days a week" } : a
+        ),
+      }
+    : p
+)
+const MARCUS_TESTS: BaselineTest[] = [
+  { id: "T-1", name: "DEXA scan", for: ["OP-1", "OP-2"], why: "Last on record Mar 2025", approved: true },
+  { id: "T-2", name: "Total testosterone", for: ["OP-1"], why: "Not on record", approved: true },
+  { id: "T-3", name: "Sleep study", for: ["OP-3"], why: "Last on record 2022", approved: false },
 ]
 
 function seed(): CarePlan[] {
@@ -279,8 +329,8 @@ function seed(): CarePlan[] {
           by: "Olivia Bennett",
           role: "Patient",
           at: shift(-1, "08:42"),
-          goals: OLIVIA_GOALS,
-          actions: OLIVIA_ACTIONS,
+          plans: OLIVIA_PLANS,
+          tests: OLIVIA_TESTS,
         },
       ],
       events: [
@@ -303,16 +353,16 @@ function seed(): CarePlan[] {
           by: "Marcus Hale",
           role: "Patient",
           at: shift(-6, "19:05"),
-          goals: MARCUS_GOALS,
-          actions: MARCUS_V1,
+          plans: MARCUS_V1,
+          tests: MARCUS_TESTS.map((t) => ({ ...t, approved: true })),
         },
         {
           version: 2,
           by: ME,
           role: "Provider",
           at: shift(-4, "15:20"),
-          goals: MARCUS_GOALS,
-          actions: MARCUS_V2,
+          plans: MARCUS_V2,
+          tests: MARCUS_TESTS,
         },
       ],
       events: [
@@ -346,7 +396,23 @@ function seed(): CarePlan[] {
   ]
 }
 
-const carePlans = createCollection<CarePlan>("hol-care-plans", seed(), "v1")
+export const carePlans = createCollection<CarePlan>(
+  "hol-care-plans",
+  seed(),
+  "v2"
+)
+
+const isOpen = (s: PlanStatus) =>
+  s === "Pending review" || s === "Changes requested"
+
+/** Care plans waiting on the physician, newest first: the bell reads it. */
+export function useCarePlansToReview() {
+  const { items } = carePlans.use()
+  return items
+    .filter((p) => isOpen(p.status))
+    .map((p) => ({ patientId: p.id, status: p.status, event: p.events[p.events.length - 1] }))
+    .sort((a, b) => b.event.at.localeCompare(a.event.at))
+}
 
 const STATUS_TONE: Record<
   PlanStatus,
@@ -363,37 +429,65 @@ const STATUS_TONE: Record<
 /** What one version changed from the one before, in plain lines. */
 function changesBetween(before: PlanVersion, after: PlanVersion) {
   const lines: string[] = []
-  for (const g of after.goals) {
-    const old = before.goals.find((x) => x.id === g.id)
-    if (!old) lines.push(`Added goal: ${g.name}, ${g.target} in ${g.timeframe}`)
-    else {
-      if (old.target !== g.target)
-        lines.push(`${g.name} target: ${old.target} to ${g.target}`)
-      if (old.timeframe !== g.timeframe)
-        lines.push(`${g.name} timeframe: ${old.timeframe} to ${g.timeframe}`)
+  for (const p of after.plans) {
+    const old = before.plans.find((x) => x.id === p.id)
+    if (!old) {
+      lines.push(`Added plan: ${p.name}`)
+      continue
     }
-  }
-  for (const g of before.goals)
-    if (!after.goals.some((x) => x.id === g.id))
-      lines.push(`Removed goal: ${g.name}`)
-  for (const a of after.actions) {
-    const old = before.actions.find((x) => x.id === a.id)
-    if (!old) lines.push(`Added: ${a.text}, ${a.often.toLowerCase()}`)
-    else {
-      if (old.text !== a.text) lines.push(`Changed: ${old.text} to ${a.text}`)
-      if (old.often !== a.often)
-        lines.push(
-          `${a.text}: ${old.often.toLowerCase()} to ${a.often.toLowerCase()}`
-        )
+    for (const a of p.actions) {
+      const was = old.actions.find((x) => x.id === a.id)
+      if (!was) lines.push(`${p.name}, added: ${a.text}, ${a.often.toLowerCase()}`)
+      else {
+        if (was.text !== a.text)
+          lines.push(`${p.name}, changed: ${was.text} to ${a.text}`)
+        if (was.often !== a.often)
+          lines.push(
+            `${a.text}: ${was.often.toLowerCase()} to ${a.often.toLowerCase()}`
+          )
+      }
     }
+    for (const a of old.actions)
+      if (!p.actions.some((x) => x.id === a.id))
+        lines.push(`${p.name}, removed: ${a.text}`)
   }
-  for (const a of before.actions)
-    if (!after.actions.some((x) => x.id === a.id))
-      lines.push(`Removed: ${a.text}`)
+  for (const p of before.plans)
+    if (!after.plans.some((x) => x.id === p.id))
+      lines.push(`Removed plan: ${p.name}`)
+  for (const t of after.tests) {
+    const old = before.tests.find((x) => x.id === t.id)
+    if (old && old.approved !== t.approved)
+      lines.push(`${t.name}: ${t.approved ? "approved" : "deselected"}`)
+  }
   return lines
 }
 
+/** Ids of plans, items and tests that differ between two versions. */
+function changedIds(
+  before: Pick<PlanVersion, "plans" | "tests"> | undefined,
+  after: Pick<PlanVersion, "plans" | "tests">
+) {
+  const ids = new Set<string>()
+  if (!before) return ids
+  for (const p of after.plans) {
+    const old = before.plans.find((x) => x.id === p.id)
+    if (!old) ids.add(p.id)
+    for (const a of p.actions)
+      if (
+        JSON.stringify(a) !==
+        JSON.stringify(old?.actions.find((x) => x.id === a.id))
+      )
+        ids.add(`${p.id}/${a.id}`)
+  }
+  for (const t of after.tests)
+    if (before.tests.find((x) => x.id === t.id)?.approved !== t.approved)
+      ids.add(t.id)
+  return ids
+}
+
 /* -------------------------------------------------------------- view -- */
+
+type Draft = { plans: OptimizationPlan[]; tests: BaselineTest[] }
 
 export function CarePlanView({
   patient,
@@ -406,10 +500,10 @@ export function CarePlanView({
 }) {
   const { items } = carePlans.use()
   const plan = items.find((p) => p.id === patient.id)
-  const [draft, setDraft] = React.useState<{
-    goals: PlanGoal[]
-    actions: PlanAction[]
-  } | null>(null)
+  /* Plan edits, only while Edit plan is on. */
+  const [draft, setDraft] = React.useState<Draft | null>(null)
+  /* Test picks: the physician approves or deselects without Edit plan. */
+  const [picks, setPicks] = React.useState<Record<string, boolean>>({})
 
   if (!plan)
     return (
@@ -420,8 +514,8 @@ export function CarePlanView({
             <EmptyHeader>
               <EmptyTitle>No care plan yet</EmptyTitle>
               <EmptyDescription>
-                When {patient.firstName} picks goals in the app and sends the
-                plan for review, it shows here.
+                When {patient.firstName} picks optimization plans in the app
+                and sends them for review, they show here.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -434,43 +528,45 @@ export function CarePlanView({
   const lastApproval = [...plan.events]
     .reverse()
     .find((e) => e.kind === "Approved and sent")
-  const shown = draft ?? latest
   const editing = draft !== null
-  const open =
-    plan.status === "Pending review" || plan.status === "Changes requested"
-  const previous = plan.versions[plan.versions.length - 2]
-  /* What the doctor is changing now, against what the patient last saw. */
-  const editedIds = new Set(
-    draft
-      ? [
-          ...draft.goals
-            .filter(
-              (g) =>
-                JSON.stringify(g) !==
-                JSON.stringify(latest.goals.find((x) => x.id === g.id))
-            )
-            .map((g) => g.id),
-          ...draft.actions
-            .filter(
-              (a) =>
-                JSON.stringify(a) !==
-                JSON.stringify(latest.actions.find((x) => x.id === a.id))
-            )
-            .map((a) => a.id),
-        ]
-      : []
+  const open = isOpen(plan.status)
+  const plans = (draft ?? latest).plans
+  const tests = latest.tests.map((t) =>
+    t.id in picks ? { ...t, approved: picks[t.id] } : t
   )
+  const edited = changedIds(latest, { plans, tests })
+
+  /* Adding a plan opens Edit plan with the new card ready for its items. */
+  const addPlan = (name: string) => {
+    const base = draft ?? { plans: latest.plans, tests: latest.tests }
+    onTab("plan")
+    setDraft({
+      ...base,
+      plans: [
+        ...base.plans,
+        {
+          id: nextId("OP", base.plans),
+          name,
+          source: "Physician",
+          evidence: [],
+          actions: [{ id: "A-1", area: "Nutrition", text: "", often: "Daily" }],
+        },
+      ],
+    })
+  }
 
   const approve = () => {
-    const goals = (draft ?? latest).goals.filter((g) => g.name.trim())
-    const actions = (draft ?? latest).actions.filter((a) => a.text.trim())
+    const kept = plans.map((p) => ({
+      ...p,
+      actions: p.actions.filter((a) => a.text.trim()),
+    }))
     const at = nowAt()
     const version = latest.version + 1
     carePlans.patch(plan.id, {
       status: "Sent to patient",
       versions: [
         ...plan.versions,
-        { version, by: ME, role: "Provider", at, goals, actions },
+        { version, by: ME, role: "Provider", at, plans: kept, tests },
       ],
       events: [
         ...plan.events,
@@ -484,9 +580,19 @@ export function CarePlanView({
         },
       ],
     })
+    /* The review task is done once the plan goes out. */
+    for (const t of tasks.get())
+      if (
+        t.type === "Care plan review" &&
+        t.patientId === plan.id &&
+        t.status !== "Completed"
+      )
+        setTaskStatus(t.id, "Completed")
     setDraft(null)
+    setPicks({})
+    const n = tests.filter((t) => t.approved).length
     toast.success("Care plan approved", {
-      description: `Version ${version} sent to ${patient.firstName} in the app.`,
+      description: `Version ${version} sent to ${patient.firstName} with ${n} baseline ${n === 1 ? "test" : "tests"}.`,
     })
   }
 
@@ -513,7 +619,7 @@ export function CarePlanView({
         size="sm"
         onClick={() => {
           onTab("plan")
-          setDraft({ goals: latest.goals, actions: latest.actions })
+          setDraft({ plans: latest.plans, tests: latest.tests })
         }}
       >
         <IconEdit />
@@ -547,7 +653,11 @@ export function CarePlanView({
           <History plan={plan} />
         ) : (
           <>
-            {!editing && (
+            {editing ? (
+              <div className="rounded-lg bg-info-surface px-4 py-3 text-sm text-info">
+                Editing version {latest.version + 1}. Changed rows are shaded.
+              </div>
+            ) : (
               <StatusNote
                 patient={patient}
                 plan={plan}
@@ -555,26 +665,23 @@ export function CarePlanView({
                 lastApproval={lastApproval}
               />
             )}
-            {editing && (
-              <div className="rounded-lg bg-info-surface px-4 py-3 text-sm text-info">
-                Editing version {latest.version + 1}. Changed rows are shaded.
-                {previous && plan.status === "Changes requested" && (
-                  <> {patient.firstName}&apos;s request is in History.</>
-                )}
-              </div>
-            )}
-            <GoalsCard
-              goals={shown.goals}
+            <PlansBlock
+              plans={plans}
               editing={editing}
-              edited={editedIds}
-              onChange={(goals) => draft && setDraft({ ...draft, goals })}
+              edited={edited}
+              onChange={(next) => draft && setDraft({ ...draft, plans: next })}
+              onAdd={open || editing ? addPlan : undefined}
             />
-            <ActionsCard
-              actions={shown.actions}
-              editing={editing}
-              edited={editedIds}
-              onChange={(next) =>
-                draft && setDraft({ ...draft, actions: next })
+            <BaselineCard
+              tests={tests}
+              plans={plans}
+              decidable={open || editing}
+              edited={edited}
+              onPick={(id, approved) => setPicks({ ...picks, [id]: approved })}
+              onPickAll={(approved) =>
+                setPicks(
+                  Object.fromEntries(tests.map((t) => [t.id, approved]))
+                )
               }
             />
           </>
@@ -585,7 +692,7 @@ export function CarePlanView({
 }
 
 /* The line that says where the plan stands: who sent it and when, the
-   patient's note or change request, or who approved it and when. */
+   patient's change request, or who approved it and when. */
 function StatusNote({
   patient,
   plan,
@@ -645,289 +752,519 @@ function StatusNote({
   )
 }
 
-function Card({
-  title,
-  action,
-  children,
-}: {
-  title: string
-  action?: React.ReactNode
-  children: React.ReactNode
-}) {
-  return (
-    <section className="overflow-hidden rounded-lg border bg-card">
-      <div className="flex items-center justify-between border-b px-4 py-2">
-        <h3 className="text-[15px] font-semibold">{title}</h3>
-        {action}
-      </div>
-      <div className="overflow-x-auto">{children}</div>
-    </section>
-  )
-}
-
-function ChangedTag() {
+function ChangedTag({ label = "Changed" }: { label?: string }) {
   return (
     <span className="ml-1.5 inline-flex h-4.5 items-center rounded-full bg-info-surface px-1.5 align-middle text-[11px] font-medium text-info">
-      Changed
+      {label}
     </span>
   )
 }
 
-function GoalsCard({
-  goals,
+/* ------------------------------------------------------------- plans -- */
+
+function PlansBlock({
+  plans,
   editing,
   edited,
   onChange,
+  onAdd,
 }: {
-  goals: PlanGoal[]
+  plans: OptimizationPlan[]
   editing: boolean
   edited: Set<string>
-  onChange: (goals: PlanGoal[]) => void
+  onChange: (plans: OptimizationPlan[]) => void
+  /** Set while the plan can still change. */
+  onAdd?: (name: string) => void
 }) {
-  const set = (id: string, patch: Partial<PlanGoal>) =>
-    onChange(goals.map((g) => (g.id === id ? { ...g, ...patch } : g)))
+  const items = plans.reduce((n, p) => n + p.actions.length, 0)
+  const left = PLAN_CATALOG.filter(
+    (name) => !plans.some((p) => p.name === name)
+  )
   return (
-    <Card
-      title={`Goals (${goals.length})`}
-      action={
-        editing && (
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={() =>
-              onChange([
-                ...goals,
-                {
-                  id: nextId("G", goals),
-                  name: "",
-                  baseline: "",
-                  target: "",
-                  timeframe: "",
-                },
-              ])
-            }
-          >
-            <IconAdd />
-            Add goal
-          </Button>
-        )
-      }
-    >
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-52">Goal</TableHead>
-            <TableHead>Baseline</TableHead>
-            <TableHead>Target</TableHead>
-            <TableHead>Timeframe</TableHead>
-            {editing && <TableHead className="w-12" />}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {goals.map((g) =>
-            editing ? (
-              <TableRow
-                key={g.id}
-                className={cn(
-                  "hover:bg-transparent",
-                  edited.has(g.id) &&
-                    "bg-info-surface/60 hover:bg-info-surface/60"
-                )}
-              >
-                <TableCell>
-                  <Input
-                    aria-label="Goal"
-                    value={g.name}
-                    onChange={(e) => set(g.id, { name: e.target.value })}
-                    className="h-8"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    aria-label="Baseline"
-                    value={g.baseline}
-                    onChange={(e) => set(g.id, { baseline: e.target.value })}
-                    className="h-8"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    aria-label="Target"
-                    value={g.target}
-                    onChange={(e) => set(g.id, { target: e.target.value })}
-                    className="h-8"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    aria-label="Timeframe"
-                    value={g.timeframe}
-                    onChange={(e) => set(g.id, { timeframe: e.target.value })}
-                    className="h-8"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Remove ${g.name || "goal"}`}
-                    onClick={() => onChange(goals.filter((x) => x.id !== g.id))}
-                  >
-                    <IconTrash />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ) : (
-              <TableRow key={g.id}>
-                <TableCell className="font-medium">
-                  {g.name}
-                  {edited.has(g.id) && <ChangedTag />}
-                </TableCell>
-                <TableCell className="text-muted-foreground tabular-nums">
-                  {g.baseline}
-                </TableCell>
-                <TableCell className="tabular-nums">{g.target}</TableCell>
-                <TableCell>{g.timeframe}</TableCell>
-              </TableRow>
-            )
-          )}
-        </TableBody>
-      </Table>
-    </Card>
+    <section className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-3 px-1">
+        <h3 className="flex items-baseline gap-2 text-[15px] font-semibold">
+          Optimization plans
+          <span className="text-[13px] font-normal text-muted-foreground tabular-nums">
+            {plans.length} plans · {items} items
+          </span>
+        </h3>
+        {onAdd && left.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="outline" size="sm" />}
+            >
+              <IconAdd />
+              Add plan
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Optimization plans</DropdownMenuLabel>
+                {left.map((name) => (
+                  <DropdownMenuItem key={name} onClick={() => onAdd(name)}>
+                    {name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+      {plans.map((p) => (
+        <PlanCard
+          key={p.id}
+          plan={p}
+          editing={editing}
+          edited={edited}
+          onChange={(next) =>
+            onChange(plans.map((x) => (x.id === p.id ? next : x)))
+          }
+          onRemove={() => onChange(plans.filter((x) => x.id !== p.id))}
+        />
+      ))}
+    </section>
   )
 }
 
-function ActionsCard({
-  actions,
+/* One plan: what the patient will do, with its Why one hover away. */
+function PlanCard({
+  plan,
+  editing,
+  edited,
+  onChange,
+  onRemove,
+}: {
+  plan: OptimizationPlan
+  editing: boolean
+  edited: Set<string>
+  onChange: (plan: OptimizationPlan) => void
+  onRemove: () => void
+}) {
+  return (
+    <article className="overflow-hidden rounded-lg border bg-card">
+      <header className="flex items-center justify-between gap-3 border-b px-4 py-2">
+        <div className="flex min-w-0 items-center gap-3">
+          <h4 className="truncate text-[15px] font-semibold">{plan.name}</h4>
+          <Why plan={plan} />
+          {edited.has(plan.id) && <ChangedTag label="New" />}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <SourceTag source={plan.source} />
+          {editing && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`Remove ${plan.name}`}
+              onClick={onRemove}
+            >
+              <IconTrash />
+            </Button>
+          )}
+        </div>
+      </header>
+      <PlanItems
+        plan={plan}
+        editing={editing}
+        edited={edited}
+        onChange={(actions) => onChange({ ...plan, actions })}
+      />
+    </article>
+  )
+}
+
+const SOURCE_LABEL: Record<OptimizationPlan["source"], string> = {
+  AI: "From the record",
+  Patient: "Patient selected",
+  Physician: "Added by physician",
+}
+
+function SourceTag({ source }: { source: OptimizationPlan["source"] }) {
+  if (source === "Physician")
+    return (
+      <Badge
+        variant="outline"
+        className="h-5.5 gap-1 rounded-full px-2 text-xs font-normal"
+      >
+        <IconEdit className="size-3.5" />
+        Added by physician
+      </Badge>
+    )
+  return source === "Patient" ? (
+    <Badge
+      variant="info"
+      className="h-5.5 gap-1 rounded-full px-2 text-xs font-normal"
+    >
+      <IconUser className="size-3.5" />
+      Patient selected
+    </Badge>
+  ) : (
+    <Badge
+      variant="secondary"
+      className="h-5.5 gap-1 rounded-full px-2 text-xs font-normal"
+    >
+      <IconSparkles className="size-3.5" />
+      From the record
+    </Badge>
+  )
+}
+
+const fmt = (v: number) =>
+  Number.isInteger(v) ? String(v) : v.toFixed(1).replace(/\.0$/, "")
+
+/* The evidence, opened by hovering the word "Why", drawn as the
+   dashboard's peek card: the plan and where it came from, then each
+   biomarker with its status in colour, the range, the chart and how it
+   moved. A plan the patient added shows their own words. */
+const PEEK = "w-80 rounded-2xl p-4 shadow-[0_16px_40px_rgba(16,24,40,.12)]"
+
+/* Readings are quarterly, the latest from Sep 2026. */
+function readingDates(n: number) {
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(Date.UTC(2026, 8 - (n - 1 - i) * 3, 15))
+    return d.toISOString().slice(0, 10)
+  })
+}
+
+const flagOf = (e: Evidence) => {
+  const last = e.values[e.values.length - 1]
+  return e.high !== undefined && last > e.high
+    ? "High"
+    : e.low !== undefined && last < e.low
+      ? "Low"
+      : null
+}
+
+function Why({ plan }: { plan: OptimizationPlan }) {
+  return (
+    <HoverCard>
+      <HoverCardTrigger
+        delay={300}
+        closeDelay={220}
+        render={
+          <button
+            type="button"
+            className="inline-flex shrink-0 cursor-default items-center gap-1 rounded-sm text-[13px] font-medium text-primary-tint outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          />
+        }
+      >
+        <IconHelp className="size-3.5" />
+        <span className="underline decoration-dotted underline-offset-4">
+          Why
+        </span>
+      </HoverCardTrigger>
+      <HoverCardContent
+        side="bottom"
+        align="start"
+        sideOffset={8}
+        followCursor={false}
+        className={PEEK}
+      >
+        <WhyCard plan={plan} />
+      </HoverCardContent>
+    </HoverCard>
+  )
+}
+
+function StatusLine({
+  tone,
+  word,
+  qualifier,
+}: {
+  tone: ToneKey
+  word: string
+  qualifier?: string
+}) {
+  return (
+    <span className="flex items-center gap-1.5 text-[13px]">
+      <span
+        aria-hidden
+        className={cn("size-1.5 shrink-0 rounded-full", SOFT_DOT[tone])}
+      />
+      <span className={cn("font-medium", SOFT_TEXT[tone])}>
+        {word}
+        {qualifier && (
+          <span className="font-normal text-muted-foreground tabular-nums">
+            {`, ${qualifier}`}
+          </span>
+        )}
+      </span>
+    </span>
+  )
+}
+
+function WhyCard({ plan }: { plan: OptimizationPlan }) {
+  const out = plan.evidence.filter((e) => flagOf(e)).length
+  return (
+    <div className="flex flex-col">
+      <HoverCardSection className="gap-1.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="min-w-0 truncate text-[15px] leading-5 font-semibold">
+            {plan.name}
+          </span>
+          <span className="shrink-0 text-xs text-muted-foreground">
+            {SOURCE_LABEL[plan.source]}
+          </span>
+        </div>
+        {plan.source === "Physician" ? (
+          <StatusLine tone="violet" word="Added by the physician" />
+        ) : plan.source === "Patient" ? (
+          <StatusLine tone="blue" word="Added by the patient" />
+        ) : (
+          <StatusLine
+            tone={out ? "red" : "green"}
+            word={
+              out
+                ? `${out} of ${plan.evidence.length} markers out of range`
+                : "Markers in range"
+            }
+          />
+        )}
+      </HoverCardSection>
+      {plan.source === "Patient" ? (
+        <HoverCardSection>
+          <p className="text-[13px] leading-5 text-foreground/80">
+            {plan.note ? <>&ldquo;{plan.note}&rdquo;</> : "No note from the patient."}
+          </p>
+        </HoverCardSection>
+      ) : plan.source === "Physician" ? null : (
+        plan.evidence.map((e) => {
+          const flag = flagOf(e)
+          const dates = readingDates(e.values.length)
+          const points = e.values.map((value, i) => ({ date: dates[i], value }))
+          const last = e.values[e.values.length - 1]
+          const prev = e.values[e.values.length - 2]
+          return (
+            <HoverCardSection key={e.name} className="gap-2.5">
+              <div className="flex flex-col gap-1">
+                <span className="text-[13px] font-semibold">{e.name}</span>
+                <StatusLine
+                  tone={flag ? "red" : "green"}
+                  word={flag ?? "In range"}
+                  qualifier={`range ${e.range}${e.unit ? ` ${e.unit}` : ""}`}
+                />
+              </div>
+              <PeekChart
+                points={points}
+                low={e.low}
+                high={e.high}
+                unit={e.unit}
+                digits={e.values.some((v) => !Number.isInteger(v)) ? 1 : 0}
+              />
+              {prev !== undefined && (
+                <p className="text-[13px] leading-5 text-foreground/80">
+                  {last > prev ? "Up" : last < prev ? "Down" : "Unchanged"} from{" "}
+                  {fmt(prev)} in {monthYear(dates[dates.length - 2])}.
+                </p>
+              )}
+            </HoverCardSection>
+          )
+        })
+      )}
+    </div>
+  )
+}
+
+function PlanItems({
+  plan,
   editing,
   edited,
   onChange,
 }: {
-  actions: PlanAction[]
+  plan: OptimizationPlan
   editing: boolean
   edited: Set<string>
   onChange: (actions: PlanAction[]) => void
 }) {
+  const actions = plan.actions
   const set = (id: string, patch: Partial<PlanAction>) =>
     onChange(actions.map((a) => (a.id === id ? { ...a, ...patch } : a)))
   const ordered = editing
     ? actions
     : [...actions].sort((a, b) => AREAS.indexOf(a.area) - AREAS.indexOf(b.area))
+
+  if (!editing)
+    return (
+      <ul className="divide-y">
+        {ordered.map((a) => (
+          <li
+            key={a.id}
+            className="grid grid-cols-[96px_minmax(0,1fr)_auto] items-baseline gap-x-3 px-4 py-2.5 text-sm"
+          >
+            <span className="text-[13px] text-muted-foreground">{a.area}</span>
+            <span>
+              {a.text}
+              {edited.has(`${plan.id}/${a.id}`) && <ChangedTag />}
+            </span>
+            <span className="text-[13px] text-muted-foreground">{a.often}</span>
+          </li>
+        ))}
+      </ul>
+    )
+
   return (
-    <Card
-      title={`Plan (${actions.length})`}
-      action={
-        editing && (
+    <div className="flex flex-col gap-2 px-3 py-3">
+      {actions.map((a) => (
+        <div
+          key={a.id}
+          className={cn(
+            "flex flex-wrap items-center gap-2 rounded-md p-1",
+            edited.has(`${plan.id}/${a.id}`) && "bg-info-surface/60"
+          )}
+        >
+          <Select
+            items={AREAS.map((x) => ({ label: x, value: x }))}
+            value={a.area}
+            onValueChange={(v) => set(a.id, { area: (v as Area) ?? a.area })}
+          >
+            <SelectTrigger className="h-8! w-32" aria-label="Area">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {AREAS.map((x) => (
+                  <SelectItem key={x} value={x}>
+                    {x}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Input
+            aria-label="What to do"
+            value={a.text}
+            onChange={(e) => set(a.id, { text: e.target.value })}
+            className="h-8 min-w-48 flex-1"
+          />
+          <Input
+            aria-label="How often"
+            value={a.often}
+            onChange={(e) => set(a.id, { often: e.target.value })}
+            className="h-8 w-36"
+          />
           <Button
             variant="ghost"
-            size="xs"
-            onClick={() =>
-              onChange([
-                ...actions,
-                {
-                  id: nextId("A", actions),
-                  area: "Nutrition",
-                  text: "",
-                  often: "Daily",
-                },
-              ])
-            }
+            size="icon-sm"
+            aria-label={`Remove ${a.text || "item"}`}
+            onClick={() => onChange(actions.filter((x) => x.id !== a.id))}
           >
-            <IconAdd />
-            Add item
+            <IconTrash />
           </Button>
-        )
-      }
-    >
+        </div>
+      ))}
+      <Button
+        variant="ghost"
+        size="xs"
+        className="self-start"
+        onClick={() =>
+          onChange([
+            ...actions,
+            { id: nextId("A", actions), area: "Nutrition", text: "", often: "Daily" },
+          ])
+        }
+      >
+        <IconAdd />
+        Add item
+      </Button>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------- baseline -- */
+
+/* The tests the plans need that the record doesn't have: ticked means
+   approved. Open plans can be decided right here; sent ones are read only. */
+function BaselineCard({
+  tests,
+  plans,
+  decidable,
+  edited,
+  onPick,
+  onPickAll,
+}: {
+  tests: BaselineTest[]
+  plans: OptimizationPlan[]
+  decidable: boolean
+  edited: Set<string>
+  onPick?: (id: string, approved: boolean) => void
+  onPickAll?: (approved: boolean) => void
+}) {
+  const approved = tests.filter((t) => t.approved).length
+  const all = approved === tests.length
+  const planName = (id: string) => plans.find((p) => p.id === id)?.name
+  return (
+    <section className="overflow-hidden rounded-lg border bg-card">
+      <div className="flex items-center justify-between gap-3 border-b px-4 py-2">
+        <h3 className="flex items-baseline gap-2 text-[15px] font-semibold">
+          Proposed baseline tests
+          <span className="text-[13px] font-normal text-muted-foreground tabular-nums">
+            {approved} of {tests.length} approved
+          </span>
+        </h3>
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-40">Area</TableHead>
-            <TableHead className="min-w-64">What to do</TableHead>
-            <TableHead>How often</TableHead>
-            {editing && <TableHead className="w-12" />}
+            {decidable && (
+              <TableHead className="w-10">
+                <Checkbox
+                  aria-label="Approve all tests"
+                  checked={all}
+                  indeterminate={approved > 0 && !all}
+                  onCheckedChange={(c) => onPickAll?.(c === true)}
+                />
+              </TableHead>
+            )}
+            <TableHead className="min-w-44">Test</TableHead>
+            <TableHead>For</TableHead>
+            <TableHead className="min-w-56">Why</TableHead>
+            <TableHead className="w-32">Decision</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {ordered.map((a) =>
-            editing ? (
-              <TableRow
-                key={a.id}
-                className={cn(
-                  "hover:bg-transparent",
-                  edited.has(a.id) &&
-                    "bg-info-surface/60 hover:bg-info-surface/60"
-                )}
-              >
+          {tests.map((t) => (
+            <TableRow
+              key={t.id}
+              className={cn(!t.approved && "text-muted-foreground")}
+            >
+              {decidable && (
                 <TableCell>
-                  <Select
-                    items={AREAS.map((x) => ({ label: x, value: x }))}
-                    value={a.area}
-                    onValueChange={(v) =>
-                      set(a.id, { area: (v as Area) ?? a.area })
-                    }
-                  >
-                    <SelectTrigger className="h-8! w-36" aria-label="Area">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {AREAS.map((x) => (
-                          <SelectItem key={x} value={x}>
-                            {x}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    aria-label="What to do"
-                    value={a.text}
-                    onChange={(e) => set(a.id, { text: e.target.value })}
-                    className="h-8"
+                  <Checkbox
+                    aria-label={`Approve ${t.name}`}
+                    checked={t.approved}
+                    onCheckedChange={(c) => onPick?.(t.id, c === true)}
                   />
                 </TableCell>
-                <TableCell>
-                  <Input
-                    aria-label="How often"
-                    value={a.often}
-                    onChange={(e) => set(a.id, { often: e.target.value })}
-                    className="h-8 w-40"
+              )}
+              <TableCell className="font-medium">
+                {t.name}
+                {edited.has(t.id) && <ChangedTag />}
+              </TableCell>
+              <TableCell className="whitespace-normal">
+                {t.for.map(planName).filter(Boolean).join(", ") || "None"}
+              </TableCell>
+              <TableCell className="whitespace-normal text-muted-foreground">
+                {t.why}
+              </TableCell>
+              <TableCell>
+                <span className="inline-flex items-center gap-1.5 text-[13px]">
+                  <span
+                    className={cn(
+                      "size-2 rounded-full",
+                      t.approved ? "bg-primary" : "bg-muted-foreground/40"
+                    )}
                   />
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Remove ${a.text || "item"}`}
-                    onClick={() =>
-                      onChange(actions.filter((x) => x.id !== a.id))
-                    }
-                  >
-                    <IconTrash />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ) : (
-              <TableRow key={a.id}>
-                <TableCell className="text-muted-foreground">
-                  {a.area}
-                </TableCell>
-                <TableCell className="whitespace-normal">
-                  {a.text}
-                  {edited.has(a.id) && <ChangedTag />}
-                </TableCell>
-                <TableCell>{a.often}</TableCell>
-              </TableRow>
-            )
-          )}
+                  {t.approved ? "Approved" : "Deselected"}
+                </span>
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
-    </Card>
+    </section>
   )
 }
+
+/* ----------------------------------------------------------- history -- */
 
 /* Every step of the loop, newest first, with what each version changed. */
 function History({ plan }: { plan: CarePlan }) {
@@ -1021,26 +1358,7 @@ function VersionDialog({
 }) {
   const v = plan.versions.find((x) => x.version === version)
   const before = plan.versions.find((x) => x.version === (version ?? 0) - 1)
-  const changed = new Set(
-    v && before
-      ? [
-          ...v.goals
-            .filter(
-              (g) =>
-                JSON.stringify(g) !==
-                JSON.stringify(before.goals.find((x) => x.id === g.id))
-            )
-            .map((g) => g.id),
-          ...v.actions
-            .filter(
-              (a) =>
-                JSON.stringify(a) !==
-                JSON.stringify(before.actions.find((x) => x.id === a.id))
-            )
-            .map((a) => a.id),
-        ]
-      : []
-  )
+  const changed = v ? changedIds(before, v) : new Set<string>()
   return (
     <Dialog open={v !== undefined} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="gap-4 sm:max-w-4xl">
@@ -1065,17 +1383,17 @@ function VersionDialog({
         </DialogHeader>
         {v && (
           <div className="-mx-1 flex max-h-[65dvh] flex-col gap-3 overflow-y-auto px-1">
-            <GoalsCard
-              goals={v.goals}
+            <PlansBlock
+              plans={v.plans}
               editing={false}
               edited={changed}
               onChange={() => {}}
             />
-            <ActionsCard
-              actions={v.actions}
-              editing={false}
+            <BaselineCard
+              tests={v.tests}
+              plans={v.plans}
+              decidable={false}
               edited={changed}
-              onChange={() => {}}
             />
           </div>
         )}

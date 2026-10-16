@@ -67,7 +67,7 @@ import {
   tasks,
 } from "@/components/provider/tasks/tasks-data"
 import { Badge } from "@/design-system/ui/badge"
-import { Button } from "@/design-system/ui/button"
+import { Button, buttonVariants } from "@/design-system/ui/button"
 import {
   Combobox,
   ComboboxContent,
@@ -1164,13 +1164,26 @@ function TaskPanel({
           </PanelRow>
         </div>
 
+        {t.type === "Care plan review" && t.patientId && (
+          <Link
+            href={`/screens/patients/${t.patientId}?section=care-plan`}
+            className={cn(buttonVariants(), "w-full")}
+          >
+            <IconFileText />
+            Review care plan
+          </Link>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" onClick={() => setPicking(true)}>
             <IconSwitch />
             Reassign
           </Button>
           <Button
-            variant={t.status === "Completed" ? "outline" : "default"}
+            variant={
+              t.status === "Completed" || t.type === "Care plan review"
+                ? "outline"
+                : "default"
+            }
             onClick={() => {
               setTaskStatus(t.id, next.status)
               toast.success(

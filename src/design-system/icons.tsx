@@ -87,6 +87,7 @@ import {
   IdentityCardIcon,
   Image01Icon,
   InboxIcon,
+  HelpCircleIcon,
   InformationCircleIcon,
   InjectionIcon,
   JusticeScale01Icon,
@@ -270,6 +271,7 @@ export const IconHospital = createIcon(FirstAidKitIcon)
 export const IconIdCard = createIcon(IdentityCardIcon)
 export const IconImage = createIcon(Image01Icon)
 export const IconInbox = createIcon(InboxIcon)
+export const IconHelp = createIcon(HelpCircleIcon)
 export const IconInfo = createIcon(InformationCircleIcon)
 export const IconInjection = createIcon(InjectionIcon)
 export const IconLab = createIcon(TestTube01Icon)
@@ -440,6 +442,7 @@ export const ICON_CATALOG: { name: string; source: string; Icon: (props: IconPro
   { name: "IconIdCard", source: "IdentityCardIcon", Icon: IconIdCard },
   { name: "IconImage", source: "Image01Icon", Icon: IconImage },
   { name: "IconInbox", source: "InboxIcon", Icon: IconInbox },
+  { name: "IconHelp", source: "HelpCircleIcon", Icon: IconHelp },
   { name: "IconInfo", source: "InformationCircleIcon", Icon: IconInfo },
   { name: "IconInjection", source: "InjectionIcon", Icon: IconInjection },
   { name: "IconLab", source: "TestTube01Icon", Icon: IconLab },

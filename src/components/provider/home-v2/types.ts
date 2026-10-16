@@ -79,7 +79,7 @@ export interface CareGap {
 }
 
 export interface ReviewDue {
-  review: "Initial record validation" | "Quarterly review" | "Intake summary" | "Optimization plan approval"
+  review: "Initial record validation" | "Quarterly review" | "Intake summary" | "Care plan review"
   due: string
   lastReview?: string
   /** An intake whose PHQ-9 item 9 came back positive is urgent. */

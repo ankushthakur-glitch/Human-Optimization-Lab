@@ -207,9 +207,9 @@ export const WORK_ITEMS: WorkItem[] = [
     payload: { review: "Quarterly review", due: "2026-10-12", lastReview: "2026-08-12" },
   },
   {
-    id: "W24", type: "review_due", patientId: "P10422", createdAt: "2026-10-01T15:00:00",
-    source: "AI plan", isOutsideSource: false, status: "open",
-    payload: { review: "Optimization plan approval", due: "2026-10-03" },
+    id: "W24", type: "review_due", patientId: "P10240", createdAt: "2026-10-02T08:42:00",
+    source: "Patient app", isOutsideSource: false, status: "open",
+    payload: { review: "Care plan review", due: "2026-10-03" },
   },
   {
     id: "W25", type: "review_due", patientId: "P10455", createdAt: "2026-10-02T20:15:00",
@@ -395,13 +395,13 @@ export const WORK_ITEMS: WorkItem[] = [
   },
   {
     id: "W61", type: "review_due", patientId: "P10455", createdAt: "2026-10-02T16:00:00",
-    source: "AI plan", isOutsideSource: false, status: "open",
-    payload: { review: "Optimization plan approval", due: "2026-10-06" },
+    source: RULES, isOutsideSource: false, status: "open",
+    payload: { review: "Quarterly review", due: "2026-10-06", lastReview: "2026-07-06" },
   },
   {
-    id: "W62", type: "review_due", patientId: "P10318", createdAt: "2026-09-30T12:00:00",
-    source: "AI plan", isOutsideSource: false, status: "open",
-    payload: { review: "Optimization plan approval", due: "2026-10-09" },
+    id: "W62", type: "review_due", patientId: "P10318", createdAt: "2026-10-02T07:55:00",
+    source: "Patient app", isOutsideSource: false, status: "open",
+    payload: { review: "Care plan review", due: "2026-10-04" },
   },
   {
     id: "W63", type: "review_due", patientId: "P10422", createdAt: "2026-10-01T06:00:00",
@@ -510,8 +510,8 @@ export const WORK_ITEMS: WorkItem[] = [
   },
   {
     id: "W79", type: "review_due", patientId: "P10411", createdAt: "2026-10-02T11:00:00",
-    source: "AI plan", isOutsideSource: false, status: "open",
-    payload: { review: "Optimization plan approval", due: "2026-10-11" },
+    source: "AI intake", isOutsideSource: false, status: "open",
+    payload: { review: "Intake summary", due: "2026-10-11" },
   },
 ]
 
@@ -546,7 +546,7 @@ export const URGENT_SNAPSHOT = [2, 2, 3, 3, 2, 3, 3, 4, 4, 3, 4, 4, 5, 4]
 
 /* ---------------------------------------------------------- stores -- */
 
-export const workItems = createCollection<WorkItem>("hol-provider-home-v2-items", WORK_ITEMS, "v4")
+export const workItems = createCollection<WorkItem>("hol-provider-home-v2-items", WORK_ITEMS, "v5")
 
 /** Every action on the queue is written here, newest first. */
 export const auditLog = createCollection<AuditEntry>("hol-provider-home-v2-audit", [], "v1")

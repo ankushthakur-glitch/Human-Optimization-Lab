@@ -174,6 +174,14 @@ export type ShellAccount = {
 }
 
 /* A shortcut the command palette offers above "Go to". */
+/** One line in the bell's panel; any listed one counts as unread. */
+export type ShellNotification = {
+  id: string
+  title: string
+  meta: string
+  href: string
+}
+
 export type ShellAction = {
   label: string
   href: string
@@ -212,6 +220,7 @@ export function EhrShell({
   homeHref = "/screens/patients",
   account = EHR_ACCOUNT,
   actions = EHR_ACTIONS,
+  notifications = [],
   children,
 }: {
   active?: ModuleId | (string & {})
@@ -219,6 +228,7 @@ export function EhrShell({
   homeHref?: string
   account?: ShellAccount
   actions?: ShellAction[]
+  notifications?: ShellNotification[]
   children: React.ReactNode
 }) {
   const [collapsed, setCollapsed] = React.useState(true)
@@ -431,21 +441,54 @@ export function EhrShell({
             >
               <IconSearch />
             </Button>
-            {/* Nothing sends notifications yet, so the panel is its empty
-                state and the bell carries no unread dot. */}
+            {/* The bell lists what the portal passes in, with a dot while
+                there is anything; empty, it shows the all clear. */}
             <Popover>
               <PopoverTrigger
                 render={
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label="Notifications"
+                    aria-label={
+                      notifications.length
+                        ? `Notifications, ${notifications.length} new`
+                        : "Notifications"
+                    }
+                    className="relative"
                   />
                 }
               >
                 <IconNotification />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1 right-1 size-2 rounded-full bg-[#DE6F68] ring-2 ring-background" />
+                )}
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-72">
+              <PopoverContent align="end" className="w-80 gap-0 p-0">
+                {notifications.length > 0 ? (
+                  <>
+                    <div className="border-b px-4 py-2.5 text-sm font-semibold">
+                      Notifications
+                    </div>
+                    <ul className="flex max-h-80 flex-col overflow-y-auto py-1">
+                      {notifications.map((n) => (
+                        <li key={n.id}>
+                          <Link
+                            href={n.href}
+                            className="flex gap-2.5 px-4 py-2.5 hover:bg-surface-hover"
+                          >
+                            <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
+                            <span className="flex min-w-0 flex-col gap-0.5">
+                              <span className="text-sm">{n.title}</span>
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                {n.meta}
+                              </span>
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
                 <div className="flex flex-col items-center gap-2 py-4 text-center">
                   <Illustration
                     name="notifications-clear"
@@ -456,6 +499,7 @@ export function EhrShell({
                     New notifications show up here.
                   </p>
                 </div>
+                )}
               </PopoverContent>
             </Popover>
             <DropdownMenu>

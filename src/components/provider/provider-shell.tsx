@@ -11,13 +11,20 @@ import {
   IconUserAdd,
 } from "@/design-system/icons"
 
-import { REYES_ID } from "@/components/practice/practice-data"
+import {
+  REYES_ID,
+  fullName,
+  patients,
+} from "@/components/practice/practice-data"
 import {
   EhrShell,
   type ModuleId,
   type NavItem,
   type ShellAction,
+  type ShellNotification,
 } from "@/components/ehr-shell"
+import { useCarePlansToReview } from "@/components/provider/chart-care-plan"
+import { atLabel } from "@/components/provider/chart-epic"
 
 const BASE = "/screens/patients"
 
@@ -60,8 +67,29 @@ export function ProviderShell({
   active?: ModuleId
   children: React.ReactNode
 }) {
+  const toReview = useCarePlansToReview()
+  const { items } = patients.use()
+  /* Care plans waiting on the physician, each opening its review. */
+  const notifications: ShellNotification[] = toReview.map((r) => {
+    const p = items.find((x) => x.id === r.patientId)
+    const name = p ? fullName(p) : r.patientId
+    return {
+      id: `care-plan-${r.patientId}`,
+      title:
+        r.status === "Changes requested"
+          ? `${name} asked for care plan changes`
+          : `${name} sent a care plan for review`,
+      meta: atLabel(r.event.at),
+      href: `${BASE}/${r.patientId}?section=care-plan`,
+    }
+  })
   return (
-    <EhrShell active={active} nav={PROVIDER_NAV} actions={PROVIDER_ACTIONS}>
+    <EhrShell
+      active={active}
+      nav={PROVIDER_NAV}
+      actions={PROVIDER_ACTIONS}
+      notifications={notifications}
+    >
       {children}
     </EhrShell>
   )
