@@ -20,6 +20,9 @@ export type HugeIconProps = {
   solid?: readonly number[]
   /** The colour of the lines inside a filled shape. */
   cut?: string
+  /** Indexes of lines that sit outside every filled shape, kept in `color`
+      in the filled state (the chart icon's arrow). */
+  keep?: readonly number[]
 }
 
 const order = (n: number, solid?: readonly number[]) => {
@@ -27,7 +30,7 @@ const order = (n: number, solid?: readonly number[]) => {
   return solid ? [...all.filter((i) => solid.includes(i)), ...all.filter((i) => !solid.includes(i))] : all
 }
 
-export function HugeIcon({ icon, size = 20, color, strokeWidth = 1.5, solid, cut = "#FFFFFF" }: HugeIconProps) {
+export function HugeIcon({ icon, size = 20, color, strokeWidth = 1.5, solid, cut = "#FFFFFF", keep }: HugeIconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       {/* Filled shapes first, so the cut lines draw on top of them. */}
@@ -37,7 +40,7 @@ export function HugeIcon({ icon, size = 20, color, strokeWidth = 1.5, solid, cut
         if (!Shape) return null
         const { key: _key, stroke, fill, strokeWidth: _width, ...rest } = attrs as Record<string, string | number>
         const filled = solid?.includes(i)
-        const ink = solid && !filled ? cut : color
+        const ink = solid && !filled && !keep?.includes(i) ? cut : color
         return (
           <Shape
             key={i}

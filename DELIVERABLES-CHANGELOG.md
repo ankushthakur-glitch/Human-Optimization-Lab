@@ -509,3 +509,17 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Merge P1: exercise flow, meal photo sheet, to-do card and optimize screens
 - Exercise videos, energy balance card and home/medicines updates
 - Merge P1: exercise videos, energy balance card and home/medicines updates
+
+## 15-Oct-2026
+
+- Tasks module, provider communication and practice updates
+- Life-focus onboarding, profile completion and wellbeing updates
+- Merge P1: life-focus onboarding, profile completion and wellbeing updates
+- Card-style To-do section, remove insight card
+- Merge P1: card-style To-do section, remove insight card
+- Fit life-focus list, drop snack tab, To-do percentage ring
+- Plan Today tab, meals card, chevron to-do, plan tabs without Plan
+- To do tab sections as Today-style cards
+- Added: Provider Portal / Communication / Communication
+- Added: Provider Portal / Tasks / Tasks
+- Added: Patient Portal / Mobile App: Optimization Member / Today (plan tab bar)

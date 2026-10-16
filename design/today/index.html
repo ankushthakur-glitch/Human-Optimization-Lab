@@ -121,7 +121,7 @@
 
   /* Meals */
   .opts { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
-  .opt { display:flex; flex-direction:column; gap:10px; padding:12px; background:#fff; border:1px solid var(--hair); border-radius:10px; box-shadow:var(--shadow-xs); }
+  .opt { display:flex; flex-direction:row; align-items:center; gap:10px; padding:12px; background:#fff; border:1px solid var(--hair); border-radius:10px; box-shadow:var(--shadow-xs); }
   .opt .ic { width:36px; height:36px; }
   .opt h3 { font-size:14px; line-height:20px; font-weight:500; color:var(--content); }
   .opt p { font-size:12px; line-height:16px; color:var(--secondary); margin-top:2px; }
@@ -132,6 +132,20 @@
   .pr + .pr { border-top:1px solid #F2F2F7; }
   .pr b { font-weight:500; color:var(--content); }
   .pr span { font-size:12px; color:var(--secondary); text-align:right; }
+
+  /* Header calendar + to-do ticks */
+  .title { align-items:flex-start !important; }
+  .title h1 + span { display:block; }
+  .cal { width:40px; height:40px; border-radius:12px; background:#fff; border:1px solid var(--hair); box-shadow:var(--shadow-xs); color:var(--content); display:grid; place-items:center; margin-top:4px; }
+  .row { display:flex; align-items:center; gap:12px; }
+  .row .item { flex:1; min-width:0; }
+  .tick { width:28px; height:28px; border-radius:50%; border:1.5px solid var(--edge); color:transparent; display:grid; place-items:center; flex:none; transition:background .15s, border-color .15s, color .15s; }
+  .tick:active { transform:scale(.92); }
+  .row.done .tick { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .row.done .ic { background:#EFEFF2; color:#8A8A92; }
+  .row.done h3, .row.done p { color:var(--tertiary); text-decoration:line-through; }
+  .progress i { width:var(--p,20%); transition:width .3s; }
+  html { scroll-behavior:smooth; }
 </style>
 </head>
 <body>
@@ -142,86 +156,101 @@
       <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="#0A0A0A" opacity=".4"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#0A0A0A"/><rect x="23" y="4" width="1.6" height="4" rx=".8" fill="#0A0A0A" opacity=".4"/></svg>
     </span></div>
 
-    <div class="title reveal" style="padding-top:20px"><h1>Today</h1><span>Tuesday, Oct 6, 2026</span></div>
+    <div class="title reveal" style="padding-top:20px">
+      <div><h1>Today</h1><span>Tuesday, Oct 6, 2026</span></div>
+      <button class="cal" aria-label="Pick a day"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></button>
+    </div>
     <section class="block reveal" style="animation-delay:.05s" aria-label="Today's to-do">
       <div class="todo">
         <div class="head">
-          <div><h2>Today's To-do</h2><p>Small steps toward your daily health goals.</p></div>
-          <span class="count">1/5</span>
+          <h2>Today's To-do</h2>
+          <span class="count" id="count">1/5</span>
         </div>
-        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="1"><i></i></div>
-        <ul class="list">
-        <li><button class="item">
-          <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h16a8 8 0 0 1-16 0zM9 7c0-1.5 1-2 1-3.5M14 7c0-1.5 1-2 1-3.5"/></svg></span>
-          <span class="t"><h3>Log a meal</h3><p>1 of 3 meals logged</p></span>
-          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
-        </button></li>
-        <li><button class="item">
-          <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg></span>
-          <span class="t"><h3>Strength B, upper body and balance</h3><p>5:30 PM · 4 moves, about 20 minutes</p></span>
-          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
-        </button></li>
-        <li><button class="item">
-          <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4.5" r="1.8"/><path d="M12 8.5l-3 3.5 3 2.5-1 6M12 8.5l3 3 3 .5M9 12l-3 1.5M12 14.5l3 2.5 1 4"/></svg></span>
-          <span class="t"><h3>Walk after dinner</h3><p>7:30 PM · 20 minutes, brisk</p></span>
-          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
-        </button></li>
-        <li><button class="item">
-          <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M7 12h2.5l1.5-3 2 5 1.5-2H17"/></svg></span>
-          <span class="t"><h3>Check blood pressure</h3><p>9:00 PM · Tonight, seated, after 5 minutes of rest</p></span>
-          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
-        </button></li>
-        <li><button class="item done">
-          <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
-          <span class="t"><h3>Weigh in</h3><p>178.0 lb at 7:05 AM</p></span>
-          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
-        </button></li>
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="1"><i id="bar"></i></div>
+        <ul class="list" id="list">
+        <li class="row">
+          <button class="item" data-go="#meals"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h16a8 8 0 0 1-16 0zM9 7c0-1.5 1-2 1-3.5M14 7c0-1.5 1-2 1-3.5"/></svg></span><span class="t"><h3>Log a meal</h3><p>1 of 3 meals logged</p></span></button>
+          <button class="tick" aria-pressed="false" aria-label="Done: Log a meal"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></button>
+        </li>
+        <li class="row">
+          <button class="item" data-go="#exercise"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg></span><span class="t"><h3>Upper body + 30 min Zone 2</h3><p>5:30 PM · 55 minutes</p></span></button>
+          <button class="tick" aria-pressed="false" aria-label="Done: Upper body + 30 min Zone 2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></button>
+        </li>
+        <li class="row">
+          <button class="item" data-go="#exercise"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4.5" r="1.8"/><path d="M12 8.5l-3 3.5 3 2.5-1 6M12 8.5l3 3 3 .5M9 12l-3 1.5M12 14.5l3 2.5 1 4"/></svg></span><span class="t"><h3>Walk after dinner</h3><p>7:30 PM · 20 minutes, brisk</p></span></button>
+          <button class="tick" aria-pressed="false" aria-label="Done: Walk after dinner"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></button>
+        </li>
+        <li class="row">
+          <button class="item" data-go=""><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M7 12h2.5l1.5-3 2 5 1.5-2H17"/></svg></span><span class="t"><h3>Check blood pressure</h3><p>9:00 PM · Seated, after 5 minutes of rest</p></span></button>
+          <button class="tick" aria-pressed="false" aria-label="Done: Check blood pressure"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></button>
+        </li>
+        <li class="row done">
+          <button class="item" data-go=""><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 9.5a4 4 0 0 1 6 0M12 9.5l1.2-1.5"/></svg></span><span class="t"><h3>Weigh in</h3><p>178.0 lb at 7:05 AM</p></span></button>
+          <button class="tick" aria-pressed="true" aria-label="Done: Weigh in"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></button>
+        </li>
         </ul>
       </div>
     </section>
 
     <section class="block reveal" style="animation-delay:.08s" aria-label="Today's goals">
-      <div class="head"><div><h2>Today's goals</h2><p>Your targets for today.</p></div><a href="#">Edit</a></div>
+      <div class="head"><h2>Today's goals</h2><a href="#">Edit</a></div>
       <div class="gcard"><div class="g"><div class="gr"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="#CEF4F1" stroke-width="5"/><circle cx="28" cy="28" r="24" fill="none" stroke="#01837E" stroke-width="5" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="108.6"/></svg><b>420</b></div><div class="nm">Calories</div><div class="tg">of 1,500</div></div><div class="g"><div class="gr"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="#CEF4F1" stroke-width="5"/><circle cx="28" cy="28" r="24" fill="none" stroke="#01837E" stroke-width="5" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="105.6"/></svg><b>45</b></div><div class="nm">Protein</div><div class="tg">of 150 g</div></div><div class="g"><div class="gr"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="#CEF4F1" stroke-width="5"/><circle cx="28" cy="28" r="24" fill="none" stroke="#01837E" stroke-width="5" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="108.6"/></svg><b>280</b></div><div class="nm">Calcium</div><div class="tg">of 1,000 mg</div></div><div class="g"><div class="gr"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="#CEF4F1" stroke-width="5"/><circle cx="28" cy="28" r="24" fill="none" stroke="#01837E" stroke-width="5" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8"/></svg><b>0</b></div><div class="nm">Exercise</div><div class="tg">of 45 min</div></div></div>
     </section>
 
-    <section class="block reveal" style="animation-delay:.12s" aria-label="Today's exercise">
+    <section class="block reveal" style="animation-delay:.12s" id="exercise" aria-label="Today's exercise">
       <div class="head"><h2>Today's exercise</h2><a href="#">View full plan <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></a></div>
       <div class="ex">
         <div class="row1"><div class="thumb" role="img" aria-label="Workout video: wall push-up"><span class="play" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></span></div>
-          <div><h3>Upper Body + 30-Min Zone 2</h3><div class="est">Estimated time: 55 minutes</div>
+          <div><h3>Upper body + 30 min Zone 2</h3><div class="est">Estimated time: 55 minutes</div>
             <ul class="checks"><li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Strength training (3–4 exercises)</li><li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>30 min Zone 2 cardio</li></ul></div></div>
         <button class="btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M7 4.5v15l13-7.5z"/></svg>Start workout</button>
       </div>
     </section>
 
-    <section class="block reveal" style="animation-delay:.16s" aria-label="Today's meals">
-      <div class="head"><div><h2>Today's meals</h2><p>Plan or log today's food, any one way.</p></div><a href="#">Nutrition targets</a></div>
+    <section class="block reveal" style="animation-delay:.16s" id="meals" aria-label="Today's meals">
+      <div class="head"><h2>Today's meals</h2><a href="#">Nutrition targets</a></div>
       <div class="opts">
-        <button class="opt"><span class="ic" style="background:var(--blue-tint);color:var(--blue)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><span><h3>Meal database</h3><p>Pre-planned meals, one tap to add</p></span></button>
-        <button class="opt"><span class="ic" style="background:var(--violet-tint);color:var(--violet)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span><span><h3>Today's plan</h3><p>Three meals built for your targets</p></span></button>
-        <button class="opt"><span class="ic" style="background:var(--soft);color:var(--primary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></span><span><h3>Photograph it</h3><p>Snap your meal and we'll log it</p></span></button>
-        <button class="opt"><span class="ic" style="background:var(--amber-tint);color:var(--amber)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11 12 15.5 16.5 11M5 19h14"/></svg></span><span><h3>Import</h3><p>Bring meals in from another app</p></span></button>
+        <button class="opt"><span class="ic" style="background:var(--blue-tint);color:var(--blue)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><h3>Meal database</h3></button>
+        <button class="opt"><span class="ic" style="background:var(--violet-tint);color:var(--violet)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span><h3>Today's plan</h3></button>
+        <button class="opt"><span class="ic" style="background:var(--soft);color:var(--primary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></span><h3>Photograph it</h3></button>
+        <button class="opt"><span class="ic" style="background:var(--amber-tint);color:var(--amber)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11 12 15.5 16.5 11M5 19h14"/></svg></span><h3>Import</h3></button>
       </div>
       <div class="plan">
-        <div class="ph"><span>IF YOU USE TODAY'S PLAN</span><a href="#">Swap any meal <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></a></div>
-        <div class="pr"><b>Breakfast</b><span>420 cal · 32 g · 320 mg</span></div>
-        <div class="pr"><b>Lunch</b><span>510 cal · 45 g · 280 mg</span></div>
-        <div class="pr"><b>Dinner</b><span>620 cal · 55 g · 430 mg</span></div>
+        <div class="ph"><span>Today's plan</span><a href="#">Swap any meal <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></a></div>
+        <div class="pr"><b>Breakfast</b><span>420 cal · 32 g protein · 320 mg calcium</span></div>
+        <div class="pr"><b>Lunch</b><span>510 cal · 45 g protein · 280 mg calcium</span></div>
+        <div class="pr"><b>Dinner</b><span>620 cal · 55 g protein · 430 mg calcium</span></div>
       </div>
     </section>
   </div>
 
   <nav class="tabs" aria-label="Main">
     <div class="pillbar">
-      <button class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6.5 8 6.5V20H4z"/></svg>Home</button>
-      <button class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Record</button>
-      <button class="tab on" aria-current="page"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4.5" width="15" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>To do</button>
+      <button class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Back</button>
+      <button class="tab on" aria-current="page"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="5" width="15" height="15" rx="3"/><path d="M8.5 3v4M15.5 3v4M4.5 10h15"/></svg>Today</button>
+      <button class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Progress</button>
       <button class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/></svg>Plan</button>
     </div>
     <button class="orb" aria-label="Ask Inlay"></button>
   </nav>
   <div class="home-ind"></div>
 </main>
+<script>
+  const list=document.getElementById('list'), count=document.getElementById('count'), bar=document.getElementById('bar');
+  function sync(){
+    const rows=[...list.children], done=rows.filter(r=>r.classList.contains('done')).length;
+    count.textContent=done+'/'+rows.length;
+    bar.style.setProperty('--p',(done/rows.length*100)+'%');
+    bar.parentElement.setAttribute('aria-valuenow',done);
+    rows.filter(r=>r.classList.contains('done')).forEach(r=>list.appendChild(r));
+  }
+  list.addEventListener('click',e=>{
+    const tick=e.target.closest('.tick');
+    if(tick){ const r=tick.closest('.row'); r.classList.toggle('done'); tick.setAttribute('aria-pressed',r.classList.contains('done')); sync(); return; }
+    const item=e.target.closest('.item'), go=item&&item.dataset.go;
+    if(go){ const t=document.querySelector(go); document.querySelector('.scroll').scrollTo({top:t.offsetTop-12,behavior:'smooth'}); }
+  });
+  sync();
+</script>
 </body>
 </html>

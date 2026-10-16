@@ -1,5 +1,5 @@
 import { BlurView } from "expo-blur"
-import { router } from "expo-router"
+import { router, useFocusEffect } from "expo-router"
 import * as React from "react"
 import {
   Animated,
@@ -18,10 +18,13 @@ import { TourHost, useTourTarget } from "@/components/app-tour"
 import { useDragBack } from "@/components/drag-back"
 import { DarkStatusBar } from "@/components/error-state"
 import {
+  IconBack,
   IconHome,
   IconPlan,
+  IconProgress,
   IconResults,
   IconToDo,
+  IconToday,
   IconUpgrade,
   type TabIconProps,
 } from "@/components/icons"
@@ -37,25 +40,51 @@ import { color, font, space } from "@/lib/theme"
    ring (OrbButton), which opens the assistant full screen. Each tab is its own
    stack screen (switched without animation), so the bar is drawn by the
    screen rather than by a tab navigator. Home stays at the bottom of the
-   stack, so Back (the swipe) from any other tab returns home. */
+   stack, so Back (the swipe) from any other tab returns home.
 
-export type TabName = "home" | "results" | "todo" | "plan"
+   A member's plan is a space of its own (user, 15 Oct, after NoBroker's
+   Services): the Plan tab opens the plan on Today, the pill's tabs swap to
+   Back, Today and Progress with a short rise and fade, and Back
+   returns to home and its four tabs the same way. */
 
-const TABS: {
-  name: TabName
+export type TabName = "home" | "results" | "todo" | "plan" | "today" | "progress"
+
+type Href = "/" | "/results" | "/gaps" | "/plan" | "/today" | "/progress"
+
+type Tab = {
+  name: TabName | "back"
   label: string
-  href: "/" | "/results" | "/gaps" | "/plan"
+  href: Href
   Icon: React.ComponentType<TabIconProps>
-}[] = [
+}
+
+const TABS: Tab[] = [
   { name: "home", label: "Home", href: "/", Icon: IconHome },
   { name: "results", label: "Record", href: "/results", Icon: IconResults },
   { name: "todo", label: "To do", href: "/gaps", Icon: IconToDo },
   { name: "plan", label: "Plan", href: "/plan", Icon: IconPlan },
 ]
 
+/** The plan's tabs: Back goes home, Today and Progress switch in place. */
+const PLAN_TABS: Tab[] = [
+  { name: "back", label: "Back", href: "/", Icon: IconBack },
+  { name: "today", label: "Today", href: "/today", Icon: IconToday },
+  { name: "progress", label: "Progress", href: "/progress", Icon: IconProgress },
+]
+
+const PLAN_SPACE: TabName[] = ["plan", "today", "progress"]
+
+/** Which set of tabs the bar showed last, so the next bar to come into view
+    knows to animate its tabs in when the set has changed. */
+let shownSet: "main" | "plan" = "main"
+
+/** Each tab rises 8 and fades in, one after another. */
+const SWAP_MS = 260
+const SWAP_STAGGER = 45
+
 /** Opens a tab: home by going back to it, another tab over home, or in
     place of the tab that is open. */
-export function openTab(href: (typeof TABS)[number]["href"], from: TabName) {
+export function openTab(href: Href, from: TabName) {
   if (href === "/") router.dismissTo("/")
   else if (from === "home") router.push(href)
   else router.replace(href)
@@ -184,6 +213,23 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
   // The plan tab reads "Upgrade", with a crown, for everyone who has no
   // plan to follow yet (5 Oct call), a member in review included.
   const upgradeLabel = upgradeTab(useExperience())
+  // A plan to follow brings its own tabs; the Upgrade tab keeps home's.
+  const set = !upgradeLabel && PLAN_SPACE.includes(active) ? "plan" : "main"
+  const tabs = set === "plan" ? PLAN_TABS : TABS
+  // Animate the tabs in when this bar comes into view showing the other set
+  // than the last bar (home stays mounted under the plan, so on focus).
+  const swap = React.useRef(TABS.map(() => new Animated.Value(shownSet === set ? 1 : 0))).current
+  useFocusEffect(
+    React.useCallback(() => {
+      if (shownSet === set) return
+      shownSet = set
+      swap.forEach((v) => v.setValue(0))
+      Animated.stagger(
+        SWAP_STAGGER,
+        swap.map((v) => Animated.timing(v, { toValue: 1, duration: SWAP_MS, easing: Easing.out(Easing.cubic), useNativeDriver: native })),
+      ).start()
+    }, [set, swap]),
+  )
   // The arc draws this week's AI credit used, as the chat's strip says it.
   const { share } = useAllowance()
   const tabsRef = useTourTarget("tabs")
@@ -197,9 +243,12 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
             tint="light"
             style={StyleSheet.absoluteFill}
           />
-          {TABS.map(({ name, label: tabLabel, href, Icon: TabIcon }) => {
+          {tabs.map(({ name, label: tabLabel, href: tabHref, Icon: TabIcon }, i) => {
             const on = name === active
             const upgrade = name === "plan" && upgradeLabel
+            // From home, a plan to follow opens on its Today tab.
+            const href = set === "main" && name === "plan" && !upgradeLabel ? "/today" : tabHref
+            const shown = swap[i]
             const label = upgrade ? "Upgrade" : tabLabel
             const Icon = upgrade ? IconUpgrade : TabIcon
             return (
@@ -211,18 +260,25 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
                 accessibilityLabel={label}
                 style={({ pressed }) => [styles.tab, pressed && styles.pressed]}
               >
-                <Icon
-                  size={18}
-                  color={on ? INK : REST}
-                  active={on}
-                  cut={color.primaryTint}
-                />
-                <Text
-                  style={[styles.tabLabel, { color: on ? INK : REST }]}
-                  numberOfLines={1}
+                <Animated.View
+                  style={[
+                    styles.tabInner,
+                    { opacity: shown, transform: [{ translateY: shown.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] },
+                  ]}
                 >
-                  {label}
-                </Text>
+                  <Icon
+                    size={18}
+                    color={on ? INK : REST}
+                    active={on}
+                    cut={color.primaryTint}
+                  />
+                  <Text
+                    style={[styles.tabLabel, { color: on ? INK : REST }]}
+                    numberOfLines={1}
+                  >
+                    {label}
+                  </Text>
+                </Animated.View>
               </Pressable>
             )
           })}
@@ -383,7 +439,7 @@ const styles = StyleSheet.create({
     height: 52,
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
   },
+  tabInner: { alignItems: "center", gap: 3 },
   tabLabel: { fontFamily: font.medium, fontSize: 10.5, lineHeight: 13 },
 })
