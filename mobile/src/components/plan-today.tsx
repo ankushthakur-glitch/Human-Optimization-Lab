@@ -3,7 +3,7 @@ import * as React from "react"
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import Svg, { Circle } from "react-native-svg"
 
-import { formatNumber } from "@/components/charts"
+import { ScoreRing, formatNumber } from "@/components/charts"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { PrimaryButton } from "@/components/hol"
 import { Barbell, BowlFood, Camera, CaretLeft, CaretRight, Check, ClipboardText, DownloadSimple, Heartbeat, MagnifyingGlass, PersonSimpleWalk, Play, Scales } from "@/components/ph"
@@ -265,12 +265,21 @@ function TodoCard({ s, date, now, onCheckIn }: { s: Store; date: Date; now: Date
   return (
     <View style={styles.todo}>
       <View style={styles.todoHead}>
-        <Text style={styles.todoTitle} accessibilityRole="header">
-          {live ? "Today's To-do" : offset < 0 ? "To-do" : "Planned"}
-        </Text>
-        <View style={styles.count}>
-          <Text style={styles.countText}>{offset > 0 ? `${tasks.length} tasks` : `${done}/${tasks.length}`}</Text>
+        <View style={styles.fill}>
+          <Text style={styles.todoTitle} accessibilityRole="header">
+            {live ? "Today's To-do" : offset < 0 ? "To-do" : "Planned"}
+          </Text>
+          {offset <= 0 && <Text style={styles.todoMeta}>{`${done} of ${tasks.length} done`}</Text>}
         </View>
+        {/* The share of the day's tasks done, as on home's To-do; a day
+            still to come only says how many it holds. */}
+        {offset > 0 ? (
+          <View style={styles.count}>
+            <Text style={styles.countText}>{`${tasks.length} tasks`}</Text>
+          </View>
+        ) : (
+          <ScoreRing percent={tasks.length ? (done / tasks.length) * 100 : 0} size={52} stroke={5} of="To-do done" playKey={`todo:${day}`} />
+        )}
       </View>
       <View style={styles.todoBar}>
         <ProgressBar done={offset > 0 ? 0 : done} total={tasks.length} />
@@ -550,6 +559,7 @@ const styles = StyleSheet.create({
   todoHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },
   todoTitle: { ...type.section, color: ink.detail },
   count: { paddingHorizontal: space.item, paddingVertical: 4, borderRadius: 999, backgroundColor: color.primarySoft, borderWidth: 1, borderColor: "#C2E1E0" },
+  todoMeta: { ...type.label, marginTop: 2 },
   countText: { ...type.label, fontFamily: type.title.fontFamily, color: ink.primary },
   todoBar: { marginTop: space.item, marginBottom: 4 },
   todoFoot: { paddingTop: space.item, paddingBottom: space.item, borderTopWidth: 1, borderTopColor: hairline.edge },
