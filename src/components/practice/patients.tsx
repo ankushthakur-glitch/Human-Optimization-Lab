@@ -67,6 +67,7 @@ import {
 import { DeactivateDialog } from "@/components/practice/sheets"
 import { InviteTimelineSheet } from "@/components/practice/invite-timeline"
 import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
+import { SOFT_TEXT } from "@/components/patient-dashboard/widgets/charting-dashboard"
 import {
   checkDuplicate,
   matchedText,
@@ -218,6 +219,22 @@ const RISK_ICON: Record<RiskLevel, { Icon: typeof IconEqual; className: string }
 
 /* High sorts first, then Moderate, then Low. */
 const riskRank = (p: Patient) => RISK_LEVELS.indexOf(riskLevel(p))
+
+/* Sample AI biological age: the patient's age shifted 8 years either way,
+   fixed per patient ID, until the real model exists. */
+function bioAge(p: Patient) {
+  const seed = [...p.id].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 997, 7)
+  return ageFrom(p.dob) + (seed % 17) - 8
+}
+
+/* Older than their real age is red, up to 2 years younger orange, 3 or
+   more years younger green. */
+function BioAgeCell({ patient }: { patient: Patient }) {
+  const bio = bioAge(patient)
+  const gap = bio - ageFrom(patient.dob)
+  const tone = gap > 0 ? "red" : gap > -3 ? "orange" : "green"
+  return <span className={`font-semibold ${SOFT_TEXT[tone]}`}>{bio}</span>
+}
 
 function RiskIcon({ patient }: { patient: Patient }) {
   const r = riskLevel(patient)
@@ -581,6 +598,19 @@ export function PatientsScreen() {
       sortValue: (p) => p.dob,
       cell: (p) => `${usDate(p.dob)} (${ageFrom(p.dob)})`,
     },
+    /* AI biological age replaces the dropped Epic risk score (15 Oct call);
+       providers only. */
+    ...(portal.key === "provider"
+      ? [
+          {
+            id: "bioAge",
+            header: "Bio age",
+            className: "hidden tabular-nums md:table-cell",
+            sortValue: bioAge,
+            cell: (p) => <BioAgeCell patient={p} />,
+          } satisfies Column<Patient>,
+        ]
+      : []),
     {
       id: "sex",
       header: "Sex",
