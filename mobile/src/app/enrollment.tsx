@@ -7,11 +7,10 @@ import {
   IncludedSheet,
   MoneyRow,
   PlanCard,
-  TotalBand,
   firstMonth,
   priceNumber,
 } from "@/components/enrollment-kit"
-import { Check, Drop, Flask, Info, Monitor } from "@/components/ph"
+import { Check, Info } from "@/components/ph"
 import { PlanStepPage } from "@/components/plan-steps"
 import {
   BASELINE_TESTS,
@@ -35,18 +34,8 @@ import { color, hairline, ink, space, type } from "@/lib/theme"
    quiet line on what paying the other way would cost.
    "Continue to payment" opens step 4 (/payment). */
 
-/** The order the tests are listed in, and each one's mark: an ink on its
-    tint, as the record's category tiles are. */
-const LIST: {
-  id: BaselineTestId
-  Icon: typeof Monitor
-  ink: string
-  tint: string
-}[] = [
-  { id: "dexa", Icon: Monitor, ink: color.high, tint: color.highTint },
-  { id: "rmr", Icon: Drop, ink: color.high, tint: color.highTint },
-  { id: "panel", Icon: Flask, ink: color.amber, tint: color.amberTint },
-]
+/** The order the tests are listed in. */
+const LIST: BaselineTestId[] = ["panel", "dexa", "rmr"]
 
 export default function EnrollmentScreen() {
   const onboarding = useOnboarding()
@@ -84,34 +73,33 @@ export default function EnrollmentScreen() {
 
       <View style={styles.section}>
         <Text style={styles.heading} accessibilityRole="header">
-          Your baseline tests
+          Select your tests
         </Text>
         <View style={styles.card}>
-          {LIST.map((row, i) => (
+          {LIST.map((id, i) => (
             <TestRow
-              key={row.id}
-              test={BASELINE_TESTS[row.id]}
-              mark={row}
-              checked={chosen.has(row.id)}
+              key={id}
+              test={BASELINE_TESTS[id]}
+              checked={chosen.has(id)}
               first={i === 0}
-              onPress={() => toggle(BASELINE_TESTS[row.id])}
+              onPress={() => toggle(BASELINE_TESTS[id])}
             />
           ))}
         </View>
       </View>
 
-      <View style={[styles.summaryCard, styles.summary]}>
-        <MoneyRow
-          label={
-            billing === "yearly"
-              ? "Membership, 12 months"
-              : "Membership, first month"
-          }
-          value={dollars(cost.membership)}
-        />
+      <View style={[styles.card, styles.summary]}>
         <MoneyRow
           label={`${cost.tests.length} ${cost.tests.length === 1 ? "test" : "tests"} selected`}
           value={dollarsExact(cost.subtotal)}
+        />
+        <MoneyRow
+          label={
+            billing === "yearly"
+              ? "Membership (12 months)"
+              : "Membership (first month)"
+          }
+          value={dollars(cost.membership)}
         />
         {cost.discount > 0 && (
           <MoneyRow
@@ -120,7 +108,12 @@ export default function EnrollmentScreen() {
             good
           />
         )}
-        <TotalBand total={cost.total} />
+        <View style={styles.total}>
+          <Text style={styles.totalLabel}>
+            {billing === "yearly" ? "Total due today" : "First month total"}
+          </Text>
+          <Text style={styles.totalValue}>{dollarsExact(cost.total)}</Text>
+        </View>
       </View>
 
       <View style={styles.note}>
@@ -135,16 +128,14 @@ export default function EnrollmentScreen() {
   )
 }
 
-/** One test: its box, its mark, the name and the price. */
+/** One test: its box, the name and the price. */
 function TestRow({
   test,
-  mark,
   checked,
   first,
   onPress,
 }: {
   test: BaselineTest
-  mark: (typeof LIST)[number]
   checked: boolean
   first: boolean
   onPress: () => void
@@ -164,9 +155,6 @@ function TestRow({
       <View style={[styles.box, checked && styles.boxOn]}>
         {checked && <Check size={12} color={color.onPrimary} weight="bold" />}
       </View>
-      <View style={[styles.tile, { backgroundColor: mark.tint }]}>
-        <mark.Icon size={16} color={mark.ink} />
-      </View>
       <Text style={styles.name} numberOfLines={1}>
         {test.name}
       </Text>
@@ -181,7 +169,7 @@ const styles = StyleSheet.create({
   plan: { marginTop: space.item },
 
   section: { gap: space.inline, marginTop: space.section },
-  heading: { ...type.section },
+  heading: { ...type.title, color: ink.strong },
 
   card: {
     borderRadius: 14,
@@ -202,13 +190,6 @@ const styles = StyleSheet.create({
     borderTopColor: hairline.rule,
   },
   name: { ...type.title, flex: 1, color: ink.strong },
-  tile: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   // Digits of one width, so the prices line up down the column.
   price: { ...type.value, fontVariant: ["tabular-nums"] },
   // The consent's checkbox at 20, as on step 2: one teal for every tick.
@@ -224,19 +205,23 @@ const styles = StyleSheet.create({
   },
   boxOn: { backgroundColor: color.primary, borderColor: color.primary },
 
-  // The sums on the soft grey ground the onboarding cards use.
-  summaryCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: hairline.edge,
-    backgroundColor: color.canvas,
-  },
+  // The sums in a white card; the total under a rule, the page's one big number.
   summary: {
     gap: space.inline,
-    paddingHorizontal: space.card,
-    paddingTop: space.card,
+    padding: space.gutter,
     marginTop: space.item,
   },
+  total: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: space.stack,
+    paddingTop: space.item,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: hairline.edge,
+  },
+  totalLabel: { ...type.section },
+  totalValue: { ...type.hero, fontSize: 24, lineHeight: 30, fontVariant: ["tabular-nums"] },
   note: {
     flexDirection: "row",
     alignItems: "flex-start",

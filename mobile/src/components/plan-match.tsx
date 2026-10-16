@@ -1,9 +1,10 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { Pressable, StyleSheet, Text, View } from "react-native"
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native"
 
 import { CaretRight, Drop, Flame, Heart, Info, Lock, Scales, Sparkle } from "@/components/ph"
 import { Card, HUE, Tile, type Hue } from "@/components/record-kit"
+import { Sheet } from "@/components/sheet"
 import { useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
@@ -28,7 +29,7 @@ import { watchList } from "@/lib/trends"
    - no results yet: nothing has been compared, so the card says so and
      the rows give way to a note;
    - she had a plan before: "Welcome back, Liv".
-   The full list is closed to start with and opens and closes in place. */
+   "See all 81" slides the full list up as a bottom sheet (usePlanList). */
 
 const ICON: Record<PlanKind, { Icon: typeof Heart; hue: Hue }> = {
   metabolic: { Icon: Scales, hue: "teal" },
@@ -41,20 +42,30 @@ const ICON: Record<PlanKind, { Icon: typeof Heart; hue: Hue }> = {
 /** The areas the other plans sit in, minus those her record points to. */
 const AREA_OF: Record<PlanKind, string> = { metabolic: "Metabolic & weight", lipid: "Lipid & cardiovascular", insulin: "Triglyceride & insulin", bone: "Bone strength", other: "" }
 
-export function PlanMatchSection() {
+/** The plans her record supports, and how many markers there are to compare. */
+function usePlanMatches() {
   const onboarding = useOnboarding()
   const markers = useMarkers()
-  const [all, setAll] = React.useState(false)
+  const matches = matchPlans(watchList(markers, { improve: onboarding.why?.improve }).filter((t) => t.latest))
+  return { matches, noResults: markers.length === 0 }
+}
+
+/** "See all 81" opens the full list as a bottom sheet. The sheet is drawn by
+    the page (`sheet`, in its overlay slot) so it covers the screen rather
+    than scrolling with the content; `show` is what "See all" calls. */
+export function usePlanList() {
+  const [open, setOpen] = React.useState(false)
+  return { show: () => setOpen(true), sheet: open ? <PlanListSheet onClose={() => setOpen(false)} /> : null }
+}
+
+export function PlanMatchSection({ onSeeAll }: { onSeeAll: () => void }) {
+  const onboarding = useOnboarding()
+  const { matches, noResults } = usePlanMatches()
 
   const name = onboarding.profile?.preferredName || onboarding.profile?.firstName || PATIENT.firstName
   const returning = !!onboarding.membership?.cancelledAt || !!onboarding.planHistory?.length
-  const matches = matchPlans(watchList(markers, { improve: onboarding.why?.improve }).filter((t) => t.latest))
   const found = matches.length
   const rest = PLAN_COUNT - found
-  const noResults = markers.length === 0
-
-  const matchedAreas = new Set(matches.map((m) => AREA_OF[m.kind]))
-  const otherAreas = PLAN_AREAS.filter((a) => !matchedAreas.has(a))
 
   return (
     <View style={styles.root}>
@@ -114,22 +125,11 @@ export function PlanMatchSection() {
             <Lock size={15} weight="bold" color={color.amber} />
             <Text style={styles.restText}>{noResults || found === 0 ? `All ${PLAN_COUNT} are not a fit today.` : `The other ${rest} are not a fit for your record today.`}</Text>
           </View>
-          <Pressable onPress={() => setAll((v) => !v)} hitSlop={8} accessibilityRole="button" accessibilityState={{ expanded: all }} style={({ pressed }) => [styles.seeAll, pressed && styles.pressed]}>
-            <Text style={styles.seeAllText}>{all ? "Show less" : `See all ${PLAN_COUNT}`}</Text>
-            <CaretRight size={14} color={color.primaryText} style={all ? styles.open : undefined} />
+          <Pressable onPress={onSeeAll} hitSlop={8} accessibilityRole="button" accessibilityLabel={`See all ${PLAN_COUNT} plans`} style={({ pressed }) => [styles.seeAll, pressed && styles.pressed]}>
+            <Text style={styles.seeAllText}>{`See all ${PLAN_COUNT}`}</Text>
+            <CaretRight size={14} color={color.primaryText} />
           </Pressable>
         </View>
-        {all && (
-          <Card style={styles.full}>
-            <Text style={styles.fullTitle}>{`All ${PLAN_COUNT} plans, by area`}</Text>
-            {matches.map((m) => (
-              <FullRow key={m.kind + m.markerId} label={AREA_OF[m.kind] || m.name} fit />
-            ))}
-            {otherAreas.map((a) => (
-              <FullRow key={a} label={a} />
-            ))}
-          </Card>
-        )}
       </View>
 
       <View style={styles.physicians} accessible accessibilityLabel="Every plan is a protocol our physicians wrote in advance. The AI selects. It does not invent one for you.">
@@ -163,11 +163,44 @@ function MatchRow({ m, rule }: { m: PlanMatch; rule: boolean }) {
   )
 }
 
+/** All the plans by area, in a sheet that slides up from the foot: the ones
+    her record supports first (tap one to open the marker it was matched
+    on), then the areas that are not a fit today. The list scrolls inside the
+    sheet, so the header and its close button stay put. */
+function PlanListSheet({ onClose }: { onClose: () => void }) {
+  const { matches } = usePlanMatches()
+  const { height } = useWindowDimensions()
+  const matchedAreas = new Set(matches.map((m) => AREA_OF[m.kind]))
+  const otherAreas = PLAN_AREAS.filter((a) => !matchedAreas.has(a))
+  return (
+    <Sheet title={`All ${PLAN_COUNT} plans, by area`} onClose={onClose}>
+      <Text style={styles.sheetLead}>
+        {matches.length > 0 ? `${matches.length} of ${PLAN_COUNT} are matched to your record today.` : `None of the ${PLAN_COUNT} is matched to your record today.`}
+      </Text>
+      <ScrollView style={{ maxHeight: Math.round(height * 0.55) }} contentContainerStyle={styles.sheetList} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+        {matches.map((m) => (
+          <FullRow key={m.kind + m.markerId} label={AREA_OF[m.kind] || m.name} fit />
+        ))}
+        {otherAreas.map((a) => (
+          <FullRow key={a} label={a} />
+        ))}
+      </ScrollView>
+    </Sheet>
+  )
+}
+
+/** View-only: a label and a status, nothing to tap. */
 function FullRow({ label, fit }: { label: string; fit?: boolean }) {
   return (
-    <View style={styles.fullRow} accessible accessibilityLabel={`${label}, ${fit ? "matched" : "not a fit today"}`}>
+    <View accessible accessibilityLabel={`${label}, ${fit ? "matched" : "not a fit today"}`} style={styles.fullRow}>
       <Text style={[styles.fullLabel, !fit && styles.fullMuted]}>{label}</Text>
-      <Text style={[styles.fullState, fit && styles.fullFit]}>{fit ? "Matched" : "Not a fit today"}</Text>
+      {fit ? (
+        <View style={styles.fullChip}>
+          <Text style={styles.fullFit}>Matched</Text>
+        </View>
+      ) : (
+        <Text style={styles.fullState}>Not a fit today</Text>
+      )}
     </View>
   )
 }
@@ -212,14 +245,14 @@ const styles = StyleSheet.create({
   restText: { ...type.label, fontSize: 12, lineHeight: 16, flex: 1, fontFamily: font.medium, color: "#7A4210" },
   seeAll: { flexDirection: "row", alignItems: "center", gap: 2 },
   seeAllText: { fontFamily: font.semibold, fontSize: 12, lineHeight: 16, color: color.primaryText },
-  open: { transform: [{ rotate: "90deg" }] },
-  full: { gap: 0, paddingVertical: 4, paddingHorizontal: space.item },
-  fullTitle: { ...type.sectionLabel, paddingVertical: 8 },
-  fullRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item, paddingVertical: 10, borderTopWidth: 1, borderTopColor: hairline.rule },
+  sheetLead: { ...type.body, fontSize: 14, lineHeight: 20, color: ink.detail },
+  sheetList: { paddingBottom: space.inline },
+  fullRow: { flexDirection: "row", alignItems: "center", gap: space.item, minHeight: 48, paddingVertical: 10, borderTopWidth: 1, borderTopColor: hairline.rule },
   fullLabel: { ...type.title, flex: 1 },
   fullMuted: { color: ink.secondary },
   fullState: { ...type.label },
-  fullFit: { fontFamily: font.semibold, color: color.ok },
+  fullChip: { paddingVertical: 3, paddingHorizontal: 10, borderRadius: 999, backgroundColor: color.okTint },
+  fullFit: { ...type.label, fontFamily: font.semibold, color: color.ok },
 
   physicians: { flexDirection: "row", alignItems: "flex-start", gap: 8, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: "#CFE8E3", backgroundColor: "#EEF6F4" },
   physiciansText: { ...type.body, flex: 1, fontSize: 12.5, lineHeight: 18, color: ink.content },

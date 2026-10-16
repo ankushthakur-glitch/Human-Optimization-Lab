@@ -92,9 +92,10 @@ export default function PaymentScreen() {
   const billing = onboarding.billingPick ?? "yearly"
   const cost = firstMonth(onboarding.baselinePicks, billing)
   const [method, setMethod] = React.useState<Method>("card")
-  const [number, setNumber] = React.useState("")
-  const [expiry, setExpiry] = React.useState("")
-  const [cvc, setCvc] = React.useState("")
+  // The prototype's demo card, as the reference shows it.
+  const [number, setNumber] = React.useState("4242 4242 4242 4242")
+  const [expiry, setExpiry] = React.useState("08 / 29")
+  const [cvc, setCvc] = React.useState("123")
   // When she ticked the agreement, kept as her consent (S-70).
   const [agreedAt, setAgreedAt] = React.useState<string>()
   const [sheet, setSheet] = React.useState<"breakdown" | "wallet">()
@@ -160,7 +161,7 @@ export default function PaymentScreen() {
       <Pressable
         onPress={() => setSheet("breakdown")}
         accessibilityRole="button"
-        accessibilityLabel={`Total due today ${dollarsExact(cost.total)}, view breakdown`}
+        accessibilityLabel={`${billing === "yearly" ? "Total due today" : "First month total"} ${dollarsExact(cost.total)}, ${billing === "yearly" ? `yearly plan, ${YEARLY_TEST_DISCOUNT}% off tests` : "monthly plan"}, view breakdown`}
         style={({ pressed }) => [styles.total, pressed && styles.pressed]}
       >
         <GreenWash />
@@ -168,7 +169,9 @@ export default function PaymentScreen() {
           <PriceTag size={22} color={color.primary} />
         </View>
         <View style={styles.totalWords}>
-          <Text style={styles.totalLabel}>Total due today</Text>
+          <Text style={styles.totalLabel}>
+            {billing === "yearly" ? "Total due today" : "First month total"}
+          </Text>
           <Text
             style={styles.totalValue}
             numberOfLines={1}
@@ -177,15 +180,10 @@ export default function PaymentScreen() {
           >
             {dollarsExact(cost.total)}
           </Text>
-          <Text style={styles.totalNote} numberOfLines={1}>
-            {billing === "yearly"
-              ? `Yearly plan · ${YEARLY_TEST_DISCOUNT}% off tests`
-              : "Monthly plan · first charge"}
-          </Text>
         </View>
         <View style={styles.totalLink}>
           <Text style={styles.totalLinkText}>View breakdown</Text>
-          <CaretRight size={16} color={ink.primary} weight="bold" />
+          <CaretRight size={14} color={ink.primary} weight="bold" />
         </View>
       </Pressable>
 
@@ -231,6 +229,7 @@ export default function PaymentScreen() {
           <>
             <TextField
               label="Card number"
+              compact
               icon={({ color: c }) => <CreditCard size={18} color={c} />}
               value={number}
               onChangeText={(v) => setNumber(cardText(v))}
@@ -243,6 +242,7 @@ export default function PaymentScreen() {
               <View style={styles.half}>
                 <TextField
                   label="Expiry date"
+                  compact
                   icon={({ color: c }) => <CalendarBlank size={18} color={c} />}
                   value={expiry}
                   onChangeText={(v) => setExpiry(expiryText(v))}
@@ -254,6 +254,7 @@ export default function PaymentScreen() {
               <View style={styles.half}>
                 <TextField
                   label="CVC"
+                  compact
                   icon={({ color: c }) => <Lock size={18} color={c} />}
                   value={cvc}
                   onChangeText={(v) => setCvc(v.replace(/\D/g, "").slice(0, 4))}
@@ -387,7 +388,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: space.item,
     marginTop: space.line,
-    padding: space.gutter,
+    paddingVertical: space.item,
+    paddingHorizontal: space.gutter,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: WASH.edge,
@@ -396,26 +398,21 @@ const styles = StyleSheet.create({
   },
   // The tag on a white tile at 60%, so the wash shows faintly through.
   totalTile: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(255, 255, 255, 0.6)",
   },
   totalWords: { flex: 1, minWidth: 0, gap: 2 },
   totalLabel: { ...type.label },
-  totalNote: { ...type.label },
-  totalLink: {
-    flexShrink: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.stack,
-  },
+  totalLink: { flexDirection: "row", alignItems: "center", gap: space.stack },
   totalLinkText: {
-    ...type.title,
-    color: ink.primary,
     fontFamily: font.semibold,
+    fontSize: 13,
+    lineHeight: 18,
+    color: ink.primary,
   },
   totalValue: {
     fontFamily: font.semibold,

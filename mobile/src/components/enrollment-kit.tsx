@@ -129,10 +129,10 @@ export function BillingToggle({
   )
 }
 
-/** The plan on a deep teal card: the name and how it is billed with the
-    price at the right (yearly shows the twelve months' full price struck
-    through above it), then one row on its own, "What's included (6)",
-    that opens the list in a sheet (`onIncluded`). */
+/** The plan on a deep teal card (PlanPriceCard: the name and how it is
+    billed, the price stacked at the right, yearly with the twelve months'
+    full price struck through above it), then one row on its own, "What's
+    included (6)", that opens the list in a sheet (`onIncluded`). */
 export function PlanCard({
   goals,
   billing,
@@ -144,39 +144,42 @@ export function PlanCard({
 }) {
   const price = TIERS.optimization.billing[billing]
   const yearly = billing === "yearly"
+  const name = planName(goals)
+  const note = yearly
+    ? "Billed yearly · cancel any time, no contract"
+    : "Cancel anytime, no contract"
+  const period = yearly ? "/ year" : "a month"
   return (
-    <View style={styles.planStack}>
-      <View style={styles.plan}>
+    <View style={styles.planCard}>
+      <GreenWash />
+      <View
+        style={styles.planTop}
+        accessible
+        accessibilityLabel={`${name}. ${note}. ${yearly ? `Was ${dollars(priceNumber("monthly") * 12)}, now ` : ""}${price.price} ${period.replace("/", "per")}`}
+      >
         <View style={styles.planWords}>
-          <Text
-            style={styles.planName}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-          >
-            {planName(goals)}
+          <Text style={styles.planName} numberOfLines={2}>
+            {name}
           </Text>
+          <Text style={styles.planNote} numberOfLines={2}>
+            {note}
+          </Text>
+        </View>
+        <View style={styles.planPrice}>
+          {yearly && (
+            <Text style={styles.planWas}>
+              {dollars(priceNumber("monthly") * 12)}
+            </Text>
+          )}
           <Text
-            style={styles.planNote}
+            style={styles.planValue}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.8}
           >
-            {yearly
-              ? "Billed yearly · cancel any time, no contract"
-              : "Billed monthly · cancel anytime, no contract"}
+            {price.price}
           </Text>
-        </View>
-        <View style={styles.price}>
-          {yearly && (
-            <Text style={styles.priceWas}>
-              {dollars(priceNumber("monthly") * 12)}
-            </Text>
-          )}
-          <Text style={styles.priceValue}>{price.price}</Text>
-          <Text style={styles.pricePeriod}>
-            {yearly ? "/ year" : "/ month"}
-          </Text>
+          <Text style={styles.planPeriod}>{period}</Text>
         </View>
       </View>
       <Pressable
@@ -397,47 +400,47 @@ function ReceiptRow({
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
-  // The deep teal plan card and the white row under it, one block.
-  planStack: { gap: space.inline },
-  plan: {
+  // The mint plan card: name and price on top, a rule, then the
+  // "What's included" row, all inside one edge.
+  planCard: {
+    overflow: "hidden",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: WASH.edge,
+  },
+  planTop: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: space.item,
     padding: space.gutter,
-    borderRadius: 14,
-    backgroundColor: ink.primary,
   },
-  planWords: { gap: space.stack },
-  planName: { ...type.section, color: ink.onColor },
-  planNote: { ...type.label, color: "rgba(255, 255, 255, 0.82)" },
-  price: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    flexWrap: "wrap",
-    gap: space.stack,
-  },
-  priceWas: {
+  // Takes what the price leaves; the name wraps rather than shrinks.
+  planWords: { flex: 1, minWidth: 0, gap: space.stack },
+  planName: { ...type.section, color: ink.strong },
+  planNote: { ...type.label, color: ink.secondary },
+  // Right-aligned, so the digits end on the card's edge in both billings.
+  planPrice: { flexShrink: 0, alignItems: "flex-end" },
+  planWas: {
     ...type.label,
-    color: "rgba(255, 255, 255, 0.7)",
     textDecorationLine: "line-through",
     fontVariant: ["tabular-nums"],
   },
-  priceValue: {
+  planValue: {
     fontFamily: font.semibold,
     fontSize: 24,
     lineHeight: 30,
-    color: ink.onColor,
+    color: ink.strong,
     fontVariant: ["tabular-nums"],
   },
-  pricePeriod: { ...type.label, color: "rgba(255, 255, 255, 0.82)" },
+  planPeriod: { ...type.label },
   includedRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     minHeight: 48,
     paddingHorizontal: space.gutter,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: hairline.edge,
-    backgroundColor: color.background,
+    borderTopWidth: 1,
+    borderTopColor: WASH.rule,
   },
   includedText: { ...type.title, color: ink.content },
 

@@ -111,8 +111,10 @@ export const FINDINGS: Finding[] = [
     clinical team sets one. No answers, no score: it is never invented
     (A-44). */
 export function inlayScore(flourish: number[] | undefined, record: { out: number }): number | undefined {
-  if (!flourish?.length) return undefined
-  const said = (flourish.reduce((s, x) => s + x, 0) / flourish.length) * 20
+  // Ratings are 0 to 10; -1 is "not applicable" and takes no part.
+  const given = flourish?.filter((x) => x >= 0) ?? []
+  if (!given.length) return undefined
+  const said = (given.reduce((s, x) => s + x, 0) / given.length) * 10
   const fromRecord = Math.max(0, 100 - record.out * 6)
   return Math.round((said + fromRecord) / 2)
 }

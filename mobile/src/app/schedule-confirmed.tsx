@@ -136,15 +136,6 @@ export default function ScheduleConfirmedScreen() {
             <View style={styles.rule} />
             <CheckLine>{`You can move any test from To do. No charge until ${MEMBER.doctorShort} approves your plan`}</CheckLine>
           </Card>
-
-          <Card style={styles.card}>
-            <Text style={type.section} accessibilityRole="header">
-              One more step: your health questions
-            </Text>
-            <Text style={type.body}>
-              {`A short chat with our assistant, about 5 minutes, so ${MEMBER.doctorShort} can build your plan around what matters to you. Your answers save as you go.`}
-            </Text>
-          </Card>
         </Animated.View>
       </ScrollView>
       <Animated.View style={rise(2)}>
@@ -188,7 +179,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.primary,
   },
   words: { alignItems: "center", gap: space.inline },
-  title: { fontFamily: font.semibold, fontSize: 28, lineHeight: 34, letterSpacing: -0.4, color: ink.strong, textAlign: "center" },
+  title: { fontFamily: font.semibold, fontSize: 26, lineHeight: 34, letterSpacing: -0.4, color: ink.strong, textAlign: "center" },
   lead: { ...type.body, textAlign: "center", paddingHorizontal: space.item },
   stack: { gap: space.item },
   card: { gap: space.item },

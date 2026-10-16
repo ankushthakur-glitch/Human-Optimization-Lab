@@ -2,6 +2,7 @@ import { router } from "expo-router"
 import { StyleSheet, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
+import { usePlanList } from "@/components/plan-match"
 import { PlanShowroom, ShowroomActions } from "@/components/plan-showroom"
 import { Button } from "@/components/ui"
 import { planFor, useExperience } from "@/lib/experience"
@@ -16,11 +17,12 @@ import { planFor, useExperience } from "@/lib/experience"
 
 export default function PlansScreen() {
   const info = useExperience()
+  const list = usePlanList()
 
   const member = planFor(info) === "member"
   // A member already has her plan; the page only describes it.
   const footer = member ? (
-    <Button onPress={() => router.push("/plan")}>See your plan</Button>
+    <Button onPress={() => router.push("/goals")}>Build My Personalized Plan</Button>
   ) : (
     <ShowroomActions onStart={() => router.push("/goals")} />
   )
@@ -28,8 +30,9 @@ export default function PlansScreen() {
   return (
     <View style={styles.fill}>
       <FlowScreen page title="Upgrade plan" footer={footer}>
-        <PlanShowroom />
+        <PlanShowroom onSeeAll={list.show} />
       </FlowScreen>
+      {list.sheet}
     </View>
   )
 }

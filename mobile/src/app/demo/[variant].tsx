@@ -79,6 +79,9 @@ export default function DemoScreen() {
     if (!landing || auth.status !== landing.status) return
     // A page other than Home (?to=/results) opens over Home, so it can
     // swipe back to it like any page reached from there.
+    // Pages left open from an earlier run (the Upgrade flow's screens
+    // among them) are closed first, so nothing resumes from them.
+    if (router.canDismiss()) router.dismissAll()
     if (landing.overHome) {
       router.replace("/")
       router.push(landing.href)

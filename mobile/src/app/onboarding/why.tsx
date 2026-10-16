@@ -10,7 +10,7 @@ import { PageGround } from "@/components/hol"
 import { Sheet } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
 import { WHY_LABELS, WhyCard, whyValue, withWhy, type WhyKey } from "@/components/why-card"
-import { Appear, AssistantGroup, ChatBar, MyBubble, Options, StreamedText, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
+import { Appear, AssistantGroup, ChatBar, MyBubble, Options, ScaleIntro, ScoreChips, StreamedText, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
 import { IconCheck, IconFace } from "@/components/icons"
 import { EMPTY, FLOURISH, TURNS, needsHelp, nextTurn, spoken, typedScale, type Answers, type Input, type Line, type Value } from "@/lib/conversation"
 import { useOnboarding } from "@/lib/onboarding"
@@ -38,8 +38,9 @@ import { color, font, ink, space } from "@/lib/theme"
 const THINK_MS = 900
 const ARRIVE_MS = 450
 const BETWEEN_MS = 550
-/** Flourishing ratings the secret skip fills in, 1 to 5. */
-const SAMPLE_FLOURISH = [4, 4, 3, 4, 4, 3]
+/** Flourishing ratings the secret skip fills in, 0 to 10. */
+const SAMPLE_FLOURISH = [6, 7, 5, 8, 7, 4]
+const SAMPLE_PRIORITIES = ["Physical health & vitality", "Emotional health & resilience", "Contribution & life balance"]
 
 export default function WhyScreen() {
   const { bottom } = useSafeAreaInsets()
@@ -119,17 +120,17 @@ export default function WhyScreen() {
      the why card, then to the Human Flourishing Index. Anything the cards
      need that is still empty gets a sample answer. */
   function skipAhead() {
-    const whyAt = TURNS.findIndex((t) => t.id === "whyCard")
-    const to = at < whyAt ? whyAt : TURNS.findIndex((t) => t.id === "result")
+    const resultAt = TURNS.findIndex((t) => t.id === "result")
+    const to = at < resultAt ? resultAt : TURNS.findIndex((t) => t.id === "whyCard")
     if (to === at) return
+    const priorities = a.priorities.length ? a.priorities : SAMPLE_PRIORITIES
     const next: Answers = {
       ...a,
-      values: a.values.trim() || "My family, my health",
-      reason: a.reason.trim() || "To be there for my family and keep doing what I love",
-      focus: a.focus || "Movement",
-      step: a.step.trim() || "Walk 15 minutes after dinner",
-      flourish: to === whyAt ? a.flourish : FLOURISH.map((_, i) => a.flourish[i] ?? SAMPLE_FLOURISH[i % SAMPLE_FLOURISH.length]),
-      said: { whyImportant: "I want to be there for them", obstacle: "Getting home tired", solution: "Do a shorter version", success: "More energy", ...a.said },
+      reason: a.reason.trim() || "More energy, less stress and time to enjoy my family",
+      focus: a.focus || priorities[0],
+      priorities,
+      improve: a.improve.length ? a.improve : ["Energy", "Fitness", "Stress"],
+      flourish: FLOURISH.map((_, i) => a.flourish[i] ?? SAMPLE_FLOURISH[i % SAMPLE_FLOURISH.length]),
     }
     justAnswered.current = null
     arrived.current = true
@@ -178,11 +179,18 @@ export default function WhyScreen() {
       ? (input.placeholder ?? "Type your answer")
       : input.type === "scale"
         ? "Or type a number from 1 to 5"
-        : "Or type your own"
+        : input.type === "reply" && input.options.length > 5
+          ? "Or type a number from 0 to 10"
+          : "Or type your own"
 
   // The open question's options, inside its last message.
   const ask =
-    !input ? null : input.type === "reply" ? (
+    !input ? null : turn?.id === "flourishIntro" ? (
+      <ScaleIntro onOkay={() => answer("Okay")} />
+    ) : input.type === "reply" && input.options.length > 5 ? (
+      // A 0 to 10 rating: tap a chip to select it, then send.
+      <ScoreChips options={input.options} selected={draft.trim()} onSelect={(o) => setDraft((d) => (d.trim() === o ? "" : o))} />
+    ) : input.type === "reply" ? (
       <Options options={input.options} live picked={[]} onPick={(o) => answer(o)} />
     ) : input.type === "pick" ? (
       <Options
@@ -234,7 +242,13 @@ export default function WhyScreen() {
           {past.map((t) => (
             <React.Fragment key={t.id}>
               <AssistantGroup>
-                <Lines lines={t.say(a, name)} a={a} onEdit={openEdit} after={<Answered input={t.input(a)} said={a.said[t.id]} settle={t.id === justAnswered.current} />} />
+                <Lines lines={t.say(a, name)} a={a} onEdit={openEdit} after={
+                    t.id === "flourishIntro" ? (
+                      <ScaleIntro done />
+                    ) : (
+                      <Answered input={t.input(a)} said={a.said[t.id]} settle={t.id === justAnswered.current} />
+                    )
+                  } />
               </AssistantGroup>
               <Mine text={a.said[t.id]} />
             </React.Fragment>
@@ -269,6 +283,8 @@ export default function WhyScreen() {
             canSend={canSend}
             placeholder={placeholder}
             bottom={bottom}
+            voice
+            sendOutside
             multiline={input?.type !== "scale"}
             keyboardType={input?.type === "scale" ? "number-pad" : "default"}
             idle={
@@ -412,7 +428,12 @@ const endsOnCard = (lines: Line[]) => lines.length > 0 && typeof lines[lines.len
 /** A past question's options, locked, with the answer ticked. */
 function Answered({ input, said, settle }: { input: Input | null; said?: string; settle?: boolean }) {
   if (!input || !said || (input.type !== "reply" && input.type !== "pick")) return null
-  const picked = input.options.filter((o) => said === o || said.includes(o))
+  // A one-tap answer is exactly one option ("1" is not inside "10"); a pick
+  // is the chosen options joined, the first letter of all but the first lowered.
+  const picked =
+    input.type === "reply"
+      ? input.options.filter((o) => said === o)
+      : input.options.filter((o) => said.toLowerCase().includes(o.toLowerCase()))
   return <Options options={input.options} live={false} multi={input.type === "pick"} settle={settle} picked={picked} onPick={() => {}} />
 }
 

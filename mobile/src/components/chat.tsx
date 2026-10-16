@@ -17,10 +17,11 @@ import {
 } from "react-native"
 
 import type { Attachment } from "@/components/attach-sheet"
-import { ArrowUp, CaretRight, Check, File, Microphone, PaperPlaneRight, Plus, StopSquare, X } from "@/components/ph"
+import { ArrowUp, CaretRight, Check, File, Microphone, PaperPlaneRight, Plus, StopSquare, Warning, X } from "@/components/ph"
 import { VoiceBeam } from "@/components/voice-beam"
 import { useVoiceInput } from "@/lib/voice"
-import { card, color, font, gutter, hairline, ink, type } from "@/lib/theme"
+import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from "react-native-svg"
+import { card, chart, color, font, gutter, hairline, ink, type } from "@/lib/theme"
 
 /* Every chat in the app (the assistant, and the "your why" conversation in
    setup) is drawn from these pieces, after the support chats in food and
@@ -284,6 +285,7 @@ export function ChatBar({
   bare,
   notice,
   voice,
+  sendOutside,
   attachments = [],
   onAttach,
   onRemoveAttachment,
@@ -308,6 +310,9 @@ export function ChatBar({
   /** A microphone in the field: speak the question, the voice beam
       glowing along the field's edge while it listens (lib/voice). */
   voice?: boolean
+  /** Keep the send button beside the field, as the setup chat draws it,
+      instead of as the round arrow at the field's end. */
+  sendOutside?: boolean
   /** A "+" in the field that opens the screen's attach sheet; what was
       added shows over the text until it is sent. */
   onAttach?: () => void
@@ -318,6 +323,7 @@ export function ChatBar({
   const speech = useVoiceInput(onChange)
   const hearing = speech.state !== "idle"
   const tooled = voice || !!onAttach
+  const listening = speech.state === "listening"
   const own = React.useRef<TextInput | null>(null)
   const ref = React.useCallback(
     (node: TextInput | null) => {
@@ -380,6 +386,33 @@ export function ChatBar({
     <View style={[styles.bar, bare && styles.barBare, { paddingBottom: Math.max(bottom, 16) }]}>
       <View style={styles.barRow}>
         <View style={styles.fieldCol}>
+        {voice && (hearing || speech.problem) && (
+          <View
+            style={[styles.voiceNote, speech.problem && styles.voiceNoteProblem]}
+            accessibilityRole={speech.problem ? "alert" : undefined}
+            accessibilityLiveRegion="polite"
+          >
+            {speech.problem ? (
+              <>
+                <Warning size={14} color={color.amber} weight="fill" />
+                <Text style={[styles.voiceNoteText, { color: color.amber }]}>{speech.problem.words}</Text>
+                {speech.problem.action && (
+                  <Pressable onPress={speech.problem.action.onPress} accessibilityRole="button" hitSlop={8} style={({ pressed }) => pressed && styles.pressed}>
+                    <Text style={[styles.noticeAction, { color: color.amber }]}>{speech.problem.action.label}</Text>
+                  </Pressable>
+                )}
+                <Pressable onPress={speech.dismiss} accessibilityRole="button" accessibilityLabel="Dismiss" hitSlop={10} style={({ pressed }) => pressed && styles.pressed}>
+                  <X size={14} color={color.amber} />
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <RecDot live={listening} />
+                <Text style={styles.voiceNoteText}>{listening ? "Listening… tap the square when you're done" : "Finishing up…"}</Text>
+              </>
+            )}
+          </View>
+        )}
         {notice && (
           <View style={[styles.notice, { backgroundColor: NOTICE[notice.hue].tint, borderColor: NOTICE[notice.hue].edge }]}>
             <Text style={[styles.noticeText, { color: NOTICE[notice.hue].ink }]} numberOfLines={1}>
@@ -450,7 +483,7 @@ export function ChatBar({
                 </Pressable>
               )}
               {/* The send sits in the field, a round arrow at its end. */}
-              {!(!typed && idle) && (
+              {!sendOutside && !(!typed && idle) && (
                 <Pressable
                   onPress={onSend}
                   disabled={!typed || !canSend || hearing}
@@ -468,7 +501,7 @@ export function ChatBar({
           field
         )}
         </View>
-        {(!tooled || (!typed && idle)) && (
+        {(!tooled || sendOutside || (!typed && idle)) && (
         <View style={styles.tools}>
           {!typed && idle ? (
             <Pressable
@@ -496,6 +529,27 @@ export function ChatBar({
       </View>
     </View>
   )
+}
+
+/** The red-free "recording" dot: it breathes while the microphone is open. */
+function RecDot({ live }: { live: boolean }) {
+  const still = useReducedMotion()
+  const pulse = React.useRef(new Animated.Value(1)).current
+  React.useEffect(() => {
+    if (!live || still) {
+      pulse.setValue(1)
+      return
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 0.3, duration: 600, easing: Easing.inOut(Easing.quad), useNativeDriver: native }),
+        Animated.timing(pulse, { toValue: 1, duration: 600, easing: Easing.inOut(Easing.quad), useNativeDriver: native }),
+      ])
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [live, still, pulse])
+  return <Animated.View style={[styles.voiceDot, live && styles.voiceDotLive, { opacity: pulse }]} />
 }
 
 /* The notice strip's two hues, as the record kit's banners draw amber and
@@ -582,6 +636,114 @@ export function StreamedText({
       {words.slice(0, shown).join("")}
       <Text style={styles.clear}>{words.slice(shown).join("")}</Text>
     </Text>
+  )
+}
+
+/** The flourishing intro's scale: a 0 to 10 strip (never red: gauge amber to
+    green) with its three anchors, then the one rule and the Okay chip. Sits
+    inside the assistant's message under its one-line title. */
+export function ScaleIntro({ done, onOkay }: { done?: boolean; onOkay?: () => void }) {
+  const anchors = [
+    { n: "0", word: "Worst" },
+    { n: "5", word: "Mixed" },
+    { n: "10", word: "Best" },
+  ]
+  return (
+    <View style={styles.scale}>
+      <View style={styles.strip}>
+        <Svg width="100%" height={8} preserveAspectRatio="none">
+          <Defs>
+            <SvgGradient id="scaleStrip" x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={chart.gaugeLow} />
+              <Stop offset="1" stopColor={chart.gaugeHigh} />
+            </SvgGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="8" rx="4" fill="url(#scaleStrip)" />
+        </Svg>
+        <View style={[styles.stop, { left: 0 }]} />
+        <View style={[styles.stop, { left: "50%", marginLeft: -7 }]} />
+        <View style={[styles.stop, { right: 0 }]} />
+      </View>
+      <View style={styles.anchors}>
+        {anchors.map((x, i) => (
+          <View key={x.n} style={[styles.anchor, { alignItems: i === 0 ? "flex-start" : i === 1 ? "center" : "flex-end" }]}>
+            <Text style={styles.anchorN}>{x.n}</Text>
+            <Text style={styles.anchorWord}>{x.word}</Text>
+          </View>
+        ))}
+      </View>
+      <Text style={styles.scaleRule}>Higher is always better.</Text>
+      <Pressable
+        onPress={onOkay}
+        disabled={done}
+        accessibilityRole="button"
+        accessibilityLabel="Okay"
+        accessibilityState={{ disabled: !!done }}
+        style={({ pressed }) => [styles.option, done && styles.optionOff, pressed && styles.pressed]}
+      >
+        <View style={styles.optionBody}>
+          <Text style={styles.optionText}>Okay</Text>
+        </View>
+        {done ? <Check size={16} color={color.primary} weight="bold" /> : <CaretRight size={16} color={card.chevron} />}
+      </Pressable>
+    </View>
+  )
+}
+
+/** A 0 to 10 rating as a grid of small chips, six to a row. Tapping one
+    selects it (teal, and its number lands in the chat bar to send); tapping
+    it again clears it. Any other option (not applicable) is a quiet link
+    underneath. */
+export function ScoreChips({
+  options,
+  selected,
+  onSelect,
+  low = "Not at all",
+  high = "Completely",
+}: {
+  options: string[]
+  selected?: string
+  onSelect: (option: string) => void
+  low?: string
+  high?: string
+}) {
+  const scores = options.filter((o) => /^\d+$/.test(o))
+  const other = options.filter((o) => !/^\d+$/.test(o))
+  return (
+    <View style={styles.scores}>
+      <View style={styles.chips} accessibilityRole="radiogroup">
+        {scores.map((o) => {
+          const on = o === selected
+          return (
+            <Pressable
+              key={o}
+              onPress={() => onSelect(o)}
+              accessibilityRole="radio"
+              accessibilityLabel={o}
+              accessibilityState={{ checked: on }}
+              style={({ pressed }) => [styles.score, on && styles.scoreOn, pressed && styles.pressed]}
+            >
+              <Text style={[styles.scoreText, on && styles.scoreTextOn]}>{o}</Text>
+            </Pressable>
+          )
+        })}
+      </View>
+      <View style={styles.ends}>
+        <Text style={styles.endText}>0 {low}</Text>
+        <Text style={styles.endText}>10 {high}</Text>
+      </View>
+      {other.map((o) => (
+        <Pressable
+          key={o}
+          onPress={() => onSelect(o)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: o === selected }}
+          style={({ pressed }) => [styles.otherOption, pressed && styles.pressed]}
+        >
+          <Text style={[styles.endText, o === selected && { color: ink.primary, fontFamily: font.medium }]}>{o}</Text>
+        </Pressable>
+      ))}
+    </View>
   )
 }
 
@@ -692,6 +854,12 @@ const styles = StyleSheet.create({
   fileThumb: { width: 24, height: 24, borderRadius: 4 },
   fileName: { ...type.meta, color: ink.content, flexShrink: 1 },
   fieldCol: { flex: 1 },
+  // What the microphone is doing, or why it cannot: a small line over the field.
+  voiceNote: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, paddingBottom: 8 },
+  voiceNoteProblem: { backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 8 },
+  voiceNoteText: { ...type.meta, flex: 1, color: ink.primary },
+  voiceDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.primaryEdge },
+  voiceDotLive: { backgroundColor: color.primary },
   // Claude's limit strip: tinted, its edge running into the field's.
   notice: {
     flexDirection: "row",
@@ -716,4 +884,35 @@ const styles = StyleSheet.create({
   dots: { flexDirection: "row", alignItems: "center", gap: 5 },
   dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: color.primary },
   clear: { color: "transparent" },
+
+  // The scale intro, on a 12 grid: strip, anchors, then the rule and chip.
+  scale: { gap: 8, marginTop: 6 },
+  strip: { height: 14, justifyContent: "center", marginHorizontal: 0 },
+  stop: { position: "absolute", top: 0, width: 14, height: 14, borderRadius: 7, backgroundColor: color.background, borderWidth: 2, borderColor: color.primary },
+  anchors: { flexDirection: "row" },
+  anchor: { flex: 1 },
+  anchorN: { fontFamily: font.semibold, fontSize: 14, lineHeight: 18, color: ink.strong },
+  anchorWord: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: ink.secondary },
+  scaleRule: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: ink.secondary },
+
+  // The rating chips: 6 a row, 44 square, 8 apart.
+  scores: { gap: 10, marginTop: 6 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  score: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: hairline.outline,
+    backgroundColor: color.background,
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: card.shadowXs,
+  },
+  scoreOn: { backgroundColor: color.primary, borderColor: color.primary },
+  scoreText: { fontFamily: font.regular, fontSize: 16, lineHeight: 20, color: ink.content },
+  scoreTextOn: { fontFamily: font.semibold, color: color.onPrimary },
+  ends: { flexDirection: "row", justifyContent: "space-between" },
+  endText: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: ink.secondary },
+  otherOption: { alignSelf: "flex-start", paddingVertical: 4 },
 })

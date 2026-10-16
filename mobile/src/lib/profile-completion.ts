@@ -39,10 +39,11 @@ export function profileProgress(why?: Partial<Answers>): ProfileProgress {
   const questions = TURNS.filter((t) => !t.skip?.(a) && !isAcknowledgement(a, t.id))
   const answered = questions.filter((t) => t.id in a.said).length
   const total = questions.length
-  // Finished the conversation, or has all twelve flourishing ratings in
-  // (a profile that came from the old setup, which never wrote `said`).
-  const rated = a.flourish.filter((n) => typeof n === "number").length >= FLOURISH.length
-  const complete = "result" in a.said || answered >= total || rated
+  // Finished the conversation, or has every flourishing rating, her three
+  // priorities and her year-from-now answer in (a profile that never wrote `said`).
+  const rated =
+    a.flourish.filter((n) => typeof n === "number").length >= FLOURISH.length && a.priorities.length > 0 && !!a.reason.trim()
+  const complete = "whyCard" in a.said || answered >= total || rated
   const percent = complete ? 100 : Math.min(99, Math.floor((answered / total) * 100))
   const left = Math.max(0, total - answered)
   return {

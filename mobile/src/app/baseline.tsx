@@ -15,7 +15,7 @@ import {
   type BaselineTestId,
 } from "@/lib/baseline-tests"
 import { useOnboarding } from "@/lib/onboarding"
-import { color, font, hairline, ink, space, surface, type } from "@/lib/theme"
+import { card, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
 /* Step 2 of the plan's set-up, "Establish your baseline" (Journey_7 screen
    5): opens after her health profile is confirmed. The same standard three
@@ -27,16 +27,18 @@ import { color, font, hairline, ink, space, surface, type } from "@/lib/theme"
    once one is cleared. Continue opens step 3
    (/enrollment), which breaks down what the ticked tests cost.
 
-   Layout is the "Tinted selection" variation (artifact "Baseline Step
-   Variations", 02): a ticked test fills with the brand teal tint and edge,
-   a skipped one greys out with its price struck through, Why? opens the
-   explanation under its own test, and the total sits in a soft teal box. */
+   Layout is the "Grouped list" variation (artifact "Baseline Step
+   Variations", 03): the tests share one white card with hairline rules, a
+   skipped one greys out with its price struck through, Why? opens the
+   explanation under its own test, and "N of 3 tests" with the total sit in
+   the card's inset footer. */
 
 export default function BaselineScreen() {
   const onboarding = useOnboarding()
   const [why, setWhy] = React.useState<BaselineTestId | null>(null)
   const chosen = new Set(chosenTests(onboarding.baselinePicks).map((t) => t.id))
-  const { total } = testCosts(onboarding.baselinePicks)
+  // Each test at its own price, as enrollment and payment charge them.
+  const { subtotal: total } = testCosts(onboarding.baselinePicks)
   const tests = Object.values(BASELINE_TESTS)
   const skipped = tests.filter((t) => !chosen.has(t.id))
 
@@ -54,7 +56,7 @@ export default function BaselineScreen() {
       <View style={styles.groups}>
         <View style={styles.group}>
           {tests.map((t) => (
-            <View key={t.id} style={styles.item}>
+            <View key={t.id} style={[styles.item, styles.itemRule]}>
               <TestCard
                 test={t}
                 checked={chosen.has(t.id)}
@@ -65,6 +67,14 @@ export default function BaselineScreen() {
               {why === t.id && <WhyPanel test={t} />}
             </View>
           ))}
+          <View style={styles.foot}>
+            <Text style={styles.footLabel}>
+              {chosen.size} of {tests.length} tests
+            </Text>
+            <Text style={styles.totalValue} accessibilityLiveRegion="polite">
+              {dollars(total)}
+            </Text>
+          </View>
         </View>
         <View style={styles.note} accessibilityLiveRegion="polite">
           <Info size={16} color={HUE.blue.ink} />
@@ -74,12 +84,6 @@ export default function BaselineScreen() {
               : skipped.length === 1
                 ? `These tests are needed to personalize your plan to you. Without ${shortName(skipped[0])}, your plan uses standard averages instead and may not fit you as closely.`
                 : "These tests are needed to personalize your plan to you. Without them, your plan uses standard averages instead and may not fit you as closely."}
-          </Text>
-        </View>
-        <View style={styles.total}>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalValue} accessibilityLiveRegion="polite">
-            {dollars(total)}
           </Text>
         </View>
       </View>
@@ -165,19 +169,33 @@ const styles = StyleSheet.create({
     marginTop: space.mark,
     paddingBottom: space.inline,
   },
-  group: { gap: space.inline },
-  item: { gap: space.inline },
+  // One white card holding every test, hairline rules between them and the
+  // count and total in an inset footer ("Grouped list", variation 03).
+  group: {
+    overflow: "hidden",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+    backgroundColor: color.background,
+    boxShadow: card.shadow,
+  },
+  item: { paddingHorizontal: space.item },
+  itemRule: { borderBottomWidth: 1, borderBottomColor: hairline.rule },
   card: {
     flexDirection: "row",
     alignItems: "center",
     gap: space.item,
-    padding: space.rowX,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: "transparent",
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    paddingVertical: 14,
   },
-  cardOn: { backgroundColor: color.primaryTint, borderColor: color.primaryEdge },
+  cardOn: {},
+  foot: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: space.item,
+    backgroundColor: surface.inset,
+  },
+  footLabel: { ...type.label, fontSize: 13, color: ink.secondary },
   pressed: { opacity: 0.7 },
   body: { flex: 1, gap: space.line },
   name: { ...type.title, color: ink.strong },
@@ -192,6 +210,7 @@ const styles = StyleSheet.create({
   whyTextOpen: { textDecorationLine: "underline" },
   // The explanation under its own row, on the kit's inset surface.
   whyBox: {
+    marginBottom: space.item,
     gap: space.inline,
     padding: space.rowX,
     borderRadius: 12,
@@ -214,27 +233,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   boxOn: { backgroundColor: color.primary, borderColor: color.primary },
-  // Information, not a warning: the kit's light blue, never red.
+  // Information, not a warning: the kit's blue icon, no box, never red.
   note: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: space.inline,
-    padding: space.rowX,
-    borderRadius: 14,
-    backgroundColor: HUE.blue.tint,
+    paddingHorizontal: 4,
   },
   noteText: { ...type.label, flex: 1, fontSize: 13, lineHeight: 18, color: ink.detail },
-  // The total in a soft teal box, no divider.
-  total: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: space.item,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: color.primarySoft,
-  },
-  totalLabel: { ...type.section },
   totalValue: {
     fontFamily: font.semibold,
     fontSize: 16,
