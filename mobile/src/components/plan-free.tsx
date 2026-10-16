@@ -2,6 +2,7 @@ import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
+import { usePlanList } from "@/components/plan-match"
 import { PlanShowroom, ShowroomActions } from "@/components/plan-showroom"
 import { Block, Card, Group, NeedsRow, TextAction } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
@@ -26,12 +27,14 @@ export function PlanFree() {
   // At low readiness the showroom waits behind "See what a plan includes".
   const [open, setOpen] = React.useState(false)
 
+  const list = usePlanList()
   const past = onboarding.planHistory ?? []
   const showroom = readiness !== "low" || open
   return (
     <TabScreen
       tab="plan"
       title="Upgrade"
+      overlay={list.sheet}
       footer={showroom ? <ShowroomActions onStart={() => router.push("/goals")} /> : undefined}
     >
       {past.length > 0 && (
@@ -44,7 +47,7 @@ export function PlanFree() {
         </Block>
       )}
       {showroom ? (
-        <PlanShowroom />
+        <PlanShowroom onSeeAll={list.show} />
       ) : (
         <Card style={styles.ready}>
           <View style={styles.readyWords}>

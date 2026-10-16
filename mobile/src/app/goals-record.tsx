@@ -8,6 +8,7 @@ import { HUE, Tag, type Tone } from "@/components/record-kit"
 import { useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
 import type { Biomarker, Point } from "@/lib/record"
+import { EVIDENCE } from "@/lib/record-goals"
 import { pointSide, valueText, withUnit } from "@/lib/trends"
 import { color, hairline, ink, space, type } from "@/lib/theme"
 
@@ -20,16 +21,6 @@ import { color, hairline, ink, space, type } from "@/lib/theme"
    health profile as the record has it (/health-profile). */
 
 type Finding = { tag: string; tone: Tone; says: string; source: string }
-
-/** Which results speak to each goal, by the goal's first words. */
-const EVIDENCE: { words: RegExp; markers: string[]; test?: string }[] = [
-  { words: /^lose weight/, markers: ["bmi", "glucose", "tg", "bp"] },
-  { words: /^improve metabolic/, markers: ["a1c", "glucose"] },
-  { words: /^improve cholesterol/, markers: ["ldl", "tg", "hdl", "bp"] },
-  { words: /^gain or preserve muscle/, markers: [], test: "body composition" },
-  { words: /^improve bone/, markers: [], test: "bone density" },
-  { words: /^improve kidney/, markers: ["egfr", "creatinine", "bun"] },
-]
 
 const nameOf = (b: Biomarker) => b.short ?? b.name
 const latestOf = (b: Biomarker): Point | undefined =>

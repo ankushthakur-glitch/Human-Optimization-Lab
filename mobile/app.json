@@ -58,7 +58,14 @@
         }
       ],
       "expo-asset",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Inlay Health uses the microphone so you can speak your answers instead of typing.",
+          "speechRecognitionPermission": "Inlay Health uses speech recognition to turn what you say into text. You review it before it is sent."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

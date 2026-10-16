@@ -28,19 +28,19 @@ export function FlourishCard({ answers }: { answers: number[] }) {
   const { overall, domains } = flourishScore(answers)
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Human Flourishing Index</Text>
+      <Text style={styles.title}>Your Flourishing Profile</Text>
       <View
         style={styles.dial}
         accessibilityRole="image"
-        accessibilityLabel={`Flourishing ${overall.toFixed(1)} out of 5`}
+        accessibilityLabel={`Flourishing ${overall.toFixed(1)} out of 10`}
       >
         <Svg width={W} height={H}>
           <Path d={arc(1)} stroke={chart.track} strokeWidth={STROKE} strokeLinecap="round" fill="none" />
-          <Path d={arc(overall / 5)} stroke={color.primary} strokeWidth={STROKE} strokeLinecap="round" fill="none" />
+          <Path d={arc(overall / 10)} stroke={color.primary} strokeWidth={STROKE} strokeLinecap="round" fill="none" />
         </Svg>
         <View style={styles.score}>
           <Text style={styles.scoreValue}>{overall.toFixed(1)}</Text>
-          <Text style={styles.scoreOf}>out of 5</Text>
+          <Text style={styles.scoreOf}>out of 10</Text>
         </View>
       </View>
       <View style={styles.domains}>
@@ -51,7 +51,7 @@ export function FlourishCard({ answers }: { answers: number[] }) {
               <Text style={styles.domainValue}>{domains[i].toFixed(1)}</Text>
             </View>
             <View style={styles.track}>
-              <View style={[styles.bar, { width: `${Math.max(2, domains[i] * 20)}%` }]} />
+              <View style={[styles.bar, { width: `${Math.max(2, domains[i] * 10)}%` }]} />
             </View>
           </View>
         ))}

@@ -21,7 +21,7 @@ function startLabelOf(s: Snapshot) {
   return s.membership?.cancelledAt || s.planHistory?.length ? "Start again" : "Build my personalized plan"
 }
 
-export function PlanShowroom() {
+export function PlanShowroom({ onSeeAll }: { onSeeAll: () => void }) {
   const onboarding = useOnboarding()
   const offer = useOffer("plan-tab", { key: "tab" })
   useShown(offer)
@@ -34,7 +34,7 @@ export function PlanShowroom() {
   }, [onboarding])
 
   return (
-    <PlanMatchSection />
+    <PlanMatchSection onSeeAll={onSeeAll} />
   )
 }
 

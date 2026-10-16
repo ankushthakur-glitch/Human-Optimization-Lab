@@ -1,5 +1,6 @@
 import type { Answers } from "@/lib/conversation"
 import { creditUsed } from "@/lib/allowance"
+import { TEST_SLOTS } from "@/lib/baseline-tests"
 import { DEFAULT_PERIOD } from "@/lib/consent"
 import { dayKey, showDate } from "@/lib/dates"
 import { BONE_SAMPLE_MEALS, BONE_VERSIONS, MEMBER_SCORES, PLAN_VERSIONS, SAMPLE_MEALS, addDays, clock, dayLabel, profileOf, thisWeek } from "@/lib/member"
@@ -63,6 +64,9 @@ export type DemoId =
   | "member-partial"
   | "member-review"
   | "member-redraft"
+  | "upgrade-enrolled"
+  | "upgrade-scheduled"
+  | "upgrade-proposed"
   | "onboarding-activate"
   | "onboarding-signin"
   | "onboarding-about"
@@ -90,7 +94,12 @@ const WHY: Answers = {
   focus: "Movement",
   step: "Walk for 20 minutes after dinner, three evenings a week",
   stepConfidence: 7,
-  flourish: [4, 4, 3, 4, 4, 4, 4, 3, 4, 4, 4, 5],
+  flourish: [
+    6, 5, 6, 5, 7, 6, 7, 6, 7, 8, 8, 7, 7, 8, 8, 7, 7, 8, 7, 7, 7, 6, 6, 5, 6, 6, 7, 7, 6, 7, 7, 6, 6, 7, 7, 6, 7, 7, 7,
+  ],
+  priorities: ["Physical health & vitality", "Emotional health & resilience", "Contribution & life balance"],
+  importanceBy: [9, 8, 7],
+  confidenceBy: [6, 7, 6],
   said: {},
 }
 
@@ -143,6 +152,14 @@ const BLANK: Patch = {
   chatCategories: undefined,
   corrections: undefined,
   testAnswers: undefined,
+  // The Upgrade flow's saved answers, so it opens on its first screen again.
+  goals: undefined,
+  ownGoals: undefined,
+  assessment: undefined,
+  healthProfile: undefined,
+  baselinePicks: undefined,
+  billingPick: undefined,
+  startingTests: undefined,
 }
 
 /** A first run from the top: nothing saved, setup at Is this you. The
@@ -182,6 +199,20 @@ const MEDS_ANSWERED = () => ({
 
 /** The plan versions as the store keeps them. */
 const versionsOf = (list: typeof PLAN_VERSIONS) => list.map((v) => ({ version: v.version, approved: v.approved, why: v.short }))
+
+/** The free patient who has just paid for the plan set-up: the membership
+    started, her plan with Dr. Patel as version 1, and the three baseline
+    tests owed, none booked. */
+function upgradePaid(): Patch {
+  const now = new Date()
+  return {
+    ...free(),
+    membership: { tier: "optimization", programs: ["metabolic", "weight", "heart"], startedAt: now.toISOString(), billing: "yearly", card: "Visa 4242" },
+    devices: [],
+    plan: { status: "review", version: 1, versions: [] },
+    startingTests: { ids: ["panel", "dexa", "rmr"], at: now.toISOString() },
+  }
+}
 
 function free(): Patch {
   const onboarded = on(-4, 8, 45)
@@ -344,6 +375,26 @@ export const DEMOS: Record<DemoId, () => Patch> = {
     }
   },
   "member-redraft": () => ({ ...member(), plan: { status: "review", version: 3, versions: versionsOf(PLAN_VERSIONS) } }),
+  /* The upgrade flow's later pages, for opening one on its own
+     (/demo/upgrade-enrolled?to=/schedule-tests): the plan set-up paid, the
+     three baseline tests owed (upgrade-enrolled), or booked as well
+     (upgrade-scheduled, for /schedule-confirmed). */
+  "upgrade-enrolled": upgradePaid,
+  // Dr. Patel has sent version 1 and she has seen "plan ready": the plan to accept.
+  "upgrade-proposed": () => ({ ...upgradePaid(), plan: { status: "proposed", version: 1, versions: [] }, planReadySeen: true }),
+  "upgrade-scheduled": () => {
+    const start = weekdayAfter(new Date())
+    const bookings = Object.fromEntries(
+      (["panel", "dexa", "rmr"] as const).map((id, i) => {
+        const time = TEST_SLOTS[id].times[0]
+        const [h, m] = [parseInt(time, 10) + (time.includes("PM") && !time.startsWith("12") ? 12 : 0), parseInt(time.split(":")[1], 10)]
+        const day = addDays(start, i)
+        const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m)
+        return [id, { where: TEST_SLOTS[id].where, when: `${dayLabel(at)}, ${time}`, price: "", paid: "", at: localIso(at), time }]
+      }),
+    )
+    return { ...upgradePaid(), bookings }
+  },
   "onboarding-activate": firstRun,
   "onboarding-signin": firstRun,
   // The free patient, signed out: sign in with her password or Face ID.
