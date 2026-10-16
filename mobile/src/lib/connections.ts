@@ -1,17 +1,15 @@
 import * as React from "react"
 
-/* The connections demo (16 Oct 2026): a free patient, nothing connected
-   yet, who can connect her
-   doctors' systems and her devices and wearables herself. A prototype
-   beside the real Access page, which keeps devices for members; nothing
-   is sent anywhere. One list for the session, so a device connected on
-   /connections shows on /home-connect too. */
+/* What she can connect from the Connect tab (16 Oct 2026): her doctors'
+   record systems and her devices and wearables, nothing connected to
+   start. A prototype: nothing is sent anywhere. One list for the session,
+   so a device connected on /connections shows on Home too. */
 
-export type DemoKind = "ehr" | "device"
+export type SourceKind = "ehr" | "device"
 
-export type DemoSource = {
+export type Source = {
   id: string
-  kind: DemoKind
+  kind: SourceKind
   name: string
   /** The line under the name: the system or the kind of device. */
   via: string
@@ -22,7 +20,7 @@ export type DemoSource = {
   synced?: string
 }
 
-const START: DemoSource[] = [
+const START: Source[] = [
   // The two record systems HOL reads directly (5 Oct 2026 call).
   { id: "epic", kind: "ehr", name: "Epic MyChart", via: "Hospitals and clinics on Epic", data: ["Lab results", "Medicines", "Conditions", "Visits", "Immunizations"], connected: false },
   { id: "oracle", kind: "ehr", name: "Oracle Health", via: "Hospitals and clinics on Cerner", data: ["Lab results", "Medicines", "Visits", "Imaging"], connected: false },
@@ -45,7 +43,7 @@ function subscribe(l: () => void) {
   }
 }
 
-export function useDemoSources() {
+export function useSources() {
   return React.useSyncExternalStore(subscribe, () => list, () => START)
 }
 

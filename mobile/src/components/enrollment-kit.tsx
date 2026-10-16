@@ -145,9 +145,9 @@ export function PlanCard({
   const price = TIERS.optimization.billing[billing]
   const yearly = billing === "yearly"
   const name = planName(goals)
-  const note = yearly
-    ? "Billed yearly · cancel any time, no contract"
-    : "Cancel anytime, no contract"
+  // Both notes fit one line and the struck price keeps its line when
+  // monthly (hidden), so the card is the same height either way.
+  const note = yearly ? "Billed yearly, cancel anytime" : "Billed monthly, cancel anytime"
   const period = yearly ? "/ year" : "a month"
   return (
     <View style={styles.planCard}>
@@ -161,16 +161,18 @@ export function PlanCard({
           <Text style={styles.planName} numberOfLines={2}>
             {name}
           </Text>
-          <Text style={styles.planNote} numberOfLines={2}>
+          <Text style={styles.planNote} numberOfLines={1}>
             {note}
           </Text>
         </View>
         <View style={styles.planPrice}>
-          {yearly && (
-            <Text style={styles.planWas}>
-              {dollars(priceNumber("monthly") * 12)}
-            </Text>
-          )}
+          <Text
+            style={[styles.planWas, !yearly && styles.hidden]}
+            accessibilityElementsHidden={!yearly}
+            importantForAccessibility={yearly ? "auto" : "no-hide-descendants"}
+          >
+            {dollars(priceNumber("monthly") * 12)}
+          </Text>
           <Text
             style={styles.planValue}
             numberOfLines={1}
@@ -400,6 +402,7 @@ function ReceiptRow({
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
+  hidden: { opacity: 0 },
   // The mint plan card: name and price on top, a rule, then the
   // "What's included" row, all inside one edge.
   planCard: {

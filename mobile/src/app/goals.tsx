@@ -1,18 +1,16 @@
 import { router } from "expo-router"
 import * as React from "react"
 import {
-  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
-  type TextStyle,
   View,
 } from "react-native"
 
 import { CATEGORIES } from "@/components/goal-list"
 import { PlanStepPage } from "@/components/plan-steps"
-import { CaretRight, Check, MagnifyingGlass, Plus, X } from "@/components/ph"
+import { CaretRight, Check, Plus } from "@/components/ph"
 import { HUE } from "@/components/record-kit"
 import { Sheet, useKeyboardHeight } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
@@ -23,7 +21,7 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* Step 1 of the plan's set-up (Journey_7 screen 2, "Goals first, not a
    questionnaire"): opened by "Build my personalized plan". 84 goals in
-   five expandable categories, searchable, multi-select, so one plan serves
+   five expandable categories, multi-select, so one plan serves
    several. "Other" opens a sheet where
    she writes her own; it joins the list ticked, with an icon read from
    its words ("sleep" gets the moon). Continue keeps her choice and opens
@@ -46,7 +44,6 @@ export default function GoalsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const [adding, setAdding] = React.useState(false)
-  const [query, setQuery] = React.useState("")
   const [open, setOpen] = React.useState<string[]>(() => {
     // The first category with a choice in it opens; the first one otherwise.
     return [(CATEGORIES.find((c) => c.goals.some((g) => initial.includes(g))) ?? CATEGORIES[0]).id]
@@ -58,8 +55,6 @@ export default function GoalsScreen() {
     ...(own.length ? [{ id: "own", name: "Your own goals", desc: "Goals you added", icon: Plus, hue: "neutral" as const, goals: own }] : []),
   ]
   const goals = categories.flatMap((c) => c.goals)
-  const q = query.trim().toLowerCase()
-  const match = (g: string) => (!q || g.toLowerCase().includes(q))
   const toggle = (label: string) =>
     setPicked((p) =>
       p.includes(label) ? p.filter((x) => x !== label) : [...p, label]
@@ -90,36 +85,16 @@ export default function GoalsScreen() {
     <PlanStepPage
       step={1}
       title="What would you like to improve?"
-      lead="Select all that apply. We'll build one personalized plan around your goals."
       onNext={next}
       nextLabel="Continue"
       later={{ label: "Skip", onPress: () => router.replace("/plan") }}
       nextDisabled={!picked.length}
       overlay={adding && <OtherSheet onSave={add} onClose={() => setAdding(false)} />}
     >
-      <View style={styles.search}>
-        <MagnifyingGlass size={18} color={ink.tertiary} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search goals"
-          placeholderTextColor={ink.tertiary}
-          accessibilityLabel="Search goals"
-          returnKeyType="search"
-          autoCorrect={false}
-          style={styles.searchInput}
-        />
-        {!!query && (
-          <Pressable onPress={() => setQuery("")} accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={8}>
-            <X size={16} color={ink.secondary} />
-          </Pressable>
-        )}
-      </View>
       {categories.map((c) => {
-        const items = c.goals.filter(match)
-        if (q && !items.length) return null
+        const items = c.goals
         const n = c.goals.filter((g) => picked.includes(g)).length
-        const expanded = !!q || open.includes(c.id)
+        const expanded = open.includes(c.id)
         const Icon = c.icon
         const hue = HUE[c.hue]
         return (
@@ -166,12 +141,6 @@ export default function GoalsScreen() {
           </View>
         )
       })}
-      {!!q && !goals.some(match) && (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>{`No goals match “${query.trim()}”`}</Text>
-          <Text style={styles.emptyNote}>Try a shorter word, like “sleep” or “walk”.</Text>
-        </View>
-      )}
       <Pressable onPress={() => setAdding(true)} accessibilityRole="button" style={({ pressed }) => [styles.other, pressed && styles.pressed]}>
         <Plus size={20} color={HUE.neutral.ink} />
         <Text style={styles.label}>Other</Text>
@@ -239,19 +208,7 @@ const styles = StyleSheet.create({
   },
   label: { ...type.title, flex: 1 },
 
-  search: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    height: 44,
-    paddingHorizontal: 13,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: hairline.outline,
-    backgroundColor: color.background,
-  },
   // The web build's own focus ring is off: the field keeps its look when tapped.
-  searchInput: { flex: 1, fontFamily: font.regular, fontSize: 14, color: ink.strong, padding: 0, ...Platform.select({ web: { outlineStyle: "none" } as unknown as TextStyle }) },
 
   cat: { borderRadius: 12, borderWidth: 1, borderColor: hairline.edge, backgroundColor: color.background, overflow: "hidden" },
   catOn: { borderColor: "#CFE8E3" },
@@ -278,9 +235,6 @@ const styles = StyleSheet.create({
   goalOn: { backgroundColor: "#E9F6F3" },
   goalText: { flex: 1, fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: ink.primary },
   goalTextOn: { fontFamily: font.medium, color: ink.strong },
-  empty: { alignItems: "center", gap: 6, paddingVertical: 28, paddingHorizontal: 12 },
-  emptyTitle: { fontFamily: font.medium, fontSize: 15, lineHeight: 20, color: ink.strong },
-  emptyNote: { fontFamily: font.regular, fontSize: 13.5, lineHeight: 20, color: ink.secondary, textAlign: "center" },
   box: {
     width: 22,
     height: 22,

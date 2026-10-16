@@ -23,21 +23,26 @@ import { classify, type Status } from "@/lib/trends"
    1. The header names the tab and holds "+ Add to your record" (a photo of
       a record, or something she tells us).
    2. Category pills: each one swaps the section below in place
-      (Biomarkers, Tests and orders, Medicines, Conditions, Visits,
+      (Biomarkers, Imaging, Tests and orders, Medicines, Conditions, Visits,
       Allergies, Immunizations, Procedures, and Added by you once she has
       added something).
    3. "Biomarkers and results", body system chips to narrow
       it (All first), and every result as a row (record-kit ResultRow):
       out of range first, then borderline, then in range. A member's row
       says how far it has moved since she started.
+   4. "Imaging": what her scans measured (a nodule's size, an echo's
+      ejection fraction), the same rows, each opening its graph and the
+      reports behind it (Dr. Blanchard, 12 Oct 2026). Never repeated under
+      Biomarkers.
 
    With sharing turned off, the same banner as every tab, over what was
    collected before. Opening the tab reads any new results. */
 
-type Category = "biomarkers" | "medicines" | "conditions" | "visits" | "allergies" | "tests" | "immunizations" | "procedures" | "added"
+type Category = "biomarkers" | "imaging" | "medicines" | "conditions" | "visits" | "allergies" | "tests" | "immunizations" | "procedures" | "added"
 
 const CATEGORIES: { value: Category; label: string }[] = [
   { value: "biomarkers", label: "Biomarkers" },
+  { value: "imaging", label: "Imaging" },
   { value: "tests", label: "Tests and orders" },
   { value: "medicines", label: "Medicines" },
   { value: "conditions", label: "Conditions" },
@@ -74,7 +79,7 @@ export function RecordTab() {
   // A member with a plan reads each result against where she started.
   const member = info.experience === "member" || info.experience === "paused"
   // The add sheet opens on the part of the record she is looking at.
-  const addKind = category === "medicines" ? "medicines" : category === "biomarkers" ? undefined : addKindOf(category)?.kind
+  const addKind = category === "medicines" ? "medicines" : category === "biomarkers" || category === "imaging" ? undefined : addKindOf(category)?.kind
   return (
     <TabScreen
       tab="results"
@@ -98,8 +103,8 @@ export function RecordTab() {
         ) : undefined
       }
     >
-      {category === "biomarkers" ? (
-        <Results member={member} />
+      {category === "biomarkers" || category === "imaging" ? (
+        <Results member={member} imaging={category === "imaging"} />
       ) : category === "medicines" ? (
         <View style={styles.results}>
           <Heading title="Medicines" variant="title" />
@@ -147,21 +152,22 @@ function Categories({ value, onChange }: { value: Category; onChange: (c: Catego
 
 /* --------------------------------------------------------- results -- */
 
-function Results({ member }: { member: boolean }) {
-  const markers = useMarkers()
+/** Biomarkers with body system chips, or the scans' measures on their own. */
+function Results({ member, imaging }: { member: boolean; imaging: boolean }) {
+  const markers = useMarkers().filter((m) => (m.kind === "imaging") === imaging)
   const [system, setSystem] = React.useState("all")
   // Only the body systems the record holds, in the record's order.
   const systems = BODY_SYSTEMS.filter((g) => markers.some((m) => m.group === g))
   const chips = [{ value: "all", label: "All" }, ...systems.map((g) => ({ value: g as string, label: SYSTEM_LABEL[g] ?? g }))]
   const rows = markers
-    .filter((m) => system === "all" || m.group === system)
+    .filter((m) => imaging || system === "all" || m.group === system)
     .map(classify)
     .filter((t) => t.latest)
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
   return (
     <View style={styles.results}>
-      <Heading title="Biomarkers and results" variant="title" />
-      <ChipRow options={chips} value={system} onChange={setSystem} label="Body system" />
+      <Heading title={imaging ? "Imaging" : "Biomarkers and results"} variant="title" />
+      {!imaging && <ChipRow options={chips} value={system} onChange={setSystem} label="Body system" />}
       <Group>
         {rows.map((t) => (
           <ResultRow
