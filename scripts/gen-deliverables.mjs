@@ -215,7 +215,7 @@ function patientApp() {
     [ONBOARDING, "Life questions: one question", at("/onboarding/life-question")],
     [ONBOARDING, "Life questions: what matters most", at("/onboarding/life-focus")],
     [ONBOARDING, "Record building", at("/onboarding/syncing")],
-    [HOME, "Home", at("/")],
+    [HOME, "Home", at("")],
     [HOME, "Notifications", at("/notifications")],
     [TODO, "To do tab", at("/gaps")],
     [TODO, "Care gap (mammogram)", at("/task/mammogram")],
