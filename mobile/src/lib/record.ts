@@ -1037,7 +1037,7 @@ export const BIOMARKERS: Biomarker[] = [
      sample patient, never a real person's. */
   {
     id: "aneurysm",
-    name: "Aortic aneurysm size",
+    name: "Aortic aneurysm",
     short: "aortic aneurysm",
     unit: "cm",
     target: "No normal range, watched for growth",
@@ -1102,7 +1102,7 @@ export const BIOMARKERS: Biomarker[] = [
   },
   {
     id: "lung-nodule",
-    name: "Lung nodule size",
+    name: "Lung nodule",
     short: "lung nodule",
     unit: "mm",
     target: "No normal range, watched for growth",
@@ -1143,7 +1143,7 @@ export const BIOMARKERS: Biomarker[] = [
   },
   {
     id: "thyroid-nodule",
-    name: "Thyroid nodule size",
+    name: "Thyroid nodule",
     short: "thyroid nodule",
     unit: "mm",
     target: "No normal range, watched for growth",
@@ -1163,7 +1163,7 @@ export const BIOMARKERS: Biomarker[] = [
   },
   {
     id: "brain-mass",
-    name: "Brain mass size",
+    name: "Brain mass",
     short: "brain mass",
     unit: "mm",
     target: "No normal range, watched for growth",

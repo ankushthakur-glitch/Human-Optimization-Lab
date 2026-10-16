@@ -173,7 +173,7 @@ function Results({ member, imaging }: { member: boolean; imaging: boolean }) {
           <ResultRow
             key={t.id}
             trend={t}
-            since={t.marker.rule && t.marker.rule.by !== "floor" ? t.takeaway : member ? sinceLine(t.marker) : undefined}
+            since={imaging ? undefined : member ? sinceLine(t.marker) : undefined}
             onPress={() =>
               router.push({
                 pathname: "/biomarker/[id]",
