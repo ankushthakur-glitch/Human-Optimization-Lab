@@ -126,3 +126,4 @@ export { UsersThreeIcon as UsersThree } from "phosphor-react-native/src/icons/Us
 export { CompassIcon as Compass } from "phosphor-react-native/src/icons/Compass"
 export { HandHeartIcon as HandHeart } from "phosphor-react-native/src/icons/HandHeart"
 export { CoinsIcon as Coins } from "phosphor-react-native/src/icons/Coins"
+export { UsersIcon as Users } from "phosphor-react-native/src/icons/Users"

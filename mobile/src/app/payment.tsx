@@ -24,13 +24,13 @@ import { PlanStepPage } from "@/components/plan-steps"
 import { Card, KeyValue, TextAction } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
-import { dollars } from "@/lib/baseline-tests"
+import { dollarsExact } from "@/lib/baseline-tests"
 import { useOnboarding } from "@/lib/onboarding"
-import { priceLabel } from "@/lib/plans"
+import { priceLabel, YEARLY_TEST_DISCOUNT } from "@/lib/plans"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
-/* Step 6 of the plan's set-up, "Payment method": opens from "Continue to
-   payment" on step 5 (/enrollment), in the same frame and with the same
+/* Step 4 of the plan's set-up, "Payment method": opens from "Continue to
+   payment" on step 3 (/enrollment), in the same frame and with the same
    small pieces as every step. The first month's total on one row, its
    breakdown a tap away, how she pays, and her agreement. "Complete
    enrollment" stays off until she has a way to pay and has ticked the
@@ -89,7 +89,7 @@ const expiryText = (raw: string) => {
 export default function PaymentScreen() {
   const onboarding = useOnboarding()
   const { start, pending } = useStartMembership()
-  const billing = onboarding.membership?.billing ?? "monthly"
+  const billing = onboarding.billingPick ?? "yearly"
   const cost = firstMonth(onboarding.baselinePicks, billing)
   const [method, setMethod] = React.useState<Method>("card")
   const [number, setNumber] = React.useState("")
@@ -125,7 +125,7 @@ export default function PaymentScreen() {
 
   return (
     <PlanStepPage
-      step={6}
+      step={4}
       title="Payment method"
       onNext={complete}
       nextLabel="Complete enrollment"
@@ -147,7 +147,7 @@ export default function PaymentScreen() {
           method !== "card" && (
             <WalletSheet
               wallet={method}
-              amount={dollars(cost.total)}
+              amount={dollarsExact(cost.total)}
               then={priceLabel(billing)}
               pending={pending}
               onPay={() => payWithWallet(method)}
@@ -160,7 +160,7 @@ export default function PaymentScreen() {
       <Pressable
         onPress={() => setSheet("breakdown")}
         accessibilityRole="button"
-        accessibilityLabel={`First month total ${dollars(cost.total)}, view breakdown`}
+        accessibilityLabel={`Total due today ${dollarsExact(cost.total)}, view breakdown`}
         style={({ pressed }) => [styles.total, pressed && styles.pressed]}
       >
         <GreenWash />
@@ -168,8 +168,20 @@ export default function PaymentScreen() {
           <PriceTag size={22} color={color.primary} />
         </View>
         <View style={styles.totalWords}>
-          <Text style={styles.totalLabel}>First month total</Text>
-          <Text style={styles.totalValue}>{dollars(cost.total)}</Text>
+          <Text style={styles.totalLabel}>Total due today</Text>
+          <Text
+            style={styles.totalValue}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+          >
+            {dollarsExact(cost.total)}
+          </Text>
+          <Text style={styles.totalNote} numberOfLines={1}>
+            {billing === "yearly"
+              ? `Yearly plan · ${YEARLY_TEST_DISCOUNT}% off tests`
+              : "Monthly plan · first charge"}
+          </Text>
         </View>
         <View style={styles.totalLink}>
           <Text style={styles.totalLinkText}>View breakdown</Text>
@@ -339,7 +351,7 @@ function WalletSheet({
       <Card style={styles.sheetRows}>
         <KeyValue label="Card" value={`${w.card}, ${w.where}`} />
         <KeyValue label="Pay to" value="Inlay Health" />
-        <KeyValue label="First month" value={amount} />
+        <KeyValue label="Due today" value={amount} />
         <KeyValue label="Then" value={`${then}, cancel anytime`} last />
       </Card>
       <View style={styles.sheetActions}>
@@ -391,9 +403,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(255, 255, 255, 0.6)",
   },
-  totalWords: { flex: 1, gap: space.line },
+  totalWords: { flex: 1, minWidth: 0, gap: 2 },
   totalLabel: { ...type.label },
-  totalLink: { flexDirection: "row", alignItems: "center", gap: space.stack },
+  totalNote: { ...type.label },
+  totalLink: {
+    flexShrink: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.stack,
+  },
   totalLinkText: {
     ...type.title,
     color: ink.primary,

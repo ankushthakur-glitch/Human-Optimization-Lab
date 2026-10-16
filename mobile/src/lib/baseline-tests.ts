@@ -50,8 +50,12 @@ const BUNDLE: { ids: BaselineTestId[]; price: number } = {
 
 const ALL = Object.values(BASELINE_TESTS) as BaselineTest[]
 
-/** "$149", "$1,020". */
+/** "$149", "$1,080". */
 export const dollars = (n: number) => `$${n.toLocaleString("en-US")}`
+
+/** Cents only when there are some: "$1,080", "$1,500.30". */
+export const dollarsExact = (n: number) =>
+  `$${n.toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })}`
 
 /** Her ticked tests in the list's order: all three until she clears one. */
 export function chosenTests(ids: string[] | undefined): BaselineTest[] {

@@ -10,12 +10,12 @@ import { Button, TextField } from "@/components/ui"
 import { useOnboarding } from "@/lib/onboarding"
 import { color, hairline, ink, space, type } from "@/lib/theme"
 
-/* Step 3 of the plan's set-up (Journey_7 screen 4, "Confirm, don't fill
-   in"): opens after the goals are checked against the record. Fifteen
+/* Step 2 of the plan's set-up (Journey_7 screen 4, "Confirm, don't fill
+   in"): opens after the goals are chosen. Fifteen
    fields already filled from the record, in the deck's words and values,
    in three blocks; she confirms them. Basic information and lifestyle
    edit in a sheet over this screen; medical has no Edit, as it is what
-   her record holds. Continue opens step 4, the tests her record is
+   her record holds. Continue opens step 3, the tests her record is
    missing (/baseline). */
 
 type Field = { id: string; label: string; value: string }
@@ -59,7 +59,7 @@ export default function HealthProfileScreen() {
 
   return (
     <PlanStepPage
-      step={3}
+      step={2}
       title="Tell us about you"
       lead="We’ve pre-filled information from your Inlay health record."
       onNext={() => router.push("/baseline")}
@@ -83,7 +83,7 @@ function Section({ title, fields, onEdit }: { title: string; fields: Field[]; on
         </Text>
         {onEdit && <TextAction onPress={onEdit}>Edit</TextAction>}
       </View>
-      {/* Step 2's card: white, edged, radius 14, the rows split by hairlines. */}
+      {/* The card: white, edged, radius 14, the rows split by hairlines. */}
       <View style={styles.card}>
         {fields.map((f, i) => (
           <View key={f.id} style={[styles.row, i > 0 && styles.rule]}>

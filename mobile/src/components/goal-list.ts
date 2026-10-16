@@ -22,6 +22,9 @@ import {
   Target,
   Tooth,
   Wind,
+  Compass,
+  Lightbulb,
+  Users,
 } from "@/components/ph"
 import type { Hue } from "@/components/record-kit"
 
@@ -44,6 +47,56 @@ export const GOALS: Goal[] = [
   { label: "Improve fitness and VO₂ max", icon: Heartbeat, hue: "teal" },
   { label: "Improve kidney health", icon: Drop, hue: "blue" },
 ]
+
+/** The goals grouped as the "What would you like to improve?" step shows
+    them: five expandable categories, 84 goals. A goal is saved by its label,
+    as the flat list was. */
+export type GoalCategory = { id: string; name: string; desc: string; icon: Icon; hue: Hue; goals: string[] }
+
+export const CATEGORIES: GoalCategory[] = [
+  {
+    id: "phys",
+    name: "Physical health",
+    desc: "Your body, energy and strength",
+    icon: Heart,
+    hue: "red",
+    goals: ["Lose weight or reduce body fat", "Improve metabolic health", "Improve cholesterol and heart health", "Gain or preserve muscle", "Improve bone health", "Improve sleep", "Increase energy", "Improve fitness and VO₂ max", "Lower blood pressure", "Balance blood sugar", "Reduce inflammation", "Improve gut health", "Walk more every day", "Improve flexibility and mobility", "Reduce joint or back pain", "Support hormone balance", "Improve skin and hair health", "Quit or cut back on alcohol"],
+  },
+  {
+    id: "emo",
+    name: "Emotional well-being",
+    desc: "Mood, stress and resilience",
+    icon: Smiley,
+    hue: "violet",
+    goals: ["Feel less stressed", "Manage anxiety", "Lift my mood", "Feel calmer in the evening", "Build a daily calm routine", "Be kinder to myself", "Handle setbacks better", "Reduce overthinking", "Feel more joy day to day", "Process difficult emotions", "Lower burnout risk", "Improve focus under pressure", "Spend less time on screens", "Practice gratitude", "Get through grief or change", "Wake up feeling rested", "Feel more in control"],
+  },
+  {
+    id: "rel",
+    name: "Relationships",
+    desc: "Family, friends and community",
+    icon: Users,
+    hue: "blue",
+    goals: ["Connect with friends more often", "Strengthen my partnership", "Be more present with family", "Make new friends", "Reduce loneliness", "Communicate more openly", "Set healthier boundaries", "Join a community group", "Support an aging parent", "Spend more time outdoors with others", "Volunteer locally", "Resolve a long-running conflict", "Plan regular family time", "Be a better listener", "Ask for help when I need it", "Mentor someone"],
+  },
+  {
+    id: "purp",
+    name: "Purpose",
+    desc: "Meaning, values and direction",
+    icon: Compass,
+    hue: "amber",
+    goals: ["Clarify what matters to me", "Find more meaning in my work", "Set a long-term life goal", "Live closer to my values", "Start a creative project", "Reduce time on things that drain me", "Give back to others", "Plan for retirement or a career change", "Build a weekly reflection habit", "Spend time in nature", "Explore faith or spirituality", "Leave a legacy for family", "Take a meaningful trip", "Improve work-life balance", "Finish something I started", "Say no more often"],
+  },
+  {
+    id: "int",
+    name: "Intellectual growth",
+    desc: "Learning, memory and curiosity",
+    icon: Lightbulb,
+    hue: "teal",
+    goals: ["Sharpen my memory", "Improve focus and attention", "Learn a new language", "Read more books", "Learn a new skill", "Keep my brain active as I age", "Reduce brain fog", "Try a new hobby", "Take an online course", "Practice a musical instrument", "Write regularly", "Learn about my own health", "Play strategy games", "Limit multitasking", "Teach someone what I know", "Follow a daily curiosity habit", "Improve decision making"],
+  },
+]
+
+export const GOAL_TOTAL = CATEGORIES.reduce((n, c) => n + c.goals.length, 0)
 
 /** Her own goal's icon, from the first words that match; a target when
     nothing does. */

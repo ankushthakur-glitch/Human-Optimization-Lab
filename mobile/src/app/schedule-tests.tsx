@@ -17,8 +17,9 @@ import { bookingOf, localIso } from "@/lib/todo"
 /* "Schedule your tests": opens from "Schedule my tests" on the enrolled
    page (/enrolled), once payment goes through. Each paid test with its
    place, a Date and a Time field; "Confirm schedule" books
-   them all and only then opens the health questions (/complete-profile,
-   the assistant's "your why" chat), whose last answer walks on to her plan. "Schedule later" stays on the
+   them all and only then opens the confirmation (/schedule-confirmed):
+   "Start conversation" there opens the health questions (/complete-profile,
+   the assistant's "your why" chat), "Chat later" walks on to her plan. "Schedule later" stays on the
    enrolled page, which leaves them in To do (lib/todo.ts).
 
    Each test's day and time are two fields: Date opens the calendar
@@ -86,7 +87,7 @@ export default function ScheduleTestsScreen() {
         toast(`${single.name} scheduled`)
         return router.canGoBack() ? router.back() : router.replace("/gaps")
       }
-      router.replace("/complete-profile")
+      router.replace("/schedule-confirmed")
     } finally {
       setSaving(false)
     }

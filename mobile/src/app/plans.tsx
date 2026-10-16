@@ -22,12 +22,12 @@ export default function PlansScreen() {
   const footer = member ? (
     <Button onPress={() => router.push("/plan")}>See your plan</Button>
   ) : (
-    <ShowroomActions onStart={() => router.push("/optimize/goals")} />
+    <ShowroomActions onStart={() => router.push("/goals")} />
   )
 
   return (
     <View style={styles.fill}>
-      <FlowScreen page title="A plan built around you" footer={footer}>
+      <FlowScreen page title="Upgrade plan" footer={footer}>
         <PlanShowroom />
       </FlowScreen>
     </View>

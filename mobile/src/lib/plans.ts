@@ -7,8 +7,8 @@ import type { Plan, useOnboarding } from "@/lib/onboarding"
    is what a plan focuses on, never a product with a price (B-01).
 
    The prices live here and only here (TIERS.optimization.billing): $100
-   a month, cancel anytime, or a year paid up front at 15% off, $1,020
-   (6 Oct 2026). Written one way by priceLabel(): "$100 a month". They show only on the plan
+   a month, cancel anytime, or a year paid up front at 10% off, $1,080,
+   with 10% off the baseline tests too (16 Oct 2026). Written one way by priceLabel(): "$100 a month". They show only on the plan
    details (the Plan tab), the checkout and the member's own
    membership page; never in an offer, the assistant, a notification or
    next to a doctor (FINAL-SPEC D.4). */
@@ -80,13 +80,16 @@ const INCLUDED = [
 export type Cadence = "monthly" | "yearly"
 
 /** The two ways to pay, in the order the checkout lists them. Yearly is
-    twelve months at 15% off: $1,200 less $180. */
+    twelve months at 10% off: $1,200 less $120. */
 const BILLING: Record<Cadence, { name: string; price: string; period: string; months: number; note: string; save?: string }> = {
   monthly: { name: "Monthly", price: "$100", period: "a month", months: 1, note: "Cancel anytime" },
-  yearly: { name: "Yearly", price: "$1,020", period: "a year", months: 12, note: "Paid once a year", save: "Save 15%" },
+  yearly: { name: "Yearly", price: "$1,080", period: "a year", months: 12, note: "Paid once a year", save: "Save 10%" },
 }
 
 export const CADENCES: Cadence[] = ["monthly", "yearly"]
+
+/** What a yearly member takes off the baseline tests, in percent. */
+export const YEARLY_TEST_DISCOUNT = 10
 
 export const TIERS = {
   free: { name: "Free record" },
@@ -104,7 +107,7 @@ export const TIERS = {
 } as const
 
 /** The price as the app writes it, everywhere it appears: "$100 a
-    month", or "$1,020 a year". */
+    month", or "$1,080 a year". */
 export const priceLabel = (cadence: Cadence = "monthly") => `${BILLING[cadence].price} ${BILLING[cadence].period}`
 
 /** One charge's amount for a cadence: "$100". */
@@ -113,17 +116,6 @@ export const priceOf = (cadence: Cadence = "monthly") => BILLING[cadence].price
 /** What stays free, membership or not (S-03), on the same page as the
     price. */
 export const FREE_STAYS = ["Every result and trend", "Reminders and care gaps", "Booking and paying for tests", "Weekly AI credit for your assistant"]
-
-/** "What you get as a member", the upgrade page's checklist (6 Oct 2026
-    reference). */
-export const MEMBER_GETS = [
-  "A personalized nutrition and exercise plan",
-  "Guidance based on your complete record",
-  "More Ask Inlay credit",
-  "Physician review every 3 months",
-  "Track progress with updated plans",
-  "Support for multiple health goals",
-] as const
 
 /** The newest approved version among a plan's versions. */
 function newest(versions: Plan["versions"]) {

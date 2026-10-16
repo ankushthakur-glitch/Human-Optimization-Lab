@@ -134,6 +134,7 @@ function Routes() {
           <Stack.Screen name="enrollment" />
           <Stack.Screen name="payment" />
           <Stack.Screen name="schedule-tests" />
+          <Stack.Screen name="schedule-confirmed" options={{ animation: "fade" }} />
           <Stack.Screen name="enrolled" options={{ animation: "fade" }} />
           <Stack.Screen name="plan-ready" options={{ animation: "fade" }} />
           <Stack.Screen name="task/[id]" />
