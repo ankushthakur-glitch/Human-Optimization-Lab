@@ -392,7 +392,7 @@ function EveryResult({ b, t }: { b: Biomarker; t: Trend }) {
                   {level !== "in" && <Dot level={level} />}
                   <Text style={styles.resultValue}>
                     {valueText(b, p)}
-                    <Text style={type.unit}>{` ${b.unit}`}</Text>
+                    <Text style={type.unit}>{`${b.unit === "%" ? "" : " "}${b.unit}`}</Text>
                   </Text>
                 </View>
               }
@@ -432,16 +432,15 @@ function ReportRow({ b, r }: { b: Biomarker; r: Report }) {
   return (
     <NeedsRow
       icon={<FileText size={16} color={HUE.teal.ink} />}
-      title={r.study}
-      meta={`${r.date}, ${r.place}`}
-      note={r.finding}
+      title={r.date}
+      meta={`${r.study}, ${r.place}`}
       accessibilityLabel={`${r.study}, ${spokenDay(p)}, ${r.place}. ${r.finding}. Opens the report.`}
       right={
         <View style={styles.result}>
           {level !== "in" && <Dot level={level} />}
           <Text style={styles.resultValue}>
             {valueText(b, p)}
-            <Text style={type.unit}>{` ${b.unit}`}</Text>
+            <Text style={type.unit}>{`${b.unit === "%" ? "" : " "}${b.unit}`}</Text>
           </Text>
         </View>
       }
