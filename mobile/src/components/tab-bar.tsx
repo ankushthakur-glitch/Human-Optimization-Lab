@@ -19,6 +19,7 @@ import { useDragBack } from "@/components/drag-back"
 import { DarkStatusBar } from "@/components/error-state"
 import {
   IconBack,
+  IconConnections,
   IconHome,
   IconPlan,
   IconProgress,
@@ -47,9 +48,9 @@ import { color, font, space } from "@/lib/theme"
    Back, Today and Progress with a short rise and fade, and Back
    returns to home and its four tabs the same way. */
 
-export type TabName = "home" | "results" | "todo" | "plan" | "today" | "progress"
+export type TabName = "home" | "results" | "todo" | "plan" | "today" | "progress" | "connections"
 
-type Href = "/" | "/results" | "/gaps" | "/plan" | "/today" | "/progress"
+type Href = "/" | "/results" | "/gaps" | "/plan" | "/today" | "/progress" | "/home-connect" | "/connections"
 
 type Tab = {
   name: TabName | "back"
@@ -74,6 +75,24 @@ const PLAN_TABS: Tab[] = [
 
 const PLAN_SPACE: TabName[] = ["plan", "today", "progress"]
 
+/** The connections demo's tabs (16 Oct 2026): home is the demo home, and
+    Connections sits between Record and To do. On from the moment the demo
+    home opens until the app reloads, so Record and To do keep it too. */
+const DEMO_TABS: Tab[] = [
+  { name: "home", label: "Home", href: "/home-connect", Icon: IconHome },
+  { name: "results", label: "Record", href: "/results", Icon: IconResults },
+  { name: "connections", label: "Connect", href: "/connections", Icon: IconConnections },
+  { name: "todo", label: "To do", href: "/gaps", Icon: IconToDo },
+  { name: "plan", label: "Plan", href: "/plan", Icon: IconPlan },
+]
+
+let demoTabs = false
+
+/** Turns on the demo's tabs, from the demo home and Connections. */
+export function useDemoTabs() {
+  demoTabs = true
+}
+
 /** Which set of tabs the bar showed last, so the next bar to come into view
     knows to animate its tabs in when the set has changed. */
 let shownSet: "main" | "plan" = "main"
@@ -85,7 +104,7 @@ const SWAP_STAGGER = 45
 /** Opens a tab: home by going back to it, another tab over home, or in
     place of the tab that is open. */
 export function openTab(href: Href, from: TabName) {
-  if (href === "/") router.dismissTo("/")
+  if (href === "/" || href === "/home-connect") router.dismissTo(href)
   else if (from === "home") router.push(href)
   else router.replace(href)
 }
@@ -215,10 +234,10 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
   const upgradeLabel = upgradeTab(useExperience())
   // A plan to follow brings its own tabs; the Upgrade tab keeps home's.
   const set = !upgradeLabel && PLAN_SPACE.includes(active) ? "plan" : "main"
-  const tabs = set === "plan" ? PLAN_TABS : TABS
+  const tabs = set === "plan" ? PLAN_TABS : demoTabs ? DEMO_TABS : TABS
   // Animate the tabs in when this bar comes into view showing the other set
   // than the last bar (home stays mounted under the plan, so on focus).
-  const swap = React.useRef(TABS.map(() => new Animated.Value(shownSet === set ? 1 : 0))).current
+  const swap = React.useRef(DEMO_TABS.map(() => new Animated.Value(shownSet === set ? 1 : 0))).current
   useFocusEffect(
     React.useCallback(() => {
       if (shownSet === set) return

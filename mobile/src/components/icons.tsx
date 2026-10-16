@@ -13,6 +13,7 @@ import InLoveIcon from "@hugeicons/core-free-icons/InLoveIcon"
 import Mail01Icon from "@hugeicons/core-free-icons/Mail01Icon"
 import NeutralIcon from "@hugeicons/core-free-icons/NeutralIcon"
 import Sad01Icon from "@hugeicons/core-free-icons/Sad01Icon"
+import SmartWatch01Icon from "@hugeicons/core-free-icons/SmartWatch01Icon"
 import SquareLock02Icon from "@hugeicons/core-free-icons/SquareLock02Icon"
 import Task01Icon from "@hugeicons/core-free-icons/Task01Icon"
 import Tick02Icon from "@hugeicons/core-free-icons/Tick02Icon"
@@ -63,6 +64,8 @@ export const IconResults = tabIcon(Analytics01Icon, [3])
 export const IconPlan = tabIcon(Task01Icon, [0, 2])
 export const IconUpgrade = tabIcon(CrownIcon, [2])
 export const IconToDo = tabIcon(CheckmarkSquare02Icon, [0])
+/** The connections demo's tab: a watch, its face filled when selected, the straps kept as lines. */
+export const IconConnections = tabIcon(SmartWatch01Icon, [0], [1, 2])
 /* The plan's own tabs (Back, Today, Progress): Back is never selected.
    Progress fills its three bars and keeps its arrow as a line. */
 export const IconBack = tabIcon(CircleArrowLeft01Icon, [0])

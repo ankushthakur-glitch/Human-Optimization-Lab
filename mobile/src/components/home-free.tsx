@@ -56,12 +56,13 @@ export function FreeHome() {
 
 /** The record part of the free home, from Needs you to Ask about your
     results. The upgrade banner only for a patient who can still upgrade:
-    not a paused member, nor one whose plan is with Dr. Patel. */
-export function RecordSections() {
+    not a paused member, nor one whose plan is with Dr. Patel. `skipNeeds`
+    for a home that draws Needs you itself (the connections demo). */
+export function RecordSections({ skipNeeds }: { skipNeeds?: boolean } = {}) {
   const exp = useExperience().experience
   return (
     <View style={styles.page}>
-      <NeedsYou />
+      {!skipNeeds && <NeedsYou />}
       <Trends />
       {exp !== "paused" && exp !== "member-review" && <UpgradeCard />}
       <Upcoming />

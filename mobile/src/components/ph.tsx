@@ -70,6 +70,7 @@ export { TrendDownIcon as TrendDown } from "phosphor-react-native/src/icons/Tren
 export { ArrowRightIcon as ArrowRight } from "phosphor-react-native/src/icons/ArrowRight"
 export { EnvelopeSimpleIcon as EnvelopeSimple } from "phosphor-react-native/src/icons/EnvelopeSimple"
 export { WatchIcon as Watch } from "phosphor-react-native/src/icons/Watch"
+export { BluetoothIcon as Bluetooth } from "phosphor-react-native/src/icons/Bluetooth"
 export { ScanSmileyIcon as ScanSmiley } from "phosphor-react-native/src/icons/ScanSmiley"
 export { DownloadSimpleIcon as DownloadSimple } from "phosphor-react-native/src/icons/DownloadSimple"
 export { BowlFoodIcon as BowlFood } from "phosphor-react-native/src/icons/BowlFood"

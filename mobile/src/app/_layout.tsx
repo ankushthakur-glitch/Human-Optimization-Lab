@@ -157,6 +157,10 @@ function Routes() {
           <Stack.Screen name="profile" />
           {/* Under Profile: the sharing permission and every connection. */}
           <Stack.Screen name="access" />
+          {/* The connections demo: a free home that connects her doctors'
+              systems and her devices (/demo/free?to=/home-connect). */}
+          <Stack.Screen name="home-connect" options={{ animation: "none" }} />
+          <Stack.Screen name="connections" />
           {/* Connecting later, after "Not now" at setup. */}
           <Stack.Screen name="connect" />
           <Stack.Screen name="connect-texts" />
