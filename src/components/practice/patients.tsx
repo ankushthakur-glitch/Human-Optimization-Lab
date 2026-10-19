@@ -122,6 +122,7 @@ const SYNC_FILTER = [
   "Consent withdrawn",
   "Discharged",
   "Deactivated",
+  "Transferred",
 ]
 
 /** "Today, 5:00 AM" from a local "2026-09-28T05:00"; older days by date. */

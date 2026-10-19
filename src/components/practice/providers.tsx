@@ -47,7 +47,7 @@ import {
   useLocationLookup,
 } from "@/components/practice/practice-data"
 import { providerHref, validNpi } from "@/components/practice/provider-record"
-import { DeactivateDialog } from "@/components/practice/sheets"
+import { DeactivateProviderDialog } from "@/components/practice/deactivate-provider"
 import { DropdownMenuItem } from "@/design-system/ui/dropdown-menu"
 
 /* The provider list, the first tab of Users. Adding, viewing and editing a
@@ -341,6 +341,7 @@ export function ProvidersPanel({ heading }: { heading: React.ReactNode }) {
               if (p.status !== "Inactive") return setDeactivating(p)
               providers.patch(p.id, {
                 status: p.lastLogin ? "Active" : "Invited",
+                departure: undefined,
               })
               toast.success(`${providerName(p)} is active again`)
             }}
@@ -428,17 +429,9 @@ export function ProvidersPanel({ heading }: { heading: React.ReactNode }) {
         spec={importSpec}
       />
 
-      <DeactivateDialog
-        illustration="deactivate-provider"
-        target={deactivating ? providerName(deactivating) : null}
-        message="They lose access to the portal and leave provider pickers. Their patients and history stay with the practice."
-        onCancel={() => setDeactivating(null)}
-        onConfirm={() => {
-          if (!deactivating) return
-          providers.patch(deactivating.id, { status: "Inactive" })
-          toast.success(`${providerName(deactivating)} is deactivated`)
-          setDeactivating(null)
-        }}
+      <DeactivateProviderDialog
+        provider={deactivating}
+        onClose={() => setDeactivating(null)}
       />
     </>
   )

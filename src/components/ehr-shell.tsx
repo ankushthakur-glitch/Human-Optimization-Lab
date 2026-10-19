@@ -58,7 +58,13 @@ import {
 /* ------------------------------------------------------------------- nav -- */
 
 export type ModuleId =
-  "dashboard" | "patients" | "tasks" | "communication" | "settings"
+  | "dashboard"
+  | "patients"
+  | "schedule"
+  | "tasks"
+  | "communication"
+  | "reports"
+  | "settings"
 
 export type NavItem = {
   id: string
