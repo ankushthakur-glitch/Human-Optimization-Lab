@@ -39,7 +39,10 @@ export function FlowScreen({
   hol = false,
   action,
   fixed,
+  oneLine = false,
 }: {
+  /** Keeps the title on a single line, shrinking it to fit instead of wrapping. */
+  oneLine?: boolean
   /** A setup screen from the consent on: the Figma "Hol" look. Without it
       (and without `page`) the classic look, classic buttons included. */
   hol?: boolean
@@ -100,7 +103,11 @@ export function FlowScreen({
           >
             <View style={styles.holBody}>
               {art && <View style={styles.holArt}>{art}</View>}
-              <Text style={[styles.holTitle, !!art && styles.holTitleCentred]} accessibilityRole="header">
+              <Text
+                style={[styles.holTitle, !!art && styles.holTitleCentred]}
+                accessibilityRole="header"
+                {...(oneLine ? { numberOfLines: 1, adjustsFontSizeToFit: true, minimumFontScale: 0.7 } : {})}
+              >
                 {title}
               </Text>
               {children}

@@ -14,7 +14,7 @@ import { isGrowth, monthYear, movingThreshold, type Trend } from "@/lib/trends"
    chevron. The whole row opens the marker. */
 
 /** The status pill's wording and colours. */
-const PILL = {
+export const PILL = {
   out: { bg: "#FDECEC", text: "#D9363E" },
   borderline: { bg: "#FEF7D6", text: "#93690A" },
   in: { bg: "#E9FAEF", text: "#2F7F4D" },
@@ -22,7 +22,7 @@ const PILL = {
 
 /** The status word: which side of the range an out of range result is on
     ("Above target"), else the status's own word. */
-const statusWord = (t: Trend) =>
+export const statusWord = (t: Trend) =>
   isGrowth(t.marker) ? t.statusWord : t.status === "in" ? TONE.in.word : t.side === "above" ? "Above target" : t.side === "below" ? "Below target" : TONE[t.status].word
 
 const SPARK_W = 72
@@ -32,7 +32,7 @@ const PAD = 2
 /** The line through the marker's last results, smooth, with a soft area
     under it. Red when the result is rising away from its range, else the
     status's own colour. */
-function Sparkline({ trend: t, w = SPARK_W, h = SPARK_H, dots = false }: { trend: Trend; w?: number; h?: number; dots?: boolean }) {
+export function Sparkline({ trend: t, w = SPARK_W, h = SPARK_H, dots = false }: { trend: Trend; w?: number; h?: number; dots?: boolean }) {
   const gid = `spark${React.useId().replace(/[^a-zA-Z0-9]/g, "")}`
   const points = recentPoints(t)
   if (points.length < 2) return <View style={{ width: w, height: h }} />
@@ -109,7 +109,7 @@ function Mark({ trend: t }: { trend: Trend }) {
   return <Arrow size={14} color={t.latest ? severityColor(t, t.latest) : TONE.out.edge} weight="bold" />
 }
 
-export function TrendTile({ trend, onPress }: { trend: Trend; onPress?: () => void }) {
+export function TrendTile({ trend, onPress, roomy = false }: { trend: Trend; onPress?: () => void; roomy?: boolean }) {
   const b = trend.marker
   const pill = PILL[trend.status]
   const has = !!trend.latest
@@ -120,10 +120,10 @@ export function TrendTile({ trend, onPress }: { trend: Trend; onPress?: () => vo
       accessibilityRole="button"
       accessibilityLabel={[trend.spoken, recentWords(trend)].filter(Boolean).join(". ")}
       accessibilityHint={onPress ? "Opens details" : undefined}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.row, roomy && styles.roomy, pressed && styles.pressed]}
     >
       <View style={styles.words}>
-        <Text style={styles.name} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+        <Text style={styles.name} numberOfLines={roomy ? 2 : 1} maxFontSizeMultiplier={1.3}>
           {b.name}
         </Text>
         <View style={styles.valueRow}>
@@ -153,7 +153,7 @@ export function TrendTile({ trend, onPress }: { trend: Trend; onPress?: () => vo
           )}
         </View>
       )}
-      <CaretRight size={16} color={card.chevron} weight="bold" />
+      {!roomy && <CaretRight size={16} color={card.chevron} weight="bold" />}
     </Pressable>
   )
 }
@@ -263,6 +263,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.card,
     boxShadow: card.shadow,
   },
+  roomy: { gap: 16, paddingVertical: 22, paddingHorizontal: 20 },
   words: { flex: 1, gap: 4, minWidth: 0 },
   name: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: ink.detail },
   valueRow: { flexDirection: "row", alignItems: "center", gap: 6 },
