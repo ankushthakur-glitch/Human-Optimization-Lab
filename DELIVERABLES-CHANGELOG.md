@@ -523,3 +523,114 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Added: Provider Portal / Communication / Communication
 - Added: Provider Portal / Tasks / Tasks
 - Added: Patient Portal / Mobile App: Optimization Member / Today (plan tab bar)
+
+## 16-Oct-2026
+
+- Merge remote-tracking branch 'origin/main' into P1
+- Plan To-do card with done count and percentage ring
+- Merge branch 'main' of https://github.com/ankushthakur-glitch/Human-Optimization-Lab
+- Plan match, flourishing assessment, schedule confirmation and onboarding updates
+- Care plan review page, queue items and bell notifications
+- Merge remote-tracking branch 'origin/P1'
+- AI bio age column on patients list
+- Upgrade plan flow, price card, goals record and chat scale intro
+- Connections screens, home connect and tab bar updates
+- Rebuild web app after merging P1
+- Report viewer, connections cleanup, demo screens removed; rebuild web app
+- Imaging rows spaced like biomarker rows; rebuild web app
+- Report rows spaced like result rows, percent without a space; rebuild web app
+- Added: Provider Portal / Communication / Chats and groups
+- Added: Provider Portal / Dashboard / Work queue: abnormal results
+- Added: Provider Portal / Patients / Patients (list, status tabs, last sync, send invites)
+- Added: Provider Portal / Tasks / Tasks (all and my tasks, task details)
+- Added: Provider Portal / Patient Chart / Care plan: review (pending)
+- Added: Provider Portal / Patient Chart / Care plan: history
+- Added: Provider Portal / Patient Chart / Care plan: changes requested
+- Added: Provider Portal / Patient Chart / Appointments: upcoming
+- Added: Provider Portal / Patient Chart / Appointments: past
+- Added: Provider Portal / Patient Chart / Vitals: trend view
+- Added: Provider Portal / Patient Chart / Lab results
+- Added: Provider Portal / Patient Chart / Family history
+- Added: Provider Portal / Patient Chart / Record building
+- Added: Provider Portal / Patient Chart / Sync failed
+- Added: Provider Portal / Dashboard / Urgent action needed
+- Added: Provider Portal / Dashboard / Medication changes
+- Added: Provider Portal / Dashboard / Overdue orders
+- Added: Provider Portal / Dashboard / Care gaps
+- Added: Provider Portal / Dashboard / Reviews due
+- Added: Provider Portal / Dashboard / All types
+- Added: Provider Portal / Patients / Patients: filtered by sync failed
+- Added: Provider Portal / Patients / Bulk add patients
+- Added: Provider Portal / Tasks / Add task
+- Added: Patient Portal / Patient Onboarding / Set password
+- Added: Patient Portal / Patient Onboarding / About you
+- Added: Patient Portal / Patient Onboarding / Consent: records
+- Added: Patient Portal / Patient Onboarding / Consent: texts and signature
+- Added: Patient Portal / Patient Onboarding / Your why conversation
+- Added: Patient Portal / Patient Onboarding / Life questions: intro
+- Added: Patient Portal / Patient Onboarding / Life questions: one question
+- Added: Patient Portal / Patient Onboarding / Life questions: what matters most
+- Added: Patient Portal / Patient Onboarding / Record building
+- Added: Patient Portal / Mobile App: Home / Home
+- Added: Patient Portal / Mobile App: Home / Notifications
+- Added: Patient Portal / Mobile App: Record / Imaging report viewer (echo)
+- Added: Patient Portal / Mobile App: Connect / Connect tab (records and devices)
+- Added: Patient Portal / Mobile App: Connect / Connect your records
+- Added: Patient Portal / Mobile App: Connect / Connect your records: texts and signature
+- Added: Patient Portal / Mobile App: Connect / Record building after connecting
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Complete your profile (health questions)
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Your tests are scheduled
+- Added: Patient Portal / Mobile App: Optimization Member / Today
+- Added: Patient Portal / Mobile App: Optimization Member / Daily review
+- Removed: Provider Portal / Patients / Patients (list, health record sync status, bulk import, send invites)
+- Removed: Provider Portal / Patient Chart / Lab results: reports
+- Removed: Provider Portal / Patient Chart / Lab results: biomarker trends
+- Removed: Provider Portal / Patient Chart / Imaging reports
+- Removed: Provider Portal / Patient Chart / Vaccines
+- Removed: Provider Portal / Patient Chart / Documents
+- Removed: Provider Portal / Patient Chart / Record building (sync now)
+- Removed: Provider Portal / Patient Chart / Sync failed (retry sync)
+- Removed: Patient Portal / Patient Onboarding / Sign in after creating a password (mobile app)
+- Removed: Patient Portal / Mobile App: Optimization Member / Home
+- Removed: Patient Portal / Mobile App: Optimization Member / Home: bone plan
+- Removed: Patient Portal / Mobile App: Optimization Member / Home: nothing logged yesterday
+- Removed: Patient Portal / Mobile App: Optimization Member / Home: dinner not logged
+- Removed: Patient Portal / Mobile App: Optimization Member / New plan version with Dr. Patel
+- Removed: Patient Portal / Mobile App: Optimization Member / Plan tab
+- Removed: Patient Portal / Mobile App: Profile and Settings / Connect your records
+- Removed: Provider Portal / Dashboard / Version 1: work queue (abnormal results)
+- Removed: Provider Portal / Dashboard / Version 1: medication changes
+- Removed: Provider Portal / Dashboard / Version 1: overdue orders
+- Removed: Provider Portal / Dashboard / Version 1: outside care
+- Removed: Provider Portal / Dashboard / Version 1: care gaps
+- Removed: Provider Portal / Dashboard / Version 1: reviews due
+- Removed: Provider Portal / Dashboard / Version 1: urgent
+- Removed: Provider Portal / Dashboard / Version 1: all
+- Removed: Provider Portal / Dashboard / Version 2: charting
+- Removed: Patient Portal / Patient Onboarding / About you (mobile app)
+- Removed: Patient Portal / Patient Onboarding / Consent: records (mobile app)
+- Removed: Patient Portal / Patient Onboarding / Consent: texts and signature (mobile app)
+- Removed: Patient Portal / Patient Onboarding / Your why conversation (mobile app)
+- Removed: Patient Portal / Patient Onboarding / Record building (mobile app)
+- Removed: Patient Portal / Patient Onboarding / Returning patient sign in (mobile app)
+- Removed: Patient Portal / Mobile App: Home (free) / Home
+- Removed: Patient Portal / Mobile App: Home (free) / Home: first session
+- Removed: Patient Portal / Mobile App: Home (free) / Home: Dr. Patel finished the review
+- Removed: Patient Portal / Mobile App: Home (free) / Home: new results arrived
+- Removed: Patient Portal / Mobile App: Home (free) / Home: readiness 3 of 5
+- Removed: Patient Portal / Mobile App: Home (free) / Home: readiness 2 of 5
+- Removed: Patient Portal / Mobile App: Home (free) / Home: nothing to watch
+- Removed: Patient Portal / Mobile App: Home (free) / Home: everything booked and answered
+- Removed: Patient Portal / Mobile App: Home (free) / Home: sharing turned off
+- Removed: Patient Portal / Mobile App: Home (free) / Home: cancelled member back on the free record
+- Removed: Patient Portal / Mobile App: Home (free) / Notifications
+- Removed: Patient Portal / Mobile App: Ask Inlay / AI credit nearly used
+- Removed: Patient Portal / Mobile App: Ask Inlay / AI credit used up
+- Removed: Patient Portal / Mobile App: Ask Inlay / Borrowed from next week
+- Removed: Patient Portal / Mobile App: Ask Inlay / Member AI credit used up
+- Removed: Patient Portal / Mobile App: Optimization Member / Plan version 1 with Dr. Patel
+- Removed: Patient Portal / Mobile App: Profile and Settings / Connect your records: texts and signature
+- Removed: Patient Portal / Mobile App: Profile and Settings / Record building after connecting
+- Removed: Provider Portal / Communication / Communication
+- Removed: Provider Portal / Tasks / Tasks
+- Removed: Patient Portal / Mobile App: Optimization Member / Today (plan tab bar)

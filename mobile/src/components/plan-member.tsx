@@ -6,7 +6,7 @@ import { Art } from "@/components/art"
 import { useReducedMotion } from "@/components/chat"
 import { planName } from "@/components/enrollment-kit"
 
-import { Barbell, Camera, CreditCard, ForkKnife, Heartbeat, PersonSimpleWalk, Ruler, Scales, Scan, Sparkle, Watch } from "@/components/ph"
+import { Barbell, CreditCard, Heartbeat, PersonSimpleWalk, Ruler, Scales, Scan, Sparkle, Watch } from "@/components/ph"
 import { DevicesSheet } from "@/components/plan-tab-devices"
 import { FocusIcon, HeadCard, headText } from "@/components/plan-tab-pieces"
 import { RecordIcon } from "@/components/record-icons"
@@ -21,10 +21,13 @@ import {
   KeyValue,
   LiveDot,
   NeedsRow,
+  Quote,
   ReviewBanner,
   SeeAllRow,
+  Status,
   Steps,
   Tag,
+  Tile,
   toast,
   type Step,
 } from "@/components/record-kit"
@@ -32,9 +35,10 @@ import { keepTogether } from "@/components/care-gap"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { PrimaryButton } from "@/components/hol"
 import { Button, TextField } from "@/components/ui"
+import { BASELINE_TESTS, type BaselineTestId } from "@/lib/baseline-tests"
 import { showDate } from "@/lib/dates"
 import { useExperience, useMarkers } from "@/lib/experience"
-import { MEAL_SLOTS, MEMBER, PLAN_DRAFT, WALK, dateOfAt, dayLabel, profileOf, progress, thisWeek, weekPlan, type WeekItem } from "@/lib/member"
+import { MEMBER, PLAN_DRAFT, WALK, dateOfAt, dayLabel, profileOf, progress, thisWeek, weekPlan, type WeekItem } from "@/lib/member"
 import { FOCUS_NAME } from "@/lib/offers"
 import { useOnboarding, type Plan } from "@/lib/onboarding"
 import { startingTestsLine } from "@/lib/todo"
@@ -258,11 +262,9 @@ function Stat({ label, value, note }: { label: string; value: string; note: stri
   )
 }
 
-/** Everything the plan holds: what it focuses on and the goal for each,
-    the daily targets, the week, the check ins and the tests. The live
-    plan and a version she is reading to accept draw the same sections;
-    `preview` leaves out what she has done, since it has not started. */
-function PlanSections({ preview }: { preview?: boolean }) {
+/** Everything the live plan holds: what it focuses on and the goal for
+    each, the daily targets, the week, the check ins and the tests. */
+function PlanSections() {
   const onboarding = useOnboarding()
   const markers = useMarkers()
   const now = new Date()
@@ -281,8 +283,6 @@ function PlanSections({ preview }: { preview?: boolean }) {
         </Group>
       </Block>
 
-      {preview && <EveryDay />}
-
       <Block title="Daily targets">
         <Card style={styles.targets}>
           <View>
@@ -290,28 +290,16 @@ function PlanSections({ preview }: { preview?: boolean }) {
               <KeyValue key={g.id} label={g.name} value={g.words} last={i === profile.goals.length - 1} />
             ))}
           </View>
-          {!!profile.diet.deficit && <Text style={[styles.meta, preview && styles.metaLast]}>{`${profile.diet.deficit}.`}</Text>}
-          {!preview && (
-            <View style={styles.cardLink}>
-              <SeeAllRow label="See today's diet plan" onPress={() => router.push("/diet")} />
-            </View>
-          )}
+          {!!profile.diet.deficit && <Text style={styles.meta}>{`${profile.diet.deficit}.`}</Text>}
+          <View style={styles.cardLink}>
+            <SeeAllRow label="See today's diet plan" onPress={() => router.push("/diet")} />
+          </View>
         </Card>
       </Block>
 
-      {preview && (
-        <Block title="What you eat">
-          <Group>
-            {profile.diet.slots.map((m) => (
-              <NeedsRow key={m.slot} title={MEAL_SLOTS.find((x) => x.id === m.slot)?.name ?? m.slot} meta={m.line} />
-            ))}
-          </Group>
-        </Block>
-      )}
+      <Workouts />
 
-      <Workouts preview={preview} />
-
-      {!preview && <Block title="Check ins">
+      <Block title="Check ins">
         <Group>
           <NeedsRow icon={<Scales size={16} color={color.primary} />} hue="teal" title="Weigh in" meta="Thursday mornings" />
           {bone ? (
@@ -321,7 +309,7 @@ function PlanSections({ preview }: { preview?: boolean }) {
           )}
           {!bone && <NeedsRow icon={<Ruler size={16} color={color.primary} />} hue="teal" title="Waist" meta="Once a month" />}
         </Group>
-      </Block>}
+      </Block>
 
       <Block title="Tests in your plan">
         <Group>
@@ -358,16 +346,149 @@ function useDoctorReply(walk?: string) {
   }, [walk, asked, plan, save])
 }
 
-/** Version 1 as Dr. Patel sent it, on the Upgrade tab: the whole plan to
-    read, yet to start, before she accepts it or requests a change (the
-    pinned footer). */
+/** The version Dr. Patel sent, on the Upgrade tab, drawn as the
+    physician's care plan reads in the portal (16 Oct 2026): where it
+    stands, then each optimization plan with where it came from, its Why
+    and its items by area with how often, then the baseline tests the
+    physician approved. She accepts it or requests a change (the pinned
+    footer). */
 function ProposedStage() {
-  const { plan } = useOnboarding()
+  const onboarding = useOnboarding()
+  const plan = onboarding.plan
+  const asked = plan?.requests?.at(-1)
+  const plans = useOptimizationPlans(onboarding)
+  const items = plans.reduce((n, p) => n + p.items.length, 0)
   return (
     <>
-      <Requests requests={plan?.requests} />
-      <PlanSections preview />
+      <HeadCard style={styles.card}>
+        <View style={styles.summaryTop}>
+          <View style={styles.headerWords}>
+            <Text style={headText.title}>{planName(onboarding.goals)}</Text>
+            <Text style={headText.meta}>{`Version ${plan?.version ?? 1}, approved by ${MEMBER.doctorShort}`}</Text>
+          </View>
+          <Tag tone="primary">Ready for you</Tag>
+        </View>
+        {asked && <Quote text={asked.text} meta={`You asked on ${showDate(new Date(asked.at))}. This version has the change.`} />}
+      </HeadCard>
+
+      <Block title="Optimization plans" meta={`${plans.length} plans · ${items} items`}>
+        <View style={styles.plans}>
+          {plans.map((p) => (
+            <PlanCard key={p.area} plan={p} />
+          ))}
+        </View>
+      </Block>
+
+      <BaselineTests plans={plans} />
     </>
+  )
+}
+
+type PlanItem = { area: "Nutrition" | "Exercise" | "Check in" | "Tests"; text: string; often: string }
+type OptimizationPlan = { area: FocusArea; why: string; items: PlanItem[] }
+
+/** Her plans as the physician approved them: one per focus area, its Why
+    from her record, and what she does for it, nutrition first, tests
+    last (the portal's order). */
+function useOptimizationPlans(s: Snapshot): OptimizationPlan[] {
+  const markers = useMarkers()
+  const now = new Date()
+  const profile = profileOf(s)
+  const week = thisWeek(s, now)
+  const strength = weekPlan(s).filter((d) => d.session)
+  const minutes = strength[0]?.session?.minutes
+  const bone = profile.focus === "bone"
+  const food = (area: FocusArea): PlanItem[] =>
+    profile.goals.filter((g) => g.focus === area).map((g) => ({ area: "Nutrition", text: `${g.name} ${g.words.toLowerCase()}`, often: "Daily" }))
+  const workout: PlanItem = {
+    area: "Exercise",
+    text: `${bone ? "Strength and balance" : "Strength workout"}${minutes ? `, about ${minutes} minutes` : ""}`,
+    often: `${strength.length} days a week`,
+  }
+  const walk: PlanItem = { area: "Exercise", text: `${WALK.title}, ${WALK.detail}`, often: "Daily" }
+  const ITEMS: Record<FocusArea, PlanItem[]> = {
+    "blood sugar": [...food("blood sugar"), walk, { area: "Tests", text: "Repeat A1c", often: "January" }],
+    weight: [
+      ...food("weight"),
+      { area: "Nutrition", text: "Log breakfast, lunch and dinner", often: "Daily" },
+      workout,
+      { area: "Check in", text: "Weigh in, before breakfast", often: "Thursdays" },
+      { area: "Check in", text: "Waist", often: "Once a month" },
+    ],
+    heart: [...food("heart"), { area: "Check in", text: "Blood pressure, seated", often: "Every evening" }, { area: "Tests", text: "Repeat lipid panel", often: "January" }],
+    bone: [
+      ...food("bone"),
+      workout,
+      walk,
+      { area: "Check in", text: "Chair stands", often: "Once a month" },
+      { area: "Tests", text: "Repeat DEXA scan", often: "May 2027" },
+    ],
+  }
+  return profile.areas.map((area) => ({ area, why: focusLine(area, s, markers, week, now), items: ITEMS[area] }))
+}
+
+/** One plan, as the portal's plan card: its name and where it came from
+    on top, its Why under them, then its items with how often. */
+function PlanCard({ plan }: { plan: OptimizationPlan }) {
+  return (
+    <Card style={styles.planCard}>
+      <View style={styles.planHead}>
+        <Tile hue="teal" size={32}>
+          <FocusIcon area={plan.area} />
+        </Tile>
+        <View style={styles.headerWords}>
+          <View style={styles.planTitleLine}>
+            <Text style={styles.planName}>{FOCUS_NAME[plan.area]}</Text>
+            <Tag tone="muted">From your record</Tag>
+          </View>
+          <Text style={styles.meta}>{`Why: ${plan.why.replace(/^Goal: /, "goal ")}`}</Text>
+        </View>
+      </View>
+      {plan.items.map((item) => (
+        <View key={item.text} style={styles.item}>
+          <Text style={styles.itemArea}>{item.area}</Text>
+          <View style={styles.itemWords}>
+            <Text style={styles.itemText}>{item.text}</Text>
+            <Text style={styles.meta}>{item.often}</Text>
+          </View>
+        </View>
+      ))}
+    </Card>
+  )
+}
+
+/** The plans each starting test serves, by focus area. */
+const TEST_FOR: Record<BaselineTestId, FocusArea[]> = {
+  panel: ["blood sugar", "heart"],
+  dexa: ["weight", "bone"],
+  rmr: ["weight"],
+}
+
+/** The baseline tests Dr. Patel approved for her plans: each one, the
+    plans it is for and its decision, as the portal's baseline table. */
+function BaselineTests({ plans }: { plans: OptimizationPlan[] }) {
+  const { startingTests } = useOnboarding()
+  const ids = (startingTests?.ids ?? ["panel", "dexa", "rmr"]).filter((id): id is BaselineTestId => id in BASELINE_TESTS)
+  const areas = plans.map((p) => p.area)
+  if (!ids.length) return null
+  return (
+    <Block title="Baseline tests" meta={`${ids.length} approved`}>
+      <Group>
+        {ids.map((id) => {
+          const forPlans = TEST_FOR[id].filter((a) => areas.includes(a)).map((a) => FOCUS_NAME[a])
+          return (
+            <NeedsRow
+              key={id}
+              icon={<RecordIcon name="labs" size={18} color={color.primary} />}
+              hue="teal"
+              title={BASELINE_TESTS[id].name}
+              meta={forPlans.length ? `For ${forPlans.join(", ").replace(/, ([^,]*)$/, " and $1").toLowerCase()}` : "For your plan"}
+              right={<Status tone="ok" bare>Approved</Status>}
+            />
+          )
+        })}
+      </Group>
+    </Block>
   )
 }
 
@@ -441,52 +562,10 @@ function RequestSheet({ onClose }: { onClose: () => void }) {
   )
 }
 
-/** What the plan asks of her each day, for a plan yet to start: the diet,
-    logging meals, the workout, the walk and the check ins, each with when
-    and how long. */
-function EveryDay() {
-  const onboarding = useOnboarding()
-  const profile = profileOf(onboarding)
-  const week = weekPlan(onboarding)
-  const bone = profile.focus === "bone"
-  const strength = week.filter((d) => d.session)
-  const minutes = strength[0]?.session?.minutes
-  const [first, second] = profile.goals
-  return (
-    <Block title="Every day">
-      <Group>
-        <NeedsRow
-          icon={<ForkKnife size={16} color={color.primary} />}
-          hue="teal"
-          title="Follow your diet plan"
-          meta={[first?.words, second?.words && `${second.name.toLowerCase()} ${second.words.toLowerCase()}`].filter(Boolean).join(", ")}
-        />
-        <NeedsRow icon={<Camera size={16} color={color.primary} />} hue="teal" title="Log your meals" meta="Breakfast, lunch and dinner, with a photo or a few words" />
-        {strength.length > 0 && (
-          <NeedsRow
-            icon={<Barbell size={16} color={color.primary} />}
-            hue="teal"
-            title={bone ? "Strength and balance" : "Strength workout"}
-            meta={`${strength.length} days a week${minutes ? `, about ${minutes} minutes` : ""}, with short videos`}
-          />
-        )}
-        <NeedsRow icon={<PersonSimpleWalk size={16} color={color.primary} />} hue="teal" title={WALK.title} meta={WALK.detail} />
-        {bone ? (
-          <NeedsRow icon={<Barbell size={16} color={color.primary} />} hue="teal" title="Chair stands" meta="Once a month" />
-        ) : (
-          <NeedsRow icon={<Heartbeat size={16} color={color.primary} />} hue="teal" title="Blood pressure" meta="Every evening" />
-        )}
-        <NeedsRow icon={<Scales size={16} color={color.primary} />} hue="teal" title="Weigh in" meta="Thursday mornings, before breakfast" />
-        {!bone && <NeedsRow icon={<Ruler size={16} color={color.primary} />} hue="teal" title="Waist" meta="Once a month" />}
-      </Group>
-    </Block>
-  )
-}
-
 /** The plan's workouts at a glance, not day by day: each session with
-    its days, its length and its moves, then the daily walk. On the live
-    plan today's session is marked and opens the workout. */
-function Workouts({ preview }: { preview?: boolean }) {
+    its days, its length and its moves, then the daily walk. Today's
+    session is marked and opens the workout. */
+function Workouts() {
   const onboarding = useOnboarding()
   const week = weekPlan(onboarding)
   const sessions = new Map<string, { session: NonNullable<(typeof week)[number]["session"]>; days: string[]; today: boolean }>()
@@ -501,7 +580,7 @@ function Workouts({ preview }: { preview?: boolean }) {
     <Block title="Your workouts">
       <Group>
         {[...sessions.values()].map(({ session, days, today }) => {
-          const live = !preview && today
+          const live = today
           return (
             <NeedsRow
               key={session.id}
@@ -698,8 +777,17 @@ const styles = StyleSheet.create({
   cardSubtitle: { ...type.title },
   body: { ...type.body },
   meta: { ...type.meta },
-  // The targets card's last line when no link row closes it.
-  metaLast: { paddingBottom: space.card },
+  // The proposed plan's cards, one per plan: the head over a hairline,
+  // then each item with its area in a column on the left.
+  plans: { gap: space.item },
+  planCard: { gap: 0, paddingVertical: 0 },
+  planHead: { flexDirection: "row", alignItems: "flex-start", gap: space.inline, paddingVertical: space.card, borderBottomWidth: 1, borderBottomColor: hairline.rule },
+  planTitleLine: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: space.inline },
+  planName: { ...type.section },
+  item: { flexDirection: "row", alignItems: "flex-start", gap: space.inline, paddingVertical: space.inline },
+  itemArea: { ...type.meta, width: 72, paddingTop: 2 },
+  itemWords: { flex: 1, gap: 2 },
+  itemText: { ...type.title },
   // A card's heading and what it holds.
   card: { gap: space.item },
 

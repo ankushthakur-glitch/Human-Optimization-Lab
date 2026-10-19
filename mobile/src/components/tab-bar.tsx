@@ -36,7 +36,7 @@ import { upgradeTab, useExperience } from "@/lib/experience"
 import { color, font, space } from "@/lib/theme"
 
 /* The signed-in app's bottom navigation, from the Figma "Hol" file: a
-   floating, see-through teal tinted pill (it blurs the page under it) with four Hugeicons tabs, outline at
+   floating, see-through teal tinted pill (it blurs the page under it) with five Hugeicons tabs, outline at
    rest and filled when selected, and beside it the assistant's orb in a
    ring (OrbButton), which opens the assistant full screen. Each tab is its own
    stack screen (switched without animation), so the bar is drawn by the
@@ -50,7 +50,7 @@ import { color, font, space } from "@/lib/theme"
 
 export type TabName = "home" | "results" | "todo" | "plan" | "today" | "progress" | "connections"
 
-type Href = "/" | "/results" | "/gaps" | "/plan" | "/today" | "/progress" | "/home-connect" | "/connections"
+type Href = "/" | "/results" | "/gaps" | "/plan" | "/today" | "/progress" | "/connections"
 
 type Tab = {
   name: TabName | "back"
@@ -59,10 +59,13 @@ type Tab = {
   Icon: React.ComponentType<TabIconProps>
 }
 
+/* Home, To do, Record, Connect, then Plan (Upgrade until there is a plan
+   to follow), in that order since 16 Oct 2026. */
 const TABS: Tab[] = [
   { name: "home", label: "Home", href: "/", Icon: IconHome },
-  { name: "results", label: "Record", href: "/results", Icon: IconResults },
   { name: "todo", label: "To do", href: "/gaps", Icon: IconToDo },
+  { name: "results", label: "Record", href: "/results", Icon: IconResults },
+  { name: "connections", label: "Connect", href: "/connections", Icon: IconConnections },
   { name: "plan", label: "Plan", href: "/plan", Icon: IconPlan },
 ]
 
@@ -75,24 +78,6 @@ const PLAN_TABS: Tab[] = [
 
 const PLAN_SPACE: TabName[] = ["plan", "today", "progress"]
 
-/** The connections demo's tabs (16 Oct 2026): home is the demo home, and
-    Connections sits between Record and To do. On from the moment the demo
-    home opens until the app reloads, so Record and To do keep it too. */
-const DEMO_TABS: Tab[] = [
-  { name: "home", label: "Home", href: "/home-connect", Icon: IconHome },
-  { name: "results", label: "Record", href: "/results", Icon: IconResults },
-  { name: "connections", label: "Connect", href: "/connections", Icon: IconConnections },
-  { name: "todo", label: "To do", href: "/gaps", Icon: IconToDo },
-  { name: "plan", label: "Plan", href: "/plan", Icon: IconPlan },
-]
-
-let demoTabs = false
-
-/** Turns on the demo's tabs, from the demo home and Connections. */
-export function useDemoTabs() {
-  demoTabs = true
-}
-
 /** Which set of tabs the bar showed last, so the next bar to come into view
     knows to animate its tabs in when the set has changed. */
 let shownSet: "main" | "plan" = "main"
@@ -104,7 +89,7 @@ const SWAP_STAGGER = 45
 /** Opens a tab: home by going back to it, another tab over home, or in
     place of the tab that is open. */
 export function openTab(href: Href, from: TabName) {
-  if (href === "/" || href === "/home-connect") router.dismissTo(href)
+  if (href === "/") router.dismissTo("/")
   else if (from === "home") router.push(href)
   else router.replace(href)
 }
@@ -234,10 +219,10 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
   const upgradeLabel = upgradeTab(useExperience())
   // A plan to follow brings its own tabs; the Upgrade tab keeps home's.
   const set = !upgradeLabel && PLAN_SPACE.includes(active) ? "plan" : "main"
-  const tabs = set === "plan" ? PLAN_TABS : demoTabs ? DEMO_TABS : TABS
+  const tabs = set === "plan" ? PLAN_TABS : TABS
   // Animate the tabs in when this bar comes into view showing the other set
   // than the last bar (home stays mounted under the plan, so on focus).
-  const swap = React.useRef(DEMO_TABS.map(() => new Animated.Value(shownSet === set ? 1 : 0))).current
+  const swap = React.useRef(TABS.map(() => new Animated.Value(shownSet === set ? 1 : 0))).current
   useFocusEffect(
     React.useCallback(() => {
       if (shownSet === set) return

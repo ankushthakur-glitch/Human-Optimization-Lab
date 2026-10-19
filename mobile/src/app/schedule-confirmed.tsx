@@ -22,8 +22,9 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    and the buttons rising in turn (all still under Reduce Motion).
    The card lists each booked test with its day, time and place. Under it
    the assistant's offer, with its two buttons:
-     "Start conversation" opens the health questions (/complete-profile),
-       the assistant's chat, which saves every answer and whose last answer
+     "Start conversation" opens "Tell us about you" (/health-profile),
+       whose Confirm opens the health questions (/complete-profile), the
+       assistant's chat, which saves every answer and whose last answer
        walks on to her plan (/plan?walk=1);
      "Chat later" skips them for now and walks on to her plan the same way.
        The questions stay open: she can start them from the plan, and
@@ -65,7 +66,7 @@ export default function ScheduleConfirmedScreen() {
   const tests = chosenTests(onboarding.startingTests?.ids ?? onboarding.baselinePicks)
   const count = tests.length
 
-  const chat = () => router.replace("/complete-profile")
+  const chat = () => router.replace("/health-profile")
   const later = () => router.replace("/plan?walk=1")
 
   const rise = (i: number) => ({

@@ -3,45 +3,45 @@ import * as React from "react"
 import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
 
 import { PlanStepPage } from "@/components/plan-steps"
-import { TextAction } from "@/components/record-kit"
+import { Tag, TextAction } from "@/components/record-kit"
 import { Pair } from "@/components/settings-rows"
 import { Sheet, useKeyboardHeight } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
 import { useOnboarding } from "@/lib/onboarding"
 import { color, hairline, ink, space, type } from "@/lib/theme"
 
-/* Step 2 of the plan's set-up (Journey_7 screen 4, "Confirm, don't fill
-   in"): opens after the goals are chosen. Fifteen
-   fields already filled from the record, in the deck's words and values,
-   in three blocks; she confirms them. Basic information and lifestyle
-   edit in a sheet over this screen; medical has no Edit, as it is what
-   her record holds. Continue opens step 3, the tests her record is
-   missing (/baseline). */
+/* "Tell us about you" (Journey_7 screen 29b, "Confirm, don't fill in"):
+   opens from "Start conversation" on /schedule-confirmed, before the
+   flourishing questions. Her profile as the record has it, in three blocks;
+   she confirms it. Basic information and lifestyle edit in a sheet over
+   this screen; medical has no Edit, as it is read from her record. Confirm
+   opens the health questions (/complete-profile). */
 
 type Field = { id: string; label: string; value: string }
 
 const BASIC: Field[] = [
-  { id: "age", label: "Age", value: "77" },
-  { id: "sex", label: "Sex", value: "Male" },
+  { id: "age", label: "Age", value: "45" },
+  { id: "sex", label: "Sex", value: "Female" },
   { id: "height", label: "Height", value: "5′8″ (173 cm)" },
-  { id: "weight", label: "Current Weight", value: "166 lb" },
-  { id: "waist", label: "Waist Circumference", value: "35.0 in" },
+  { id: "weight", label: "Current weight", value: "213 lb" },
+  { id: "bmi", label: "BMI", value: "32.4" },
+  { id: "waist", label: "Waist circumference", value: "41.0 in" },
 ]
 
 const LIFESTYLE: Field[] = [
-  { id: "diet", label: "Typical Diet", value: "Low carbohydrate" },
+  { id: "diet", label: "Typical diet", value: "Low carbohydrate" },
   { id: "meals", label: "Meals per day", value: "3" },
-  { id: "exercise", label: "Exercise Days / Week", value: "5-6" },
-  { id: "activities", label: "Preferred Activities", value: "Walking, strength training" },
+  { id: "exercise", label: "Exercise days / week", value: "5-6" },
+  { id: "activities", label: "Preferred activities", value: "Walking, strength training" },
   { id: "alcohol", label: "Alcohol", value: "Occasional" },
-  { id: "sleep", label: "Sleep (avg per night)", value: "6 hours" },
+  { id: "sleep", label: "Sleep, avg per night", value: "6 hours" },
 ]
 
 const MEDICAL: Field[] = [
-  { id: "conditions", label: "Key Conditions", value: "See record" },
-  { id: "medicines", label: "Medications", value: "3 medications" },
-  { id: "supplements", label: "Supplements", value: "Yes" },
-  { id: "allergies", label: "Allergies", value: "Birch, stone fruits" },
+  { id: "conditions", label: "Conditions", value: "Prediabetes, hyperlipidemia" },
+  { id: "medicines", label: "Medications", value: "Atorvastatin 20 mg" },
+  { id: "supplements", label: "Supplements", value: "Vitamin D3, omega-3" },
+  { id: "allergies", label: "Allergies", value: "Penicillin" },
 ]
 
 export default function HealthProfileScreen() {
@@ -59,22 +59,21 @@ export default function HealthProfileScreen() {
 
   return (
     <PlanStepPage
-      step={2}
       title="Tell us about you"
-      lead="We’ve pre-filled information from your Inlay health record."
-      onNext={() => router.push("/baseline")}
+      nextLabel="Confirm"
+      onNext={() => router.push("/complete-profile")}
       overlay={editing && <EditSheet title={editing.title} fields={editing.fields} onSave={save} onClose={() => setEditing(undefined)} />}
     >
-      <Section title="Basic Information" fields={basic} onEdit={() => setEditing({ title: "Basic Information", fields: basic })} />
+      <Section title="Basic information" fields={basic} onEdit={() => setEditing({ title: "Basic information", fields: basic })} />
       <Section title="Lifestyle" fields={lifestyle} onEdit={() => setEditing({ title: "Lifestyle", fields: lifestyle })} />
-      <Section title="Medical" fields={MEDICAL} />
+      <Section title="Medical" fields={MEDICAL} badge="From your record" />
     </PlanStepPage>
   )
 }
 
-/** One block: its name and Edit (none on medical, which comes from the
-    record), then its fields as label and value rows. */
-function Section({ title, fields, onEdit }: { title: string; fields: Field[]; onEdit?: () => void }) {
+/** One block: its name and Edit, or on medical a "From your record" tag
+    in its place, then its fields as label and value rows. */
+function Section({ title, fields, onEdit, badge }: { title: string; fields: Field[]; onEdit?: () => void; badge?: string }) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHead}>
@@ -82,6 +81,7 @@ function Section({ title, fields, onEdit }: { title: string; fields: Field[]; on
           {title}
         </Text>
         {onEdit && <TextAction onPress={onEdit}>Edit</TextAction>}
+        {!!badge && <Tag tone="muted">{badge}</Tag>}
       </View>
       {/* The card: white, edged, radius 14, the rows split by hairlines. */}
       <View style={styles.card}>

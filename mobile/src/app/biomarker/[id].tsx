@@ -6,7 +6,7 @@ import { BiomarkerTrend, PressureChart, RangeBar, rangeDomain, useEntrance, type
 import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
 import { AskButton } from "@/components/hol"
-import { ArrowRight, Info, TrendDown, TrendUp } from "@/components/ph"
+import { ArrowRight, FileText, Info, TrendDown, TrendUp } from "@/components/ph"
 import { Banner, Block, Card, Dot, Group, HUE, LEVEL_TEXT, NeedsRow, SeeAllRow, SmallAction, Status, type Level } from "@/components/record-kit"
 import { experience, useMarkers } from "@/lib/experience"
 import { MEMBER, PLAN_START_RESULTS, pressureReadingsOf, pressures, sinceStart, type Measure } from "@/lib/member"
@@ -14,6 +14,7 @@ import { useChangeCourse } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { PLACE_NAME, type Biomarker, type Point, type Zone } from "@/lib/record"
+import { reportsFor, useReports, type Report } from "@/lib/reports"
 import {
   STATUS_WORD,
   chartSeries,
@@ -50,7 +51,8 @@ import { chart, color, font, hairline, ink, outOfRangeColor, space, type } from 
    with its card. Results measured another way (a home kit) are shown
    hollow and never joined to the line. Members see how far the marker has
    come since their starting tests, and what their plan does about it,
-   instead of any offer. */
+   instead of any offer. A scan's measure lists the reports behind its
+   results in place of every result, each opening the report itself. */
 
 /** Results shown before "Show all". */
 const ROWS = 5
@@ -135,7 +137,7 @@ export default function MarkerScreen() {
       <Readout b={b} t={t} member={member} review={review} />
       <OverTime b={b} t={t} />
       {!!home && <HomeReadings list={homeList} average={home} />}
-      <EveryResult b={b} t={t} />
+      {b.kind === "imaging" ? <Reports b={b} /> : <EveryResult b={b} t={t} />}
       {!review && offer.show && course && (
         <PlanAdds
           {...course.adds}
@@ -390,7 +392,7 @@ function EveryResult({ b, t }: { b: Biomarker; t: Trend }) {
                   {level !== "in" && <Dot level={level} />}
                   <Text style={styles.resultValue}>
                     {valueText(b, p)}
-                    <Text style={type.unit}>{` ${b.unit}`}</Text>
+                    <Text style={type.unit}>{`${b.unit === "%" ? "" : " "}${b.unit}`}</Text>
                   </Text>
                 </View>
               }
@@ -400,6 +402,50 @@ function EveryResult({ b, t }: { b: Biomarker; t: Trend }) {
         {!all && rows.length > ROWS && <SeeAllRow label={`Show all ${rows.length}`} onPress={() => setAll(true)} />}
       </Group>
     </Block>
+  )
+}
+
+/* ---------------------------------------------------------- reports -- */
+
+/** The scans behind an imaging measure, newest first: the study, when and
+    where, what it found, and this measure's value. Each opens the report. */
+function Reports({ b }: { b: Biomarker }) {
+  const [all, setAll] = React.useState(false)
+  const rows = reportsFor(useReports(), b.id)
+  if (!rows.length) return null
+  const shown = all ? rows : rows.slice(0, ROWS)
+  return (
+    <Block title="Reports">
+      <Group>
+        {shown.map((r) => (
+          <ReportRow key={r.id} b={b} r={r} />
+        ))}
+        {!all && rows.length > ROWS && <SeeAllRow label={`Show all ${rows.length}`} onPress={() => setAll(true)} />}
+      </Group>
+    </Block>
+  )
+}
+
+function ReportRow({ b, r }: { b: Biomarker; r: Report }) {
+  const p = r.measures.find((m) => m.marker.id === b.id)!.point
+  const level: Level = pointStatus(b, p)
+  return (
+    <NeedsRow
+      icon={<FileText size={16} color={HUE.teal.ink} />}
+      title={r.date}
+      meta={`${r.study}, ${r.place}`}
+      accessibilityLabel={`${r.study}, ${spokenDay(p)}, ${r.place}. ${r.finding}. Opens the report.`}
+      right={
+        <View style={styles.result}>
+          {level !== "in" && <Dot level={level} />}
+          <Text style={styles.resultValue}>
+            {valueText(b, p)}
+            <Text style={type.unit}>{`${b.unit === "%" ? "" : " "}${b.unit}`}</Text>
+          </Text>
+        </View>
+      }
+      onPress={() => router.push({ pathname: "/report/[id]", params: { id: r.id } })}
+    />
   )
 }
 

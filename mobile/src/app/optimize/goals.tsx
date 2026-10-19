@@ -115,7 +115,6 @@ export default function GoalsScreen() {
             <Text style={styles.title} accessibilityRole="header">
               What would you like to improve?
             </Text>
-            <Text style={styles.lead}>Select all that apply. We'll build one personalized plan around your goals.</Text>
           </View>
         </>
       }

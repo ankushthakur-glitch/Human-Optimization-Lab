@@ -61,7 +61,7 @@ import {
   RowRemoveButton,
   SignatureDialog,
 } from "@/components/practice/record-page"
-import { DeactivateDialog } from "@/components/practice/sheets"
+import { DeactivateProviderDialog } from "@/components/practice/deactivate-provider"
 import { Button } from "@/design-system/ui/button"
 import { Checkbox } from "@/design-system/ui/checkbox"
 import {
@@ -685,6 +685,7 @@ function ProfileBody({
                     if (p.status !== "Inactive") return setDeactivating(true)
                     providers.patch(p.id, {
                       status: p.lastLogin ? "Active" : "Invited",
+                      departure: undefined,
                     })
                     toast.success(`${providerName(p)} is active again`)
                   }}
@@ -721,6 +722,17 @@ function ProfileBody({
                 { label: "SSN", value: maskSsn(p.ssn) },
                 { label: "Languages spoken", value: p.languages.join(", ") },
                 { label: "Status", value: <StatusBadge status={p.status} /> },
+                ...(p.status === "Inactive" && p.departure
+                  ? [
+                      {
+                        label: "Deactivated",
+                        value:
+                          p.departure.kind === "moved"
+                            ? `Moved to ${p.departure.practiceName}, ${usDate(p.departure.at)}`
+                            : `Left Inlay, ${usDate(p.departure.at)}`,
+                      },
+                    ]
+                  : []),
               ]}
             />
           </div>
@@ -872,16 +884,9 @@ function ProfileBody({
           toast.success("Signature saved")
         }}
       />
-      <DeactivateDialog
-        illustration="deactivate-provider"
-        target={deactivating ? providerName(p) : null}
-        message="They lose access to the portal and leave provider pickers. Their patients and history stay with the practice."
-        onCancel={() => setDeactivating(false)}
-        onConfirm={() => {
-          providers.patch(p.id, { status: "Inactive" })
-          toast.success(`${providerName(p)} is deactivated`)
-          setDeactivating(false)
-        }}
+      <DeactivateProviderDialog
+        provider={deactivating ? p : null}
+        onClose={() => setDeactivating(false)}
       />
     </RecordPage>
   )

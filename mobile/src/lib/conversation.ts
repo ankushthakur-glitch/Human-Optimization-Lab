@@ -4,11 +4,11 @@
    survey: every question in the write up, in its order, one at a time. The
    steps, in order:
 
-     1  the 8 flourishing domains, each rated 0 to 10 (higher is always
-        better; 0 = not at all / worst possible, 5 = moderate / mixed,
+     1  the 8 flourishing domains, each rated 1 to 10 (higher is always
+        better; 1 = not at all / worst possible, 5 = moderate / mixed,
         10 = completely / best possible)
      2  priority: which three areas she would most like to improve
-     3  importance and confidence (0 to 10) for each of the three
+     3  importance and confidence (1 to 10) for each of the three
      4  the Flourishing Profile, shown as a gauge
      5  "If your health and life were meaningfully better one year from
         today, what would be different?", in her own words
@@ -39,12 +39,12 @@ export type Answers = {
   focus?: string
   step: string
   stepConfidence?: number
-  /** The flourishing assessment: one 0 to 10 answer per item, -1 where she
+  /** The flourishing assessment: one 1 to 10 answer per item, -1 where she
       chose "Not applicable / I prefer not to answer". */
   flourish: number[]
   /** The three domains she most wants to improve. */
   priorities: string[]
-  /** 0 to 10, one per priority, in the same order. */
+  /** 1 to 10, one per priority, in the same order. */
   importanceBy: number[]
   confidenceBy: number[]
   /** Something they said needs a person: the care team is told. */
@@ -93,8 +93,8 @@ export const DOMAINS = [
   "Health agency & self-efficacy",
 ]
 
-/** The one scale: 0 to 10, as taps. */
-const RATING = Array.from({ length: 11 }, (_, i) => String(i))
+/** The one scale: 1 to 10, as taps. */
+const RATING = Array.from({ length: 10 }, (_, i) => String(i + 1))
 const NOT_APPLICABLE = "Not applicable / I prefer not to answer"
 
 type Item = { domain: number; text: string; optional?: boolean }
@@ -208,7 +208,7 @@ const IMPROVE_OF_DOMAIN: Record<string, string[]> = {
 }
 
 const mean = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length
-/** A 0 to 10 mean on the app's 1 to 5 scale. */
+/** A 1 to 10 mean on the app's 1 to 5 scale. */
 const toFive = (xs: number[]) => Math.min(5, Math.max(1, Math.round(mean(xs) / 2)))
 
 /** Words that stop the script and point to a person right away. A stand in
@@ -241,17 +241,17 @@ export type Turn = {
   save: (a: Answers, value: Value) => Partial<Answers>
 }
 
-/** A 0 to 10 rating from a tap or typed words, kept in range. */
+/** A 1 to 10 rating from a tap or typed words, kept in range. */
 const rating = (v: Value) => {
   const n = Number(v)
-  return Number.isFinite(n) ? Math.min(10, Math.max(0, Math.round(n))) : -1
+  return Number.isFinite(n) ? Math.min(10, Math.max(1, Math.round(n))) : -1
 }
 
 /** The words under the five faces, lowest first (the face scale is still
     part of the chat's inputs). */
 export const SCALE_WORDS = ["Not at all", "A little", "Somewhat", "Quite", "Very"]
 
-/** A 0 to 10 question for the priority at `i`: importance or confidence. */
+/** A 1 to 10 question for the priority at `i`: importance or confidence. */
 function priorityTurn(i: number, kind: "importance" | "confidence"): Turn {
   const key = kind === "importance" ? "importanceBy" : "confidenceBy"
   return {
@@ -295,7 +295,7 @@ export const TURNS: Turn[] = [
     save: () => ({}),
   },
 
-  // 1. The eight domains, 0 to 10.
+  // 1. The eight domains, 1 to 10.
   ...FLOURISH.map<Turn>((item, i) => {
     const firstOfDomain = i === 0 || FLOURISH[i - 1].domain !== item.domain
     return {

@@ -64,7 +64,7 @@ export const IconResults = tabIcon(Analytics01Icon, [3])
 export const IconPlan = tabIcon(Task01Icon, [0, 2])
 export const IconUpgrade = tabIcon(CrownIcon, [2])
 export const IconToDo = tabIcon(CheckmarkSquare02Icon, [0])
-/** The connections demo's tab: a watch, its face filled when selected, the straps kept as lines. */
+/** The Connect tab: a watch, its face filled when selected, the straps kept as lines. */
 export const IconConnections = tabIcon(SmartWatch01Icon, [0], [1, 2])
 /* The plan's own tabs (Back, Today, Progress): Back is never selected.
    Progress fills its three bars and keeps its arrow as a line. */

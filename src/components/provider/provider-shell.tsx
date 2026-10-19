@@ -2,6 +2,8 @@
 
 import * as React from "react"
 import {
+  IconCalendar,
+  IconChartColumn,
   IconChat,
   IconDashboard,
   IconFileList,
@@ -40,12 +42,24 @@ const PROVIDER_NAV: NavItem[] = [
     href: `${BASE}/dashboard`,
   },
   { id: "patients", label: "Patients", icon: IconUser, href: BASE },
+  {
+    id: "schedule",
+    label: "Schedule",
+    icon: IconCalendar,
+    href: `${BASE}/schedule`,
+  },
   { id: "tasks", label: "Tasks", icon: IconFileList, href: `${BASE}/tasks` },
   {
     id: "communication",
     label: "Communication",
     icon: IconChat,
     href: `${BASE}/communication`,
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: IconChartColumn,
+    href: `${BASE}/reports`,
   },
   { id: "settings", label: "Settings", icon: IconSettings },
 ]

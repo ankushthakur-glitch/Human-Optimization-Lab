@@ -38,7 +38,7 @@ import { color, font, ink, space } from "@/lib/theme"
 const THINK_MS = 900
 const ARRIVE_MS = 450
 const BETWEEN_MS = 550
-/** Flourishing ratings the secret skip fills in, 0 to 10. */
+/** Flourishing ratings the secret skip fills in, 1 to 10. */
 const SAMPLE_FLOURISH = [6, 7, 5, 8, 7, 4]
 const SAMPLE_PRIORITIES = ["Physical health & vitality", "Emotional health & resilience", "Contribution & life balance"]
 
@@ -180,7 +180,7 @@ export default function WhyScreen() {
       : input.type === "scale"
         ? "Or type a number from 1 to 5"
         : input.type === "reply" && input.options.length > 5
-          ? "Or type a number from 0 to 10"
+          ? "Or type a number from 1 to 10"
           : "Or type your own"
 
   // The open question's options, inside its last message.
@@ -188,8 +188,8 @@ export default function WhyScreen() {
     !input ? null : turn?.id === "flourishIntro" ? (
       <ScaleIntro onOkay={() => answer("Okay")} />
     ) : input.type === "reply" && input.options.length > 5 ? (
-      // A 0 to 10 rating: tap a chip to select it, then send.
-      <ScoreChips options={input.options} selected={draft.trim()} onSelect={(o) => setDraft((d) => (d.trim() === o ? "" : o))} />
+      // A 1 to 10 rating: one tap answers.
+      <ScoreChips options={input.options} onSelect={(o) => answer(o)} />
     ) : input.type === "reply" ? (
       <Options options={input.options} live picked={[]} onPick={(o) => answer(o)} />
     ) : input.type === "pick" ? (
@@ -234,11 +234,18 @@ export default function WhyScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Pressable onPress={skipAhead} style={styles.headingTap}>
-            <Text style={styles.heading} accessibilityRole="header">
-              Your why
-            </Text>
-          </Pressable>
+          <View style={styles.headingRow}>
+            <Pressable onPress={skipAhead} style={styles.headingTap}>
+              <Text style={styles.heading} accessibilityRole="header">
+                Your why
+              </Text>
+            </Pressable>
+            {/* Hidden demo shortcut: an invisible tap area at the top right
+                fills sample answers and jumps to the result. */}
+            {at < TURNS.findIndex((t) => t.id === "result") && (
+              <Pressable onPress={skipAhead} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.secretTap} />
+            )}
+          </View>
           {past.map((t) => (
             <React.Fragment key={t.id}>
               <AssistantGroup>
@@ -428,6 +435,8 @@ const endsOnCard = (lines: Line[]) => lines.length > 0 && typeof lines[lines.len
 /** A past question's options, locked, with the answer ticked. */
 function Answered({ input, said, settle }: { input: Input | null; said?: string; settle?: boolean }) {
   if (!input || !said || (input.type !== "reply" && input.type !== "pick")) return null
+  // A rating's answer is her bubble; the chips don't stay behind.
+  if (input.type === "reply" && input.options.length > 5) return null
   // A one-tap answer is exactly one option ("1" is not inside "10"); a pick
   // is the chosen options joined, the first letter of all but the first lowered.
   const picked =
@@ -539,7 +548,9 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
 
   thread: { ...column, paddingTop: 4, paddingBottom: 20, gap: 10 },
+  headingRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
   headingTap: { alignSelf: "flex-start" },
+  secretTap: { width: 120, height: 36 },
   heading: { fontFamily: font.semibold, fontSize: 22, lineHeight: 30, color: ink.content, marginBottom: 10 },
 
   card: { alignSelf: "stretch" },

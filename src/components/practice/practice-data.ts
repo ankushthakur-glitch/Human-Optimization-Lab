@@ -46,7 +46,8 @@ export const PATIENT_STATUSES = [
 export type PatientStatus = (typeof PATIENT_STATUSES)[number]
 /** Why an Inactive record closed: the patient withdrew consent, left the
     practice, or staff deactivated it. */
-export type InactiveReason = "Consent withdrawn" | "Discharged" | "Deactivated"
+export type InactiveReason =
+  "Consent withdrawn" | "Discharged" | "Deactivated" | "Transferred"
 export const REACTIVATABLE: readonly PatientStatus[] = ["Inactive"]
 
 /* -------------------------------------------------------------------------- */
@@ -403,7 +404,21 @@ export type Provider = {
   status: PersonStatus
   invitedAt: string
   lastLogin: string
+  /** Why an Inactive provider went, set when they were deactivated. */
+  departure?: ProviderDeparture
 }
+
+/** Moved: the provider and their patients went to another clinic on Inlay.
+    Left: the provider left Inlay and their patients were reassigned. */
+export type ProviderDeparture =
+  | {
+      kind: "moved"
+      practiceId: string
+      practiceName: string
+      at: string
+      patients: number
+    }
+  | { kind: "left"; at: string; patients: number }
 
 export type License = {
   type: string
@@ -1673,15 +1688,96 @@ type PanelRow = [
 ]
 
 const PANEL_ROWS: PanelRow[] = [
-  ["P10318", "Marcus", "Hale", "1962-03-14", "Male", "optimization", "active", REYES.id],
-  ["P10411", "Daniel", "Okafor", "1957-02-09", "Male", "free", "active", REYES.id],
-  ["P10422", "Priya", "Natarajan", "1969-11-23", "Female", "optimization", "active", REYES.id],
-  ["P10433", "Thomas", "Whitfield", "1949-06-30", "Male", "free", "active", REYES.id],
-  ["P10444", "Grace", "Lindqvist", "1983-09-12", "Female", "free", "active", HARRINGTON_ID],
-  ["P10455", "Samuel", "Ortiz", "1975-01-05", "Male", "optimization", "active", REYES.id],
-  ["P10466", "Hannah", "Brooks", "1991-04-18", "Female", "free", "invited_not_joined", REYES.id],
-  ["P10477", "Walter", "Chen", "1944-12-02", "Male", "free", "active", HARRINGTON_ID],
-  ["P10488", "Leah", "Moreno", "1988-07-27", "Female", "free", "waiting_for_consent", REYES.id],
+  [
+    "P10318",
+    "Marcus",
+    "Hale",
+    "1962-03-14",
+    "Male",
+    "optimization",
+    "active",
+    REYES.id,
+  ],
+  [
+    "P10411",
+    "Daniel",
+    "Okafor",
+    "1957-02-09",
+    "Male",
+    "free",
+    "active",
+    REYES.id,
+  ],
+  [
+    "P10422",
+    "Priya",
+    "Natarajan",
+    "1969-11-23",
+    "Female",
+    "optimization",
+    "active",
+    REYES.id,
+  ],
+  [
+    "P10433",
+    "Thomas",
+    "Whitfield",
+    "1949-06-30",
+    "Male",
+    "free",
+    "active",
+    REYES.id,
+  ],
+  [
+    "P10444",
+    "Grace",
+    "Lindqvist",
+    "1983-09-12",
+    "Female",
+    "free",
+    "active",
+    HARRINGTON_ID,
+  ],
+  [
+    "P10455",
+    "Samuel",
+    "Ortiz",
+    "1975-01-05",
+    "Male",
+    "optimization",
+    "active",
+    REYES.id,
+  ],
+  [
+    "P10466",
+    "Hannah",
+    "Brooks",
+    "1991-04-18",
+    "Female",
+    "free",
+    "invited_not_joined",
+    REYES.id,
+  ],
+  [
+    "P10477",
+    "Walter",
+    "Chen",
+    "1944-12-02",
+    "Male",
+    "free",
+    "active",
+    HARRINGTON_ID,
+  ],
+  [
+    "P10488",
+    "Leah",
+    "Moreno",
+    "1988-07-27",
+    "Female",
+    "free",
+    "waiting_for_consent",
+    REYES.id,
+  ],
 ]
 
 /* The generated rows the new patients replace: late in the list, so the
@@ -1693,7 +1789,16 @@ const REPLACED_ROWS = [122, 123, 124, 12, 125, 126, 127, 128, 129]
 const NIGHTLY = "2026-10-03T05:00"
 
 PANEL_ROWS.forEach((row, n) => {
-  const [id, firstName, lastName, dob, sex, membership, recordState, providerId] = row
+  const [
+    id,
+    firstName,
+    lastName,
+    dob,
+    sex,
+    membership,
+    recordState,
+    providerId,
+  ] = row
   const i = REPLACED_ROWS[n]
   const base = PATIENTS[i]
   PATIENTS[i] = {
@@ -1722,7 +1827,11 @@ PANEL_ROWS.forEach((row, n) => {
 /* The four named sample patients join the panel under Dr. Harrington. */
 const PANEL_EXISTING: Record<string, Partial<Patient>> = {
   P10240: { recordState: "active", membership: "free", lastSyncAt: NIGHTLY },
-  P10257: { recordState: "waiting_for_consent", membership: "free", status: "Active" },
+  P10257: {
+    recordState: "waiting_for_consent",
+    membership: "free",
+    status: "Active",
+  },
   P10750: { recordState: "building", membership: "free", status: "Active" },
   P10665: {
     recordState: "sync_failed",
@@ -1884,7 +1993,11 @@ export function mergePatient(id: string, incoming: PatientInput) {
 /** Emails the patient portal invite to patients added without one. */
 export function sendPatientInvites(ids: string[]) {
   for (const id of ids) {
-    patients.patch(id, { status: "Invited", invitedAt: today(), respondedAt: "" })
+    patients.patch(id, {
+      status: "Invited",
+      invitedAt: today(),
+      respondedAt: "",
+    })
   }
 }
 

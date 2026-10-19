@@ -639,12 +639,12 @@ export function StreamedText({
   )
 }
 
-/** The flourishing intro's scale: a 0 to 10 strip (never red: gauge amber to
+/** The flourishing intro's scale: a 1 to 10 strip (never red: gauge amber to
     green) with its three anchors, then the one rule and the Okay chip. Sits
     inside the assistant's message under its one-line title. */
 export function ScaleIntro({ done, onOkay }: { done?: boolean; onOkay?: () => void }) {
   const anchors = [
-    { n: "0", word: "Worst" },
+    { n: "1", word: "Worst" },
     { n: "5", word: "Mixed" },
     { n: "10", word: "Best" },
   ]
@@ -690,19 +690,16 @@ export function ScaleIntro({ done, onOkay }: { done?: boolean; onOkay?: () => vo
   )
 }
 
-/** A 0 to 10 rating as a grid of small chips, six to a row. Tapping one
-    selects it (teal, and its number lands in the chat bar to send); tapping
-    it again clears it. Any other option (not applicable) is a quiet link
-    underneath. */
+/** A 1 to 10 rating as a grid of small chips. Tapping one answers at
+    once, with no selected state or press effect. Any other option (not
+    applicable) is a quiet link underneath. */
 export function ScoreChips({
   options,
-  selected,
   onSelect,
   low = "Not at all",
   high = "Completely",
 }: {
   options: string[]
-  selected?: string
   onSelect: (option: string) => void
   low?: string
   high?: string
@@ -711,25 +708,15 @@ export function ScoreChips({
   const other = options.filter((o) => !/^\d+$/.test(o))
   return (
     <View style={styles.scores}>
-      <View style={styles.chips} accessibilityRole="radiogroup">
-        {scores.map((o) => {
-          const on = o === selected
-          return (
-            <Pressable
-              key={o}
-              onPress={() => onSelect(o)}
-              accessibilityRole="radio"
-              accessibilityLabel={o}
-              accessibilityState={{ checked: on }}
-              style={({ pressed }) => [styles.score, on && styles.scoreOn, pressed && styles.pressed]}
-            >
-              <Text style={[styles.scoreText, on && styles.scoreTextOn]}>{o}</Text>
-            </Pressable>
-          )
-        })}
+      <View style={styles.chips}>
+        {scores.map((o) => (
+          <Pressable key={o} onPress={() => onSelect(o)} accessibilityRole="button" accessibilityLabel={o} style={styles.score}>
+            <Text style={styles.scoreText}>{o}</Text>
+          </Pressable>
+        ))}
       </View>
       <View style={styles.ends}>
-        <Text style={styles.endText}>0 {low}</Text>
+        <Text style={styles.endText}>1 {low}</Text>
         <Text style={styles.endText}>10 {high}</Text>
       </View>
       {other.map((o) => (
@@ -737,10 +724,9 @@ export function ScoreChips({
           key={o}
           onPress={() => onSelect(o)}
           accessibilityRole="button"
-          accessibilityState={{ selected: o === selected }}
-          style={({ pressed }) => [styles.otherOption, pressed && styles.pressed]}
+          style={styles.otherOption}
         >
-          <Text style={[styles.endText, o === selected && { color: ink.primary, fontFamily: font.medium }]}>{o}</Text>
+          <Text style={styles.endText}>{o}</Text>
         </Pressable>
       ))}
     </View>
@@ -909,9 +895,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     boxShadow: card.shadowXs,
   },
-  scoreOn: { backgroundColor: color.primary, borderColor: color.primary },
   scoreText: { fontFamily: font.regular, fontSize: 16, lineHeight: 20, color: ink.content },
-  scoreTextOn: { fontFamily: font.semibold, color: color.onPrimary },
   ends: { flexDirection: "row", justifyContent: "space-between" },
   endText: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: ink.secondary },
   otherOption: { alignSelf: "flex-start", paddingVertical: 4 },

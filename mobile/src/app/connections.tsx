@@ -5,13 +5,13 @@ import { Bluetooth, CheckCircle, Hospital, Plus, ShieldCheck, Watch } from "@/co
 import { Block, TextAction, toast } from "@/components/record-kit"
 import { Chevron, Row, Rows, Switch } from "@/components/settings-rows"
 import { Sheet } from "@/components/sheet"
-import { TabScreen, useDemoTabs } from "@/components/tab-bar"
+import { TabScreen } from "@/components/tab-bar"
 import { Button } from "@/components/ui"
-import { type DemoSource, connectSource, useDemoSources } from "@/lib/connections-demo"
+import { type Source, connectSource, useSources } from "@/lib/connections"
 import { chart, color, ink, space, type } from "@/lib/theme"
 
-/* Connections (demo, 16 Oct 2026): where the demo free home sends her to
-   connect her health. Nothing is connected to start.
+/* Connections, the Connect tab (16 Oct 2026): where she connects her
+   health. Nothing is connected to start.
 
    Health records: the two systems HOL reads directly, Epic MyChart and
    Oracle Health (5 Oct 2026 call), each with Connect, which asks what to
@@ -19,16 +19,15 @@ import { chart, color, ink, space, type } from "@/lib/theme"
 
    Devices and wearables: the usual pairing flow. Add a device opens a
    sheet that scans for a moment, then lists the devices it found; Connect
-   on one pairs it, and it joins her list with a green dot. A tab of its
-   own in the demo's tab bar (Connect), its sheets drawn over the bar. */
+   on one pairs it, and it joins her list with a green dot. Its sheets are
+   drawn over the tab bar. */
 
-type DeviceStep = "scanning" | "found" | { pairing: DemoSource } | { paired: DemoSource }
+type DeviceStep = "scanning" | "found" | { pairing: Source } | { paired: Source }
 
 export default function ConnectionsScreen() {
-  const sources = useDemoSources()
-  const [record, setRecord] = React.useState<DemoSource | null>(null)
+  const sources = useSources()
+  const [record, setRecord] = React.useState<Source | null>(null)
   const [device, setDevice] = React.useState<DeviceStep | null>(null)
-  useDemoTabs()
 
   const ehr = sources.filter((s) => s.kind === "ehr")
   const linkedEhr = ehr.filter((s) => s.connected)
@@ -109,7 +108,7 @@ function Synced({ when }: { when?: string }) {
 
 /** What she shares from a record system: a switch per kind of data, all
     on to start. Connect needs at least one. */
-function ShareSheet({ source, onBack, onConnect }: { source: DemoSource; onBack: () => void; onConnect: (data: string[]) => void }) {
+function ShareSheet({ source, onBack, onConnect }: { source: Source; onBack: () => void; onConnect: (data: string[]) => void }) {
   const [on, setOn] = React.useState<Record<string, boolean>>(() => Object.fromEntries(source.data.map((d) => [d, true])))
   const chosen = source.data.filter((d) => on[d])
   return (
@@ -152,7 +151,7 @@ function DeviceSheet({
   onClose,
 }: {
   step: DeviceStep
-  found: DemoSource[]
+  found: Source[]
   onStep: (s: DeviceStep) => void
   onClose: () => void
 }) {

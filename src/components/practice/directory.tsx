@@ -271,7 +271,7 @@ export function PersonCell({
 
 export type ExportRow = Record<string, string | number>
 
-async function exportRows(fileName: string, rows: ExportRow[]) {
+export async function exportRows(fileName: string, rows: ExportRow[]) {
   if (rows.length === 0) return
   const { default: writeXlsxFile } = await import("write-excel-file/browser")
   const headers = Object.keys(rows[0])

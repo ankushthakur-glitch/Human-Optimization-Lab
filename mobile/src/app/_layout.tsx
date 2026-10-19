@@ -40,10 +40,8 @@ const FONTS = {
                          logging a meal, one day, progress, history),
                          membership, profile and connect later
    signed out for idling session-expired
-   The error states (+not-found, and the review index under errors/) and
-   the review pages under demo/ (the review controls, a sample patient, the
-   kit gallery) sit outside every guard, so they open whatever the account
-   state.
+   The error states (+not-found, and the review index under errors/) sit
+   outside every guard, so they open whatever the account state.
    A screen whose guard turns false drops out of history, so Back never
    returns to a sign-in form after signing in. Every other screen can go
    back: the swipe and the back button both work, except on the first
@@ -126,6 +124,7 @@ function Routes() {
           <Stack.Screen name="assistant" options={{ animation: "slide_from_bottom" }} />
           {/* The record, opened from home and Results. */}
           <Stack.Screen name="biomarker/[id]" />
+          <Stack.Screen name="report/[id]" />
           <Stack.Screen name="record/item" />
           <Stack.Screen name="record/add" />
           <Stack.Screen name="medications" />
@@ -162,10 +161,8 @@ function Routes() {
           <Stack.Screen name="profile" />
           {/* Under Profile: the sharing permission and every connection. */}
           <Stack.Screen name="access" />
-          {/* The connections demo: a free home that connects her doctors'
-              systems and her devices (/demo/free?to=/home-connect). */}
-          <Stack.Screen name="home-connect" options={{ animation: "none" }} />
-          <Stack.Screen name="connections" />
+          {/* The Connect tab: her doctors' systems and her devices. */}
+          <Stack.Screen name="connections" options={{ animation: "none" }} />
           {/* Connecting later, after "Not now" at setup. */}
           <Stack.Screen name="connect" />
           <Stack.Screen name="connect-texts" />
