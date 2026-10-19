@@ -136,20 +136,17 @@ export function AgeCompare({ calendar, biological }: { calendar: number; biologi
         </View>
       </View>
 
-      <View style={styles.readout} accessibilityLiveRegion="polite">
-        {probe === null ? (
-          <Text style={styles.hint} maxFontSizeMultiplier={1.3}>
-            Touch the line to compare any age with yours
-          </Text>
-        ) : (
+      {/* Only while the line is touched: no standing hint under it. */}
+      {probe !== null && (
+        <View style={styles.readout} accessibilityLiveRegion="polite">
           <Text style={styles.hint} maxFontSizeMultiplier={1.3}>
             <Text style={styles.hintStrong}>Age {probe}</Text>
             {probeGap === 0
               ? " is your calendar age"
               : ` is ${years(Math.abs(probeGap))} ${probeGap > 0 ? "older" : "younger"} than you`}
           </Text>
-        )}
-      </View>
+        </View>
+      )}
     </View>
   )
 }

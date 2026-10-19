@@ -18,8 +18,8 @@ import { bookingOf, localIso } from "@/lib/todo"
    page (/enrolled), once payment goes through. Each paid test with its
    place, a Date and a Time field; "Confirm schedule" books
    them all and only then opens the confirmation (/schedule-confirmed):
-   "Start conversation" there opens the health questions (/complete-profile,
-   the assistant's "your why" chat), "Chat later" walks on to her plan. "Schedule later" stays on the
+   "Personalize my care" there leads to the flourishing questions,
+   "I'll do this later" walks on to her plan. "Schedule later" stays on the
    enrolled page, which leaves them in To do (lib/todo.ts).
 
    Each test's day and time are two fields: Date opens the calendar

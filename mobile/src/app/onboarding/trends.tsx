@@ -7,16 +7,13 @@ import { Button } from "@/components/ui"
 import { useMarkers } from "@/lib/experience"
 import { watchList } from "@/lib/trends"
 
-/* The next step of the free journey after the record is built: the value
-   phase is done, so this is the first of the two hard screens agreed on the
-   16 Oct 2026 call with Dr. Blanchard ("value, then the wrong way"). It shows
-   the markers whose results are moving away from the patient's range, each
-   with the result before, the result now, its status and its direction.
-   Everything comes from the record through lib/trends.ts: no clinical
-   meaning is added here, and nothing about biological age, plans or prices.
-   The patient moves on to Biological age, the next screen. */
+/* The record tour's third step, the first of the two hard screens agreed
+   on the 16 Oct 2026 call ("value, then the wrong way"): the markers whose
+   results are moving away from her range, as the trend tiles, each with
+   its last results, its status and its direction. Everything comes from
+   the record through lib/trends.ts: no clinical meaning is added here, and
+   nothing about biological age, plans or prices. Next: Biological age. */
 
-/** Biological age, the next screen in the agreed flow. */
 const NEXT = "/onboarding/biological-age" as Href
 
 /** Only results from the last 12 months can make a marker count as moving now. */
@@ -34,7 +31,8 @@ export default function TrendsScreen() {
   return (
     <FlowScreen
       hol
-      title={shown.length ? "These are trending the wrong way." : "Nothing is trending the wrong way."}
+      title={shown.length ? "Trending the wrong way" : "Nothing trending the wrong way"}
+      description={shown.length ? "Results from the last year moving away from your range." : "Your results from the last year are holding steady."}
       footer={<Button onPress={() => router.push(NEXT)}>See my biological age</Button>}
     >
       <TrendTiles trends={shown} />

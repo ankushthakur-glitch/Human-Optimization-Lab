@@ -343,6 +343,24 @@ export const MEDICATIONS: Medication[] = [
     lists: [{ origin: "doctor", dose: "10 mg when needed", date: "Aug 12, 2026" }],
   },
   {
+    id: "metformin",
+    name: "Metformin",
+    kind: "medicine",
+    lists: [{ origin: "doctor", dose: "500 mg twice a day", date: "Aug 12, 2026" }],
+  },
+  {
+    id: "fluticasone",
+    name: "Fluticasone nasal spray",
+    kind: "medicine",
+    lists: [{ origin: "doctor", dose: "2 sprays once a day", date: "Aug 12, 2026" }],
+  },
+  {
+    id: "amlodipine",
+    name: "Amlodipine",
+    kind: "medicine",
+    lists: [{ origin: "hospital", dose: "5 mg once a day", date: "Jun 3, 2026" }],
+  },
+  {
     id: "vitamin-d",
     name: "Vitamin D3",
     kind: "supplement",
@@ -1357,6 +1375,37 @@ export const APPOINTMENTS: Appointment[] = [
     ask: "Help me prepare for my cardiology visit",
   },
   { id: "review-dec", name: "Record review by Dr. Patel", with: "Dr. Maya Patel", place: "Harborview Longevity Clinic", at: "2026-12-08T09:00", kind: "review", origin: "doctor" },
+]
+
+/** Blood draws already booked, from the labs' own scheduling (sample data):
+    shown with the visits on the setup tour's Upcoming appointments. */
+export type ScheduledLab = {
+  id: string
+  name: string
+  /** Local time, "2026-10-28T07:30". */
+  at: string
+  place: string
+}
+
+export const SCHEDULED_LABS: ScheduledLab[] = [
+  {
+    id: "draw-a1c-lipids",
+    name: "A1c and lipid panel",
+    at: "2026-10-28T07:30",
+    place: "Quest Diagnostics, Del Mar",
+  },
+  {
+    id: "draw-thyroid",
+    name: "Thyroid panel and vitamin D",
+    at: "2026-11-04T08:00",
+    place: "Labcorp, Carmel Valley",
+  },
+  {
+    id: "draw-cmp",
+    name: "Metabolic panel and blood count",
+    at: "2026-11-18T07:45",
+    place: "Quest Diagnostics, Del Mar",
+  },
 ]
 
 export const PROCEDURES = [

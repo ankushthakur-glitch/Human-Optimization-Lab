@@ -5,7 +5,7 @@ import { keepTogether } from "@/components/care-gap"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { openMedicineByName } from "@/components/medicines"
 import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, UpgradeBanner, dotted } from "@/components/home-parts"
-import { CheckCircle, Hospital, Pill, Warning, Watch } from "@/components/ph"
+import { CheckCircle, Hospital, Pill, Warning } from "@/components/ph"
 import { Block, CARD_RADIUS, Group, NeedsRow, Rise, Status } from "@/components/record-kit"
 import { Chevron, Row, Rows } from "@/components/settings-rows"
 import { TabScreen, openTab } from "@/components/tab-bar"
@@ -13,7 +13,7 @@ import { TrendTiles } from "@/components/trend-tile"
 import { useAllowance } from "@/lib/allowance"
 import { useExperience, useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
-import { READINGS, useSources } from "@/lib/connections"
+import { useSources } from "@/lib/connections"
 import { MEDICATIONS } from "@/lib/record"
 import { card, color, space, type } from "@/lib/theme"
 import { NEW_IN_RECORD_NOTE, caughtUp, comingUp, homeBanner, markSeen, needsTitle, todo, yourMedicines, type TodoItem } from "@/lib/todo"
@@ -59,14 +59,13 @@ export function FreeHome() {
 /** The record part of the free home, from Needs you to Ask about your
     results. The upgrade banner only for a patient who can still upgrade:
     not a paused member, nor one whose plan is with Dr. Patel. Since 16 Oct
-    2026 Your connections follows Needs you, with today's readings from
-    her devices above it once one is connected. */
+    2026 Your connections follows Needs you; since 19 Oct 2026 it holds
+    her health records only, no devices. */
 export function RecordSections() {
   const exp = useExperience().experience
   return (
     <View style={styles.page}>
       <NeedsYou />
-      <FromDevices />
       <YourConnections />
       <Trends />
       {exp !== "paused" && exp !== "member-review" && <UpgradeCard />}
@@ -130,50 +129,17 @@ export function NeedsYou() {
 
 const connectedLine = (n: number, one: string) => (n ? `${n} ${one}${n === 1 ? "" : "s"} connected` : "None connected")
 
-/** Her record systems and her devices, each row opening the Connect tab. */
+/** Her record systems, opening the Connect tab. */
 export function YourConnections() {
   const sources = useSources().filter((s) => s.connected)
   const ehr = sources.filter((s) => s.kind === "ehr").length
-  const devices = sources.filter((s) => s.kind === "device").length
   const open = () => openTab("/connections", "home")
   return (
     <Rise at={2} id="home:connections">
       <Block title="Your connections">
         <Rows>
           <Row icon={<Hospital size={16} color={color.primary} />} title="Health records" meta={connectedLine(ehr, "system")} gap={10} right={<Chevron />} onPress={open} />
-          <Row icon={<Watch size={16} color={color.primary} />} title="Devices and wearables" meta={connectedLine(devices, "device")} gap={10} right={<Chevron />} onPress={open} />
         </Rows>
-      </Block>
-    </Rise>
-  )
-}
-
-/** Today's readings from the devices she connected, two to a row. */
-export function FromDevices() {
-  const tiles = useSources()
-    .filter((s) => s.kind === "device" && s.connected)
-    .flatMap((s) => (READINGS[s.id] ?? []).map((r) => ({ ...r, from: s.name, key: `${s.id}:${r.label}` })))
-    .slice(0, 4)
-  if (!tiles.length) return null
-  return (
-    <Rise at={2} id="home:devices">
-      <Block title="From your devices">
-        <View style={styles.deviceGrid}>
-          {tiles.map((t) => (
-            <View key={t.key} style={styles.deviceTile}>
-              <Text style={styles.deviceLabel} numberOfLines={1}>
-                {t.label}
-              </Text>
-              <Text style={styles.deviceValue} numberOfLines={1}>
-                {t.value}
-                {!!t.unit && <Text style={styles.deviceLabel}> {t.unit}</Text>}
-              </Text>
-              <Text style={styles.deviceFrom} numberOfLines={1}>
-                {t.from} · Today
-              </Text>
-            </View>
-          ))}
-        </View>
       </Block>
     </Rise>
   )
@@ -366,11 +332,6 @@ const styles = StyleSheet.create({
   page: { gap: space.section },
 
   // From your devices: two tiles to a row.
-  deviceGrid: { flexDirection: "row", flexWrap: "wrap", gap: space.item },
-  deviceTile: { flexBasis: "47%", flexGrow: 1, gap: 4, padding: space.compact, borderRadius: CARD_RADIUS, backgroundColor: card.fill, boxShadow: card.shadow },
-  deviceLabel: { ...type.label },
-  deviceValue: { ...type.stat },
-  deviceFrom: { ...type.meta },
 
   // The outside visits' note, the card's last line at a row's height.
   footnote: { ...type.label, paddingVertical: space.rowY },

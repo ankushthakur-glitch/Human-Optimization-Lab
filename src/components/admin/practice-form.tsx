@@ -52,6 +52,7 @@ const EMPTY: PracticeInput = {
   email: "",
   fax: "",
   website: "",
+  twilioNumber: "",
   primaryContact: EMPTY_CONTACT,
   region: "",
 }
@@ -67,6 +68,7 @@ function fromPractice(p: Practice): PracticeInput {
     email: p.email,
     fax: p.fax,
     website: p.website,
+    twilioNumber: p.twilioNumber ?? "",
     primaryContact: p.primaryContact,
     region: p.region,
   }
@@ -99,6 +101,8 @@ function validate(v: PracticeInput): Errors {
     errors.email = "Enter a valid email address."
   if (v.fax && digits(v.fax).length !== 10)
     errors.fax = "Enter a 10-digit fax number."
+  if (v.twilioNumber && digits(v.twilioNumber).length !== 10)
+    errors.twilioNumber = "Enter a 10-digit phone number."
   if (v.website && !/^https?:\/\/[^\s.]+\.[^\s]+$/.test(v.website))
     errors.website = "Start with https:// and include the domain."
   return errors
@@ -205,7 +209,7 @@ function PracticeFormBody({
       <SheetHeader className="shrink-0 border-b">
         <SheetTitle>{editing ? "Edit practice" : "Add practice"}</SheetTitle>
         <SheetDescription className="sr-only">
-          Practice details, region, primary contact and location.
+          Practice details, region, primary contact, location and messaging.
         </SheetDescription>
       </SheetHeader>
 
@@ -350,6 +354,24 @@ function PracticeFormBody({
               value={values.website}
               onChange={(event) => set("website", event.target.value)}
               error={errors.website}
+            />
+          </div>
+        </FormSection>
+
+        <FormSection title="Messaging">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField
+              id="practice-twilioNumber"
+              label="Twilio number"
+              type="tel"
+              inputMode="tel"
+              autoComplete="off"
+              placeholder="(123)-456-7890"
+              value={values.twilioNumber}
+              onChange={(event) =>
+                set("twilioNumber", formatPhone(event.target.value))
+              }
+              error={errors.twilioNumber}
             />
           </div>
         </FormSection>

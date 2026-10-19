@@ -1,69 +1,87 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { StyleSheet, Text } from "react-native"
+import { StyleSheet, View } from "react-native"
 
 import { FlowScreen, Section } from "@/components/flow"
-import { Group, NeedsRow } from "@/components/record-kit"
+import { Flask, Stethoscope } from "@/components/ph"
+import { Group, HUE, NeedsRow, Tile } from "@/components/record-kit"
 import { Button } from "@/components/ui"
-import { APPOINTMENTS, type Appointment } from "@/lib/record"
-import { type } from "@/lib/theme"
+import { APPOINTMENTS, SCHEDULED_LABS } from "@/lib/record"
+import { space } from "@/lib/theme"
 
-/* The step after "Your record is ready", the first of the value phase agreed
-   on the 16 Oct 2026 call with Dr. Blanchard: show the patient what the
-   platform does for them before it shows what is going the wrong way. This
-   one is Upcoming appointments (the "What's coming up" idea of the earlier
-   bento, now a screen of its own): the visits already on the patient's
-   calendar, each as the appointment card designed on 13 Oct. Medicines are
-   the next screen, New medication, never on this one. Nothing here is off
-   track, risk, biological age, a price or an upgrade. The patient moves on
-   to New medication. */
+/* The record tour's first step, after "Your record is ready" (the value
+   phase agreed on the 16 Oct 2026 call with Dr. Blanchard: what the
+   platform does for her before what is going the wrong way). Everything
+   already booked, lab tests and visits together, grouped by month (layout
+   option 3 of the 19 Oct "Upcoming appointments: 10 layouts" canvas):
+   the weekday and day, the name, the time and the place, and on the right
+   a mark for a lab test or a visit. Medicines are the next step. */
 
-/** New medication, the next screen. */
 const NEXT = "/onboarding/new-medication" as const
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
-/** "2026-10-21T10:30" as "Wed, 10:30 AM". */
-function whenOf(at: string): string | undefined {
-  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(at)
-  if (!m) return undefined
-  const h = Number(m[4])
-  const day = WEEKDAYS[new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getDay()]
-  return `${day}, ${h % 12 || 12}:${m[5]} ${h < 12 ? "AM" : "PM"}`
+type Item = { id: string; at: string; name: string; place: string; kind: "lab" | "visit" }
+
+/** "2026-10-21T10:30" as its local day and "10:30 AM". */
+function parts(at: string) {
+  const [, y, mo, d, h, mi] = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(at)!.map(Number)
+  const day = new Date(y, mo - 1, d)
+  return { day, time: `${h % 12 || 12}:${String(mi).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}` }
 }
 
 export default function UpcomingAppointmentsScreen() {
-  const upcoming = React.useMemo(() => [...APPOINTMENTS].sort((a, b) => a.at.localeCompare(b.at)), [])
+  const months = React.useMemo(() => {
+    const all: Item[] = [
+      ...SCHEDULED_LABS.map((l) => ({ id: l.id, at: l.at, name: l.name, place: l.place, kind: "lab" as const })),
+      ...APPOINTMENTS.map((a) => ({ id: a.id, at: a.at, name: a.name, place: a.place, kind: "visit" as const })),
+    ].sort((a, b) => a.at.localeCompare(b.at))
+    const groups: { label: string; items: Item[] }[] = []
+    for (const x of all) {
+      const label = MONTHS[parts(x.at).day.getMonth()]
+      if (groups.at(-1)?.label !== label) groups.push({ label, items: [] })
+      groups.at(-1)!.items.push(x)
+    }
+    return groups
+  }, [])
 
   return (
-    <FlowScreen hol title="Upcoming appointments" footer={<Button onPress={() => router.push(NEXT)}>Continue</Button>}>
-      {upcoming.length > 0 && (
-        <Section title={`${upcoming.length} ${upcoming.length === 1 ? "appointment" : "appointments"} coming up`}>
-          <Group>
-            {upcoming.map((a) => (
-              <Row key={a.id} appointment={a} />
-            ))}
-          </Group>
-        </Section>
-      )}
-
-      <Text style={styles.note}>From your own record. General information, not medical advice.</Text>
+    <FlowScreen hol title="Upcoming appointments" description="Lab tests and visits already booked, by month." footer={<Button onPress={() => router.push(NEXT)}>Continue</Button>}>
+      <View style={styles.groups}>
+        {months.map((m) => (
+          <Section key={m.label} title={m.label}>
+            <Group>
+              {m.items.map((x) => (
+                <Row key={x.id} item={x} />
+              ))}
+            </Group>
+          </Section>
+        ))}
+      </View>
     </FlowScreen>
   )
 }
 
-function Row({ appointment: a }: { appointment: Appointment }) {
+function Row({ item: x }: { item: Item }) {
+  const { day, time } = parts(x.at)
+  const lab = x.kind === "lab"
   return (
     <NeedsRow
-      date={a.at}
-      title={a.name}
-      meta={[whenOf(a.at), a.with, a.place].filter(Boolean).join(", ")}
-      tag={{ tone: "primary", label: "Booked" }}
+      date={{ weekday: WEEKDAYS[day.getDay()], day: day.getDate() }}
+      title={x.name}
+      meta={`${time} · ${x.place}`}
+      right={
+        <Tile hue={lab ? "blue" : "teal"} size={32}>
+          {lab ? <Flask size={16} color={HUE.blue.ink} /> : <Stethoscope size={16} color={HUE.teal.ink} />}
+        </Tile>
+      }
+      accessibilityLabel={`${x.name}, ${lab ? "lab test" : "visit"}, ${WEEKDAYS[day.getDay()]} ${MONTHS[day.getMonth()]} ${day.getDate()}, ${time}, ${x.place}`}
       chevron={false}
     />
   )
 }
 
 const styles = StyleSheet.create({
-  note: { ...type.meta, textAlign: "center" },
+  groups: { gap: space.section },
 })

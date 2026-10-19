@@ -40,9 +40,16 @@ export function FlowScreen({
   action,
   fixed,
   oneLine = false,
+  titleInBar = false,
+  description,
 }: {
+  /** One short line under the page title: what the page shows. */
+  description?: string
   /** Keeps the title on a single line, shrinking it to fit instead of wrapping. */
   oneLine?: boolean
+  /** A setup screen (`hol`) whose title sits beside the back button, on one
+      line, instead of under it: the record tour after "Your record is ready". */
+  titleInBar?: boolean
   /** A setup screen from the consent on: the Figma "Hol" look. Without it
       (and without `page`) the classic look, classic buttons included. */
   hol?: boolean
@@ -94,7 +101,7 @@ export function FlowScreen({
       <DarkStatusBar />
       <View style={styles.fill}>
         <PageGround />
-        <HolBar back={back} onBack={onBack} bar={bar} />
+        <HolBar back={back} onBack={onBack} bar={bar} title={titleInBar ? title : undefined} />
         <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <ScrollView
             contentContainerStyle={styles.scroll}
@@ -103,13 +110,18 @@ export function FlowScreen({
           >
             <View style={styles.holBody}>
               {art && <View style={styles.holArt}>{art}</View>}
-              <Text
-                style={[styles.holTitle, !!art && styles.holTitleCentred]}
-                accessibilityRole="header"
-                {...(oneLine ? { numberOfLines: 1, adjustsFontSizeToFit: true, minimumFontScale: 0.7 } : {})}
-              >
-                {title}
-              </Text>
+              {!titleInBar && (
+                <View style={styles.holHead}>
+                  <Text
+                    style={[styles.holTitle, !!art && styles.holTitleCentred]}
+                    accessibilityRole="header"
+                    {...(oneLine ? { numberOfLines: 1, adjustsFontSizeToFit: true, minimumFontScale: 0.7 } : {})}
+                  >
+                    {title}
+                  </Text>
+                  {!!description && <Text style={styles.holDescription}>{description}</Text>}
+                </View>
+              )}
               {children}
             </View>
           </ScrollView>
@@ -228,12 +240,12 @@ export function FlowBar({
     then the Figma's round grey back button, when there is somewhere to go
     back to. Sits on the page gradient, so put it inside the view that
     draws it. */
-export function HolBar({ back = true, onBack, bar }: { back?: boolean; onBack?: () => void; bar?: React.ReactNode }) {
+export function HolBar({ back = true, onBack, bar, title }: { back?: boolean; onBack?: () => void; bar?: React.ReactNode; title?: string }) {
   const top = useTopInset()
   const canBack = back && (!!onBack || router.canGoBack())
   const status = <View style={[styles.statusBar, { height: top }]} />
   // A screen that never goes back keeps only a breath under the status bar.
-  if (!canBack && !bar)
+  if (!canBack && !bar && !title)
     return (
       <>
         {status}
@@ -250,12 +262,17 @@ export function HolBar({ back = true, onBack, bar }: { back?: boolean; onBack?: 
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Back"
-            style={({ pressed }) => [styles.holBack, pressed && styles.holBackPressed]}
+            style={({ pressed }) => [styles.holBack, !!title && styles.holBackPlain, pressed && styles.holBackPressed]}
           >
             <CaretLeft size={20} color={ink.detail} />
           </Pressable>
         ) : (
           <View style={styles.holBackSpace} />
+        )}
+        {!!title && (
+          <Text style={styles.holBarTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} accessibilityRole="header">
+            {title}
+          </Text>
         )}
         {bar && <View style={styles.holBarCentred}>{bar}</View>}
         {bar && <View style={styles.holBackSpace} />}
@@ -462,9 +479,13 @@ const styles = StyleSheet.create({
   },
   barEmpty: { height: space.inline },
   holBack: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "#EBEBEB" },
+  // Beside a title the caret stands on its own, without the grey circle.
+  holBackPlain: { backgroundColor: "transparent", width: 24, alignItems: "flex-start" },
   holBackPressed: { opacity: 0.6 },
   holBackSpace: { width: 32, height: 32 },
   holBarCentred: { flex: 1, alignItems: "center" },
+  // The title beside the back button: the hero title's face, on one line.
+  holBarTitle: { flex: 1, fontFamily: font.semibold, fontSize: 20, lineHeight: 28, color: ink.content },
   holBody: {
     width: "100%",
     maxWidth: 420 + space.gutter * 2,
@@ -480,6 +501,9 @@ const styles = StyleSheet.create({
   // page title (18 medium) centred as the Consent names its pages.
   holTitle: { fontFamily: font.semibold, fontSize: 22, lineHeight: 30, color: ink.content },
   holTitleCentred: { ...type.tabTitle, textAlign: "center" },
+  // The title and its one line description, kept together.
+  holHead: { gap: space.inline },
+  holDescription: { ...type.body },
 
   sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 20 },
   sectionTitle: { ...type.sectionLabel },

@@ -1,15 +1,12 @@
 import { type Href, router } from "expo-router"
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
-import { ArrowRight } from "@/components/ph"
-import { TrendTile } from "@/components/trend-tile"
+import { Group, ResultRow } from "@/components/record-kit"
 import { Button } from "@/components/ui"
 import { biologicalAge, drivers } from "@/lib/biological-age"
 import { useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
-import { space, type } from "@/lib/theme"
 
 /* The last of the three screens agreed on the 16 Oct 2026 call: what is
    driving her biological age, in the call's own words "these are the things
@@ -53,29 +50,16 @@ export default function WhatIsDrivingItScreen() {
       : "These results are out of range or moving the wrong way."
 
   return (
-    <FlowScreen
-      hol
-      title="What is driving it?"
-      footer={
-        <Button onPress={finish} trailing={({ color }) => <ArrowRight size={18} color={color} weight="bold" />}>
-          See plans that can help
-        </Button>
-      }
-    >
-      <Text style={styles.lede}>{lede}</Text>
-
+    <FlowScreen hol title="What is driving it?" description={lede} footer={<Button onPress={finish}>See plans that can help</Button>}>
+      {/* The Record tab's biomarker rows, not tappable: a marker's page
+          opens only once setup is done. */}
       {!none && (
-        <View style={styles.list}>
+        <Group>
           {list.map((t) => (
-            <TrendTile key={t.id} trend={t} roomy onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: t.marker.id } })} />
+            <ResultRow key={t.id} trend={t} />
           ))}
-        </View>
+        </Group>
       )}
     </FlowScreen>
   )
 }
-
-const styles = StyleSheet.create({
-  lede: { ...type.body, marginTop: -space.inline },
-  list: { gap: 16 },
-})

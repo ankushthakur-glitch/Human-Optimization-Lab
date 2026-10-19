@@ -15,11 +15,13 @@ import {
   CalendarBlank,
   CaretRight,
   CreditCard,
+  FirstAidKit,
   GoogleLogo,
   Lock,
   PriceTag,
   ScanSmiley,
 } from "@/components/ph"
+import { PaidPopup } from "@/components/paid-popup"
 import { PlanStepPage } from "@/components/plan-steps"
 import { Card, KeyValue, TextAction } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
@@ -40,13 +42,20 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    Apple Pay and Google Pay take no card fields: a panel says which card
    in her wallet pays and how she confirms, and "Complete enrollment"
    opens the wallet's own confirm sheet (the card, who is paid, the
-   amount) before anything is charged. */
+   amount) before anything is charged.
 
-type Method = "card" | "apple" | "google"
-type Wallet = Exclude<Method, "card">
+   An HSA or FSA card pays like any card, with the same fields.
+
+   Once the payment goes through, a small popup says so: the amount, the
+   card, and "Download receipt" for the itemized receipt; Continue opens
+   the enrolled page (/enrolled). */
+
+type Method = "card" | "hsa" | "apple" | "google"
+type Wallet = Exclude<Method, "card" | "hsa">
 
 const METHODS: { id: Method; name: string }[] = [
   { id: "card", name: "Credit card" },
+  { id: "hsa", name: "HSA or FSA" },
   { id: "apple", name: "Apple Pay" },
   { id: "google", name: "Google Pay" },
 ]
@@ -100,15 +109,24 @@ export default function PaymentScreen() {
   const [agreedAt, setAgreedAt] = React.useState<string>()
   const [sheet, setSheet] = React.useState<"breakdown" | "wallet">()
 
+  // Paid: the popup is up, and Continue opens the enrolled page.
+  const [paid, setPaid] = React.useState<() => void>()
+
   const digits = number.replace(/\D/g, "")
   // Demo: the card fields are not checked, only the agreement.
   const ready = !!agreedAt
 
+  async function pay(details: Parameters<typeof start>[0]) {
+    const open = await start({ ...details, hold: true })
+    setSheet(undefined)
+    if (open) setPaid(() => open)
+  }
+
   function complete() {
     if (!ready || !agreedAt) return
-    if (method !== "card") return setSheet("wallet")
-    start({
-      card: `Card ending ${digits.slice(-4) || "4242"}`,
+    if (method === "apple" || method === "google") return setSheet("wallet")
+    void pay({
+      card: `${method === "hsa" ? "HSA or FSA card" : "Card"} ending ${digits.slice(-4) || "4242"}`,
       billing,
       agreedAt,
       enrolled: true,
@@ -118,7 +136,7 @@ export default function PaymentScreen() {
   function payWithWallet(wallet: Wallet) {
     if (!agreedAt) return
     const w = WALLETS[wallet]
-    start({ card: `${w.card}, ${w.name}`, billing, agreedAt, enrolled: true })
+    void pay({ card: `${w.card}, ${w.name}`, billing, agreedAt, enrolled: true })
   }
 
   // The terms and the privacy policy open in the consent screen's sheets.
@@ -132,9 +150,11 @@ export default function PaymentScreen() {
       nextLabel="Complete enrollment"
       nextWide
       nextDisabled={!ready}
-      nextPending={pending && method === "card"}
+      nextPending={pending && (method === "card" || method === "hsa")}
       overlay={
-        doc ? (
+        paid ? (
+          <PaidPopup onContinue={paid} />
+        ) : doc ? (
           <ConsentSheets page={{ sheet: doc, setSheet: setDoc }} />
         ) : sheet === "breakdown" ? (
           <CostBreakdownSheet
@@ -145,7 +165,7 @@ export default function PaymentScreen() {
           />
         ) : (
           sheet === "wallet" &&
-          method !== "card" && (
+          (method === "apple" || method === "google") && (
             <WalletSheet
               wallet={method}
               amount={dollarsExact(cost.total)}
@@ -225,10 +245,10 @@ export default function PaymentScreen() {
       </View>
 
       <View style={styles.section}>
-        {method === "card" ? (
+        {method === "card" || method === "hsa" ? (
           <>
             <TextField
-              label="Card number"
+              label={method === "hsa" ? "HSA or FSA card number" : "Card number"}
               compact
               icon={({ color: c }) => <CreditCard size={18} color={c} />}
               value={number}
@@ -273,7 +293,7 @@ export default function PaymentScreen() {
         <View style={styles.secure}>
           <Lock size={14} color={ink.tertiary} />
           <Text style={styles.secureText}>
-            {method === "card"
+            {method === "card" || method === "hsa"
               ? "Secure and encrypted"
               : "Secure and encrypted. Inlay never sees your card number."}
           </Text>
@@ -302,6 +322,7 @@ export default function PaymentScreen() {
     Google's blue. */
 function MethodMark({ method, size = 24 }: { method: Method; size?: number }) {
   if (method === "card") return <CreditCard size={size} color={ink.strong} />
+  if (method === "hsa") return <FirstAidKit size={size} color={color.primary} />
   if (method === "apple")
     return <AppleLogo size={size} weight="fill" color="#000000" />
   return <GoogleLogo size={size} weight="bold" color="#4285F4" />
@@ -425,11 +446,13 @@ const styles = StyleSheet.create({
   section: { gap: space.inline, marginTop: space.section },
   heading: { ...type.section },
 
-  methods: { flexDirection: "row", gap: space.inline },
+  // Four ways to pay, two to a row.
+  methods: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
   // Each way to pay: its mark and name in a slim tile, edged in teal on
   // the light green when chosen, as the goals' rows are.
   method: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: "45%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -478,4 +501,5 @@ const styles = StyleSheet.create({
   sheetRows: { paddingVertical: space.card - space.rowY },
   sheetActions: { gap: space.stack },
   quiet: { alignItems: "center" },
+
 })

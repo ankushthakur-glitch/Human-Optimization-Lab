@@ -328,6 +328,15 @@ function DetailsCards({
           ]}
         />
         <InfoCard
+          title="Messaging"
+          rows={[
+            {
+              label: "Twilio number",
+              value: practice.twilioNumber || "Not set",
+            },
+          ]}
+        />
+        <InfoCard
           title="Location"
           columns={2}
           rows={[

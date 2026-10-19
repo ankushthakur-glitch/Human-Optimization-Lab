@@ -8,7 +8,6 @@ import {
   IconCheck,
   IconClose,
   IconDownload,
-  IconEye,
   IconFileText,
   IconFilter,
   IconImage,
@@ -16,7 +15,6 @@ import {
   IconReply,
   IconSearch,
   IconSend,
-  IconUsersGroup,
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
@@ -30,7 +28,6 @@ import {
   AttachmentTitle,
 } from "@/design-system/ui/attachment"
 import { Button } from "@/design-system/ui/button"
-import { Checkbox } from "@/design-system/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -46,8 +43,6 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/design-system/ui/dropdown-menu"
-import { Field, FieldLabel } from "@/design-system/ui/field"
-import { Input } from "@/design-system/ui/input"
 import {
   InputGroup,
   InputGroupAddon,
@@ -55,21 +50,14 @@ import {
   InputGroupInput,
   InputGroupTextarea,
 } from "@/design-system/ui/input-group"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/design-system/ui/popover"
 import { Skeleton } from "@/design-system/ui/skeleton"
 import { toast } from "@/design-system/ui/sonner"
-import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/design-system/ui/tooltip"
 import { Avatar } from "@/components/dashboard-kit-v2"
-import { SUB_TAB, SUB_TABS_LIST } from "@/components/practice/directory"
 import {
   type Provider,
   providerName,
@@ -89,7 +77,6 @@ import {
   REACTIONS,
   type Reaction,
   chats,
-  createGroup,
   lastOf,
   markRead,
   openDirect,
@@ -99,12 +86,10 @@ import {
 import { useDictation } from "@/components/provider/communication/use-dictation"
 
 /* Communication, from the Amazing Grace Center "Chat" frames: a list of
-   conversations on the left, the open one on the right, New chat and New
-   group dialogs. Only clinicians talk here: the reference's Patients tab and
-   the patient half of its New chat dialog are left out on purpose, because
-   providers never message patients from this module. */
+   conversations on the left, the open one on the right, a New chat dialog.
+   Only one to one provider chats: the reference's Patients tab, its groups
+   and the patient half of its New chat dialog are left out on purpose. */
 
-type Tab = "chats" | "groups"
 type Filter = "all" | "unread"
 
 const PANEL =
@@ -167,16 +152,13 @@ function useColleagues() {
   )
 }
 
-function titleOf(t: ChatThread, people: Map<string, Provider>) {
-  if (t.kind === "group") return t.name
-  const other = people.get(t.memberIds.find((m) => m !== CHAT_ME) ?? "")
-  return other ? providerName(other) : "Provider"
+function otherOf(t: ChatThread, people: Map<string, Provider>) {
+  return people.get(t.memberIds.find((m) => m !== CHAT_ME) ?? "")
 }
 
-function otherOf(t: ChatThread, people: Map<string, Provider>) {
-  return t.kind === "direct"
-    ? people.get(t.memberIds.find((m) => m !== CHAT_ME) ?? "")
-    : undefined
+function titleOf(t: ChatThread, people: Map<string, Provider>) {
+  const other = otherOf(t, people)
+  return other ? providerName(other) : "Provider"
 }
 
 /** The text of a message, or its documents when it has no text. */
@@ -186,18 +168,6 @@ function summaryOf(m: ChatMessage) {
     (m.attachments.length === 1
       ? m.attachments[0]!.name
       : `${m.attachments.length} documents`)
-  )
-}
-
-function GroupMark({ size = 36 }: { size?: 36 | 40 }) {
-  return (
-    <span
-      aria-hidden
-      className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary-surface text-primary-tint"
-      style={{ width: size, height: size }}
-    >
-      <IconUsersGroup className="size-4.5" />
-    </span>
   )
 }
 
@@ -214,26 +184,20 @@ function UnreadCount({ n }: { n: number }) {
 export function CommunicationScreen() {
   const { items, ready } = chats.use()
   const people = useProviderLookup()
-  const [tab, setTab] = React.useState<Tab>("chats")
   const [filter, setFilter] = React.useState<Filter>("all")
   const [query, setQuery] = React.useState("")
   const [openId, setOpenId] = React.useState<string | null>(null)
   /* Below lg the list and the thread take turns on screen. */
   const [showThread, setShowThread] = React.useState(false)
-  const [dialog, setDialog] = React.useState<Tab | null>(null)
+  const [dialog, setDialog] = React.useState(false)
 
-  const kind = tab === "chats" ? "direct" : "group"
   const list = React.useMemo(() => {
     const q = query.trim().toLowerCase()
     return items
-      .filter((t) => t.kind === kind)
       .filter((t) => filter === "all" || t.unread > 0)
       .filter((t) => !q || titleOf(t, people).toLowerCase().includes(q))
       .sort((a, b) => (lastOf(b)?.at ?? "").localeCompare(lastOf(a)?.at ?? ""))
-  }, [items, kind, filter, query, people])
-
-  const countOf = (k: ChatThread["kind"]) =>
-    items.filter((t) => t.kind === k).length
+  }, [items, filter, query, people])
 
   /* The open thread stays open while it is in the list; otherwise the
      first row opens, so the right side is never blank on a wide screen. */
@@ -254,15 +218,8 @@ export function CommunicationScreen() {
     if (ready && visibleId && visibleUnread > 0) markRead(visibleId)
   }, [ready, visibleId, visibleUnread])
 
-  function switchTab(next: Tab) {
-    setTab(next)
-    setOpenId(null)
-    setShowThread(false)
-  }
-
-  function started(id: string, nextTab: Tab) {
-    setDialog(null)
-    setTab(nextTab)
+  function started(id: string) {
+    setDialog(false)
     setQuery("")
     setFilter("all")
     open(id)
@@ -273,25 +230,21 @@ export function CommunicationScreen() {
       <div className="flex min-h-0 flex-1 flex-col gap-4 bg-surface-sunken px-4 pt-3 pb-4">
         <h1 className="sr-only">Communication</h1>
         <header className="flex flex-wrap items-center justify-between gap-3">
-          <Tabs value={tab} onValueChange={(v) => switchTab(v as Tab)}>
-            <TabsList aria-label="Conversation type" className={SUB_TABS_LIST}>
-              <TabsTrigger value="chats" className={SUB_TAB}>
-                Providers ({countOf("direct")})
-              </TabsTrigger>
-              <TabsTrigger value="groups" className={SUB_TAB}>
-                Groups ({countOf("group")})
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <Button size="sm" onClick={() => setDialog(tab)}>
+          <h2 className="text-[15px] font-semibold">
+            Communication{" "}
+            <span className="font-normal text-muted-foreground tabular-nums">
+              ({items.length})
+            </span>
+          </h2>
+          <Button size="sm" onClick={() => setDialog(true)}>
             <IconAdd />
-            {tab === "chats" ? "New chat" : "New group"}
+            New chat
           </Button>
         </header>
 
         <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(300px,380px)_1fr]">
           <section
-            aria-label={tab === "chats" ? "Provider chats" : "Groups"}
+            aria-label="Provider chats"
             className={cn(PANEL, showThread && "hidden lg:flex")}
           >
             <div className="flex shrink-0 items-center gap-2 p-3">
@@ -363,9 +316,7 @@ export function CommunicationScreen() {
                 <li className="px-2 py-10 text-center text-[13px] text-muted-foreground">
                   {query || filter === "unread"
                     ? "No conversations match"
-                    : tab === "chats"
-                      ? "No chats yet"
-                      : "No groups yet"}
+                    : "No chats yet"}
                 </li>
               )}
             </ul>
@@ -392,14 +343,9 @@ export function CommunicationScreen() {
       </div>
 
       <NewChatDialog
-        open={dialog === "chats"}
-        onClose={() => setDialog(null)}
-        onStart={(providerId) => started(openDirect(providerId), "chats")}
-      />
-      <NewGroupDialog
-        open={dialog === "groups"}
-        onClose={() => setDialog(null)}
-        onCreate={(name, ids) => started(createGroup(name, ids), "groups")}
+        open={dialog}
+        onClose={() => setDialog(false)}
+        onStart={(providerId) => started(openDirect(providerId))}
       />
     </ProviderShell>
   )
@@ -421,16 +367,12 @@ function ThreadRow({
   const last = lastOf(t)
   const other = otherOf(t, people)
   const title = titleOf(t, people)
-  const author =
-    last && last.authorId !== CHAT_ME ? people.get(last.authorId) : undefined
   const body = last ? summaryOf(last) : ""
   const preview = !last
     ? "No messages yet"
     : last.authorId === CHAT_ME
       ? `You: ${body}`
-      : t.kind === "group" && author
-        ? `${author.firstName}: ${body}`
-        : body
+      : body
 
   return (
     <button
@@ -442,11 +384,7 @@ function ThreadRow({
         active ? "bg-primary-surface" : "hover:bg-muted/60"
       )}
     >
-      {t.kind === "group" ? (
-        <GroupMark />
-      ) : (
-        <Avatar name={title} photo={other?.photo} size={36} />
-      )}
+      <Avatar name={title} photo={other?.photo} size={36} />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex items-center gap-2">
           <span
@@ -456,11 +394,6 @@ function ThreadRow({
             )}
           >
             {title}
-            {t.kind === "group" && (
-              <span className="ml-1.5 text-xs font-normal text-muted-foreground tabular-nums">
-                {t.memberIds.length}
-              </span>
-            )}
           </span>
           {last && (
             <span
@@ -503,9 +436,6 @@ function ThreadHeader({
   onBack: () => void
 }) {
   const other = otherOf(t, people)
-  const members = t.memberIds
-    .map((id) => people.get(id))
-    .filter((p): p is Provider => Boolean(p))
 
   return (
     <div className="flex shrink-0 items-center gap-3 px-4 py-3">
@@ -518,21 +448,17 @@ function ThreadHeader({
       >
         <IconArrowLeft />
       </Button>
-      {t.kind === "group" ? (
-        <GroupMark size={40} />
-      ) : (
-        <Avatar
-          name={titleOf(t, people)}
-          photo={other?.photo}
-          size={48}
-          className="size-10!"
-        />
-      )}
+      <Avatar
+        name={titleOf(t, people)}
+        photo={other?.photo}
+        size={48}
+        className="size-10!"
+      />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <h2 className="truncate text-[15px] leading-5 font-semibold">
           {titleOf(t, people)}
         </h2>
-        {other ? (
+        {other && (
           <p className="flex flex-wrap gap-x-4 text-xs text-muted-foreground">
             <span>
               Specialty :{" "}
@@ -545,107 +471,9 @@ function ThreadHeader({
               Email : <span className="text-foreground/85">{other.email}</span>
             </span>
           </p>
-        ) : (
-          <Popover>
-            <PopoverTrigger
-              render={
-                <button
-                  type="button"
-                  className="flex w-fit items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
-                />
-              }
-            >
-              <span className="flex -space-x-1.5">
-                {members.slice(0, 5).map((p) => (
-                  <Avatar
-                    key={p.id}
-                    name={`${p.firstName} ${p.lastName}`}
-                    photo={p.photo}
-                    size={28}
-                    className="size-5! text-[9px] ring-2 ring-card"
-                  />
-                ))}
-              </span>
-              {members.length} members
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-72 p-2">
-              <p className="px-2 pt-1 pb-2 text-xs font-medium text-muted-foreground">
-                Members
-              </p>
-              <ul className="flex flex-col">
-                {members.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex items-center gap-2.5 rounded-md px-2 py-1.5"
-                  >
-                    <Avatar
-                      name={`${p.firstName} ${p.lastName}`}
-                      photo={p.photo}
-                      size={28}
-                    />
-                    <span className="flex min-w-0 flex-col">
-                      <span className="truncate text-[13px] font-medium">
-                        {providerName(p)}
-                        {p.id === CHAT_ME && (
-                          <span className="font-normal text-muted-foreground">
-                            {" "}
-                            (you)
-                          </span>
-                        )}
-                      </span>
-                      <span className="truncate text-xs text-muted-foreground">
-                        {p.specialty}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </PopoverContent>
-          </Popover>
         )}
       </div>
     </div>
-  )
-}
-
-/* Turns "@First Last" for the thread's members into tags. A tag for the
-   signed-in provider gets a tint so it stands out when scanning. */
-function MessageText({
-  text,
-  people,
-  memberIds,
-}: {
-  text: string
-  people: Map<string, Provider>
-  memberIds: string[]
-}) {
-  const names = memberIds
-    .map((id) => people.get(id))
-    .filter((p): p is Provider => Boolean(p))
-    .map((p) => ({ id: p.id, tag: `@${p.firstName} ${p.lastName}` }))
-    .sort((a, b) => b.tag.length - a.tag.length)
-  if (names.length === 0 || !text.includes("@")) return <>{text}</>
-  const pattern = new RegExp(
-    `(${names.map((n) => n.tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`
-  )
-  return (
-    <>
-      {text.split(pattern).map((part, i) => {
-        const hit = names.find((n) => n.tag === part)
-        if (!hit) return <React.Fragment key={i}>{part}</React.Fragment>
-        return (
-          <span
-            key={i}
-            className={cn(
-              "font-medium text-primary-tint",
-              hit.id === CHAT_ME && "rounded-sm bg-primary-surface px-0.5"
-            )}
-          >
-            {part}
-          </span>
-        )
-      })}
-    </>
   )
 }
 
@@ -717,7 +545,8 @@ function DocumentCard({ file }: { file: ChatAttachment }) {
             alt=""
             className={cn(
               "size-full object-cover object-top",
-              !image && "rounded-t-sm bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.06)]"
+              !image &&
+                "rounded-t-sm bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.06)]"
             )}
           />
         ) : (
@@ -767,79 +596,6 @@ function DocumentCard({ file }: { file: ChatAttachment }) {
         </Tooltip>
       </div>
     </div>
-  )
-}
-
-/* The eye count opens who has seen the message and who hasn't yet. */
-function SeenBy({
-  message: m,
-  thread: t,
-  people,
-}: {
-  message: ChatMessage
-  thread: ChatThread
-  people: Map<string, Provider>
-}) {
-  const seen = m.seenBy
-    .map((id) => people.get(id))
-    .filter((p): p is Provider => Boolean(p))
-  const waiting = t.memberIds
-    .filter((id) => id !== m.authorId && !m.seenBy.includes(id))
-    .map((id) => people.get(id))
-    .filter((p): p is Provider => Boolean(p))
-
-  const row = (p: Provider) => (
-    <li key={p.id} className="flex items-center gap-2.5 px-2 py-1.5">
-      <Avatar name={`${p.firstName} ${p.lastName}`} photo={p.photo} size={28} />
-      <span className="flex min-w-0 flex-col">
-        <span className="truncate text-[13px] font-medium text-foreground">
-          {providerName(p)}
-          {p.id === CHAT_ME && (
-            <span className="font-normal text-muted-foreground"> (you)</span>
-          )}
-        </span>
-        <span className="truncate text-xs text-muted-foreground">
-          {p.specialty}
-        </span>
-      </span>
-    </li>
-  )
-
-  return (
-    <Popover>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            aria-label={`Seen by ${seen.length}, view who`}
-            className="-mx-1 flex items-center gap-1 rounded-md px-1 py-0.5 hover:bg-foreground/5 hover:text-foreground"
-          />
-        }
-      >
-        <IconEye className="size-3.5" />
-        {seen.length}
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-72 gap-0 p-2">
-        <p className="px-2 pt-1 pb-1 text-xs font-medium text-muted-foreground">
-          Seen by ({seen.length})
-        </p>
-        {seen.length > 0 ? (
-          <ul className="flex flex-col">{seen.map(row)}</ul>
-        ) : (
-          <p className="px-2 py-1.5 text-[13px] text-muted-foreground">
-            No one yet
-          </p>
-        )}
-        {waiting.length > 0 && (
-          <>
-            <p className="mt-1 border-t px-2 pt-2.5 pb-1 text-xs font-medium text-muted-foreground">
-              Not seen yet ({waiting.length})
-            </p>
-            <ul className="flex flex-col">{waiting.map(row)}</ul>
-          </>
-        )}
-      </PopoverContent>
-    </Popover>
   )
 }
 
@@ -915,9 +671,7 @@ function Quote({
       <span className="font-medium text-primary-tint">
         {nameOf(q.authorId, people)}
       </span>
-      <span className="line-clamp-2 text-muted-foreground">
-        {summaryOf(q)}
-      </span>
+      <span className="line-clamp-2 text-muted-foreground">{summaryOf(q)}</span>
     </button>
   )
 }
@@ -940,10 +694,9 @@ function MessageItem({
   onJump: (messageId: string) => void
 }) {
   const mine = m.authorId === CHAT_ME
-  const group = t.kind === "group"
   const author = people.get(m.authorId)
   const bg = mine ? MINE_BG : "bg-card"
-  const named = showAuthor && author && (group || !mine)
+  const named = showAuthor && author && !mine
   const quoted = m.replyTo
     ? t.messages.find((x) => x.id === m.replyTo)
     : undefined
@@ -956,17 +709,6 @@ function MessageItem({
         mine && "flex-row-reverse"
       )}
     >
-      {group && (
-        <span className="w-9 shrink-0">
-          {showAuthor && author && (
-            <Avatar
-              name={`${author.firstName} ${author.lastName}`}
-              photo={author.photo}
-              size={36}
-            />
-          )}
-        </span>
-      )}
       <div
         className={cn(
           "flex max-w-[min(72%,600px)] min-w-0 flex-col gap-1",
@@ -1017,11 +759,6 @@ function MessageItem({
           {named && (
             <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground">
               {providerName(author)}
-              {group && (
-                <span className="rounded-full bg-primary-surface px-2 py-px text-xs text-primary-tint">
-                  {author.specialty}
-                </span>
-              )}
             </span>
           )}
           {quoted && (
@@ -1033,11 +770,7 @@ function MessageItem({
           )}
           {m.text && (
             <p className="break-words whitespace-pre-wrap text-foreground">
-              <MessageText
-                text={m.text}
-                people={people}
-                memberIds={t.memberIds}
-              />
+              {m.text}
             </p>
           )}
           {m.attachments.length > 0 && (
@@ -1048,12 +781,6 @@ function MessageItem({
             </div>
           )}
           <span className="flex items-center justify-end gap-2 text-[11px] text-muted-foreground tabular-nums">
-            {group && (
-              <>
-                <SeenBy message={m} thread={t} people={people} />
-                <span aria-hidden className="h-3 w-px bg-border" />
-              </>
-            )}
             {fmtTime(m.at)}
           </span>
         </div>
@@ -1099,14 +826,6 @@ function MessageItem({
 const MAX_FILE = 10 * 1024 * 1024
 const ACCEPT = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
 
-/* The "@query" the caret sits right after, if any. */
-function mentionAt(value: string, caret: number) {
-  const match = /(^|\s)@([^\s@]*(?: [^\s@]*)?)$/.exec(value.slice(0, caret))
-  return match
-    ? { query: match[2]!, start: caret - match[2]!.length - 1 }
-    : null
-}
-
 function ComposerTool({
   label,
   onClick,
@@ -1146,11 +865,6 @@ function ThreadView({
 }) {
   const [draft, setDraft] = React.useState("")
   const [files, setFiles] = React.useState<ChatAttachment[]>([])
-  const [mention, setMention] = React.useState<{
-    query: string
-    start: number
-  } | null>(null)
-  const [pick, setPick] = React.useState(0)
   const [replyId, setReplyId] = React.useState<string | null>(null)
   const [flash, setFlash] = React.useState<string | null>(null)
   const replying = replyId
@@ -1159,18 +873,7 @@ function ThreadView({
   const scroller = React.useRef<HTMLDivElement>(null)
   const input = React.useRef<HTMLTextAreaElement>(null)
   const fileInput = React.useRef<HTMLInputElement>(null)
-  /* Where the caret goes after a tag is inserted, applied right after the
-     new draft renders so fast typing can't land in front of it. */
-  const caretTo = React.useRef<number | null>(null)
-  React.useLayoutEffect(() => {
-    const el = input.current
-    if (caretTo.current === null || !el) return
-    el.focus()
-    el.setSelectionRange(caretTo.current, caretTo.current)
-    caretTo.current = null
-  }, [draft])
   const count = t.messages.length
-  const group = t.kind === "group"
 
   const dictation = useDictation({
     onText: setDraft,
@@ -1190,44 +893,6 @@ function ThreadView({
     if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 160)
       el.scrollTop = el.scrollHeight
   }, [tailReactions])
-
-  /* Who can be tagged: the group's other members. */
-  const taggable = React.useMemo(
-    () =>
-      t.memberIds
-        .filter((id) => id !== CHAT_ME)
-        .map((id) => people.get(id))
-        .filter((p): p is Provider => Boolean(p)),
-    [t.memberIds, people]
-  )
-  const matches = React.useMemo(() => {
-    if (!group || !mention) return []
-    const q = mention.query.toLowerCase()
-    return taggable.filter(
-      (p) =>
-        `${p.firstName} ${p.lastName}`.toLowerCase().startsWith(q) ||
-        p.lastName.toLowerCase().startsWith(q)
-    )
-  }, [group, mention, taggable])
-  const menuOpen = matches.length > 0
-
-  function track(value: string, caret: number) {
-    const next = group ? mentionAt(value, caret) : null
-    setMention(next)
-    if (next?.query !== mention?.query) setPick(0)
-  }
-
-  function insertMention(p: Provider) {
-    if (!mention) return
-    const el = input.current
-    const caret = el?.selectionStart ?? draft.length
-    const tag = `@${p.firstName} ${p.lastName} `
-    const next = draft.slice(0, mention.start) + tag + draft.slice(caret)
-    setDraft(next)
-    setMention(null)
-    const at = mention.start + tag.length
-    caretTo.current = at
-  }
 
   function addFiles(list: FileList | null) {
     if (!list) return
@@ -1253,15 +918,9 @@ function ThreadView({
     if (dictation.listening) dictation.stop()
     const text = draft.trim()
     if (!text && files.length === 0) return
-    const mentionIds = group
-      ? taggable
-          .filter((p) => text.includes(`@${p.firstName} ${p.lastName}`))
-          .map((p) => p.id)
-      : []
-    sendMessage(t.id, text, files, mentionIds, replying?.id)
+    sendMessage(t.id, text, files, replying?.id)
     setDraft("")
     setFiles([])
-    setMention(null)
     setReplyId(null)
   }
 
@@ -1301,7 +960,11 @@ function ThreadView({
               const newDay = !prev || prev.at.slice(0, 10) !== m.at.slice(0, 10)
               const showAuthor = newDay || prev?.authorId !== m.authorId
               return (
-                <li key={m.id} id={`msg-${m.id}`} className="flex flex-col gap-4">
+                <li
+                  key={m.id}
+                  id={`msg-${m.id}`}
+                  className="flex flex-col gap-4"
+                >
                   {newDay && (
                     <div className="flex items-center gap-3 px-[8%] py-1 text-xs text-muted-foreground">
                       <span className="h-px flex-1 bg-border" />
@@ -1326,43 +989,6 @@ function ThreadView({
       </div>
 
       <div className="relative flex shrink-0 flex-col gap-2 p-4">
-        {menuOpen && (
-          <ul
-            role="listbox"
-            aria-label="Tag a member"
-            className="absolute inset-x-4 bottom-full z-20 mb-1 max-h-60 overflow-y-auto rounded-lg border bg-popover p-1 shadow-md sm:right-auto sm:w-72"
-          >
-            {matches.map((p, i) => (
-              <li key={p.id} role="option" aria-selected={i === pick}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => insertMention(p)}
-                  onMouseEnter={() => setPick(i)}
-                  className={cn(
-                    "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left",
-                    i === pick && "bg-muted"
-                  )}
-                >
-                  <Avatar
-                    name={`${p.firstName} ${p.lastName}`}
-                    photo={p.photo}
-                    size={28}
-                  />
-                  <span className="flex min-w-0 flex-col">
-                    <span className="truncate text-[13px] font-medium">
-                      {providerName(p)}
-                    </span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {p.specialty}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
         {replying && (
           <div className="flex items-start gap-2.5 rounded-lg border-l-2 border-primary bg-primary-surface/60 py-2 pr-2 pl-3">
             <IconReply className="mt-0.5 size-4 shrink-0 text-primary-tint" />
@@ -1404,42 +1030,11 @@ function ThreadView({
               ref={input}
               rows={1}
               value={draft}
-              placeholder={
-                dictation.listening
-                  ? "Listening"
-                  : group
-                    ? "Type a message, @ to tag"
-                    : "Type a message"
-              }
+              placeholder={dictation.listening ? "Listening" : "Type a message"}
               aria-label="Message"
               className="max-h-32 min-h-10 py-2.5 text-[13px] md:text-[13px]"
-              onChange={(e) => {
-                setDraft(e.target.value)
-                track(e.target.value, e.target.selectionStart)
-              }}
-              onSelect={(e) =>
-                track(e.currentTarget.value, e.currentTarget.selectionStart)
-              }
-              onBlur={() => setMention(null)}
+              onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
-                if (menuOpen) {
-                  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                    e.preventDefault()
-                    const step = e.key === "ArrowDown" ? 1 : -1
-                    setPick((i) => (i + step + matches.length) % matches.length)
-                    return
-                  }
-                  if (e.key === "Enter" || e.key === "Tab") {
-                    e.preventDefault()
-                    insertMention(matches[pick] ?? matches[0]!)
-                    return
-                  }
-                  if (e.key === "Escape") {
-                    e.preventDefault()
-                    setMention(null)
-                    return
-                  }
-                }
                 if (e.key === "Escape" && replying) {
                   e.preventDefault()
                   setReplyId(null)
@@ -1515,12 +1110,10 @@ function ProviderPicker({
   people,
   selected,
   onToggle,
-  multi,
 }: {
   people: Provider[]
   selected: string[]
   onToggle: (id: string) => void
-  multi: boolean
 }) {
   const [query, setQuery] = React.useState("")
   const q = query.trim().toLowerCase()
@@ -1547,7 +1140,6 @@ function ProviderPicker({
       </InputGroup>
       <ul
         role="listbox"
-        aria-multiselectable={multi || undefined}
         className="-mx-2 no-scrollbar min-h-0 flex-1 overflow-y-auto"
       >
         {shown.map((p) => {
@@ -1562,14 +1154,6 @@ function ProviderPicker({
                   on ? "bg-primary-surface" : "hover:bg-muted/60"
                 )}
               >
-                {multi && (
-                  <Checkbox
-                    checked={on}
-                    tabIndex={-1}
-                    aria-hidden
-                    className="pointer-events-none"
-                  />
-                )}
                 <Avatar
                   name={`${p.firstName} ${p.lastName}`}
                   photo={p.photo}
@@ -1583,7 +1167,7 @@ function ProviderPicker({
                     {p.specialty}
                   </span>
                 </span>
-                {!multi && on && <IconCheck className="size-4 text-primary" />}
+                {on && <IconCheck className="size-4 text-primary" />}
               </button>
             </li>
           )
@@ -1640,7 +1224,6 @@ function NewChatForm({
           people={colleagues}
           selected={picked ? [picked] : []}
           onToggle={(id) => setPicked((cur) => (cur === id ? "" : id))}
-          multi={false}
         />
       </div>
       <DialogFooter className="mt-0 shrink-0 flex-row justify-end gap-2 border-t px-6 py-4">
@@ -1656,93 +1239,5 @@ function NewChatForm({
         </Button>
       </DialogFooter>
     </>
-  )
-}
-
-function NewGroupDialog({
-  open,
-  onClose,
-  onCreate,
-}: {
-  open: boolean
-  onClose: () => void
-  onCreate: (name: string, providerIds: string[]) => void
-}) {
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="flex h-[min(640px,88dvh)] flex-col gap-0 rounded-xl p-0 sm:max-w-md">
-        {open && <NewGroupForm onClose={onClose} onCreate={onCreate} />}
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function NewGroupForm({
-  onClose,
-  onCreate,
-}: {
-  onClose: () => void
-  onCreate: (name: string, providerIds: string[]) => void
-}) {
-  const colleagues = useColleagues()
-  const [name, setName] = React.useState("")
-  const [picked, setPicked] = React.useState<string[]>([])
-  const ready = name.trim() && picked.length > 0
-
-  return (
-    <form
-      noValidate
-      className="flex min-h-0 flex-1 flex-col"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (ready) onCreate(name.trim(), picked)
-      }}
-    >
-      <DialogHeader className="shrink-0 border-b px-6 py-4">
-        <DialogTitle className="text-base font-semibold">New group</DialogTitle>
-        <DialogDescription className="sr-only">
-          Name the group and add providers from the practice.
-        </DialogDescription>
-      </DialogHeader>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 px-6 py-4">
-        <Field className="shrink-0 gap-1.5">
-          <FieldLabel htmlFor="group-name">Group name</FieldLabel>
-          <Input
-            id="group-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={60}
-          />
-        </Field>
-        <div className="flex min-h-0 flex-1 flex-col gap-1.5">
-          <span className="text-sm font-medium">
-            Members
-            {picked.length > 0 && (
-              <span className="ml-1.5 font-normal text-muted-foreground tabular-nums">
-                {picked.length} selected
-              </span>
-            )}
-          </span>
-          <ProviderPicker
-            people={colleagues}
-            selected={picked}
-            onToggle={(id) =>
-              setPicked((cur) =>
-                cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]
-              )
-            }
-            multi
-          />
-        </div>
-      </div>
-      <DialogFooter className="mt-0 shrink-0 flex-row justify-end gap-2 border-t px-6 py-4">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={!ready}>
-          Create group
-        </Button>
-      </DialogFooter>
-    </form>
   )
 }

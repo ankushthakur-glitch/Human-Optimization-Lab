@@ -30,7 +30,9 @@ export function useStartMembership() {
   const navigation = useNavigation()
   const [pending, setPending] = React.useState(false)
 
-  async function start({ card, billing, agreedAt, enrolled }: { card: string; billing: Cadence; agreedAt: string; enrolled?: boolean }) {
+  /** Starts the membership. With `hold`, the enrolled page waits: `start`
+      hands back the step that opens it, for after the payment popup. */
+  async function start({ card, billing, agreedAt, enrolled, hold }: { card: string; billing: Cadence; agreedAt: string; enrolled?: boolean; hold?: boolean }): Promise<(() => void) | void> {
     setPending(true)
     await new Promise((done) => setTimeout(done, PAYING_MS))
     const now = new Date()
@@ -56,7 +58,9 @@ export function useStartMembership() {
       // One reset, home with the enrolled page over it: a dismissTo then a
       // push raced, as the Plan tab holds a pop for two frames (drag-back)
       // and the held pop then took the enrolled page off again.
-      navigation.dispatch({ type: "RESET", payload: { index: 1, routes: [{ name: "index" }, { name: "enrolled" }] } })
+      const open = () => navigation.dispatch({ type: "RESET", payload: { index: 1, routes: [{ name: "index" }, { name: "enrolled" }] } })
+      if (hold) return open
+      open()
       return
     }
     showToast("Welcome in. Dr. Patel is reviewing your plan.")

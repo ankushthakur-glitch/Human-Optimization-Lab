@@ -20,6 +20,8 @@ import { store } from "@/lib/storage"
    life      eight 0 to 10 questions about her life, while the record arrives
    why       the "your why" conversation and the flourishing index
    records   the record builds
+   tour      what the record shows: appointments, new medicines, results
+             going the wrong way, biological age and what drives it
    done      the dashboard, where suggested plans are offered
 
    A patient who says no to the consent skips the rest and lands on the
@@ -31,7 +33,7 @@ import { store } from "@/lib/storage"
    A prototype with no backend: when the API exists, `save` posts each step
    and the server holds the state. */
 
-export type Step = "about" | "consent" | "life" | "why" | "records" | "done"
+export type Step = "about" | "consent" | "life" | "why" | "records" | "tour" | "done"
 
 export type Profile = {
   firstName: string
@@ -284,6 +286,8 @@ export type State = {
   goals?: string[]
   /** Goals she wrote herself under "Other", oldest first. */
   ownGoals?: string[]
+  /** Plans she added herself from all 81 on /goal-plans, by name. */
+  addedPlans?: string[]
   /** Her answers to the flourishing assessment on /goals, by question key
       ("physical.0"): 0 to 10, or "na" where she chose not to answer. */
   assessment?: Record<string, number | "na">
@@ -430,4 +434,5 @@ export const STEP_ROUTE = {
   life: "/onboarding/life",
   why: "/onboarding/why",
   records: "/onboarding/syncing",
+  tour: "/onboarding/working",
 } as const

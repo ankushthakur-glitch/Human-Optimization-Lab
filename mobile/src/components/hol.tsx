@@ -59,8 +59,11 @@ export function PageHeader({
   children,
   compact,
   floating,
+  onTitlePress,
 }: {
   title?: string
+  /** Makes the title a button (a demo shortcut, e.g. the flourishing result). */
+  onTitlePress?: () => void
   back?: boolean
   onBack?: () => void
   /** A text action on the right, in the darker teal. */
@@ -92,11 +95,18 @@ export function PageHeader({
                 <CaretLeft size={floating ? 20 : 24} color={ink.detail} />
               </Pressable>
             )}
-            {!!title && (
-              <Text style={styles.headerTitle} numberOfLines={1} accessibilityRole="header">
-                {title}
-              </Text>
-            )}
+            {!!title &&
+              (onTitlePress ? (
+                <Pressable onPress={onTitlePress} hitSlop={8} accessibilityRole="button" accessibilityLabel={title} style={({ pressed }) => pressed && styles.pressed}>
+                  <Text style={styles.headerTitle} numberOfLines={1}>
+                    {title}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Text style={styles.headerTitle} numberOfLines={1} accessibilityRole="header">
+                  {title}
+                </Text>
+              ))}
           </View>
         )}
         {right ??

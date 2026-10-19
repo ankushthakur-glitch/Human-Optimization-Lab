@@ -15,7 +15,8 @@ import { color, hairline, ink, space, type } from "@/lib/theme"
    flourishing questions. Her profile as the record has it, in three blocks;
    she confirms it. Basic information and lifestyle edit in a sheet over
    this screen; medical has no Edit, as it is read from her record. Confirm
-   opens the health questions (/complete-profile). */
+   opens "Are you flourishing?" (/flourishing), the short video before the
+   flourishing questions (/flourishing-questions). */
 
 type Field = { id: string; label: string; value: string }
 
@@ -61,7 +62,7 @@ export default function HealthProfileScreen() {
     <PlanStepPage
       title="Tell us about you"
       nextLabel="Confirm"
-      onNext={() => router.push("/complete-profile")}
+      onNext={() => router.push("/flourishing")}
       overlay={editing && <EditSheet title={editing.title} fields={editing.fields} onSave={save} onClose={() => setEditing(undefined)} />}
     >
       <Section title="Basic information" fields={basic} onEdit={() => setEditing({ title: "Basic information", fields: basic })} />
