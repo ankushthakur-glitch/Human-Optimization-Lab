@@ -1,10 +1,10 @@
+import { router } from "expo-router"
 import * as React from "react"
 import { ActivityIndicator, Animated, Easing, Image, StyleSheet, Text, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
 import { RecordBlocks } from "@/components/record-blocks"
 import { Button } from "@/components/ui"
-import { useOnboarding } from "@/lib/onboarding"
 import { DATA_TYPES, SOURCES } from "@/lib/record"
 import { card, chart, color, font, hairline, ink, space, type } from "@/lib/theme"
 
@@ -45,14 +45,14 @@ const STAGE_TEXT: Record<Exclude<Stage, "done">, string> = {
 }
 
 export default function SyncingScreen() {
-  const onboarding = useOnboarding()
-  // Setup is done: the route guard opens the dashboard.
-  return <BuildRecord onDone={() => onboarding.save({ step: "done" })} />
+  // The record is ready: on to what it does for the patient, then the value
+  // phase (onboarding/working, trends, biological age).
+  return <BuildRecord action="See what my record does" onDone={() => router.push("/onboarding/working")} />
 }
 
 /** The record building, shared by setup and by connecting later from the
     dashboard. The swipe back leaves it, and it starts over on return. */
-export function BuildRecord({ onDone }: { onDone: () => void }) {
+export function BuildRecord({ onDone, action = "Go to my dashboard" }: { onDone: () => void; action?: string }) {
   // How many providers have turned up, then how many kinds of record are in.
   const [found, setFound] = React.useState(0)
   const [landed, setLanded] = React.useState(0)
@@ -96,7 +96,7 @@ export function BuildRecord({ onDone }: { onDone: () => void }) {
       }
       footer={
         <Button onPress={onDone} disabled={!done}>
-          Go to my dashboard
+          {action}
         </Button>
       }
     >

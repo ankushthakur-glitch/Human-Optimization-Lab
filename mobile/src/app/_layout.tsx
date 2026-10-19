@@ -108,6 +108,11 @@ function Routes() {
           <Stack.Screen name="onboarding/life-focus" />
           <Stack.Screen name="onboarding/why" />
           <Stack.Screen name="onboarding/syncing" />
+          <Stack.Screen name="onboarding/working" />
+          <Stack.Screen name="onboarding/new-medication" />
+          <Stack.Screen name="onboarding/trends" />
+          <Stack.Screen name="onboarding/biological-age" />
+          <Stack.Screen name="onboarding/what-is-driving-it" />
         </Stack.Protected>
         <Stack.Protected guard={status === "signedIn" && onboarded}>
           {/* The four tabs swap in place; the assistant rises over them. */}
