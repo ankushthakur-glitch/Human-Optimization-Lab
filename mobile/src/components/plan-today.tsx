@@ -9,7 +9,6 @@ import { PrimaryButton } from "@/components/hol"
 import { Barbell, BowlFood, Camera, CaretLeft, CaretRight, Check, ClipboardText, DownloadSimple, Heartbeat, MagnifyingGlass, PersonSimpleWalk, Play, Scales } from "@/components/ph"
 import { Block, HUE, ProgressBar, Rise, TextAction } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
-import { saveLog } from "@/components/today-exercise-parts"
 import { relativeDay } from "@/lib/dates"
 import { WALK, addDays, clockOf, dayOfAt, dayScore, daysBetween, localDay, profileOf, today, type MealSlot, type NutrientId, type TodayAction } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
@@ -236,16 +235,14 @@ const ICONS: Record<TodayAction["id"], typeof Barbell> = {
   weigh: Scales,
 }
 
-/** One card: the title with its count, the bar, and each task with its
-    tick. Today the walk and the session tick straight off; a meal, a weigh
-    in and a blood pressure need what she ate or read, so their tick opens
-    where she adds it. Another day is read only. Done tasks sink to the
-    bottom. */
+/** One card: the title with its count, the bar, and each task with a
+    chevron on the right (20 Oct 2026: no radio button), as on home's To-do.
+    Today every task opens where it is logged and is done once logged there.
+    Another day is read only. Done tasks sink to the bottom. */
 function TodoCard({ s, date, now, onCheckIn }: { s: Store; date: Date; now: Date; onCheckIn: (kind: CheckInKind) => void }) {
   const offset = daysBetween(now, date)
   const live = offset === 0
   const day = localDay(date)
-  const log = s.exercises?.[day] ?? {}
   // Array.sort is stable, so each group keeps its day order.
   const tasks = tasksOn(s, date, now).sort((x, y) => Number(x.done) - Number(y.done))
   const done = tasks.filter((t) => t.done).length
@@ -255,11 +252,6 @@ function TodoCard({ s, date, now, onCheckIn }: { s: Store; date: Date; now: Date
     else if (t.id === "strength") router.push("/exercise")
     else if (t.id === "walk") onCheckIn("walk")
     else onCheckIn(t.id === "bp" ? "bp" : "weight")
-  }
-  const tick = (t: Task) => {
-    if (t.id === "walk") return saveLog(s, day, "walk", log.walk ? undefined : ({ at: new Date().toISOString(), minutes: WALK.minutes } as never))
-    if (t.id === "strength" && t.action.session) return saveLog(s, day, t.action.session.id, t.done ? undefined : { at: new Date().toISOString() })
-    open(t)
   }
 
   return (
@@ -307,25 +299,8 @@ function TodoCard({ s, date, now, onCheckIn }: { s: Store; date: Date; now: Date
                   {t.meta}
                 </Text>
               </View>
+              {live && <CaretRight size={16} color={card.chevron} />}
             </Pressable>
-            {live ? (
-              <Pressable
-                onPress={() => tick(t)}
-                hitSlop={8}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: t.done }}
-                accessibilityLabel={`Done: ${t.title}`}
-                style={({ pressed }) => [styles.tick, t.done && styles.tickOn, pressed && styles.tickPressed]}
-              >
-                {t.done && <Check size={14} weight="bold" color={color.onPrimary} />}
-              </Pressable>
-            ) : (
-              t.done && (
-                <View style={[styles.tick, styles.tickOn]}>
-                  <Check size={14} weight="bold" color={color.onPrimary} />
-                </View>
-              )
-            )}
           </View>
         )
       })}
@@ -571,9 +546,6 @@ const styles = StyleSheet.create({
   taskTitle: { ...type.title, fontSize: 15, lineHeight: 21, color: ink.strong },
   taskMeta: { fontFamily: type.body.fontFamily, fontSize: 13, lineHeight: 18, color: ink.secondary, marginTop: 2 },
   done: { color: ink.tertiary, textDecorationLine: "line-through" },
-  tick: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: "#C2E1E0", alignItems: "center", justifyContent: "center" },
-  tickOn: { backgroundColor: color.primary, borderColor: color.primary },
-  tickPressed: { transform: [{ scale: 0.92 }] },
 
   rings: {
     flexDirection: "row",

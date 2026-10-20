@@ -296,7 +296,7 @@ export function GoalCard({ n, goal, playKey, week }: { n: number; goal: GoalDay;
 /* ---------------------------------------------------------- styles -- */
 
 const styles = StyleSheet.create({
-  page: { gap: space.item, paddingTop: space.inline, paddingBottom: space.section },
+  page: { gap: space.item, paddingTop: 0, paddingBottom: space.section },
 
   plan: { gap: space.item },
   planTop: { flexDirection: "row", alignItems: "center", gap: space.lead },
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
 
   stepper: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.inline, paddingVertical: space.stack },
   stepperText: { ...type.title, color: ink.strong, minWidth: 168, textAlign: "center" },
-  arrow: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  arrow: { width: 44, height: 40, alignItems: "center", justifyContent: "center" },
 
   score: { flexDirection: "row", alignItems: "center", gap: space.lead },
   scoreWords: { flex: 1, gap: space.line },

@@ -49,9 +49,17 @@ export type Life = {
   ratings: Partial<Record<DomainKey, number>>
   /** The three she most wants to improve, in the order she ticked them. */
   focus?: DomainKey[]
+  /** The symptoms that bother her most, chips she tapped and anything she typed or said. */
+  symptoms?: string[]
+  /** How much each of those bothers her, 1 to 10, by symptom. */
+  symptomRatings?: Record<string, number>
   /** She chose "Skip for now" on the intro. */
   skipped?: boolean
 }
+
+/** The symptoms offered on "What Matters Most", and how many she may choose. */
+export const SYMPTOMS = ["Irritability", "Sadness", "Anxiety", "Fatigue", "Lack of sleep", "Weight gain", "Low back pain", "Poor focus"]
+export const SYMPTOM_COUNT = 3
 
 /** How many she picks to improve. */
 export const FOCUS_COUNT = 3

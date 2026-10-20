@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker"
 import * as React from "react"
 
-import { Image, StyleSheet, View } from "react-native"
+import { Alert, Image, Linking, Platform, StyleSheet, View } from "react-native"
 
 import { Camera, Images } from "@/components/ph"
 import { toast } from "@/components/record-kit"
@@ -22,9 +22,17 @@ export type PhotoSource = "camera" | "library"
     to undefined when she cancels or the camera is not allowed. */
 export async function pickMealPhoto(source: PhotoSource): Promise<string | undefined> {
   if (source === "camera") {
-    const allowed = await ImagePicker.requestCameraPermissionsAsync()
+    // Ask only when the system still lets us; once she has said no for good,
+    // point her to Settings instead of a prompt that will never show.
+    let allowed = await ImagePicker.getCameraPermissionsAsync()
+    if (!allowed.granted && allowed.canAskAgain) allowed = await ImagePicker.requestCameraPermissionsAsync()
     if (!allowed.granted) {
-      toast("Allow the camera in Settings to take a photo")
+      if (Platform.OS === "web") toast("Allow the camera in your browser to take a photo")
+      else
+        Alert.alert("Camera is off", "Allow the camera in Settings to take a photo of your meal.", [
+          { text: "Not now", style: "cancel" },
+          { text: "Open Settings", onPress: () => void Linking.openSettings() },
+        ])
       return undefined
     }
     const r = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.8 })

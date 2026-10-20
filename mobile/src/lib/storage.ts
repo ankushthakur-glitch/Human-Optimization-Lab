@@ -16,6 +16,43 @@ if (Platform.OS === "web" && typeof localStorage !== "undefined") {
       .filter((key) => key.startsWith("hol."))
       .forEach((key) => localStorage.removeItem(key))
   } catch {}
+
+  /* Review builds only: /?demo=paid opens signed in on the paid member's
+     home (a live plan, onboarding done), so the dashboard can be shared by
+     one link instead of walking through activation, onboarding and checkout. */
+  try {
+    if (new URLSearchParams(window.location.search).get("demo") === "paid") {
+      const now = new Date().toISOString()
+      localStorage.setItem("hol.passwordHash", "demo")
+      localStorage.setItem("hol.signedIn", "1")
+      localStorage.setItem(
+        "hol.onboarding",
+        JSON.stringify({
+          step: "done",
+          consent: "signed",
+          consentAt: now,
+          membership: {
+            tier: "optimization",
+            programs: ["weight"],
+            startedAt: "2026-05-03T00:00:00.000Z",
+            approvedAt: "2026-05-18T00:00:00.000Z",
+            card: "Visa ending 4242",
+            billing: "monthly",
+            renewalConsentAt: "2026-05-03T00:00:00.000Z",
+          },
+          plan: {
+            status: "live",
+            version: 2,
+            versions: [
+              { version: 2, approved: "Sep 12, 2026", why: "Your home blood pressure readings were above your range in late August." },
+              { version: 1, approved: "May 18, 2026", why: "Your first plan, built from your record, your questionnaire and your why." },
+            ],
+          },
+          planReadySeen: true,
+        })
+      )
+    }
+  } catch {}
 }
 
 export const store =
