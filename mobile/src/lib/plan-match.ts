@@ -1,3 +1,4 @@
+import type { Hue } from "@/components/record-kit"
 import type { Trend } from "@/lib/trends"
 
 /* The upgrade page's plan match: the optimization plans the physicians
@@ -5,11 +6,59 @@ import type { Trend } from "@/lib/trends"
    selects; it never writes one. Each watched marker points to one plan,
    and two markers that point to the same plan count once. */
 
-/** Every optimization plan on file. */
-export const PLAN_COUNT = 81
-
 /** The areas the plans are grouped by when she opens the full list. */
 export const PLAN_AREAS = ["Metabolic & weight", "Lipid & cardiovascular", "Triglyceride & insulin", "Blood pressure", "Bone strength", "Muscle & strength", "Sleep", "Kidney", "Liver"] as const
+
+export type PlanArea = (typeof PLAN_AREAS)[number]
+
+/** Every optimization plan on file, by area, nine to an area. The first
+    names are the ones the record and the goals pick (/goal-plans). */
+export const PLANS: Record<PlanArea, string[]> = {
+  "Metabolic & weight": ["Metabolic health", "Weight loss foundations", "Body fat reduction", "GLP-1 support", "Waist circumference reset", "Metabolism after menopause", "Mediterranean eating", "Weight maintenance", "Appetite and cravings"],
+  "Lipid & cardiovascular": ["Lipid control", "LDL lowering", "HDL support", "Lipoprotein(a) watch", "Heart-healthy eating", "Cardio fitness for heart health", "Statin support", "Family history heart care", "ApoB reduction"],
+  "Triglyceride & insulin": ["Insulin sensitivity", "Prediabetes reversal", "A1C lowering", "Triglyceride lowering", "Steady blood sugar", "Lower carb eating", "Time-restricted eating", "After-meal glucose", "Fasting glucose reset"],
+  "Blood pressure": ["Blood pressure lowering", "Salt reduction", "DASH eating", "Home blood pressure checks", "Stress and blood pressure", "Morning blood pressure", "Weight and blood pressure", "Alcohol and blood pressure", "Activity for blood pressure"],
+  "Bone strength": ["Bone strength", "Osteopenia support", "Calcium and vitamin D", "Strength training for bone", "Fall prevention", "Balance training", "Posture and spine", "Bone health after menopause", "Joint mobility"],
+  "Muscle & strength": ["Muscle strength", "Fitness and VO₂ max", "Protein for muscle", "Muscle loss prevention", "Resistance training basics", "Grip strength", "Endurance building", "Recovery and mobility", "Active aging"],
+  Sleep: ["Better sleep", "More energy", "Insomnia support", "Sleep schedule reset", "Snoring and sleep apnea check", "Wind-down routine", "Shift work sleep", "Caffeine and sleep", "Deep sleep support"],
+  Kidney: ["Kidney health", "eGFR protection", "Hydration", "Kidney-friendly eating", "Protein balance for kidneys", "Blood pressure for kidneys", "Blood sugar for kidneys", "Medicine review for kidneys", "Uric acid lowering"],
+  Liver: ["Liver health", "Fatty liver reversal", "Liver enzymes", "Alcohol reduction", "Liver-friendly eating", "Weight loss for liver", "Inflammation reduction", "Gut health", "Liver and energy"],
+}
+
+/** Each area's colour, so a plan wears the same hue wherever it shows:
+    the upgrade page, the set-up's plans and the list of all 81. */
+export const AREA_HUE: Record<PlanArea, Hue> = {
+  "Metabolic & weight": "teal",
+  "Lipid & cardiovascular": "red",
+  "Triglyceride & insulin": "amber",
+  "Blood pressure": "red",
+  "Bone strength": "violet",
+  "Muscle & strength": "green",
+  Sleep: "blue",
+  Kidney: "blue",
+  Liver: "amber",
+}
+
+/** A plan's area, by its name. */
+export const areaOfPlan = (name: string) => PLAN_AREAS.find((a) => PLANS[a].includes(name))
+
+/** A plan's colour, by its name; violet for one of her own. */
+export const planHue = (name: string): Hue => {
+  const area = areaOfPlan(name)
+  return area ? AREA_HUE[area] : "violet"
+}
+
+/** Every optimization plan on file. */
+export const PLAN_COUNT = Object.values(PLANS).reduce((n, p) => n + p.length, 0)
+
+/** The short name each record plan goes by in the list of all plans. */
+export const SHORT_NAME: Record<PlanKind, string> = {
+  metabolic: "Metabolic health",
+  insulin: "Insulin sensitivity",
+  lipid: "Lipid control",
+  bone: "Bone strength",
+  other: "Personalized plan",
+}
 
 export type PlanKind = "metabolic" | "lipid" | "insulin" | "bone" | "other"
 

@@ -5,6 +5,7 @@ import { ActivityIndicator, Animated, Easing, Image, StyleSheet, Text, View } fr
 import { FlowScreen } from "@/components/flow"
 import { RecordBlocks } from "@/components/record-blocks"
 import { Button } from "@/components/ui"
+import { useOnboarding } from "@/lib/onboarding"
 import { DATA_TYPES, SOURCES } from "@/lib/record"
 import { card, chart, color, font, hairline, ink, space, type } from "@/lib/theme"
 
@@ -45,9 +46,16 @@ const STAGE_TEXT: Record<Exclude<Stage, "done">, string> = {
 }
 
 export default function SyncingScreen() {
-  // The record is ready: on to what it does for the patient, then the value
-  // phase (onboarding/working, trends, biological age).
-  return <BuildRecord action="See what my record does" onDone={() => router.push("/onboarding/working")} />
+  const onboarding = useOnboarding()
+  // The record is ready: on to the tour of what it shows (onboarding/working,
+  // new medication, trends, biological age, what is driving it). Saved as a
+  // step, so a patient who closes the app comes back to the tour, not to a
+  // record building again.
+  const next = async () => {
+    await onboarding.save({ step: "tour" })
+    router.push("/onboarding/working")
+  }
+  return <BuildRecord action="See what my record does" onDone={next} />
 }
 
 /** The record building, shared by setup and by connecting later from the

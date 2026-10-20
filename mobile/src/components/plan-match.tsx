@@ -2,24 +2,24 @@ import { router } from "expo-router"
 import * as React from "react"
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native"
 
-import { CaretRight, Drop, Flame, Heart, Info, Lock, Scales, Sparkle } from "@/components/ph"
-import { Card, HUE, Tile, type Hue } from "@/components/record-kit"
+import { CaretRight, Check, Drop, Flame, Heart, Info, Lock, Plus, Scales, Sparkle } from "@/components/ph"
+import { Card, HUE, Tile } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
-import { COUNT_WORD, PLAN_AREAS, PLAN_COUNT, matchPlans, type PlanKind, type PlanMatch } from "@/lib/plan-match"
+import { AREA_HUE, COUNT_WORD, PLAN_AREAS, PLAN_COUNT, PLANS, SHORT_NAME, matchPlans, planHue, type PlanKind, type PlanMatch } from "@/lib/plan-match"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 import { watchList } from "@/lib/trends"
 
-/* The upgrade page's top (reference from Fynn's team, 16 Oct 2026): a
-   welcome, then what the AI found. In order: "Welcome, Liv" and the one
-   sentence of what was done for her; the AI PLAN MATCH card (all the plans
-   on file, then how many her record supports); "The three your numbers
-   point to", one row each with the numbers it was matched on; one quiet
-   line on the rest, with "See all 81" opening the list in place; and the
-   note that the physicians wrote every plan. The pinned "Build my
-   personalized plan" (ShowroomActions) stays the one action.
+/* The upgrade page's top (reference from Fynn's team, 16 Oct 2026; more
+   white space between and inside the blocks, 19 Oct): a welcome, then what
+   the AI found. In order: "Welcome, Liv" and the one sentence of what was
+   done for her; the AI plan match card (all the plans on file, then how
+   many her record supports); "The three your numbers point to", one row
+   each with the numbers it was matched on; one quiet line on the rest, with
+   "See all 81" opening the list in place. The pinned "Build my personalized
+   plan" (ShowroomActions) stays the one action.
 
    States:
    - three, two or one match: the count, the heading and the sentence on
@@ -31,19 +31,17 @@ import { watchList } from "@/lib/trends"
    - she had a plan before: "Welcome back, Liv".
    "See all 81" slides the full list up as a bottom sheet (usePlanList). */
 
-const ICON: Record<PlanKind, { Icon: typeof Heart; hue: Hue }> = {
-  metabolic: { Icon: Scales, hue: "teal" },
-  lipid: { Icon: Heart, hue: "red" },
-  insulin: { Icon: Drop, hue: "amber" },
-  bone: { Icon: Sparkle, hue: "violet" },
-  other: { Icon: Flame, hue: "amber" },
+const ICON: Record<PlanKind, typeof Heart> = {
+  metabolic: Scales,
+  lipid: Heart,
+  insulin: Drop,
+  bone: Sparkle,
+  other: Flame,
 }
 
-/** The areas the other plans sit in, minus those her record points to. */
-const AREA_OF: Record<PlanKind, string> = { metabolic: "Metabolic & weight", lipid: "Lipid & cardiovascular", insulin: "Triglyceride & insulin", bone: "Bone strength", other: "" }
 
 /** The plans her record supports, and how many markers there are to compare. */
-function usePlanMatches() {
+export function usePlanMatches() {
   const onboarding = useOnboarding()
   const markers = useMarkers()
   const matches = matchPlans(watchList(markers, { improve: onboarding.why?.improve }).filter((t) => t.latest))
@@ -52,10 +50,12 @@ function usePlanMatches() {
 
 /** "See all 81" opens the full list as a bottom sheet. The sheet is drawn by
     the page (`sheet`, in its overlay slot) so it covers the screen rather
-    than scrolling with the content; `show` is what "See all" calls. */
-export function usePlanList() {
+    than scrolling with the content; `show` is what "See all" calls. In the
+    plan's set-up (/goal-plans) `pick` lets her add plans: `chosen` are the
+    plans already hers, `added` those she added, `toggle` adds or removes one. */
+export function usePlanList(pick?: { chosen: string[]; added: string[]; toggle: (name: string) => void }) {
   const [open, setOpen] = React.useState(false)
-  return { show: () => setOpen(true), sheet: open ? <PlanListSheet onClose={() => setOpen(false)} /> : null }
+  return { show: () => setOpen(true), sheet: open ? <PlanListSheet pick={pick} onClose={() => setOpen(false)} /> : null }
 }
 
 export function PlanMatchSection({ onSeeAll }: { onSeeAll: () => void }) {
@@ -81,7 +81,7 @@ export function PlanMatchSection({ onSeeAll }: { onSeeAll: () => void }) {
       <View style={styles.match} accessible accessibilityLabel={`AI plan match. ${PLAN_COUNT} plans on file. ${found} your record supports.`}>
         <View style={styles.matchHead}>
           <Info size={14} color={color.primaryText} />
-          <Text style={styles.matchLabel}>AI PLAN MATCH</Text>
+          <Text style={styles.matchLabel}>AI plan match</Text>
         </View>
         <View style={styles.counts}>
           <View style={[styles.count, styles.countFile]}>
@@ -132,10 +132,6 @@ export function PlanMatchSection({ onSeeAll }: { onSeeAll: () => void }) {
         </View>
       </View>
 
-      <View style={styles.physicians} accessible accessibilityLabel="Every plan is a protocol our physicians wrote in advance. The AI selects. It does not invent one for you.">
-        <Info size={15} color={color.primaryText} />
-        <Text style={styles.physiciansText} numberOfLines={2}>Every plan is a protocol our physicians wrote in advance. The AI selects; it never invents one.</Text>
-      </View>
     </View>
   )
 }
@@ -143,7 +139,8 @@ export function PlanMatchSection({ onSeeAll }: { onSeeAll: () => void }) {
 /** One matched plan: its icon, its name, what it was matched on, and a
     chevron; the row opens the marker it was matched on. */
 function MatchRow({ m, rule }: { m: PlanMatch; rule: boolean }) {
-  const { Icon, hue } = ICON[m.kind]
+  const Icon = ICON[m.kind]
+  const hue = planHue(SHORT_NAME[m.kind])
   return (
     <Pressable
       onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: m.markerId } })}
@@ -163,60 +160,96 @@ function MatchRow({ m, rule }: { m: PlanMatch; rule: boolean }) {
   )
 }
 
-/** All the plans by area, in a sheet that slides up from the foot: the ones
-    her record supports first (tap one to open the marker it was matched
-    on), then the areas that are not a fit today. The list scrolls inside the
-    sheet, so the header and its close button stay put. */
-function PlanListSheet({ onClose }: { onClose: () => void }) {
+/** All the plans by area, in a sheet that slides up from the foot. Opened
+    from the upgrade page it is view only: the plans her record supports say
+    "Matched". Opened in the set-up, those already hers say "In your plans"
+    and every other has Add; one she added says "Added" and a tap takes it
+    off again. The list scrolls inside the sheet, so the header and its
+    close button stay put. */
+function PlanListSheet({ pick, onClose }: { pick?: { chosen: string[]; added: string[]; toggle: (name: string) => void }; onClose: () => void }) {
   const { matches } = usePlanMatches()
   const { height } = useWindowDimensions()
-  const matchedAreas = new Set(matches.map((m) => AREA_OF[m.kind]))
-  const otherAreas = PLAN_AREAS.filter((a) => !matchedAreas.has(a))
+  const matched = new Set(matches.map((m) => SHORT_NAME[m.kind]))
+  const chosen = new Set(pick?.chosen ?? [])
+  const added = new Set(pick?.added ?? [])
   return (
-    <Sheet title={`All ${PLAN_COUNT} plans, by area`} onClose={onClose}>
-      <Text style={styles.sheetLead}>
-        {matches.length > 0 ? `${matches.length} of ${PLAN_COUNT} are matched to your record today.` : `None of the ${PLAN_COUNT} is matched to your record today.`}
-      </Text>
-      <ScrollView style={{ maxHeight: Math.round(height * 0.55) }} contentContainerStyle={styles.sheetList} showsVerticalScrollIndicator={false} nestedScrollEnabled>
-        {matches.map((m) => (
-          <FullRow key={m.kind + m.markerId} label={AREA_OF[m.kind] || m.name} fit />
-        ))}
-        {otherAreas.map((a) => (
-          <FullRow key={a} label={a} />
+    <Sheet title={`All ${PLAN_COUNT} plans`} onClose={onClose}>
+      <ScrollView style={{ maxHeight: Math.round(height * 0.62) }} contentContainerStyle={styles.sheetList} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+        {PLAN_AREAS.map((area) => (
+          <View key={area} style={styles.area}>
+            <View style={styles.areaHead}>
+              <View style={[styles.areaDot, { backgroundColor: HUE[AREA_HUE[area]].ink }]} />
+              <Text style={styles.areaName} accessibilityRole="header">{area}</Text>
+            </View>
+            {PLANS[area].map((name) => (
+              <FullRow
+                key={name}
+                label={name}
+                state={pick ? (added.has(name) ? "added" : chosen.has(name) ? "yours" : "add") : matched.has(name) ? "matched" : undefined}
+                onPress={pick && !chosen.has(name) ? () => pick.toggle(name) : undefined}
+              />
+            ))}
+          </View>
         ))}
       </ScrollView>
     </Sheet>
   )
 }
 
-/** View-only: a label and a status, nothing to tap. */
-function FullRow({ label, fit }: { label: string; fit?: boolean }) {
+/** One plan: its name and where it stands. A plan she can add or take off
+    is one tap. */
+function FullRow({ label, state, onPress }: { label: string; state?: "matched" | "yours" | "added" | "add"; onPress?: () => void }) {
+  const right =
+    state === "matched" || state === "yours" ? (
+      <View style={styles.fullChip}>
+        <Text style={styles.fullFit}>{state === "matched" ? "Matched" : "In your plans"}</Text>
+      </View>
+    ) : state === "added" ? (
+      <View style={[styles.fullChip, styles.addedChip]}>
+        <Check size={12} color={color.onPrimary} weight="bold" />
+        <Text style={[styles.fullFit, styles.addedText]}>Added</Text>
+      </View>
+    ) : state === "add" ? (
+      <View style={styles.add}>
+        <Plus size={14} color={color.primary} weight="bold" />
+        <Text style={styles.addText}>Add</Text>
+      </View>
+    ) : null
+  const words = `${label}${state === "added" ? ", added" : state === "yours" ? ", in your plans" : state === "matched" ? ", matched" : ""}`
+  if (!onPress)
+    return (
+      <View accessible accessibilityLabel={words} style={styles.fullRow}>
+        <Text style={styles.fullLabel}>{label}</Text>
+        {right}
+      </View>
+    )
   return (
-    <View accessible accessibilityLabel={`${label}, ${fit ? "matched" : "not a fit today"}`} style={styles.fullRow}>
-      <Text style={[styles.fullLabel, !fit && styles.fullMuted]}>{label}</Text>
-      {fit ? (
-        <View style={styles.fullChip}>
-          <Text style={styles.fullFit}>Matched</Text>
-        </View>
-      ) : (
-        <Text style={styles.fullState}>Not a fit today</Text>
-      )}
-    </View>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: state === "added" }}
+      accessibilityLabel={state === "added" ? `${label}, added. Tap to remove` : `Add ${label}`}
+      style={({ pressed }) => [styles.fullRow, pressed && styles.pressed]}
+    >
+      <Text style={styles.fullLabel}>{label}</Text>
+      {right}
+    </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { gap: 14 },
-  welcome: { gap: 4 },
+  // More air than the first cut (19 Oct 2026): each block stands apart.
+  root: { gap: space.section + 4 },
+  welcome: { gap: space.inline },
   title: { ...type.display, fontSize: 18, lineHeight: 24 },
-  lead: { ...type.body, fontSize: 14, lineHeight: 20, color: ink.detail },
+  lead: { ...type.body, fontSize: 14, lineHeight: 21, color: ink.detail },
 
   // The AI plan match card: mint, the two counts side by side.
-  match: { gap: 8, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: "#CFE8E3", backgroundColor: "#E9F6F3" },
+  match: { gap: space.item, padding: space.item + 4, borderRadius: 18, borderWidth: 1, borderColor: "#CFE8E3", backgroundColor: "#E9F6F3" },
   matchHead: { flexDirection: "row", alignItems: "center", gap: 6 },
-  matchLabel: { fontFamily: font.semibold, fontSize: 11, lineHeight: 16, letterSpacing: 0.8, color: color.primaryText },
-  counts: { flexDirection: "row", alignItems: "center", gap: 6 },
-  count: { flex: 1, alignItems: "center", justifyContent: "center", gap: 0, paddingVertical: 9, paddingHorizontal: 8, borderRadius: 12 },
+  matchLabel: { fontFamily: font.semibold, fontSize: 12, lineHeight: 16, color: color.primaryText },
+  counts: { flexDirection: "row", alignItems: "center", gap: space.inline },
+  count: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2, paddingVertical: space.item + 2, paddingHorizontal: space.inline, borderRadius: 14 },
   countFile: { backgroundColor: color.background },
   countFound: { backgroundColor: color.primary },
   countFigure: { ...type.display, fontSize: 26, lineHeight: 32 },
@@ -225,35 +258,38 @@ const styles = StyleSheet.create({
   onDarkSoft: { color: color.onPrimary, opacity: 0.85 },
 
   // The matched plans: a heading over one white card of rows.
-  rowsBlock: { gap: 8 },
+  rowsBlock: { gap: space.item },
   heading: { ...type.section, fontSize: 15, lineHeight: 20 },
-  rows: { borderRadius: 14, borderWidth: 1, borderColor: hairline.edge, backgroundColor: color.background },
-  row: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, paddingHorizontal: 12 },
+  rows: { borderRadius: 16, borderWidth: 1, borderColor: hairline.edge, backgroundColor: color.background },
+  row: { flexDirection: "row", alignItems: "center", gap: space.item, paddingVertical: space.item + 2, paddingHorizontal: space.item + 2 },
   rowRule: { borderTopWidth: 1, borderTopColor: hairline.rule },
-  rowWords: { flex: 1, gap: 1 },
+  rowWords: { flex: 1, gap: 3 },
   rowName: { ...type.title, fontSize: 14, lineHeight: 19, color: ink.strong },
   matchedText: { ...type.label, fontSize: 12, lineHeight: 16, flexShrink: 1, fontFamily: font.medium, color: color.ok },
   pressed: { opacity: 0.7 },
 
-  note: { gap: space.stack, padding: space.item },
+  note: { gap: space.stack, padding: space.item + 4 },
   noteTitle: { ...type.section },
   body: { ...type.body },
 
-  rest: { gap: 8 },
-  restLine: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 9, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: color.amberEdge, backgroundColor: color.amberTint },
-  restWords: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
-  restText: { ...type.label, fontSize: 12, lineHeight: 16, flex: 1, fontFamily: font.medium, color: "#7A4210" },
+  rest: { gap: space.inline },
+  restLine: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingVertical: space.item, paddingHorizontal: space.item + 2, borderRadius: 14, borderWidth: 1, borderColor: color.amberEdge, backgroundColor: color.amberTint },
+  restWords: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.inline },
+  restText: { ...type.label, fontSize: 12, lineHeight: 17, flex: 1, fontFamily: font.medium, color: "#7A4210" },
   seeAll: { flexDirection: "row", alignItems: "center", gap: 2 },
   seeAllText: { fontFamily: font.semibold, fontSize: 12, lineHeight: 16, color: color.primaryText },
-  sheetLead: { ...type.body, fontSize: 14, lineHeight: 20, color: ink.detail },
   sheetList: { paddingBottom: space.inline },
   fullRow: { flexDirection: "row", alignItems: "center", gap: space.item, minHeight: 48, paddingVertical: 10, borderTopWidth: 1, borderTopColor: hairline.rule },
   fullLabel: { ...type.title, flex: 1 },
-  fullMuted: { color: ink.secondary },
-  fullState: { ...type.label },
   fullChip: { paddingVertical: 3, paddingHorizontal: 10, borderRadius: 999, backgroundColor: color.okTint },
   fullFit: { ...type.label, fontFamily: font.semibold, color: color.ok },
+  addedChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: color.primary },
+  addedText: { color: color.onPrimary },
+  add: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 3, paddingHorizontal: 10, borderRadius: 999, borderWidth: 1, borderColor: color.primaryEdge },
+  addText: { ...type.label, fontFamily: font.semibold, color: color.primary },
+  area: { paddingTop: space.item },
+  areaHead: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingBottom: space.line },
+  areaDot: { width: 8, height: 8, borderRadius: 4 },
+  areaName: { ...type.section, fontSize: 14, lineHeight: 20 },
 
-  physicians: { flexDirection: "row", alignItems: "flex-start", gap: 8, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: "#CFE8E3", backgroundColor: "#EEF6F4" },
-  physiciansText: { ...type.body, flex: 1, fontSize: 12.5, lineHeight: 18, color: ink.content },
 })

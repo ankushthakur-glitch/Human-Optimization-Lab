@@ -5,12 +5,10 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 import {
   BillingToggle,
   IncludedSheet,
-  MoneyRow,
   PlanCard,
   firstMonth,
-  priceNumber,
 } from "@/components/enrollment-kit"
-import { Check, Info } from "@/components/ph"
+import { Check } from "@/components/ph"
 import { PlanStepPage } from "@/components/plan-steps"
 import {
   BASELINE_TESTS,
@@ -30,8 +28,9 @@ import { color, hairline, ink, space, type } from "@/lib/theme"
    Monthly or yearly (yearly the default, saving 10% and taking 10% off
    the tests), the plan named from her goals with its price and what it
    includes, then every baseline test with its icon and price, ticked as
-   she left them on step 2, and what she pays today under them, with one
-   quiet line on what paying the other way would cost.
+   she left them on step 2, and in the same card what she pays today, with
+   the tests and membership that make it up in one line under it. All on
+   one screen, no scrolling.
    "Continue to payment" opens step 4 (/payment). */
 
 /** The order the tests are listed in. */
@@ -85,45 +84,20 @@ export default function EnrollmentScreen() {
               onPress={() => toggle(BASELINE_TESTS[id])}
             />
           ))}
+          <View style={styles.total}>
+            <View style={styles.totalWords}>
+              <Text style={styles.totalLabel}>
+                {billing === "yearly" ? "Total due today" : "First month total"}
+              </Text>
+              <Text style={styles.totalLine}>
+                {`${dollarsExact(cost.subtotal)} tests + ${dollars(cost.membership)} membership${cost.discount > 0 ? `, ${YEARLY_TEST_DISCOUNT}% off tests` : ""}`}
+              </Text>
+            </View>
+            <Text style={styles.totalValue}>{dollarsExact(cost.total)}</Text>
+          </View>
         </View>
       </View>
 
-      <View style={[styles.card, styles.summary]}>
-        <MoneyRow
-          label={`${cost.tests.length} ${cost.tests.length === 1 ? "test" : "tests"} selected`}
-          value={dollarsExact(cost.subtotal)}
-        />
-        <MoneyRow
-          label={
-            billing === "yearly"
-              ? "Membership (12 months)"
-              : "Membership (first month)"
-          }
-          value={dollars(cost.membership)}
-        />
-        {cost.discount > 0 && (
-          <MoneyRow
-            label={`Annual member discount, ${YEARLY_TEST_DISCOUNT}% off tests`}
-            value={`−${dollarsExact(cost.discount)}`}
-            good
-          />
-        )}
-        <View style={styles.total}>
-          <Text style={styles.totalLabel}>
-            {billing === "yearly" ? "Total due today" : "First month total"}
-          </Text>
-          <Text style={styles.totalValue}>{dollarsExact(cost.total)}</Text>
-        </View>
-      </View>
-
-      <View style={styles.note}>
-        <Info size={14} color={ink.tertiary} />
-        <Text style={styles.noteText}>
-          {billing === "yearly"
-            ? `Paying monthly instead is ${dollars(priceNumber("monthly"))} a month${cost.subtotal ? ` plus ${dollars(cost.subtotal)} of tests` : ""} — ${dollars(cost.monthlyToday)} today, and ${dollars(cost.yearlySaving)} more across the year.`
-            : `Paying yearly instead is ${dollars(priceNumber("yearly"))} up front with ${YEARLY_TEST_DISCOUNT}% off your tests, and saves ${dollars(cost.yearlySaving)} across the year.`}
-        </Text>
-      </View>
     </PlanStepPage>
   )
 }
@@ -166,9 +140,9 @@ function TestRow({
 const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
 
-  plan: { marginTop: space.item },
+  plan: { marginTop: space.inline },
 
-  section: { gap: space.inline, marginTop: space.section },
+  section: { gap: space.inline, marginTop: space.item },
   heading: { ...type.title, color: ink.strong },
 
   card: {
@@ -181,7 +155,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: space.item,
-    minHeight: 48,
+    minHeight: 46,
     paddingVertical: space.inline,
     paddingHorizontal: space.rowX,
   },
@@ -205,28 +179,22 @@ const styles = StyleSheet.create({
   },
   boxOn: { backgroundColor: color.primary, borderColor: color.primary },
 
-  // The sums in a white card; the total under a rule, the page's one big number.
-  summary: {
-    gap: space.inline,
-    padding: space.gutter,
-    marginTop: space.item,
-  },
+  // The total closes the tests' card, under a rule: the page's one big number.
   total: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: space.stack,
-    paddingTop: space.item,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: space.item,
+    paddingVertical: space.item,
+    paddingHorizontal: space.rowX,
+    borderTopWidth: 1,
     borderTopColor: hairline.edge,
+    backgroundColor: color.primaryTint,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
   },
+  totalWords: { flex: 1, gap: 2 },
   totalLabel: { ...type.section },
+  totalLine: { ...type.meta },
   totalValue: { ...type.hero, fontSize: 24, lineHeight: 30, fontVariant: ["tabular-nums"] },
-  note: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: space.mark,
-    marginTop: space.item,
-  },
-  noteText: { ...type.meta, flex: 1 },
 })

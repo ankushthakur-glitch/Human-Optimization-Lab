@@ -634,3 +634,13 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Removed: Provider Portal / Communication / Communication
 - Removed: Provider Portal / Tasks / Tasks
 - Removed: Patient Portal / Mobile App: Optimization Member / Today (plan tab bar)
+
+## 20-Oct-2026
+
+- Reports and schedule modules, provider deactivation; add journey deck 14
+- Onboarding record walkthrough screens
+- Merge remote-tracking branch 'origin/P1'
+- 16 Oct journey changes, flourishing flow, HSA payment; journey deck 15
+- Tasks use Assign to instead of Assignee
+- Added: Provider Portal / Reports / Reports
+- Added: Provider Portal / Schedule / Schedule

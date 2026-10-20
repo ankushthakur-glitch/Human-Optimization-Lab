@@ -8,7 +8,7 @@ import { WASH, planName } from "@/components/enrollment-kit"
 import { DarkStatusBar } from "@/components/error-state"
 import { PageFooter, PageGround } from "@/components/hol"
 import { Check, CaretRight } from "@/components/ph"
-import { Card, CheckLine, Steps, TextAction, type Step } from "@/components/record-kit"
+import { Card, Steps, TextAction, type Step } from "@/components/record-kit"
 import { Button, useTopInset } from "@/components/ui"
 import { MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
@@ -25,12 +25,13 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    and the buttons rise in turn (all still under Reduce Motion). The steps
    are the kit's track: enrolled done today, scheduling the paid tests now,
    the rest to come. "Schedule my tests" opens the day and time for each
-   test (/schedule-tests); "Confirm schedule" there then opens the health
-   questions (/complete-profile, the assistant's conversation; no chat shows
-   before that tap). "Schedule later" leaves them in To do, brought up
+   test (/schedule-tests); "Confirm schedule" there then opens the
+   confirmation (/schedule-confirmed), which leads on to the flourishing
+   questions. "Schedule later" leaves them in To do, brought up
    every other day. Either way she walks on to her plan with Dr. Patel
    (/plan?walk=1), which this build approves after a moment, so the
-   set-up plays through to "Your personalized plan is ready". */
+   set-up plays through to "Your personalized plan is ready". The
+   payment and its receipt were confirmed in a popup just before. */
 
 const native = Platform.OS !== "web"
 
@@ -179,14 +180,12 @@ export default function EnrolledScreen() {
           </Animated.View>
         </View>
 
-        <Animated.View style={rise(1)}>
+        <Animated.View style={[styles.cards, rise(1)]}>
           <Card style={styles.card}>
             <Text style={type.section} accessibilityRole="header">
               What happens next
             </Text>
             <Steps steps={steps} />
-            <View style={styles.rule} />
-            <CheckLine>{`No charge until ${MEMBER.doctorShort} approves your plan`}</CheckLine>
           </Card>
         </Animated.View>
       </ScrollView>
@@ -258,6 +257,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: font.semibold, fontSize: 28, lineHeight: 34, letterSpacing: -0.4, color: ink.strong, textAlign: "center" },
   lead: { ...type.body, textAlign: "center", paddingHorizontal: space.item },
 
+  cards: { gap: space.item },
   card: { gap: space.item },
   // The help line under the card, filling the space above the button.
   rule: { height: 1, backgroundColor: hairline.rule },

@@ -130,10 +130,12 @@ function Routes() {
           <Stack.Screen name="medications" />
           <Stack.Screen name="medicine/[id]" />
           <Stack.Screen name="tell-us" />
-          <Stack.Screen name="complete-profile" />
           <Stack.Screen name="goals" />
-          <Stack.Screen name="goals-record" />
+          <Stack.Screen name="goal-plans" />
           <Stack.Screen name="health-profile" />
+          <Stack.Screen name="flourishing" />
+          <Stack.Screen name="flourishing-questions" />
+          <Stack.Screen name="flourishing-result" />
           <Stack.Screen name="baseline" />
           <Stack.Screen name="enrollment" />
           <Stack.Screen name="payment" />

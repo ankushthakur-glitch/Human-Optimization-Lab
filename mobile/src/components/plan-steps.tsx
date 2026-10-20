@@ -55,6 +55,7 @@ export function PlanStepPage({
   skip,
   noBack,
   headerTitle = "Your plan",
+  onTitlePress,
   title,
   lead,
   onNext,
@@ -78,6 +79,8 @@ export function PlanStepPage({
   noBack?: boolean
   /** The header's words: "Your plan", or "Payment method" on the last step. */
   headerTitle?: string
+  /** Makes the header's words a button (a demo shortcut). */
+  onTitlePress?: () => void
   /** The heading over the list; none on the last step, whose header names it. */
   title?: string
   lead?: string
@@ -95,7 +98,7 @@ export function PlanStepPage({
     <View style={styles.screen}>
       <DarkStatusBar />
       <PageGround />
-      <PageHeader title={headerTitle} onBack={back} right={step ? <PlanSteps step={step} total={total} /> : undefined} />
+      <PageHeader title={headerTitle} onTitlePress={onTitlePress} onBack={back} right={step ? <PlanSteps step={step} total={total} /> : undefined} />
       {!!title && (
         <View style={styles.head}>
           <Text style={styles.title} accessibilityRole="header">

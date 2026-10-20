@@ -1,9 +1,9 @@
-import { CATEGORIES } from "@/components/goal-list"
+import { GOALS } from "@/components/goal-list"
 import type { Biomarker } from "@/lib/record"
 import { pointSide } from "@/lib/trends"
 
 /** Which results speak to each goal, by the goal's first words. Shared by
-    /goals (to preselect) and /goals-record (to check each choice). */
+    /goals, to preselect. */
 export const EVIDENCE: { words: RegExp; markers: string[]; test?: string }[] = [
   { words: /^lose weight/, markers: ["bmi", "glucose", "tg", "bp"] },
   { words: /^improve metabolic/, markers: ["a1c", "glucose"] },
@@ -21,7 +21,7 @@ export function recordGoals(markers: Biomarker[], max = 3): string[] {
     const last = b?.points[b.points.length - 1]
     return !!b && !!last && !!pointSide(b, last)
   }
-  return CATEGORIES.flatMap((c) => c.goals)
+  return GOALS.map((g) => g.label)
     .filter((g) => EVIDENCE.some((e) => e.words.test(g.toLowerCase()) && e.markers.some(out)))
     .slice(0, max)
 }

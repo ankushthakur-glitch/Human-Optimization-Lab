@@ -1,14 +1,17 @@
+import { router } from "expo-router"
 import * as React from "react"
+import { StyleSheet, View } from "react-native"
 
 import { ArrowRight } from "@/components/ph"
 import { PlanMatchSection } from "@/components/plan-match"
+import { TextAction } from "@/components/record-kit"
 import { Button } from "@/components/ui"
 import { logEvent, useOffer, useShown } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
 
 /* The plan showroom (FINAL-SPEC C.14.3, D.4), cut back on 16 Oct 2026 to
    what the upgrade screen needs: the AI plan match (components/plan-match.tsx),
-   "Welcome, Liv", the plans her record supports and the physician note,
+   "Welcome, Liv" and the plans her record supports,
    then "Build my personalized plan" (ShowroomActions) pinned below it. What
    a member gets, the prices, what stays free and what is charged apart are
    gone from this screen. */
@@ -49,7 +52,10 @@ export function ShowroomActions({
 }) {
   const onboarding = useOnboarding()
   const offer = useOffer("plan-tab", { key: "tab" })
+  // "Do it later": back where she came from, or home from the tab.
+  const later = () => (router.canGoBack() ? router.back() : router.replace("/"))
   return (
+    <View style={styles.actions}>
     <Button
       trailing={({ color: c }) => <ArrowRight size={18} weight="bold" color={c} />}
       onPress={() => {
@@ -60,5 +66,16 @@ export function ShowroomActions({
     >
       {startLabelOf(onboarding)}
     </Button>
+    <View style={styles.later}>
+      <TextAction tone="muted" onPress={later}>
+        Do it later
+      </TextAction>
+    </View>
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  actions: { gap: 4 },
+  later: { alignItems: "center", paddingTop: 4 },
+})

@@ -324,7 +324,7 @@ function AssigneeSelect({
         size={size}
         className={className ?? "w-full"}
         aria-invalid={invalid || undefined}
-        aria-label="Assignee"
+        aria-label="Assign to"
       >
         {children ?? <SelectValue />}
       </SelectTrigger>
@@ -429,7 +429,7 @@ function TaskList() {
     },
     {
       id: "assignee",
-      header: "Assignee",
+      header: "Assign to",
       cell: (t) => <AssigneeCell id={t.assigneeId} people={people} />,
       sortValue: (t) => people.name(t.assigneeId),
     },
@@ -500,7 +500,7 @@ function TaskList() {
       ? [
           {
             id: "assignee",
-            label: "Assignee",
+            label: "Assign to",
             all: "All assignees",
             options: assigneeNames,
             match: (t: Task, v: string) => people.name(t.assigneeId) === v,
@@ -576,7 +576,7 @@ function TaskList() {
           Title: t.title,
           Patient: patientName(t.patientId),
           "Patient ID": t.patientId,
-          Assignee: people.name(t.assigneeId),
+          "Assign to": people.name(t.assigneeId),
           Description: t.description,
           Status: isOverdue(t) ? `${t.status}, overdue` : t.status,
           Due: whenLabel(t.due),
@@ -1120,7 +1120,7 @@ function TaskPanel({
               </SelectContent>
             </Select>
           </PanelRow>
-          <PanelRow icon={IconUser} label="Assignee">
+          <PanelRow icon={IconUser} label="Assign to">
             <AssigneeSelect
               size="sm"
               value={t.assigneeId}
@@ -1324,7 +1324,7 @@ function AddTaskForm({
         />
         <Field>
           <FieldLabel htmlFor="task-assignee">
-            Assignee
+            Assign to
             <Required />
           </FieldLabel>
           <AssigneeSelect

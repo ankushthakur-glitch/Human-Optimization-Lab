@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { ScoreRing, formatNumber } from "@/components/charts"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { EnergyBalance } from "@/components/energy-balance"
-import { FromDevices, Upcoming, YourConnections } from "@/components/home-free"
+import { Upcoming, YourConnections } from "@/components/home-free"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { Barbell, BowlFood, Bone, CaretRight, Check, Drop, Flame, Heartbeat, PersonSimpleRun, PersonSimpleWalk, Scales } from "@/components/ph"
 import {
@@ -74,7 +74,6 @@ export function OptimizedHome() {
           </Block>
         </Rise>
         <Upcoming at={5} />
-        <FromDevices />
         <YourConnections />
       </View>
     </TabScreen>

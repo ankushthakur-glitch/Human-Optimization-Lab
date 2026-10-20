@@ -11,7 +11,6 @@ import { Bone, CalendarCheck, CaretRight, Drop, MapPin, Wind } from "@/component
 import { Card, CheckLine, HUE, TextAction, Tile } from "@/components/record-kit"
 import { Button, useTopInset } from "@/components/ui"
 import { BASELINE_TESTS, TEST_SLOTS, chosenTests, type BaselineTestId } from "@/lib/baseline-tests"
-import { MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
@@ -22,11 +21,10 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    and the buttons rising in turn (all still under Reduce Motion).
    The card lists each booked test with its day, time and place. Under it
    the assistant's offer, with its two buttons:
-     "Start conversation" opens "Tell us about you" (/health-profile),
-       whose Confirm opens the health questions (/complete-profile), the
-       assistant's chat, which saves every answer and whose last answer
-       walks on to her plan (/plan?walk=1);
-     "Chat later" skips them for now and walks on to her plan the same way.
+     "Personalize my care" opens "Tell us about you" (/health-profile),
+       then the flourishing video, questions and result, which walks on
+       to her plan (/plan?walk=1);
+     "I'll do this later" skips them for now and walks on to her plan the same way.
        The questions stay open: she can start them from the plan, and
        nothing is lost. Either button replaces this page, so back never
        returns to a confirmed schedule. */
@@ -135,7 +133,7 @@ export default function ScheduleConfirmedScreen() {
               )
             })}
             <View style={styles.rule} />
-            <CheckLine>{`You can move any test from To do. No charge until ${MEMBER.doctorShort} approves your plan`}</CheckLine>
+            <CheckLine>You can move any test from To do.</CheckLine>
           </Card>
         </Animated.View>
       </ScrollView>

@@ -1664,9 +1664,10 @@ export function Quote({ text, meta }: { text: string; meta?: string }) {
     range or borderline; in range needs no mark, the badge says it), and
     on the right its last results as a small trend chart and a caret.
     `since` adds a quiet line under the value: the member's change since
-    she started, or a new result's words. The whole row opens the marker.
-    Feed it a classified marker from lib/trends.ts. */
-export function ResultRow({ trend: t, since, onPress }: { trend: MarkerTrend; since?: string; onPress: () => void }) {
+    she started, or a new result's words. The whole row opens the marker;
+    without `onPress` (setup, before a marker's page can open) it is a
+    plain row with no caret. Feed it a classified marker from lib/trends.ts. */
+export function ResultRow({ trend: t, since, onPress }: { trend: MarkerTrend; since?: string; onPress?: () => void }) {
   const unit = t.marker.unit
   const tone = t.status === "out" ? outOfRangeColor() : chart.borderline
   const Arrow = t.side === "below" ? ArrowDownRight : ArrowUpRight
@@ -1676,9 +1677,10 @@ export function ResultRow({ trend: t, since, onPress }: { trend: MarkerTrend; si
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
+      disabled={!onPress}
+      accessibilityRole={onPress ? "button" : undefined}
       accessibilityLabel={[t.spoken, since].filter(Boolean).join(" ")}
-      accessibilityHint="Opens details"
+      accessibilityHint={onPress ? "Opens details" : undefined}
       style={({ pressed }) => [styles.resultRow, pressed && styles.rowPressed]}
     >
       <View style={styles.resultBody}>
@@ -1711,7 +1713,7 @@ export function ResultRow({ trend: t, since, onPress }: { trend: MarkerTrend; si
           </Text>
         </View>
       )}
-      <CaretRight size={16} color={card.chevron} weight="bold" />
+      {onPress && <CaretRight size={16} color={card.chevron} weight="bold" />}
     </Pressable>
   )
 }

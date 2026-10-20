@@ -39,6 +39,9 @@ export type Practice = {
   email: string
   fax: string
   website: string
+  /** The Twilio number the practice's patient texts (invites, reminders)
+      are sent from. Empty until HOL provisions one. */
+  twilioNumber: string
   primaryContact: PrimaryContact
   /** The bucket HOL reports this practice under: a metro area, part of a
       state or a whole state, whichever suits the market. */
@@ -151,7 +154,10 @@ const CONTACTS: [firstName: string, lastName: string][] = [
 ]
 
 function practice(
-  p: Omit<Practice, "tenant" | "referralUrl" | "primaryContact" | "region">
+  p: Omit<
+    Practice,
+    "tenant" | "referralUrl" | "primaryContact" | "region" | "twilioNumber"
+  >
 ): Practice {
   const tenant = tenantFromName(p.name)
   const seed = Number(p.id)
@@ -164,6 +170,11 @@ function practice(
     tenant,
     referralUrl: referralUrlFor(tenant),
     region: REGION_BY_AREA[p.contactNumber.slice(1, 4)] ?? "",
+    /* Every fourth sample practice has no number provisioned yet. */
+    twilioNumber:
+      seed % 4 === 0
+        ? ""
+        : `(${p.contactNumber.slice(1, 4)})-555-01${String(seed % 100).padStart(2, "0")}`,
     primaryContact: {
       firstName,
       lastName,
@@ -647,7 +658,7 @@ const SEED: Practice[] = [...HAND_WRITTEN, ...generatedPractices()]
 const STORAGE_KEY = "hol-admin-practices"
 /* Bump the schema tag whenever the Practice shape changes, so sessions saved
    before the change don't load rows missing the new fields. */
-const SEED_VERSION = `v7:${SEED.map((p) => p.id).join(",")}`
+const SEED_VERSION = `v8:${SEED.map((p) => p.id).join(",")}`
 
 let practices: Practice[] = SEED
 let hydrated = false
