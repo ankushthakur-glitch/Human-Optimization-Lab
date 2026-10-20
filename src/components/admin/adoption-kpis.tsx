@@ -8,7 +8,6 @@ import {
   IconUserCircle,
   IconUserMinus,
   IconUsersGroup,
-  IconWarning,
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
@@ -39,7 +38,7 @@ export type Kpi = {
   /** The word after the count: "onboarded", "enrolled". */
   unit: string
   rate: number
-  /** Lower is better (providers behind, patients who declined). */
+  /** Lower is better (patients pending or declined). */
   invert?: boolean
   parts: { label: string; value: number; tone: PartTone }[]
   benchmark: { label: string; rate: number }
@@ -68,19 +67,14 @@ export function holAverages(practices: Practice[]) {
     users: avg((a) => share(a.usersOnboarded, a.users.length)),
     providers: avg((a) => share(a.providersOnboarded, a.providers.length)),
     enrolled: avg((a) => a.rate ?? 0),
-    behind: avg((a) =>
-      share(a.behind, a.providers.filter((p) => p.open >= 3).length)
-    ),
   }
 }
 
 export function practiceKpis(a: Adoption, hol: ReturnType<typeof holAverages>): Kpi[] {
   const count = <T extends { status: string }>(list: T[], s: string) =>
     list.filter((x) => x.status === s).length
-  const judged = a.providers.filter((p) => p.open >= 3).length
   const users = { value: a.usersOnboarded, total: a.users.length }
   const providers = { value: a.providersOnboarded, total: a.providers.length }
-  const behindRate = share(a.behind, judged)
   return [
     {
       label: "Users onboarded",
@@ -124,21 +118,6 @@ export function practiceKpis(a: Adoption, hol: ReturnType<typeof holAverages>): 
       ],
       benchmark: { label: "Inlay average", rate: hol.enrolled },
       tone: toneFor(a.rate ?? 0, hol.enrolled),
-    },
-    {
-      label: "Providers behind",
-      icon: IconWarning,
-      value: a.behind,
-      total: judged,
-      unit: "behind",
-      rate: behindRate,
-      invert: true,
-      parts: [
-        { label: "Behind", value: a.behind, tone: "warn" },
-        { label: "On track", value: judged - a.behind, tone: "fill" },
-      ],
-      benchmark: { label: "Inlay average", rate: hol.behind },
-      tone: a.behind ? "alert" : "good",
     },
   ]
 }
@@ -290,7 +269,12 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
 
 export function KpiGrid({ kpis }: { kpis: Kpi[] }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div
+      className={cn(
+        "grid gap-3",
+        kpis.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-4"
+      )}
+    >
       {kpis.map((kpi) => (
         <KpiTile key={kpi.label} kpi={kpi} />
       ))}

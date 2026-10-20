@@ -8,7 +8,7 @@ import { CaretLeft, Check } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
 import { Sheet } from "@/components/sheet"
 import { Button, useTopInset } from "@/components/ui"
-import { DOCS, type Doc, PERIODS, endDate, periodLabel } from "@/lib/consent"
+import { DOCS, type Doc, PERIODS, docVersionLine, endDate, periodLabel } from "@/lib/consent"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { DATA_TYPES } from "@/lib/record"
@@ -143,6 +143,7 @@ export function ConsentSheets({ page }: { page: Pick<ConsentPage, "sheet" | "set
               {p}
             </Text>
           ))}
+          <Text style={styles.docVersion}>{docVersionLine(page.sheet)}</Text>
         </ScrollView>
         <Button onPress={close}>Done</Button>
       </Sheet>
@@ -270,6 +271,7 @@ const styles = StyleSheet.create({
   legalScroll: { maxHeight: 420 },
   legal: { gap: space.item },
   legalText: { ...type.body },
+  docVersion: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: color.muted },
 
   periodList: { flexDirection: "row", gap: space.item },
   period: {

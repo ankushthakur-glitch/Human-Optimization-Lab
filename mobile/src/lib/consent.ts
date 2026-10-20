@@ -23,9 +23,13 @@ export const LEGAL = [
     sheet. Reading them is never required to tick a box. */
 export type Doc = "authorization" | "privacy" | "terms" | "lab" | "texts"
 
-export const DOCS: Record<Doc, { title: string; text: string[] }> = {
-  authorization: { title: "HIPAA authorization", text: LEGAL },
+/* Each document's current version and the day it took effect, as published
+   in the Super Admin's Settings > Consent documents. */
+export const DOCS: Record<Doc, { title: string; version: number; effective: string; text: string[] }> = {
+  authorization: { title: "HIPAA authorization", version: 1, effective: "2026-09-22", text: LEGAL },
   privacy: {
+    version: 2,
+    effective: "2026-10-01",
     title: "Privacy policy",
     text: [
       "Inlay Health collects the health records you authorize, the answers you give in the app and how you use it, to build your record and support your care.",
@@ -34,6 +38,8 @@ export const DOCS: Record<Doc, { title: string; text: string[] }> = {
     ],
   },
   terms: {
+    version: 1,
+    effective: "2026-09-22",
     title: "Terms of service",
     text: [
       "Inlay Health gives you a copy of your health record, tools to understand it and a way to work on it with your practice. It does not replace your doctor or emergency care. In an emergency, call 911.",
@@ -43,6 +49,8 @@ export const DOCS: Record<Doc, { title: string; text: string[] }> = {
     ],
   },
   lab: {
+    version: 1,
+    effective: "2026-09-22",
     title: "Lab request terms",
     text: [
       "When you book a test through Inlay, a licensed physician reviews the request and orders it, and a partner lab collects your sample and runs the test.",
@@ -51,6 +59,8 @@ export const DOCS: Record<Doc, { title: string; text: string[] }> = {
     ],
   },
   texts: {
+    version: 1,
+    effective: "2026-09-22",
     title: "Messaging terms",
     text: [
       "Inlay Health will text and message you about your care, such as new results, reminders and notes from your care team. How often depends on your care.",
@@ -77,3 +87,10 @@ export function periodEnd(p: string, from: Date = new Date()) {
 
 /** The day collection stops if signed today. */
 export const endDate = (p: string) => showDate(periodEnd(p))
+
+/** "Version 2, effective Oct 1, 2026", shown under a document's text. */
+export function docVersionLine(doc: Doc) {
+  const { version, effective } = DOCS[doc]
+  const [y, m, d] = effective.split("-").map(Number)
+  return `Version ${version}, effective ${showDate(new Date(y, m - 1, d))}`
+}

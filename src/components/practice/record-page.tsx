@@ -48,9 +48,12 @@ export function RecordPage({
   badge,
   action,
   fill,
+  hideTitle,
   children,
 }: {
   title: string
+  /** Keeps the title for screen readers only, e.g. when tabs name the page. */
+  hideTitle?: boolean
   backHref: string
   badge?: React.ReactNode
   action?: React.ReactNode
@@ -70,9 +73,14 @@ export function RecordPage({
             nativeButton={false}
             render={<Link href={backHref} />}
           >
-            <IconArrowLeft />
+            <IconArrowLeft className="size-5" />
           </Button>
-          <h1 className="truncate text-lg font-semibold tracking-tight">
+          <h1
+            className={cn(
+              "truncate text-lg font-semibold tracking-tight",
+              hideTitle && "sr-only"
+            )}
+          >
             {title}
           </h1>
           {badge}

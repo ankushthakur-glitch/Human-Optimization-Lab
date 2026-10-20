@@ -28,17 +28,29 @@ export type PrimaryContact = {
 
 export type PracticeStatus = "Active" | "Inactive"
 
+/* The modules and AI areas a practice can be given at onboarding. */
+export const FEATURES = [
+  { id: "app", name: "Patient app" },
+  { id: "optimization", name: "Optimization" },
+  { id: "chat", name: "Ask Inlay" },
+  { id: "careplan", name: "AI care plans" },
+  { id: "employers", name: "Employer reports" },
+] as const
+
+/** A new practice gets everything but employer reports, which is new. */
+export const DEFAULT_FEATURES: string[] = FEATURES.map((f) => f.id).filter(
+  (id) => id !== "employers"
+)
+
 export type Practice = {
   id: string
   name: string
   tenant: string
-  referralUrl: string
   locationName: string
   contactNumber: string
   npi: string
   email: string
   fax: string
-  website: string
   /** The Twilio number the practice's patient texts (invites, reminders)
       are sent from. Empty until HOL provisions one. */
   twilioNumber: string
@@ -46,6 +58,8 @@ export type Practice = {
   /** The bucket HOL reports this practice under: a metro area, part of a
       state or a whole state, whichever suits the market. */
   region: string
+  /** Feature ids from FEATURES this practice can use. */
+  features: string[]
   status: PracticeStatus
   createdAt: string
   clinicians: number
@@ -73,11 +87,6 @@ export function tenantFromName(name: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
-}
-
-export function referralUrlFor(tenant: string) {
-  const slug = tenant ? tenant.replace(/_/g, "-") : "tenant-name"
-  return `https://app.humanoptimizationlab.com/${slug}/referral`
 }
 
 export function managerName(
@@ -156,7 +165,7 @@ const CONTACTS: [firstName: string, lastName: string][] = [
 function practice(
   p: Omit<
     Practice,
-    "tenant" | "referralUrl" | "primaryContact" | "region" | "twilioNumber"
+    "tenant" | "primaryContact" | "region" | "twilioNumber" | "features"
   >
 ): Practice {
   const tenant = tenantFromName(p.name)
@@ -168,7 +177,10 @@ function practice(
   return {
     ...p,
     tenant,
-    referralUrl: referralUrlFor(tenant),
+    /* The first few sample practices already report to employers. */
+    features: ["593892", "954150", "232276"].includes(p.id)
+      ? FEATURES.map((f) => f.id)
+      : DEFAULT_FEATURES,
     region: REGION_BY_AREA[p.contactNumber.slice(1, 4)] ?? "",
     /* Every fourth sample practice has no number provisioned yet. */
     twilioNumber:
@@ -196,7 +208,6 @@ const HAND_WRITTEN: Practice[] = [
     npi: "1497852036",
     email: "frontdesk@summitconcierge.com",
     fax: "(303)-555-0143",
-    website: "https://www.summitconcierge.com",
     status: "Active",
     createdAt: "2026-09-23",
     clinicians: 6,
@@ -220,7 +231,6 @@ const HAND_WRITTEN: Practice[] = [
     npi: "1760493218",
     email: "care@harborviewlongevity.com",
     fax: "",
-    website: "https://www.harborviewlongevity.com",
     status: "Active",
     createdAt: "2026-09-22",
     clinicians: 50,
@@ -244,7 +254,6 @@ const HAND_WRITTEN: Practice[] = [
     npi: "1356820471",
     email: "hello@lakeshoreprecision.com",
     fax: "(512)-555-0165",
-    website: "",
     status: "Inactive",
     createdAt: "2026-09-08",
     clinicians: 2,
@@ -258,7 +267,6 @@ const HAND_WRITTEN: Practice[] = [
     npi: "1932057846",
     email: "office@northfieldexec.com",
     fax: "(312)-555-0188",
-    website: "https://www.northfieldexec.com",
     status: "Active",
     createdAt: "2026-09-01",
     clinicians: 9,
@@ -282,7 +290,6 @@ const HAND_WRITTEN: Practice[] = [
     npi: "1285730964",
     email: "team@cedarpineconcierge.com",
     fax: "",
-    website: "https://www.cedarpineconcierge.com",
     status: "Active",
     createdAt: "2026-08-21",
     clinicians: 3,
@@ -296,7 +303,6 @@ const HAND_WRITTEN: Practice[] = [
     npi: "1649208375",
     email: "concierge@meridianperformance.com",
     fax: "(480)-555-0134",
-    website: "https://www.meridianperformance.com",
     status: "Active",
     createdAt: "2026-08-19",
     clinicians: 5,
@@ -320,7 +326,6 @@ const HAND_WRITTEN: Practice[] = [
     npi: "1174689302",
     email: "info@brightwatermed.com",
     fax: "(617)-555-0173",
-    website: "https://www.brightwatermed.com",
     status: "Active",
     createdAt: "2026-08-19",
     clinicians: 7,
@@ -344,7 +349,6 @@ const HAND_WRITTEN: Practice[] = [
     npi: "1528391740",
     email: "",
     fax: "",
-    website: "",
     status: "Active",
     createdAt: "2026-08-18",
     clinicians: 1,
@@ -622,7 +626,6 @@ function generatedPractices(): Practice[] {
       ),
       email: `${inboxes[i % inboxes.length]}@${domain}`,
       fax: i % 3 === 0 ? "" : `(${area})-555-${pad(150 + i, 4)}`,
-      website: i % 5 === 4 ? "" : `https://www.${domain}`,
       status,
       createdAt,
       clinicians,
@@ -658,7 +661,7 @@ const SEED: Practice[] = [...HAND_WRITTEN, ...generatedPractices()]
 const STORAGE_KEY = "hol-admin-practices"
 /* Bump the schema tag whenever the Practice shape changes, so sessions saved
    before the change don't load rows missing the new fields. */
-const SEED_VERSION = `v8:${SEED.map((p) => p.id).join(",")}`
+const SEED_VERSION = `v9:${SEED.map((p) => p.id).join(",")}`
 
 let practices: Practice[] = SEED
 let hydrated = false

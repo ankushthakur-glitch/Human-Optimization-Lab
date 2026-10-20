@@ -27,6 +27,17 @@ const CLINIC_MANAGER: Sender = {
   address: "450 Harbor Drive, Anytown, CA 12345",
 }
 
+/* A patient is invited by their own provider, so the letter names her and
+   the footer gives her contact details, not the clinic manager's. */
+const PROVIDER: Sender = {
+  name: "Dr. Elise Harrington",
+  title: "Provider",
+  email: "elise.harrington@harborviewlongevity.com",
+  website: "harborviewlongevity.com",
+  phone: "(229) 555-0157",
+  address: "450 Harbor Drive, Anytown, CA 12345",
+}
+
 const PLATFORM_ADMIN: Sender = {
   name: "Maya Chen",
   title: "Platform Admin",
@@ -111,7 +122,7 @@ export const INVITEES: Record<InviteeKey, Invitee> = {
     home: "",
     /* Must match PATIENT.activationCode in mobile/src/lib/patient.ts. */
     activationCode: "731064",
-    sender: CLINIC_MANAGER,
+    sender: PROVIDER,
   },
 }
 

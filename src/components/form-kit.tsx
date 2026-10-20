@@ -279,6 +279,72 @@ export function MultiSelectField({
   )
 }
 
+/** A dropdown that keeps several choices: the trigger lists what is picked
+    and the menu ticks each one, for short fixed lists. */
+export function MultiSelectDropdownField({
+  id,
+  label,
+  required,
+  error,
+  options,
+  value,
+  onChange,
+  placeholder = "Select",
+  className,
+}: {
+  id: string
+  label: string
+  required?: boolean
+  error?: string
+  options: readonly string[]
+  value: string[]
+  onChange: (value: string[]) => void
+  placeholder?: string
+  className?: string
+}) {
+  const items = options.map((option) => ({ label: option, value: option }))
+  return (
+    <Field data-invalid={error ? true : undefined} className={className}>
+      <FieldLabel htmlFor={id}>
+        {label}
+        {required && <Required />}
+      </FieldLabel>
+      <Select
+        multiple
+        items={items}
+        value={value}
+        onValueChange={(next: string[]) => onChange(next)}
+      >
+        <SelectTrigger
+          id={id}
+          className="w-full"
+          aria-invalid={error ? true : undefined}
+        >
+          <SelectValue>
+            {(picked: string[]) =>
+              picked.length === 0 ? (
+                <span className="text-muted-foreground">{placeholder}</span>
+              ) : (
+                <span className="truncate">{picked.join(", ")}</span>
+              )
+            }
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {items.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+      {error && <FieldError>{error}</FieldError>}
+    </Field>
+  )
+}
+
 /** The scrolling form body of a side sheet. */
 export function SheetForm({
   id,

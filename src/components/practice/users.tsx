@@ -36,7 +36,6 @@ import {
   type PersonStatus,
   type StaffUser,
   type StaffUserInput,
-  USER_ROLES,
   fullName,
   inviteUser,
   shortDate,
@@ -57,8 +56,9 @@ import {
 } from "@/components/practice/sheets"
 import { Badge } from "@/design-system/ui/badge"
 import { DropdownMenuItem } from "@/design-system/ui/dropdown-menu"
+import { useAccessRoles } from "@/components/settings/settings-data"
 
-/* Non-clinical users: everyone here is Staff, told apart by a sub role.
+/* Non-clinical users: each has one role, from Roles and permissions.
    Add, view and edit open in the right-hand panel, as in the reference. */
 
 const EMPTY: StaffUserInput = {
@@ -71,15 +71,14 @@ const EMPTY: StaffUserInput = {
   photo: "",
 }
 
-const roleOf = (u: StaffUser) => (u.self ? "Clinic manager" : "Staff")
-const subRoleOf = (u: StaffUser) => (u.self ? "Practice admin" : u.role)
+const roleOf = (u: StaffUser) => u.role
 
 function validate(v: StaffUserInput, others: StaffUser[]): Errors {
   const e: Errors = {}
   if (!VALIDATE) return e
   if (!v.firstName.trim()) e.firstName = "Enter a first name."
   if (!v.lastName.trim()) e.lastName = "Enter a last name."
-  if (!v.role) e.role = "Select a sub role."
+  if (!v.role) e.role = "Select a role."
   if (v.phone && digits(v.phone).length !== 10) e.phone = "Enter 10 digits."
   if (!v.email.trim()) e.email = "Enter their email."
   else if (!EMAIL.test(v.email.trim())) e.email = "Enter a valid email address."
@@ -99,6 +98,7 @@ function validate(v: StaffUserInput, others: StaffUser[]): Errors {
 function UserForm({ user, onDone }: { user?: StaffUser; onDone: () => void }) {
   const { items } = users.use()
   const loc = useLocationLookup()
+  const accessRoles = useAccessRoles()
   const [values, setValues] = React.useState<StaffUserInput>(() =>
     user ? { ...user } : EMPTY
   )
@@ -147,7 +147,7 @@ function UserForm({ user, onDone }: { user?: StaffUser; onDone: () => void }) {
     <>
       <SideSheetHeader
         title={user ? "Edit user" : "Add user"}
-        description="The user's name, sub role, contact and locations."
+        description="The user's name, role, contact and locations."
       />
       <form
         id="user-form"
@@ -191,9 +191,9 @@ function UserForm({ user, onDone }: { user?: StaffUser; onDone: () => void }) {
           />
           <SelectField
             id="user-role"
-            label="Sub role"
+            label="Role"
             required
-            options={USER_ROLES}
+            options={accessRoles}
             value={values.role}
             onChange={set("role")}
             error={errors.role}
@@ -284,8 +284,7 @@ function UserView({
                   { label: "User ID", value: u.id },
                   { label: "First name", value: u.firstName },
                   { label: "Last name", value: u.lastName },
-                  { label: "User role", value: roleOf(u) },
-                  { label: "Sub role", value: subRoleOf(u) },
+                  { label: "Role", value: roleOf(u) },
                   { label: "Email", value: u.email },
                   { label: "Contact number", value: u.phone },
                   { label: "Locations", value: locationNames },
@@ -314,6 +313,7 @@ type Panel = { kind: "form"; id?: string } | { kind: "view"; id: string } | null
 
 export function StaffPanel({ heading }: { heading: React.ReactNode }) {
   const { items } = users.use()
+  const accessRoles = useAccessRoles()
   const loc = useLocationLookup()
   const [panel, setPanel] = React.useState<Panel>(null)
   const [deactivating, setDeactivating] = React.useState<StaffUser | null>(null)
@@ -356,13 +356,6 @@ export function StaffPanel({ heading }: { heading: React.ReactNode }) {
       className: "hidden md:table-cell",
       sortValue: roleOf,
       cell: roleOf,
-    },
-    {
-      id: "sub",
-      header: "Sub role",
-      className: "hidden sm:table-cell",
-      sortValue: subRoleOf,
-      cell: subRoleOf,
     },
     {
       id: "phone",
@@ -456,9 +449,9 @@ export function StaffPanel({ heading }: { heading: React.ReactNode }) {
           },
           {
             id: "role",
-            label: "Sub role",
-            all: "All sub roles",
-            options: USER_ROLES,
+            label: "Role",
+            all: "All roles",
+            options: accessRoles,
             match: (u, v) => u.role === v,
           },
         ]}
@@ -475,7 +468,6 @@ export function StaffPanel({ heading }: { heading: React.ReactNode }) {
           "User ID": u.id,
           "User name": fullName(u),
           Role: roleOf(u),
-          "Sub role": subRoleOf(u),
           "Contact number": u.phone,
           Email: u.email,
           Locations: locationNames(u),

@@ -173,6 +173,7 @@ import {
   VolumeHighIcon,
   VolumeOffIcon,
   WaveIcon,
+  DragDropVerticalIcon,
 } from "@hugeicons/core-free-icons"
 
 export type IconProps = Omit<
@@ -294,6 +295,7 @@ export const IconMessage = createIcon(Message01Icon)
 export const IconMic = createIcon(Mic01Icon)
 export const IconMicOff = createIcon(MicOff01Icon)
 export const IconMoon = createIcon(Moon02Icon)
+export const IconDrag = createIcon(DragDropVerticalIcon)
 export const IconMore = createIcon(MoreHorizontalIcon)
 export const IconMoreVertical = createIcon(MoreVerticalIcon)
 export const IconMountain = createIcon(MountainIcon)
@@ -465,6 +467,7 @@ export const ICON_CATALOG: { name: string; source: string; Icon: (props: IconPro
   { name: "IconMic", source: "Mic01Icon", Icon: IconMic },
   { name: "IconMicOff", source: "MicOff01Icon", Icon: IconMicOff },
   { name: "IconMoon", source: "Moon02Icon", Icon: IconMoon },
+  { name: "IconDrag", source: "DragDropVerticalIcon", Icon: IconDrag },
   { name: "IconMore", source: "MoreHorizontalIcon", Icon: IconMore },
   { name: "IconMoreVertical", source: "MoreVerticalIcon", Icon: IconMoreVertical },
   { name: "IconMountain", source: "MountainIcon", Icon: IconMountain },

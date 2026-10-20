@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { IconWarning } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
 import type {
@@ -21,7 +20,6 @@ import {
   SUB_TABS_LIST,
 } from "@/components/practice/directory"
 import { Avatar, AvatarFallback, AvatarImage } from "@/design-system/ui/avatar"
-import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
 import { Card } from "@/design-system/ui/card"
 import {
@@ -268,10 +266,7 @@ function ProvidersTable({
         </TableHeader>
         <TableBody className="[&_td]:px-4 [&_td]:py-2">
           {paged.visible.map((p) => (
-            <TableRow
-              key={p.id}
-              className={cn(p.behind && "bg-warning-surface/40")}
-            >
+            <TableRow key={p.id}>
               <TableCell className="max-w-[18rem]">
                 <div className="flex min-w-0 items-center gap-2">
                   <PersonAvatar name={p.name} photo={p.photo} />
@@ -305,7 +300,7 @@ function ProvidersTable({
                 {p.declined}
               </TableCell>
               <TableCell>
-                <RateCell rate={p.rate} behind={p.behind} />
+                <RateCell rate={p.rate} />
               </TableCell>
             </TableRow>
           ))}
@@ -315,33 +310,17 @@ function ProvidersTable({
   )
 }
 
-export function RateCell({
-  rate,
-  behind,
-}: {
-  rate: number | null
-  behind: boolean
-}) {
+export function RateCell({ rate }: { rate: number | null }) {
   if (rate === null) {
     return <span className="text-muted-foreground">No patients</span>
   }
   return (
     <div className="flex items-center gap-3">
       <div className="w-20 shrink-0">
-        <Meter value={rate} tone={behind ? "warning" : "primary"} />
+        <Meter value={rate} tone="primary" />
       </div>
       <span className="w-9 text-right tabular-nums">{pct(rate)}</span>
-      {behind && <BehindBadge />}
     </div>
-  )
-}
-
-export function BehindBadge() {
-  return (
-    <Badge variant="warning">
-      <IconWarning data-icon="inline-start" />
-      Behind
-    </Badge>
   )
 }
 

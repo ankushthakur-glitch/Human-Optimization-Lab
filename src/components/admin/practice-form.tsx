@@ -11,13 +11,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/design-system/ui/sheet"
+import { Checkbox } from "@/design-system/ui/checkbox"
+import { Label } from "@/design-system/ui/label"
 import {
+  DEFAULT_FEATURES,
+  FEATURES,
   type Practice,
   type PracticeInput,
   type PrimaryContact,
   REGIONS,
   formatPhone,
-  referralUrlFor,
   tenantFromName,
 } from "@/components/admin/practices-store"
 import {
@@ -45,32 +48,30 @@ const EMPTY_CONTACT: PrimaryContact = {
 const EMPTY: PracticeInput = {
   name: "",
   tenant: "",
-  referralUrl: "",
   locationName: "",
   contactNumber: "",
   npi: "",
   email: "",
   fax: "",
-  website: "",
   twilioNumber: "",
   primaryContact: EMPTY_CONTACT,
   region: "",
+  features: DEFAULT_FEATURES,
 }
 
 function fromPractice(p: Practice): PracticeInput {
   return {
     name: p.name,
     tenant: p.tenant,
-    referralUrl: p.referralUrl,
     locationName: p.locationName,
     contactNumber: p.contactNumber,
     npi: p.npi,
     email: p.email,
     fax: p.fax,
-    website: p.website,
     twilioNumber: p.twilioNumber ?? "",
     primaryContact: p.primaryContact,
     region: p.region,
+    features: p.features ?? DEFAULT_FEATURES,
   }
 }
 
@@ -103,8 +104,6 @@ function validate(v: PracticeInput): Errors {
     errors.fax = "Enter a 10-digit fax number."
   if (v.twilioNumber && digits(v.twilioNumber).length !== 10)
     errors.twilioNumber = "Enter a 10-digit phone number."
-  if (v.website && !/^https?:\/\/[^\s.]+\.[^\s]+$/.test(v.website))
-    errors.website = "Start with https:// and include the domain."
   return errors
 }
 
@@ -115,9 +114,8 @@ function validate(v: PracticeInput): Errors {
 /**
  * Add or edit a practice. It opens from the right, as in the reference, so the
  * list stays in view behind it. Passing `practice` switches it to edit mode.
- * The tenant name and referral URL are not shown: they are derived from the
- * name on create and kept fixed on edit, since they key the practice's data
- * and the links already sent to patients.
+ * The tenant name is not shown: it is derived from the name on create and
+ * kept fixed on edit, since it keys the practice's data.
  */
 export function PracticeFormSheet({
   open,
@@ -164,7 +162,6 @@ function PracticeFormBody({
   const [attempted, setAttempted] = React.useState(false)
 
   const tenant = editing ? values.tenant : tenantFromName(values.name)
-  const referralUrl = editing ? values.referralUrl : referralUrlFor(tenant)
   const errors = attempted ? validate(values) : {}
 
   function set<K extends keyof PracticeInput>(key: K, value: PracticeInput[K]) {
@@ -200,7 +197,6 @@ function PracticeFormBody({
         email: values.primaryContact.email.trim(),
       },
       tenant,
-      referralUrl,
     })
   }
 
@@ -209,7 +205,7 @@ function PracticeFormBody({
       <SheetHeader className="shrink-0 border-b">
         <SheetTitle>{editing ? "Edit practice" : "Add practice"}</SheetTitle>
         <SheetDescription className="sr-only">
-          Practice details, region, primary contact, location and messaging.
+          Practice details, region, primary contact, location, messaging and feature access.
         </SheetDescription>
       </SheetHeader>
 
@@ -345,16 +341,6 @@ function PracticeFormBody({
               onChange={(event) => set("fax", formatPhone(event.target.value))}
               error={errors.fax}
             />
-            <TextField
-              id="practice-website"
-              label="Website"
-              type="url"
-              autoComplete="url"
-              placeholder="https://www.example.com"
-              value={values.website}
-              onChange={(event) => set("website", event.target.value)}
-              error={errors.website}
-            />
           </div>
         </FormSection>
 
@@ -373,6 +359,35 @@ function PracticeFormBody({
               }
               error={errors.twilioNumber}
             />
+          </div>
+        </FormSection>
+
+        <FormSection title="Feature access">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {FEATURES.map((feature) => (
+              <Label
+                key={feature.id}
+                htmlFor={`practice-feature-${feature.id}`}
+                className="flex items-center gap-2.5 font-normal"
+              >
+                <Checkbox
+                  id={`practice-feature-${feature.id}`}
+                  checked={values.features.includes(feature.id)}
+                  onCheckedChange={(on) =>
+                    set(
+                      "features",
+                      on
+                        ? FEATURES.map((f) => f.id).filter(
+                            (id) =>
+                              id === feature.id || values.features.includes(id)
+                          )
+                        : values.features.filter((id) => id !== feature.id)
+                    )
+                  }
+                />
+                {feature.name}
+              </Label>
+            ))}
           </div>
         </FormSection>
       </SheetForm>

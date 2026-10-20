@@ -294,6 +294,7 @@ export async function exportRows(fileName: string, rows: ExportRow[]) {
 export function Directory<T extends { id: string }>({
   title,
   heading,
+  leading,
   statusTabs,
   noun,
   rows,
@@ -314,6 +315,8 @@ export function Directory<T extends { id: string }>({
   title: string
   /** Replaces the status switch on the left, e.g. with the Users tabs. */
   heading?: React.ReactNode
+  /** Sits before the switch, e.g. a settings page's back arrow. */
+  leading?: React.ReactNode
   /** Status segments with counts: All (n), then one per option. */
   statusTabs?: { options: readonly string[]; value: (row: T) => string }
   /** Plural, lower case: "providers". */
@@ -322,7 +325,8 @@ export function Directory<T extends { id: string }>({
   columns: Column<T>[]
   search: (row: T) => string[]
   filters?: FilterDef<T>[]
-  primaryAction: ToolbarAction
+  /** The add control; a read only list such as the audit log has none. */
+  primaryAction?: ToolbarAction
   /** Extra ways to add, shown as outline buttons before the primary one. */
   moreActions?: ToolbarAction[]
   bulkActions?: (selected: T[], clear: () => void) => React.ReactNode
@@ -403,10 +407,12 @@ export function Directory<T extends { id: string }>({
           {action.label}
         </Button>
       ))}
-      <Button size="sm" onClick={primaryAction.onClick}>
-        {primaryAction.icon}
-        {primaryAction.label}
-      </Button>
+      {primaryAction && (
+        <Button size="sm" onClick={primaryAction.onClick}>
+          {primaryAction.icon}
+          {primaryAction.label}
+        </Button>
+      )}
     </div>
   )
 
@@ -415,35 +421,42 @@ export function Directory<T extends { id: string }>({
       <h1 className="sr-only">{title}</h1>
 
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
-        {heading ??
-          (statusTabs ? (
-            <Tabs
-              value={status}
-              onValueChange={(value) => {
-                setStatus(String(value))
-                setPage(1)
-                clear()
-              }}
-            >
-              <TabsList className={SUB_TABS_LIST}>
-                <TabsTrigger value="all" className={SUB_TAB}>
-                  All ({rows.length})
-                </TabsTrigger>
-                {statusTabs.options.map((option) => (
-                  <TabsTrigger key={option} value={option} className={SUB_TAB}>
-                    {option} (
-                    {
-                      rows.filter((row) => statusTabs.value(row) === option)
-                        .length
-                    }
-                    )
+        <div className="flex min-w-0 items-center gap-2">
+          {leading}
+          {heading ??
+            (statusTabs ? (
+              <Tabs
+                value={status}
+                onValueChange={(value) => {
+                  setStatus(String(value))
+                  setPage(1)
+                  clear()
+                }}
+              >
+                <TabsList className={SUB_TABS_LIST}>
+                  <TabsTrigger value="all" className={SUB_TAB}>
+                    All ({rows.length})
                   </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          ) : (
-            <span />
-          ))}
+                  {statusTabs.options.map((option) => (
+                    <TabsTrigger
+                      key={option}
+                      value={option}
+                      className={SUB_TAB}
+                    >
+                      {option} (
+                      {
+                        rows.filter((row) => statusTabs.value(row) === option)
+                          .length
+                      }
+                      )
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            ) : (
+              <span />
+            ))}
+        </div>
 
         {selected.length > 0 ? (
           <div className="flex h-8 flex-wrap items-center justify-end gap-3">

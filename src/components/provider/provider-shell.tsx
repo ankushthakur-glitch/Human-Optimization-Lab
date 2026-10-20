@@ -61,7 +61,12 @@ const PROVIDER_NAV: NavItem[] = [
     icon: IconChartColumn,
     href: `${BASE}/reports`,
   },
-  { id: "settings", label: "Settings", icon: IconSettings },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: IconSettings,
+    href: `${BASE}/settings`,
+  },
 ]
 
 const PROVIDER_ACTIONS: ShellAction[] = [

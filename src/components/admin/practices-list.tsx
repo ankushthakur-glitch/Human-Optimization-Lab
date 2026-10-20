@@ -3,9 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { toast } from "@/design-system/ui/sonner"
 import {
-  IconCopy,
   IconFilter,
   IconHospital,
   IconMoreVertical,
@@ -15,6 +13,8 @@ import {
 
 import { AdminShell } from "@/components/admin/admin-shell"
 import { usePracticeActions } from "@/components/admin/practice-actions"
+import { usePlatformAdoption } from "@/components/admin/practice-adoption"
+import { RateCell } from "@/components/admin/practice-adoption-view"
 import {
   type Practice,
   type PracticeStatus,
@@ -76,11 +76,6 @@ import {
   useTableSort,
   TableRow,
 } from "@/design-system/ui/table"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/design-system/ui/tooltip"
 import { Illustration } from "@/components/illustrations/illustration"
 
 const STATUS_FILTER = [
@@ -121,13 +116,6 @@ const PAGE_LINK =
 const PAGE_STEP =
   "size-[26px] cursor-pointer px-0! text-muted-foreground [&>span]:hidden!"
 
-function copy(text: string, what: string) {
-  navigator.clipboard?.writeText(text).then(
-    () => toast.success(`${what} copied`),
-    () => toast.error(`Couldn't copy the ${what.toLowerCase()}`)
-  )
-}
-
 export function ManagerCell({
   practice,
   onInvite,
@@ -160,6 +148,9 @@ export function ManagerCell({
 /** Super Admin: every practice on the platform. */
 export function PracticesList() {
   const { practices } = usePractices()
+  /* Conversion: enrolled patients over open records, active practices only. */
+  const adoption = usePlatformAdoption(practices)
+  const conversion = (p: Practice) => adoption.get(p.id)?.rate ?? null
   const router = useRouter()
   const searchParams = useSearchParams()
   const actions = usePracticeActions()
@@ -212,7 +203,7 @@ export function PracticesList() {
     id: (p) => p.id,
     name: (p) => p.name,
     region: (p) => p.region,
-    referral: (p) => p.referralUrl,
+    conversion: (p) => conversion(p) ?? -1,
     manager: (p) => (p.manager ? managerName(p.manager) : ""),
     clinicians: (p) => p.clinicians,
     patients: (p) => p.patients,
@@ -429,12 +420,6 @@ export function PracticesList() {
                       Region
                     </TableSortHead>
                     <TableSortHead
-                      className="hidden 2xl:table-cell"
-                      {...sorting.headProps("referral")}
-                    >
-                      Referral URL
-                    </TableSortHead>
-                    <TableSortHead
                       className="hidden lg:table-cell"
                       {...sorting.headProps("manager")}
                     >
@@ -451,6 +436,12 @@ export function PracticesList() {
                       {...sorting.headProps("patients")}
                     >
                       Patients
+                    </TableSortHead>
+                    <TableSortHead
+                      className="hidden w-44 lg:table-cell"
+                      {...sorting.headProps("conversion")}
+                    >
+                      Conversion
                     </TableSortHead>
                     <TableSortHead {...sorting.headProps("status")}>
                       Status
@@ -491,30 +482,6 @@ export function PracticesList() {
                       <TableCell className="hidden md:table-cell">
                         {practice.region}
                       </TableCell>
-                      <TableCell className="hidden max-w-[16rem] 2xl:table-cell">
-                        <div className="flex items-center gap-1">
-                          <span className="truncate text-muted-foreground">
-                            {practice.referralUrl.replace("https://", "")}
-                          </span>
-                          <Tooltip>
-                            <TooltipTrigger
-                              render={
-                                <Button
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  aria-label={`Copy referral URL for ${practice.name}`}
-                                  onClick={() =>
-                                    copy(practice.referralUrl, "Referral URL")
-                                  }
-                                />
-                              }
-                            >
-                              <IconCopy />
-                            </TooltipTrigger>
-                            <TooltipContent>Copy link</TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </TableCell>
                       <TableCell className="hidden max-w-[14rem] lg:table-cell">
                         <ManagerCell
                           practice={practice}
@@ -526,6 +493,9 @@ export function PracticesList() {
                       </TableCell>
                       <TableCell className="hidden text-center tabular-nums sm:table-cell">
                         {practice.patients}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <RateCell rate={conversion(practice)} />
                       </TableCell>
                       <TableCell>
                         <Badge variant={STATUS_VARIANT[practice.status]}>
