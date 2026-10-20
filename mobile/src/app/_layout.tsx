@@ -105,7 +105,6 @@ function Routes() {
           <Stack.Screen name="onboarding/consent-texts" />
           <Stack.Screen name="onboarding/life" />
           <Stack.Screen name="onboarding/life-question" />
-          <Stack.Screen name="onboarding/life-focus" />
           <Stack.Screen name="onboarding/why" />
           <Stack.Screen name="onboarding/syncing" />
           <Stack.Screen name="onboarding/working" />

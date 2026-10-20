@@ -4,43 +4,52 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { PlanStepPage } from "@/components/plan-steps"
 import { useOnboarding } from "@/lib/onboarding"
-import { DOMAINS, SCALE, THINKING_ABOUT, firstOpen } from "@/lib/wellbeing"
+import { SCALE, THINKING_ABOUT } from "@/lib/wellbeing"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
-/* Setup's life questions, page 2: one question at a time, 1 to 10, a part
-   of life each, in the same frame as the plan's steps (components/
-   plan-steps.tsx): the part of life in the header (no step counter), the
-   question as the heading, Skip and Continue in the foot (Back is the
-   header's caret and the swipe). A tap
-   picks a number and Continue saves it and moves on; Skip moves on
-   without one. The caret goes to the question before (the first goes back to
-   the intro). Every answer is saved as it is picked, so a patient who
-   closes the app comes back to the question she stopped at. */
+/* Setup's "What Matters Most", page 2: one of the three symptoms she chose
+   on the page before, a question each, 1 to 10, in the same frame as the
+   plan's steps (components/plan-steps.tsx): the symptom in the header (no
+   step counter), the question as the heading, Skip and Continue in the foot
+   (Back is the header's caret and the swipe). A tap picks a number and
+   Continue saves it and moves on; Skip moves on without one. The caret goes
+   to the symptom before (the first goes back to the choice). Every rating
+   is saved as it is picked. The last one starts the record building. */
 
 /** 1 to 10, five to a row: 1 to 5, then 6 to 10. */
 const PER_ROW = 5
 const NUMBERS = SCALE.filter((n) => n > 0)
 const ROWS = [NUMBERS.slice(0, PER_ROW), NUMBERS.slice(PER_ROW)]
 
-export default function LifeQuestionScreen() {
-  const onboarding = useOnboarding()
-  const [at, setAt] = React.useState(() => firstOpen(onboarding.life?.ratings ?? {}))
-  const domain = DOMAINS[at]
-  const last = at === DOMAINS.length - 1
-  const ratings = onboarding.life?.ratings ?? {}
-  const value = ratings[domain.key]
+const asked = (symptom: string) => `How much has ${symptom.toLowerCase()} bothered you?`
 
-  const pick = (n: number) => onboarding.save({ life: { ...onboarding.life, ratings: { ...ratings, [domain.key]: n }, skipped: false } })
+export default function SymptomRatingScreen() {
+  const onboarding = useOnboarding()
+  const symptoms = onboarding.life?.symptoms ?? []
+  const ratings = onboarding.life?.symptomRatings ?? {}
+  const [at, setAt] = React.useState(0)
+  const symptom = symptoms[at]
+  const last = at === symptoms.length - 1
+  const value = symptom === undefined ? undefined : ratings[symptom]
+
+  // Nothing chosen (opened directly): on to the record building.
+  React.useEffect(() => {
+    if (symptoms.length === 0) router.replace("/onboarding/syncing")
+  }, [symptoms.length])
+  if (symptom === undefined) return null
+
+  const pick = (n: number) => onboarding.save({ life: { ...onboarding.life, ratings: onboarding.life?.ratings ?? {}, symptomRatings: { ...ratings, [symptom]: n } } })
   const move = () => {
-    if (last) router.push("/onboarding/life-focus")
-    else setAt(at + 1)
+    if (!last) return setAt(at + 1)
+    onboarding.save({ step: "records" })
+    router.push("/onboarding/syncing")
   }
   const back = () => (at === 0 ? router.back() : setAt(at - 1))
 
   return (
     <PlanStepPage
-      headerTitle={domain.short}
-      title={domain.question}
+      headerTitle={symptom}
+      title={asked(symptom)}
       lead={THINKING_ABOUT}
       onBack={back}
       skip={move}
@@ -49,10 +58,10 @@ export default function LifeQuestionScreen() {
       nextDisabled={value === undefined}
     >
       <View style={styles.ends}>
-        <Text style={styles.end}>1 · Very poor</Text>
-        <Text style={styles.end}>Excellent · 10</Text>
+        <Text style={styles.end}>1 · Not at all</Text>
+        <Text style={styles.end}>Very much · 10</Text>
       </View>
-      <View style={styles.grid} accessibilityRole="radiogroup" accessibilityLabel={domain.question}>
+      <View style={styles.grid} accessibilityRole="radiogroup" accessibilityLabel={asked(symptom)}>
         {ROWS.map((row, r) => (
           <View key={r} style={styles.row}>
             {Array.from({ length: PER_ROW }, (_, i) => {
@@ -65,7 +74,7 @@ export default function LifeQuestionScreen() {
                   onPress={() => pick(n)}
                   accessibilityRole="radio"
                   accessibilityState={{ checked: on }}
-                  accessibilityLabel={`${n}${n === 1 ? ", very poor" : n === 10 ? ", excellent" : ""}`}
+                  accessibilityLabel={`${n}${n === 1 ? ", not at all" : n === 10 ? ", very much" : ""}`}
                   style={({ pressed }) => [styles.cell, styles.number, on && styles.numberOn, pressed && !on && styles.pressed]}
                 >
                   <Text style={[styles.numberText, on && styles.numberTextOn]}>{n}</Text>

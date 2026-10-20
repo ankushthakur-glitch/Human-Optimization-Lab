@@ -7,7 +7,6 @@ import {
   ConsentShell,
   DocLink,
   MissingTick,
-  PeriodList,
   Shield,
   type ConsentSheet,
   useConsentPage,
@@ -71,10 +70,9 @@ function InfoRow({ icon, title, line, onSeeAll }: { icon: React.ReactNode; title
     go on. */
 export function ConsentRecords({ onNext }: { onNext: (period: string) => void }) {
   const page = useConsentPage()
-  const [period, setPeriod] = React.useState(DEFAULT_PERIOD)
   const [terms, setTerms] = React.useState(false)
   const [missing, setMissing] = React.useState(false)
-  const agree = () => (page.checked && terms ? onNext(period) : setMissing(true))
+  const agree = () => (page.checked && terms ? onNext(DEFAULT_PERIOD) : setMissing(true))
   return (
     <ConsentShell
       sheets={page}
@@ -92,12 +90,6 @@ export function ConsentRecords({ onNext }: { onNext: (period: string) => void })
         <View style={styles.rule} />
         <InfoRow icon={<Flask size={16} color={color.primary} />} title="What we collect" line="Visits, labs and 7 more" onSeeAll={() => page.setSheet("types")} />
       </Card>
-      <View style={styles.period}>
-        <Text style={styles.label} accessibilityRole="header">
-          How long
-        </Text>
-        <PeriodList value={period} onChange={setPeriod} />
-      </View>
       <View style={styles.checks}>
         <ConsentCheck checked={page.checked} onChange={page.setChecked} label={AUTHORIZE}>
           {`${AUTHORIZE} `}
@@ -171,9 +163,7 @@ const styles = StyleSheet.create({
   rowLine: { ...type.label },
   seeAll: { fontFamily: font.medium, fontSize: 12, lineHeight: 14, color: color.primaryText },
 
-  period: { gap: space.item },
   checks: { gap: space.item },
-  label: { ...type.title, color: ink.detail },
   statement: { fontFamily: font.regular, fontSize: 14, lineHeight: 22, color: ink.content },
   link: { color: color.primaryText, textDecorationLine: "underline" },
 })

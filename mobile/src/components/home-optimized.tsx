@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from "expo-router"
 import * as React from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { ScoreRing, formatNumber } from "@/components/charts"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
@@ -242,9 +243,33 @@ const STATE_WORD = { met: "Met", close: "Close", under: "Short", none: "No log" 
 /** The colours of a goal's progress bar and day bars: green when the day's
     goal is complete or very near (90% or more), red when it is incomplete; the day in view, still in progress, is blue in the bars.
     One red only: bars are drawn solid, never faded, so no second shade appears. */
-const PROGRESS = { done: "#16A85A", short: "#E8504F", current: "#2A78D6" } as const
+const PROGRESS = {
+  done: ["#4CC585", "#2F7F4D"],
+  short: ["#F08A8F", "#C72B32"],
+  current: ["#6C93F2", "#3056D3"],
+} as const
 
-function progressColor(value: number | undefined, target: number) {
+type Pair = readonly [string, string]
+
+/** "Classic green and blue" from the Plan Card Variations artifact (20 Oct
+    2026): each colour is a light-to-deep gradient pair, so the bars read
+    with depth. Bars run top to bottom, the progress bar left to right. */
+function Gradient({ pair, across }: { pair: Pair; across?: boolean }) {
+  const id = `g${React.useId().replace(/[^a-zA-Z0-9]/g, "")}`
+  return (
+    <Svg width="100%" height="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
+      <Defs>
+        <LinearGradient id={id} x1="0" y1="0" x2={across ? "1" : "0"} y2={across ? "0" : "1"}>
+          <Stop offset="0" stopColor={pair[0]} />
+          <Stop offset="1" stopColor={pair[1]} />
+        </LinearGradient>
+      </Defs>
+      <Rect width="1" height="1" fill={`url(#${id})`} />
+    </Svg>
+  )
+}
+
+function progressColor(value: number | undefined, target: number): Pair {
   const s = value === undefined || target <= 0 ? 0 : value / target
   return s >= 0.9 ? PROGRESS.done : PROGRESS.short
 }
@@ -286,7 +311,9 @@ export function GoalTile({ goal }: { goal: GoalDay }) {
           {goal.value !== undefined && <Text style={type.unit}>{` / ${formatNumber(goal.goal.target)} ${unit}`}</Text>}
         </Text>
         <View style={[styles.bar, { backgroundColor: chart.track }]}>
-          <View style={[styles.barFill, { width: `${share * 100}%`, backgroundColor: tone }]} />
+          <View style={[styles.barFill, { width: `${share * 100}%` }]}>
+            <Gradient pair={tone} across />
+          </View>
         </View>
         <View style={styles.micro}>
           {goal.week.map((w, i) => (
@@ -294,12 +321,12 @@ export function GoalTile({ goal }: { goal: GoalDay }) {
               key={i}
               style={[
                 styles.microBar,
-                {
-                  height: w.value !== undefined ? Math.max(3, (28 * w.value) / max) : 3,
-                  backgroundColor: w.value === undefined ? chart.track : w.selected ? PROGRESS.current : progressColor(w.value, goal.goal.target),
-                },
+                { height: w.value !== undefined ? Math.max(3, (32 * w.value) / max) : 3 },
+                w.value === undefined && { backgroundColor: chart.track },
               ]}
-            />
+            >
+              {w.value !== undefined && <Gradient pair={w.selected ? PROGRESS.current : progressColor(w.value, goal.goal.target)} />}
+            </View>
           ))}
         </View>
         <Text style={type.meta}>{footer}</Text>
@@ -379,9 +406,9 @@ const styles = StyleSheet.create({
   stateWord: { ...type.metaStrong },
   value: { ...type.hero },
   bar: { height: 6, borderRadius: 3, overflow: "hidden" },
-  barFill: { height: 6, borderRadius: 3 },
-  micro: { flexDirection: "row", alignItems: "flex-end", gap: 4, height: 28 },
-  microBar: { flex: 1, borderRadius: 3 },
+  barFill: { height: 6, borderRadius: 3, overflow: "hidden" },
+  micro: { flexDirection: "row", alignItems: "flex-end", gap: 4, height: 32 },
+  microBar: { flex: 1, borderRadius: 3, overflow: "hidden" },
 
   bleed: { marginHorizontal: -space.gutter },
   strip: { gap: space.item, paddingHorizontal: space.gutter },

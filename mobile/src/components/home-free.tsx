@@ -6,7 +6,7 @@ import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { openMedicineByName } from "@/components/medicines"
 import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, UpgradeBanner, dotted } from "@/components/home-parts"
 import { CheckCircle, Hospital, Pill, Warning } from "@/components/ph"
-import { Block, CARD_RADIUS, Group, NeedsRow, Rise, Status } from "@/components/record-kit"
+import { Block, CARD_RADIUS, Group, NeedsRow, Rise, Status, spokenDate } from "@/components/record-kit"
 import { Chevron, Row, Rows } from "@/components/settings-rows"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { TrendTiles } from "@/components/trend-tile"
@@ -15,7 +15,7 @@ import { useExperience, useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
 import { useSources } from "@/lib/connections"
 import { MEDICATIONS } from "@/lib/record"
-import { card, color, space, type } from "@/lib/theme"
+import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
 import { NEW_IN_RECORD_NOTE, caughtUp, comingUp, homeBanner, markSeen, needsTitle, todo, yourMedicines, type TodoItem } from "@/lib/todo"
 import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
 
@@ -193,21 +193,25 @@ export function Upcoming({ at = 3 }: { at?: number }) {
   return (
     <Rise at={at} id="home:coming">
       <Block title="Upcoming" onSeeAll={openToDo}>
-        <Group>
-          {coming.map((item) => (
-            <NeedsRow
-              key={item.id}
-              date={item.date}
-              icon={item.date ? undefined : <RecordGlyph name={item.icon} />}
-              title={item.title}
-              meta={dotted(item.meta, keepTogether)}
-              note={item.note}
-              tag={item.tag}
-              chevron={false}
-              onPress={() => router.push(item.href as Href)}
-            />
-          ))}
-        </Group>
+        {coming.map((item) => (
+          <View key={item.id} style={styles.coming}>
+            <View style={styles.comingRow}>
+              <NeedsRow
+                date={item.date}
+                icon={item.date ? undefined : <RecordGlyph name={item.icon} />}
+                title={item.title}
+                meta={dotted(item.meta, keepTogether)}
+                accessibilityLabel={[item.title, item.date && spokenDate(item.date), item.meta, item.note].filter(Boolean).join(", ")}
+                onPress={() => router.push(item.href as Href)}
+              />
+            </View>
+            {!!item.note && (
+              <View style={styles.comingFoot}>
+                <Text style={styles.comingNote}>{item.note}</Text>
+              </View>
+            )}
+          </View>
+        ))}
       </Block>
     </Rise>
   )
@@ -335,6 +339,14 @@ const styles = StyleSheet.create({
 
   // The outside visits' note, the card's last line at a row's height.
   footnote: { ...type.label, paddingVertical: space.rowY },
+
+  // The Upcoming card (Plan Card Variations, "Row with footer", 20 Oct
+  // 2026): the dated row on the card, what to do before on a grey strip
+  // under a hairline that runs edge to edge.
+  coming: { backgroundColor: card.fill, borderRadius: CARD_RADIUS, boxShadow: card.shadow, overflow: "hidden" },
+  comingRow: { paddingHorizontal: space.rowX },
+  comingFoot: { backgroundColor: surface.inset, borderTopWidth: 1, borderTopColor: hairline.rule, paddingHorizontal: space.card, paddingVertical: space.inline },
+  comingNote: { ...type.label, color: ink.detail },
   // The medicines card's last line, at a row's height.
   supplements: { ...type.label, paddingVertical: space.rowY },
 })
