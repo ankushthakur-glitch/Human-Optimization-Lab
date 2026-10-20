@@ -642,5 +642,100 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Merge remote-tracking branch 'origin/P1'
 - 16 Oct journey changes, flourishing flow, HSA payment; journey deck 15
 - Tasks use Assign to instead of Assignee
+- Merge remote-tracking branch 'origin/main' into P1
+- Merge remote-tracking branch 'origin/main'
+- Admin, clinic manager and provider settings modules; portal refinements
+- Overview dashboard, chart sticky notes; settings refinements; deliverables 20-Oct-2026
 - Added: Provider Portal / Reports / Reports
 - Added: Provider Portal / Schedule / Schedule
+- Added: Super Admin Portal / Dashboard / Dashboard: all regions
+- Added: Super Admin Portal / Settings / Settings home
+- Added: Global Pages / Design System / Illustration handoff: usage and downloads
+- Added: Provider Portal / Communication / Provider chats
+- Added: Provider Portal / Dashboard / Abnormal results
+- Added: Provider Portal / Patients / Patients (list, status tabs, last sync)
+- Added: Provider Portal / Reports / Reports (report types, period, filters, export)
+- Added: Provider Portal / Schedule / Schedule (calendar and list, appointment details)
+- Added: Provider Portal / Settings / Settings home
+- Added: Clinic Manager Portal / Patients / Add patient
+- Added: Clinic Manager Portal / Patients / Patients (list, status tabs, bulk add)
+- Added: Clinic Manager Portal / Settings / Settings home
+- Added: Clinic Manager Portal / Users / Users: providers tab (list, bulk add)
+- Added: Global Pages / Design System / Icon library
+- Added: Provider Portal / Patient Chart / Care plan: pending review
+- Added: Provider Portal / Patient Chart / Care plan: history, changes requested
+- Added: Provider Portal / Patient Chart / Care plan: no plan yet
+- Added: Super Admin Portal / Dashboard / Dashboard: one region
+- Added: Super Admin Portal / Practices / Add practice
+- Added: Super Admin Portal / Practices / Practice details: providers tab
+- Added: Super Admin Portal / Practices / Practice details: users tab
+- Added: Clinic Manager Portal / Users / Users: non-clinical users tab (list, view and edit side sheet)
+- Added: Clinic Manager Portal / Users / Add user
+- Added: Clinic Manager Portal / Patients / Bulk add patients
+- Added: Super Admin Portal / Settings / Roles and permissions
+- Added: Super Admin Portal / Settings / Optimization plans: plan catalogue
+- Added: Super Admin Portal / Settings / Optimization plans: test intervals
+- Added: Super Admin Portal / Settings / Optimization plans: limits
+- Added: Super Admin Portal / Settings / Pricing: membership
+- Added: Super Admin Portal / Settings / Pricing: longevity tests
+- Added: Super Admin Portal / Settings / AI credit
+- Added: Super Admin Portal / Settings / Partners
+- Added: Super Admin Portal / Settings / Consent documents
+- Added: Super Admin Portal / Settings / Audit log
+- Added: Clinic Manager Portal / Settings / Roles and permissions
+- Added: Clinic Manager Portal / Settings / Patient flags
+- Added: Clinic Manager Portal / Settings / Employer accounts
+- Added: Clinic Manager Portal / Settings / Patient invitation: channels
+- Added: Clinic Manager Portal / Settings / Patient invitation: reminders
+- Added: Clinic Manager Portal / Settings / Alerts
+- Added: Clinic Manager Portal / Settings / Audit log
+- Added: Provider Portal / Settings / Patient flags
+- Added: Provider Portal / Settings / Audit log
+- Added: Patient Portal / Login and Authentication / Set password (mobile app)
+- Added: Patient Portal / Patient Onboarding / Is this you?
+- Added: Patient Portal / Patient Onboarding / Life questions: three to improve
+- Added: Patient Portal / Patient Onboarding / Record tour: upcoming appointments
+- Added: Patient Portal / Patient Onboarding / Record tour: new medication
+- Added: Patient Portal / Patient Onboarding / Record tour: trending the wrong way
+- Added: Patient Portal / Patient Onboarding / Your biological age
+- Added: Patient Portal / Patient Onboarding / What is driving it
+- Added: Patient Portal / Patient Onboarding / Welcome: AI plan match
+- Added: Patient Portal / Mobile App: Record / Tell us something
+- Added: Patient Portal / Mobile App: Connect / Connect tab
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 1: plans updated from your goals
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 2: establish your baseline
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 3: complete your enrollment
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 4: payment method (card, HSA or FSA)
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Tell us about you
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Are you flourishing? (video)
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Flourishing questions
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Your flourishing result
+- Added: Patient Portal / Mobile App: Optimization Member / Diet plan
+- Added: Patient Portal / Mobile App: Optimization Member / Today's exercise
+- Removed: Super Admin Portal / Dashboard / Dashboard (coming soon)
+- Removed: Super Admin Portal / Settings / Settings (coming soon)
+- Removed: Global Pages / Illustrations / Handoff: usage and downloads
+- Removed: Clinic Manager Portal / Patients / Patient onboarding form
+- Removed: Clinic Manager Portal / Patients / Patients (list, bulk import)
+- Removed: Clinic Manager Portal / Users / Users: providers tab (list, bulk import)
+- Removed: Clinic Manager Portal / Users / Users: non-clinical users tab (list, add, view, edit panels)
+- Removed: Patient Portal / Mobile App: Record / Tell us about a difference
+- Removed: Patient Portal / Mobile App: Optimization Member / Diet
+- Removed: Patient Portal / Mobile App: Optimization Member / Exercise
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 2: goals checked against the record
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 3: health profile
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 4: establish your baseline
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 5: complete your enrollment
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 6: payment method
+- Removed: Provider Portal / Communication / Chats and groups
+- Removed: Provider Portal / Dashboard / Work queue: abnormal results
+- Removed: Provider Portal / Patients / Patients (list, status tabs, last sync, send invites)
+- Removed: Provider Portal / Patient Chart / Care plan: review (pending)
+- Removed: Patient Portal / Patient Onboarding / Set password
+- Removed: Patient Portal / Patient Onboarding / About you
+- Removed: Patient Portal / Patient Onboarding / Your why conversation
+- Removed: Patient Portal / Patient Onboarding / Life questions: what matters most
+- Removed: Patient Portal / Mobile App: Connect / Connect tab (records and devices)
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Complete your profile (health questions)
+- Removed: Provider Portal / Reports / Reports
+- Removed: Provider Portal / Schedule / Schedule
