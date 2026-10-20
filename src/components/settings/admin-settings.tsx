@@ -34,7 +34,6 @@ import { ConsentDocsPage } from "@/components/settings/consent-docs"
 import { PartnersPage } from "@/components/settings/partners"
 import { RolesPage } from "@/components/settings/roles"
 import {
-  AREAS,
   INTERVAL_UNITS,
   LONGEVITY_ITEMS,
   MODELS,
@@ -42,7 +41,6 @@ import {
   type Phase,
   type Plan,
   RERATE_INTERVALS,
-  RESET_PERIODS,
   RETEST_INTERVALS,
   SOURCES,
   TEMPLATE_SECTIONS,
@@ -242,12 +240,12 @@ const PHASE_TONE: Record<Phase, "success" | "warning" | "muted"> = {
   Later: "muted",
 }
 
-/** The master list of 81 plans: phase, tests and retesting per plan. */
+/** The master list of 81 plans and the tests suggested with each. */
 function PlanCatalogue() {
   const { items } = plans.use()
   const [editing, setEditing] = React.useState<Plan | "new" | null>(null)
 
-  /* Phase, tests and retesting are still open in the scope sheet. */
+  /* Phase and retesting are still open in the scope sheet. */
   const allColumns: (Column<Plan> & { status?: SettingStatus })[] = [
     {
       id: "id",
@@ -271,13 +269,6 @@ function PlanCatalogue() {
       sortValue: (p) => p.name,
     },
     {
-      id: "area",
-      header: "Area",
-      className: "hidden lg:table-cell text-foreground/80",
-      cell: (p) => p.area,
-      sortValue: (p) => p.area,
-    },
-    {
       id: "phase",
       status: "Open",
       header: "Phase",
@@ -286,9 +277,8 @@ function PlanCatalogue() {
     },
     {
       id: "tests",
-      status: "Open",
-      header: "Tests",
-      className: "hidden xl:table-cell max-w-72 truncate text-foreground/80",
+      header: "Suggested tests",
+      className: "hidden lg:table-cell max-w-96 truncate text-foreground/80",
       cell: (p) => p.tests.join(", "),
     },
     {
@@ -347,17 +337,17 @@ function PlanCatalogue() {
         noun="plans"
         rows={items}
         columns={columns}
-        search={(p) => [p.id, p.name, p.area]}
+        search={(p) => [p.id, p.name, ...p.tests]}
         statusTabs={
           shown("Open") ? { options: PHASES, value: (p) => p.phase } : undefined
         }
         filters={[
           {
-            id: "area",
-            label: "Area",
-            all: "All areas",
-            options: AREAS,
-            match: (p, v) => p.area === v,
+            id: "test",
+            label: "Suggested test",
+            all: "All tests",
+            options: TESTS,
+            match: (p, v) => p.tests.includes(v),
           },
           {
             id: "status",
@@ -376,14 +366,8 @@ function PlanCatalogue() {
         exportRow={(p) => ({
           ID: p.id,
           Plan: p.name,
-          Area: p.area,
-          ...(shown("Open")
-            ? {
-                Phase: p.phase,
-                Tests: p.tests.join(", "),
-                Retest: p.retest,
-              }
-            : {}),
+          "Suggested tests": p.tests.join(", "),
+          ...(shown("Open") ? { Phase: p.phase, Retest: p.retest } : {}),
           Status: p.status,
         })}
         emptyIllustration="no-results"
@@ -417,7 +401,6 @@ function PlanForm({
 }) {
   const [draft, setDraft] = React.useState({
     name: plan?.name ?? "",
-    area: plan?.area ?? "",
     phase: plan?.phase ?? "V1",
     tests: plan?.tests ?? [],
     retest: plan?.retest ?? RETEST_INTERVALS[0],
@@ -456,7 +439,7 @@ function PlanForm({
       <DialogHeader>
         <DialogTitle>{plan ? "Edit plan" : "Add plan"}</DialogTitle>
         <DialogDescription className="sr-only">
-          The plan&apos;s name, area, phase, tests and retesting.
+          The plan&apos;s name, suggested tests, phase and retesting.
         </DialogDescription>
       </DialogHeader>
       <TextField
@@ -470,32 +453,21 @@ function PlanForm({
           setError("")
         }}
       />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <SelectField
-          id="plan-area"
-          label="Area"
-          options={AREAS}
-          value={draft.area}
-          onChange={(area) => setDraft({ ...draft, area })}
-        />
-        {shown("Open") && (
-          <SelectField
-            id="plan-phase"
-            label="Phase"
-            options={PHASES}
-            value={draft.phase}
-            onChange={(phase) => setDraft({ ...draft, phase: phase as Phase })}
-          />
-        )}
-      </div>
+      <MultiSelectDropdownField
+        id="plan-tests"
+        label="Suggested tests"
+        options={TESTS}
+        value={draft.tests}
+        placeholder="Select tests"
+        onChange={(tests) => setDraft({ ...draft, tests })}
+      />
       {shown("Open") && (
-        <MultiSelectDropdownField
-          id="plan-tests"
-          label="Tests"
-          options={TESTS}
-          value={draft.tests}
-          placeholder="Select tests"
-          onChange={(tests) => setDraft({ ...draft, tests })}
+        <SelectField
+          id="plan-phase"
+          label="Phase"
+          options={PHASES}
+          value={draft.phase}
+          onChange={(phase) => setDraft({ ...draft, phase: phase as Phase })}
         />
       )}
       {shown("Open") && (
@@ -712,13 +684,16 @@ function CarePlanLimits() {
 /* -------------------------------------------------------------------------- */
 
 function Membership() {
-  const settings = useSettings("membership", {
+  const settings = useSettings("membership-v2", {
     monthly: 149,
     annualOn: true,
-    annual: 1490,
+    discount: 15,
     hsa: false,
   })
   const d = settings.draft
+  /* The annual price follows from the monthly one less the discount. */
+  const full = d.monthly * 12
+  const annual = Math.round(full * (1 - d.discount / 100))
   return (
     <SettingsFrame action={settings.actions}>
       <SettingsSection title="Optimization membership">
@@ -740,14 +715,30 @@ function Membership() {
             />
           </ValueRow>
           {d.annualOn && (
-            <ValueRow label="Annual price">
+            <ValueRow label="Annual discount">
               <NumberInput
-                label="Annual price"
-                prefix="$"
-                unit="a year"
-                value={d.annual}
-                onChange={(annual) => settings.patch({ annual })}
+                label="Annual discount"
+                unit="% off"
+                value={d.discount}
+                onChange={(discount) =>
+                  settings.patch({ discount: Math.min(discount, 100) })
+                }
               />
+            </ValueRow>
+          )}
+          {d.annualOn && (
+            <ValueRow label="Annual price">
+              <span className="text-sm tabular-nums">
+                <span className="font-medium">
+                  ${annual.toLocaleString("en-US")} a year
+                </span>
+                {full > annual && (
+                  <span className="text-muted-foreground">
+                    , saves ${(full - annual).toLocaleString("en-US")} on $
+                    {full.toLocaleString("en-US")}
+                  </span>
+                )}
+              </span>
             </ValueRow>
           )}
         </ValueCard>
@@ -873,66 +864,80 @@ function PriceList({ kind }: { kind: "longevity" | "top-ups" }) {
 /*  AI                                                                         */
 /* -------------------------------------------------------------------------- */
 
-/* The allowance is set in questions: five a week for free patients, per
-   the scope sheet; the paid figure is a placeholder until it is agreed. */
+/* Each allowance is a number of questions or a dollar amount of tokens,
+   over a week or a month. Five questions a week for free patients, per the
+   scope sheet; the paid figure is a placeholder until it is agreed. */
+const LIMIT_BY = ["Questions", "Token spend"] as const
+const LIMIT_PERIODS = ["Week", "Month"] as const
+
+type Allowance = { by: string; amount: number; per: string }
+
+function AllowanceCard({
+  who,
+  value,
+  onChange,
+}: {
+  who: string
+  value: Allowance
+  onChange: (value: Allowance) => void
+}) {
+  const tokens = value.by === "Token spend"
+  const per = `a ${value.per.toLowerCase()}`
+  return (
+    <ValueCard>
+      <ValueRow label="Limit by">
+        <ChoiceSelect
+          label={`${who} limit by`}
+          value={value.by}
+          options={LIMIT_BY}
+          onChange={(by) => onChange({ ...value, by })}
+        />
+      </ValueRow>
+      <ValueRow label="Period">
+        <ChoiceSelect
+          label={`${who} allowance period`}
+          value={value.per}
+          options={LIMIT_PERIODS}
+          onChange={(p) => onChange({ ...value, per: p })}
+        />
+      </ValueRow>
+      <ValueRow label="Allowance">
+        <NumberInput
+          label={`${who} allowance`}
+          prefix={tokens ? "$" : undefined}
+          unit={tokens ? `of tokens ${per}` : `questions ${per}`}
+          value={value.amount}
+          min={0}
+          onChange={(amount) => onChange({ ...value, amount })}
+          className="w-56"
+        />
+      </ValueRow>
+    </ValueCard>
+  )
+}
+
 function AiCredit() {
-  const settings = useSettings("ai-credit-questions", {
-    freeQuestions: 5,
-    freeReset: "Every week" as string,
-    paidQuestions: 40,
-    paidReset: "Every week" as string,
+  const settings = useSettings("ai-credit-allowance", {
+    free: { by: "Questions", amount: 5, per: "Week" } as Allowance,
+    paid: { by: "Questions", amount: 40, per: "Week" } as Allowance,
     grace: true,
   })
   const d = settings.draft
   return (
     <SettingsFrame action={settings.actions}>
       <SettingsSection title="Free patients">
-        <ValueCard>
-          <ValueRow label="Allowance">
-            <NumberInput
-              label="Free allowance"
-              unit="questions a week"
-              value={d.freeQuestions}
-              min={0}
-              onChange={(freeQuestions) => settings.patch({ freeQuestions })}
-              className="w-56"
-            />
-          </ValueRow>
-          {shown("Open") && (
-            <ValueRow label="Resets">
-              <ChoiceSelect
-                label="Free allowance resets"
-                value={d.freeReset}
-                options={RESET_PERIODS}
-                onChange={(freeReset) => settings.patch({ freeReset })}
-              />
-            </ValueRow>
-          )}
-        </ValueCard>
+        <AllowanceCard
+          who="Free"
+          value={d.free}
+          onChange={(free) => settings.patch({ free })}
+        />
       </SettingsSection>
       <SettingsSection title="Paid patients">
-        <ValueCard>
-          <ValueRow label="Allowance">
-            <NumberInput
-              label="Paid allowance"
-              unit="questions a week"
-              value={d.paidQuestions}
-              min={0}
-              onChange={(paidQuestions) => settings.patch({ paidQuestions })}
-              className="w-56"
-            />
-          </ValueRow>
-          {shown("Partly") && (
-            <ValueRow label="Resets">
-              <ChoiceSelect
-                label="Paid allowance resets"
-                value={d.paidReset}
-                options={RESET_PERIODS}
-                onChange={(paidReset) => settings.patch({ paidReset })}
-              />
-            </ValueRow>
-          )}
-        </ValueCard>
+        <AllowanceCard
+          who="Paid"
+          value={d.paid}
+          onChange={(paid) => settings.patch({ paid })}
+        />
       </SettingsSection>
       {/* Not in the scope sheet: the grace chat for one in progress. */}
       {shown("Open") && (

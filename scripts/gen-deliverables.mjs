@@ -64,7 +64,7 @@ const PAGES = {
   "/screens/login/reset-code": [ADMIN, AUTH, "Reset code sent"],
   "/screens/login/reset-password": [ADMIN, AUTH, "Reset password"],
 
-  "/screens/handoff/illustrations": [GLOBAL, "Illustrations", "Handoff: usage and downloads"],
+  "/screens/handoff/illustrations": [GLOBAL, "Design System", "Illustration handoff: usage and downloads"],
 
   "/screens/errors": [GLOBAL, "Error States (web)", "All error states"],
   "/screens/errors/permission-denied": [GLOBAL, "Error States (web)", "Permission denied"],
@@ -72,22 +72,23 @@ const PAGES = {
   "/screens/session-expired": [GLOBAL, "Error States (web)", "Session expired"],
 
   "/screens/admin": [ADMIN, "", "", { skip: true }],
+  "/screens/admin/dashboard": [ADMIN, "Dashboard", "Dashboard: all regions"],
   "/screens/admin/practices": [ADMIN, "Practices", "Practice list"],
   "/screens/admin/practices/[id]": [ADMIN, "Practices", "Practice details", { url: "/screens/admin/practices/593892" }],
   "/screens/admin/practices/[id]/providers/[providerId]": [ADMIN, "Practices", "Provider adoption", { url: "/screens/admin/practices/593892/providers/PR4775" }],
-  // Placeholder pages, not deliverables (removed from the sheet 19 Oct 2026).
-  "/screens/admin/dashboard": [ADMIN, "Dashboard", "Dashboard", { skip: true }],
-  "/screens/admin/settings": [ADMIN, "Settings", "Settings", { skip: true }],
+  "/screens/admin/settings": [ADMIN, "Settings", "Settings home"],
+  // Each settings page is [group]/[page]; SETTINGS below lists them.
+  "/screens/admin/settings/[group]/[page]": [ADMIN, "Settings", "", { skip: true }],
 
 
   // The clinic manager's practice portal.
   "/screens/practice": [MANAGER, "", "", { skip: true }],
-  "/screens/practice/users": [MANAGER, "Users", "Users: providers tab (list, bulk import)"],
+  "/screens/practice/users": [MANAGER, "Users", "Users: providers tab (list, bulk add)"],
   "/screens/practice/users/providers/new": [MANAGER, "Users", "Add provider"],
   "/screens/practice/users/providers/[id]": [MANAGER, "Users", "Provider profile", { url: "/screens/practice/users/providers/PR3132" }],
   "/screens/practice/users/providers/[id]/edit": [MANAGER, "Users", "Edit provider", { url: "/screens/practice/users/providers/PR3132/edit" }],
-  "/screens/practice/patients": [MANAGER, "Patients", "Patients (list, bulk import)"],
-  "/screens/practice/patients/new": [MANAGER, "Patients", "Patient onboarding form"],
+  "/screens/practice/patients": [MANAGER, "Patients", "Patients (list, status tabs, bulk add)"],
+  "/screens/practice/patients/new": [MANAGER, "Patients", "Add patient"],
   "/screens/practice/patients/[id]": [MANAGER, "Patients", "Patient profile", { url: "/screens/practice/patients/P10240" }],
   "/screens/practice/patients/[id]/edit": [MANAGER, "Patients", "Edit patient", { url: "/screens/practice/patients/P10240/edit" }],
   "/screens/practice/patients/duplicates": [MANAGER, "Patients", "Possible duplicates queue"],
@@ -96,11 +97,17 @@ const PAGES = {
   "/screens/practice/locations/new": [MANAGER, "Locations", "Add location"],
   "/screens/practice/locations/[id]": [MANAGER, "Locations", "Location details", { url: "/screens/practice/locations/LOC1001" }],
   "/screens/practice/locations/[id]/edit": [MANAGER, "Locations", "Edit location", { url: "/screens/practice/locations/LOC1001/edit" }],
+  "/screens/practice/settings": [MANAGER, "Settings", "Settings home"],
+  "/screens/practice/settings/[group]/[page]": [MANAGER, "Settings", "", { skip: true }],
   // A provider's portal, reached from the provider invite.
-  "/screens/patients/dashboard": [PROVIDER, "Dashboard", "Work queue: abnormal results"],
-  "/screens/patients": [PROVIDER, "Patients", "Patients (list, status tabs, last sync, send invites)"],
+  "/screens/patients/dashboard": [PROVIDER, "Dashboard", "Abnormal results"],
+  "/screens/patients": [PROVIDER, "Patients", "Patients (list, status tabs, last sync)"],
   "/screens/patients/tasks": [PROVIDER, "Tasks", "Tasks (all and my tasks, task details)"],
-  "/screens/patients/communication": [PROVIDER, "Communication", "Chats and groups"],
+  "/screens/patients/communication": [PROVIDER, "Communication", "Provider chats"],
+  "/screens/patients/reports": [PROVIDER, "Reports", "Reports (report types, period, filters, export)"],
+  "/screens/patients/schedule": [PROVIDER, "Schedule", "Schedule (calendar and list, appointment details)"],
+  "/screens/patients/settings": [PROVIDER, "Settings", "Settings home"],
+  "/screens/patients/settings/[group]/[page]": [PROVIDER, "Settings", "", { skip: true }],
   "/screens/patients/new": [PROVIDER, "Patients", "Add patient and send invite"],
   "/screens/patients/[id]": [PROVIDER, "Patient Chart", "Dashboard: free member", { url: "/screens/patients/P10240" }],
   "/screens/patients/[id]/edit": [PROVIDER, "Patients", "Edit patient", { url: "/screens/patients/P10240/edit" }],
@@ -129,7 +136,8 @@ const SAMPLE_ITEM = {"title": "Knee arthroscopy, right", "provenance": "clinicia
     at?]. `at` -1 puts a row above the portal's listed pages; a route puts it
     just after that route's row. */
 const EXTRA = [
-  [GLOBAL, "Design System", "Illustration library", "/illustrations"],
+  [GLOBAL, "Design System", "Icon library", "/icons", "/"],
+  [GLOBAL, "Design System", "Illustration library", "/illustrations", "/"],
   [GLOBAL, "Error States (web)", "Page not found", "/screens/page-not-found"],
   // The patient app's error states; errors/ is a review index that opens each one.
   [GLOBAL, "Error States (mobile app)", "All error states", "/app/errors", "/screens/session-expired"],
@@ -144,9 +152,11 @@ const EXTRA = [
   [PROVIDER, "Patient Chart", "Dashboard: optimization member", "/screens/patients/P10318", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Overview: face sheet", "/screens/patients/P10240?section=overview", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Overview: timeline", "/screens/patients/P10240?section=overview&tab=timeline", "/screens/patients/[id]"],
-  [PROVIDER, "Patient Chart", "Care plan: review (pending)", "/screens/patients/P10240?section=care-plan", "/screens/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Care plan: pending review", "/screens/patients/P10240?section=care-plan", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Care plan: history", "/screens/patients/P10240?section=care-plan&tab=history", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Care plan: changes requested", "/screens/patients/P10318?section=care-plan", "/screens/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Care plan: history, changes requested", "/screens/patients/P10318?section=care-plan&tab=history", "/screens/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Care plan: no plan yet", "/screens/patients/P10257?section=care-plan", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Encounters", "/screens/patients/P10240?section=encounters", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Appointments: upcoming", "/screens/patients/P10240?section=appointments", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Appointments: past", "/screens/patients/P10240?section=appointments&tab=past", "/screens/patients/[id]"],
@@ -164,8 +174,15 @@ const EXTRA = [
   [PROVIDER, "Patient Chart", "Record building", "/screens/patients/P10750", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Sync failed", "/screens/patients/P10665", "/screens/patients/[id]"],
 
+  [ADMIN, "Dashboard", "Dashboard: one region", "/screens/admin/dashboard?region=Arizona", "/screens/admin/dashboard"],
+  [ADMIN, "Practices", "Add practice", "/screens/admin/practices?new=1", "/screens/admin/practices"],
+  [ADMIN, "Practices", "Practice details: providers tab", "/screens/admin/practices/593892?tab=providers", "/screens/admin/practices/[id]"],
+  [ADMIN, "Practices", "Practice details: users tab", "/screens/admin/practices/593892?tab=users", "/screens/admin/practices/[id]"],
+
   ...authFor(MANAGER, "clinic-manager", WEB_AUTH),
-  [MANAGER, "Users", "Users: non-clinical users tab (list, add, view, edit panels)", "/screens/practice/users?tab=staff"],
+  [MANAGER, "Users", "Users: non-clinical users tab (list, view and edit side sheet)", "/screens/practice/users?tab=staff"],
+  [MANAGER, "Users", "Add user", "/screens/practice/users?tab=staff&new=1"],
+  [MANAGER, "Patients", "Bulk add patients", "/screens/practice/patients?import=1", "/screens/practice/patients"],
 
   ...authFor(PROVIDER, "provider", WEB_AUTH),
   ...[
@@ -180,6 +197,32 @@ const EXTRA = [
   [PROVIDER, "Patients", "Bulk add patients", "/screens/patients?import=1", "/screens/patients"],
   [PROVIDER, "Tasks", "Add task", "/screens/patients/tasks?new=1", "/screens/patients/tasks"],
 
+  ...settingsPages(ADMIN, "/screens/admin/settings", [
+    ["Roles and permissions", "roles/permissions"],
+    ["Optimization plans: plan catalogue", "plans/catalogue"],
+    ["Optimization plans: test intervals", "plans/intervals"],
+    ["Optimization plans: limits", "plans/limits"],
+    ["Pricing: membership", "pricing/membership"],
+    ["Pricing: longevity tests", "pricing/longevity"],
+    ["AI credit", "ai/credit"],
+    ["Partners", "partners/list"],
+    ["Consent documents", "consent/documents"],
+    ["Audit log", "security/audit-log"],
+  ]),
+  ...settingsPages(MANAGER, "/screens/practice/settings", [
+    ["Roles and permissions", "people/roles"],
+    ["Patient flags", "patients/flags"],
+    ["Employer accounts", "employers/list"],
+    ["Patient invitation: channels", "invitations/channels"],
+    ["Patient invitation: reminders", "invitations/reminders"],
+    ["Alerts", "alerts/notifications"],
+    ["Audit log", "security/audit-log"],
+  ]),
+  ...settingsPages(PROVIDER, "/screens/patients/settings", [
+    ["Patient flags", "account/flags"],
+    ["Audit log", "security/audit-log"],
+  ]),
+
   // A patient signs in on the mobile app; only the invitation is on the web.
   ...authFor(PATIENT, "patient", [
     ["Invitation email (desktop)", "/screens/login/invite-email"],
@@ -188,9 +231,15 @@ const EXTRA = [
   // The app's signed-out screens, served from public/app. Set password and
   // home sit behind the app's session, so they have no link of their own.
   [PATIENT, AUTH, "Activate account (mobile app)", "/app/activate", -1],
+  [PATIENT, AUTH, "Set password (mobile app)", "/app/set-password", -1],
   [PATIENT, AUTH, "Sign in (mobile app)", "/app/sign-in", -1],
   ...patientApp(),
 ]
+
+/** A portal's settings pages ([group]/[page]), listed after its settings home. */
+function settingsPages(portal, base, subs) {
+  return subs.map(([sub, path]) => [portal, "Settings", sub, `${base}/${path}`, base])
+}
 
 /** The patient app's screens, linked plainly (the demo seed links were
     removed 16 Oct 2026). A signed-in screen opens once the sample patient
@@ -207,20 +256,19 @@ function patientApp() {
   const MEMBER = "Mobile App: Optimization Member"
   const PROFILE = "Mobile App: Profile and Settings"
   return [
-    [ONBOARDING, "Set password", at("/set-password")],
-    [ONBOARDING, "About you", at("/onboarding/about-you")],
+    [ONBOARDING, "Is this you?", at("/onboarding/about-you")],
     [ONBOARDING, "Consent: records", at("/onboarding/consent")],
     [ONBOARDING, "Consent: texts and signature", at("/onboarding/consent-texts")],
     [ONBOARDING, "Life questions: intro", at("/onboarding/life")],
     [ONBOARDING, "Life questions: one question", at("/onboarding/life-question")],
-    [ONBOARDING, "Life questions: what matters most", at("/onboarding/life-focus")],
+    [ONBOARDING, "Life questions: three to improve", at("/onboarding/life-focus")],
     [ONBOARDING, "Record building", at("/onboarding/syncing")],
     [ONBOARDING, "Record tour: upcoming appointments", at("/onboarding/working")],
     [ONBOARDING, "Record tour: new medication", at("/onboarding/new-medication")],
     [ONBOARDING, "Record tour: trending the wrong way", at("/onboarding/trends")],
     [ONBOARDING, "Your biological age", at("/onboarding/biological-age")],
     [ONBOARDING, "What is driving it", at("/onboarding/what-is-driving-it")],
-    [ONBOARDING, "Welcome: 3 of 81 plans", at("/plans")],
+    [ONBOARDING, "Welcome: AI plan match", at("/plans")],
     [HOME, "Home", at("")],
     [HOME, "Notifications", at("/notifications")],
     [TODO, "To do tab", at("/gaps")],
@@ -239,8 +287,8 @@ function patientApp() {
     [RECORD, "Outside visit (urgent care)", at("/visit/urgent")],
     [RECORD, "Record item details (procedure)", at(`/record/item?d=${encodeURIComponent(JSON.stringify(SAMPLE_ITEM))}`)],
     [RECORD, "Add to your record (medicine form)", at("/record/add?kind=medicines")],
-    [RECORD, "Tell us about a difference", at("/tell-us")],
-    [CONNECT, "Connect tab (records and devices)", at("/connections")],
+    [RECORD, "Tell us something", at("/tell-us")],
+    [CONNECT, "Connect tab", at("/connections")],
     [CONNECT, "Connect your records", at("/connect")],
     [CONNECT, "Connect your records: texts and signature", at("/connect-texts")],
     [CONNECT, "Record building after connecting", at("/building")],
@@ -261,9 +309,9 @@ function patientApp() {
     [UPGRADE, "Your plan is ready", at("/plan-ready")],
     [MEMBER, "Today", at("/today")],
     [MEMBER, "Daily review", at("/review")],
-    [MEMBER, "Diet", at("/diet")],
+    [MEMBER, "Diet plan", at("/diet")],
     [MEMBER, "Log a meal", at("/log-meal")],
-    [MEMBER, "Exercise", at("/exercise")],
+    [MEMBER, "Today's exercise", at("/exercise")],
     [MEMBER, "Exercise move", at("/exercise/sit-to-stand")],
     [MEMBER, "Yesterday", at("/day/yesterday")],
     [MEMBER, "Progress", at("/progress")],

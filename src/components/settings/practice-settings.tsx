@@ -27,12 +27,10 @@ import {
   fullName,
   providerName,
   providers,
-  usDate,
   users,
 } from "@/components/practice/practice-data"
 import { PracticeShell } from "@/components/practice/practice-shell"
 import { PatientFlagsPage } from "@/components/settings/patient-flags"
-import { RolesPage } from "@/components/settings/roles"
 import { AuditLogPage } from "@/components/settings/audit-log"
 import {
   ACTION_EVENTS,
@@ -41,6 +39,7 @@ import {
   MATCH_ATTRIBUTES,
   NOTIFY_EVENTS,
   type InviteContact,
+  type ReminderChannel,
   SENDERS,
   employers,
   reminders,
@@ -87,11 +86,6 @@ const GROUPS: SettingsGroup[] = [
     title: "Providers and staff",
     icon: IconUsersGroup,
     pages: [
-      {
-        id: "roles",
-        label: "Roles and permissions",
-        render: () => <PracticeRoles />,
-      },
       {
         id: "care-teams",
         label: "Care teams",
@@ -197,34 +191,6 @@ export function PracticeSettingsPage({
 /* -------------------------------------------------------------------------- */
 /*  Providers and staff                                                        */
 /* -------------------------------------------------------------------------- */
-
-/** The practice's roles and what each can open in the portal: add, edit,
-    activate, deactivate and delete. People pick from these on the provider
-    and user forms. */
-function PracticeRoles() {
-  const providerList = providers.use().items
-  const staffList = users.use().items
-  return (
-    <RolesPage
-      scope={{
-        actor: PRACTICE.manager.name,
-        manage: true,
-        hidden: ["inlay-admin"],
-        inUse: (name) =>
-          providerList.filter((p) => p.role === name).length +
-          staffList.filter((u) => u.role === name).length,
-        onRename: (from, to) => {
-          providerList
-            .filter((p) => p.role === from)
-            .forEach((p) => providers.patch(p.id, { role: to }))
-          staffList
-            .filter((u) => u.role === from)
-            .forEach((u) => users.patch(u.id, { role: to }))
-        },
-      }}
-    />
-  )
-}
 
 /** Which providers each medical assistant supports: the same assignment
     the provider form sets, seen from the assistant's side. */
@@ -349,9 +315,6 @@ function Employers() {
       <SettingsTable
         columns={[
           { header: "Employer" },
-          { header: "Eligible", className: "w-24 text-right" },
-          { header: "Matched", className: "w-24 text-right" },
-          { header: "Last file", className: "hidden w-28 md:table-cell" },
           ...(shown("Partly")
             ? [{ header: "Reports", className: "w-24" }]
             : []),
@@ -369,15 +332,6 @@ function Employers() {
               >
                 {employer.name}
               </Button>
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {employer.eligible.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {employer.matched.toLocaleString()}
-            </TableCell>
-            <TableCell className="hidden tabular-nums md:table-cell">
-              {employer.lastFile ? usDate(employer.lastFile) : "None"}
             </TableCell>
             {shown("Partly") && (
               <TableCell>
@@ -594,7 +548,7 @@ function EmployerMatching() {
 /* -------------------------------------------------------------------------- */
 
 function Channels() {
-  const settings = useSettings("invite-channels", {
+  const settings = useSettings("invite-channels-v2", {
     channels: CHANNELS,
     sender: SENDERS[0] as string,
   })
@@ -688,9 +642,19 @@ function Channels() {
 
 const SMS_LIMIT = 160
 
-/** The invitation and its reminders as a list; each goes out on every
-    channel in use (see Channels). Adding or editing one opens its details:
-    day, heading, message and whether it carries the decline link. */
+const REMINDER_CHANNELS: { id: ReminderChannel; name: string }[] = [
+  { id: "sms", name: "Text message" },
+  { id: "email", name: "Email" },
+]
+
+const channelNames = (ids: ReminderChannel[]) =>
+  REMINDER_CHANNELS.filter((c) => ids.includes(c.id))
+    .map((c) => c.name)
+    .join(", ")
+
+/** The invitation and its reminders as a list. Adding or editing one opens
+    its details: day, channels, heading, message and whether it carries the
+    decline link. */
 function Reminders() {
   const { items } = reminders.use()
   const sorted = [...items].sort((a, b) => a.day - b.day)
@@ -716,6 +680,7 @@ function Reminders() {
         columns={[
           { header: "Contact", className: "w-36" },
           { header: "Day", className: "w-24" },
+          { header: "Send by", className: "w-44" },
           { header: "Heading" },
           { header: "Decline link", className: "hidden w-32 md:table-cell" },
           { header: "Actions", className: "w-24 text-right" },
@@ -733,6 +698,7 @@ function Reminders() {
               </Button>
             </TableCell>
             <TableCell className="tabular-nums">Day {contact.day}</TableCell>
+            <TableCell>{channelNames(contact.channels ?? [])}</TableCell>
             <TableCell className="max-w-0 truncate text-foreground/80">
               {contact.heading}
             </TableCell>
@@ -807,6 +773,7 @@ function ReminderForm({
 }) {
   const [draft, setDraft] = React.useState<Omit<InviteContact, "id">>({
     day: contact?.day ?? nextDay,
+    channels: contact?.channels ?? ["sms", "email"],
     heading: contact?.heading ?? "",
     message: contact?.message ?? "",
     decline: contact?.decline ?? false,
@@ -814,10 +781,17 @@ function ReminderForm({
   const [error, setError] = React.useState("")
   const set = (changes: Partial<typeof draft>) =>
     setDraft((d) => ({ ...d, ...changes }))
-  const over = draft.message.length > SMS_LIMIT
+  const sms = draft.channels.includes("sms")
+  const email = draft.channels.includes("email")
+  const over = sms && draft.message.length > SMS_LIMIT
+  const [channelError, setChannelError] = React.useState("")
 
   function submit(event: React.FormEvent) {
     event.preventDefault()
+    if (draft.channels.length === 0) {
+      setChannelError("Select at least one channel")
+      return
+    }
     if (!draft.message.trim()) {
       setError("Enter the message")
       return
@@ -865,27 +839,31 @@ function ReminderForm({
           Include decline link
         </label>
       </div>
-      <TextField
-        id="reminder-heading"
-        label="Heading"
-        value={draft.heading}
-        onChange={(e) => set({ heading: e.target.value })}
-      />
+      {email && (
+        <TextField
+          id="reminder-heading"
+          label="Email subject"
+          value={draft.heading}
+          onChange={(e) => set({ heading: e.target.value })}
+        />
+      )}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
           <label htmlFor="reminder-message" className="text-sm font-medium">
             Message
           </label>
-          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
-            {over && (
-              <span
-                aria-hidden
-                className="size-1.5 rounded-full"
-                style={{ background: SUBTLE.red }}
-              />
-            )}
-            {draft.message.length} of {SMS_LIMIT} characters
-          </span>
+          {sms && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
+              {over && (
+                <span
+                  aria-hidden
+                  className="size-1.5 rounded-full"
+                  style={{ background: SUBTLE.red }}
+                />
+              )}
+              {draft.message.length} of {SMS_LIMIT} characters
+            </span>
+          )}
         </div>
         <Textarea
           id="reminder-message"
@@ -899,6 +877,36 @@ function ReminderForm({
         />
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
+      <fieldset className="flex flex-col gap-1.5">
+        <legend className="mb-1.5 text-sm font-medium">Send by</legend>
+        <div className="flex items-center gap-6">
+          {REMINDER_CHANNELS.map((channel) => (
+            <label
+              key={channel.id}
+              className="flex h-9 items-center gap-2 text-sm"
+            >
+              <Checkbox
+                checked={draft.channels.includes(channel.id)}
+                onCheckedChange={(on) => {
+                  set({
+                    channels: REMINDER_CHANNELS.map((c) => c.id).filter(
+                      (id) =>
+                        id === channel.id
+                          ? on === true
+                          : draft.channels.includes(id)
+                    ),
+                  })
+                  setChannelError("")
+                }}
+              />
+              {channel.name}
+            </label>
+          ))}
+        </div>
+        {channelError && (
+          <p className="text-sm text-destructive">{channelError}</p>
+        )}
+      </fieldset>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel

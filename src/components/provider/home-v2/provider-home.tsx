@@ -8,22 +8,28 @@ import { Button } from "@/design-system/ui/button"
 import { Skeleton } from "@/design-system/ui/skeleton"
 import { Spinner } from "@/design-system/ui/spinner"
 import { fullName, patients, providers } from "@/components/practice/practice-data"
-import { ChartCardSkeleton, KitIcon } from "@/components/dashboard-kit-v2"
+import { KitIcon } from "@/components/dashboard-kit-v2"
 import { PROVIDER_ID, ProviderShell } from "@/components/provider/provider-shell"
 import { NOW, fmtDateTime } from "@/components/provider/home-v2/clock"
 import { TYPE_META } from "@/components/provider/home-v2/labels"
-import { DailyBrief } from "@/components/provider/home-v2/daily-brief"
 import { ItemPanel } from "@/components/provider/home-v2/item-panel"
-import { MetricRow } from "@/components/provider/home-v2/metric-row"
+import {
+  MyPatients,
+  MyTasks,
+  NeedsYou,
+  OverviewStats,
+  StatCardSkeleton,
+  TodaySchedule,
+  WeekAhead,
+  useClinicDay,
+} from "@/components/provider/home-v2/overview"
 import { recordAudit, workItems } from "@/components/provider/home-v2/mock"
-import { PriorityCard, TimeOpenCard, TopPatientsCard } from "@/components/provider/home-v2/queue-charts"
+import { useNow } from "@/components/provider/schedule/schedule-data"
 import {
   type ActionOptions,
-  type AgeBucket,
   CARD_TYPES,
   type Scope,
   actionLabel,
-  ageBucketOf,
   applyAction,
   byPriority,
   isOpen,
@@ -31,18 +37,17 @@ import {
   openQueue,
   patientsInScope,
   toQueue,
-  topPatients,
   typeCounts,
 } from "@/components/provider/home-v2/selectors"
-import type { ActionKind, Priority, QueueItem, WorkItem } from "@/components/provider/home-v2/types"
+import type { ActionKind, QueueItem, WorkItem } from "@/components/provider/home-v2/types"
 import { Worklist, type WorklistTab } from "@/components/provider/home-v2/worklist"
 
-/* The provider home (/screens/patients/dashboard): a start-of-day work
-   queue read top to bottom. The AI Daily Brief; how much work and is it
-   growing, with the work itself right under the card that selects it; how
-   urgent and how old the queue is and who needs the most attention. Every
-   number comes from the selectors over the work-item and patient stores,
-   and nothing here notifies. */
+/* The provider home (/screens/patients/dashboard): the physician's whole
+   day on one page, read top to bottom. Five stat cards (appointments,
+   urgent work, tasks, care plans, messages); today's schedule beside what
+   needs the physician; visits by day, the task list and the panel; then
+   the Worklist of clinical items. Every number comes from the stores the
+   linked pages read, and nothing here notifies. */
 
 const ACTOR = "Daniel Reyes, MD"
 
@@ -72,8 +77,6 @@ export function ProviderHomeV2() {
   const ready = roster.ready && work.ready
 
   const [query, setQuery] = React.useState("")
-  const [priority, setPriority] = React.useState<Priority | "">("")
-  const [age, setAge] = React.useState<AgeBucket | "">("")
   const [finished, setFinished] = React.useState<Record<string, Finished>>({})
   const [panel, setPanel] = React.useState<{ id: string; list: string[] } | null>(null)
   const worklistRef = React.useRef<HTMLElement | null>(null)
@@ -101,10 +104,9 @@ export function ProviderHomeV2() {
     () => open.filter((i) => i.priority === "urgent").sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     [open]
   )
-  const top = React.useMemo(
-    () => topPatients(open).map((t) => ({ ...t, name: byId.get(t.patientId) ? fullName(byId.get(t.patientId)!) : t.patientId })),
-    [open, byId]
-  )
+  /* Appointments run on the real clock, as the Schedule does. */
+  const now = useNow()
+  const clinic = useClinicDay(now)
   /* Sync now pulls a fresh copy for every patient; the mock stamps the
      clock's time once the pull ends. */
   const [syncedAt, setSyncedAt] = React.useState<string | null>(null)
@@ -138,8 +140,6 @@ export function ProviderHomeV2() {
     if (tab === "urgent" ? i.priority !== "urgent" : tab !== "all" && i.type !== tab) return false
     const p = byId.get(i.patientId)
     if (!p) return false
-    if (priority && i.priority !== priority) return false
-    if (age && ageBucketOf(i) !== age) return false
     return !q || fullName(p).toLowerCase().includes(q) || p.id.toLowerCase().includes(q)
   })
   /* What the panel walks: the rows as the Worklist shows them. */
@@ -211,19 +211,6 @@ export function ProviderHomeV2() {
     if (scroll) goToWorklist()
   }
 
-  /* Chart filters toggle: pressing the selected slice or bar clears it. */
-  function pickPriority(p: Priority) {
-    setPriority((cur) => (cur === p ? "" : p))
-    goToWorklist()
-  }
-  function pickAge(b: AgeBucket) {
-    setAge((cur) => (cur === b ? "" : b))
-    goToWorklist()
-  }
-  function pickPatient(row: { name: string }) {
-    setQuery(row.name)
-    showTab("all", true)
-  }
 
   const current = panel ? (listed.find((i) => i.id === panel.id) ?? null) : null
   const at = panel ? panel.list.indexOf(panel.id) : -1
@@ -258,18 +245,38 @@ export function ProviderHomeV2() {
             </div>
           </header>
 
-          <DailyBrief
-            ready={ready}
-            open={open}
-            urgent={urgent}
-            counts={counts}
-            byId={byId}
-            onPick={(t) => showTab(t, true)}
-            onOpen={(item, from) => openItem(item, from, [item.id])}
-          />
+          {ready && now ? (
+            <OverviewStats
+              day={clinic.today}
+              dayLabel="Today"
+              open={open}
+              urgent={urgent}
+              onUrgent={() => showTab("urgent", true)}
+            />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              {Array.from({ length: 5 }, (_, i) => (
+                <StatCardSkeleton key={i} />
+              ))}
+            </div>
+          )}
 
-          {/* The Worklist sits right under the cards, so picking one does not scroll. */}
-          <MetricRow ready={ready} counts={counts} urgent={urgent} selected={tab} onPick={(t) => showTab(t)} />
+          {ready && now && (
+            <>
+              {/* The day beside what is waiting on the physician. */}
+              <div className="grid gap-4 xl:grid-cols-3">
+                <TodaySchedule now={now} day={clinic.day} title={clinic.title} className="xl:col-span-2" />
+                <NeedsYou urgent={urgent} byId={byId} onOpen={(item, from) => openItem(item, from, [item.id])} />
+              </div>
+
+              {/* The week, the task list and the panel. */}
+              <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                <WeekAhead now={now} />
+                <MyTasks byId={byId} today={NOW.slice(0, 10)} />
+                <MyPatients today={now.slice(0, 10)} className="lg:col-span-2 xl:col-span-1" />
+              </div>
+            </>
+          )}
 
           <Worklist
             sectionRef={worklistRef}
@@ -279,10 +286,10 @@ export function ProviderHomeV2() {
             counts={tabCounts}
             query={query}
             onQuery={setQuery}
-            priority={priority}
-            onClearPriority={() => setPriority("")}
-            age={age}
-            onClearAge={() => setAge("")}
+            priority=""
+            onClearPriority={() => {}}
+            age=""
+            onClearAge={() => {}}
             rows={rows}
             byId={byId}
             finished={Object.fromEntries(Object.entries(finished).map(([id, f]) => [id, f.label]))}
@@ -292,22 +299,6 @@ export function ProviderHomeV2() {
             onAct={actRow}
           />
 
-          {/* Urgency, who needs the most attention and age, side by side. */}
-          <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
-            {ready ? (
-              <>
-                <PriorityCard open={open} selected={priority} onSelect={pickPriority} />
-                <TopPatientsCard rows={top} onSelect={pickPatient} />
-                <TimeOpenCard open={open} selected={age} onSelect={pickAge} />
-              </>
-            ) : (
-              <>
-                <ChartCardSkeleton body="size-[236px] rounded-full" />
-                <ChartCardSkeleton body="h-[300px] w-full rounded-[5.76px]" />
-                <ChartCardSkeleton body="h-[300px] w-full rounded-[5.76px]" />
-              </>
-            )}
-          </div>
         </div>
       </div>
 

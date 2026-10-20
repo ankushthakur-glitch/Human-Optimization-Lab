@@ -363,7 +363,7 @@ export const TESTS = [
   "Sleep study",
 ]
 
-/* Placeholder tests per area until Dr. Blanchard's list arrives. */
+/* Placeholder suggested tests, seeded by area, until Dr. Blanchard's list arrives. */
 const AREA_TESTS: Record<string, string[]> = {
   "Metabolic and weight": ["A1C", "Fasting insulin", "Body composition"],
   "Lipid and cardiovascular": ["Lipid panel", "ApoB", "Lipoprotein(a)"],
@@ -382,8 +382,8 @@ const AREA_TESTS: Record<string, string[]> = {
 export type Plan = {
   id: string
   name: string
-  area: string
   phase: Phase
+  /** The tests suggested with the plan. */
   tests: string[]
   retest: string
   status: "Active" | "Retired"
@@ -393,7 +393,6 @@ const PLAN_SEED: Plan[] = AREAS.flatMap((area, a) =>
   PLAN_AREAS[area].map((name, i) => ({
     id: `PL${String(a * 9 + i + 1).padStart(3, "0")}`,
     name,
-    area,
     phase: (i < 4 ? "V1" : i < 7 ? "V2" : "Later") as Phase,
     tests: AREA_TESTS[area],
     retest: i % 3 === 2 ? "Every 6 months" : "Every 3 months",
@@ -457,8 +456,6 @@ export const TOP_UPS = [
 /* -------------------------------------------------------------------------- */
 /*  AI                                                                         */
 /* -------------------------------------------------------------------------- */
-
-export const RESET_PERIODS = ["Every day", "Every week", "Every month"] as const
 
 export const MODELS = [
   "Claude Opus 5.5",
@@ -579,15 +576,17 @@ export const MATCH_ATTRIBUTES = [
 export const CHANNELS = [
   { id: "sms", name: "Text message", on: true },
   { id: "email", name: "Email", on: true },
-  { id: "epic", name: "Epic patient portal", on: true },
 ]
 
-/* Four contacts over 30 days. Each goes out on every channel in use, with
-   its own message; the decline link comes with the last one. */
+/* Four contacts over 30 days, each on the channels picked for it, with its
+   own message; the decline link comes with the last one. */
+export type ReminderChannel = "sms" | "email"
 export type InviteContact = {
   id: string
   day: number
-  /** The email subject and the portal message title. */
+  /** Text message, email or both. */
+  channels: ReminderChannel[]
+  /** The email subject. */
   heading: string
   message: string
   /** Carries the link to decline the invitation. */
@@ -598,6 +597,7 @@ export const REMINDERS: InviteContact[] = [
   {
     id: "r1",
     day: 0,
+    channels: ["sms", "email"],
     heading: "{practice_name} invited you to Inlay Health",
     message:
       "Hi {first_name}, {practice_name} has invited you to Inlay Health to see your health record in one place. Join here: {link}",
@@ -606,6 +606,7 @@ export const REMINDERS: InviteContact[] = [
   {
     id: "r2",
     day: 7,
+    channels: ["sms", "email"],
     heading: "Your Inlay Health invitation from {provider_name}",
     message:
       "Hi {first_name}, {provider_name} invited you to Inlay Health. Your results, medications and visits in one place: {link}",
@@ -614,6 +615,7 @@ export const REMINDERS: InviteContact[] = [
   {
     id: "r3",
     day: 14,
+    channels: ["email"],
     heading: "Your invitation is still open",
     message:
       "Hi {first_name}, a reminder from {practice_name}: your Inlay Health invitation is still open. Join here: {link}",
@@ -622,6 +624,7 @@ export const REMINDERS: InviteContact[] = [
   {
     id: "r4",
     day: 30,
+    channels: ["sms", "email"],
     heading: "Last reminder: your Inlay Health invitation",
     message:
       "{practice_name}: last reminder about Inlay Health. Join: {link}. Not interested? Let us know: {decline_link}",
@@ -632,7 +635,7 @@ export const REMINDERS: InviteContact[] = [
 export const reminders = createCollection(
   "hol-settings-invite-reminders",
   REMINDERS,
-  VERSION
+  "settings-v3"
 )
 
 export const SENDERS = [

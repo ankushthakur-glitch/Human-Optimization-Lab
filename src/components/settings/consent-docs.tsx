@@ -2,17 +2,40 @@
 
 import * as React from "react"
 import { toast } from "@/design-system/ui/sonner"
-import { IconEdit, IconEye, IconHistory } from "@/design-system/icons"
+import {
+  IconAdd,
+  IconArrowLeft,
+  IconEdit,
+  IconEye,
+  IconHistory,
+} from "@/design-system/icons"
 
 import { DateField } from "@/components/form-kit"
-import { NAME_LINK, RowMenu } from "@/components/practice/directory"
-import { usDate } from "@/components/practice/practice-data"
+import {
+  type Column,
+  Directory,
+  NAME_LINK,
+  RowMenu,
+  avatarTone,
+  initials,
+} from "@/components/practice/directory"
+import {
+  type Patient,
+  patients,
+  usDate,
+} from "@/components/practice/practice-data"
 import { createCollection } from "@/components/practice/collection-store"
 import {
   SettingsFrame,
+  SettingsSection,
   SettingsTable,
   StatusDot,
 } from "@/components/settings/settings-kit"
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/design-system/ui/avatar"
 import { Button } from "@/design-system/ui/button"
 import { Checkbox } from "@/design-system/ui/checkbox"
 import {
@@ -154,23 +177,110 @@ function upcoming(doc: ConsentDoc) {
 
 type Open =
   | { kind: "edit"; doc: ConsentDoc }
-  | { kind: "history"; doc: ConsentDoc }
   | { kind: "view"; doc: ConsentDoc; version: DocVersion }
+
+/* Who signed which version: every active patient accepted one version of
+   each document. Where a document has more than one live version, about a
+   third of patients still hold the earlier one. Sample data until the app
+   reports signatures. */
+type Signature = {
+  id: string
+  patientId: string
+  name: string
+  photo: string
+  dob: string
+  version: number
+  signedOn: string
+}
+
+const addDays = (iso: string, days: number) => {
+  const d = new Date(`${iso}T12:00:00`)
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+const daysBetween = (from: string, to: string) =>
+  Math.max(
+    1,
+    Math.round(
+      (new Date(`${to}T12:00:00`).getTime() -
+        new Date(`${from}T12:00:00`).getTime()) /
+        86_400_000
+    )
+  )
+
+function signaturesFor(doc: ConsentDoc, people: Patient[]): Signature[] {
+  const live = doc.versions.filter((v) => v.effective <= today())
+  if (live.length === 0) return []
+  return people
+    .filter((p) => p.status === "Active")
+    .map((p, i) => {
+      const v =
+        live.length > 1 && i % 3 === 0
+          ? live[live.length - 2]
+          : live[live.length - 1]
+      const until =
+        doc.versions.find((x) => x.version === v.version + 1)?.effective ??
+        today()
+      return {
+        id: `${doc.id}-${p.id}`,
+        patientId: p.id,
+        name: `${p.firstName} ${p.lastName}`,
+        photo: p.photo,
+        dob: p.dob,
+        version: v.version,
+        signedOn: addDays(v.effective, (i * 7) % daysBetween(v.effective, until)),
+      }
+    })
+}
 
 export function ConsentDocsPage() {
   const { items } = consentDocs.use()
+  const { items: people } = patients.use()
+  const [openId, setOpenId] = React.useState<string | null>(null)
   const [open, setOpen] = React.useState<Open | null>(null)
+  const doc = items.find((d) => d.id === openId)
+
+  const dialog = (
+    <Dialog open={open !== null} onOpenChange={(o) => !o && setOpen(null)}>
+      <DialogContent className="max-h-[90vh] gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        {open?.kind === "edit" && (
+          <VersionForm doc={open.doc} onClose={() => setOpen(null)} />
+        )}
+        {open?.kind === "view" && (
+          <ViewVersion
+            doc={open.doc}
+            version={open.version}
+            onClose={() => setOpen(null)}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+
+  if (doc) {
+    return (
+      <>
+        <DocumentDetail
+          doc={doc}
+          signatures={signaturesFor(doc, people)}
+          onBack={() => setOpenId(null)}
+          onOpen={setOpen}
+        />
+        {dialog}
+      </>
+    )
+  }
 
   return (
     <SettingsFrame>
       <SettingsTable
         equal
         columns={[
-          { header: "Document" },
-          { header: "Version" },
+          { header: "Document name" },
+          { header: "Current version" },
           { header: "Effective" },
-          { header: "Published by", className: "hidden md:table-cell" },
-          { header: "Next version", className: "hidden lg:table-cell" },
+          { header: "Patients signed", className: "hidden md:table-cell" },
           { header: "Actions", className: "w-24 text-right" },
         ]}
       >
@@ -183,29 +293,31 @@ export function ConsentDocsPage() {
                 <Button
                   variant="link"
                   className={`${NAME_LINK} font-medium text-primary-tint`}
-                  onClick={() => setOpen({ kind: "view", doc, version: live })}
+                  onClick={() => setOpenId(doc.id)}
                 >
                   {doc.title}
                 </Button>
               </TableCell>
-              <TableCell className="tabular-nums">{live.version}</TableCell>
+              <TableCell className="tabular-nums">
+                {live.version}
+                {next && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    Version {next.version} from {usDate(next.effective)}
+                  </span>
+                )}
+              </TableCell>
               <TableCell className="tabular-nums">
                 {usDate(live.effective)}
               </TableCell>
-              <TableCell className="hidden text-foreground/80 md:table-cell">
-                {live.publishedBy}
-              </TableCell>
-              <TableCell className="hidden lg:table-cell">
-                {next ? (
-                  <StatusDot tone="warning">
-                    {next.version}, from {usDate(next.effective)}
-                  </StatusDot>
-                ) : (
-                  <span className="text-muted-foreground">None</span>
-                )}
+              <TableCell className="hidden tabular-nums md:table-cell">
+                {signaturesFor(doc, people).length}
               </TableCell>
               <TableCell className="text-right">
                 <RowMenu label={`Actions for ${doc.title}`}>
+                  <DropdownMenuItem onClick={() => setOpenId(doc.id)}>
+                    <IconHistory />
+                    Versions and signatures
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
                       setOpen({ kind: "view", doc, version: live })
@@ -220,44 +332,177 @@ export function ConsentDocsPage() {
                     <IconEdit />
                     New version
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setOpen({ kind: "history", doc })}
-                  >
-                    <IconHistory />
-                    Version history
-                  </DropdownMenuItem>
                 </RowMenu>
               </TableCell>
             </TableRow>
           )
         })}
       </SettingsTable>
-
-      <Dialog open={open !== null} onOpenChange={(o) => !o && setOpen(null)}>
-        <DialogContent className="max-h-[90vh] gap-0 overflow-hidden p-0 sm:max-w-2xl">
-          {open?.kind === "edit" && (
-            <VersionForm doc={open.doc} onClose={() => setOpen(null)} />
-          )}
-          {open?.kind === "history" && (
-            <History
-              doc={open.doc}
-              onView={(version) =>
-                setOpen({ kind: "view", doc: open.doc, version })
-              }
-              onClose={() => setOpen(null)}
-            />
-          )}
-          {open?.kind === "view" && (
-            <ViewVersion
-              doc={open.doc}
-              version={open.version}
-              onEdit={() => setOpen({ kind: "edit", doc: open.doc })}
-              onClose={() => setOpen(null)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {dialog}
     </SettingsFrame>
+  )
+}
+
+/** One document: every version it has had, then the patients who signed
+    each one, switched by version. */
+function DocumentDetail({
+  doc,
+  signatures,
+  onBack,
+  onOpen,
+}: {
+  doc: ConsentDoc
+  signatures: Signature[]
+  onBack: () => void
+  onOpen: (open: Open) => void
+}) {
+  const live = current(doc)
+  const versions = [...doc.versions].reverse()
+  const signed = (v: DocVersion) =>
+    signatures.filter((s) => s.version === v.version).length
+
+  const columns: Column<Signature>[] = [
+    {
+      id: "name",
+      header: "Patient",
+      cell: (s) => (
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Avatar className="size-8 shrink-0">
+            {s.photo && <AvatarImage src={s.photo} alt="" />}
+            <AvatarFallback className={`font-medium ${avatarTone(s.name)}`}>
+              {initials(s.name)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="truncate font-medium">{s.name}</span>
+        </div>
+      ),
+      sortValue: (s) => s.name,
+    },
+    {
+      id: "patientId",
+      header: "Patient ID",
+      className: "hidden text-primary-tint tabular-nums md:table-cell",
+      cell: (s) => s.patientId,
+      sortValue: (s) => s.patientId,
+    },
+    {
+      id: "dob",
+      header: "Date of birth",
+      className: "hidden tabular-nums lg:table-cell text-foreground/80",
+      cell: (s) => usDate(s.dob),
+      sortValue: (s) => s.dob,
+    },
+    {
+      id: "version",
+      header: "Version",
+      className: "tabular-nums",
+      cell: (s) => s.version,
+      sortValue: (s) => s.version,
+    },
+    {
+      id: "signedOn",
+      header: "Signed on",
+      className: "tabular-nums",
+      cell: (s) => usDate(s.signedOn),
+      sortValue: (s) => s.signedOn,
+    },
+  ]
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface-sunken">
+      <div className="flex shrink-0 flex-col gap-4 px-4 pt-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Back to consent documents"
+              onClick={onBack}
+            >
+              <IconArrowLeft className="size-5" />
+            </Button>
+            <h1 className="truncate text-lg font-semibold">{doc.title}</h1>
+          </div>
+          <Button size="sm" onClick={() => onOpen({ kind: "edit", doc })}>
+            <IconAdd />
+            New version
+          </Button>
+        </div>
+        <SettingsSection title="Versions">
+          <SettingsTable
+            equal
+            columns={[
+              { header: "Version" },
+              { header: "Effective" },
+              { header: "Published by", className: "hidden md:table-cell" },
+              { header: "Status" },
+              { header: "Patients signed" },
+              { header: "", className: "w-16" },
+            ]}
+          >
+            {versions.map((v) => (
+              <TableRow key={v.version}>
+                <TableCell className="font-medium tabular-nums">
+                  {v.version}
+                </TableCell>
+                <TableCell className="tabular-nums">
+                  {usDate(v.effective)}
+                </TableCell>
+                <TableCell className="hidden text-foreground/80 md:table-cell">
+                  {v.publishedBy}, {usDate(v.publishedOn)}
+                </TableCell>
+                <TableCell>
+                  {v.version === live.version ? (
+                    <StatusDot tone="success">Current</StatusDot>
+                  ) : v.effective > today() ? (
+                    <StatusDot tone="warning">Upcoming</StatusDot>
+                  ) : (
+                    <StatusDot tone="muted">Replaced</StatusDot>
+                  )}
+                </TableCell>
+                <TableCell className="tabular-nums">{signed(v)}</TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`View version ${v.version}`}
+                    onClick={() => onOpen({ kind: "view", doc, version: v })}
+                  >
+                    <IconEye />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </SettingsTable>
+        </SettingsSection>
+      </div>
+      <div className="flex min-h-[32rem] flex-1 flex-col">
+        <Directory
+          key={doc.id}
+          title={`${doc.title}: signed by`}
+          leading={
+            <h2 className="mr-2 text-[15px] font-semibold">Signed by</h2>
+          }
+          noun="patients"
+          rows={signatures}
+          columns={columns}
+          search={(s) => [s.name, s.patientId]}
+          statusTabs={{
+            options: versions.map((v) => `Version ${v.version}`),
+            value: (s) => `Version ${s.version}`,
+          }}
+          exportName={`${doc.title} signatures`}
+          exportRow={(s) => ({
+            Patient: s.name,
+            "Patient ID": s.patientId,
+            "Date of birth": usDate(s.dob),
+            Version: s.version,
+            "Signed on": usDate(s.signedOn),
+          })}
+          emptyIllustration="no-results"
+        />
+      </div>
+    </div>
   )
 }
 
@@ -366,96 +611,22 @@ function VersionForm({
   )
 }
 
-function History({
-  doc,
-  onView,
-  onClose,
-}: {
-  doc: ConsentDoc
-  onView: (version: DocVersion) => void
-  onClose: () => void
-}) {
-  const live = current(doc)
-  return (
-    <Frame
-      title={`${doc.title}: version history`}
-      footer={
-        <Button variant="outline" onClick={onClose}>
-          Close
-        </Button>
-      }
-    >
-      <SettingsTable
-        equal
-        columns={[
-          { header: "Version" },
-          { header: "Effective" },
-          { header: "Published by" },
-          { header: "Status" },
-          { header: "", className: "w-16" },
-        ]}
-      >
-        {[...doc.versions].reverse().map((v) => (
-          <TableRow key={v.version}>
-            <TableCell className="font-medium tabular-nums">
-              {v.version}
-            </TableCell>
-            <TableCell className="tabular-nums">
-              {usDate(v.effective)}
-            </TableCell>
-            <TableCell className="text-foreground/80">
-              {v.publishedBy}, {usDate(v.publishedOn)}
-            </TableCell>
-            <TableCell>
-              {v.version === live.version ? (
-                <StatusDot tone="success">Current</StatusDot>
-              ) : v.effective > today() ? (
-                <StatusDot tone="warning">Upcoming</StatusDot>
-              ) : (
-                <StatusDot tone="muted">Replaced</StatusDot>
-              )}
-            </TableCell>
-            <TableCell className="text-right">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`View version ${v.version}`}
-                onClick={() => onView(v)}
-              >
-                <IconEye />
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-      </SettingsTable>
-    </Frame>
-  )
-}
-
 function ViewVersion({
   doc,
   version,
-  onEdit,
   onClose,
 }: {
   doc: ConsentDoc
   version: DocVersion
-  onEdit: () => void
   onClose: () => void
 }) {
   return (
     <Frame
       title={doc.title}
       footer={
-        <>
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
-          <Button onClick={onEdit}>
-            <IconEdit />
-            New version
-          </Button>
-        </>
+        <Button variant="outline" onClick={onClose}>
+          Close
+        </Button>
       }
     >
       <p className="text-xs text-muted-foreground tabular-nums">

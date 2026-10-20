@@ -58,6 +58,11 @@ export type Partner = {
   services: string
   phone: string
   website: string
+  /** The person at the partner Inlay deals with. */
+  contactName: string
+  contactRole: string
+  contactEmail: string
+  contactPhone: string
   status: "Active" | "Inactive"
 }
 
@@ -71,6 +76,10 @@ const SEED: Partner[] = [
     services: "Blood panels, ApoB, Lp(a), A1C",
     phone: "(866)-697-8378",
     website: "questdiagnostics.com",
+    contactName: "Rachel Kim",
+    contactRole: "Account manager",
+    contactEmail: "rachel.kim@questdiagnostics.com",
+    contactPhone: "(866)-697-8401",
   },
   {
     name: "Labcorp",
@@ -79,6 +88,10 @@ const SEED: Partner[] = [
     services: "Blood panels, hormones, urine albumin",
     phone: "(800)-845-6167",
     website: "labcorp.com",
+    contactName: "Daniel Ortiz",
+    contactRole: "Partnership lead",
+    contactEmail: "dortiz@labcorp.com",
+    contactPhone: "(800)-845-6210",
   },
   {
     name: "BodySpec",
@@ -93,6 +106,10 @@ const SEED: Partner[] = [
     services: "DEXA body composition, bone density",
     phone: "(415)-555-0142",
     website: "bodyspec.com",
+    contactName: "Priya Shah",
+    contactRole: "Clinic partnerships",
+    contactEmail: "priya@bodyspec.com",
+    contactPhone: "(415)-555-0143",
   },
   {
     name: "RadNet Imaging",
@@ -101,6 +118,10 @@ const SEED: Partner[] = [
     services: "Coronary calcium scan, MRI, ultrasound",
     phone: "(310)-555-0177",
     website: "radnet.com",
+    contactName: "Michael Grant",
+    contactRole: "Referral coordinator",
+    contactEmail: "mgrant@radnet.com",
+    contactPhone: "(310)-555-0178",
   },
   {
     name: "Prenuvo",
@@ -109,6 +130,10 @@ const SEED: Partner[] = [
     services: "Full-body MRI",
     phone: "(888)-555-0119",
     website: "prenuvo.com",
+    contactName: "Hannah Lee",
+    contactRole: "Partner success",
+    contactEmail: "hannah.lee@prenuvo.com",
+    contactPhone: "(888)-555-0120",
   },
   {
     name: "CVS Pharmacy",
@@ -117,6 +142,10 @@ const SEED: Partner[] = [
     services: "Prescriptions, vaccines",
     phone: "(800)-555-0187",
     website: "cvs.com",
+    contactName: "Carlos Rivera",
+    contactRole: "Pharmacy relations",
+    contactEmail: "carlos.rivera@cvs.com",
+    contactPhone: "(800)-555-0188",
   },
   {
     name: "Walgreens",
@@ -125,6 +154,10 @@ const SEED: Partner[] = [
     services: "Prescriptions, vaccines",
     phone: "(800)-555-0134",
     website: "walgreens.com",
+    contactName: "Emily Turner",
+    contactRole: "Account manager",
+    contactEmail: "emily.turner@walgreens.com",
+    contactPhone: "(800)-555-0135",
   },
   {
     name: "Henry Ford Health Imaging",
@@ -133,6 +166,10 @@ const SEED: Partner[] = [
     services: "Coronary calcium scan, DEXA",
     phone: "(313)-555-0166",
     website: "henryford.com",
+    contactName: "James Patel",
+    contactRole: "Imaging scheduling lead",
+    contactEmail: "jpatel@henryford.com",
+    contactPhone: "(313)-555-0167",
   },
   {
     name: "Meijer Pharmacy",
@@ -141,6 +178,10 @@ const SEED: Partner[] = [
     services: "Prescriptions",
     phone: "(616)-555-0128",
     website: "meijer.com",
+    contactName: "Laura Mitchell",
+    contactRole: "Pharmacy manager",
+    contactEmail: "lmitchell@meijer.com",
+    contactPhone: "(616)-555-0129",
   },
   {
     name: "Scripps Cardiology",
@@ -149,6 +190,10 @@ const SEED: Partner[] = [
     services: "Cardiology referrals",
     phone: "(858)-555-0193",
     website: "scripps.org",
+    contactName: "David Chen",
+    contactRole: "Referral coordinator",
+    contactEmail: "dchen@scripps.org",
+    contactPhone: "(858)-555-0194",
   },
 ].map((p, i) => ({
   ...p,
@@ -159,7 +204,7 @@ const SEED: Partner[] = [
 export const partners = createCollection(
   "hol-settings-partners",
   SEED,
-  "partners-v1"
+  "partners-v2"
 )
 
 const regionsLabel = (p: Partner) =>
@@ -211,13 +256,30 @@ export function PartnersPage() {
     {
       id: "services",
       header: "Services",
-      className: "hidden max-w-72 truncate xl:table-cell text-foreground/80",
+      className: "hidden max-w-72 truncate 2xl:table-cell text-foreground/80",
       cell: (p) => p.services,
+    },
+    {
+      id: "contact",
+      header: "Contact person",
+      className: "hidden md:table-cell",
+      cell: (p) =>
+        p.contactName ? (
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate">{p.contactName}</span>
+            <span className="truncate text-xs text-muted-foreground">
+              {p.contactEmail || p.contactRole}
+            </span>
+          </div>
+        ) : (
+          <span className="text-muted-foreground">None</span>
+        ),
+      sortValue: (p) => p.contactName,
     },
     {
       id: "phone",
       header: "Phone",
-      className: "hidden tabular-nums md:table-cell",
+      className: "hidden tabular-nums xl:table-cell",
       cell: (p) => p.phone,
     },
     {
@@ -267,7 +329,14 @@ export function PartnersPage() {
         noun="partners"
         rows={items}
         columns={columns}
-        search={(p) => [p.id, p.name, p.type, p.services, ...p.regions]}
+        search={(p) => [
+          p.id,
+          p.name,
+          p.type,
+          p.services,
+          p.contactName,
+          ...p.regions,
+        ]}
         filters={[
           {
             id: "region",
@@ -305,6 +374,10 @@ export function PartnersPage() {
           Services: p.services,
           Phone: p.phone,
           Website: p.website,
+          "Contact person": p.contactName,
+          "Contact role": p.contactRole,
+          "Contact email": p.contactEmail,
+          "Contact phone": p.contactPhone,
           Status: p.status,
         })}
         emptyIllustration="no-results"
@@ -313,7 +386,7 @@ export function PartnersPage() {
         open={editing !== null}
         onOpenChange={(o) => !o && setEditing(null)}
       >
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           {editing && (
             <PartnerForm
               partner={editing === "new" ? null : editing}
@@ -326,6 +399,34 @@ export function PartnersPage() {
     </div>
   )
 }
+
+type Field =
+  | "name"
+  | "type"
+  | "regions"
+  | "services"
+  | "phone"
+  | "website"
+  | "contactName"
+  | "contactRole"
+  | "contactEmail"
+  | "contactPhone"
+
+/* Every field is required, with the message shown under it when empty. */
+const REQUIRED: Record<Field, string> = {
+  name: "Enter the partner's name",
+  type: "Select a type",
+  regions: "Select at least one location",
+  services: "Enter the services",
+  phone: "Enter the phone number",
+  website: "Enter the website",
+  contactName: "Enter the contact's name",
+  contactRole: "Enter the contact's role",
+  contactEmail: "Enter the contact's email",
+  contactPhone: "Enter the contact's phone number",
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function PartnerForm({
   partner,
@@ -343,18 +444,49 @@ function PartnerForm({
     services: partner?.services ?? "",
     phone: partner?.phone ?? "",
     website: partner?.website ?? "",
+    contactName: partner?.contactName ?? "",
+    contactRole: partner?.contactRole ?? "",
+    contactEmail: partner?.contactEmail ?? "",
+    contactPhone: partner?.contactPhone ?? "",
   })
-  const [error, setError] = React.useState("")
-  const set = (changes: Partial<typeof draft>) =>
+  const [errors, setErrors] = React.useState<Partial<Record<Field, string>>>(
+    {}
+  )
+  const set = (changes: Partial<typeof draft>) => {
     setDraft((d) => ({ ...d, ...changes }))
+    setErrors((e) => {
+      const next = { ...e }
+      for (const key of Object.keys(changes)) delete next[key as Field]
+      return next
+    })
+  }
 
   function submit(event: React.FormEvent) {
     event.preventDefault()
-    if (!draft.name.trim()) {
-      setError("Enter the partner's name")
+    const found: Partial<Record<Field, string>> = {}
+    for (const [key, message] of Object.entries(REQUIRED) as [
+      Field,
+      string,
+    ][]) {
+      const value = draft[key]
+      if (Array.isArray(value) ? value.length === 0 : !value.trim())
+        found[key] = message
+    }
+    if (draft.contactEmail.trim() && !EMAIL.test(draft.contactEmail.trim()))
+      found.contactEmail = "Enter a valid email"
+    if (Object.keys(found).length > 0) {
+      setErrors(found)
       return
     }
-    const values = { ...draft, name: draft.name.trim() }
+    const values = {
+      ...draft,
+      name: draft.name.trim(),
+      services: draft.services.trim(),
+      website: draft.website.trim(),
+      contactName: draft.contactName.trim(),
+      contactRole: draft.contactRole.trim(),
+      contactEmail: draft.contactEmail.trim(),
+    }
     if (partner) {
       partners.patch(partner.id, values)
       toast.success("Partner updated")
@@ -376,7 +508,7 @@ function PartnerForm({
       <DialogHeader>
         <DialogTitle>{partner ? "Edit partner" : "Add partner"}</DialogTitle>
         <DialogDescription className="sr-only">
-          The partner&apos;s name, type, locations and contact details.
+          The partner&apos;s name, type, locations, details and contact person.
         </DialogDescription>
       </DialogHeader>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -385,11 +517,8 @@ function PartnerForm({
           label="Partner name"
           required
           value={draft.name}
-          error={error}
-          onChange={(e) => {
-            set({ name: e.target.value })
-            setError("")
-          }}
+          error={errors.name}
+          onChange={(e) => set({ name: e.target.value })}
         />
         <SelectField
           id="partner-type"
@@ -398,6 +527,7 @@ function PartnerForm({
           options={PARTNER_TYPES}
           value={draft.type}
           onChange={(type) => set({ type })}
+          error={errors.type}
         />
       </div>
       <MultiSelectField
@@ -408,26 +538,70 @@ function PartnerForm({
         value={draft.regions}
         onChange={(regions) => set({ regions })}
         placeholder="Select locations"
+        error={errors.regions}
       />
       <TextField
         id="partner-services"
         label="Services"
+        required
         value={draft.services}
         onChange={(e) => set({ services: e.target.value })}
+        error={errors.services}
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           id="partner-phone"
           label="Phone"
+          required
           type="tel"
           value={draft.phone}
           onChange={(e) => set({ phone: formatPhone(e.target.value) })}
+          error={errors.phone}
         />
         <TextField
           id="partner-website"
           label="Website"
+          required
           value={draft.website}
           onChange={(e) => set({ website: e.target.value })}
+          error={errors.website}
+        />
+      </div>
+      <h3 className="-mb-1 pt-1 text-sm font-semibold">Contact person</h3>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          id="partner-contact-name"
+          label="Name"
+          required
+          value={draft.contactName}
+          onChange={(e) => set({ contactName: e.target.value })}
+          error={errors.contactName}
+        />
+        <TextField
+          id="partner-contact-role"
+          label="Role"
+          required
+          value={draft.contactRole}
+          onChange={(e) => set({ contactRole: e.target.value })}
+          error={errors.contactRole}
+        />
+        <TextField
+          id="partner-contact-email"
+          label="Email"
+          required
+          type="email"
+          value={draft.contactEmail}
+          onChange={(e) => set({ contactEmail: e.target.value })}
+          error={errors.contactEmail}
+        />
+        <TextField
+          id="partner-contact-phone"
+          label="Phone"
+          required
+          type="tel"
+          value={draft.contactPhone}
+          onChange={(e) => set({ contactPhone: formatPhone(e.target.value) })}
+          error={errors.contactPhone}
         />
       </div>
       <DialogFooter>
