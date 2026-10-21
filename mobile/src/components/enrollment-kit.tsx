@@ -12,7 +12,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 import { CaretRight, Check } from "@/components/ph"
 import { Sheet } from "@/components/sheet"
 import { Button } from "@/components/ui"
-import { chosenTests, dollars, dollarsExact } from "@/lib/baseline-tests"
+import { chosenAddOns, chosenTests, dollars, dollarsExact } from "@/lib/baseline-tests"
 import { CADENCES, TIERS, YEARLY_TEST_DISCOUNT, type Cadence } from "@/lib/plans"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
@@ -61,8 +61,14 @@ export function planName(goals: string[] | undefined) {
     charge (a month, or the year up front) and, paying yearly, the member
     discount off the tests. `monthlyToday` and `yearlySaving` say what the
     other way of paying would be. */
-export function firstMonth(ids: string[] | undefined, billing: Cadence) {
+export function firstMonth(
+  ids: string[] | undefined,
+  billing: Cadence,
+  addOnIds?: string[]
+) {
   const tests = chosenTests(ids)
+  const addOns = chosenAddOns(addOnIds)
+  const addOnTotal = addOns.reduce((sum, a) => sum + a.price, 0)
   const subtotal = tests.reduce((sum, t) => sum + t.price, 0)
   const membership = priceNumber(billing)
   const discount =
@@ -72,10 +78,12 @@ export function firstMonth(ids: string[] | undefined, billing: Cadence) {
   return {
     tests,
     subtotal,
+    addOns,
+    addOnTotal,
     membership,
     discount,
-    total: subtotal + membership - discount,
-    monthlyToday: subtotal + priceNumber("monthly"),
+    total: subtotal + addOnTotal + membership - discount,
+    monthlyToday: subtotal + addOnTotal + priceNumber("monthly"),
     yearlySaving: priceNumber("monthly") * 12 - priceNumber("yearly"),
   }
 }
@@ -237,9 +245,9 @@ export function GreenWash() {
 /** The wash's two greens and the card's edge: the brand teal at its
     lightest, so the words keep their full contrast. */
 export const WASH = {
-  from: "#DDF2EE",
-  to: "#F5FBFA",
-  edge: "#CBE8E2",
+  from: "#D6F0EA",
+  to: "#F7FCFB",
+  edge: "#C4E6DF",
   rule: "rgba(1, 131, 126, 0.12)",
 }
 
@@ -314,16 +322,18 @@ export function TotalBand({ total }: { total: number }) {
     is the same row; only the total is bold. */
 export function CostBreakdownSheet({
   tests,
+  addOns,
   billing,
   goals,
   onClose,
 }: {
   tests: string[] | undefined
+  addOns?: string[]
   billing: Cadence
   goals: string[] | undefined
   onClose: () => void
 }) {
-  const cost = firstMonth(tests, billing)
+  const cost = firstMonth(tests, billing, addOns)
   const price = TIERS.optimization.billing[billing]
   return (
     <Sheet title="Cost breakdown" onClose={onClose}>
@@ -352,6 +362,15 @@ export function CostBreakdownSheet({
             />
           )}
         </View>
+
+        {cost.addOns.length > 0 && (
+          <View style={styles.group}>
+            <Text style={styles.groupTitle}>Add-ons</Text>
+            {cost.addOns.map((a) => (
+              <ReceiptRow key={a.id} label={a.name} value={dollars(a.price)} />
+            ))}
+          </View>
+        )}
 
         <View style={styles.group}>
           <Text style={styles.groupTitle}>Membership</Text>

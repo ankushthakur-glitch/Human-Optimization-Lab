@@ -263,8 +263,6 @@ function patientApp() {
     [ONBOARDING, "What matters most", at("/onboarding/life")],
     [ONBOARDING, "What matters most: rate each symptom", at("/onboarding/life-question")],
     [ONBOARDING, "Record building", at("/onboarding/syncing")],
-    [ONBOARDING, "Record tour: upcoming appointments", at("/onboarding/working")],
-    [ONBOARDING, "Record tour: new medication", at("/onboarding/new-medication")],
     [ONBOARDING, "Record tour: trending the wrong way", at("/onboarding/trends")],
     [ONBOARDING, "Your biological age", at("/onboarding/biological-age")],
     [ONBOARDING, "What is driving it", at("/onboarding/what-is-driving-it")],

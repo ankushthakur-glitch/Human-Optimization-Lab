@@ -33,9 +33,10 @@ export function PlanFree() {
   return (
     <TabScreen
       tab="plan"
-      title="Upgrade"
+      title="Plan"
       overlay={list.sheet}
-      footer={showroom ? <ShowroomActions onStart={() => router.push("/goals")} /> : undefined}
+      fit={showroom && past.length === 0}
+      footer={showroom ? <ShowroomActions onStart={() => router.push("/goal-plans")} /> : undefined}
     >
       {past.length > 0 && (
         <Block title="Your past plans">

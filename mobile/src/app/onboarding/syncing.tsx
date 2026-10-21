@@ -1,8 +1,13 @@
-import { router } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { ActivityIndicator, Animated, Easing, Image, StyleSheet, Text, View } from "react-native"
 
+import Hospital01Icon from "@hugeicons/core-free-icons/Hospital01Icon"
+import SmartPhone01Icon from "@hugeicons/core-free-icons/SmartPhone01Icon"
+
 import { FlowScreen } from "@/components/flow"
+import { HugeIcon } from "@/components/hugeicon"
+import { IconCheck } from "@/components/icons"
 import { RecordBlocks } from "@/components/record-blocks"
 import { Button } from "@/components/ui"
 import { useOnboarding } from "@/lib/onboarding"
@@ -45,26 +50,61 @@ const STAGE_TEXT: Record<Exclude<Stage, "done">, string> = {
   organizing: "Organizing your record",
 }
 
+/** The record screen as the life questions leave it: already built. */
+export const RECORD_READY = "/onboarding/syncing?ready=1" as const
+
 export default function SyncingScreen() {
   const onboarding = useOnboarding()
-  // The record is ready: on to the tour of what it shows (onboarding/working,
-  // new medication, trends, biological age, what is driving it). Saved as a
-  // step, so a patient who closes the app comes back to the tour, not to a
-  // record building again.
+  const { ready } = useLocalSearchParams<{ ready?: string }>()
+  // The record is ready, and that is the last step of setup (the trends,
+  // biological age and "what is driving it" pages are no longer part of it):
+  // finish it so the dashboard opens, then open the plans page over it (as an
+  // offer anywhere in the app does), so Back lands on Home. Finishing swaps
+  // the guarded screens and takes this one with it, so the moves after it run
+  // from here, not from an effect.
+  // "See what my record does" finishes setup and opens the dashboard with the
+  // biological age sheet already up (the home reads `age=1`).
   const next = async () => {
-    await onboarding.save({ step: "tour" })
-    router.push("/onboarding/working")
+    await onboarding.save({ step: "done" })
+    setTimeout(() => router.replace("/?age=1"), 300)
   }
-  return <BuildRecord action="See what my record does" onDone={next} />
+  // First visit, straight after "Your why": the record has only started, so
+  // she needn't wait for it; the life questions come next while it builds.
+  const meanwhile = async () => {
+    await onboarding.save({ step: "life" })
+    router.push("/onboarding/life")
+  }
+  return (
+    <View style={styles.fill}>
+      <BuildRecord
+        action="See what my record does"
+        onDone={next}
+        done={ready === "1"}
+        meanwhile={ready === "1" ? undefined : { label: "Continue while it builds", onPress: meanwhile }}
+      />
+
+    </View>
+  )
 }
 
 /** The record building, shared by setup and by connecting later from the
-    dashboard. The swipe back leaves it, and it starts over on return. */
-export function BuildRecord({ onDone, action = "Go to my dashboard" }: { onDone: () => void; action?: string }) {
+    dashboard. The swipe back leaves it, and it starts over on return. With
+    `meanwhile`, the button works while it builds; `done` opens it built. */
+export function BuildRecord({
+  onDone,
+  action = "Go to my dashboard",
+  done: built = false,
+  meanwhile,
+}: {
+  onDone: () => void
+  action?: string
+  done?: boolean
+  meanwhile?: { label: string; onPress: () => void }
+}) {
   // How many providers have turned up, then how many kinds of record are in.
-  const [found, setFound] = React.useState(0)
-  const [landed, setLanded] = React.useState(0)
-  const [organized, setOrganized] = React.useState(false)
+  const [found, setFound] = React.useState(built ? SOURCES.length : 0)
+  const [landed, setLanded] = React.useState(built ? DATA_TYPES.length : 0)
+  const [organized, setOrganized] = React.useState(built)
 
   const stage: Stage =
     found < SOURCES.length ? "finding" : landed < DATA_TYPES.length ? "collecting" : organized ? "done" : "organizing"
@@ -103,9 +143,13 @@ export function BuildRecord({ onDone, action = "Go to my dashboard" }: { onDone:
         )
       }
       footer={
-        <Button onPress={onDone} disabled={!done}>
-          {action}
-        </Button>
+        done || !meanwhile ? (
+          <Button onPress={onDone} disabled={!done}>
+            {action}
+          </Button>
+        ) : (
+          <Button onPress={meanwhile.onPress}>{meanwhile.label}</Button>
+        )
       }
     >
       {done ? <RecordShare /> : <Building stage={stage} percent={percent} landed={landed} />}
@@ -137,42 +181,83 @@ function RecordShare() {
           </View>
         ))}
       </View>
+      <View style={styles.chips}>
+        {CHIPS.map((key) => {
+          const i = DATA_TYPES.findIndex((t) => t.key === key)
+          return (
+            <View key={key} style={styles.chip}>
+              <Text style={styles.chipText}>
+                {DATA_TYPES[i].label}
+                <Text style={styles.chipCount}> {DATA_TYPES[i].count}</Text>
+              </Text>
+            </View>
+          )
+        })}
+        <View style={[styles.chip, styles.chipDim]}>
+          <Text style={[styles.chipText, styles.dimText]}>Imaging</Text>
+        </View>
+      </View>
     </View>
   )
 }
 
+/** The kinds shown as chips on the finished record, in the order they landed. */
+const CHIPS = ["Observation.lab", "Observation.vital", "Encounter", "MedicationStatement", "Condition", "AllergyIntolerance", "DocumentReference"] as const
+
 /** The record while it builds, in the same panel as the finished one: the
-    running total and stage, one bar filling, then each kind of record with
-    its count as it lands. */
+    running total and stage, one bar filling, the sources it reads from,
+    then each kind of record as a chip with its count as it lands. */
 function Building({ stage, percent, landed }: { stage: Exclude<Stage, "done">; percent: number; landed: number }) {
   const total = DATA_TYPES.slice(0, landed).reduce((sum, t) => sum + t.count, 0)
+  const clinicIn = stage !== "finding"
+  const phoneIn = stage === "organizing"
   return (
-    <View style={styles.share}>
-      <View style={styles.shareHead}>
-        <Text style={styles.shareValue}>{total}</Text>
-        <Text style={[styles.shareText, styles.grow]}>{STAGE_TEXT[stage]}</Text>
-        <Text style={styles.progressPercent}>{percent}%</Text>
+    <View style={styles.build}>
+      <Text style={styles.sub}>
+        Your clinic&apos;s record is in. Other providers answer over the next few minutes, sometimes up to a day.
+      </Text>
+      <View style={styles.share}>
+        <View style={styles.shareHead}>
+          <Text style={styles.shareValue}>{total}</Text>
+          <Text style={[styles.shareText, styles.grow]}>records so far</Text>
+          <Text style={styles.searching}>Still searching</Text>
+        </View>
+        <Progress percent={percent} label={STAGE_TEXT[stage]} />
+        <View style={styles.legend}>
+          <SourceRow
+            icon={Hospital01Icon}
+            name={SOURCES[0].name}
+            note="Your clinic · in seconds"
+            count={clinicIn ? total : undefined}
+          />
+          <SourceRow icon={SmartPhone01Icon} name="Apple Health" note="Connected · importing past data" count={phoneIn ? total : undefined} />
+        </View>
       </View>
-      <Progress percent={percent} label={STAGE_TEXT[stage]} />
-      <View style={styles.legend}>
-        {DATA_TYPES.map((t, i) => {
-          const inNow = i < landed
-          const loading = i === landed && stage === "collecting"
-          return (
-            <View key={t.key} style={styles.legendRow}>
-              <View style={[styles.dot, { backgroundColor: inNow ? color.primary : chart.track }]} />
-              <Text style={[styles.rowLabel, !inNow && styles.dim]}>{t.label}</Text>
-              {inNow ? (
-                <Text style={styles.legendCount}>{t.count}</Text>
-              ) : loading ? (
-                <ActivityIndicator size="small" color={color.primary} />
-              ) : (
-                <View style={styles.placeholder} />
-              )}
-            </View>
-          )
-        })}
+      <Text style={styles.note}>Nothing next waits on the search. New records land on their own and show up in To do.</Text>
+    </View>
+  )
+}
+
+/** One place the record is read from: its name, how it's going, and a check
+    with the count once it is in, a spinner until then. */
+function SourceRow({ icon, name, note, count }: { icon: typeof Hospital01Icon; name: string; note: string; count?: number }) {
+  return (
+    <View style={styles.legendRow}>
+      <View style={styles.sourceIcon}>
+        <HugeIcon icon={icon} size={16} color={color.primary} />
       </View>
+      <View style={styles.grow}>
+        <Text style={styles.sourceName}>{name}</Text>
+        <Text style={styles.sourceNote}>{note}</Text>
+      </View>
+      {count !== undefined ? (
+        <View style={styles.sourceDone}>
+          <IconCheck size={14} color={ink.primary} />
+          <Text style={styles.sourceCount}>{count}</Text>
+        </View>
+      ) : (
+        <ActivityIndicator size="small" color={color.primary} />
+      )}
     </View>
   )
 }
@@ -189,6 +274,7 @@ function Progress({ percent, label }: { percent: number; label: string }) {
     }).start()
   }, [percent, value])
   const width = value.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] })
+  const ahead = value.interpolate({ inputRange: [0, 100], outputRange: ["10%", "100%"] })
   return (
     <View
       style={styles.track}
@@ -196,17 +282,19 @@ function Progress({ percent, label }: { percent: number; label: string }) {
       accessibilityLabel={label}
       accessibilityValue={{ min: 0, max: 100, now: percent }}
     >
+      <Animated.View style={[styles.bar, styles.barAhead, { width: ahead }]} />
       <Animated.View style={[styles.bar, { width }]} />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   art: { width: 112, height: 112 },
 
-  progressPercent: { ...type.value, color: ink.primary },
   track: { height: 8, borderRadius: 4, backgroundColor: chart.track, overflow: "hidden", marginTop: space.item },
-  bar: { height: "100%", borderRadius: 4, backgroundColor: color.primary },
+  bar: { position: "absolute", left: 0, top: 0, height: "100%", borderRadius: 4, backgroundColor: color.primary },
+  barAhead: { backgroundColor: "#39BAB4" },
   grow: { flex: 1 },
 
   // The Figma "Hol" card: white at 60% on the page, radius 8, 12 inside.
@@ -221,6 +309,22 @@ const styles = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4 },
   sharePercent: { ...type.label },
   legendCount: { ...type.value, color: ink.content, minWidth: 28, textAlign: "right" },
+
+  build: { gap: space.section },
+  sub: { ...type.body, textAlign: "center" },
+  searching: { ...type.label, color: ink.primary },
+  sourceIcon: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: color.primaryTint },
+  sourceName: { ...type.title },
+  sourceNote: { ...type.label },
+  sourceDone: { flexDirection: "row", alignItems: "center", gap: space.mark },
+  sourceCount: { ...type.value, color: ink.primary },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: space.inline, marginTop: space.stack },
+  chip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: color.primaryTint },
+  chipDim: { backgroundColor: chart.track },
+  chipText: { ...type.label, color: ink.content },
+  chipCount: { fontFamily: font.semibold },
+  dimText: { color: ink.tertiary },
+  note: { ...type.label, textAlign: "center" },
 
   rowLabel: { flex: 1, fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: ink.detail },
   dim: { color: card.chevron },

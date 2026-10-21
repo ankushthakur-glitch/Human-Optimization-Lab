@@ -103,10 +103,15 @@ export function TourHost({
   // Waits a moment after home opens, so the page has laid out and the
   // patient has seen it before it dims.
   React.useEffect(() => {
-    if (!show) return
+    if (!show) {
+      // Covered by the sheet or another screen: close, so it fades in afresh.
+      setOpen(false)
+      fade.setValue(0)
+      return
+    }
     const t = setTimeout(() => setOpen(true), 700)
     return () => clearTimeout(t)
-  }, [show])
+  }, [show, fade])
 
   // The lit part, measured against the tour's own frame (both in window
   // terms, then subtracted), so it lines up on a phone and inside the web

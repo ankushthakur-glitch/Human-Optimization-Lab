@@ -2,6 +2,7 @@ import { router } from "expo-router"
 import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
+import { RECORD_READY } from "@/app/onboarding/syncing"
 import { PlanStepPage } from "@/components/plan-steps"
 import { useOnboarding } from "@/lib/onboarding"
 import { SCALE, THINKING_ABOUT } from "@/lib/wellbeing"
@@ -34,7 +35,7 @@ export default function SymptomRatingScreen() {
 
   // Nothing chosen (opened directly): on to the record building.
   React.useEffect(() => {
-    if (symptoms.length === 0) router.replace("/onboarding/syncing")
+    if (symptoms.length === 0) router.replace(RECORD_READY)
   }, [symptoms.length])
   if (symptom === undefined) return null
 
@@ -42,7 +43,7 @@ export default function SymptomRatingScreen() {
   const move = () => {
     if (!last) return setAt(at + 1)
     onboarding.save({ step: "records" })
-    router.push("/onboarding/syncing")
+    router.push(RECORD_READY)
   }
   const back = () => (at === 0 ? router.back() : setAt(at - 1))
 

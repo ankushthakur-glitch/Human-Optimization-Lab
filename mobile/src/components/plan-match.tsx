@@ -73,8 +73,8 @@ export function PlanMatchSection({ onSeeAll }: { onSeeAll: () => void }) {
         <Text style={styles.title} accessibilityRole="header">
           {returning ? `Welcome back, ${name}` : `Welcome, ${name}`}
         </Text>
-        <Text style={styles.lead} numberOfLines={2}>
-          {`We have done the first step: your record was compared against all ${PLAN_COUNT} optimization plans we hold.`}
+        <Text style={styles.lead} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
+          {`Your record was compared with all ${PLAN_COUNT} plans.`}
         </Text>
       </View>
 
@@ -239,17 +239,18 @@ function FullRow({ label, state, onPress }: { label: string; state?: "matched" |
 
 const styles = StyleSheet.create({
   // More air than the first cut (19 Oct 2026): each block stands apart.
-  root: { gap: space.section + 4 },
+  // The page does not scroll, so the blocks sit closer (20 → 14).
+  root: { gap: space.section - 2 },
   welcome: { gap: space.inline },
   title: { ...type.display, fontSize: 18, lineHeight: 24 },
   lead: { ...type.body, fontSize: 14, lineHeight: 21, color: ink.detail },
 
   // The AI plan match card: mint, the two counts side by side.
-  match: { gap: space.item, padding: space.item + 4, borderRadius: 18, borderWidth: 1, borderColor: "#CFE8E3", backgroundColor: "#E9F6F3" },
+  match: { gap: space.inline, padding: space.item, borderRadius: 18, borderWidth: 1, borderColor: "#CFE8E3", backgroundColor: "#E9F6F3" },
   matchHead: { flexDirection: "row", alignItems: "center", gap: 6 },
   matchLabel: { fontFamily: font.semibold, fontSize: 12, lineHeight: 16, color: color.primaryText },
   counts: { flexDirection: "row", alignItems: "center", gap: space.inline },
-  count: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2, paddingVertical: space.item + 2, paddingHorizontal: space.inline, borderRadius: 14 },
+  count: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2, paddingVertical: space.item - 2, paddingHorizontal: space.inline, borderRadius: 14 },
   countFile: { backgroundColor: color.background },
   countFound: { backgroundColor: color.primary },
   countFigure: { ...type.display, fontSize: 26, lineHeight: 32 },
@@ -261,7 +262,7 @@ const styles = StyleSheet.create({
   rowsBlock: { gap: space.item },
   heading: { ...type.section, fontSize: 15, lineHeight: 20 },
   rows: { borderRadius: 16, borderWidth: 1, borderColor: hairline.edge, backgroundColor: color.background },
-  row: { flexDirection: "row", alignItems: "center", gap: space.item, paddingVertical: space.item + 2, paddingHorizontal: space.item + 2 },
+  row: { flexDirection: "row", alignItems: "center", gap: space.item, paddingVertical: space.item - 2, paddingHorizontal: space.item + 2 },
   rowRule: { borderTopWidth: 1, borderTopColor: hairline.rule },
   rowWords: { flex: 1, gap: 3 },
   rowName: { ...type.title, fontSize: 14, lineHeight: 19, color: ink.strong },

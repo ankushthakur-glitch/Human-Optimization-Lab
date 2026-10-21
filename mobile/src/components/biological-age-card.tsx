@@ -27,16 +27,16 @@ export function useBiologicalAge() {
 
   const older = gap > 0
   const lede = older
-    ? `Your body is testing older than the ${years(calendar)} on your record.${
+    ? `Your body tests older than your ${years(calendar)}.${
         list.length > 0
-          ? ` ${WORDS[list.length]} ${list.length === 1 ? "number accounts" : "numbers account"} for most of the gap, and ${
-              list.length === 1 ? "it is" : "they are all"
-            } things you can move.`
+          ? ` ${WORDS[list.length]} ${list.length === 1 ? "number drives" : "numbers drive"} most of it, and ${
+              list.length === 1 ? "it is" : "all are"
+            } movable.`
           : ""
       }`
     : gap < 0
-      ? `Your body is testing younger than the ${years(calendar)} on your record.`
-      : `Your body is testing the same as the ${years(calendar)} on your record.`
+      ? `Your body tests younger than your ${years(calendar)}.`
+      : `Your body tests the same as your ${years(calendar)}.`
 
   return { calendar, biological, gap, older, lede, list }
 }
@@ -53,6 +53,7 @@ export function BiologicalAgeCard({ onPress, hint }: { onPress?: () => void; hin
           {biological}
         </Text>
       </View>
+      <View style={styles.divider} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden />
       <View style={styles.text}>
         {gap !== 0 && (
           <View style={styles.pill}>
@@ -66,7 +67,7 @@ export function BiologicalAgeCard({ onPress, hint }: { onPress?: () => void; hin
         </Text>
       </View>
       {onPress && (
-        <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        <View style={styles.caret} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
           <CaretRight size={16} color={ink.onColor} />
         </View>
       )}
@@ -97,10 +98,14 @@ const styles = StyleSheet.create({
   card: { flexDirection: "row", alignItems: "center", gap: space.item, padding: space.card, minHeight: 68, borderRadius: 8, backgroundColor: color.primary },
   pressed: { opacity: 0.9 },
   number: { gap: 2 },
+  divider: { alignSelf: "stretch", width: StyleSheet.hairlineWidth * 2, backgroundColor: "rgba(255,255,255,0.45)" },
   cap: { fontFamily: font.medium, fontSize: 10, lineHeight: 14, letterSpacing: 1, color: ink.onColor },
   value: { fontFamily: font.semibold, fontSize: 44, lineHeight: 48, color: ink.onColor, fontVariant: ["tabular-nums"] },
-  text: { flex: 1, gap: space.inline, alignItems: "flex-start" },
+  // The right side stays narrower than the card leaves it: a measure cap and a
+  // little room before the caret, so the sentence sits balanced, not edge to edge.
+  text: { flex: 1, maxWidth: 232, gap: space.inline, alignItems: "flex-start", paddingRight: space.inline },
+  caret: { marginLeft: "auto" },
   pill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: chart.outside },
   pillText: { fontFamily: font.medium, fontSize: 11, lineHeight: 16, color: ink.onColor },
-  lede: { fontFamily: font.regular, fontSize: 13, lineHeight: 18, color: ink.onColor },
+  lede: { fontFamily: font.regular, fontSize: 12, lineHeight: 17, color: ink.onColor },
 })

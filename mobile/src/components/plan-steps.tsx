@@ -9,14 +9,14 @@ import { CaretLeft, CaretRight } from "@/components/ph"
 import { Button } from "@/components/ui"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
-/** The plan set-up's four steps (/goals, /baseline,
+/** The plan set-up's four steps (/goal-plans, /baseline,
     /enrollment, /payment). */
 export const PLAN_STEPS = 4
 
 /** Where Back goes from each step when there is no screen behind it (the
     step opened from a link): the Plan tab before step 1, else the step
     before. */
-const BEFORE = ["/plan", "/goals", "/baseline", "/enrollment"] as const
+const BEFORE = ["/plan", "/goal-plans", "/baseline", "/enrollment"] as const
 
 function backFrom(step?: number) {
   if (router.canGoBack()) router.back()
@@ -63,7 +63,9 @@ export function PlanStepPage({
   nextDisabled,
   nextPending,
   nextWide,
+  nextOneLine,
   overlay,
+  aboveFoot,
   children,
 }: {
   step?: number
@@ -89,7 +91,11 @@ export function PlanStepPage({
   nextDisabled?: boolean
   nextPending?: boolean
   nextWide?: boolean
+  /** A long label stays on one line: the button takes the room Back leaves. */
+  nextOneLine?: boolean
   overlay?: React.ReactNode
+  /** Fixed over Continue, outside the scrolling list (a running total). */
+  aboveFoot?: React.ReactNode
   children: React.ReactNode
 }) {
   const { bottom } = useSafeAreaInsets()
@@ -120,6 +126,7 @@ export function PlanStepPage({
           paddingBottom: Math.max(bottom - 10, space.item + 4),
         }}
       >
+        {aboveFoot && <View style={styles.aboveFoot}>{aboveFoot}</View>}
         <View style={styles.footer}>
           {!nextWide && (
             <View style={styles.backs}>
@@ -142,8 +149,8 @@ export function PlanStepPage({
               )}
             </View>
           )}
-          <View style={nextWide ? styles.fill : styles.next}>
-            <Button onPress={onNext} disabled={nextDisabled} pending={nextPending} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
+          <View style={nextWide ? styles.fill : nextOneLine ? styles.hug : styles.next}>
+            <Button onPress={onNext} disabled={nextDisabled} pending={nextPending} oneLine={nextOneLine} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
               {nextLabel}
             </Button>
           </View>
@@ -163,12 +170,14 @@ const styles = StyleSheet.create({
 
   screen: { flex: 1, backgroundColor: color.background },
   fill: { flex: 1 },
+  hug: { flexShrink: 0, marginLeft: "auto" },
   pressed: { opacity: 0.7 },
   head: { gap: space.inline, paddingHorizontal: space.gutter, paddingTop: space.section, paddingBottom: space.item },
   title: { fontFamily: font.semibold, fontSize: 18, lineHeight: 24, letterSpacing: -0.2, color: ink.strong },
   lead: { ...type.body },
   list: { gap: space.inline, paddingHorizontal: space.gutter, paddingTop: space.line, paddingBottom: space.item },
 
+  aboveFoot: { marginBottom: space.item },
   footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.section },
   backs: { flexDirection: "row", alignItems: "center", gap: space.section },
   back: { flexDirection: "row", alignItems: "center", gap: space.line, paddingVertical: space.inline },

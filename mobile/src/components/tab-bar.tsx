@@ -1,5 +1,5 @@
 import { BlurView } from "expo-blur"
-import { router, useFocusEffect } from "expo-router"
+import { router, useFocusEffect, useIsFocused } from "expo-router"
 import * as React from "react"
 import {
   Animated,
@@ -19,7 +19,7 @@ import { useDragBack } from "@/components/drag-back"
 import { DarkStatusBar } from "@/components/error-state"
 import {
   IconBack,
-  IconConnections,
+  IconCare,
   IconHome,
   IconPlan,
   IconProgress,
@@ -48,9 +48,9 @@ import { color, font, space } from "@/lib/theme"
    Back, Today and Progress with a short rise and fade, and Back
    returns to home and its four tabs the same way. */
 
-export type TabName = "home" | "results" | "todo" | "plan" | "today" | "progress" | "connections"
+export type TabName = "home" | "results" | "todo" | "plan" | "today" | "progress" | "connections" | "care"
 
-type Href = "/" | "/results" | "/gaps" | "/plan" | "/today" | "/progress" | "/connections"
+type Href = "/" | "/results" | "/gaps" | "/plan" | "/today" | "/progress" | "/connections" | "/membership"
 
 type Tab = {
   name: TabName | "back"
@@ -59,14 +59,14 @@ type Tab = {
   Icon: React.ComponentType<TabIconProps>
 }
 
-/* Home, To do, Record, Connect, then Plan (Upgrade until there is a plan
-   to follow), in that order since 16 Oct 2026. */
+/* Home, To do, Record, Plan (Upgrade until there is a plan to follow),
+   then Care, in that order since 21 Oct 2026. */
 const TABS: Tab[] = [
   { name: "home", label: "Home", href: "/", Icon: IconHome },
   { name: "todo", label: "To do", href: "/gaps", Icon: IconToDo },
   { name: "results", label: "Record", href: "/results", Icon: IconResults },
-  { name: "connections", label: "Connect", href: "/connections", Icon: IconConnections },
   { name: "plan", label: "Plan", href: "/plan", Icon: IconPlan },
+  { name: "care", label: "Care", href: "/membership", Icon: IconCare },
 ]
 
 /** The plan's tabs: Back goes home, Today and Progress switch in place. */
@@ -115,16 +115,19 @@ export function TabScreen({
   overlay,
   bare,
   headless,
+  fit,
   onRefresh,
   children,
 }: {
+  /** The content is drawn to fit one screen, so the page does not scroll. */
+  fit?: boolean
   /** No tab bar: a back caret in the header instead. */
   bare?: boolean
   /** No header bar at all: the page starts under the status bar and keeps
       the tab bar, e.g. the plan while the doctor reviews it. */
   headless?: boolean
   /** Stays above the tab bar while the page scrolls beneath it, e.g. the
-      Plan tab's "Build my personalized plan". */
+      Plan tab's "Start my optimization plan". */
   footer?: React.ReactNode
   /** Pull down to refresh: the page redoes what it shows (home's to-do). */
   onRefresh?: () => void | Promise<void>
@@ -143,6 +146,7 @@ export function TabScreen({
 }) {
   const { bottom } = useSafeAreaInsets()
   const top = useTopInset()
+  const focused = useIsFocused()
   const [refreshing, setRefreshing] = React.useState(false)
   const pull = async () => {
     setRefreshing(true)
@@ -162,8 +166,10 @@ export function TabScreen({
   const barSpace = barBottom + BAR
   return (
     <View style={styles.screen}>
-      {/* On home, the first-run walk through dims all of this but one part. */}
-      <TourHost active={tab === "home"}>
+      {/* On home, the first-run walk through dims all of this but one part.
+          It waits while an overlay (the biological age sheet) is up or home
+          is covered by another screen, and starts once she is back on home. */}
+      <TourHost active={tab === "home" && !overlay && focused}>
         <DarkStatusBar />
         {headless ? (
           <View style={{ height: top }} />
@@ -192,6 +198,8 @@ export function TabScreen({
               { paddingBottom: (bare ? bottom : barSpace) + space.inline + (footer ? FOOTER_SPACE : 0) },
             ]}
             showsVerticalScrollIndicator={false}
+            scrollEnabled={!fit}
+            bounces={!fit}
             refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={pull} /> : undefined}
           >
             {children}
@@ -253,7 +261,7 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
             // From home, a plan to follow opens on its Today tab.
             const href = set === "main" && name === "plan" && !upgradeLabel ? "/today" : tabHref
             const shown = swap[i]
-            const label = upgrade ? "Upgrade" : tabLabel
+            const label = upgrade ? "Plan" : tabLabel
             const Icon = upgrade ? IconUpgrade : TabIcon
             return (
               <Pressable

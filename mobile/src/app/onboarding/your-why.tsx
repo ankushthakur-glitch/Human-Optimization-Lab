@@ -1,0 +1,72 @@
+import { router } from "expo-router"
+import * as React from "react"
+import { StyleSheet, Text, View } from "react-native"
+
+import { FlowScreen } from "@/components/flow"
+import { CalendarCheck, ChartLineUp, ClipboardText, Heart, Info, Sparkle } from "@/components/ph"
+import { Group, HUE, NeedsRow, type Hue } from "@/components/record-kit"
+import { Button } from "@/components/ui"
+import { color, font, ink, space, touchRadius } from "@/lib/theme"
+
+/* Setup's "Your why" page, right after "Updates about your care" (which now
+   follows "Connect your health records") and before
+   the eight life questions: what the free account does for her, in five
+   lines, before anything is asked of her. Read only; Continue goes on to
+   "Building your record", which carries on to "About your life". It says plainly that none of
+   it needs a purchase. (Not to be confused with the later "Your why"
+   conversation, onboarding/why.tsx.) */
+
+const NEXT = "/onboarding/syncing" as const
+
+type Icon = React.ComponentType<{ size?: number; color?: string }>
+
+const BENEFITS: { title: string; meta: string; icon: Icon; hue: Hue }[] = [
+  { title: "A complete longitudinal record", meta: "Every result from every provider, on one timeline", icon: ChartLineUp, hue: "teal" },
+  { title: "Medication and appointment management", meta: "Kept current by the record itself, not by you", icon: CalendarCheck, hue: "blue" },
+  { title: "Order management and status", meta: "Where every test stands, without a phone call", icon: ClipboardText, hue: "amber" },
+  { title: "Physical and emotional review", meta: "The part no record holds, asked directly", icon: Heart, hue: "red" },
+  { title: "Ask Inlay about your record", meta: "Five questions a week, included free", icon: Sparkle, hue: "violet" },
+]
+
+export default function YourWhyScreen() {
+  // The record starts building on the next page; "About your life" follows it.
+  const next = () => router.push(NEXT)
+
+  return (
+    <FlowScreen
+      hol
+      title="Your why"
+      description="Before we ask anything else, here is what the account you just opened does for you. It is free, and it stays free."
+      footer={<Button onPress={next}>Continue</Button>}
+    >
+      <View style={styles.stack}>
+        <Group>
+          {BENEFITS.map(({ title, meta, icon: Icon, hue }) => (
+            <NeedsRow key={title} icon={<Icon size={16} color={HUE[hue].ink} />} hue={hue} title={title} meta={meta} />
+          ))}
+        </Group>
+        <View style={styles.note} accessible accessibilityRole="text">
+          <Info size={18} color={ink.strong} />
+          <Text style={styles.noteText}>
+            None of this asks you to buy anything. The record is yours whether or not you ever take an optimization plan.
+          </Text>
+        </View>
+      </View>
+    </FlowScreen>
+  )
+}
+
+const styles = StyleSheet.create({
+  stack: { gap: space.section },
+  /* A quiet grey note: outlined info icon, then the sentence, top aligned. */
+  note: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: space.lead,
+    backgroundColor: color.inputFill,
+    borderRadius: touchRadius,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  noteText: { flex: 1, fontFamily: font.regular, fontSize: 14, lineHeight: 20, letterSpacing: 0, color: ink.content },
+})

@@ -99,7 +99,7 @@ export default function PaymentScreen() {
   const onboarding = useOnboarding()
   const { start, pending } = useStartMembership()
   const billing = onboarding.billingPick ?? "yearly"
-  const cost = firstMonth(onboarding.baselinePicks, billing)
+  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns)
   const [method, setMethod] = React.useState<Method>("card")
   // The prototype's demo card, as the reference shows it.
   const [number, setNumber] = React.useState("4242 4242 4242 4242")
@@ -159,6 +159,7 @@ export default function PaymentScreen() {
         ) : sheet === "breakdown" ? (
           <CostBreakdownSheet
             tests={onboarding.baselinePicks}
+            addOns={onboarding.addOns}
             billing={billing}
             goals={onboarding.goals}
             onClose={() => setSheet(undefined)}

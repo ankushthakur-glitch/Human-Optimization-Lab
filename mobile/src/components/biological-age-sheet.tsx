@@ -16,7 +16,7 @@ export function BiologicalAgeSheet({ onStart, onClose }: { onStart: () => void; 
   const { list } = useBiologicalAge()
 
   return (
-    <Sheet title="Your biological age" onClose={onClose}>
+    <Sheet title="Your biological age" onClose={onClose} dismissOnScrim={false} tall>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <BiologicalAgeCard />
 
@@ -48,13 +48,13 @@ export function BiologicalAgeSheet({ onStart, onClose }: { onStart: () => void; 
           </>
         )}
       </ScrollView>
-      <Button onPress={onStart}>Start my optimization plan</Button>
+      <Button onPress={onStart}>See optimization plan</Button>
     </Sheet>
   )
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexShrink: 1 },
+  scroll: { flexShrink: 1, flexGrow: 1 },
   content: { gap: space.item },
 
   label: { ...type.sectionLabel, marginTop: space.inline },

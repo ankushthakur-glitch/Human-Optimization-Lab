@@ -1,4 +1,4 @@
-import { router, type Href } from "expo-router"
+import { router, useLocalSearchParams, type Href } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
@@ -8,15 +8,13 @@ import { keepTogether } from "@/components/care-gap"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { openMedicineByName } from "@/components/medicines"
 import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, UpgradeBanner, dotted } from "@/components/home-parts"
-import { CheckCircle, Hospital, Pill, Warning } from "@/components/ph"
+import { CheckCircle, Pill, Warning } from "@/components/ph"
 import { Block, CARD_RADIUS, Group, NeedsRow, Rise, Status, spokenDate } from "@/components/record-kit"
-import { Chevron, Row, Rows } from "@/components/settings-rows"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { TrendTiles } from "@/components/trend-tile"
 import { useAllowance } from "@/lib/allowance"
 import { useExperience, useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
-import { useSources } from "@/lib/connections"
 import { MEDICATIONS } from "@/lib/record"
 import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
 import { NEW_IN_RECORD_NOTE, caughtUp, comingUp, homeBanner, markSeen, needsTitle, todo, yourMedicines, type TodoItem } from "@/lib/todo"
@@ -46,7 +44,9 @@ export function FreeHome() {
   const banner = homeBanner(onboarding)
   // The biological age sheet slides up over the tab bar, so it is the tab
   // screen's overlay; its button opens the plan options.
-  const [age, setAge] = React.useState(false)
+  // Setup's last button lands here with `age=1`, so the sheet opens at once.
+  const { age: openAge } = useLocalSearchParams<{ age?: string }>()
+  const [age, setAge] = React.useState(openAge === "1")
   const start = () => {
     setAge(false)
     openTab("/plan", "home")
@@ -81,7 +81,6 @@ export function RecordSections({ onOpenAge }: { onOpenAge: () => void }) {
     <View style={styles.page}>
       <NeedsYou />
       <AgeCard onPress={onOpenAge} />
-      <YourConnections />
       <Trends />
       {exp !== "paused" && exp !== "member-review" && <UpgradeCard />}
       <Upcoming />
@@ -148,26 +147,6 @@ function AgeCard({ onPress }: { onPress: () => void }) {
   return (
     <Rise at={2} id="home:age">
       <BiologicalAgeCard onPress={onPress} hint="Opens what is driving it" />
-    </Rise>
-  )
-}
-
-/* -------------------------------------------------- your connections -- */
-
-const connectedLine = (n: number, one: string) => (n ? `${n} ${one}${n === 1 ? "" : "s"} connected` : "None connected")
-
-/** Her record systems, opening the Connect tab. */
-export function YourConnections() {
-  const sources = useSources().filter((s) => s.connected)
-  const ehr = sources.filter((s) => s.kind === "ehr").length
-  const open = () => openTab("/connections", "home")
-  return (
-    <Rise at={2} id="home:connections">
-      <Block title="Your connections">
-        <Rows>
-          <Row icon={<Hospital size={16} color={color.primary} />} title="Health records" meta={connectedLine(ehr, "system")} gap={10} right={<Chevron />} onPress={open} />
-        </Rows>
-      </Block>
     </Rise>
   )
 }

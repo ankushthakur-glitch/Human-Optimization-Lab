@@ -3,8 +3,9 @@ import { router, useLocalSearchParams } from "expo-router"
 import { ConsentTexts, periodParam } from "@/components/consent-steps"
 import { useOnboarding } from "@/lib/onboarding"
 
-/** Setup's consent, page 2: texts. Signing starts the record and opens the
-    eight life questions (app/onboarding/life.tsx) while it arrives. The
+/** Setup's consent, last page ("Updates about your care"), after "Connect
+    your health records". Signing starts the record and opens "Your why"
+    and then the eight life questions (app/onboarding/life.tsx) while it arrives. The
     longer health questions (the why) no longer sit here: they wait on the
     home as "Complete your profile" (14 Oct 2026). */
 export default function ConsentTextsScreen() {
@@ -14,9 +15,9 @@ export default function ConsentTextsScreen() {
     <ConsentTexts
       period={periodParam(period)}
       onSigned={async (signedAs, consentPeriod) => {
-        await onboarding.save({ signedAs, consent: "signed", consentAt: new Date().toISOString(), consentPeriod, step: "life" })
+        await onboarding.save({ signedAs, consent: "signed", consentAt: new Date().toISOString(), consentPeriod, step: "yourWhy" })
         // Back returns here, and signing again moves on again.
-        router.push("/onboarding/life")
+        router.push("/onboarding/your-why")
       }}
     />
   )

@@ -17,6 +17,9 @@ import { store } from "@/lib/storage"
 
    about     basic demographics, needed to match them in the national networks
    consent   the one HIPAA authorization
+   connect   link Epic MyChart or Oracle Health, the two record systems
+             HOL reads (optional); then "Updates about your care", where
+             signing moves on to yourWhy
    life      eight 0 to 10 questions about her life, while the record arrives
    why       the "your why" conversation and the flourishing index
    records   the record builds
@@ -33,7 +36,7 @@ import { store } from "@/lib/storage"
    A prototype with no backend: when the API exists, `save` posts each step
    and the server holds the state. */
 
-export type Step = "about" | "consent" | "life" | "why" | "records" | "tour" | "done"
+export type Step = "about" | "consent" | "connect" | "yourWhy" | "life" | "why" | "records" | "tour" | "done"
 
 export type Profile = {
   firstName: string
@@ -298,6 +301,10 @@ export type State = {
       5); unset means all three. (Renamed from baselineTests, which held
       only the optional extras, so old saves start fresh.) */
   baselinePicks?: string[]
+  /** The home sleep study and SMART program she left on at /baseline
+      ("sleep", "smart"); unset means both. Priced into the total on
+      /enrollment, /payment and the receipt. */
+  addOns?: string[]
   /** How she chose to pay on /enrollment, before any membership exists;
       unset means yearly. */
   billingPick?: Cadence
@@ -431,8 +438,10 @@ export function useOnboarding() {
 export const STEP_ROUTE = {
   about: "/onboarding/about-you",
   consent: "/onboarding/consent",
+  connect: "/onboarding/connect-records",
+  yourWhy: "/onboarding/your-why",
   life: "/onboarding/life",
   why: "/onboarding/why",
-  records: "/onboarding/syncing",
-  tour: "/onboarding/working",
+  records: "/onboarding/syncing?ready=1",
+  tour: "/onboarding/syncing?ready=1",
 } as const
