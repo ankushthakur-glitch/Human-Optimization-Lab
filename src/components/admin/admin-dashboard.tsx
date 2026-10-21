@@ -15,7 +15,6 @@ import {
 import {
   holAverages,
   practiceKpis,
-  toneFor,
 } from "@/components/admin/adoption-kpis"
 import {
   DateRangeFilter,
@@ -332,13 +331,7 @@ export function AdminDashboard() {
                         {row.adoption.declined}
                       </TableCell>
                       <TableCell>
-                        <RateCell
-                          rate={row.adoption.rate}
-                          behind={
-                            row.adoption.rate !== null &&
-                            toneFor(row.adoption.rate, hol.enrolled) === "alert"
-                          }
-                        />
+                        <RateCell rate={row.adoption.rate} />
                       </TableCell>
                     </TableRow>
                   ))}

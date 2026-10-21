@@ -107,7 +107,7 @@ const PANEL =
 
 /* Status colours: the kit's soft hues for the bar and tint, the word a
    step darker so it reads. */
-const STATUS_TONE: Record<
+export const STATUS_TONE: Record<
   AppointmentStatus,
   { bar: string; word: string; tint: number }
 > = {
@@ -186,7 +186,7 @@ function ageOn(dob: string, nowIso: string) {
   return ny - y - (nm < m || (nm === m && nd < d) ? 1 : 0)
 }
 
-const timeRange = (a: Appointment) =>
+export const timeRange = (a: Appointment) =>
   `${clockTime(a.start)} to ${clockTime(endOf(a))}`
 
 /* -------------------------------------------------------------------------- */
@@ -940,7 +940,7 @@ function ListView({
 /*  Details                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function AppointmentDialog({
+export function AppointmentDialog({
   now,
   appointment,
   onClose,

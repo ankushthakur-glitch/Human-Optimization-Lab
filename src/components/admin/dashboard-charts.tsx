@@ -1,18 +1,13 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
 import { format } from "date-fns"
 import { Area, AreaChart, Cell, Pie, PieChart, XAxis, YAxis } from "recharts"
 
 import { cn } from "@/lib/utils"
 import type { Kpi, Tone } from "@/components/admin/adoption-kpis"
 import type { Period } from "@/components/admin/date-range-filter"
-import type {
-  Adoption,
-  ProviderAdoption,
-} from "@/components/admin/practice-adoption"
-import { PersonAvatar } from "@/components/admin/practice-adoption-view"
+import type { Adoption } from "@/components/admin/practice-adoption"
 import type { Practice } from "@/components/admin/practices-store"
 import {
   Card,
@@ -29,23 +24,14 @@ import {
 } from "@/design-system/ui/chart"
 import { Empty, EmptyHeader, EmptyTitle } from "@/design-system/ui/empty"
 import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "@/design-system/ui/item"
-import {
   Progress,
   ProgressLabel,
   ProgressValue,
 } from "@/design-system/ui/progress"
-import { ScrollArea } from "@/design-system/ui/scroll-area"
 
 /* The admin dashboard, built to be read at a glance from the design system's
    own parts: Card for every tile and chart, plain text for rates, Progress for
-   every bar, Item for list rows, Empty for nothing to show. Fills are the
+   every bar, Empty for nothing to show. Fills are the
    soft --viz-* tokens in globals.css, set on those components through
    className. Each chart reads the same adoption roll up as the tiles, for
    whatever region is in scope. */
@@ -266,7 +252,7 @@ const TONE_BAR: Record<Tone, string> = {
    lives on the practice pages. */
 export function StatTiles({ kpis }: { kpis: Kpi[] }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-3">
       {kpis.map((k) => (
         <Card key={k.label} className={cn(CARD, "gap-3 py-4")}>
           <CardHeader>
@@ -574,71 +560,6 @@ export function RateRanking({
           </button>
         ))}
       </div>
-    </ChartCard>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Providers behind                                                           */
-/* -------------------------------------------------------------------------- */
-
-export type BehindProvider = {
-  provider: ProviderAdoption
-  practice: Practice
-  practiceRate: number
-}
-
-export function ProvidersBehind({ list }: { list: BehindProvider[] }) {
-  const sorted = [...list].sort(
-    (a, b) =>
-      (a.provider.rate ?? 0) -
-      a.practiceRate -
-      ((b.provider.rate ?? 0) - b.practiceRate)
-  )
-  return (
-    <ChartCard
-      title="Providers behind"
-      action={list.length}
-      /* Beside the ranking on wide screens: as tall as that card, the list
-         scrolling inside, rather than setting the row's height itself. */
-      className="lg:h-0 lg:min-h-full"
-    >
-      {sorted.length === 0 ? (
-        <Nothing title="No provider is behind their practice" />
-      ) : (
-        <ScrollArea className="-mx-2 max-h-80 min-h-0 flex-1 lg:max-h-none">
-          <div className="flex flex-col divide-y divide-border/70">
-            {sorted.map(({ provider: p, practice, practiceRate }) => (
-              <Item
-                key={`${practice.id}-${p.id}`}
-                size="xs"
-                className="rounded-none px-2 py-2.5 hover:bg-muted/60"
-                render={
-                  <Link
-                    href={`/screens/admin/practices/${practice.id}/providers/${p.id}`}
-                    title={`${pct(p.rate ?? 0)} enrolled, practice ${pct(practiceRate)}`}
-                  />
-                }
-              >
-                <ItemMedia>
-                  <PersonAvatar name={p.name} photo={p.photo} />
-                </ItemMedia>
-                <ItemContent className="min-w-0">
-                  <ItemTitle className="w-full truncate text-[13px] font-medium">
-                    {p.name}
-                  </ItemTitle>
-                  <ItemDescription className="truncate text-xs">
-                    {practice.name}
-                  </ItemDescription>
-                </ItemContent>
-                <ItemActions className="text-[13px] font-medium text-warning tabular-nums">
-                  {pct(p.rate ?? 0)}
-                </ItemActions>
-              </Item>
-            ))}
-          </div>
-        </ScrollArea>
-      )}
     </ChartCard>
   )
 }

@@ -137,7 +137,6 @@ export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"]
 export const SEXES = ["Female", "Male", "Other"]
 
 export const CREDENTIALS = ["MD", "DO", "NP", "PA", "RN"]
-export const PROVIDER_ROLES = ["Provider", "Supervising provider"]
 export const SPECIALTIES = [
   "Internal Medicine",
   "Family Medicine",
@@ -397,6 +396,8 @@ export type Provider = {
   /** Primary service locations. */
   locationIds: string[]
   supervisorIds: string[]
+  /** Medical assistants (StaffUser ids) who support this provider's panel. */
+  assistantIds: string[]
   education: string
   licenses: License[]
   /** A data URL of the drawn signature, or empty. */
@@ -631,7 +632,7 @@ export function emptyProvider(): ProviderInput {
     gender: "",
     npi: "",
     specialty: "",
-    role: "Provider",
+    role: "Physician",
     taxonomyCode: "",
     languages: ["English"],
     ssn: "",
@@ -652,6 +653,7 @@ export function emptyProvider(): ProviderInput {
     nonBilling: false,
     locationIds: [],
     supervisorIds: [],
+    assistantIds: [],
     education: "",
     licenses: [{ type: "", state: "CA", number: "", expiry: "" }],
     signature: "",
@@ -1246,6 +1248,7 @@ const PROVIDERS: Provider[] = PROVIDER_ROWS.map((row, i) => {
     nonBilling: credential === "RN",
     locationIds,
     supervisorIds: role === "Provider" ? [i % 2 ? "PR3136" : "PR3132"] : [],
+    assistantIds: [],
     education:
       credential === "MD" || credential === "DO"
         ? `Residency in ${specialty}; ${6 + i} years in outpatient and concierge practice.`
@@ -1667,6 +1670,7 @@ const REYES: Provider = {
   photo: "",
   email: `daniel.reyes@${PRACTICE.domain}`,
   supervisorIds: [HARRINGTON_ID],
+  assistantIds: [],
   registrationDate: isoDaysAgo(120),
   lastLogin: isoDaysAgo(0),
 }
@@ -1856,7 +1860,7 @@ PATIENTS.forEach((p, i) => {
 /*  Stores                                                                     */
 /* -------------------------------------------------------------------------- */
 
-const VERSION = "v18"
+const VERSION = "v20"
 
 /** The sample patients, before any session edits: the duplicate queue seeds from them. */
 export const PATIENT_SEED = PATIENTS
@@ -1866,9 +1870,20 @@ export const locations = createCollection(
   LOCATIONS,
   VERSION
 )
+/* Each provider starts with one medical assistant, taken in turn. */
+const ASSISTANT_IDS = USERS.filter((u) => u.role === "Medical assistant").map(
+  (u) => u.id
+)
 export const providers = createCollection(
   "hol-practice-providers",
-  [...PROVIDERS, REYES],
+  [...PROVIDERS, REYES].map((p, i) => ({
+    ...p,
+    /* One role per person, from Roles and permissions. */
+    role: "Physician",
+    assistantIds: ASSISTANT_IDS.length
+      ? [ASSISTANT_IDS[i % ASSISTANT_IDS.length]]
+      : [],
+  })),
   VERSION
 )
 export const users = createCollection("hol-practice-users", USERS, VERSION)

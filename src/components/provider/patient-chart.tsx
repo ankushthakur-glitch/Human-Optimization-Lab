@@ -16,6 +16,7 @@ import {
   IconLanguage,
   IconLocation,
   IconMail,
+  IconNote,
   IconPhone,
   IconRefresh,
   IconStethoscope,
@@ -69,6 +70,10 @@ import {
   useEpicExtras,
 } from "@/components/provider/chart-epic-views"
 import { CarePlanView } from "@/components/provider/chart-care-plan"
+import {
+  StickyNoteCard,
+  StickyNotesView,
+} from "@/components/provider/chart-sticky-notes"
 import {
   AllergiesView,
   DiagnosesView,
@@ -127,6 +132,7 @@ export type ChartSection =
   | "vitals"
   | "labs"
   | "family"
+  | "notes"
   | "profile"
 
 /* One section per Epic read in the "EHR Integration" sheet: Encounter,
@@ -150,6 +156,7 @@ const SECTIONS: {
   { id: "vitals", label: "Vitals", icon: IconHeartPulse },
   { id: "labs", label: "Lab results", icon: IconLab },
   { id: "family", label: "Family history", icon: IconTeam },
+  { id: "notes", label: "Sticky notes", icon: IconNote },
   { id: "profile", label: "Profile", icon: IconUserCircle },
 ]
 
@@ -280,6 +287,7 @@ export function PatientChart({ patient }: { patient: Patient }) {
         chart={chart}
         collapsed={collapsed}
         onToggle={() => morph(() => setCollapsed(!collapsed))}
+        onNotes={() => go({ section: "notes" })}
       />
 
       <div className="flex min-h-[420px] flex-1 overflow-hidden rounded-lg bg-card border border-border shadow-[0_1px_2px_rgba(16,24,40,.04)] [view-transition-name:chart-body] max-md:flex-col print:overflow-visible">
@@ -287,6 +295,8 @@ export function PatientChart({ patient }: { patient: Patient }) {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {section === "profile" ? (
             <ProfileSection patient={patient} extras={extras} />
+          ) : section === "notes" ? (
+            <StickyNotesView patient={patient} />
           ) : section === "care-plan" ? (
             <CarePlanView
               patient={patient}
@@ -385,11 +395,13 @@ function ChartHeader({
   chart,
   collapsed,
   onToggle,
+  onNotes,
 }: {
   patient: Patient
   chart: Chart
   collapsed: boolean
   onToggle: () => void
+  onNotes: () => void
 }) {
   const { items: saved } = patientLabels.use()
   const labels = saved.find((t) => t.id === p.id)?.labels ?? []
@@ -487,7 +499,12 @@ function ChartHeader({
           </div>
         </div>
 
-        <SyncPanel patient={p} chart={chart} collapsed={collapsed} />
+        <SyncPanel
+          patient={p}
+          chart={chart}
+          collapsed={collapsed}
+          onNotes={onNotes}
+        />
       </div>
 
       <button
@@ -787,10 +804,12 @@ function SyncPanel({
   patient,
   chart,
   collapsed,
+  onNotes,
 }: {
   patient: Patient
   chart: Chart
   collapsed: boolean
+  onNotes: () => void
 }) {
   const { record, state, syncedAt, syncing, sync } = chart
   const { model } = useDashboard(patient, record)
@@ -931,6 +950,11 @@ function SyncPanel({
           {next ? visitWhen(next) : "Not booked"}
         </SyncFact>
       </FactCard>
+      <StickyNoteCard
+        patient={patient}
+        collapsed={collapsed}
+        onOpen={onNotes}
+      />
     </div>
   )
 }

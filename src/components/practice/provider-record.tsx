@@ -32,7 +32,6 @@ import {
   GENDERS,
   LANGUAGES,
   LICENSE_TYPES,
-  PROVIDER_ROLES,
   type Provider,
   type ProviderInput,
   SPECIALTIES,
@@ -47,11 +46,13 @@ import {
   personAddress,
   providerName,
   providers,
+  users,
   shortDate,
   useLocationLookup,
   usDate,
 } from "@/components/practice/practice-data"
 import { PracticeShell } from "@/components/practice/practice-shell"
+import { useAccessRoles } from "@/components/settings/settings-data"
 import {
   DetailGrid,
   PhotoField,
@@ -211,10 +212,18 @@ function ProviderForm({ provider }: { provider?: Provider }) {
   )
   const supervisors = items.filter(
     (p) =>
-      p.role === "Supervising provider" &&
+      p.role === "Physician" &&
       p.status !== "Inactive" &&
       p.id !== provider?.id
   )
+  const accessRoles = useAccessRoles()
+  const assistants = users
+    .use()
+    .items.filter(
+      (u) =>
+        u.role === "Medical assistant" &&
+        (u.status !== "Inactive" || values.assistantIds.includes(u.id))
+    )
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -350,7 +359,7 @@ function ProviderForm({ provider }: { provider?: Provider }) {
               id="provider-role"
               label="Role"
               required
-              options={PROVIDER_ROLES}
+              options={accessRoles}
               value={values.role}
               onChange={set("role")}
               error={errors.role}
@@ -519,6 +528,22 @@ function ProviderForm({ provider }: { provider?: Provider }) {
                 )
               }
             />
+            <MultiSelectField
+              id="provider-assistantIds"
+              label="Medical assistants"
+              options={assistants.map(fullName)}
+              value={values.assistantIds
+                .map((uid) => assistants.find((u) => u.id === uid))
+                .filter((u) => !!u)
+                .map(fullName)}
+              onChange={(names) =>
+                set("assistantIds")(
+                  names
+                    .map((n) => assistants.find((u) => fullName(u) === n)?.id)
+                    .filter((x): x is string => !!x)
+                )
+              }
+            />
           </div>
         </RecordCard>
 
@@ -643,6 +668,12 @@ function ProfileBody({
     .map((sid) => all.find((x) => x.id === sid))
     .filter((x): x is Provider => !!x)
     .map(providerName)
+    .join(", ")
+  const staff = users.use().items
+  const assistants = (p.assistantIds ?? [])
+    .map((uid) => staff.find((u) => u.id === uid))
+    .filter((u) => !!u)
+    .map(fullName)
     .join(", ")
 
   return (
@@ -771,6 +802,7 @@ function ProfileBody({
                 value: p.nonBilling ? "Non billing" : "Billing",
               },
               { label: "Supervising providers", value: supervisors },
+              { label: "Medical assistants", value: assistants },
               { label: "Role", value: p.role },
               { label: "Invited", value: shortDate(p.invitedAt) },
               { label: "Last login", value: shortDate(p.lastLogin) || "Never" },

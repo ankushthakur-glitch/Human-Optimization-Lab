@@ -56,7 +56,6 @@ export type ProviderAdoption = {
   declined: number
   /** Enrolled over open records, 0 to 1; null with no open records. */
   rate: number | null
-  behind: boolean
 }
 
 export type Adoption = {
@@ -71,13 +70,7 @@ export type Adoption = {
   closed: number
   rate: number | null
   providersOnboarded: number
-  behind: number
 }
-
-/* A provider is flagged when their rate trails the practice's by this many
-   points, once they have enough patients for the rate to mean something. */
-const BEHIND_GAP = 0.3
-const BEHIND_MIN_PATIENTS = 3
 
 const isClosed = (status: PatientStatus) => REACTIVATABLE.includes(status)
 
@@ -90,12 +83,11 @@ type Roster = {
     | "invited"
     | "declined"
     | "rate"
-    | "behind"
   >[]
 }
 
 function summarise(roster: Roster): Adoption {
-  const counted = roster.providers.map((p) => {
+  const providers = roster.providers.map((p) => {
     const openRecords = p.patients.filter((x) => !isClosed(x.status))
     const enrolled = openRecords.filter((x) => x.status === "Active").length
     const invited = openRecords.filter((x) => x.status === "Invited").length
@@ -107,25 +99,15 @@ function summarise(roster: Roster): Adoption {
       invited,
       declined,
       rate: openRecords.length ? enrolled / openRecords.length : null,
-      behind: false,
     }
   })
 
-  const patientsTotal = counted.reduce((n, p) => n + p.patients.length, 0)
-  const open = counted.reduce((n, p) => n + p.open, 0)
-  const enrolled = counted.reduce((n, p) => n + p.enrolled, 0)
-  const invited = counted.reduce((n, p) => n + p.invited, 0)
-  const declined = counted.reduce((n, p) => n + p.declined, 0)
+  const patientsTotal = providers.reduce((n, p) => n + p.patients.length, 0)
+  const open = providers.reduce((n, p) => n + p.open, 0)
+  const enrolled = providers.reduce((n, p) => n + p.enrolled, 0)
+  const invited = providers.reduce((n, p) => n + p.invited, 0)
+  const declined = providers.reduce((n, p) => n + p.declined, 0)
   const rate = open ? enrolled / open : null
-
-  const providers = counted.map((p) => ({
-    ...p,
-    behind:
-      rate !== null &&
-      p.rate !== null &&
-      p.open >= BEHIND_MIN_PATIENTS &&
-      p.rate <= rate - BEHIND_GAP,
-  }))
 
   return {
     users: roster.users,
@@ -139,7 +121,6 @@ function summarise(roster: Roster): Adoption {
     closed: patientsTotal - open,
     rate,
     providersOnboarded: providers.filter((p) => p.status === "Active").length,
-    behind: providers.filter((p) => p.behind).length,
   }
 }
 
@@ -358,7 +339,6 @@ export function derivedAdoption(practice: Practice): Adoption {
 /* -------------------------------------------------------------------------- */
 
 /** Several practices' adoption summed into one, as if they were a single
-    practice. Providers keep the behind flag they earned in their own
     practice. */
 export function combineAdoption(list: Adoption[]): Adoption {
   const sum = (f: (a: Adoption) => number) => list.reduce((n, a) => n + f(a), 0)
@@ -376,7 +356,6 @@ export function combineAdoption(list: Adoption[]): Adoption {
     closed: sum((a) => a.closed),
     rate: open ? enrolled / open : null,
     providersOnboarded: sum((a) => a.providersOnboarded),
-    behind: sum((a) => a.behind),
   }
 }
 

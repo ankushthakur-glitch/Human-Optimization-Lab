@@ -3,6 +3,7 @@
 import * as React from "react"
 import {
   IconLocation,
+  IconSettings,
   IconStethoscope,
   IconUser,
   IconUserAdd,
@@ -17,7 +18,7 @@ import {
 } from "@/components/ehr-shell"
 import { PRACTICE } from "@/components/practice/practice-data"
 
-export type PracticeModule = "users" | "patients" | "locations"
+export type PracticeModule = "users" | "patients" | "locations" | "settings"
 
 const BASE = "/screens/practice"
 
@@ -34,6 +35,12 @@ const PRACTICE_NAV: NavItem[] = [
     label: "Locations",
     icon: IconLocation,
     href: `${BASE}/locations`,
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: IconSettings,
+    href: `${BASE}/settings`,
   },
 ]
 

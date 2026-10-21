@@ -11,7 +11,6 @@ import {
   usePracticeAdoption,
 } from "@/components/admin/practice-adoption"
 import {
-  BehindBadge,
   HEAD,
   NothingYet,
   PersonAvatar,
@@ -167,7 +166,6 @@ function ProviderBody({
           {practice.name}
         </Badge>
         <StatusBadge status={provider.status} />
-        {provider.behind && <BehindBadge />}
       </div>
 
       <KpiGrid kpis={providerKpis(adoption, provider.id)} />

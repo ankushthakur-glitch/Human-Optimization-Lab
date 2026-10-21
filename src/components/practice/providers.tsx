@@ -33,7 +33,6 @@ import {
 import {
   CREDENTIALS,
   GENDERS,
-  PROVIDER_ROLES,
   type Provider,
   type ProviderInput,
   SPECIALTIES,
@@ -49,6 +48,7 @@ import {
 import { providerHref, validNpi } from "@/components/practice/provider-record"
 import { DeactivateProviderDialog } from "@/components/practice/deactivate-provider"
 import { DropdownMenuItem } from "@/design-system/ui/dropdown-menu"
+import { useAccessRoles } from "@/components/settings/settings-data"
 
 /* The provider list, the first tab of Users. Adding, viewing and editing a
    provider happen on full pages (see provider-record.tsx). */
@@ -67,6 +67,7 @@ function resend(p: Provider) {
 
 function useProviderImport(): ImportSpec<ProviderInput> {
   const { items } = providers.use()
+  const roleNames = useAccessRoles()
   const loc = useLocationLookup()
   const activeNames = loc.active.map((l) => l.name)
 
@@ -102,8 +103,8 @@ function useProviderImport(): ImportSpec<ProviderInput> {
       {
         header: "Role",
         required: true,
-        example: "Provider",
-        options: PROVIDER_ROLES,
+        example: "Physician",
+        options: roleNames,
         width: 20,
       },
       {
@@ -155,11 +156,9 @@ function useProviderImport(): ImportSpec<ProviderInput> {
       if (phone && digits(phone).length !== 10)
         errors.push("Mobile number needs 10 digits.")
 
-      const role = pick(PROVIDER_ROLES, c.Role || "Provider")
+      const role = pick(roleNames, c.Role || "Physician")
       if (!role)
-        errors.push(
-          `Role "${c.Role}" isn't one of ${PROVIDER_ROLES.join(", ")}.`
-        )
+        errors.push(`Role "${c.Role}" isn't one of ${roleNames.join(", ")}.`)
 
       const specialty = c.Specialty ? pick(SPECIALTIES, c.Specialty) : ""
       if (specialty === undefined)
@@ -214,7 +213,7 @@ function useProviderImport(): ImportSpec<ProviderInput> {
               gender: gender ?? "",
               npi,
               specialty: specialty ?? "",
-              role: role ?? "Provider",
+              role: role ?? "Physician",
               email,
               phone: phone ? formatPhone(phone) : "",
               locationIds,
@@ -243,6 +242,7 @@ export function ProvidersPanel({ heading }: { heading: React.ReactNode }) {
   const { items } = providers.use()
   const loc = useLocationLookup()
   const importSpec = useProviderImport()
+  const roleNames = useAccessRoles()
   const router = useRouter()
   const [importing, setImporting] = React.useState(false)
   const [deactivating, setDeactivating] = React.useState<Provider | null>(null)
@@ -382,7 +382,7 @@ export function ProvidersPanel({ heading }: { heading: React.ReactNode }) {
             id: "role",
             label: "Role",
             all: "All roles",
-            options: PROVIDER_ROLES,
+            options: roleNames,
             match: (p, v) => p.role === v,
           },
           {

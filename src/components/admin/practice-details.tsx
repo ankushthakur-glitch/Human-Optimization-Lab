@@ -5,7 +5,6 @@ import Link from "next/link"
 import { toast } from "@/design-system/ui/sonner"
 import {
   IconArrowLeft,
-  IconCopy,
   IconEdit,
   IconMail,
   IconMoreVertical,
@@ -26,6 +25,7 @@ import {
   practiceKpis,
 } from "@/components/admin/adoption-kpis"
 import {
+  FEATURES,
   type Practice,
   formatDate,
   usePractices,
@@ -137,13 +137,6 @@ function InfoRow({ label, value, wide }: Row) {
         <span className="min-w-0">{empty ? "Not provided" : value}</span>
       </dd>
     </div>
-  )
-}
-
-function copy(text: string, what: string) {
-  navigator.clipboard?.writeText(text).then(
-    () => toast.success(`${what} copied`),
-    () => toast.error(`Couldn't copy the ${what.toLowerCase()}`)
   )
 }
 
@@ -305,34 +298,23 @@ function DetailsCards({
           ]}
         />
         <InfoCard
-          title="Referral"
-          rows={[
-            {
-              label: "Referral URL",
-              value: (
-                <span className="flex items-center gap-1">
-                  <span className="min-w-0 truncate">
-                    {practice.referralUrl}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label="Copy referral URL"
-                    onClick={() => copy(practice.referralUrl, "Referral URL")}
-                  >
-                    <IconCopy />
-                  </Button>
-                </span>
-              ),
-            },
-          ]}
-        />
-        <InfoCard
           title="Messaging"
           rows={[
             {
               label: "Twilio number",
               value: practice.twilioNumber || "Not set",
+            },
+          ]}
+        />
+        <InfoCard
+          title="Feature access"
+          rows={[
+            {
+              label: "Features",
+              value:
+                FEATURES.filter((f) => practice.features?.includes(f.id))
+                  .map((f) => f.name)
+                  .join(", ") || "None",
             },
           ]}
         />
@@ -354,26 +336,6 @@ function DetailsCards({
                   render={<a href={`mailto:${practice.email}`} />}
                 >
                   {practice.email}
-                </Button>
-              ),
-            },
-            {
-              label: "Website",
-              wide: true,
-              value: practice.website && (
-                <Button
-                  variant="link"
-                  className={LINK}
-                  nativeButton={false}
-                  render={
-                    <a
-                      href={practice.website}
-                      target="_blank"
-                      rel="noreferrer"
-                    />
-                  }
-                >
-                  {practice.website.replace(/^https?:\/\//, "")}
                 </Button>
               ),
             },

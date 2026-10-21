@@ -30,6 +30,12 @@ import {
 const PRIMARY = "#01837E"
 const PRIMARY_TINT = "#005350"
 
+/* Who sent the invitation and the practice it is for stand out in the
+   letter: set heavier and in the darkest ink. */
+function Name({ children }: { children: React.ReactNode }) {
+  return <span className="font-semibold text-[#171717]">{children}</span>
+}
+
 /* A patient's app link, as the prototype follows it: the patient app's web
    build, served by this site at /app, opening on activation with the email
    filled in. The live link will be a store redirect that does the same. */
@@ -214,8 +220,9 @@ export function InviteEmailTemplate({
         {patient ? (
           <>
             <p>
-              <span className="font-medium">{invitee.practice}</span> has
-              invited you to the {BRAND_NAME} app.
+              <Name>{sender.name}</Name>, your provider at{" "}
+              <Name>{invitee.practice}</Name>, has invited you to the{" "}
+              {BRAND_NAME} app.
             </p>
             <p className="mb-[1.6em]">
               Your account is ready. Download the app on your phone and activate
@@ -225,9 +232,8 @@ export function InviteEmailTemplate({
         ) : provider ? (
           <>
             <p>
-              <span className="font-medium">{sender.name}</span>, clinic manager
-              at <span className="font-medium">{invitee.practice}</span>, has
-              invited you to the {BRAND_NAME} provider portal.
+              <Name>{sender.name}</Name>, clinic manager at{" "}
+              <Name>{invitee.practice}</Name>, has invited you to the {BRAND_NAME} provider portal.
             </p>
             <p className="mb-[1.6em]">
               Your account is ready. Activate it to add your patients and invite
@@ -237,9 +243,8 @@ export function InviteEmailTemplate({
         ) : manager ? (
           <>
             <p>
-              <span className="font-medium">Maya Chen</span>, platform admin at{" "}
-              {BRAND_NAME} Lab, has added{" "}
-              <span className="font-medium">{invitee.practice}</span> to{" "}
+              <Name>{sender.name}</Name>, platform admin at {BRAND_NAME} Lab,
+              has added <Name>{invitee.practice}</Name> to{" "}
               {BRAND_NAME} and invited you as its Clinic Manager.
             </p>
             <p className="mb-[1.6em]">
@@ -250,8 +255,8 @@ export function InviteEmailTemplate({
         ) : (
           <>
             <p>
-              <span className="font-medium">Maya Chen</span>, platform admin at{" "}
-              {BRAND_NAME} Lab, has invited you to the {BRAND_NAME} admin
+              <Name>{sender.name}</Name>, platform admin at {BRAND_NAME} Lab,
+              has invited you to the {BRAND_NAME} admin
               console as a Super Admin.
             </p>
             <p className="mb-[1.6em]">
@@ -337,13 +342,13 @@ export function InviteEmailTemplate({
         </div>
 
         <p className="mb-[1.6em]">
-          If the code runs out, ask {patient ? invitee.practice : sender.name}{" "}
-          to send a new invitation.
+          If the code runs out, ask <Name>{sender.name}</Name> to send a new
+          invitation.
         </p>
         <p>
           If you have any questions or need help accessing{" "}
           {patient ? "the app" : staff ? "the portal" : "the admin console"},
-          please contact {patient ? invitee.practice : sender.name} at{" "}
+          please contact <Name>{sender.name}</Name> at{" "}
           <span
             className="underline underline-offset-2"
             style={{ color: PRIMARY_TINT }}
@@ -378,6 +383,11 @@ export function InviteEmailTemplate({
             </span>
             <span className="text-[#606060]">( {sender.title} )</span>
           </p>
+          {invitee.practice && (
+            <p className="-mt-[7px] font-medium text-[#171717]">
+              {invitee.practice}
+            </p>
+          )}
           <ul className="flex flex-col gap-2">
             {contacts.map(({ icon, text, link }) => (
               <li key={text} className="flex items-center gap-2">
