@@ -73,10 +73,15 @@ export const ADD_ONS: Record<AddOnId, { id: AddOnId; name: string; price: number
   smart: { id: "smart", name: "SMART program", price: 100 },
 }
 
-/** Her add-ons in the list's order: both until she turns one off. */
+/** The add-ons /baseline shows. The SMART program is held back for now, so
+    it is never chosen, listed or charged on enrollment, payment or the
+    receipt; adding it here brings it back on every screen at once. */
+export const OFFERED_ADD_ONS: AddOnId[] = ["sleep"]
+
+/** Her add-ons in the list's order: every offered one until she turns it off. */
 export function chosenAddOns(ids: string[] | undefined) {
   const on = ids ? new Set(ids) : null
-  return (Object.values(ADD_ONS) as (typeof ADD_ONS)[AddOnId][]).filter((a) => !on || on.has(a.id))
+  return OFFERED_ADD_ONS.map((id) => ADD_ONS[id]).filter((a) => !on || on.has(a.id))
 }
 
 /** The ticked ids with one test flipped, to save back. */

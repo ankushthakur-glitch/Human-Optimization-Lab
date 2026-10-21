@@ -137,7 +137,8 @@ export default function BaselineScreen() {
   ]
 
   // For now the screen shows three cards; the shared insulin card and the
-  // SMART program stay defined above and return by adding their keys here.
+  // SMART program stay defined above and return by adding their keys here
+  // (and "smart" to OFFERED_ADD_ONS, so enrollment and payment follow).
   const SHOWN: Group["key"][] = ["metabolic", "lipid", "sleep"]
   const shown = groups.filter((g) => SHOWN.includes(g.key))
 

@@ -103,7 +103,7 @@ export default function EnrollmentScreen() {
       key: "sleep",
       name: "Sleep restoration",
       lines: kept.has("sleep")
-        ? [{ key: "sleep", name: ADD_ONS.sleep.name, says: "Two nights at home", price: ADD_ONS.sleep.price }]
+        ? [{ key: "sleep", name: ADD_ONS.sleep.name, says: "Two nights at home - you said you wake at three", price: ADD_ONS.sleep.price }]
         : [],
       on: addOns.has("sleep"),
       set: (on: boolean) => setAddOn("sleep", on),
