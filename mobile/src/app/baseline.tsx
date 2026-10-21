@@ -197,25 +197,28 @@ export default function BaselineScreen() {
                 <View style={styles.row}>
                   <View style={styles.body}>
                     {!!item.name && (
-                      <Text style={[styles.name, !g.on && styles.dim]} numberOfLines={1}>
-                        {item.name}
-                      </Text>
+                      // The info button sits right after the test's name.
+                      <View style={styles.nameRow}>
+                        <Text style={[styles.name, !g.on && styles.dim]} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                        {item.info && (
+                          <Pressable
+                            onPress={() => setOpen(item.key)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`About ${item.name}`}
+                            hitSlop={8}
+                            style={({ pressed }) => [styles.more, pressed && styles.pressed]}
+                          >
+                            <Info size={14} color={ink.primary} />
+                          </Pressable>
+                        )}
+                      </View>
                     )}
                     <Text style={[styles.says, item.shared && styles.shared, !g.on && styles.dim]}>{item.says}</Text>
                   </View>
                   <View style={styles.side}>
                     <Text style={[styles.price, !g.on && styles.dim, !g.on && styles.struck]}>{dollars(item.price)}</Text>
-                    {item.info && (
-                      <Pressable
-                        onPress={() => setOpen(item.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`About ${item.name}`}
-                        hitSlop={8}
-                        style={({ pressed }) => [styles.more, pressed && styles.pressed]}
-                      >
-                        <Info size={14} color={ink.primary} />
-                      </Pressable>
-                    )}
                   </View>
                 </View>
               </View>
@@ -254,7 +257,8 @@ const styles = StyleSheet.create({
   item: { paddingHorizontal: space.rowX, borderTopWidth: 1, borderTopColor: hairline.rule },
   row: { flexDirection: "row", alignItems: "center", gap: space.item, paddingVertical: space.rowY },
   body: { flex: 1, gap: 2 },
-  name: { ...type.title, fontSize: 14, color: ink.strong },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: space.mark },
+  name: { ...type.title, flexShrink: 1, fontSize: 14, color: ink.strong },
   says: { ...type.label, fontSize: 12, color: ink.secondary },
   shared: { fontStyle: "italic" },
   side: { alignItems: "flex-end", gap: space.mark },
