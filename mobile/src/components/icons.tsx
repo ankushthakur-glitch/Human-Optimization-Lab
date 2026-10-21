@@ -5,17 +5,16 @@ import Calendar03Icon from "@hugeicons/core-free-icons/Calendar03Icon"
 import ChartUpIcon from "@hugeicons/core-free-icons/ChartUpIcon"
 import CheckmarkSquare02Icon from "@hugeicons/core-free-icons/CheckmarkSquare02Icon"
 import CircleArrowLeft01Icon from "@hugeicons/core-free-icons/CircleArrowLeft01Icon"
-import CrownIcon from "@hugeicons/core-free-icons/CrownIcon"
+import ClipboardListIcon from "@hugeicons/core-free-icons/ClipboardListIcon"
 import FaceIdIcon from "@hugeicons/core-free-icons/FaceIdIcon"
 import HappyIcon from "@hugeicons/core-free-icons/HappyIcon"
+import HeartCheckIcon from "@hugeicons/core-free-icons/HeartCheckIcon"
 import Home09Icon from "@hugeicons/core-free-icons/Home09Icon"
 import InLoveIcon from "@hugeicons/core-free-icons/InLoveIcon"
 import Mail01Icon from "@hugeicons/core-free-icons/Mail01Icon"
 import NeutralIcon from "@hugeicons/core-free-icons/NeutralIcon"
 import Sad01Icon from "@hugeicons/core-free-icons/Sad01Icon"
-import SmartWatch01Icon from "@hugeicons/core-free-icons/SmartWatch01Icon"
 import SquareLock02Icon from "@hugeicons/core-free-icons/SquareLock02Icon"
-import Task01Icon from "@hugeicons/core-free-icons/Task01Icon"
 import Tick02Icon from "@hugeicons/core-free-icons/Tick02Icon"
 import ViewIcon from "@hugeicons/core-free-icons/ViewIcon"
 import ViewOffSlashIcon from "@hugeicons/core-free-icons/ViewOffSlashIcon"
@@ -61,11 +60,10 @@ function tabIcon(icon: typeof Home09Icon, body: readonly number[], keep?: readon
 
 export const IconHome = tabIcon(Home09Icon, [0])
 export const IconResults = tabIcon(Analytics01Icon, [3])
-export const IconPlan = tabIcon(Task01Icon, [0, 2])
-export const IconUpgrade = tabIcon(CrownIcon, [2])
+export const IconPlan = tabIcon(ClipboardListIcon, [1])
+export const IconUpgrade = IconPlan
 export const IconToDo = tabIcon(CheckmarkSquare02Icon, [0])
-/** The Connect tab: a watch, its face filled when selected, the straps kept as lines. */
-export const IconConnections = tabIcon(SmartWatch01Icon, [0], [1, 2])
+export const IconCare = tabIcon(HeartCheckIcon, [0])
 /* The plan's own tabs (Back, Today, Progress): Back is never selected.
    Progress fills its three bars and keeps its arrow as a line. */
 export const IconBack = tabIcon(CircleArrowLeft01Icon, [0])

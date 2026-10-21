@@ -24,7 +24,7 @@ export type Receipt = {
 export function receiptOf(onboarding: State): Receipt {
   const m = onboarding.membership
   const billing = m?.billing ?? "yearly"
-  const cost = firstMonth(onboarding.baselinePicks, billing)
+  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns)
   const at = new Date(m?.startedAt ?? Date.now())
   return {
     number: `INL-${at.getTime().toString().slice(-8)}`,
@@ -33,6 +33,7 @@ export function receiptOf(onboarding: State): Receipt {
     lines: [
       { label: `${planName(onboarding.goals)}, ${priceLabel(billing)}`, amount: dollarsExact(cost.membership) },
       ...cost.tests.map((t) => ({ label: t.name, amount: dollarsExact(t.price) })),
+      ...cost.addOns.map((a) => ({ label: a.name, amount: dollarsExact(a.price) })),
       ...(cost.discount ? [{ label: "Yearly discount on tests", amount: `-${dollarsExact(cost.discount)}` }] : []),
     ],
     total: dollarsExact(cost.total),

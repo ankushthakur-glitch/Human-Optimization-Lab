@@ -19,7 +19,7 @@ import { chart, color, space, type } from "@/lib/theme"
    the share sheet and the devices group are gone. Its sheet is drawn
    over the tab bar. */
 
-type Step = { connecting: Source } | { connected: Source }
+export type Step = { connecting: Source } | { connected: Source }
 
 export default function ConnectionsScreen() {
   const sources = useSources()
@@ -70,9 +70,10 @@ function Synced({ when }: { when?: string }) {
 
 const CONNECT_MS = 1800
 
-/** Connecting to a record system in one sheet: a loader for a moment,
-    then connected. */
-function ConnectSheet({ step, onStep, onClose }: { step: Step; onStep: (s: Step) => void; onClose: () => void }) {
+/** Connecting to a record system: a loader sheet for a moment, then the
+    connected sheet. Each has its own key so the connected sheet slides up
+    as a popup of its own instead of just swapping the loader's content. */
+export function ConnectSheet({ step, onStep, onClose, popup = false }: { step: Step; onStep: (s: Step) => void; onClose: () => void; popup?: boolean }) {
   React.useEffect(() => {
     if (!("connecting" in step)) return
     const t = setTimeout(() => {
@@ -84,7 +85,7 @@ function ConnectSheet({ step, onStep, onClose }: { step: Step; onStep: (s: Step)
 
   if ("connecting" in step)
     return (
-      <Sheet title={`Connecting to ${step.connecting.name}`} onClose={onClose}>
+      <Sheet key="connecting" title={`Connecting to ${step.connecting.name}`} onClose={onClose} popup={popup}>
         <View style={styles.status}>
           <ActivityIndicator color={color.primary} size="large" />
           <Text style={styles.statusText}>Signing you in securely</Text>
@@ -93,7 +94,7 @@ function ConnectSheet({ step, onStep, onClose }: { step: Step; onStep: (s: Step)
     )
 
   return (
-    <Sheet title={`${step.connected.name} connected`} onClose={onClose}>
+    <Sheet key="connected" title={`${step.connected.name} connected`} onClose={onClose} popup={popup}>
       <View style={styles.status}>
         <View style={styles.doneTile}>
           <CheckCircle size={32} color={color.primary} />

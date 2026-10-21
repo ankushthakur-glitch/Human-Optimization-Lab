@@ -103,12 +103,12 @@ function Routes() {
           <Stack.Screen name="onboarding/about-you" />
           <Stack.Screen name="onboarding/consent" />
           <Stack.Screen name="onboarding/consent-texts" />
+          <Stack.Screen name="onboarding/connect-records" />
+          <Stack.Screen name="onboarding/your-why" />
           <Stack.Screen name="onboarding/life" />
           <Stack.Screen name="onboarding/life-question" />
           <Stack.Screen name="onboarding/why" />
           <Stack.Screen name="onboarding/syncing" />
-          <Stack.Screen name="onboarding/working" />
-          <Stack.Screen name="onboarding/new-medication" />
           <Stack.Screen name="onboarding/trends" />
           <Stack.Screen name="onboarding/biological-age" />
           <Stack.Screen name="onboarding/what-is-driving-it" />
@@ -129,7 +129,6 @@ function Routes() {
           <Stack.Screen name="medications" />
           <Stack.Screen name="medicine/[id]" />
           <Stack.Screen name="tell-us" />
-          <Stack.Screen name="goals" />
           <Stack.Screen name="goal-plans" />
           <Stack.Screen name="health-profile" />
           <Stack.Screen name="flourishing" />

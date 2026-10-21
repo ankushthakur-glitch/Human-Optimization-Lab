@@ -6,9 +6,9 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 import { ScoreRing, formatNumber } from "@/components/charts"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { EnergyBalance } from "@/components/energy-balance"
-import { Upcoming, YourConnections } from "@/components/home-free"
+import { Upcoming } from "@/components/home-free"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
-import { Barbell, BowlFood, Bone, CaretRight, Check, Drop, Flame, Heartbeat, PersonSimpleRun, PersonSimpleWalk, Scales } from "@/components/ph"
+import { Barbell, BowlFood, Bone, CaretRight, ChatText, Check, Drop, Flame, Heartbeat, PersonSimpleRun, PersonSimpleWalk, Scales } from "@/components/ph"
 import {
   Block,
   Card,
@@ -75,7 +75,6 @@ export function OptimizedHome() {
           </Block>
         </Rise>
         <Upcoming at={5} />
-        <YourConnections />
       </View>
     </TabScreen>
   )
@@ -148,6 +147,20 @@ function TodoList({ t, onCheckIn }: { t: TodayPlan; onCheckIn: (kind: CheckInKin
     )
   }
 
+  // The flourishing and SMART check-in (21 Oct 2026): one more row in the
+  // list, the same card as the others, last in the day's order. It opens the
+  // short questions and is not part of the day's count above.
+  const checkIn = (
+    <TaskCard
+      key="check-in"
+      title="Flourishing & SMART check-in"
+      icon={<ChatText size={18} color={color.primary} />}
+      meta="3 minutes · type or talk"
+      done={false}
+      onPress={() => router.push("/flourishing-questions")}
+    />
+  )
+
   return (
     <View style={styles.todo}>
       <View style={styles.todoHead}>
@@ -162,7 +175,9 @@ function TodoList({ t, onCheckIn }: { t: TodayPlan; onCheckIn: (kind: CheckInKin
       <ProgressBar done={t.done} total={t.of} />
       {/* Done tasks sink to the bottom; Array.sort is stable, so each group
           keeps its day order. */}
-      <View style={styles.list}>{tasks.map(card).sort((x, y) => Number(!!x.props.done) - Number(!!y.props.done))}</View>
+      <View style={styles.list}>
+        {[...tasks.map(card), checkIn].sort((x, y) => Number(!!x.props.done) - Number(!!y.props.done))}
+      </View>
     </View>
   )
 }

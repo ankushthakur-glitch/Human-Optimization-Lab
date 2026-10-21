@@ -717,7 +717,7 @@ export function ScoreChips({
       </View>
       <View style={styles.ends}>
         <Text style={styles.endText}>1 {low}</Text>
-        <Text style={styles.endText}>10 {high}</Text>
+        <Text style={styles.endText}>{Math.max(...scores.map(Number))} {high}</Text>
       </View>
       {other.map((o) => (
         <Pressable
@@ -809,7 +809,7 @@ const styles = StyleSheet.create({
     borderColor: hairline.outline,
     borderRadius: 8,
     boxShadow: card.shadowXs,
-    ...Platform.select({ web: { outlineStyle: "none" } as unknown as TextStyle }),
+    ...Platform.select({ web: { outlineStyle: "none", scrollbarWidth: "none" } as unknown as TextStyle }),
   },
   tools: { flexDirection: "row", alignItems: "center", gap: 2 },
   // The field as a box when it holds tools: the input's edge and ground

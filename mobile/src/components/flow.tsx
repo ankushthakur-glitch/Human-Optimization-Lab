@@ -122,6 +122,7 @@ export function FlowScreen({
                   {!!description && <Text style={styles.holDescription}>{description}</Text>}
                 </View>
               )}
+              {titleInBar && !!description && <Text style={styles.holDescription}>{description}</Text>}
               {children}
             </View>
           </ScrollView>

@@ -113,7 +113,7 @@ export const CONCERNS = ["I feel tired all the time", "I want to lose weight", "
 export const FOLLOW_ON = {
   title: "You don't just have to watch this number.",
   body: "We can build a plan with you to work on it.",
-  action: "Build my personalized plan",
+  action: "Start my optimization plan",
 } as const
 
 /** The calm card in the thread when a free patient sends a question with

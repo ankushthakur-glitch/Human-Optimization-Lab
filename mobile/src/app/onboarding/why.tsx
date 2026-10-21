@@ -13,6 +13,7 @@ import { WHY_LABELS, WhyCard, whyValue, withWhy, type WhyKey } from "@/component
 import { Appear, AssistantGroup, ChatBar, MyBubble, Options, ScaleIntro, ScoreChips, StreamedText, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
 import { IconCheck, IconFace } from "@/components/icons"
 import { EMPTY, FLOURISH, TURNS, needsHelp, nextTurn, spoken, typedScale, type Answers, type Input, type Line, type Value } from "@/lib/conversation"
+import { RECORD_READY } from "@/app/onboarding/syncing"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { color, font, ink, space } from "@/lib/theme"
@@ -99,7 +100,7 @@ export default function WhyScreen() {
         return
       }
       await onboarding.save({ why: next, whyAt: at, step: "records" })
-      router.push("/onboarding/syncing")
+      router.push(RECORD_READY)
       return
     }
 

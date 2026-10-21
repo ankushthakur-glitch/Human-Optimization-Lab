@@ -51,7 +51,7 @@ export type Life = {
   focus?: DomainKey[]
   /** The symptoms that bother her most, chips she tapped and anything she typed or said. */
   symptoms?: string[]
-  /** How much each of those bothers her, 1 to 10, by symptom. */
+  /** How much each of those bothers her, 1 to 5, by symptom. */
   symptomRatings?: Record<string, number>
   /** She chose "Skip for now" on the intro. */
   skipped?: boolean

@@ -64,6 +64,21 @@ export function chosenTests(ids: string[] | undefined): BaselineTest[] {
   return ALL.filter((t) => on.has(t.id))
 }
 
+export type AddOnId = "sleep" | "smart"
+
+/** What /baseline offers beyond the three tests: the prices live here so
+    every screen that totals them agrees. Not part of the yearly test discount. */
+export const ADD_ONS: Record<AddOnId, { id: AddOnId; name: string; price: number }> = {
+  sleep: { id: "sleep", name: "Home Sleep Study", price: 299 },
+  smart: { id: "smart", name: "SMART program", price: 100 },
+}
+
+/** Her add-ons in the list's order: both until she turns one off. */
+export function chosenAddOns(ids: string[] | undefined) {
+  const on = ids ? new Set(ids) : null
+  return (Object.values(ADD_ONS) as (typeof ADD_ONS)[AddOnId][]).filter((a) => !on || on.has(a.id))
+}
+
 /** The ticked ids with one test flipped, to save back. */
 export function toggleTest(ids: string[] | undefined, id: BaselineTestId) {
   const on = new Set(chosenTests(ids).map((t) => t.id))
