@@ -14,8 +14,8 @@ import { color, font, ink, space } from "@/lib/theme"
 
 /* Setup's "Connect your health records" page, right after the authorization
    page and before "Updates about your care" (the consent texts). The 5 Oct 2026 call settled what HOL reads: the two
-   record systems, Epic MyChart and Oracle Health (lib/connections.ts), and
-   what each one shares. No devices, no wearables. Since 21 Oct 2026 Continue
+   record systems, Epic MyChart and Oracle Health (lib/connections.ts).
+   No devices, no wearables. Since 21 Oct 2026 Continue
    stays disabled until one system is connected, and connecting opens as a
    centred popup rather than the Connect tab's bottom sheet. */
 
@@ -47,7 +47,7 @@ export default function ConnectRecordsScreen() {
 }
 
 /** One record system: its name and who it serves, Connect (or when it
-    synced), and under it what it shares with Inlay. */
+    synced). */
 function Source({ source, onConnect }: { source: Source; onConnect: () => void }) {
   return (
     <Card style={styles.source}>
@@ -67,16 +67,6 @@ function Source({ source, onConnect }: { source: Source; onConnect: () => void }
           )
         }
       />
-      <View style={styles.data}>
-        <Text style={styles.dataLabel}>Shares</Text>
-        <View style={styles.chips}>
-          {source.data.map((d) => (
-            <View key={d} style={styles.chip}>
-              <Text style={styles.chipText}>{d}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
     </Card>
   )
 }
@@ -84,11 +74,6 @@ function Source({ source, onConnect }: { source: Source; onConnect: () => void }
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   source: { gap: space.item, backgroundColor: color.background, padding: space.card + 4 },
-  data: { gap: space.mark, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.border, paddingTop: space.item },
-  dataLabel: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: ink.tertiary },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: space.mark },
-  chip: { borderRadius: 16, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: color.primarySoft, borderWidth: StyleSheet.hairlineWidth, borderColor: color.primaryLine },
-  chipText: { fontFamily: font.medium, fontSize: 12, lineHeight: 16, color: ink.primary },
   synced: { flexDirection: "row", alignItems: "center", gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: color.ok },
   syncedText: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: ink.tertiary },

@@ -1,6 +1,6 @@
-/* The sample patient the prototype is built around: the same person the
-   patient invitation email in the web prototype is addressed to
-   (src/components/auth/invitees.ts). Sample data only, never a real patient. */
+/* The sample patient the prototype is built around: the same person as the
+   first sample patient in the web portal (src/components/practice/
+   practice-data.ts). Sample data only, never a real patient. */
 
 export const PATIENT = {
   firstName: "Olivia",
@@ -8,8 +8,7 @@ export const PATIENT = {
   email: "olivia.bennett@example.com",
   practice: "Harborview Longevity Clinic",
   practicePhone: "(858) 555-0100",
-  /** The one-time activation code printed in the invitation email. Must
-      match INVITEES.patient.activationCode in the web prototype. */
+  /** The one-time activation code the patient is sent with their invite. */
   activationCode: "731064",
 } as const
 

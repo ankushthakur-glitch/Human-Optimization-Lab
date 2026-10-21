@@ -8,7 +8,7 @@ import { keepTogether } from "@/components/care-gap"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { openMedicineByName } from "@/components/medicines"
 import { ASK_TILE, HeroRow, RecordGlyph, SparkleGlyph, UpgradeBanner, dotted } from "@/components/home-parts"
-import { CheckCircle, Pill, Warning } from "@/components/ph"
+import { Pill } from "@/components/ph"
 import { Block, CARD_RADIUS, Group, NeedsRow, Rise, Status, spokenDate } from "@/components/record-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { TrendTiles } from "@/components/trend-tile"
@@ -17,13 +17,12 @@ import { useExperience, useMarkers } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
 import { MEDICATIONS } from "@/lib/record"
 import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
-import { NEW_IN_RECORD_NOTE, caughtUp, comingUp, homeBanner, markSeen, needsTitle, todo, yourMedicines, type TodoItem } from "@/lib/todo"
+import { NEW_IN_RECORD_NOTE, comingUp, homeBanner, markSeen, todo, yourMedicines, type TodoItem } from "@/lib/todo"
 import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
 
 /* Home on the free record (FINAL-SPEC C.1), as the Figma "Hol" Home
    (40024634:963, 5 Oct 2026): the one status banner when something is
-   true; the red "3 things need you" banner, collapsed, which opens To do;
-   Your trends, a 2 by 2 grid of sparkline tiles; Upcoming; New in your
+   true; Your trends, a 2 by 2 grid of sparkline tiles; Upcoming; New in your
    record when an outside visit arrived; Your medicines; the teal Ask
    about your results banner. The Inlay score, the "checking" banner and
    the plan card left the home on 5 Oct 2026, at the user's word; the AI is metered in tokens now, so no question count.
@@ -70,8 +69,8 @@ export function FreeHome() {
   )
 }
 
-/** The record part of the free home, from Needs you to Ask about your
-    results. The upgrade banner only for a patient who can still upgrade:
+/** The record part of the free home, from Biological age to Ask about
+    your results; To do sits after Your medicines (21 Oct 2026). The upgrade banner only for a patient who can still upgrade:
     not a paused member, nor one whose plan is with Dr. Patel. Since 16 Oct
     2026 Your connections follows Needs you; since 19 Oct 2026 it holds
     her health records only, no devices. */
@@ -79,13 +78,13 @@ export function RecordSections({ onOpenAge }: { onOpenAge: () => void }) {
   const exp = useExperience().experience
   return (
     <View style={styles.page}>
-      <NeedsYou />
       <AgeCard onPress={onOpenAge} />
       <Trends />
       {exp !== "paused" && exp !== "member-review" && <UpgradeCard />}
       <Upcoming />
       <NewInRecord />
       <Medicines />
+      <ToDo />
       <AskRow />
     </View>
   )
@@ -101,43 +100,6 @@ const openToDo = () => openTab("/gaps", "home")
     (care-gap.ts keepTogether), which holds dates, times, names, places and
     "Reminder 2 of 3" whole and never leaves one short word on a line. */
 const together = (words?: string) => (words ? keepTogether(words) : undefined)
-
-/* --------------------------------------------------------- needs you -- */
-
-/** "3 pending actions to stay on track." Short enough for one line on a phone. */
-const pendingLine = (n: number) => `${n} pending ${n === 1 ? "action" : "actions"} to stay on track.`
-
-/** What needs her now (C.1.2, 3), as a collapsed muted red banner:
-    the count as the title, the pending line under it, and the whole banner
-    opens To do, where each item has its action. With nothing open, the
-    same banner says she is all caught up and opens what is next. */
-export function NeedsYou() {
-  const onboarding = useOnboarding()
-  const needs = todo(onboarding).needs
-
-  if (!needs.length) {
-    const next = caughtUp(onboarding)
-    const open = next.href ? () => router.push(next.href as Href) : openToDo
-    return (
-      <Rise at={1} id="home:needs">
-        <HeroRow icon={<CheckCircle size={18} color={color.primary} />} title={next.title} line={next.meta} onPress={open} />
-      </Rise>
-    )
-  }
-
-  return (
-    <Rise at={1} id="home:needs">
-      <HeroRow
-        icon={<Warning size={18} color={color.high} />}
-        tile={color.highTint}
-        alert
-        title={needsTitle(needs.length)}
-        line={pendingLine(needs.length)}
-        onPress={openToDo}
-      />
-    </Rise>
-  )
-}
 
 /* ---------------------------------------------------- biological age -- */
 
@@ -310,6 +272,35 @@ export function Medicines() {
             />
           ))}
           {!!meds.supplements && <Text style={styles.supplements}>{meds.supplements}</Text>}
+        </Group>
+      </Block>
+    </Rise>
+  )
+}
+
+/* -------------------------------------------------------------- to do -- */
+
+/** What needs her now (C.1.2, 3), low on the home since 21 Oct 2026 in
+    place of the red banner at the top: three at most, each opening where
+    she acts on it; See all opens To do. Nothing open, no section. */
+export function ToDo() {
+  const onboarding = useOnboarding()
+  const needs = todo(onboarding).needs
+  if (!needs.length) return null
+  return (
+    <Rise at={6} id="home:todo">
+      <Block title="To do" onSeeAll={openToDo}>
+        <Group>
+          {needs.slice(0, 3).map((item) => (
+            <NeedsRow
+              key={item.id}
+              icon={<RecordGlyph name={item.icon} />}
+              title={item.title}
+              meta={together(item.meta)}
+              tag={item.tag}
+              onPress={() => router.push(item.href as Href)}
+            />
+          ))}
         </Group>
       </Block>
     </Rise>

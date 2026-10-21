@@ -16,7 +16,7 @@ import {
   type BaselineTestId,
 } from "@/lib/baseline-tests"
 import { useOnboarding } from "@/lib/onboarding"
-import { card, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
+import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* Step 2 of the plan's set-up, "What your baseline needs": the tests and
    the program her plan calls for, each under the part of the plan that
@@ -275,13 +275,15 @@ const styles = StyleSheet.create({
     gap: space.item,
     padding: space.item,
     borderRadius: 12,
-    backgroundColor: surface.inset,
+    backgroundColor: color.primarySoft,
+    borderWidth: 1,
+    borderColor: color.primaryEdge,
   },
-  summaryText: { ...type.label, flex: 1, fontSize: 13, color: ink.secondary },
+  summaryText: { ...type.label, flex: 1, fontFamily: font.medium, fontSize: 13, color: color.primaryText },
   totalValue: {
     fontFamily: font.semibold,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 18,
+    lineHeight: 24,
     fontVariant: ["tabular-nums"],
-    color: ink.strong,
+    color: color.primaryText,
   },})

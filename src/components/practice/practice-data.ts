@@ -1630,8 +1630,8 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
   }
 })
 
-/* The first sample patient is Olivia Bennett, the patient the invitation
-   email and the patient app (mobile/) are built around, under Dr. Elise
+/* The first sample patient is Olivia Bennett, the patient the patient app
+   (mobile/) is built around, under Dr. Elise
    Harrington, so her record reads the same in the portal and the app. */
 export const OLIVIA_ID = PATIENTS[0].id
 PATIENTS[0] = {
@@ -1640,7 +1640,8 @@ PATIENTS[0] = {
   lastName: "Bennett",
   sex: "Female",
   dob: "1978-04-16",
-  email: INVITEES.patient.email,
+  /* Must match PATIENT.email in mobile/src/lib/patient.ts. */
+  email: "olivia.bennett@example.com",
   photo: patientHeadshot("Female", 0),
   providerId: "PR3132",
   locationId:

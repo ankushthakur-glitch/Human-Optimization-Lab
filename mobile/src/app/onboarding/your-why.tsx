@@ -46,7 +46,7 @@ export default function YourWhyScreen() {
           ))}
         </Group>
         <View style={styles.note} accessible accessibilityRole="text">
-          <Info size={18} color={ink.strong} />
+          <Info size={18} color={color.blue} />
           <Text style={styles.noteText}>
             None of this asks you to buy anything. The record is yours whether or not you ever take an optimization plan.
           </Text>
@@ -58,12 +58,12 @@ export default function YourWhyScreen() {
 
 const styles = StyleSheet.create({
   stack: { gap: space.section },
-  /* A quiet grey note: outlined info icon, then the sentence, top aligned. */
+  /* A quiet light blue note: outlined info icon, then the sentence, top aligned. */
   note: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: space.lead,
-    backgroundColor: color.inputFill,
+    backgroundColor: color.blueTint,
     borderRadius: touchRadius,
     paddingHorizontal: 16,
     paddingVertical: 14,

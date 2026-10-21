@@ -11,8 +11,8 @@ import {
 } from "@/components/auth/invitees"
 
 /* The invitation as it is sent, to a Super Admin, a practice's clinic
-   manager, or a patient invited to the mobile app: a logo header, the letter,
-   and a contact footer for whoever sent it. Laid out from the approved email
+   manager or a provider: a logo header, the letter, and a contact footer
+   for whoever sent it. Laid out from the approved email
    template (Figma "Main Container" for web, "Email Temp" for mobile), recoloured
    from its blue to the brand teal.
 
@@ -35,12 +35,6 @@ const PRIMARY_TINT = "#005350"
 function Name({ children }: { children: React.ReactNode }) {
   return <span className="font-semibold text-[#171717]">{children}</span>
 }
-
-/* A patient's app link, as the prototype follows it: the patient app's web
-   build, served by this site at /app, opening on activation with the email
-   filled in. The live link will be a store redirect that does the same. */
-const appLink = (email: string) =>
-  `/app/activate?email=${encodeURIComponent(email)}`
 
 /* Long values (an email address, a website) drop to their own line as a
    whole, and only wrap at a natural point: after a slash or before the @,
@@ -68,24 +62,11 @@ function Arrow() {
   )
 }
 
-/* The button the letter is built around. Staff land on the portal's activate
-   page; a patient on the app's, with their email filled in. Drawn as a styled
-   link, which is how a button is made in an email. */
+/* The button the letter is built around: it opens the portal's activate
+   page. Drawn as a styled link, which is how a button is made in an email. */
 function ActivateButton({ invitee }: { invitee: InviteeKey }) {
   const className =
     "inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-[15px] font-semibold text-white no-underline"
-  if (invitee === "patient") {
-    return (
-      <a
-        href={appLink(INVITEES.patient.email)}
-        className={className}
-        style={{ backgroundColor: PRIMARY }}
-      >
-        Activate account
-        <Arrow />
-      </a>
-    )
-  }
   return (
     <Link
       href={withInvitee("/screens/login/activate", invitee)}
@@ -95,81 +76,6 @@ function ActivateButton({ invitee }: { invitee: InviteeKey }) {
       Activate account
       <Arrow />
     </Link>
-  )
-}
-
-/* Store buttons for the patient invitation read on a phone, drawn in the
-   stores' black badge style, each mark as on its official badge: Apple's in
-   white, Google Play's in its four colours. Both follow the same app link for
-   now; the live email points each at its own store listing. */
-
-const STORES = [
-  {
-    name: "App Store",
-    caption: "Download on the",
-    paths: [
-      {
-        d: "M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701",
-      },
-    ],
-  },
-  {
-    name: "Google Play",
-    caption: "GET IT ON",
-    paths: [
-      /* right, yellow */
-      {
-        d: "M22.018 13.298l-3.919 2.218-3.515-3.493 3.543-3.521 3.891 2.202a1.49 1.49 0 0 1 0 2.594z",
-        color: "#FBBC04",
-      },
-      /* left, blue */
-      {
-        d: "M1.337.924a1.486 1.486 0 0 0-.112.568v21.017c0 .217.045.419.124.6l11.155-11.087L1.337.924z",
-        color: "#4285F4",
-      },
-      /* top, green */
-      {
-        d: "M13.544 10.989l3.258-3.238L3.45.195a1.466 1.466 0 0 0-.946-.179l11.04 10.973z",
-        color: "#34A853",
-      },
-      /* bottom, red */
-      {
-        d: "M13.544 13.056l-11 10.933c.298.036.612-.016.906-.183l13.324-7.54-3.23-3.21z",
-        color: "#EA4335",
-      },
-    ],
-  },
-]
-
-function StoreButtons({ email }: { email: string }) {
-  return (
-    <span className="mt-2 flex flex-wrap gap-2">
-      {STORES.map(({ name, caption, paths }) => (
-        <a
-          key={name}
-          href={appLink(email)}
-          aria-label={`${caption} ${name}`}
-          className="flex h-11 items-center gap-2 rounded-lg bg-black pr-3.5 pl-3 text-white"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="size-6 shrink-0"
-            fill="currentColor"
-            aria-hidden
-          >
-            {paths.map(({ d, color }: { d: string; color?: string }) => (
-              <path key={d} d={d} fill={color} />
-            ))}
-          </svg>
-          <span className="flex flex-col leading-none">
-            <span className="text-[10px]">{caption}</span>
-            <span className="mt-0.5 text-[17px] font-medium tracking-tight">
-              {name}
-            </span>
-          </span>
-        </a>
-      ))}
-    </span>
   )
 }
 
@@ -188,7 +94,6 @@ export function InviteEmailTemplate({
   const provider = key === "provider"
   /* Practice staff get help with the portal, not the admin console. */
   const staff = manager || provider
-  const patient = key === "patient"
   const { sender } = invitee
   const contacts = [
     { icon: "/email/envelope.svg", text: sender.email, link: true },
@@ -217,19 +122,7 @@ export function InviteEmailTemplate({
 
       <div className={web ? "px-7 py-5" : "px-4 py-5"}>
         <p className={cn(!web && "mb-[1.6em]")}>Dear {invitee.firstName},</p>
-        {patient ? (
-          <>
-            <p>
-              <Name>{sender.name}</Name>, your provider at{" "}
-              <Name>{invitee.practice}</Name>, has invited you to the{" "}
-              {BRAND_NAME} app.
-            </p>
-            <p className="mb-[1.6em]">
-              Your account is ready. Download the app on your phone and activate
-              your account to get started.
-            </p>
-          </>
-        ) : provider ? (
+        {provider ? (
           <>
             <p>
               <Name>{sender.name}</Name>, clinic manager at{" "}
@@ -264,13 +157,6 @@ export function InviteEmailTemplate({
               platform settings in one place.
             </p>
           </>
-        )}
-
-        {patient && (
-          <div className="mb-[1.6em]">
-            <p>First, get the {BRAND_NAME} app on your phone:</p>
-            <StoreButtons email={invitee.email} />
-          </div>
         )}
 
         {/* The activation ticket: who it admits on the stub, then the code
@@ -347,7 +233,7 @@ export function InviteEmailTemplate({
         </p>
         <p>
           If you have any questions or need help accessing{" "}
-          {patient ? "the app" : staff ? "the portal" : "the admin console"},
+          {staff ? "the portal" : "the admin console"},
           please contact <Name>{sender.name}</Name> at{" "}
           <span
             className="underline underline-offset-2"

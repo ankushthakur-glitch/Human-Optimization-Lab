@@ -223,11 +223,7 @@ const EXTRA = [
     ["Audit log", "security/audit-log"],
   ]),
 
-  // A patient signs in on the mobile app; only the invitation is on the web.
-  ...authFor(PATIENT, "patient", [
-    ["Invitation email (desktop)", "/screens/login/invite-email"],
-    ["Invitation email (mobile)", "/screens/login/invite-email/mobile"],
-  ]),
+  // A patient has no web invitation: they activate on the mobile app.
   // The app's signed-out screens, served from public/app. Set password and
   // home sit behind the app's session, so they have no link of their own.
   [PATIENT, AUTH, "Activate account (mobile app)", "/app/activate", -1],

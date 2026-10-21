@@ -1,6 +1,6 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { Pressable, StyleSheet, Text, View } from "react-native"
+import { StyleSheet, Text, View } from "react-native"
 
 import { goalOf, GOALS } from "@/components/goal-list"
 import { usePlanList, usePlanMatches } from "@/components/plan-match"
@@ -20,22 +20,20 @@ import { color, ink, space, type } from "@/lib/theme"
    as "Added", and a tap in the list takes it off again. Continue opens step 2, the tests her record is missing (/baseline). */
 
 type Icon = typeof Heart
-type Row = { key: string; name: string; says: string; Icon: Icon; hue: Hue; from: "record" | "goal" | "life" | "added"; more?: string }
+type Row = { key: string; name: string; says: string; Icon: Icon; hue: Hue; from: "record" | "goal" | "life" | "added" }
 
 /** What her answers to the life questions add: a plan of its own, with the
-    line she said and a word on what it is. */
-const LIFE_PLANS: { name: string; Icon: Icon; says: string; more: string }[] = [
+    line she said. */
+const LIFE_PLANS: { name: string; Icon: Icon; says: string }[] = [
   {
     name: "Sleep restoration",
     Icon: Moon,
     says: "You said you wake at three and cannot get back off",
-    more: "A home sleep study shows whether something like disrupted breathing is behind the waking, so the plan can target the cause.",
   },
   {
     name: "SMART stress & resiliency",
     Icon: Lightning,
     says: "You said you are snapping at everyone",
-    more: "SMART is the Benson-Henry Institute's Stress Management and Resiliency Training, an eight-week program with short guided practices at home.",
   },
 ]
 
@@ -63,7 +61,6 @@ export default function GoalPlansScreen() {
   const onboarding = useOnboarding()
   const { matches } = usePlanMatches()
   const [added, setAdded] = React.useState<string[]>(() => onboarding.addedPlans ?? [])
-  const [open, setOpen] = React.useState<string | null>(null)
 
   const rows: Row[] = matches.map((m) => ({ key: `record-${m.kind}-${m.markerId}`, name: m.name, says: m.matchedOn.replace(/^Matched on /, ""), Icon: RECORD_ICON[m.kind], hue: planHue(SHORT_NAME[m.kind]), from: "record" }))
   const covered = new Set<string>(matches.map((m) => SHORT_NAME[m.kind]))
@@ -79,7 +76,7 @@ export default function GoalPlansScreen() {
   for (const p of LIFE_PLANS) {
     if (covered.has(p.name)) continue
     covered.add(p.name)
-    rows.push({ key: `life-${p.name}`, name: p.name, says: p.says, Icon: p.Icon, hue: planHue(p.name), from: "life", more: p.more })
+    rows.push({ key: `life-${p.name}`, name: p.name, says: p.says, Icon: p.Icon, hue: planHue(p.name), from: "life" })
   }
   const picked = rows.slice(0, MAX)
   const pickedNames = picked.map((r) => r.name)
@@ -110,19 +107,7 @@ export default function GoalPlansScreen() {
           <Text style={styles.name}>{r.name}</Text>
           <Text style={styles.says}>{r.says}</Text>
         </View>
-        {r.more && (
-          <Pressable
-            onPress={() => setOpen(open === r.key ? null : r.key)}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: open === r.key }}
-            accessibilityLabel={`More about ${r.name}`}
-            hitSlop={8}
-          >
-            <Text style={styles.moreLink}>{open === r.key ? "Less ›" : "More ›"}</Text>
-          </Pressable>
-        )}
       </View>
-      {r.more && open === r.key && <Text style={styles.moreText}>{r.more}</Text>}
     </Card>
   )
 
@@ -159,8 +144,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.item, paddingHorizontal: space.rowX },
   rowCard: { gap: space.inline, paddingVertical: space.item, paddingHorizontal: space.rowX },
   rowTop: { flexDirection: "row", alignItems: "center", gap: space.lead },
-  moreLink: { ...type.label, color: color.primary },
-  moreText: { ...type.label, color: ink.secondary },
   words: { flex: 1, gap: 2 },
   name: { ...type.title, color: ink.strong },
   says: { ...type.label, color: ink.secondary },
