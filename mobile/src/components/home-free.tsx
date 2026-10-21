@@ -1,6 +1,9 @@
 import { router, type Href } from "expo-router"
+import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
+import { BiologicalAgeCard } from "@/components/biological-age-card"
+import { BiologicalAgeSheet } from "@/components/biological-age-sheet"
 import { keepTogether } from "@/components/care-gap"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { openMedicineByName } from "@/components/medicines"
@@ -41,16 +44,27 @@ import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
 export function FreeHome() {
   const onboarding = useOnboarding()
   const banner = homeBanner(onboarding)
+  // The biological age sheet slides up over the tab bar, so it is the tab
+  // screen's overlay; its button opens the plan options.
+  const [age, setAge] = React.useState(false)
+  const start = () => {
+    setAge(false)
+    openTab("/plan", "home")
+  }
 
   return (
-    <TabScreen tab="home" header={<HomeHeader variant="free" />}>
+    <TabScreen
+      tab="home"
+      header={<HomeHeader variant="free" />}
+      overlay={age && <BiologicalAgeSheet onStart={start} onClose={() => setAge(false)} />}
+    >
       <View style={styles.page}>
         {!!banner && (
           <Rise at={0} id="home:banner">
             <StatusBanner variant="free" tab="home" />
           </Rise>
         )}
-        <RecordSections />
+        <RecordSections onOpenAge={() => setAge(true)} />
       </View>
     </TabScreen>
   )
@@ -61,11 +75,12 @@ export function FreeHome() {
     not a paused member, nor one whose plan is with Dr. Patel. Since 16 Oct
     2026 Your connections follows Needs you; since 19 Oct 2026 it holds
     her health records only, no devices. */
-export function RecordSections() {
+export function RecordSections({ onOpenAge }: { onOpenAge: () => void }) {
   const exp = useExperience().experience
   return (
     <View style={styles.page}>
       <NeedsYou />
+      <AgeCard onPress={onOpenAge} />
       <YourConnections />
       <Trends />
       {exp !== "paused" && exp !== "member-review" && <UpgradeCard />}
@@ -121,6 +136,18 @@ export function NeedsYou() {
         line={pendingLine(needs.length)}
         onPress={openToDo}
       />
+    </Rise>
+  )
+}
+
+/* ---------------------------------------------------- biological age -- */
+
+/** The teal Biological age card (20 Oct 2026, the client's reference),
+    after Needs you; it opens the sheet with what is driving it. */
+function AgeCard({ onPress }: { onPress: () => void }) {
+  return (
+    <Rise at={2} id="home:age">
+      <BiologicalAgeCard onPress={onPress} hint="Opens what is driving it" />
     </Rise>
   )
 }
