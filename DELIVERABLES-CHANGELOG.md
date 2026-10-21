@@ -739,3 +739,38 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Complete your profile (health questions)
 - Removed: Provider Portal / Reports / Reports
 - Removed: Provider Portal / Schedule / Schedule
+
+## 21-Oct-2026
+
+- Merge origin/main into P1
+- Biological Age card on the dashboard
+- Onboarding flow rework, connect-records and your-why screens, plan and home updates
+- Merge branch 'main' of https://github.com/ankushthakur-glitch/Human-Optimization-Lab
+- Merge remote-tracking branch 'origin/P1'
+- Remove the patient invitation email; patients activate in the app
+- Rebuild patient app web export with latest mobile changes
+- Baseline info button sits beside the test name
+- Checkout matches the baseline plan
+- Added: Patient Portal / Patient Onboarding / Connect your health records
+- Added: Patient Portal / Patient Onboarding / Updates about your care: texts and signature
+- Added: Patient Portal / Patient Onboarding / Your why
+- Added: Patient Portal / Patient Onboarding / What matters most
+- Added: Patient Portal / Patient Onboarding / Record ready
+- Added: Patient Portal / Mobile App: Home / Your biological age
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 1: what your plan would work on
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 2: what your baseline needs
+- Removed: Patient Portal / Login and Authentication / Invitation email (desktop)
+- Removed: Patient Portal / Login and Authentication / Invitation email (mobile)
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 1: goals
+- Removed: Patient Portal / Patient Onboarding / Consent: texts and signature
+- Removed: Patient Portal / Patient Onboarding / Life questions: intro
+- Removed: Patient Portal / Patient Onboarding / Life questions: one question
+- Removed: Patient Portal / Patient Onboarding / Life questions: three to improve
+- Removed: Patient Portal / Patient Onboarding / Record tour: upcoming appointments
+- Removed: Patient Portal / Patient Onboarding / Record tour: new medication
+- Removed: Patient Portal / Patient Onboarding / Record tour: trending the wrong way
+- Removed: Patient Portal / Patient Onboarding / Your biological age
+- Removed: Patient Portal / Patient Onboarding / What is driving it
+- Removed: Patient Portal / Patient Onboarding / Welcome: AI plan match
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 1: plans updated from your goals
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 2: establish your baseline
