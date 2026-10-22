@@ -6,7 +6,7 @@ import Svg, { Circle } from "react-native-svg"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import { Barbell, BowlFood, Brain, CaretRight, Check, Flame, Moon, PersonSimpleRun, Play } from "@/components/ph"
-import { Block, Card, Rise } from "@/components/record-kit"
+import { Block, Card, Heading, Rise } from "@/components/record-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { reviewDay, type ReviewDay } from "@/lib/daily-review"
 import {
@@ -26,7 +26,7 @@ import {
   type Meal,
 } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { chart, color, ink, space, type } from "@/lib/theme"
+import { chart, color, hairline, ink, space, type } from "@/lib/theme"
 import { formatNumber } from "@/lib/trends"
 
 /* A paid member's Home, the Paid Patient Dashboard (22 Oct 2026), top to
@@ -94,21 +94,23 @@ function YesterdayStrip({ day }: { day: ReviewDay }) {
   const scored = day.status === "complete"
   const words = scored ? `${day.met} of ${day.total} goals met` : "Not every meal was logged"
   return (
-    <Card style={styles.strip}>
-      <Ring percent={scored ? (day.met / day.total) * 100 : 0} size={24} stroke={3} />
-      <Text style={styles.stripText} numberOfLines={1}>
-        <Text style={styles.stripLead}>Yesterday: </Text>
-        {words}
-      </Text>
-      <Pressable
-        onPress={() => openTab("/plan", "home")}
-        accessibilityRole="link"
-        hitSlop={8}
-        style={({ pressed }) => [styles.link, pressed && styles.pressed]}
-      >
-        <Text style={styles.linkText}>Review in Plan</Text>
-        <CaretRight size={12} color={color.primary} />
-      </Pressable>
+    <Card>
+      <View style={styles.strip}>
+        <Ring percent={scored ? (day.met / day.total) * 100 : 0} size={28} stroke={4} />
+        <Text style={styles.stripText} numberOfLines={1}>
+          <Text style={styles.stripLead}>Yesterday: </Text>
+          <Text style={styles.stripWords}>{words}</Text>
+        </Text>
+        <Pressable
+          onPress={() => openTab("/plan", "home")}
+          accessibilityRole="link"
+          hitSlop={8}
+          style={({ pressed }) => [styles.link, pressed && styles.pressed]}
+        >
+          <Text style={styles.linkText}>Review in Plan</Text>
+          <CaretRight size={12} color={color.primary} />
+        </Pressable>
+      </View>
     </Card>
   )
 }
@@ -333,26 +335,34 @@ function TodaysMeals({ t }: { t: TodayPlan }) {
     .sort((a, b) => MEAL_SLOTS.findIndex((m) => m.id === a.slot) - MEAL_SLOTS.findIndex((m) => m.id === b.slot))
   const next = t.actions.find((a) => a.id === "meal")?.slot
   return (
-    <Block
-      title="Today's meals"
-      variant="title"
-      link={{ label: "Log a meal", onPress: () => router.push({ pathname: "/log-meal", params: next ? { slot: next } : {} }) }}
-    >
+    <Card style={styles.mealsCard}>
+      <Heading
+        title="Today's meals"
+        variant="title"
+        link={{ label: "Log a meal", onPress: () => router.push({ pathname: "/log-meal", params: next ? { slot: next } : {} }) }}
+      />
       {meals.length ? (
         <View style={styles.meals}>
-          {meals.map((m) => (
-            <MealCard key={m.id} meal={m} />
+          {meals.map((m, i) => (
+            <View key={m.id} style={styles.mealRow}>
+              <View style={styles.rail}>
+                <View style={[styles.railLine, i === 0 && styles.railHidden]} />
+                <View style={styles.railDot} />
+                <View style={[styles.railLine, i === meals.length - 1 && styles.railHidden]} />
+              </View>
+              <MealCard meal={m} />
+            </View>
           ))}
         </View>
       ) : (
-        <Card style={styles.mealCard}>
+        <View style={styles.mealCard}>
           <View style={styles.fill}>
             <Text style={type.title}>Nothing logged yet</Text>
             <Text style={type.label}>{t.actions.find((a) => a.id === "meal")?.detail ?? "Log your first meal"}</Text>
           </View>
-        </Card>
+        </View>
       )}
-    </Block>
+    </Card>
   )
 }
 
@@ -366,7 +376,7 @@ function MealCard({ meal }: { meal: Meal }) {
     .join(" · ")
   const slot = MEAL_SLOTS.find((m) => m.id === meal.slot)?.name ?? "Meal"
   return (
-    <Card style={styles.mealCard} accessibilityLabel={`${slot}, ${mealName(meal)}, ${facts}, logged`}>
+    <View style={[styles.mealCard, styles.fill]} accessible accessibilityLabel={`${slot}, ${mealName(meal)}, ${facts}, logged`}>
       <View style={styles.fill}>
         <Text style={styles.slot}>{slot.toUpperCase()}</Text>
         <Text style={type.title}>{mealName(meal)}</Text>
@@ -376,7 +386,7 @@ function MealCard({ meal }: { meal: Meal }) {
         <Check size={10} weight="bold" color={ink.good} />
         <Text style={styles.loggedText}>LOGGED</Text>
       </View>
-    </Card>
+    </View>
   )
 }
 
@@ -418,9 +428,19 @@ const styles = StyleSheet.create({
   fill: { flex: 1, minWidth: 0, gap: space.line },
   pressed: { opacity: 0.7 },
 
-  strip: { flexDirection: "row", alignItems: "center", gap: space.item },
+  strip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.item,
+    padding: space.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: color.primaryEdge,
+    backgroundColor: color.primarySoft,
+  },
   stripText: { ...type.label, flex: 1 },
-  stripLead: { ...type.metaStrong },
+  stripLead: { ...type.title, color: ink.strong },
+  stripWords: { ...type.label, color: color.primaryText },
   link: { flexDirection: "row", alignItems: "center", gap: space.line },
   linkText: { ...type.seeAll },
 
@@ -453,8 +473,23 @@ const styles = StyleSheet.create({
   startPressed: { backgroundColor: color.primaryPressed },
   startText: { ...type.title, color: ink.onColor },
 
-  meals: { gap: space.item },
-  mealCard: { flexDirection: "row", alignItems: "center", gap: space.item },
+  mealsCard: { gap: space.item },
+  meals: { marginVertical: -5 },
+  mealRow: { flexDirection: "row", alignItems: "stretch", gap: space.inline, paddingVertical: 5 },
+  rail: { width: 20, alignItems: "center", marginVertical: -5 },
+  railLine: { flex: 1, width: 2, backgroundColor: color.primaryEdge },
+  railHidden: { backgroundColor: "transparent" },
+  railDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: color.primary },
+  mealCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.item,
+    padding: space.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+    backgroundColor: color.background,
+  },
   slot: { ...type.caption, color: ink.tertiary, letterSpacing: 0.6 },
   logged: {
     flexDirection: "row",
