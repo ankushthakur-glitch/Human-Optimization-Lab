@@ -586,6 +586,7 @@ export function PatientsScreen() {
       id: "risk",
       header: "Risk",
       className: "w-px !pr-0",
+      sticky: "left",
       sortValue: riskRank,
       cell: (p) => <RiskIcon patient={p} />,
     },
@@ -593,6 +594,7 @@ export function PatientsScreen() {
       id: "id",
       header: "Patient ID",
       className: `${ID_CELL} !pl-3`,
+      sticky: "left",
       sortValue: (p) => p.id,
       cell: (p) => p.id,
     },
@@ -600,6 +602,7 @@ export function PatientsScreen() {
       id: "name",
       header: "Name",
       className: "max-w-[14rem]",
+      sticky: "left",
       sortValue: fullName,
       cell: (p) => (
         <PersonCell
@@ -699,6 +702,7 @@ export function PatientsScreen() {
       id: "actions",
       header: "Actions",
       className: "w-10 text-right",
+      sticky: "right",
       cell: (p) => (
         <RowMenu label={`Actions for ${fullName(p)}`}>
           <DropdownMenuItem onClick={() => router.push(patientHref(p.id))}>
