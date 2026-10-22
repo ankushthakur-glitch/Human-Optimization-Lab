@@ -1,13 +1,34 @@
-import { router, useFocusEffect } from "expo-router"
+import { router, useFocusEffect, type Href } from "expo-router"
 import * as React from "react"
 import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 import Svg, { Circle } from "react-native-svg"
 
+import { BiologicalAgeSheet } from "@/components/biological-age-sheet"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
-import { Barbell, BowlFood, Brain, CaretRight, Check, Flame, Moon, PersonSimpleRun, Play } from "@/components/ph"
-import { Block, Card, Heading, Rise } from "@/components/record-kit"
+import { RecordGlyph } from "@/components/home-parts"
+import {
+  ArrowDownRight,
+  Barbell,
+  BowlFood,
+  Brain,
+  CaretRight,
+  ChatText,
+  Check,
+  DownloadSimple,
+  Flame,
+  MagnifyingGlass,
+  Microphone,
+  Moon,
+  PersonSimpleRun,
+  Play,
+  Scales,
+  Scan,
+  Sparkle,
+} from "@/components/ph"
+import { Block, Card, Group, HUE, NeedsRow, Rise } from "@/components/record-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
+import { biologicalAge } from "@/lib/biological-age"
 import { reviewDay, type ReviewDay } from "@/lib/daily-review"
 import {
   LIGHTS_OUT,
@@ -15,18 +36,23 @@ import {
   MEMBER,
   SMART_TODAY,
   WALK,
+  addDays,
   dayFrom,
+  dayLabel,
   daysBetween,
   dayOfAt,
   mealsOn,
   mealName,
   profileOf,
+  progress,
   today,
   totalsOf,
   type Meal,
+  type MealSlot,
 } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { chart, color, hairline, ink, space, type } from "@/lib/theme"
+import { bookingOf, orderHref, scheduleHref } from "@/lib/todo"
 import { formatNumber } from "@/lib/trends"
 
 /* A paid member's Home, the Paid Patient Dashboard (22 Oct 2026), top to
@@ -38,15 +64,20 @@ import { formatNumber } from "@/lib/trends"
    3. Today's goals: the ring of goals done, then calories, protein,
       exercise, the SMART session and lights out, each updating as she logs;
    4. Today's workout: the session and Start workout;
-   5. Today's meals: what she has logged, and Log a meal.
-   The to do list, energy balance, trends and upcoming that the previous
-   home held live on the To do, Plan and Record tabs. */
+   5. Today's meals: the plan first, what she has logged and what is still
+      planned (client slide 38, "Home, scrolled down");
+   6. Log a meal: one box, four ways in, so nothing has to be typed;
+   7. Your progress: weight and biological age side by side, each opening
+      its page in Plan;
+   8. To do: the free app's preview, now with the weekly check-in.
+   Energy balance, trends and upcoming live on the Plan and Record tabs. */
 
 const WORKOUT_PHOTO = require("../../assets/images/exercise-demo.jpg")
 
 export function OptimizedHome() {
   const onboarding = useOnboarding()
   const [sheet, setSheet] = React.useState<CheckInKind>()
+  const [age, setAge] = React.useState(false)
   // The goals read the clock (what is on track, what is next), so they are
   // redone on every pull down and every time the home comes back into view.
   const [, setTick] = React.useState(0)
@@ -64,7 +95,18 @@ export function OptimizedHome() {
       tab="home"
       onRefresh={refresh}
       header={<HomeHeader line={`Day ${planDay} of your plan`} />}
-      overlay={sheet && <CheckInSheet kind={sheet} onClose={() => setSheet(undefined)} />}
+      overlay={
+        (sheet && <CheckInSheet kind={sheet} onClose={() => setSheet(undefined)} />) ||
+        (age && (
+          <BiologicalAgeSheet
+            onStart={() => {
+              setAge(false)
+              openTab("/plan", "home")
+            }}
+            onClose={() => setAge(false)}
+          />
+        ))
+      }
     >
       <View style={styles.page}>
         <StatusBanner variant="member" tab="home" />
@@ -80,6 +122,15 @@ export function OptimizedHome() {
         <Rise at={4} id="home:meals">
           <TodaysMeals t={t} />
         </Rise>
+        <Rise at={5} id="home:log">
+          <LogAMeal slot={t.actions.find((a) => a.id === "meal")?.slot} />
+        </Rise>
+        <Rise at={5} id="home:progress">
+          <YourProgress onAge={() => setAge(true)} />
+        </Rise>
+        <Rise at={5} id="home:todo">
+          <ToDoPreview now={now} />
+        </Rise>
       </View>
     </TabScreen>
   )
@@ -94,24 +145,22 @@ function YesterdayStrip({ day }: { day: ReviewDay }) {
   const scored = day.status === "complete"
   const words = scored ? `${day.met} of ${day.total} goals met` : "Not every meal was logged"
   return (
-    <Card>
-      <View style={styles.strip}>
-        <Ring percent={scored ? (day.met / day.total) * 100 : 0} size={28} stroke={4} />
-        <Text style={styles.stripText} numberOfLines={1}>
-          <Text style={styles.stripLead}>Yesterday: </Text>
-          <Text style={styles.stripWords}>{words}</Text>
-        </Text>
-        <Pressable
-          onPress={() => openTab("/plan", "home")}
-          accessibilityRole="link"
-          hitSlop={8}
-          style={({ pressed }) => [styles.link, pressed && styles.pressed]}
-        >
-          <Text style={styles.linkText}>Review in Plan</Text>
-          <CaretRight size={12} color={color.primary} />
-        </Pressable>
-      </View>
-    </Card>
+    <View style={styles.strip}>
+      <Ring percent={scored ? (day.met / day.total) * 100 : 0} size={28} stroke={4} />
+      <Text style={styles.stripText} numberOfLines={1}>
+        <Text style={styles.stripLead}>Yesterday: </Text>
+        <Text style={styles.stripWords}>{words}</Text>
+      </Text>
+      <Pressable
+        onPress={() => openTab("/plan", "home")}
+        accessibilityRole="link"
+        hitSlop={8}
+        style={({ pressed }) => [styles.link, pressed && styles.pressed]}
+      >
+        <Text style={styles.linkText}>Review in Plan</Text>
+        <CaretRight size={12} color={color.primary} />
+      </Pressable>
+    </View>
   )
 }
 
@@ -328,40 +377,54 @@ function TodaysWorkout({ t, onWalk }: { t: TodayPlan; onWalk: () => void }) {
 
 /* -------------------------------------------------------- today's meals -- */
 
+/** Which of the plan's ideas stands for each meal still to log. */
+const PLANNED: Partial<Record<MealSlot, number>> = { breakfast: 2, lunch: 0, dinner: 1 }
+
+/** The plan's idea for a meal: its name, and "34 g protein, 11 g fiber,
+    420 kcal" read back as the card's facts. */
+function plannedMeal(slot: MealSlot, ideas: readonly { name: string; line: string }[]) {
+  const idea = ideas[PLANNED[slot] ?? 0] ?? ideas[0]
+  const kcal = idea.line.match(/(\d+) kcal/)?.[1]
+  const protein = idea.line.match(/(\d+) g protein/)?.[1]
+  return { name: idea.name, facts: [kcal && `${kcal} kcal`, protein && `${protein} g protein`].filter(Boolean).join(" · ") }
+}
+
 function TodaysMeals({ t }: { t: TodayPlan }) {
   const onboarding = useOnboarding()
-  const meals = mealsOn(onboarding, t.day)
-    .slice()
-    .sort((a, b) => MEAL_SLOTS.findIndex((m) => m.id === a.slot) - MEAL_SLOTS.findIndex((m) => m.id === b.slot))
-  const next = t.actions.find((a) => a.id === "meal")?.slot
+  const logged = mealsOn(onboarding, t.day)
+  const ideas = profileOf(onboarding).diet.ideas
+  // The plan first (client slide 38): breakfast, lunch and dinner always show,
+  // logged with what she ate, or planned with the plan's idea. A snack she
+  // logged sits among them, in the day's order.
+  const slots = MEAL_SLOTS.filter((m) => m.main || logged.some((l) => l.slot === m.id))
   return (
-    <Card style={styles.mealsCard}>
-      <Heading
-        title="Today's meals"
-        variant="title"
-        link={{ label: "Log a meal", onPress: () => router.push({ pathname: "/log-meal", params: next ? { slot: next } : {} }) }}
-      />
-      {meals.length ? (
-        <View style={styles.meals}>
-          {meals.map((m, i) => (
-            <View key={m.id} style={styles.mealRow}>
-              <View style={styles.rail}>
-                <View style={[styles.railLine, i === 0 && styles.railHidden]} />
-                <View style={styles.railDot} />
-                <View style={[styles.railLine, i === meals.length - 1 && styles.railHidden]} />
-              </View>
-              <MealCard meal={m} />
-            </View>
-          ))}
-        </View>
-      ) : (
-        <View style={styles.mealCard}>
-          <View style={styles.fill}>
-            <Text style={type.title}>Nothing logged yet</Text>
-            <Text style={type.label}>{t.actions.find((a) => a.id === "meal")?.detail ?? "Log your first meal"}</Text>
-          </View>
-        </View>
-      )}
+    <Block title="Today's meals" variant="title" link={{ label: "Today's plan", onPress: () => router.push("/diet") }}>
+      <View style={styles.meals}>
+        {slots.map((m) => {
+          const meal = logged.find((l) => l.slot === m.id)
+          return meal ? <MealCard key={m.id} meal={meal} /> : <PlannedCard key={m.id} slot={m.id} idea={plannedMeal(m.id, ideas)} />
+        })}
+      </View>
+    </Block>
+  )
+}
+
+function PlannedCard({ slot, idea }: { slot: MealSlot; idea: { name: string; facts: string } }) {
+  const name = MEAL_SLOTS.find((m) => m.id === slot)?.name ?? "Meal"
+  return (
+    <Card
+      style={styles.mealCard}
+      onPress={() => router.push({ pathname: "/log-meal", params: { slot } })}
+      accessibilityLabel={`${name}, ${idea.name}, ${idea.facts}, planned. Log it`}
+    >
+      <View style={styles.fill}>
+        <Text style={styles.slot}>{name.toUpperCase()}</Text>
+        <Text style={type.title}>{idea.name}</Text>
+        {!!idea.facts && <Text style={type.label}>{idea.facts}</Text>}
+      </View>
+      <View style={styles.planned}>
+        <Text style={styles.plannedText}>PLANNED</Text>
+      </View>
     </Card>
   )
 }
@@ -376,7 +439,7 @@ function MealCard({ meal }: { meal: Meal }) {
     .join(" · ")
   const slot = MEAL_SLOTS.find((m) => m.id === meal.slot)?.name ?? "Meal"
   return (
-    <View style={[styles.mealCard, styles.fill]} accessible accessibilityLabel={`${slot}, ${mealName(meal)}, ${facts}, logged`}>
+    <Card style={styles.mealCard} accessibilityLabel={`${slot}, ${mealName(meal)}, ${facts}, logged`}>
       <View style={styles.fill}>
         <Text style={styles.slot}>{slot.toUpperCase()}</Text>
         <Text style={type.title}>{mealName(meal)}</Text>
@@ -386,7 +449,145 @@ function MealCard({ meal }: { meal: Meal }) {
         <Check size={10} weight="bold" color={ink.good} />
         <Text style={styles.loggedText}>LOGGED</Text>
       </View>
-    </View>
+    </Card>
+  )
+}
+
+/* ----------------------------------------------------------- log a meal -- */
+
+/** One box, four ways in (slide 38): the meal database, scanning the food,
+    saying it, importing from another app. They open Log a meal the way
+    Plan's Today tab does, so nothing has to be typed. */
+function LogAMeal({ slot }: { slot?: MealSlot }) {
+  const open = (via?: "type" | "scan" | "voice") =>
+    router.push({ pathname: "/log-meal", params: { ...(slot ? { slot } : {}), ...(via ? { via } : {}) } })
+  const ways = [
+    { label: "Meal database", note: "Search and add", Icon: MagnifyingGlass, hue: HUE.blue, onPress: () => open("type") },
+    { label: "Scan food", note: "Scan the barcode", Icon: Scan, hue: HUE.teal, onPress: () => open("scan") },
+    { label: "Say it", note: "Tell us what you ate", Icon: Microphone, hue: HUE.violet, onPress: () => open("voice") },
+    { label: "Import", note: "From another app", Icon: DownloadSimple, hue: HUE.amber, onPress: () => open() },
+  ]
+  return (
+    <Card style={styles.logBox}>
+      <View style={styles.logHead}>
+        <Text style={styles.logTitle} accessibilityRole="header">
+          Log a meal
+        </Text>
+        <Text style={type.label}>choose any way</Text>
+      </View>
+      <View style={styles.ways}>
+        {ways.map(({ label, note, Icon, hue, onPress }) => (
+          <Pressable
+            key={label}
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={`${label}. ${note}`}
+            style={({ pressed }) => [styles.way, pressed && styles.pressed]}
+          >
+            <View style={[styles.wayTile, { backgroundColor: hue.tint }]}>
+              <Icon size={16} color={hue.ink} />
+            </View>
+            <View style={styles.fill}>
+              <Text style={type.title}>{label}</Text>
+              <Text style={type.caption} numberOfLines={1}>
+                {note}
+              </Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+      <Pressable onPress={() => router.push("/assistant")} accessibilityRole="link" style={({ pressed }) => [styles.askLine, pressed && styles.pressed]}>
+        <Sparkle size={12} color={color.primary} />
+        <Text style={type.label}>
+          Or just tell Ask Inlay: <Text style={styles.askQuote}>"had the chicken bowl for lunch."</Text>
+        </Text>
+      </Pressable>
+    </Card>
+  )
+}
+
+/* -------------------------------------------------------- your progress -- */
+
+/** Weight and biological age as a glance, side by side. Each opens its page:
+    the weight on Progress in Plan, the biological age on its own sheet,
+    whose button leads on into Plan. */
+function YourProgress({ onAge }: { onAge: () => void }) {
+  const onboarding = useOnboarding()
+  const p = progress(onboarding)
+  const age = biologicalAge()
+  const lost = Math.abs(p.weight.change)
+  return (
+    <Block title="Your progress" variant="title" link={{ label: "Plan", onPress: () => openTab("/plan", "home") }}>
+      <View style={styles.tiles}>
+        <Pressable
+          onPress={() => router.push("/progress")}
+          accessibilityRole="button"
+          accessibilityLabel={`Weight ${formatNumber(p.weight.now, 1)} pounds, ${p.weight.change <= 0 ? "down" : "up"} ${formatNumber(lost, 1)} pounds since day 1. Opens your progress`}
+          style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
+        >
+          <View style={styles.tileHead}>
+            <Scales size={14} color={ink.secondary} />
+            <Text style={type.label}>Weight</Text>
+          </View>
+          <Text style={styles.tileValue}>
+            {formatNumber(p.weight.now, 1)}
+            <Text style={type.unit}> lb</Text>
+          </Text>
+          <View style={styles.tileNote}>
+            {p.weight.change <= 0 && <ArrowDownRight size={12} weight="bold" color={ink.good} />}
+            <Text style={[type.label, { color: ink.good }]}>{`${formatNumber(lost, 1)} lb since day 1`}</Text>
+          </View>
+        </Pressable>
+        <Pressable
+          onPress={onAge}
+          accessibilityRole="button"
+          accessibilityLabel={`Biological age ${age.biological}. Retest in January. Opens what is driving it`}
+          style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
+        >
+          <View style={styles.tileHead}>
+            <Sparkle size={14} color={ink.secondary} />
+            <Text style={type.label}>Biological age</Text>
+          </View>
+          <Text style={styles.tileValue}>{age.biological}</Text>
+          <Text style={type.label}>Retest in January</Text>
+        </Pressable>
+      </View>
+    </Block>
+  )
+}
+
+/* ---------------------------------------------------------------- to do -- */
+
+/** The To do preview the free app carries, now with the weekly check-in
+    first. The check-in opens the flourishing and SMART questions; the repeat
+    A1c and lipid panel opens its booking, or the order once it is booked. */
+function ToDoPreview({ now }: { now: Date }) {
+  const onboarding = useOnboarding()
+  const sunday = addDays(now, (7 - now.getDay()) % 7 || 7)
+  const labs = bookingOf("labs-nov", onboarding, now)
+  return (
+    <Block title="To do" variant="title" link={{ label: "See all", onPress: () => openTab("/gaps", "home") }}>
+      <Group>
+        <NeedsRow
+          icon={<ChatText size={16} color={color.primary} />}
+          title="Weekly check-in"
+          meta={`Due ${dayLabel(sunday)} · 3 minutes`}
+          action={{ label: "Start", onPress: () => router.push("/flourishing-questions") }}
+          onPress={() => router.push("/flourishing-questions")}
+        />
+        <NeedsRow
+          icon={<RecordGlyph name="labs" />}
+          title="Repeat A1c and lipid panel"
+          meta={labs ? `Booked · ${dayLabel(labs.date)}${labs.time ? `, ${labs.time}` : ""}` : "Not booked · Due Nov 12"}
+          action={
+            labs
+              ? { label: "View", onPress: () => router.push(orderHref("labs-nov") as Href) }
+              : { label: "Book", onPress: () => router.push(scheduleHref("labs-nov") as Href) }
+          }
+          onPress={() => router.push(orderHref("labs-nov") as Href)}
+        />
+      </Group>
+    </Block>
   )
 }
 
@@ -439,7 +640,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.primarySoft,
   },
   stripText: { ...type.label, flex: 1 },
-  stripLead: { ...type.title, color: ink.strong },
+  stripLead: { ...type.title, fontSize: 13, lineHeight: 18, color: ink.strong },
   stripWords: { ...type.label, color: color.primaryText },
   link: { flexDirection: "row", alignItems: "center", gap: space.line },
   linkText: { ...type.seeAll },
@@ -473,23 +674,8 @@ const styles = StyleSheet.create({
   startPressed: { backgroundColor: color.primaryPressed },
   startText: { ...type.title, color: ink.onColor },
 
-  mealsCard: { gap: space.item },
-  meals: { marginVertical: -5 },
-  mealRow: { flexDirection: "row", alignItems: "stretch", gap: space.inline, paddingVertical: 5 },
-  rail: { width: 20, alignItems: "center", marginVertical: -5 },
-  railLine: { flex: 1, width: 2, backgroundColor: color.primaryEdge },
-  railHidden: { backgroundColor: "transparent" },
-  railDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: color.primary },
-  mealCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.item,
-    padding: space.card,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: hairline.edge,
-    backgroundColor: color.background,
-  },
+  meals: { gap: space.item },
+  mealCard: { flexDirection: "row", alignItems: "center", gap: space.item },
   slot: { ...type.caption, color: ink.tertiary, letterSpacing: 0.6 },
   logged: {
     flexDirection: "row",
@@ -501,4 +687,46 @@ const styles = StyleSheet.create({
     backgroundColor: color.okTint,
   },
   loggedText: { ...type.tag, color: ink.good },
+  planned: {
+    paddingHorizontal: space.inline,
+    paddingVertical: space.line,
+    borderRadius: 999,
+    backgroundColor: color.primarySoft,
+  },
+  plannedText: { ...type.tag, color: color.primaryText },
+
+  logBox: { gap: space.item },
+  logHead: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
+  logTitle: { ...type.section, color: color.primaryText },
+  ways: { flexDirection: "row", flexWrap: "wrap", gap: space.item },
+  way: {
+    flexBasis: "47%",
+    flexGrow: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.inline,
+    paddingVertical: space.item,
+    paddingHorizontal: space.inline,
+    borderRadius: 10,
+    backgroundColor: color.background,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+  },
+  wayTile: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  askLine: { flexDirection: "row", alignItems: "center", gap: space.inline },
+  askQuote: { ...type.label, color: color.primaryText },
+
+  tiles: { flexDirection: "row", gap: space.item },
+  tile: {
+    flex: 1,
+    gap: space.stack,
+    padding: space.card,
+    borderRadius: 8,
+    backgroundColor: color.background,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+  },
+  tileHead: { flexDirection: "row", alignItems: "center", gap: space.stack },
+  tileValue: { ...type.section, fontSize: 24, lineHeight: 30, fontVariant: ["tabular-nums"] },
+  tileNote: { flexDirection: "row", alignItems: "center", gap: space.stack },
 })

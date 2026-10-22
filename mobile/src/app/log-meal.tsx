@@ -75,8 +75,11 @@ export default function LogMealScreen() {
   const profile = profileOf(s)
   const ids = profile.goals.map((g) => g.id).filter((id) => id !== "calories")
 
-  // The plan's Today tab opens straight on a way in: "scan" or "type".
-  const [sheet, setSheet] = React.useState<"voice" | "type" | undefined>(() => (!editing && params.via === "type" ? "type" : undefined))
+  // Home and the plan's Today tab open straight on a way in: "scan", "type"
+  // or "voice" (Say it).
+  const [sheet, setSheet] = React.useState<"voice" | "type" | undefined>(() =>
+    !editing && (params.via === "type" || params.via === "voice") ? params.via : undefined,
+  )
 
   const toCapture = () => setStep({ at: "capture" })
   const leave = () => (router.canGoBack() ? router.back() : router.navigate("/"))
