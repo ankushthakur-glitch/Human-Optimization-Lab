@@ -52,7 +52,7 @@ function symptomsFrom(text: string) {
     .slice(0, SYMPTOM_COUNT)
 }
 
-const EXAMPLE = "e.g., irritability, sadness, anxiety."
+const EXAMPLE = "e.g., back pain, poor sleep, anxiety."
 const MAX_SCORE = 10
 const SCORES = Array.from({ length: MAX_SCORE }, (_, i) => String(i + 1))
 const asked = (symptom: string) => `How would you rate your ${symptom.toLowerCase()}?`

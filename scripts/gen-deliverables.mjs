@@ -238,8 +238,9 @@ function settingsPages(portal, base, subs) {
 }
 
 /** The patient app's screens, linked plainly (the demo seed links were
-    removed 16 Oct 2026). A signed-in screen opens once the sample patient
-    has signed in on that browser; otherwise the app shows sign in. */
+    removed 16 Oct 2026). Each link opens its own screen as the sample
+    patient (mobile/src/lib/storage.ts); the bare /app starts at
+    activation, so Home is /app?home=1. */
 function patientApp() {
   const at = (to) => `/app${to}`
   const ONBOARDING = "Patient Onboarding"
@@ -260,7 +261,7 @@ function patientApp() {
     [ONBOARDING, "Record building", at("/onboarding/syncing")],
     [ONBOARDING, "What matters most", at("/onboarding/life")],
     [ONBOARDING, "Record ready", at("/onboarding/syncing?ready=1")],
-    [HOME, "Home", at("")],
+    [HOME, "Home", at("?home=1")],
     [HOME, "Your biological age", at("?age=1")],
     [HOME, "Notifications", at("/notifications")],
     [TODO, "To do tab", at("/gaps")],
