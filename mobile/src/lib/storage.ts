@@ -35,7 +35,8 @@ if (Platform.OS === "web" && typeof localStorage !== "undefined") {
             tier: "optimization",
             programs: ["weight"],
             startedAt: "2026-05-03T00:00:00.000Z",
-            approvedAt: "2026-05-18T00:00:00.000Z",
+            // Seven days ago, so the home reads "Day 8 of your plan".
+            approvedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
             card: "Visa ending 4242",
             billing: "monthly",
             renewalConsentAt: "2026-05-03T00:00:00.000Z",

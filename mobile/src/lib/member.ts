@@ -1072,6 +1072,12 @@ export const BP_CHECK = {
   how: ["Sit with your feet flat and your arm resting at heart height.", "Take two readings, a minute apart.", "Enter both numbers, top number first."],
 } as const
 
+/** The SMART stress and resiliency session and the evening cut off on the
+    member home's goals (22 Oct 2026, sample data until they come from the
+    server): the session counts once done, lights out is the bedtime goal. */
+export const SMART_TODAY = { session: 8, minutes: 12, done: true } as const
+export const LIGHTS_OUT = { by: "10:30 PM", hour: 22, minute: 30 } as const
+
 /* ------------------------------------------------------------ profiles -- */
 
 /** The plan's sample profile: Olivia's weight, blood sugar and heart plan,

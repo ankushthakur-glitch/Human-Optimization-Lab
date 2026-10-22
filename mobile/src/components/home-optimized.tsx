@@ -1,379 +1,437 @@
 import { router, useFocusEffect } from "expo-router"
 import * as React from "react"
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
+import { Image, Pressable, StyleSheet, Text, View } from "react-native"
+import Svg, { Circle } from "react-native-svg"
 
-import { ScoreRing, formatNumber } from "@/components/charts"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
-import { EnergyBalance } from "@/components/energy-balance"
-import { Upcoming } from "@/components/home-free"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
-import { Barbell, BowlFood, Bone, CaretRight, ChatText, Check, Drop, Flame, Heartbeat, PersonSimpleRun, PersonSimpleWalk, Scales } from "@/components/ph"
+import { Barbell, BowlFood, Brain, CaretRight, Check, Flame, Moon, PersonSimpleRun, Play, Target } from "@/components/ph"
+import { Block, Card, Rise } from "@/components/record-kit"
+import { TabScreen, openTab } from "@/components/tab-bar"
+import { reviewDay, type ReviewDay } from "@/lib/daily-review"
 import {
-  Block,
-  Card,
-  ProgressBar,
-  Rise,
-} from "@/components/record-kit"
-import { TabScreen } from "@/components/tab-bar"
-import { TrendCard } from "@/components/trend-tile"
-import { reviewDay, type GoalDay, type ReviewDay, type ReviewGoalId } from "@/lib/daily-review"
-import { useMarkers } from "@/lib/experience"
-import { clockOf, dayOfAt, localDay, today, type TodayAction } from "@/lib/member"
+  LIGHTS_OUT,
+  MEAL_SLOTS,
+  MEMBER,
+  SMART_TODAY,
+  WALK,
+  dayFrom,
+  daysBetween,
+  dayOfAt,
+  mealsOn,
+  mealName,
+  profileOf,
+  today,
+  totalsOf,
+  todayFocus,
+  type Meal,
+} from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { card, chart, color, hairline, ink, space, type } from "@/lib/theme"
-import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
-import { keepEnd } from "@/lib/words"
+import { chart, color, ink, space, type } from "@/lib/theme"
+import { formatNumber } from "@/lib/trends"
 
-/* An Optimization member's home, five sections in this order (13 Oct 2026):
-   1. To do: the checklist she works through: the walk, the meal, the
-      exercise, the weigh in and the blood pressure each open their screen
-      or sheet (the tracker hero was removed 14 Oct 2026);
-   2. Energy balance: energy out minus food in, and the past seven days
-      (added 14 Oct 2026; every paid plan, shown once yesterday is fully logged);
-   3. Yesterday's goals: the score and the four goal tiles the client
-      approved (12 Oct 2026), which open the full review;
-   4. Your trends: her results as a sideways strip of graphs;
-   5. Upcoming: what is coming next, last because it is the furthest ahead.
-   Only what the care plan decisions cover: no step counts, no wearables
-   (a later phase). Medicines and new visits live on the Record tab. */
+/* A paid member's Home, the Paid Patient Dashboard (22 Oct 2026), top to
+   bottom as the client approved it:
+   1. the pinned header: her photo, the greeting and "Day 8 of your plan",
+      the bell;
+   2. yesterday's strip: how many of yesterday's goals she met, and Review
+      in Plan;
+   3. Today's goals: the ring of goals done, then calories, protein,
+      exercise, the SMART session and lights out, each updating as she logs;
+   4. the day's one coaching line;
+   5. Today's workout: the session and Start workout;
+   6. Today's meals: what she has logged, and Log a meal.
+   The to do list, energy balance, trends and upcoming that the previous
+   home held live on the To do, Plan and Record tabs. */
+
+const WORKOUT_PHOTO = require("../../assets/images/exercise-demo.jpg")
 
 export function OptimizedHome() {
   const onboarding = useOnboarding()
   const [sheet, setSheet] = React.useState<CheckInKind>()
-  // The to-do reads the clock (what is next, what is late), so it is redone on
-  // every pull down and every time the home comes back into view.
+  // The goals read the clock (what is on track, what is next), so they are
+  // redone on every pull down and every time the home comes back into view.
   const [, setTick] = React.useState(0)
   const refresh = React.useCallback(() => setTick((n) => n + 1), [])
   useFocusEffect(refresh)
-  const t = today(onboarding)
-  const day = reviewDay(onboarding, 1)
+
+  const now = new Date()
+  const t = today(onboarding, now)
+  const yesterday = reviewDay(onboarding, 1, now)
+  const started = dayOfAt(onboarding.membership?.approvedAt ?? onboarding.membership?.startedAt ?? MEMBER.start)
+  const planDay = Math.max(1, daysBetween(dayFrom(started), now) + 1)
 
   return (
     <TabScreen
       tab="home"
       onRefresh={refresh}
-      header={<HomeHeader line="Here's your day." />}
+      header={<HomeHeader line={`Day ${planDay} of your plan`} />}
       overlay={sheet && <CheckInSheet kind={sheet} onClose={() => setSheet(undefined)} />}
     >
       <View style={styles.page}>
         <StatusBanner variant="member" tab="home" />
-        <Rise at={1} id="home:todo">
-          <TodoList t={t} onCheckIn={setSheet} />
+        <Rise at={1} id="home:yesterday">
+          <YesterdayStrip day={yesterday} />
         </Rise>
-        {day.energy && (
-          <Rise at={2} id="home:energy">
-            <EnergyBalance day={day} onDetails={openReview} />
-          </Rise>
-        )}
-        <Rise at={3} id="home:goals">
-          <YesterdayGoals day={day} />
+        <Rise at={2} id="home:goals">
+          <TodaysGoals t={t} yesterday={yesterday} now={now} />
         </Rise>
-        <Rise at={4} id="home:trends">
-          <Block title="Your trends" onSeeAll={() => router.push("/results")}>
-            <TrendStrip />
-          </Block>
+        <Rise at={3} id="home:note">
+          <CoachingNote text={coachingLine(t, todayFocus(onboarding, now))} />
         </Rise>
-        <Upcoming at={5} />
+        <Rise at={4} id="home:workout">
+          <TodaysWorkout t={t} onWalk={() => setSheet("walk")} />
+        </Rise>
+        <Rise at={5} id="home:meals">
+          <TodaysMeals t={t} />
+        </Rise>
       </View>
     </TabScreen>
   )
 }
 
 type TodayPlan = ReturnType<typeof today>
+type Store = ReturnType<typeof useOnboarding>
 
-const openReview = () => router.push("/review")
+/* ----------------------------------------------------- yesterday's strip -- */
 
-/* ------------------------------------------------------ today's to-do -- */
-
-/** Today's own reading of a kind (her weigh in, her blood pressure). */
-function todayEntry(s: ReturnType<typeof useOnboarding>, kind: "weight" | "bp") {
-  const day = localDay()
-  return (s.entries ?? []).filter((e) => e.kind === kind && dayOfAt(e.at) === day).at(-1)
+function YesterdayStrip({ day }: { day: ReviewDay }) {
+  const scored = day.status === "complete"
+  const words = scored ? `${day.met} of ${day.total} goals met` : "Not every meal was logged"
+  return (
+    <Card style={styles.strip}>
+      <Ring percent={scored ? (day.met / day.total) * 100 : 0} size={24} stroke={3} />
+      <Text style={styles.stripText} numberOfLines={1}>
+        <Text style={styles.stripLead}>Yesterday: </Text>
+        {words}
+      </Text>
+      <Pressable
+        onPress={() => openTab("/plan", "home")}
+        accessibilityRole="link"
+        hitSlop={8}
+        style={({ pressed }) => [styles.link, pressed && styles.pressed]}
+      >
+        <Text style={styles.linkText}>Review in Plan</Text>
+        <CaretRight size={12} color={color.primary} />
+      </Pressable>
+    </Card>
+  )
 }
 
-function TodoList({ t, onCheckIn }: { t: TodayPlan; onCheckIn: (kind: CheckInKind) => void }) {
-  const onboarding = useOnboarding()
-  const tasks = t.actions.filter((a) => a.counts)
-  const walk = onboarding.exercises?.[t.day]?.walk
+/* ------------------------------------------------------- today's goals -- */
 
-  const card = (a: TodayAction) => {
-    const facts = keepEnd(`${a.time} · ${a.detail}`)
-    if (a.id === "walk")
-      return (
-        <TaskCard
-          key={a.id}
-          title={a.title}
-          icon={<PersonSimpleWalk size={18} color={color.primary} />}
-          meta={walk ? `Done at ${clockOf(new Date(walk.at))}` : facts}
-          done={!!walk}
-          onPress={() => onCheckIn("walk")}
-        />
-      )
-    if (a.id === "meal")
-      return (
-        <TaskCard
-          key={a.id}
-          title={a.title}
-          icon={<BowlFood size={18} color={color.primary} />}
-          meta={a.progress?.words ?? facts}
-          done={a.status === "done"}
-          onPress={() => router.push({ pathname: "/log-meal", params: { slot: a.slot } })}
-        />
-      )
-    if (a.id === "strength")
-      return (
-        <TaskCard
-          key={a.id}
-          title={a.title}
-          icon={<Barbell size={18} color={color.primary} />}
-          meta={a.status === "progress" && a.progress ? a.progress.words : facts}
-          done={a.status === "done"}
-          onPress={() => router.push("/exercise")}
-        />
-      )
-    const kind = a.id === "bp" ? "bp" : "weight"
-    const entry = todayEntry(onboarding, kind)
-    const reading = entry && (kind === "bp" ? `${entry.value}/${entry.value2}` : `${entry.value.toFixed(1)} lb`)
-    return (
-      <TaskCard
-        key={a.id}
-        title={a.title}
-        icon={kind === "bp" ? <Heartbeat size={18} color={color.primary} /> : <Scales size={18} color={color.primary} />}
-        meta={entry ? `${reading} at ${clockOf(new Date(entry.at))}` : facts}
-        done={!!entry}
-        onPress={() => onCheckIn(kind)}
-      />
-    )
+type Standing = "done" | "track" | "open"
+
+type GoalRow = {
+  id: string
+  name: string
+  icon: React.ReactNode
+  tint: string
+  hue: string
+  value?: string
+  unit?: string
+  /** 0 to 1; no bar when undefined. */
+  share?: number
+  note: string
+  standing: Standing
+  /** Shown instead of the value, e.g. "Done". */
+  word?: string
+}
+
+/** The share of the waking day gone (7 AM to 9 PM), how far along a
+    nutrient should be right now to be on track. */
+const dayShare = (now: Date) => Math.max(0, Math.min((now.getHours() + now.getMinutes() / 60 - 7) / 14, 1))
+
+function goalRows(s: Store, t: TodayPlan, yesterday: ReviewDay, now: Date): GoalRow[] {
+  const profile = profileOf(s)
+  const totals = totalsOf(mealsOn(s, t.day))
+  const calGoal = profile.goals.find((g) => g.id === "calories")
+  const proGoal = profile.goals.find((g) => g.id === "protein")
+  const exGoal = yesterday.goals.find((g) => g.goal.id === "exercise")?.goal
+  const pace = dayShare(now)
+  const rows: GoalRow[] = []
+
+  if (calGoal) {
+    const eaten = Math.round(totals.calories?.value ?? 0)
+    const over = eaten > calGoal.target
+    rows.push({
+      id: "calories",
+      name: "Calories",
+      icon: <Flame size={18} color={color.blue} />,
+      tint: color.blueTint,
+      hue: color.blue,
+      value: formatNumber(eaten),
+      unit: ` / ${formatNumber(calGoal.target)} kcal`,
+      share: Math.min(eaten / calGoal.target, 1),
+      note: over
+        ? `${formatNumber(eaten - calGoal.target)} kcal over today's limit`
+        : profile.energy
+          ? "On track for a 300 kcal deficit"
+          : `${formatNumber(calGoal.target - eaten)} kcal left today`,
+      standing: over ? "open" : "track",
+    })
   }
 
-  // The flourishing and SMART check-in (21 Oct 2026): one more row in the
-  // list, the same card as the others, last in the day's order. It opens the
-  // short questions and is not part of the day's count above.
-  const checkIn = (
-    <TaskCard
-      key="check-in"
-      title="Flourishing & SMART check-in"
-      icon={<ChatText size={18} color={color.primary} />}
-      meta="3 minutes · type or talk"
-      done={false}
-      onPress={() => router.push("/flourishing-questions")}
-    />
-  )
+  if (proGoal) {
+    const had = Math.round(totals.protein?.value ?? 0)
+    const left = proGoal.target - had
+    const met = left <= 0
+    rows.push({
+      id: "protein",
+      name: "Protein",
+      icon: <BowlFood size={18} color={color.amber} />,
+      tint: color.amberTint,
+      hue: color.amber,
+      value: formatNumber(had),
+      unit: ` / ${formatNumber(proGoal.target)} g`,
+      share: Math.min(had / proGoal.target, 1),
+      note: met ? "Goal reached" : `${formatNumber(left)} g to go`,
+      standing: met ? "done" : had >= proGoal.target * pace * 0.8 ? "track" : "open",
+    })
+  }
 
+  // Exercise counts the session and the walk once each is done today.
+  const session = t.session
+  const strength = t.actions.find((a) => a.id === "strength")
+  const walk = t.actions.find((a) => a.id === "walk")
+  const minutes =
+    (strength?.status === "done" && session ? session.minutes : 0) + (walk?.status === "done" ? WALK.minutes : 0)
+  const exTarget = exGoal?.target ?? 45
+  rows.push({
+    id: "exercise",
+    name: "Exercise",
+    icon: <PersonSimpleRun size={18} color={color.primary} />,
+    tint: color.primarySoft,
+    hue: chart.data,
+    value: formatNumber(minutes),
+    unit: ` / ${formatNumber(exTarget)} min`,
+    share: Math.min(minutes / exTarget, 1),
+    note: minutes >= exTarget ? "Goal reached" : strength ? `Workout planned for ${strength.time}` : `Walk planned for ${walk?.time ?? "this evening"}`,
+    standing: minutes >= exTarget ? "done" : "open",
+  })
+
+  rows.push({
+    id: "smart",
+    name: "SMART session",
+    icon: <Brain size={18} color={color.primary} />,
+    tint: color.primarySoft,
+    hue: chart.data,
+    share: SMART_TODAY.done ? 1 : 0,
+    word: SMART_TODAY.done ? "Done" : "To do",
+    note: `Session ${SMART_TODAY.session} · ${SMART_TODAY.minutes} minutes`,
+    standing: SMART_TODAY.done ? "done" : "open",
+  })
+
+  const late = now.getHours() * 60 + now.getMinutes() > LIGHTS_OUT.hour * 60 + LIGHTS_OUT.minute
+  rows.push({
+    id: "lights",
+    name: "Lights out",
+    icon: <Moon size={18} color={color.violet} />,
+    tint: color.violetTint,
+    hue: color.violet,
+    value: LIGHTS_OUT.by,
+    unit: undefined,
+    note: "Tonight",
+    standing: late ? "open" : "track",
+  })
+  return rows
+}
+
+function TodaysGoals({ t, yesterday, now }: { t: TodayPlan; yesterday: ReviewDay; now: Date }) {
+  const rows = goalRows(useOnboarding(), t, yesterday, now)
+  const done = rows.filter((r) => r.standing === "done").length
+  const track = rows.filter((r) => r.standing === "track").length
   return (
-    <View style={styles.todo}>
-      <View style={styles.todoHead}>
-        <View style={styles.fill}>
-          <Text style={styles.todoTitle} accessibilityRole="header">
-            Today's To-do
-          </Text>
-          <Text style={styles.todoSub}>Small steps toward your daily health goals.</Text>
+    <Card style={styles.goals}>
+      <View style={styles.goalsHead}>
+        <View>
+          <Ring percent={(done / rows.length) * 100} size={44} stroke={4} label={`${done}/${rows.length}`} />
         </View>
-        <ScoreRing percent={t.of ? (t.done / t.of) * 100 : 0} size={52} stroke={5} of="Today's To-do done" />
+        <View style={styles.fill}>
+          <Text style={styles.goalsTitle} accessibilityRole="header">
+            Today's goals
+          </Text>
+          <Text style={type.label}>{`${done} done, ${track} on track · updates as you log`}</Text>
+        </View>
       </View>
-      <ProgressBar done={t.done} total={t.of} />
-      {/* Done tasks sink to the bottom; Array.sort is stable, so each group
-          keeps its day order. */}
-      <View style={styles.list}>
-        {[...tasks.map(card), checkIn].sort((x, y) => Number(!!x.props.done) - Number(!!y.props.done))}
+      {rows.map((r) => (
+        <GoalLine key={r.id} row={r} />
+      ))}
+    </Card>
+  )
+}
+
+function GoalLine({ row }: { row: GoalRow }) {
+  return (
+    <View
+      style={styles.goal}
+      accessible
+      accessibilityLabel={[row.name, row.word ?? `${row.value ?? ""}${row.unit ?? ""}`, row.note].join(", ")}
+    >
+      <View style={[styles.goalTile, { backgroundColor: row.tint }]}>{row.icon}</View>
+      <View style={styles.fill}>
+        <View style={styles.goalTop}>
+          <Text style={type.title}>{row.name}</Text>
+          {row.word ? (
+            <Text style={styles.goalWord}>{row.word}</Text>
+          ) : (
+            <Text style={type.value}>
+              {row.unit === undefined && <Text style={type.unit}>{"by "}</Text>}
+              {row.value}
+              {!!row.unit && <Text style={type.unit}>{row.unit}</Text>}
+            </Text>
+          )}
+        </View>
+        {row.share !== undefined && (
+          <View style={[styles.bar, { backgroundColor: row.hue === chart.data ? chart.dataTrack : chart.track }]}>
+            <View style={[styles.barFill, { width: `${row.share * 100}%`, backgroundColor: row.hue }]} />
+          </View>
+        )}
+        <Text style={type.label}>{row.note}</Text>
       </View>
     </View>
   )
 }
 
-/** One task as a card in a list: a round icon tile, the title and its
-    facts, and a chevron on the right (13 Oct 2026: no radio button). A done
-    task keeps the neutral card (14 Oct 2026): its tile shows a smaller tick,
-    the title is struck through and its facts say when. Every card opens its
-    screen or sheet, the walk's included, and the task is done once logged
-    there. */
-function TaskCard({
-  icon,
-  title,
-  meta,
-  done,
-  onPress,
-}: {
-  icon: React.ReactNode
-  title: string
-  meta?: string
-  done?: boolean
-  onPress: () => void
-}) {
+/* -------------------------------------------------------- coaching note -- */
+
+/** The day's one coaching line: what kind of day it is, then the food
+    focus, in the plan's own words. */
+function coachingLine(t: TodayPlan, focus: string) {
+  const session = t.session
+  const lead = session ? (session.id.startsWith("strength") || session.id === "balance-a" ? "Strength day." : "Training day.") : "Rest day."
+  return `${lead} ${focus.replace(/^Today's focus: /, "").replace(/^./, (c) => c.toUpperCase())}${/[.!?]$/.test(focus) ? "" : "."}`
+}
+
+function CoachingNote({ text }: { text: string }) {
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={[title, meta, done === undefined ? undefined : done ? "done" : "to do"].filter(Boolean).join(", ")}
-      style={({ pressed }) => [styles.task, done && styles.taskDone, pressed && styles.pressed]}
-    >
-      <View style={[styles.taskTile, done && styles.taskTileDone]}>{done ? <Check size={15} weight="bold" color={ink.tertiary} /> : icon}</View>
-      <View style={styles.fill}>
-        <Text style={[styles.taskTitle, done && styles.taskTitleDone, done && styles.struck]} numberOfLines={2}>
-          {title}
-        </Text>
-        {!!meta && (
-          <Text style={[styles.taskMeta, done && styles.struck]} numberOfLines={3}>
-            {meta}
-          </Text>
-        )}
-      </View>
-      <CaretRight size={16} color={card.chevron} />
-    </Pressable>
+    <View style={styles.note} accessible accessibilityLabel={text}>
+      <Target size={14} color={color.primary} style={styles.noteIcon} />
+      <Text style={[type.metaStrong, styles.noteText]}>{text}</Text>
+    </View>
   )
 }
 
-/* ------------------------------------------------------ yesterday's goals -- */
+/* ------------------------------------------------------ today's workout -- */
 
-/** The four cards on the home, in this order (14 Oct 2026). */
-const HOME_GOALS: ReviewGoalId[] = ["calcium", "protein", "exercise", "water"]
-
-function YesterdayGoals({ day }: { day: ReviewDay }) {
-  const goals = HOME_GOALS.map((id) => day.goals.find((g) => g.goal.id === id)).filter((g): g is GoalDay => !!g)
+function TodaysWorkout({ t, onWalk }: { t: TodayPlan; onWalk: () => void }) {
+  const session = t.session
+  const strength = t.actions.find((a) => a.id === "strength")
+  const walk = t.actions.find((a) => a.id === "walk")
+  const done = strength?.status === "done"
+  const title = session ? (session.id === "balance-a" ? session.title : `${session.title}, ${session.focus.toLowerCase()}`) : "Rest day, an easy walk"
+  const meta = session ? `${session.minutes + WALK.minutes} minutes · ${strength?.time}` : `${WALK.minutes} minutes · ${walk?.time ?? ""}`
   return (
-    <Block title="Yesterday's goals" link={{ label: "Details", onPress: openReview }}>
-      <View style={styles.tiles}>
-        {goals.map((g) => (
-          <GoalTile key={g.goal.id} goal={g} />
-        ))}
-      </View>
+    <Block title="Today's workout" variant="title" link={{ label: "Full plan", onPress: () => openTab("/today", "home") }}>
+      <Card style={styles.workout}>
+        <View style={styles.workoutTop}>
+          <Image source={WORKOUT_PHOTO} style={styles.photo} accessibilityIgnoresInvertColors accessibilityLabel="" />
+          <View style={styles.fill}>
+            <Text style={type.title}>{title}</Text>
+            <Text style={type.label}>{meta}</Text>
+            <Text style={[type.meta, styles.workoutHint]}>
+              {session ? "Do it as written, do part, or ask for an easier version" : "Walk after dinner, 20 minutes, brisk"}
+            </Text>
+          </View>
+        </View>
+        <Pressable
+          onPress={session ? () => router.push("/exercise") : onWalk}
+          accessibilityRole="button"
+          accessibilityLabel={session ? (done ? "View workout" : "Start workout") : "Log your walk"}
+          style={({ pressed }) => [styles.start, pressed && styles.startPressed]}
+        >
+          {session ? <Play size={14} weight="fill" color={ink.onColor} /> : <Barbell size={16} color={ink.onColor} />}
+          <Text style={styles.startText}>{session ? (done ? "View workout" : "Start workout") : "Log your walk"}</Text>
+        </Pressable>
+      </Card>
     </Block>
   )
 }
 
-/* -------------------------------------------------------------- goals -- */
+/* -------------------------------------------------------- today's meals -- */
 
-/** Each goal's icon (all in the primary colour) and name. */
-const GOAL_LOOK: Record<ReviewGoalId, { Icon: React.ComponentType<{ size?: number; color?: string }>; name: string }> = {
-  energy: { Icon: Flame, name: "Calorie deficit" },
-  protein: { Icon: BowlFood, name: "Protein" },
-  calcium: { Icon: Bone, name: "Calcium" },
-  exercise: { Icon: PersonSimpleRun, name: "Exercise" },
-  water: { Icon: Drop, name: "Water" },
-}
-
-const STATE_WORD = { met: "Met", close: "Close", under: "Short", none: "No log" } as const
-
-/** The colours of a goal's progress bar and day bars: green when the day's
-    goal is complete or very near (90% or more), red when it is incomplete; the day in view, still in progress, is blue in the bars.
-    One red only: bars are drawn solid, never faded, so no second shade appears. */
-const PROGRESS = {
-  done: ["#4CC585", "#2F7F4D"],
-  short: ["#F08A8F", "#C72B32"],
-  current: ["#6C93F2", "#3056D3"],
-} as const
-
-type Pair = readonly [string, string]
-
-/** "Classic green and blue" from the Plan Card Variations artifact (20 Oct
-    2026): each colour is a light-to-deep gradient pair, so the bars read
-    with depth. Bars run top to bottom, the progress bar left to right. */
-function Gradient({ pair, across }: { pair: Pair; across?: boolean }) {
-  const id = `g${React.useId().replace(/[^a-zA-Z0-9]/g, "")}`
+function TodaysMeals({ t }: { t: TodayPlan }) {
+  const onboarding = useOnboarding()
+  const meals = mealsOn(onboarding, t.day)
+    .slice()
+    .sort((a, b) => MEAL_SLOTS.findIndex((m) => m.id === a.slot) - MEAL_SLOTS.findIndex((m) => m.id === b.slot))
+  const next = t.actions.find((a) => a.id === "meal")?.slot
   return (
-    <Svg width="100%" height="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
-      <Defs>
-        <LinearGradient id={id} x1="0" y1="0" x2={across ? "1" : "0"} y2={across ? "0" : "1"}>
-          <Stop offset="0" stopColor={pair[0]} />
-          <Stop offset="1" stopColor={pair[1]} />
-        </LinearGradient>
-      </Defs>
-      <Rect width="1" height="1" fill={`url(#${id})`} />
-    </Svg>
-  )
-}
-
-function progressColor(value: number | undefined, target: number): Pair {
-  const s = value === undefined || target <= 0 ? 0 : value / target
-  return s >= 0.9 ? PROGRESS.done : PROGRESS.short
-}
-
-/** The member home's goal tile, approved by the user on 12 Oct 2026 ("I
-    loved this element, keep it"): leave its look as it is. */
-export function GoalTile({ goal }: { goal: GoalDay }) {
-  const look = GOAL_LOOK[goal.goal.id]
-  const unit = goal.goal.unit
-  const share = goal.value !== undefined ? Math.max(0, Math.min(goal.value / goal.goal.target, 1)) : 0
-  const max = Math.max(goal.goal.target, ...goal.week.map((w) => w.value ?? 0))
-  const footer =
-    goal.value === undefined
-      ? "Not logged"
-      : goal.state === "met"
-        ? goal.value > goal.goal.target && goal.goal.id !== "exercise"
-          ? `${formatNumber(goal.value - goal.goal.target)} ${unit} over goal`
-          : "Goal reached"
-        : `${formatNumber(goal.goal.target - goal.value)} ${unit} to go`
-  const tone = progressColor(goal.value, goal.goal.target)
-  const stateInk = goal.state === "met" ? ink.good : goal.state === "close" ? "#A95413" : ink.tertiary
-  return (
-    <Pressable
-      onPress={openReview}
-      accessibilityRole="button"
-      accessibilityLabel={`${look.name}, ${goal.value === undefined ? "not logged" : `${goal.value} of ${goal.goal.target} ${unit}`}, ${STATE_WORD[goal.state]}`}
-      style={({ pressed }) => [styles.tileWrap, pressed && styles.pressed]}
+    <Block
+      title="Today's meals"
+      variant="title"
+      link={{ label: "Log a meal", onPress: () => router.push({ pathname: "/log-meal", params: next ? { slot: next } : {} }) }}
     >
-      <Card style={styles.tile}>
-        <View style={styles.tileHead}>
-          <View style={[styles.icon, { backgroundColor: color.primarySoft }]}>
-            <look.Icon size={16} color={color.primary} />
-          </View>
-          <Text style={[styles.stateWord, { color: stateInk }]}>{STATE_WORD[goal.state]}</Text>
-        </View>
-        <Text style={type.label}>{look.name}</Text>
-        <Text style={styles.value} numberOfLines={1}>
-          {goal.value === undefined ? "No log" : formatNumber(goal.value)}
-          {goal.value !== undefined && <Text style={type.unit}>{` / ${formatNumber(goal.goal.target)} ${unit}`}</Text>}
-        </Text>
-        <View style={[styles.bar, { backgroundColor: chart.track }]}>
-          <View style={[styles.barFill, { width: `${share * 100}%` }]}>
-            <Gradient pair={tone} across />
-          </View>
-        </View>
-        <View style={styles.micro}>
-          {goal.week.map((w, i) => (
-            <View
-              key={i}
-              style={[
-                styles.microBar,
-                { height: w.value !== undefined ? Math.max(3, (32 * w.value) / max) : 3 },
-                w.value === undefined && { backgroundColor: chart.track },
-              ]}
-            >
-              {w.value !== undefined && <Gradient pair={w.selected ? PROGRESS.current : progressColor(w.value, goal.goal.target)} />}
-            </View>
+      {meals.length ? (
+        <View style={styles.meals}>
+          {meals.map((m) => (
+            <MealCard key={m.id} meal={m} />
           ))}
         </View>
-        <Text style={type.meta}>{footer}</Text>
-      </Card>
-    </Pressable>
+      ) : (
+        <Card style={styles.mealCard}>
+          <View style={styles.fill}>
+            <Text style={type.title}>Nothing logged yet</Text>
+            <Text style={type.label}>{t.actions.find((a) => a.id === "meal")?.detail ?? "Log your first meal"}</Text>
+          </View>
+        </Card>
+      )}
+    </Block>
   )
 }
 
-/* ------------------------------------------------------------- trends -- */
-
-/** Her results as a sideways strip of graphs, worth watching first. */
-function TrendStrip() {
-  const onboarding = useOnboarding()
-  const markers = useMarkers()
-  const list = watchList(markers, { improve: onboarding.why?.improve })
-  const tiles: Trend[] = [...homeTiles(list, { goodNews: true }).tiles]
-  if (tiles.length < 4) {
-    const steady = markers
-      .map(classify)
-      .filter((t) => !t.watch && !!t.latest && !tiles.some((x) => x.id === t.id))
-      .sort((a, b) => b.count - a.count)
-    tiles.push(...steady.slice(0, 4 - tiles.length))
-  }
-  if (!tiles.length) return null
+function MealCard({ meal }: { meal: Meal }) {
+  const totals = totalsOf([meal])
+  const facts = [
+    totals.calories && `${formatNumber(Math.round(totals.calories.value))} kcal`,
+    totals.protein && `${formatNumber(Math.round(totals.protein.value))} g protein`,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+  const slot = MEAL_SLOTS.find((m) => m.id === meal.slot)?.name ?? "Meal"
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bleed} contentContainerStyle={styles.strip}>
-      {tiles.map((t) => (
-        <View key={t.id} style={styles.trend}>
-          <TrendCard trend={t} onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: t.id } })} />
+    <Card style={styles.mealCard} accessibilityLabel={`${slot}, ${mealName(meal)}, ${facts}, logged`}>
+      <View style={styles.fill}>
+        <Text style={styles.slot}>{slot.toUpperCase()}</Text>
+        <Text style={type.title}>{mealName(meal)}</Text>
+        {!!facts && <Text style={type.label}>{facts}</Text>}
+      </View>
+      <View style={styles.logged}>
+        <Check size={10} weight="bold" color={ink.good} />
+        <Text style={styles.loggedText}>LOGGED</Text>
+      </View>
+    </Card>
+  )
+}
+
+/* --------------------------------------------------------------- ring -- */
+
+/** A small progress ring in the chart kit's data teal, a number inside it
+    when given a label. */
+function Ring({ percent, size, stroke, label }: { percent: number; size: number; stroke: number; label?: string }) {
+  const r = (size - stroke) / 2
+  const c = 2 * Math.PI * r
+  return (
+    <View style={{ width: size, height: size }} accessible accessibilityLabel={label ? `${label} goals done` : undefined}>
+      <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={chart.dataTrack} strokeWidth={stroke} fill="none" />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={chart.data}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${(Math.max(0, Math.min(percent, 100)) / 100) * c} ${c}`}
+          fill="none"
+        />
+      </Svg>
+      {!!label && (
+        <View style={styles.ringLabel}>
+          <Text style={styles.ringText}>{label}</Text>
         </View>
-      ))}
-    </ScrollView>
+      )}
+    </View>
   )
 }
 
@@ -381,51 +439,68 @@ function TrendStrip() {
 
 const styles = StyleSheet.create({
   page: { gap: space.section, paddingBottom: space.section },
-  fill: { flex: 1 },
+  fill: { flex: 1, minWidth: 0, gap: space.line },
   pressed: { opacity: 0.7 },
 
-  // Today's to-do: a heading with its count, then one card per task, a done
-  // one tinted teal with its check filled.
-  // One card holds the heading, the count, the bar and every task; the
-  // tasks are rows in it, a hairline between each.
-  todo: { gap: space.item, padding: space.card, borderRadius: 12, backgroundColor: card.fill, boxShadow: card.shadow },
-  todoHead: { flexDirection: "row", alignItems: "flex-start", gap: space.item },
-  todoTitle: { ...type.sectionLabel },
-  todoSub: { ...type.label, marginTop: 2 },
-  list: {},
-  task: {
+  strip: { flexDirection: "row", alignItems: "center", gap: space.item },
+  stripText: { ...type.label, flex: 1 },
+  stripLead: { ...type.metaStrong },
+  link: { flexDirection: "row", alignItems: "center", gap: space.line },
+  linkText: { ...type.seeAll },
+
+  goals: { gap: 0 },
+  goalsHead: { flexDirection: "row", alignItems: "center", gap: space.item, paddingBottom: space.inline },
+  goalsTitle: { ...type.section },
+  goal: { flexDirection: "row", alignItems: "flex-start", gap: space.lead, paddingVertical: space.rowY, borderTopWidth: 1, borderTopColor: "#F2F2F7" },
+  goalTile: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  goalTop: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space.item },
+  goalWord: { ...type.metaStrong, color: ink.good },
+  bar: { height: 6, borderRadius: 3, overflow: "hidden", marginVertical: space.stack },
+  barFill: { height: 6, borderRadius: 3 },
+
+  ringLabel: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
+  ringText: { ...type.metaStrong, color: ink.strong, fontVariant: ["tabular-nums"] },
+
+  note: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: space.inline,
+    padding: space.compact,
+    borderRadius: 8,
+    backgroundColor: color.primaryTint,
+    borderWidth: 1,
+    borderColor: color.primaryEdge,
+  },
+  noteIcon: { marginTop: 2 },
+  noteText: { flex: 1, lineHeight: 18, fontFamily: type.body.fontFamily },
+
+  workout: { gap: space.item },
+  workoutTop: { flexDirection: "row", alignItems: "flex-start", gap: space.lead },
+  photo: { width: 64, height: 64, borderRadius: 8, backgroundColor: color.primarySoft },
+  workoutHint: { marginTop: space.stack },
+  start: {
+    height: 48,
+    borderRadius: 999,
+    backgroundColor: color.primary,
     flexDirection: "row",
     alignItems: "center",
-    gap: space.lead,
-    paddingVertical: space.item,
-    borderTopWidth: 1,
-    borderTopColor: hairline.rule,
+    justifyContent: "center",
+    gap: space.inline,
   },
-  taskTile: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: color.primarySoft },
-  // Done: the disabled look, the card and its words faded, the tile grey.
-  taskDone: { opacity: 0.6 },
-  taskTileDone: { backgroundColor: hairline.edge },
-  taskTitle: { ...type.title, color: ink.strong },
-  taskTitleDone: { color: ink.tertiary },
-  taskMeta: { ...type.label, marginTop: space.line },
-  struck: { textDecorationLine: "line-through" },
+  startPressed: { backgroundColor: color.primaryPressed },
+  startText: { ...type.title, color: ink.onColor },
 
-  // Yesterday's goals.
-  score: { flexDirection: "row", alignItems: "center", gap: space.lead },
-
-  tileWrap: { flexBasis: "47%", flexGrow: 1 },
-  tiles: { flexDirection: "row", flexWrap: "wrap", gap: space.item },
-  tile: { gap: space.inline },
-  tileHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  icon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  stateWord: { ...type.metaStrong },
-  value: { ...type.hero },
-  bar: { height: 6, borderRadius: 3, overflow: "hidden" },
-  barFill: { height: 6, borderRadius: 3, overflow: "hidden" },
-  micro: { flexDirection: "row", alignItems: "flex-end", gap: 4, height: 32 },
-  microBar: { flex: 1, borderRadius: 3, overflow: "hidden" },
-
-  bleed: { marginHorizontal: -space.gutter },
-  strip: { gap: space.item, paddingHorizontal: space.gutter },
-  trend: { width: 168 },
+  meals: { gap: space.item },
+  mealCard: { flexDirection: "row", alignItems: "center", gap: space.item },
+  slot: { ...type.caption, color: ink.tertiary, letterSpacing: 0.6 },
+  logged: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.stack,
+    paddingHorizontal: space.inline,
+    paddingVertical: space.line,
+    borderRadius: 999,
+    backgroundColor: color.okTint,
+  },
+  loggedText: { ...type.tag, color: ink.good },
 })
