@@ -360,7 +360,7 @@ export type Meal = {
   slot: MealSlot
   /** "7:50 AM" */
   time: string
-  how: "photo" | "voice" | "typed" | "again"
+  how: "photo" | "voice" | "typed" | "again" | "scan"
   foods: Food[]
   /** Checked by the patient, or kept as an estimate after "Not sure"
       (shown as Estimated, M-16). */
@@ -1071,6 +1071,12 @@ export const BP_CHECK = {
   detail: "Tonight, seated, after 5 minutes of rest",
   how: ["Sit with your feet flat and your arm resting at heart height.", "Take two readings, a minute apart.", "Enter both numbers, top number first."],
 } as const
+
+/** The SMART stress and resiliency session and the evening cut off on the
+    member home's goals (22 Oct 2026, sample data until they come from the
+    server): the session counts once done, lights out is the bedtime goal. */
+export const SMART_TODAY = { session: 8, minutes: 12, done: true } as const
+export const LIGHTS_OUT = { by: "10:30 PM", hour: 22, minute: 30 } as const
 
 /* ------------------------------------------------------------ profiles -- */
 
@@ -1873,6 +1879,52 @@ export function progressChartOf(p: ReturnType<typeof progress>) {
     name: "weight",
     readingsLabel: "Weigh ins",
   }
+}
+
+/* ------------------------------------------------------------- outlook -- */
+
+/** The horizons the Outlook shows (Journey screen 36) and how likely each is.
+    The likelihoods are sample values until the physician sets them (H.1). */
+export const OUTLOOK_HORIZONS = [
+  { days: 30, label: "In 30 days", likely: 85 },
+  { days: 60, label: "In 60 days", likely: 80 },
+  { days: 120, label: "In 120 days", likely: 75 },
+  { days: 365, label: "In 1 year", likely: 70 },
+] as const
+
+export type OutlookHorizon = { days: number; label: string; likely: number; weight: number; waist: number; fatPct?: number }
+
+/** Where she is likely to be if she keeps going as she has: her weight
+    eases toward the goal at the pace of her last 8 weeks (flat when the
+    forecast rule fails, M-44), her waist follows her weight at the ratio
+    she has shown, and her body fat follows from her last DEXA scan.
+    `points` carry the weight line out a year for the progress chart. */
+export function outlookOf(s: Snapshot, now: Date = new Date()) {
+  const p = progress(s, now)
+  const w0 = p.weight.now
+  const goal = p.weight.goal
+  const gap = w0 - goal
+  const perDay = (p.weight.forecast?.perWeek ?? 0) / 7
+  const k = gap > 0 && perDay > 0 ? perDay / gap : 0
+  const weightAt = (days: number) => (k ? goal + gap * Math.exp(-k * days) : w0)
+  const lost = p.weight.start - w0
+  const perLb = lost >= 1 ? Math.min(0.5, Math.max(0.1, (p.waist.start - p.waist.now) / lost)) : 0.25
+  const scan = DEXA_SCANS.filter((d) => d.at <= localDay(now)).at(-1)
+  const tenth = (v: number) => Math.round(v * 10) / 10
+  const horizons: OutlookHorizon[] = OUTLOOK_HORIZONS.map((h) => {
+    const w = weightAt(h.days)
+    return {
+      ...h,
+      weight: tenth(w),
+      waist: tenth(p.waist.now - perLb * (w0 - w)),
+      fatPct: scan ? tenth(((scan.fatLb + (w - scan.weightLb)) / w) * 100) : undefined,
+    }
+  })
+  const today = dayFrom(dayOfAt(p.weight.latestAt))
+  const points: { date: string; value: number }[] = []
+  for (let d = 0; d < 365; d += 14) points.push({ date: localDay(addDays(today, d)), value: tenth(weightAt(d)) })
+  points.push({ date: localDay(addDays(today, 365)), value: tenth(weightAt(365)) })
+  return { horizons, points }
 }
 
 /* ---------------------------------------------------------- milestones -- */

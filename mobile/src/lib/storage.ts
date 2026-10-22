@@ -29,14 +29,15 @@ const ORDER: Step[] = ["about", "consent", "connect", "yourWhy", "life", "why", 
 
 /** What the store starts with for a page load on `pathname`: nothing (a
     signed-out start), "code" (the activation code accepted, for set
-    password) or the onboarding state to sign in with. */
-function seedFor(pathname: string, query: URLSearchParams): "code" | Partial<State> | undefined {
+    password) or the onboarding state to sign in with. `demoPaid` keeps a
+    ?demo=paid session on the paid member across later links. */
+function seedFor(pathname: string, query: URLSearchParams, demoPaid: boolean): "code" | Partial<State> | undefined {
   const parts = pathname.replace(/^\/app(?=\/|$)/, "").split("/").filter(Boolean)
   const [first, second] = parts
   const now = new Date().toISOString()
   const free: Partial<State> = { step: "done", profile: { ...DEMOGRAPHICS }, consent: "signed", consentAt: now }
   if (!first) {
-    if (query.get("demo") === "paid") return paid(free)
+    if (demoPaid) return paid(free)
     return [...query.keys()].length > 0 ? free : undefined
   }
   if (SIGNED_OUT.includes(first) || first.startsWith("+")) return undefined
@@ -50,7 +51,7 @@ function seedFor(pathname: string, query: URLSearchParams): "code" | Partial<Sta
       ...(past("connect") && { consent: "signed", consentAt: now }),
     }
   }
-  return MEMBER.includes(first) ? paid(free) : free
+  return MEMBER.includes(first) || demoPaid ? paid(free) : free
 }
 
 /** The paid member: a live plan, version 2, on the weight program. */
@@ -61,7 +62,8 @@ function paid(free: Partial<State>): Partial<State> {
       tier: "optimization",
       programs: ["weight"],
       startedAt: "2026-05-03T00:00:00.000Z",
-      approvedAt: "2026-05-18T00:00:00.000Z",
+      // Seven days ago, so the home reads "Day 8 of your plan".
+      approvedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
       card: "Visa ending 4242",
       billing: "monthly",
       renewalConsentAt: "2026-05-03T00:00:00.000Z",
@@ -102,7 +104,12 @@ if (Platform.OS === "web" && typeof localStorage !== "undefined") {
      which the installed app opens, still starts at activation; /?home=1
      opens the free home and /?demo=paid the paid member's home. */
   try {
-    const seed = seedFor(window.location.pathname, new URLSearchParams(window.location.search))
+    // The ?demo= flag is kept for the tab, so a refresh or a deep link such
+    // as /log-meal?via=scan stays on the paid member. ?demo=off clears it.
+    const query = new URLSearchParams(window.location.search)
+    const asked = query.get("demo")
+    if (asked) sessionStorage.setItem("hol.demo", asked === "off" ? "" : asked)
+    const seed = seedFor(window.location.pathname, query, sessionStorage.getItem("hol.demo") === "paid")
     if (seed) {
       if (seed === "code") localStorage.setItem("hol.codeAccepted", "1")
       else {

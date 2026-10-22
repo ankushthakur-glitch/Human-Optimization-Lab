@@ -82,45 +82,50 @@ export default function ProgressScreen() {
   const [sheet, setSheet] = React.useState<CheckInKind>()
   // Progress belongs to a plan that has started; a paused plan keeps it.
   const started = experience === "member" || experience === "paused"
-  const p = progress(s)
-  const bone = profileOf(s).headline === "stands"
 
   return (
     <View style={styles.fill}>
       {/* A plan that has started keeps Progress as one of its tabs. */}
       <ProgressFrame tab={started} footer={started ? <AskButton params={{ ask: ASK }} /> : <AskButton params={{ topic: "plan" }} />}>
-        {!started ? (
-          <NothingYet />
-        ) : bone ? (
-          <>
-            <StandsHeadline p={p} />
-            <StrengthCard p={p} onAdd={() => setSheet("stands")} />
-            <CalciumCard s={s} />
-            <Group>
-              <NeedsRow icon={<Scan size={16} color={HUE.teal.ink} />} title="Bone density" meta={NEXT_BONE_SCAN.words} />
-            </Group>
-            <WeightCard p={p} onAdd={() => setSheet("weight")} />
-            <LastThirtyDays s={s} />
-            <Milestones s={s} />
-            <ScoreCard s={s} />
-            <HistoryLink />
-          </>
-        ) : (
-          <>
-            <FatHeadline p={p} />
-            <WeightCard p={p} onAdd={() => setSheet("weight")} />
-            <BodyComposition p={p} />
-            <PressureCard p={p} onAdd={() => setSheet("bp")} />
-            <SinceStartRows title="Results since you started" />
-            <LastThirtyDays s={s} />
-            <Milestones s={s} />
-            <ScoreCard s={s} />
-            <HistoryLink />
-          </>
-        )}
+        {started ? <ProgressSections s={s} onAdd={setSheet} /> : <NothingYet />}
       </ProgressFrame>
       {sheet && <CheckInSheet kind={sheet} onClose={() => setSheet(undefined)} />}
     </View>
+  )
+}
+
+/** Everything the page shows once the plan has started; the Plan tab's
+    Progress section draws the same cards. The owner holds the check in
+    sheet that "Add" opens. */
+export function ProgressSections({ s, onAdd }: { s: Store; onAdd: (kind: CheckInKind) => void }) {
+  const p = progress(s)
+  const bone = profileOf(s).headline === "stands"
+  return bone ? (
+    <>
+      <StandsHeadline p={p} />
+      <StrengthCard p={p} onAdd={() => onAdd("stands")} />
+      <CalciumCard s={s} />
+      <Group>
+        <NeedsRow icon={<Scan size={16} color={HUE.teal.ink} />} title="Bone density" meta={NEXT_BONE_SCAN.words} />
+      </Group>
+      <WeightCard p={p} onAdd={() => onAdd("weight")} />
+      <LastThirtyDays s={s} />
+      <Milestones s={s} />
+      <ScoreCard s={s} />
+      <HistoryLink />
+    </>
+  ) : (
+    <>
+      <FatHeadline p={p} />
+      <WeightCard p={p} onAdd={() => onAdd("weight")} />
+      <BodyComposition p={p} />
+      <PressureCard p={p} onAdd={() => onAdd("bp")} />
+      <SinceStartRows title="Results since you started" />
+      <LastThirtyDays s={s} />
+      <Milestones s={s} />
+      <ScoreCard s={s} />
+      <HistoryLink />
+    </>
   )
 }
 

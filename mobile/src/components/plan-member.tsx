@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { Animated, Easing, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native"
+import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native"
 
 import { Art } from "@/components/art"
+import { ProgressChart, formatNumber } from "@/components/charts"
 import { useReducedMotion } from "@/components/chat"
 import { planName } from "@/components/enrollment-kit"
 
-import { Barbell, CreditCard, Heartbeat, PersonSimpleWalk, Ruler, Scales, Scan, Sparkle, Watch } from "@/components/ph"
+import { Barbell, Camera, CreditCard, Heartbeat, PersonSimpleWalk, Ruler, Scales, Scan, Sparkle, Watch } from "@/components/ph"
 import { DevicesSheet } from "@/components/plan-tab-devices"
 import { FocusIcon, HeadCard, headText } from "@/components/plan-tab-pieces"
 import { RecordIcon } from "@/components/record-icons"
@@ -38,10 +39,13 @@ import { Button, TextField } from "@/components/ui"
 import { BASELINE_TESTS, type BaselineTestId } from "@/lib/baseline-tests"
 import { showDate } from "@/lib/dates"
 import { useExperience, useMarkers } from "@/lib/experience"
-import { MEMBER, PLAN_DRAFT, WALK, dateOfAt, dayLabel, profileOf, progress, thisWeek, weekPlan, type WeekItem } from "@/lib/member"
+import { MEMBER, PLAN_DRAFT, WALK, dateOfAt, dayLabel, outlookOf, profileOf, progress, progressChartOf, thisWeek, weekPlan, type WeekItem } from "@/lib/member"
 import { FOCUS_NAME } from "@/lib/offers"
 import { useOnboarding, type Plan } from "@/lib/onboarding"
 import { startingTestsLine } from "@/lib/todo"
+import { PlanReview, planDayNow } from "@/components/plan-review"
+import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
+import { ProgressSections } from "@/app/progress"
 import { acceptedPlan, changeRequested, livePlan, proposedPlan } from "@/lib/plans"
 import { MARKER_CARE, type Biomarker, type FocusArea } from "@/lib/record"
 import { classify, valueText, withUnit } from "@/lib/trends"
@@ -75,6 +79,8 @@ export function PlanMember() {
   const { experience, sharingOff } = useExperience()
   const [devices, setDevices] = React.useState(false)
   const [asking, setAsking] = React.useState(false)
+  const [section, setSection] = React.useState<Section>("review")
+  const [checkIn, setCheckIn] = React.useState<CheckInKind>()
   const onboarding = useOnboarding()
   // Walked on from the enrolled page: with no portal in this build,
   // Dr. Patel sends the plan after a moment, and again after each change
@@ -90,11 +96,21 @@ export function PlanMember() {
   // A version Dr. Patel sent: accept it or request a change, pinned over
   // the tab bar while she reads.
   const proposed = experience !== "paused" && onboarding.plan?.status === "proposed"
-  const overlay = asking ? <RequestSheet onClose={() => setAsking(false)} /> : devices ? <DevicesSheet onClose={() => setDevices(false)} /> : undefined
+  const overlay = asking ? (
+    <RequestSheet onClose={() => setAsking(false)} />
+  ) : devices ? (
+    <DevicesSheet onClose={() => setDevices(false)} />
+  ) : checkIn ? (
+    <CheckInSheet kind={checkIn} onClose={() => setCheckIn(undefined)} />
+  ) : undefined
+  // The live plan reads in four sections under the header: Review first.
+  const live = experience !== "member-review" && experience !== "paused"
   return (
     <TabScreen
       tab="plan"
       title="Plan"
+      headerRight={live ? <Text style={styles.day}>{`Day ${Math.max(1, planDayNow(onboarding))} · optimization plan`}</Text> : undefined}
+      pinned={live ? <SectionTabs value={section} onChange={setSection} /> : undefined}
       headless={experience === "member-review"}
       overlay={overlay}
       footer={proposed ? <ReviewActions onRequest={() => setAsking(true)} /> : undefined}
@@ -105,7 +121,7 @@ export function PlanMember() {
       ) : experience === "paused" ? (
         <PausedStage />
       ) : (
-        <LivePlan onDevices={() => setDevices(true)} />
+        <LivePlan section={section} onDevices={() => setDevices(true)} onAdd={setCheckIn} />
       )}
     </TabScreen>
   )
@@ -145,7 +161,40 @@ function focusLine(area: FocusArea, s: Snapshot, markers: Biomarker[], week: Wee
   return "Goal: keep your bone density steady. Next scan May 2027."
 }
 
-function LivePlan({ onDevices }: { onDevices: () => void }) {
+type Section = "review" | "progress" | "photos" | "outlook"
+const SECTIONS: { value: Section; label: string }[] = [
+  { value: "review", label: "Review" },
+  { value: "progress", label: "Progress" },
+  { value: "photos", label: "Photos" },
+  { value: "outlook", label: "Outlook" },
+]
+
+/** The plan's sections as underlined tabs, equal across the width: the
+    open one in teal over a teal rule, the rest grey over the hairline. */
+function SectionTabs({ value, onChange }: { value: Section; onChange: (s: Section) => void }) {
+  return (
+    <View style={styles.sectionTabs} accessibilityRole="tablist">
+      {SECTIONS.map((o) => {
+        const on = o.value === value
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => onChange(o.value)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            style={({ pressed }) => [styles.sectionTab, on && styles.sectionTabOn, pressed && styles.pressed]}
+          >
+            <Text style={[styles.sectionTabText, on && styles.sectionTabTextOn]} numberOfLines={1}>
+              {o.label}
+            </Text>
+          </Pressable>
+        )
+      })}
+    </View>
+  )
+}
+
+function LivePlan({ section, onDevices, onAdd }: { section: Section; onDevices: () => void; onAdd: (kind: CheckInKind) => void }) {
   const onboarding = useOnboarding()
   const versions = onboarding.plan?.versions ?? []
   // The version she follows, and a newer one while it is with the doctor
@@ -184,34 +233,84 @@ function LivePlan({ onDevices }: { onDevices: () => void }) {
         </View>
       )}
 
-      {live && <PlanSummary version={live.version} approved={live.on} by={live.by} />}
+      {section === "review" && live && <PlanReview />}
 
-      <PlanSections />
+      {section === "progress" && <ProgressSections s={onboarding} onAdd={onAdd} />}
 
-      {live && (
-        <Block title="Why your plan changed">
-          <Card style={styles.card}>
-            <Text style={styles.cardSubtitle}>{`Version ${live.version}, ${live.on}`}</Text>
-            <Text style={styles.body}>{details?.why ?? `${live.why}.`}</Text>
-            {!!details?.changes.length && <CheckLines lines={details.changes} />}
+      {section === "photos" && <PhotosSection />}
+
+      {section === "outlook" && <Outlook />}
+    </>
+  )
+}
+
+/** The Outlook (Journey screen 36, "Where she is likely to be"): her own
+    trend carried forward 30, 60 and 120 days and a year, each with weight,
+    waist, body fat and a likelihood, labelled plainly as estimates. Then
+    the weight line joined to the projected one at today, with the goal
+    marked; Ask Inlay for what-ifs; and Dr. Patel's quarterly review. */
+function Outlook() {
+  const onboarding = useOnboarding()
+  const now = new Date()
+  const p = progress(onboarding, now)
+  const { horizons, points } = outlookOf(onboarding, now)
+  const days = Math.max(1, planDayNow(onboarding))
+  const workouts = weekPlan(onboarding).filter((d) => d.session).length
+  const next = ["second", "third", "fourth", "fifth", "sixth"][workouts - 1]
+  const whatIf = next ? `What if I add a ${next} workout?` : "What if I add a workout?"
+  return (
+    <>
+      <Text style={styles.body}>
+        {`If you keep following your plan the way you have for ${days} days, this is where you are likely to be. `}
+        <Text style={styles.strong}>Estimates, not promises</Text>
+        {", from your own trend."}
+      </Text>
+
+      <View style={styles.horizons}>
+        {horizons.map((h) => (
+          <Card key={h.days} style={styles.horizon}>
+            <Text style={styles.meta}>{h.label}</Text>
+            <Text style={styles.horizonValue}>
+              {formatNumber(h.weight, 1)}
+              <Text style={styles.meta}>{" lb"}</Text>
+            </Text>
+            <Text style={styles.meta}>{`${formatNumber(h.waist, 1)} in waist`}</Text>
+            {h.fatPct !== undefined && <Text style={styles.meta}>{`${formatNumber(h.fatPct, 1)}% body fat`}</Text>}
+            <Text style={styles.likely}>{`${h.likely}% likely`}</Text>
           </Card>
-        </Block>
-      )}
+        ))}
+      </View>
 
-      <Versions versions={versions} />
+      <Block title="Weight trend">
+        <Card style={styles.chartCard}>
+          <ProgressChart {...progressChartOf(p)} forecast={points} confidence="moderate" caption={null} playKey="outlook:weight" />
+        </Card>
+      </Block>
 
       <Group>
         <NeedsRow
-          icon={<Watch size={16} color={color.primary} />}
+          icon={<Sparkle size={16} color={color.primary} />}
           hue="teal"
-          title="Watch, ring or scale"
-          tag={{ tone: "muted", label: "Coming soon" }}
-          onPress={onDevices}
+          title={`Ask Inlay: "${whatIf}"`}
+          onPress={() => router.push({ pathname: "/assistant", params: { topic: "plan", ask: whatIf } })}
         />
-        <NeedsRow icon={<Sparkle size={16} color={color.primary} />} hue="teal" title="Ask about your plan" onPress={() => router.push("/assistant?topic=plan")} />
-        <NeedsRow icon={<CreditCard size={16} color={color.primary} />} hue="teal" title="Membership and billing" onPress={() => router.push("/membership")} />
       </Group>
+
+      <Text style={styles.meta}>{`Calculated weekly from your logs and check ins. ${MEMBER.doctorShort} reviews it with you at each quarterly review.`}</Text>
     </>
+  )
+}
+
+/** Progress photos: none added yet, so the section says what they are for. */
+function PhotosSection() {
+  return (
+    <Card style={styles.photos}>
+      <Tile hue="teal" size={40}>
+        <Camera size={20} color={color.primary} />
+      </Tile>
+      <Text style={styles.cardSubtitle}>No progress photos yet</Text>
+      <Text style={[styles.meta, styles.photosText]}>Photos taken at the same time each month show changes the scale cannot. Only you and your care team see them.</Text>
+    </Card>
   )
 }
 
@@ -769,6 +868,15 @@ const BULLET = 6
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  // The header's day of the plan, right of "Plan".
+  day: { ...type.meta },
+  sectionTabs: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: hairline.rule },
+  sectionTab: { flex: 1, minHeight: 44, alignItems: "center", justifyContent: "center", borderBottomWidth: 2, borderBottomColor: "transparent", marginBottom: -1 },
+  sectionTabOn: { borderBottomColor: color.primary },
+  sectionTabText: { ...type.title, color: ink.secondary },
+  sectionTabTextOn: { color: color.primary },
+  photos: { alignItems: "center", gap: space.inline, paddingVertical: space.card * 1.5 },
+  photosText: { textAlign: "center" },
   // The longer label gets the wider half, so both stay on one line.
   actionWide: { flex: 1.25 },
   // Request a change and Accept plan, side by side over the tab bar.
@@ -776,6 +884,13 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   cardSubtitle: { ...type.title },
   body: { ...type.body },
+  strong: { fontFamily: font.semibold },
+  // The Outlook's four horizons, two across over two, the likelihood last.
+  horizons: { flexDirection: "row", flexWrap: "wrap", gap: space.item },
+  horizon: { flexBasis: "47%", flexGrow: 1, gap: 2, paddingVertical: space.inline },
+  horizonValue: { ...type.stat },
+  likely: { ...type.label, fontFamily: font.medium, color: color.primary, marginTop: space.stack },
+  chartCard: { gap: space.card },
   meta: { ...type.meta },
   // The proposed plan's cards, one per plan: the head over a hairline,
   // then each item with its area in a column on the left.
