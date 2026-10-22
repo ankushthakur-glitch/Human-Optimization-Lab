@@ -360,7 +360,7 @@ export type Meal = {
   slot: MealSlot
   /** "7:50 AM" */
   time: string
-  how: "photo" | "voice" | "typed" | "again"
+  how: "photo" | "voice" | "typed" | "again" | "scan"
   foods: Food[]
   /** Checked by the patient, or kept as an estimate after "Not sure"
       (shown as Estimated, M-16). */

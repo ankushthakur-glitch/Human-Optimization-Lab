@@ -1,18 +1,16 @@
 import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native"
+import { StyleSheet, Text, View } from "react-native"
 
-import { useReducedMotion } from "@/components/chat"
 import { FlowScreen } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
-import { PhotoPreviewSheet, PhotoSheet, pickMealPhoto, type PhotoSource } from "@/components/meal-photo"
+import { ProductStep, ScanStep } from "@/components/meal-scan"
 import { TypeSheet, VoiceSheet } from "@/components/meal-sheets"
-import { Camera, ForkKnife, Microphone, PencilSimple } from "@/components/ph"
+import { ForkKnife, Microphone, PencilSimple, Scan } from "@/components/ph"
 import { Block, Card, ChipRow, Group, HUE, NeedsRow, SmallAction, Tabs, Tag, TextAction } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { Kcal, TotalsHead, isSlot, kcalWords, logDay, nutrientLine, recentMeals, saveLabel, slotName, type LogDay } from "@/components/today-food-meals"
 import {
-  PHOTO,
   VOICE,
   readTyped,
   readingOf,
@@ -21,17 +19,19 @@ import {
   type Portion,
   type Reading,
 } from "@/components/today-food-readings"
+import type { Product } from "@/components/scan-food"
 import { toast } from "@/components/toast"
 import { Button, TextField } from "@/components/ui"
 import { MEAL_SLOTS, clockOf, mealLine, mealName, profileOf, slotAt, totalsOf, type Food, type Meal, type MealSlot, type NutrientId } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { color, font, ink, space, type } from "@/lib/theme"
+import { space, type } from "@/lib/theme"
 import { formatNumber } from "@/lib/trends"
 
 /* Log a meal (FINAL-SPEC C.22): logging that takes two taps and never
    guesses silently (M-12, M-16, M-17, M-19). Four steps in one route:
-   capture (a photo, her voice or typing, or a recent meal again), reading,
-   checking what was found, and saved. The back button steps back a step;
+   capture (scanning a package, her voice or typing, or a recent meal
+   again), checking what was found (for a scan: how much she had), and
+   saved. The back button steps back a step;
    the swipe leaves. Opened from the Log a meal door, the diet plan or a
    day, with ?slot=breakfast|lunch|snack|dinner and ?day=yesterday (or a
    day key) to preselect; ?edit=<meal id> opens a logged meal at the check
@@ -44,17 +44,14 @@ import { formatNumber } from "@/lib/trends"
 
 type Step =
   | { at: "capture" }
-  | { at: "photo"; uri: string; source: PhotoSource }
-  | { at: "reading"; note?: string }
-  | { at: "check"; reading: Reading; n: number; note?: string }
+  | { at: "scan" }
+  | { at: "product"; product: Product }
+  | { at: "check"; reading: Reading; n: number }
 
 /** When a meal logged for an earlier day is usually eaten. */
 const USUAL_TIME: Record<MealSlot, string> = { breakfast: "8:00 AM", lunch: "12:30 PM", snack: "3:30 PM", dinner: "6:30 PM" }
 
-/** What the reading step says while it works, a line at a time. */
-const READING_LINES = ["Finding the foods", "Estimating portions", "Adding up nutrients"]
-
-const RETAKE: Record<Meal["how"], string> = { photo: "Retake", voice: "Say it again", typed: "Type it again", again: "Retake" }
+const RETAKE: Record<Meal["how"], string> = { photo: "Retake", voice: "Say it again", typed: "Type it again", again: "Retake", scan: "Scan again" }
 
 const newId = () => `m-${Date.now().toString(36)}`
 
@@ -73,33 +70,13 @@ export default function LogMealScreen() {
   const [editing] = React.useState(() => (params.edit ? s.meals?.[day.key]?.find((m) => m.id === params.edit) : undefined))
   const [slot, setSlot] = React.useState<MealSlot>(() => editing?.slot ?? mainSlot(isSlot(params.slot) ? params.slot : slotAt(now)))
   const [step, setStep] = React.useState<Step>(() =>
-    editing ? { at: "check", reading: readingOf(editing, mealName(editing)), n: 0 } : { at: "capture" }
+    editing ? { at: "check", reading: readingOf(editing, mealName(editing)), n: 0 } : params.via === "scan" ? { at: "scan" } : { at: "capture" }
   )
   const profile = profileOf(s)
   const ids = profile.goals.map((g) => g.id).filter((id) => id !== "calories")
 
-  // Reading the photo takes 2.2 s, then she checks what was found.
-  React.useEffect(() => {
-    if (step.at !== "reading") return
-    const done = setTimeout(() => setStep({ at: "check", reading: PHOTO, n: Date.now(), note: step.note }), 2200)
-    return () => clearTimeout(done)
-  }, [step])
-
-  // The plan's Today tab opens straight on a way in: "photo" or "type".
-  const [adding, setAdding] = React.useState(() => !editing && params.via === "photo")
+  // The plan's Today tab opens straight on a way in: "scan" or "type".
   const [sheet, setSheet] = React.useState<"voice" | "type" | undefined>(() => (!editing && params.via === "type" ? "type" : undefined))
-
-  // The photo's source is asked in a sheet, then she sees it before it is read.
-  // Retaking or choosing another replaces it; cancelling keeps the one she has.
-  async function takePhoto(source: PhotoSource) {
-    setAdding(false)
-    try {
-      const uri = await pickMealPhoto(source)
-      if (uri) setStep({ at: "photo", uri, source })
-    } catch {
-      toast("That photo couldn't be added")
-    }
-  }
 
   const toCapture = () => setStep({ at: "capture" })
   const leave = () => (router.canGoBack() ? router.back() : router.navigate("/"))
@@ -114,12 +91,26 @@ export default function LogMealScreen() {
 
   const time = () => editing?.time ?? (day.today ? clockOf(new Date()) : USUAL_TIME[slot])
 
+  if (step.at === "scan") return <ScanStep onBack={toCapture} onFound={(product) => setStep({ at: "product", product })} />
+
+  if (step.at === "product")
+    return (
+      <ProductStep
+        product={step.product}
+        slot={slot}
+        onSlot={setSlot}
+        day={day}
+        ids={ids}
+        onBack={() => setStep({ at: "scan" })}
+        onSave={(draft) => save({ ...draft, id: newId(), time: time() })}
+      />
+    )
+
   if (step.at === "check")
     return (
       <CheckStep
         key={step.n}
         reading={step.reading}
-        note={step.note}
         slot={slot}
         onSlot={editing ? setSlot : undefined}
         day={day}
@@ -155,11 +146,11 @@ export default function LogMealScreen() {
         <Tabs snug options={slotTabs(slot)} value={slot} onChange={setSlot} />
       </View>
 
-      {/* Three ways in, as rows: a photo first, then her voice, then
-          typing. */}
+      {/* Three ways in, as rows: scanning a package first, then her voice,
+          then typing. */}
       <Block title="Log it">
         <Group>
-          <NeedsRow icon={<Camera size={16} color={HUE.teal.ink} />} title="Add photo" onPress={() => setAdding(true)} />
+          <NeedsRow icon={<Scan size={16} color={HUE.teal.ink} />} title="Scan food" onPress={() => setStep({ at: "scan" })} />
           <NeedsRow icon={<Microphone size={16} color={HUE.teal.ink} />} title="Say it" onPress={() => setSheet("voice")} />
           <NeedsRow icon={<PencilSimple size={16} color={HUE.teal.ink} />} title="Type it" onPress={() => setSheet("type")} />
         </Group>
@@ -193,17 +184,6 @@ export default function LogMealScreen() {
         </Block>
       )}
       </FlowScreen>
-      {step.at === "reading" && <ReadingPopup />}
-      {adding && <PhotoSheet onPick={takePhoto} onClose={() => setAdding(false)} />}
-      {step.at === "photo" && (
-        <PhotoPreviewSheet
-          uri={step.uri}
-          source={step.source}
-          onRetake={() => takePhoto(step.source)}
-          onClose={toCapture}
-          onDone={(note) => setStep({ at: "reading", note })}
-        />
-      )}
       {sheet === "voice" && (
         <VoiceSheet
           transcript={VOICE.transcript ?? ""}
@@ -226,40 +206,6 @@ export default function LogMealScreen() {
     </View>
   )
 }
-
-/* ------------------------------------------------------------ reading -- */
-
-/** Reading the photo: a popup over the page with a teal spinner and one
-    line that changes every 0.7 s (still under Reduce Motion). It takes the
-    touches while it works; the effect above then opens the check step. */
-function ReadingPopup() {
-  const still = useReducedMotion()
-  const [i, setI] = React.useState(0)
-  React.useEffect(() => {
-    if (still) return
-    const tick = setInterval(() => setI((n) => Math.min(n + 1, READING_LINES.length - 1)), 700)
-    return () => clearInterval(tick)
-  }, [still])
-  return (
-    <View style={StyleSheet.absoluteFill}>
-      <View style={styles.scrim} />
-      <View style={styles.popupWrap} pointerEvents="box-none">
-        <View style={styles.popup} accessibilityViewIsModal accessible accessibilityRole="progressbar" accessibilityLabel="Reading your photo">
-          <ActivityIndicator size="large" color={color.primary} />
-          <View style={styles.panelWords}>
-            <Text style={styles.panelTitle} accessibilityRole="header">
-              Reading your photo
-            </Text>
-            <Text style={styles.label} accessibilityLiveRegion="polite">
-              {READING_LINES[still ? 0 : i]}
-            </Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  )
-}
-
 
 /* -------------------------------------------------------------- check -- */
 
@@ -284,7 +230,6 @@ const kcalDigits = (text: string) => text.replace(/\D/g, "").slice(0, 4)
     off. Saving is her confirmation. */
 function CheckStep({
   reading,
-  note,
   slot,
   onSlot,
   day,
@@ -295,8 +240,6 @@ function CheckStep({
   onSave,
 }: {
   reading: Reading
-  /** What she wrote about the photo, kept with the meal. */
-  note?: string
   slot: MealSlot
   /** Editing a logged meal can move it to another slot. */
   onSlot?: (slot: MealSlot) => void
@@ -331,7 +274,7 @@ function CheckStep({
     how: reading.how,
     foods,
     status: editing ? editing.status : "estimated",
-    note: editing ? editing.note : note || undefined,
+    note: editing?.note,
     title: changed ? undefined : reading.title,
   }
   const totals = totalsOf([{ ...draft, id: "draft", time: "" }])
@@ -488,21 +431,10 @@ const styles = StyleSheet.create({
   label: { ...type.label },
   meta: { ...type.meta },
   metaStrong: { ...type.metaStrong },
-  centred: { textAlign: "center" },
   // Lets the input give way to its unit, as on the exercise page.
   input: { minWidth: 0 },
   unit: { ...type.unitLarge, paddingRight: 14 },
 
-
-  // The reading popup: a dimmed page with a white card centred on it.
-  scrim: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0, 0, 0, 0.3)" },
-  popupWrap: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center", padding: space.gutter },
-  popup: { width: "100%", maxWidth: 320, alignItems: "center", gap: space.card, paddingVertical: 28, paddingHorizontal: space.card, borderRadius: 20, backgroundColor: color.background },
-  panelWords: { alignItems: "center", gap: space.stack },
-  panelTitle: { fontFamily: font.medium, fontSize: 16, lineHeight: 24, color: ink.content, textAlign: "center" },
-  mic: { width: 72, height: 72, alignItems: "center", justifyContent: "center" },
-  micRing: { position: "absolute", width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: color.primary },
-  micCore: { width: 72, height: 72, borderRadius: 36, backgroundColor: HUE.teal.tint, alignItems: "center", justifyContent: "center" },
 
   totals: { gap: space.stack },
   totalsTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },

@@ -6,7 +6,7 @@ import Svg, { Circle } from "react-native-svg"
 import { ScoreRing, formatNumber } from "@/components/charts"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { PrimaryButton } from "@/components/hol"
-import { Barbell, BowlFood, Camera, CaretLeft, CaretRight, Check, ClipboardText, DownloadSimple, Heartbeat, MagnifyingGlass, PersonSimpleWalk, Play, Scales } from "@/components/ph"
+import { Barbell, BowlFood, CaretLeft, CaretRight, Check, ClipboardText, DownloadSimple, Heartbeat, MagnifyingGlass, PersonSimpleWalk, Play, Scales, Scan } from "@/components/ph"
 import { Block, HUE, ProgressBar, Rise, TextAction } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { relativeDay } from "@/lib/dates"
@@ -429,11 +429,11 @@ function Meals({ s, live }: { s: Store; live: boolean }) {
   const kcal = target("calories")
   const protein = target("protein")
   const calcium = target("calcium")
-  const log = (via?: "photo" | "type") => router.push({ pathname: "/log-meal", params: via ? { via } : {} })
+  const log = (via?: "scan" | "type") => router.push({ pathname: "/log-meal", params: via ? { via } : {} })
   const ways = [
     { label: "Meal database", Icon: MagnifyingGlass, hue: HUE.blue, onPress: () => log("type") },
     { label: "Today's plan", Icon: ClipboardText, hue: HUE.violet, onPress: () => router.push("/diet") },
-    { label: "Photograph it", Icon: Camera, hue: HUE.teal, onPress: () => log("photo") },
+    { label: "Scan food", Icon: Scan, hue: HUE.teal, onPress: () => log("scan") },
     { label: "Import", Icon: DownloadSimple, hue: HUE.amber, onPress: () => log() },
   ]
   return (

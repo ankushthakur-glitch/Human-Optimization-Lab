@@ -193,7 +193,7 @@ export function TotalsHead({ kcal, about = true }: { kcal?: Amount; about?: bool
   )
 }
 
-const HOW: Record<Meal["how"], string> = { photo: "from a photo", voice: "by voice", typed: "typed in", again: "logged again" }
+const HOW: Record<Meal["how"], string> = { photo: "from a photo", voice: "by voice", typed: "typed in", again: "logged again", scan: "scanned from the package" }
 
 /** One logged meal from the diet plan: its foods, its totals, and Edit and
     Delete. Delete asks once more in the same sheet. */
