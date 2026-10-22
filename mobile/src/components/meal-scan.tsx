@@ -497,14 +497,22 @@ function NutritionTable({ product, rows, totals }: { product: Product; rows: Nut
     <Card style={styles.table} accessibilityLabel="Nutrition, one serving and what you add">
       <View style={styles.tableHead}>
         <Text style={styles.tableLabel}>Nutrition</Text>
-        <Text style={[styles.tableLabel, styles.colPer]}>{per}</Text>
-        <Text style={[styles.tableLabel, styles.colAdd, styles.addInk]}>You add</Text>
+        <Text style={[styles.tableLabel, styles.colPer]} numberOfLines={1}>
+          {per}
+        </Text>
+        <Text style={[styles.tableLabel, styles.colAdd, styles.addInk]} numberOfLines={1}>
+          You add
+        </Text>
       </View>
       {rows.map((id) => (
         <View key={id} style={styles.tableRow}>
           <Text style={styles.tableName}>{NUTRIENTS[id].name}</Text>
-          <Text style={[styles.tablePer, styles.colPer]}>{words(id, product.nutrients[id], false)}</Text>
-          <Text style={[styles.tableAdd, styles.colAdd]}>{words(id, totals[id]?.value, true)}</Text>
+          <Text style={[styles.tablePer, styles.colPer]} numberOfLines={1}>
+            {words(id, product.nutrients[id], false)}
+          </Text>
+          <Text style={[styles.tableAdd, styles.colAdd]} numberOfLines={1}>
+            {words(id, totals[id]?.value, true)}
+          </Text>
         </View>
       ))}
     </Card>
@@ -574,11 +582,13 @@ const styles = StyleSheet.create({
   table: { paddingVertical: space.stack },
   tableHead: { flexDirection: "row", alignItems: "center", paddingVertical: space.inline },
   tableRow: { flexDirection: "row", alignItems: "center", paddingVertical: space.rowY, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: hairline.rule },
-  tableLabel: { ...type.metaStrong, flex: 1, color: ink.secondary },
-  tableName: { ...type.body, flex: 1, color: ink.content },
+  tableLabel: { ...type.metaStrong, flex: 1, minWidth: 0, color: ink.secondary },
+  tableName: { ...type.body, flex: 1, minWidth: 0, color: ink.content },
   tablePer: { ...type.label },
   tableAdd: { ...type.value, color: ink.primary },
   addInk: { color: ink.primary },
-  colPer: { flex: 0, width: 64, textAlign: "right" },
-  colAdd: { flex: 0, width: 84, textAlign: "right" },
+  // The two number columns keep their width: `flex: 0` let the row squeeze
+  // them, so a unit wrapped under its number and the headings overlapped.
+  colPer: { flexGrow: 0, flexShrink: 0, flexBasis: 76, textAlign: "right" },
+  colAdd: { flexGrow: 0, flexShrink: 0, flexBasis: 88, textAlign: "right" },
 })
