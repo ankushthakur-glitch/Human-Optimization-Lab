@@ -42,6 +42,7 @@ import { MEMBER, PLAN_DRAFT, WALK, dateOfAt, dayLabel, profileOf, progress, this
 import { FOCUS_NAME } from "@/lib/offers"
 import { useOnboarding, type Plan } from "@/lib/onboarding"
 import { startingTestsLine } from "@/lib/todo"
+import { PlanReview } from "@/components/plan-review"
 import { acceptedPlan, changeRequested, livePlan, proposedPlan } from "@/lib/plans"
 import { MARKER_CARE, type Biomarker, type FocusArea } from "@/lib/record"
 import { classify, valueText, withUnit } from "@/lib/trends"
@@ -183,6 +184,8 @@ function LivePlan({ onDevices }: { onDevices: () => void }) {
           <Requests requests={onboarding.plan?.requests} />
         </View>
       )}
+
+      {live && <PlanReview />}
 
       {live && <PlanSummary version={live.version} approved={live.on} by={live.by} />}
 

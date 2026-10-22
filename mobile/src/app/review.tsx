@@ -1,10 +1,8 @@
+import { Redirect } from "expo-router"
 
-
-import { DailyReviewPage } from "@/components/daily-review"
-
-/* A member's daily review: the whole of yesterday, and earlier days, from
-   the plan card on home. */
+/* The daily review is the Plan tab's Review now (22 Oct 2026); an old link
+   to /review lands there. */
 
 export default function ReviewScreen() {
-  return <DailyReviewPage />
+  return <Redirect href="/plan" />
 }
