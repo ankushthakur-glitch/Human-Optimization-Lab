@@ -1,39 +1,24 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native"
 
 import { BiologicalAgeCard, useBiologicalAge } from "@/components/biological-age-card"
-import { BiomarkerTrend } from "@/components/charts"
 import { ArrowDownRight, ArrowUpRight } from "@/components/ph"
 import { Sheet } from "@/components/sheet"
 import { Button } from "@/components/ui"
-import { chartSeries } from "@/lib/trends"
 import { chart, color, hairline, ink, outOfRangeColor, space, type } from "@/lib/theme"
 
 /* The last thing setup shows before the dashboard opens: her biological age
    and the few results driving it, as a sheet that slides up over the page
    (the client's reference). The same Sheet as every other bottom sheet; the
-   hero is the teal card, then how it has moved over time (21 Oct 2026
-   call), then the drivers, her own results. The biological age
+   hero is the teal card, the drivers are her own results. The biological age
    is a sample until the model exists (lib/biological-age.ts). */
 
 export function BiologicalAgeSheet({ onStart, onClose }: { onStart: () => void; onClose: () => void }) {
-  const { list, trend } = useBiologicalAge()
-  // A sample has no source to name in the readout.
-  const series = chartSeries(trend)
-  const over = { ...series, readings: series.readings.map((r) => ({ ...r, source: undefined })) }
+  const { list } = useBiologicalAge()
 
   return (
     <Sheet title="Your biological age" onClose={onClose} dismissOnScrim={false} tall>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <BiologicalAgeCard trend={false} />
-
-        {trend.count > 1 && (
-          <>
-            <Text style={styles.label}>Over time</Text>
-            <View style={styles.chart}>
-              <BiomarkerTrend {...over}spoken={trend.spoken} playKey="biological-age:over-time" />
-            </View>
-          </>
-        )}
+        <BiologicalAgeCard />
 
         {list.length > 0 && (
           <>
@@ -73,7 +58,6 @@ const styles = StyleSheet.create({
   content: { gap: space.item },
 
   label: { ...type.sectionLabel, marginTop: space.inline },
-  chart: { padding: space.card, borderRadius: 8, borderWidth: 1, borderColor: hairline.edge, backgroundColor: color.background },
   list: { gap: space.inline },
   row: { flexDirection: "row", gap: space.lead, padding: space.card, borderRadius: 8, borderWidth: 1, borderColor: hairline.edge, backgroundColor: color.background },
   rowIcon: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: color.errorTint },
