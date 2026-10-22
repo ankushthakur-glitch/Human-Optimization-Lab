@@ -526,13 +526,17 @@ function YourProgress({ onAge }: { onAge: () => void }) {
           style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
         >
           <View style={styles.tileHead}>
-            <Scales size={14} color={ink.secondary} />
-            <Text style={type.label}>Weight</Text>
+            <View style={[styles.tileIcon, { backgroundColor: color.blueTint }]}>
+              <Scales size={16} color={color.blue} />
+            </View>
+            <View style={styles.fill}>
+              <Text style={type.label}>Weight</Text>
+              <Text style={styles.tileValue}>
+                {formatNumber(p.weight.now, 1)}
+                <Text style={type.unit}> lb</Text>
+              </Text>
+            </View>
           </View>
-          <Text style={styles.tileValue}>
-            {formatNumber(p.weight.now, 1)}
-            <Text style={type.unit}> lb</Text>
-          </Text>
           <View style={styles.tileNote}>
             {p.weight.change <= 0 && <ArrowDownRight size={12} weight="bold" color={ink.good} />}
             <Text style={[type.label, { color: ink.good }]}>{`${formatNumber(lost, 1)} lb since day 1`}</Text>
@@ -545,10 +549,14 @@ function YourProgress({ onAge }: { onAge: () => void }) {
           style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
         >
           <View style={styles.tileHead}>
-            <Sparkle size={14} color={ink.secondary} />
-            <Text style={type.label}>Biological age</Text>
+            <View style={[styles.tileIcon, { backgroundColor: color.violetTint }]}>
+              <Sparkle size={16} color={color.violet} />
+            </View>
+            <View style={styles.fill}>
+              <Text style={type.label}>Biological age</Text>
+              <Text style={styles.tileValue}>{age.biological}</Text>
+            </View>
           </View>
-          <Text style={styles.tileValue}>{age.biological}</Text>
           <Text style={type.label}>Retest in January</Text>
         </Pressable>
       </View>
@@ -719,14 +727,15 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: "row", gap: space.item },
   tile: {
     flex: 1,
-    gap: space.stack,
-    padding: space.card,
+    gap: space.inline,
+    padding: space.item,
     borderRadius: 8,
     backgroundColor: color.background,
     borderWidth: 1,
     borderColor: hairline.edge,
   },
-  tileHead: { flexDirection: "row", alignItems: "center", gap: space.stack },
-  tileValue: { ...type.section, fontSize: 24, lineHeight: 30, fontVariant: ["tabular-nums"] },
+  tileHead: { flexDirection: "row", alignItems: "center", gap: space.inline },
+  tileIcon: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  tileValue: { ...type.section, fontSize: 19, lineHeight: 24, fontVariant: ["tabular-nums"] },
   tileNote: { flexDirection: "row", alignItems: "center", gap: space.stack },
 })
