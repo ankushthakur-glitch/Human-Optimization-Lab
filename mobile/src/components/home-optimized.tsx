@@ -1,32 +1,28 @@
-import { router, useFocusEffect, type Href } from "expo-router"
+import { router, useFocusEffect } from "expo-router"
 import * as React from "react"
 import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 import Svg, { Circle } from "react-native-svg"
 
 import { BiologicalAgeSheet } from "@/components/biological-age-sheet"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
+import { EnergyBalance } from "@/components/energy-balance"
+import { Trends, Upcoming } from "@/components/home-free"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
-import { RecordGlyph } from "@/components/home-parts"
 import {
   ArrowDownRight,
   Barbell,
   BowlFood,
   Brain,
   CaretRight,
-  ChatText,
   Check,
-  DownloadSimple,
   Flame,
-  MagnifyingGlass,
-  Microphone,
   Moon,
   PersonSimpleRun,
   Play,
   Scales,
-  Scan,
   Sparkle,
 } from "@/components/ph"
-import { Block, Card, Group, HUE, NeedsRow, Rise } from "@/components/record-kit"
+import { Block, Card, Heading, HUE, Rise } from "@/components/record-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { biologicalAge } from "@/lib/biological-age"
 import { reviewDay, type ReviewDay } from "@/lib/daily-review"
@@ -36,9 +32,7 @@ import {
   MEMBER,
   SMART_TODAY,
   WALK,
-  addDays,
   dayFrom,
-  dayLabel,
   daysBetween,
   dayOfAt,
   mealsOn,
@@ -52,7 +46,6 @@ import {
 } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { chart, color, hairline, ink, space, type } from "@/lib/theme"
-import { bookingOf, orderHref, scheduleHref } from "@/lib/todo"
 import { formatNumber } from "@/lib/trends"
 
 /* A paid member's Home, the Paid Patient Dashboard (22 Oct 2026), top to
@@ -69,8 +62,10 @@ import { formatNumber } from "@/lib/trends"
    6. Log a meal: one box, four ways in, so nothing has to be typed;
    7. Your progress: weight and biological age side by side, each opening
       its page in Plan;
-   8. To do: the free app's preview, now with the weekly check-in.
-   Energy balance, trends and upcoming live on the Plan and Record tabs. */
+   8. Energy balance: energy out, food in and the deficit for the last
+      finished day, then the past seven days, Details opening Plan;
+   9. Your trends: the free home's sparkline tiles, See all opening Results;
+   10. Upcoming: the next appointment or test, See all opening To do. */
 
 const WORKOUT_PHOTO = require("../../assets/images/exercise-demo.jpg")
 
@@ -116,21 +111,22 @@ export function OptimizedHome() {
         <Rise at={2} id="home:goals">
           <TodaysGoals t={t} yesterday={yesterday} now={now} />
         </Rise>
-        <Rise at={3} id="home:workout">
+        {yesterday.energy && (
+          <Rise at={3} id="home:energy">
+            <EnergyBalance day={yesterday} onDetails={() => openTab("/plan", "home")} />
+          </Rise>
+        )}
+        <Trends />
+        <Rise at={4} id="home:workout">
           <TodaysWorkout t={t} onWalk={() => setSheet("walk")} />
         </Rise>
         <Rise at={4} id="home:meals">
           <TodaysMeals t={t} />
         </Rise>
-        <Rise at={5} id="home:log">
-          <LogAMeal slot={t.actions.find((a) => a.id === "meal")?.slot} />
-        </Rise>
         <Rise at={5} id="home:progress">
           <YourProgress onAge={() => setAge(true)} />
         </Rise>
-        <Rise at={5} id="home:todo">
-          <ToDoPreview now={now} />
-        </Rise>
+        <Upcoming at={5} />
       </View>
     </TabScreen>
   )
@@ -349,7 +345,7 @@ function TodaysWorkout({ t, onWalk }: { t: TodayPlan; onWalk: () => void }) {
   const title = session ? (session.id === "balance-a" ? session.title : `${session.title}, ${session.focus.toLowerCase()}`) : "Rest day, an easy walk"
   const meta = session ? `${session.minutes + WALK.minutes} minutes · ${strength?.time}` : `${WALK.minutes} minutes · ${walk?.time ?? ""}`
   return (
-    <Block title="Today's workout" variant="title" link={{ label: "Full plan", onPress: () => openTab("/today", "home") }}>
+    <Block title="Today's workout" link={{ label: "Full plan", onPress: () => openTab("/today", "home") }}>
       <Card style={styles.workout}>
         <View style={styles.workoutTop}>
           <Image source={WORKOUT_PHOTO} style={styles.photo} accessibilityIgnoresInvertColors accessibilityLabel="" />
@@ -398,14 +394,15 @@ function TodaysMeals({ t }: { t: TodayPlan }) {
   // logged sits among them, in the day's order.
   const slots = MEAL_SLOTS.filter((m) => m.main || logged.some((l) => l.slot === m.id))
   return (
-    <Block title="Today's meals" variant="title" link={{ label: "Today's plan", onPress: () => router.push("/diet") }}>
+    <Card style={styles.logBox}>
+      <Heading title="Today's meals" variant="title" link={{ label: "Log a meal", onPress: () => router.push("/log-meal") }} />
       <View style={styles.meals}>
         {slots.map((m) => {
           const meal = logged.find((l) => l.slot === m.id)
           return meal ? <MealCard key={m.id} meal={meal} /> : <PlannedCard key={m.id} slot={m.id} idea={plannedMeal(m.id, ideas)} />
         })}
       </View>
-    </Block>
+    </Card>
   )
 }
 
@@ -415,7 +412,7 @@ function PlannedCard({ slot, idea }: { slot: MealSlot; idea: { name: string; fac
     <Card
       style={styles.mealCard}
       onPress={() => router.push({ pathname: "/log-meal", params: { slot } })}
-      accessibilityLabel={`${name}, ${idea.name}, ${idea.facts}, planned. Log it`}
+      accessibilityLabel={`${name}, ${idea.name}, ${idea.facts}, logged. Log it`}
     >
       <View style={styles.fill}>
         <Text style={styles.slot}>{name.toUpperCase()}</Text>
@@ -423,7 +420,7 @@ function PlannedCard({ slot, idea }: { slot: MealSlot; idea: { name: string; fac
         {!!idea.facts && <Text style={type.label}>{idea.facts}</Text>}
       </View>
       <View style={styles.planned}>
-        <Text style={styles.plannedText}>PLANNED</Text>
+        <Text style={styles.plannedText}>LOGGED</Text>
       </View>
     </Card>
   )
@@ -453,59 +450,6 @@ function MealCard({ meal }: { meal: Meal }) {
   )
 }
 
-/* ----------------------------------------------------------- log a meal -- */
-
-/** One box, four ways in (slide 38): the meal database, scanning the food,
-    saying it, importing from another app. They open Log a meal the way
-    Plan's Today tab does, so nothing has to be typed. */
-function LogAMeal({ slot }: { slot?: MealSlot }) {
-  const open = (via?: "type" | "scan" | "voice") =>
-    router.push({ pathname: "/log-meal", params: { ...(slot ? { slot } : {}), ...(via ? { via } : {}) } })
-  const ways = [
-    { label: "Meal database", note: "Search and add", Icon: MagnifyingGlass, hue: HUE.blue, onPress: () => open("type") },
-    { label: "Scan food", note: "Scan the barcode", Icon: Scan, hue: HUE.teal, onPress: () => open("scan") },
-    { label: "Say it", note: "Tell us what you ate", Icon: Microphone, hue: HUE.violet, onPress: () => open("voice") },
-    { label: "Import", note: "From another app", Icon: DownloadSimple, hue: HUE.amber, onPress: () => open() },
-  ]
-  return (
-    <Card style={styles.logBox}>
-      <View style={styles.logHead}>
-        <Text style={styles.logTitle} accessibilityRole="header">
-          Log a meal
-        </Text>
-        <Text style={type.label}>choose any way</Text>
-      </View>
-      <View style={styles.ways}>
-        {ways.map(({ label, note, Icon, hue, onPress }) => (
-          <Pressable
-            key={label}
-            onPress={onPress}
-            accessibilityRole="button"
-            accessibilityLabel={`${label}. ${note}`}
-            style={({ pressed }) => [styles.way, pressed && styles.pressed]}
-          >
-            <View style={[styles.wayTile, { backgroundColor: hue.tint }]}>
-              <Icon size={16} color={hue.ink} />
-            </View>
-            <View style={styles.fill}>
-              <Text style={type.title}>{label}</Text>
-              <Text style={type.caption} numberOfLines={1}>
-                {note}
-              </Text>
-            </View>
-          </Pressable>
-        ))}
-      </View>
-      <Pressable onPress={() => router.push("/assistant")} accessibilityRole="link" style={({ pressed }) => [styles.askLine, pressed && styles.pressed]}>
-        <Sparkle size={12} color={color.primary} />
-        <Text style={[type.label, styles.askText]} numberOfLines={1}>
-          Or tell Ask Inlay: <Text style={styles.askQuote}>"had the chicken bowl"</Text>
-        </Text>
-      </Pressable>
-    </Card>
-  )
-}
-
 /* -------------------------------------------------------- your progress -- */
 
 /** Weight and biological age as a glance, side by side. Each opens its page:
@@ -517,7 +461,7 @@ function YourProgress({ onAge }: { onAge: () => void }) {
   const age = biologicalAge()
   const lost = Math.abs(p.weight.change)
   return (
-    <Block title="Your progress" variant="title" link={{ label: "Plan", onPress: () => openTab("/plan", "home") }}>
+    <Block title="Your progress" link={{ label: "Plan", onPress: () => openTab("/plan", "home") }}>
       <View style={styles.tiles}>
         <Pressable
           onPress={() => router.push("/progress")}
@@ -560,41 +504,6 @@ function YourProgress({ onAge }: { onAge: () => void }) {
           <Text style={type.label}>Retest in January</Text>
         </Pressable>
       </View>
-    </Block>
-  )
-}
-
-/* ---------------------------------------------------------------- to do -- */
-
-/** The To do preview the free app carries, now with the weekly check-in
-    first. The check-in opens the flourishing and SMART questions; the repeat
-    A1c and lipid panel opens its booking, or the order once it is booked. */
-function ToDoPreview({ now }: { now: Date }) {
-  const onboarding = useOnboarding()
-  const sunday = addDays(now, (7 - now.getDay()) % 7 || 7)
-  const labs = bookingOf("labs-nov", onboarding, now)
-  return (
-    <Block title="To do" variant="title" link={{ label: "See all", onPress: () => openTab("/gaps", "home") }}>
-      <Group>
-        <NeedsRow
-          icon={<ChatText size={16} color={color.primary} />}
-          title="Weekly check-in"
-          meta={`Due ${dayLabel(sunday)} · 3 minutes`}
-          action={{ label: "Start", onPress: () => router.push("/flourishing-questions") }}
-          onPress={() => router.push("/flourishing-questions")}
-        />
-        <NeedsRow
-          icon={<RecordGlyph name="labs" />}
-          title="Repeat A1c and lipid panel"
-          meta={labs ? `Booked · ${dayLabel(labs.date)}${labs.time ? `, ${labs.time}` : ""}` : "Not booked · Due Nov 12"}
-          action={
-            labs
-              ? { label: "View", onPress: () => router.push(orderHref("labs-nov") as Href) }
-              : { label: "Book", onPress: () => router.push(scheduleHref("labs-nov") as Href) }
-          }
-          onPress={() => router.push(orderHref("labs-nov") as Href)}
-        />
-      </Group>
     </Block>
   )
 }
@@ -655,7 +564,7 @@ const styles = StyleSheet.create({
 
   goals: { gap: 0 },
   goalsHead: { flexDirection: "row", alignItems: "center", gap: space.item, paddingBottom: space.inline },
-  goalsTitle: { ...type.section },
+  goalsTitle: { ...type.sectionLabel },
   goal: { flexDirection: "row", alignItems: "flex-start", gap: space.lead, paddingVertical: space.rowY, borderTopWidth: 1, borderTopColor: "#F2F2F7" },
   goalTile: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   goalTop: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space.item },
@@ -702,28 +611,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.primarySoft,
   },
   plannedText: { ...type.tag, color: color.primaryText },
-
   logBox: { gap: space.item },
-  logHead: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
-  logTitle: { ...type.section, color: color.primaryText },
-  ways: { flexDirection: "row", flexWrap: "wrap", gap: space.item },
-  way: {
-    flexBasis: "47%",
-    flexGrow: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.inline,
-    paddingVertical: space.item,
-    paddingHorizontal: space.inline,
-    borderRadius: 10,
-    backgroundColor: color.background,
-    borderWidth: 1,
-    borderColor: hairline.edge,
-  },
-  wayTile: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  askLine: { flexDirection: "row", alignItems: "center", gap: space.inline },
-  askText: { flexShrink: 1, fontSize: 11 },
-  askQuote: { ...type.label, fontSize: 11, color: color.primaryText },
 
   tiles: { flexDirection: "row", gap: space.item },
   tile: {

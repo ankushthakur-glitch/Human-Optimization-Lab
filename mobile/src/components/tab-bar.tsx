@@ -226,7 +226,10 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
   // plan to follow yet (5 Oct call), a member in review included.
   const upgradeLabel = upgradeTab(useExperience())
   // A plan to follow brings its own tabs; the Upgrade tab keeps home's.
-  const set = !upgradeLabel && PLAN_SPACE.includes(active) ? "plan" : "main"
+  // The bar keeps Home, To do, Record, Plan and Care on the Plan tab too
+  // (22 Oct 2026): Review, Progress, Photos and Outlook are the Plan
+  // screen's own top tabs now.
+  const set = "main" as "main" | "plan"
   const tabs = set === "plan" ? PLAN_TABS : TABS
   // Animate the tabs in when this bar comes into view showing the other set
   // than the last bar (home stays mounted under the plan, so on focus).
@@ -256,17 +259,17 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
             style={StyleSheet.absoluteFill}
           />
           {tabs.map(({ name, label: tabLabel, href: tabHref, Icon: TabIcon }, i) => {
-            const on = name === active
+            // Today and Progress sit inside the plan, so Plan stays selected on them.
+            const on = name === active || (name === "plan" && PLAN_SPACE.includes(active))
             const upgrade = name === "plan" && upgradeLabel
-            // From home, a plan to follow opens on its Today tab.
-            const href = set === "main" && name === "plan" && !upgradeLabel ? "/today" : tabHref
+            const href = tabHref
             const shown = swap[i]
             const label = upgrade ? "Plan" : tabLabel
             const Icon = upgrade ? IconUpgrade : TabIcon
             return (
               <Pressable
                 key={name}
-                onPress={() => !on && openTab(href, active)}
+                onPress={() => name !== active && openTab(href, active)}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: on }}
                 accessibilityLabel={label}

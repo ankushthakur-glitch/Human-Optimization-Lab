@@ -48,6 +48,12 @@ const nameOf = (g: { id: ReviewGoalId; name: string }) => (g.id === "energy" ? "
 
 const monthDay = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 
+/** The day of the plan she is on: Day 1 is the day it was approved. */
+export function planDayNow(onboarding: ReturnType<typeof useOnboarding>, now = new Date()) {
+  const started = dayOfAt(onboarding.membership?.approvedAt ?? onboarding.membership?.startedAt ?? MEMBER.start)
+  return daysBetween(dayFrom(started), now) + 1
+}
+
 export function PlanReview() {
   const onboarding = useOnboarding()
   const [period, setPeriod] = React.useState<Period>("day")

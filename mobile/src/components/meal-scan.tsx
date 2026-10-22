@@ -4,14 +4,13 @@ import { Animated, Easing, Platform, Pressable, StyleSheet, Text, TextInput, Vie
 import { useReducedMotion } from "@/components/chat"
 import { FlowScreen } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
-import { Barcode, Flashlight, Keyboard, MagnifyingGlass, Minus, Package, PencilSimple, Plus, Scan, Warning } from "@/components/ph"
+import { Barcode, Flashlight, MagnifyingGlass, Minus, Package, PencilSimple, Plus, Scan, Warning } from "@/components/ph"
 import { Block, Card, ChipRow, Group, HUE, NeedsRow, Tabs, Tag } from "@/components/record-kit"
 import {
   MANY,
   SCANNED,
   amountIn,
   amountText,
-  isBarcode,
   lookupBarcode,
   nutrientsFor,
   portionWords,
@@ -24,7 +23,7 @@ import {
 } from "@/components/scan-food"
 import { Sheet, useKeyboardHeight } from "@/components/sheet"
 import { saveLabel, slotName, type LogDay } from "@/components/today-food-meals"
-import { Button, TextField } from "@/components/ui"
+import { TextField } from "@/components/ui"
 import { MEAL_SLOTS, NUTRIENTS, totalsOf, type Amount, type Meal, type MealSlot, type Nutrients, type NutrientId } from "@/lib/member"
 import { color, hairline, ink, space, type } from "@/lib/theme"
 import { formatNumber } from "@/lib/trends"
@@ -50,24 +49,32 @@ const native = Platform.OS !== "web"
 /* ---------------------------------------------------------------- scan -- */
 
 type Mode = "scan" | "manual"
-type Sheeted = "code" | "name"
+type Sheeted = "name"
 
 export function ScanStep({
+  slot,
   onFound,
+  onSave,
   onBack,
 }: {
-  /** A product to ask about: found, searched for or typed in. */
-  onFound: (product: Product) => void
+  slot: MealSlot
+  /** A product typed in from its label, still to ask how much of. */
+  onFound: (product: Product, servings?: number) => void
+  /** The scanned item and the amount she entered, saved as the meal. */
+  onSave: (meal: Omit<Meal, "id" | "time">) => void | Promise<void>
   onBack: () => void
 }) {
   const [mode, setMode] = React.useState<Mode>("scan")
   const [sheet, setSheet] = React.useState<Sheeted>()
   // A code that no one has, once the lookup came back empty.
   const [missing, setMissing] = React.useState<string>()
+  // The product the camera (or a search) found, shown in the popup before
+  // she goes on to say how much.
+  const [product, setProduct] = React.useState<Product>()
 
   async function resolve(code: string) {
     const found = await lookupBarcode(code)
-    if (found) onFound(found)
+    if (found) setProduct(found)
     else {
       setSheet(undefined)
       setMissing(code)
@@ -77,24 +84,17 @@ export function ScanStep({
   if (mode === "manual") return <ManualStep onBack={() => setMode("scan")} onDone={onFound} />
 
   return (
-    <View style={styles.fill}>
-      <FlowScreen page title="Scan food" onBack={onBack}>
-        {missing ? (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Sheet popup title={product ? "Scanned item" : "Scan food"} onClose={onBack}>
+        {product ? (
+          <ScannedItem product={product} onSave={(servings) => onSave(scanDraft(product, servings, slot))} />
+        ) : missing ? (
           <NotFound code={missing} onAgain={() => setMissing(undefined)} onSearch={() => setSheet("name")} onManual={() => setMode("manual")} />
         ) : (
-          <>
-            <Viewfinder paused={!!sheet} onFound={() => resolve(SCANNED.barcode)} />
-            <Block title="Can't scan it?">
-              <Group>
-                <NeedsRow icon={<Keyboard size={16} color={HUE.teal.ink} />} title="Enter the barcode number" onPress={() => setSheet("code")} />
-                <NeedsRow icon={<MagnifyingGlass size={16} color={HUE.teal.ink} />} title="Search by name" onPress={() => setSheet("name")} />
-              </Group>
-            </Block>
-          </>
+          <Viewfinder paused={!!sheet} onFound={() => resolve(SCANNED.barcode)} />
         )}
-      </FlowScreen>
-      {sheet === "code" && <CodeSheet onClose={() => setSheet(undefined)} onDone={resolve} />}
-      {sheet === "name" && <SearchSheet onClose={() => setSheet(undefined)} onPick={onFound} onManual={() => (setSheet(undefined), setMode("manual"))} />}
+      </Sheet>
+      {sheet === "name" && <SearchSheet onClose={() => setSheet(undefined)} onPick={(p) => (setSheet(undefined), setProduct(p))} onManual={() => (setSheet(undefined), setMode("manual"))} />}
     </View>
   )
 }
@@ -165,6 +165,90 @@ const CORNER = {
   br: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 8 },
 } as const
 
+/** What was found: the product, its label serving and the main nutrients
+    for that serving. A nutrient the label leaves out shows a dash. */
+const ITEM_ROWS: NutrientId[] = ["calories", "protein", "fiber", "addedSugar", "sodium"]
+
+/** The meal a scanned item makes for an amount in servings. */
+function scanDraft(product: Product, servings: number, slot: MealSlot): Omit<Meal, "id" | "time"> {
+  return {
+    slot,
+    how: "scan",
+    title: product.name,
+    foods: [{ name: product.name, portion: portionWords(product, servings, "serving"), confidence: "high", nutrients: nutrientsFor(product, servings) }],
+    status: "confirmed",
+  }
+}
+
+function ScannedItem({ product, onSave }: { product: Product; onSave: (servings: number) => void | Promise<void> }) {
+  const [text, setText] = React.useState("")
+  const [saving, setSaving] = React.useState(false)
+  const qty = Number(text)
+  const valid = text !== "" && Number.isFinite(qty) && qty > 0
+  return (
+    <View style={styles.item}>
+      <View style={styles.productTop}>
+        <View style={styles.productTile}>
+          <Package size={20} color={HUE.teal.ink} />
+        </View>
+        <View style={styles.productWords}>
+          <Text style={styles.productName}>{product.name}</Text>
+          {!!product.brand && <Text style={styles.label}>{product.brand}</Text>}
+        </View>
+        <Tag tone="muted">{product.custom ? "You entered" : "From the label"}</Tag>
+      </View>
+      <Card style={styles.table} accessibilityLabel={`Nutrition for ${servingName(product)}`}>
+        <View style={styles.tableHead}>
+          <Text style={styles.tableLabel}>Nutrition</Text>
+          <Text style={[styles.tableLabel, styles.colPer]} numberOfLines={1}>
+            {servingName(product)}
+          </Text>
+        </View>
+        {ITEM_ROWS.map((id) => {
+          const v = product.nutrients[id]
+          return (
+            <View key={id} style={styles.tableRow}>
+              <Text style={styles.tableName}>{NUTRIENTS[id].name}</Text>
+              <Text style={[styles.tableAdd, styles.colPer]} numberOfLines={1}>
+                {v === undefined ? "—" : `${formatNumber(Math.round(v * 10) / 10)}${id === "calories" ? "" : ` ${NUTRIENTS[id].unit}`}`}
+              </Text>
+            </View>
+          )
+        })}
+      </Card>
+      <View style={styles.item}>
+        <TextField
+          label="How much did you have?"
+          value={text}
+          onChangeText={(t) => setText(amountText(t))}
+          placeholder="e.g., serving 170g"
+          placeholderTextColor="#A8A6AC"
+          keyboardType="decimal-pad"
+          returnKeyType="done"
+          trailing={<Text style={styles.unit}>servings</Text>}
+          style={[styles.input, !text && styles.inputEmpty]}
+        />
+        <Text style={styles.label} accessibilityLiveRegion="polite">
+          {valid ? `${qty === 1 ? "serving" : "servings"}, ${trim(qty * product.serving.amount)} ${product.measure}` : "Enter an amount"}
+        </Text>
+      </View>
+      <PrimaryButton
+        onPress={async () => {
+          setSaving(true)
+          try {
+            await onSave(qty)
+          } finally {
+            setSaving(false)
+          }
+        }}
+        disabled={!valid || saving}
+      >
+        Save
+      </PrimaryButton>
+    </View>
+  )
+}
+
 /** A code nobody has: say so, show the code, and give three ways on. */
 function NotFound({ code, onAgain, onSearch, onManual }: { code: string; onAgain: () => void; onSearch: () => void; onManual: () => void }) {
   return (
@@ -188,40 +272,6 @@ function NotFound({ code, onAgain, onSearch, onManual }: { code: string; onAgain
 }
 
 /* -------------------------------------------------------------- sheets -- */
-
-/** Type the number printed under the barcode. */
-function CodeSheet({ onDone, onClose }: { onDone: (code: string) => void; onClose: () => void }) {
-  const [text, setText] = React.useState("")
-  const [touched, setTouched] = React.useState(false)
-  const keyboard = useKeyboardHeight()
-  const field = React.useRef<TextInput>(null)
-  React.useEffect(() => {
-    const t = setTimeout(() => field.current?.focus(), 300)
-    return () => clearTimeout(t)
-  }, [])
-  const ok = isBarcode(text)
-  const go = () => (ok ? onDone(text) : setTouched(true))
-  return (
-    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
-      <Sheet title="Enter the barcode number" onClose={onClose}>
-        <TextField
-          ref={field}
-          label="Barcode"
-          value={text}
-          onChangeText={(t) => setText(t.replace(/\D/g, "").slice(0, 14))}
-          keyboardType="number-pad"
-          returnKeyType="done"
-          placeholder="The digits under the bars"
-          error={touched && !ok ? "A barcode has 8 to 14 digits" : undefined}
-          onSubmitEditing={go}
-        />
-        <Button onPress={go} disabled={!text}>
-          Look it up
-        </Button>
-      </Sheet>
-    </View>
-  )
-}
 
 /** Search the food list by name or brand. An empty result offers the
     label form instead of a dead end. */
@@ -362,6 +412,7 @@ function addLabel(kcal: number | undefined, slot: MealSlot, day: LogDay) {
     Switching units keeps the same amount, counted the new way. */
 export function ProductStep({
   product,
+  servings: start = 1,
   slot,
   onSlot,
   day,
@@ -370,6 +421,8 @@ export function ProductStep({
   onSave,
 }: {
   product: Product
+  /** The amount already entered in the scan popup, in servings. */
+  servings?: number
   slot: MealSlot
   onSlot: (slot: MealSlot) => void
   day: LogDay
@@ -379,7 +432,7 @@ export function ProductStep({
   onSave: (meal: Omit<Meal, "id" | "time">) => void
 }) {
   const [unit, setUnit] = React.useState<Unit>("serving")
-  const [text, setText] = React.useState("1")
+  const [text, setText] = React.useState(trim(start))
   const qty = Number(text)
   const valid = Number.isFinite(qty) && qty > 0
   const servings = valid ? servingsOf(product, qty, unit) : 0
@@ -544,6 +597,8 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   unit: { ...type.unitLarge, paddingRight: 14 },
   input: { minWidth: 0 },
+  // The hint reads smaller than what she types.
+  inputEmpty: { fontSize: 13 },
   form: { gap: space.item },
   sheetFrame: { position: "absolute", top: 0, left: 0, right: 0 },
 
@@ -558,6 +613,8 @@ const styles = StyleSheet.create({
   torch: { position: "absolute", top: 12, right: 12, width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
   torchOn: { backgroundColor: "#FFFFFF" },
   status: { ...type.title, textAlign: "center" },
+
+  item: { gap: space.item },
 
   // A code nobody has.
   missing: { alignItems: "center", gap: space.item },

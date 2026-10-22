@@ -45,7 +45,7 @@ import { formatNumber } from "@/lib/trends"
 type Step =
   | { at: "capture" }
   | { at: "scan" }
-  | { at: "product"; product: Product }
+  | { at: "product"; product: Product; servings?: number }
   | { at: "check"; reading: Reading; n: number }
 
 /** When a meal logged for an earlier day is usually eaten. */
@@ -94,12 +94,11 @@ export default function LogMealScreen() {
 
   const time = () => editing?.time ?? (day.today ? clockOf(new Date()) : USUAL_TIME[slot])
 
-  if (step.at === "scan") return <ScanStep onBack={toCapture} onFound={(product) => setStep({ at: "product", product })} />
-
   if (step.at === "product")
     return (
       <ProductStep
         product={step.product}
+        servings={step.servings}
         slot={slot}
         onSlot={setSlot}
         day={day}
@@ -187,6 +186,12 @@ export default function LogMealScreen() {
         </Block>
       )}
       </FlowScreen>
+      {step.at === "scan" && <ScanStep
+          slot={slot}
+          onBack={toCapture}
+          onFound={(product, servings) => setStep({ at: "product", product, servings })}
+          onSave={(draft) => save({ ...draft, id: newId(), time: time() })}
+        />}
       {sheet === "voice" && (
         <VoiceSheet
           transcript={VOICE.transcript ?? ""}

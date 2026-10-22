@@ -2293,6 +2293,7 @@ export function ProgressChart(props: ProgressChartProps) {
   }
   const xs: number[] = []
   const scrub = useScrub(xs, select)
+  const gid = useSvgId("wash")
   if (!raw.length) {
     return (
       <View style={styles.frame}>
@@ -2501,7 +2502,18 @@ export function ProgressChart(props: ProgressChartProps) {
       >
         <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <Svg width={W} height={H}>
+            <Defs>
+              {/* The same wash as the biomarker trend: the line's teal at
+                  16% fading to nothing down the page. */}
+              <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={color.primaryText} stopOpacity={0.16} />
+                <Stop offset="1" stopColor={color.primaryText} stopOpacity={0} />
+              </LinearGradient>
+            </Defs>
             {end && <Rect x={xt} y={top} width={Math.max(plotRight - xt, 0)} height={base - top} fill={chart.future} />}
+            <AG opacity={phase(motion, 0, lineEnd, 0, 1)}>
+              <Path d={`${monotone(trendXY)} L ${trendXY[trendXY.length - 1][0].toFixed(1)} ${base} L ${trendXY[0][0].toFixed(1)} ${base} Z`} fill={`url(#${gid})`} />
+            </AG>
             <Line x1={0} x2={plotRight} y1={base} y2={base} stroke={chart.track} strokeWidth={1} />
             {goal !== undefined && <Line x1={0} x2={plotRight} y1={gy} y2={gy} stroke={chart.goal} strokeWidth={1} />}
             {end && (
