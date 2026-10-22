@@ -315,6 +315,16 @@ export type State = {
   /** She has seen "Your personalized plan is ready" (/plan-ready), shown
       once after her first plan is approved. */
   planReadySeen?: boolean
+  /** The starting point she set before day one (/starting-point, Journey_14
+      screen 29): the home measures and how much each symptom bothers her,
+      0 to 10. Progress pairs every later number with these. */
+  startingPoint?: { at: string; weight: number; waist: number; bother: { wake: number; irritable: number; gain: number } }
+  /** How she answered each of the six topics on Today, by day (lib/topics.ts):
+      the way she chose and when. */
+  topicLog?: Record<string, Partial<Record<string, { way: string; at: string }>>>
+  /** The measurements beyond weight and waist (entries holds those two),
+      by day, in inches. */
+  measures?: Record<string, Partial<Record<"chest" | "hips" | "thigh" | "arm", number>>>
   /** The plan's sample profile (lib/member.ts PROFILES): weight, blood
       sugar and heart, or bone. Weight when unset. */
   memberFocus?: "weight" | "bone"

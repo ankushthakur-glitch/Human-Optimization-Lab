@@ -20,13 +20,23 @@ if (Platform.OS === "web" && typeof localStorage !== "undefined") {
   /* Review builds only: /?demo=paid opens signed in on the paid member's
      home (a live plan, onboarding done), so the dashboard can be shared by
      one link instead of walking through activation, onboarding and checkout.
-     A different ?demo= value (or ?demo=off) clears it. */
+     ?demo=free does the same for a free patient (onboarding done, consent
+     signed, no membership), so the free home, record and Upgrade tab can be
+     reviewed by one link too. A different ?demo= value (or ?demo=off)
+     clears it. */
   try {
     // The flag is kept for the tab, so a refresh or a deep link such as
     // /log-meal?via=scan opens on the paid home's state without it.
     const asked = new URLSearchParams(window.location.search).get("demo")
     if (asked) sessionStorage.setItem("hol.demo", asked === "off" ? "" : asked)
-    if (asked === "paid" || sessionStorage.getItem("hol.demo") === "paid") {
+    const demo = sessionStorage.getItem("hol.demo")
+    if (demo === "free") {
+      const now = new Date().toISOString()
+      localStorage.setItem("hol.passwordHash", "demo")
+      localStorage.setItem("hol.signedIn", "1")
+      localStorage.setItem("hol.onboarding", JSON.stringify({ step: "done", consent: "signed", consentAt: now }))
+    }
+    if (asked === "paid" || demo === "paid") {
       const now = new Date().toISOString()
       localStorage.setItem("hol.passwordHash", "demo")
       localStorage.setItem("hol.signedIn", "1")

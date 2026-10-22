@@ -120,6 +120,10 @@ function Routes() {
           <Stack.Screen name="plan" options={{ animation: "none" }} />
           <Stack.Screen name="gaps" options={{ animation: "none" }} />
           <Stack.Screen name="today" options={{ animation: "none" }} />
+          {/* The six topics of a plan, a lift's form page and yesterday's figures, opened from Today and Review. */}
+          <Stack.Screen name="topic/[id]" />
+          <Stack.Screen name="lift/[id]" />
+          <Stack.Screen name="yesterday" />
           <Stack.Screen name="assistant" options={{ animation: "slide_from_bottom" }} />
           {/* The record, opened from home and Results. */}
           <Stack.Screen name="biomarker/[id]" />
@@ -141,6 +145,7 @@ function Routes() {
           <Stack.Screen name="schedule-confirmed" options={{ animation: "fade" }} />
           <Stack.Screen name="enrolled" options={{ animation: "fade" }} />
           <Stack.Screen name="plan-ready" options={{ animation: "fade" }} />
+          <Stack.Screen name="starting-point" />
           <Stack.Screen name="task/[id]" />
           <Stack.Screen name="order/[id]" />
           <Stack.Screen name="book/[id]" />

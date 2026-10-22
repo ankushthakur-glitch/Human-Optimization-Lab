@@ -114,6 +114,7 @@ export function TabScreen({
   footer,
   overlay,
   bare,
+  back,
   headless,
   fit,
   onRefresh,
@@ -123,6 +124,9 @@ export function TabScreen({
   fit?: boolean
   /** No tab bar: a back caret in the header instead. */
   bare?: boolean
+  /** A back caret in the header with the tab bar kept, for a page opened
+      from a tab (a topic opened from Today). */
+  back?: boolean
   /** No header bar at all: the page starts under the status bar and keeps
       the tab bar, e.g. the plan while the doctor reviews it. */
   headless?: boolean
@@ -175,8 +179,8 @@ export function TabScreen({
           <View style={{ height: top }} />
         ) : (
           <PageHeader
-            back={!!bare}
-            onBack={bare ? () => (router.canGoBack() ? router.back() : router.replace("/")) : undefined}
+            back={!!bare || !!back}
+            onBack={bare || back ? () => (router.canGoBack() ? router.back() : router.replace("/")) : undefined}
             title={title}
             right={headerRight}
             compact={!!header}
