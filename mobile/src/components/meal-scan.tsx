@@ -23,10 +23,10 @@ import {
   type Unit,
 } from "@/components/scan-food"
 import { Sheet, useKeyboardHeight } from "@/components/sheet"
-import { TotalsHead, nutrientLine, saveLabel, type LogDay } from "@/components/today-food-meals"
+import { saveLabel, slotName, type LogDay } from "@/components/today-food-meals"
 import { Button, TextField } from "@/components/ui"
-import { MEAL_SLOTS, totalsOf, type Meal, type MealSlot, type Nutrients, type NutrientId } from "@/lib/member"
-import { color, ink, space, type } from "@/lib/theme"
+import { MEAL_SLOTS, NUTRIENTS, totalsOf, type Amount, type Meal, type MealSlot, type Nutrients, type NutrientId } from "@/lib/member"
+import { color, hairline, ink, space, type } from "@/lib/theme"
 import { formatNumber } from "@/lib/trends"
 
 /* Scan food on Log a meal. Two steps and a fallback:
@@ -332,9 +332,30 @@ const slotTabs = (slot: MealSlot) => MEAL_SLOTS.filter((m) => m.main || m.id ===
 
 const trim = (v: number) => String(Math.round(v * 100) / 100)
 
-/** What a quick chip says, for each unit. */
-const QUICK: Record<"serving" | "package", number[]> = { serving: [0.5, 1, 2], package: [0.5, 1] }
-const quickLabel = (v: number) => (v === 0.5 ? "½" : String(v))
+/** The quick chips for each unit: half, one and two servings, or half a
+    package and a whole one. Grams and millilitres take half, one and one
+    and a half of the label's serving, so a 170 g pot offers 85, 170 and
+    255. */
+function quickOf(p: Product, unit: Unit): number[] {
+  if (unit === "serving") return [0.5, 1, 2]
+  if (unit === "package") return [0.5, 1]
+  return [0.5, 1, 1.5].map((m) => Math.round(m * p.serving.amount))
+}
+const quickLabel = (v: number, unit: Unit) => (unit === "g" || unit === "ml" ? `${v} ${unit}` : v === 0.5 ? "½" : String(v))
+
+/** "1 pot" from "1 pot (170 g)": the serving as the label counts it. */
+const servingName = (p: Product) => p.serving.words.replace(/\s*\(.*$/, "")
+
+/** The button's words with the calories it adds: "Add 250 kcal to Dinner". */
+function addLabel(kcal: number | undefined, slot: MealSlot, day: LogDay) {
+  if (kcal === undefined) return saveLabel(slot, day)
+  const add = `Add ${formatNumber(Math.round(kcal))} kcal`
+  const name = slotName(slot)
+  if (day.today) return slot === "snack" ? `${add} as a snack` : `${add} to ${name}`
+  const lower = name.toLowerCase()
+  if (day.yesterday) return slot === "snack" ? `${add} as yesterday’s snack` : `${add} to yesterday’s ${lower}`
+  return slot === "snack" ? `${add} as a snack on ${day.label}` : `${add} to ${lower} on ${day.label}`
+}
 
 /** How much of the product: the label's serving to start, a stepper and
     a unit, the nutrients for that amount, and the one button that saves.
@@ -386,7 +407,8 @@ export function ProductStep({
   const totals = totalsOf([{ ...draft, id: "draft", time: "" }])
   const many = servings > MANY
   const measure = valid ? `${trim(servings * product.serving.amount)} ${product.measure}` : undefined
-  const quick = unit === "serving" || unit === "package" ? QUICK[unit] : undefined
+  const quick = quickOf(product, unit)
+  const rows: NutrientId[] = ["calories", ...ids.slice(0, 3)]
 
   return (
     <FlowScreen
@@ -395,13 +417,13 @@ export function ProductStep({
       onBack={onBack}
       footer={
         <PrimaryButton onPress={() => onSave(draft)} disabled={!valid}>
-          {saveLabel(slot, day)}
+          {valid ? addLabel(totals.calories?.value, slot, day) : saveLabel(slot, day)}
         </PrimaryButton>
       }
     >
       <Tabs snug options={slotTabs(slot)} value={slot} onChange={onSlot} />
 
-      <Card style={styles.product}>
+      <Card>
         <View style={styles.productTop}>
           <View style={styles.productTile}>
             <Package size={20} color={HUE.teal.ink} />
@@ -412,14 +434,13 @@ export function ProductStep({
           </View>
           <Tag tone="muted">{product.custom ? "You entered" : "From the label"}</Tag>
         </View>
-        <Text style={styles.label}>{`One serving is ${product.serving.words}${product.perPackage && product.perPackage > 1 ? `, ${product.perPackage} in the package` : ""}`}</Text>
       </Card>
 
       <Block title="How much?">
         <View style={styles.amount}>
           <View style={styles.stepper}>
             <StepButton label="Less" onPress={() => bump(-1)} disabled={valid && qty <= stepOf(unit)}>
-              <Minus size={20} color={ink.strong} />
+              <Minus size={20} color={color.primary} />
             </StepButton>
             <View style={styles.entry}>
               <TextInput
@@ -433,20 +454,22 @@ export function ProductStep({
               />
             </View>
             <StepButton label="More" onPress={() => bump(1)}>
-              <Plus size={20} color={ink.strong} />
+              <Plus size={20} color={color.primary} />
             </StepButton>
           </View>
-          <ChipRow label="Unit" options={units} value={unit} onChange={change} wrap />
-          {quick && (
+          {/* The unit on the left, the quick amounts on the right; they
+              share a line when they fit and stack when they do not. */}
+          <View style={styles.choices}>
+            <ChipRow label="Unit" options={units} value={unit} onChange={change} wrap />
             <ChipRow
               label="Quick amounts"
-              options={quick.map((v) => ({ value: String(v), label: quickLabel(v) }))}
+              options={quick.map((v) => ({ value: String(v), label: quickLabel(v, unit) }))}
               value={valid && quick.includes(qty) ? String(qty) : undefined}
               onChange={(v) => setText(v)}
               wrap
               tick={false}
             />
-          )}
+          </View>
           <Text style={styles.label} accessibilityLiveRegion="polite">
             {valid ? `${unit === "serving" ? "" : `${trim(servings)} ${servings === 1 ? "serving" : "servings"}, `}${measure}` : "Enter an amount"}
           </Text>
@@ -459,15 +482,32 @@ export function ProductStep({
         </View>
       </Block>
 
-      <Block title="You’re adding">
-        <Card style={styles.totals}>
-          <View style={styles.totalsTop}>
-            <TotalsHead kcal={valid ? totals.calories : undefined} about={false} />
-          </View>
-          <Text style={styles.label}>{valid ? nutrientLine(totals, ids.slice(0, 3)) : "Enter an amount to see the nutrients."}</Text>
-        </Card>
-      </Block>
+      <NutritionTable product={product} rows={rows} totals={valid ? totals : {}} />
     </FlowScreen>
+  )
+}
+
+/** The label beside what she adds: one serving as printed, then the amount
+    she picked. A nutrient the label leaves out shows a dash, never zero. */
+function NutritionTable({ product, rows, totals }: { product: Product; rows: NutrientId[]; totals: Partial<Record<NutrientId, Amount>> }) {
+  const per = servingName(product)
+  const words = (id: NutrientId, v: number | undefined, unit: boolean) =>
+    v === undefined ? "—" : `${formatNumber(Math.round(v * 10) / 10)}${unit || id !== "calories" ? ` ${NUTRIENTS[id].unit}` : ""}`
+  return (
+    <Card style={styles.table} accessibilityLabel="Nutrition, one serving and what you add">
+      <View style={styles.tableHead}>
+        <Text style={styles.tableLabel}>Nutrition</Text>
+        <Text style={[styles.tableLabel, styles.colPer]}>{per}</Text>
+        <Text style={[styles.tableLabel, styles.colAdd, styles.addInk]}>You add</Text>
+      </View>
+      {rows.map((id) => (
+        <View key={id} style={styles.tableRow}>
+          <Text style={styles.tableName}>{NUTRIENTS[id].name}</Text>
+          <Text style={[styles.tablePer, styles.colPer]}>{words(id, product.nutrients[id], false)}</Text>
+          <Text style={[styles.tableAdd, styles.colAdd]}>{words(id, totals[id]?.value, true)}</Text>
+        </View>
+      ))}
+    </Card>
   )
 }
 
@@ -516,19 +556,29 @@ const styles = StyleSheet.create({
   missingMark: { width: 44, height: 44, borderRadius: 22, backgroundColor: HUE.amber.tint, alignItems: "center", justifyContent: "center" },
 
   // How much.
-  product: { gap: space.card },
   productTop: { flexDirection: "row", alignItems: "center", gap: space.lead },
   productTile: { width: 40, height: 40, borderRadius: 20, backgroundColor: HUE.teal.tint, alignItems: "center", justifyContent: "center" },
   productWords: { flex: 1, gap: space.line },
   productName: { ...type.title },
   amount: { gap: space.item },
   stepper: { flexDirection: "row", alignItems: "center", gap: space.item },
-  step: { width: 52, height: 52, borderRadius: 26, backgroundColor: color.background, borderWidth: 1, borderColor: color.inputBorder, alignItems: "center", justifyContent: "center" },
+  step: { width: 52, height: 52, borderRadius: 26, backgroundColor: color.background, borderWidth: 1, borderColor: color.primaryEdge, alignItems: "center", justifyContent: "center" },
   stepOff: { opacity: 0.4 },
-  entry: { flex: 1, height: 52, borderRadius: 12, backgroundColor: color.background, borderWidth: 1, borderColor: color.inputBorder, justifyContent: "center" },
+  entry: { flex: 1, height: 52, borderRadius: 12, backgroundColor: color.background, borderWidth: 1, borderColor: color.primaryEdge, justifyContent: "center" },
   entryInput: { ...type.hero, textAlign: "center", paddingVertical: 0, minWidth: 0 },
   warn: { flexDirection: "row", alignItems: "center", gap: space.inline, padding: space.compact, borderRadius: 8, backgroundColor: HUE.amber.tint },
   warnText: { ...type.label, flex: 1, color: HUE.amber.ink },
-  totals: { gap: space.stack },
-  totalsTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },
+  choices: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: space.inline },
+
+  // The label table: nutrient, one serving, what she adds.
+  table: { paddingVertical: space.stack },
+  tableHead: { flexDirection: "row", alignItems: "center", paddingVertical: space.inline },
+  tableRow: { flexDirection: "row", alignItems: "center", paddingVertical: space.rowY, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: hairline.rule },
+  tableLabel: { ...type.metaStrong, flex: 1, color: ink.secondary },
+  tableName: { ...type.body, flex: 1, color: ink.content },
+  tablePer: { ...type.label },
+  tableAdd: { ...type.value, color: ink.primary },
+  addInk: { color: ink.primary },
+  colPer: { flex: 0, width: 64, textAlign: "right" },
+  colAdd: { flex: 0, width: 84, textAlign: "right" },
 })
