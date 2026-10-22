@@ -166,13 +166,16 @@ export function useNewParam(open: () => void) {
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
+  // An effect event, so a caller's unmemoized `open` can't re-run the effect
+  // (each run sets state, which re-renders with a new `open`: an update loop).
+  const onNew = React.useEffectEvent(open)
   React.useEffect(() => {
     if (params.get("new") !== "1") return
-    open()
+    onNew()
     const rest = new URLSearchParams(params)
     rest.delete("new")
     router.replace(rest.size ? `${pathname}?${rest}` : pathname)
-  }, [params, open, router, pathname])
+  }, [params, router, pathname])
 }
 
 /* -------------------------------------------------------------------------- */

@@ -318,7 +318,6 @@ export function StaffPanel({ heading }: { heading: React.ReactNode }) {
   const [panel, setPanel] = React.useState<Panel>(null)
   const [deactivating, setDeactivating] = React.useState<StaffUser | null>(null)
 
-  /* The React Compiler memoizes this, which keeps useNewParam's effect stable. */
   const openCreate = () => setPanel({ kind: "form" })
   useNewParam(openCreate)
 
