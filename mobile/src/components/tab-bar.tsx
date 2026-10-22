@@ -50,7 +50,7 @@ import { color, font, space } from "@/lib/theme"
 
 export type TabName = "home" | "results" | "todo" | "plan" | "today" | "progress" | "connections" | "care"
 
-type Href = "/" | "/results" | "/gaps" | "/plan" | "/today" | "/progress" | "/connections" | "/membership"
+type Href = "/" | "/results" | "/gaps" | "/plan" | "/today" | "/progress" | "/connections" | "/care"
 
 type Tab = {
   name: TabName | "back"
@@ -66,7 +66,7 @@ const TABS: Tab[] = [
   { name: "todo", label: "To do", href: "/gaps", Icon: IconToDo },
   { name: "results", label: "Record", href: "/results", Icon: IconResults },
   { name: "plan", label: "Plan", href: "/plan", Icon: IconPlan },
-  { name: "care", label: "Care", href: "/membership", Icon: IconCare },
+  { name: "care", label: "Care", href: "/care", Icon: IconCare },
 ]
 
 /** The plan's tabs: Back goes home, Today and Progress switch in place. */

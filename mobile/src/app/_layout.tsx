@@ -150,6 +150,11 @@ function Routes() {
           <Stack.Screen name="task/[id]" />
           <Stack.Screen name="order/[id]" />
           <Stack.Screen name="book/[id]" />
+          {/* The Care tab's catalog: the nine categories, an item, and
+              booking its time. */}
+          <Stack.Screen name="care" options={{ animation: "none" }} />
+          <Stack.Screen name="catalog/[id]" />
+          <Stack.Screen name="catalog/book/[id]" />
           <Stack.Screen name="visit/[id]" />
           <Stack.Screen name="notifications" />
           {/* The member's day, opened from the member home's doors and
