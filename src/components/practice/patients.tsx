@@ -58,6 +58,7 @@ import {
   useProviderLookup,
   usDate,
 } from "@/components/practice/practice-data"
+import { useEmployerLookup } from "@/components/settings/settings-data"
 import { PatientsFrame, usePortal } from "@/components/practice/portal"
 import {
   type RecordState,
@@ -362,7 +363,9 @@ function usePatientImport(): ImportSpec<PatientInput> {
   const batch = React.useRef<{ row: number; value: PatientInput }[]>([])
   const loc = useLocationLookup()
   const prov = useProviderLookup()
+  const emp = useEmployerLookup()
   const activeLocations = loc.active.map((l) => l.name)
+  const activeEmployers = emp.active.map((e) => e.name)
   const activeProviders = prov.active.map(providerName)
 
   return {
@@ -406,6 +409,12 @@ function usePatientImport(): ImportSpec<PatientInput> {
         example: activeProviders[0] ?? "",
         options: activeProviders,
         width: 28,
+      },
+      {
+        header: "Employer",
+        example: activeEmployers[0] ?? "",
+        options: activeEmployers,
+        width: 24,
       },
     ],
     parse(c, row): ParsedRow<PatientInput> {
@@ -464,6 +473,12 @@ function usePatientImport(): ImportSpec<PatientInput> {
       else if (locationId && !provider.locationIds.includes(locationId))
         errors.push(`${providerName(provider)} doesn't work at ${c.Location}.`)
 
+      const employerId = emp.active.find(
+        (e) => e.name.toLowerCase() === c.Employer.trim().toLowerCase()
+      )?.id
+      if (c.Employer && !employerId)
+        errors.push(`Employer "${c.Employer}" isn't an active employer.`)
+
       const value: PatientInput = {
         ...emptyPatient(),
         firstName: first,
@@ -474,6 +489,7 @@ function usePatientImport(): ImportSpec<PatientInput> {
         phone: phone ? formatPhone(phone) : "",
         locationId: locationId ?? "",
         providerId: provider?.id ?? "",
+        employerId: employerId ?? "",
       }
       if (!VALIDATE) errors.length = 0
       const outcome =
@@ -536,6 +552,7 @@ export function PatientsScreen() {
   const { items } = patients.use()
   const loc = useLocationLookup()
   const prov = useProviderLookup()
+  const emp = useEmployerLookup()
   const importSpec = usePatientImport()
   const router = useRouter()
   const portal = usePortal()
@@ -648,6 +665,13 @@ export function PatientsScreen() {
       cell: (p) => prov.name(p.providerId),
     },
     {
+      id: "employer",
+      header: "Employer",
+      className: "hidden lg:table-cell",
+      sortValue: (p) => emp.name(p.employerId),
+      cell: (p) => emp.name(p.employerId),
+    },
+    {
       id: "status",
       header: "Status",
       sortValue: (p) => p.status,
@@ -746,6 +770,13 @@ export function PatientsScreen() {
             match: (p, v) => prov.name(p.providerId) === v,
           },
           {
+            id: "employer",
+            label: "Employer",
+            all: "All employers",
+            options: emp.all.map((e) => e.name),
+            match: (p, v) => emp.name(p.employerId) === v,
+          },
+          {
             id: "risk",
             label: "Risk level",
             all: "All risk levels",
@@ -792,6 +823,7 @@ export function PatientsScreen() {
           Email: p.email,
           Location: loc.name(p.locationId),
           "Primary provider": prov.name(p.providerId),
+          Employer: emp.name(p.employerId),
           Status: p.status,
           "Risk level": riskLevel(p),
           "Last interacted": shortDate(p.lastEngagedAt ?? ""),

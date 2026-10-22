@@ -1,9 +1,10 @@
 "use client"
 
-import { IconFlag, IconHistory } from "@/design-system/icons"
+import { IconFlag, IconHistory, IconNotification } from "@/design-system/icons"
 
 import { ProviderShell } from "@/components/provider/provider-shell"
 import { AuditLogPage } from "@/components/settings/audit-log"
+import { NotificationsPage } from "@/components/settings/notifications"
 import { PatientFlagsPage } from "@/components/settings/patient-flags"
 import {
   type SettingsGroup,
@@ -12,8 +13,8 @@ import {
 } from "@/components/settings/settings-kit"
 
 /* The provider's Settings: patient flags (from the Solid EHR "Provider
-   Account > Patient Flags" frames, with ready-made flags to start from) and
-   the audit log of their own activity and of everyone who opened their
+   Account > Patient Flags" frames, with ready-made flags to start from), their
+   own notifications and the audit log of their own activity and of everyone who opened their
    patients' charts. */
 
 const BASE = "/screens/patients/settings"
@@ -28,6 +29,18 @@ const GROUPS: SettingsGroup[] = [
         id: "flags",
         label: "Patient flags",
         render: () => <PatientFlagsPage actor="Dr. Elise Harrington" />,
+      },
+    ],
+  },
+  {
+    id: "alerts",
+    title: "Alerts",
+    icon: IconNotification,
+    pages: [
+      {
+        id: "notifications",
+        label: "Notifications",
+        render: () => <NotificationsPage storageKey="provider-notifications" />,
       },
     ],
   },

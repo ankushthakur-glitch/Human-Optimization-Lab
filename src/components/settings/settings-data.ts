@@ -566,6 +566,18 @@ export const employers = createCollection(
   VERSION
 )
 
+/** Employer names by id, for the patient form's dropdown and the patient list.
+    Only active employers can be picked; an inactive one still reads by name. */
+export function useEmployerLookup() {
+  const { items } = employers.use()
+  return {
+    all: items,
+    active: items.filter((e) => e.status === "Active"),
+    name: (id: string) => items.find((e) => e.id === id)?.name ?? "",
+    idFor: (name: string) => items.find((e) => e.name === name)?.id,
+  }
+}
+
 export const MATCH_ATTRIBUTES = [
   { id: "name", name: "Full name", on: true },
   { id: "dob", name: "Date of birth", on: true },

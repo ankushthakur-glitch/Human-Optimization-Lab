@@ -19,6 +19,7 @@ import {
   personAddress,
   usDate,
 } from "@/components/practice/practice-data"
+import type { LabOrder } from "@/components/provider/chart-lab-orders"
 
 /* What the sources actually send, drawn as the documents a provider would
    print: a lab's patient report, the clinic's signed progress note, a C-CDA
@@ -407,6 +408,84 @@ function PatientBox({
 const footerFor = (sourceId: string, id: string) => {
   const s = SOURCES.find((x) => x.id === sourceId)
   return `${id}  |  Received from ${s?.name ?? ORGS[sourceId]?.name ?? sourceId} through Health Gorilla${s ? `, ${s.network}` : ""}`
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Lab order                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/** The requisition the clinic sends the lab for an order placed in the chart. */
+export function LabOrderPaper({
+  patient: p,
+  order: o,
+  orderedOn,
+}: {
+  patient: Patient
+  order: LabOrder
+  /** The order time, already formatted. */
+  orderedOn: string
+}) {
+  return (
+    <Paper footer={`${o.id}  |  Ordered from the ${CLINIC.name} chart`}>
+      <Letterhead
+        org={CLINIC}
+        title="Lab requisition"
+        meta={
+          <>
+            <Barcode value={o.id} />
+            <span className="text-[11px] text-neutral-600">Order {o.id}</span>
+            <span
+              className={cn(
+                "text-[11px] font-semibold",
+                o.status === "Cancelled" ? "text-neutral-500" : "text-sky-700"
+              )}
+            >
+              {o.status}
+            </span>
+          </>
+        }
+      />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <PatientBox p={p} extra={[["Phone", p.phone]]} />
+        <Box title="Collection">
+          <KV
+            rows={[
+              ["Lab", o.lab],
+              ["Collect on", usDate(o.collectOn)],
+              ["Priority", o.priority],
+              ["Fasting", o.fasting ? "Yes" : "No"],
+            ]}
+          />
+        </Box>
+        <Box title="Ordering provider">
+          <KV
+            rows={[
+              ["Provider", o.orderedBy],
+              ["Practice", CLINIC.name],
+              ["Ordered", orderedOn],
+              ["Address", CLINIC.address],
+            ]}
+          />
+        </Box>
+      </div>
+
+      <Part title="Tests ordered">
+        <Grid
+          head={["#", "Test", "Diagnosis"]}
+          rows={o.tests.map((t, i) => [i + 1, t, o.diagnosis || "Not given"])}
+        />
+      </Part>
+
+      {o.note && (
+        <Part title="Note to lab">
+          <p>{o.note}</p>
+        </Part>
+      )}
+
+      <Signature name={o.orderedBy} credential="MD" when={orderedOn} />
+    </Paper>
+  )
 }
 
 /* -------------------------------------------------------------------------- */

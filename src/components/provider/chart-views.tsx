@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { IconDownload, IconPrint } from "@/design-system/icons"
+import { IconAdd, IconDownload, IconPrint } from "@/design-system/icons"
+import { toast } from "@/design-system/ui/sonner"
 
 import { cn } from "@/lib/utils"
 import {
@@ -18,8 +19,14 @@ import {
 } from "@/components/provider/chart-layout"
 import {
   EncounterPaper,
+  LabOrderPaper,
   LabReportPaper,
 } from "@/components/provider/chart-papers"
+import {
+  type LabOrder,
+  LabOrderDialog,
+  labOrders,
+} from "@/components/provider/chart-lab-orders"
 import {
   type Updated,
   atLabel,
@@ -32,7 +39,8 @@ import { Button } from "@/design-system/ui/button"
    documents layout: the section bar, then a searchable list on the left and
    the selected item on the right as the document the source sent, with
    Print and Download under it. All three are read-only copies of what
-   Health Gorilla returned (Encounter, DiagnosticReport, DocumentReference). */
+   Health Gorilla returned (Encounter, DiagnosticReport, DocumentReference),
+   apart from the Lab orders tab, where the provider orders tests. */
 
 const source = (id: string) => SOURCES.find((s) => s.id === id)
 
@@ -127,6 +135,7 @@ function Viewer({
   updated,
   children,
   onDownload,
+  action,
 }: {
   title: string
   badge?: React.ReactNode
@@ -134,6 +143,8 @@ function Viewer({
   updated: Updated
   children: React.ReactNode
   onDownload: () => void
+  /** One more footer button, on the left. */
+  action?: React.ReactNode
 }) {
   return (
     <>
@@ -154,6 +165,7 @@ function Viewer({
         {children}
       </div>
       <div className="flex h-14 shrink-0 items-center justify-end gap-3 border-t px-3 print:hidden">
+        {action && <div className="mr-auto">{action}</div>}
         <Button variant="outline" onClick={() => window.print()}>
           <IconPrint />
           Print
@@ -284,107 +296,287 @@ export function EncountersView({
 /*  Lab results                                                                */
 /* -------------------------------------------------------------------------- */
 
+const ORDER_BADGE: Record<LabOrder["status"], "info" | "secondary"> = {
+  Ordered: "info",
+  Cancelled: "secondary",
+}
+
 export function LabsView({
   patient,
   record,
+  tab,
+  onTab,
   selected,
   onSelect,
 }: {
   patient: Patient
   record: HealthRecord
+  tab: "reports" | "orders"
+  onTab: (tab: "reports" | "orders", item?: string) => void
   selected: string
   onSelect: (id: string) => void
 }) {
   const [query, setQuery] = React.useState("")
   const [from, setFrom] = React.useState("all")
-  const rows = record.labReports.filter(
-    (r) =>
-      (from === "all" || r.sourceId === from) &&
-      matches(query, r.name, r.accession, ...r.results.map((x) => x.name))
+  const [ordering, setOrdering] = React.useState(false)
+  const { items: allOrders } = labOrders.use()
+  const orders = allOrders.filter((o) => o.patientId === patient.id)
+
+  const addOrder = (
+    <Button size="sm" onClick={() => setOrdering(true)}>
+      <IconAdd />
+      Add lab order
+    </Button>
   )
-  const current = rows.find((r) => r.id === selected) ?? rows[0]
 
   return (
     <Section>
       <SectionBar
-        title="Lab reports"
+        tabs={[
+          { id: "reports", label: `Lab reports (${record.labReports.length})` },
+          { id: "orders", label: `Lab orders (${orders.length})` },
+        ]}
+        value={tab}
+        onTab={(t) => onTab(t as "reports" | "orders")}
         actions={
           <>
             <SearchBox
               value={query}
               onChange={setQuery}
-              label="Search lab reports"
+              label={tab === "orders" ? "Search lab orders" : "Search lab reports"}
             />
-            <SourceSelect
-              items={record.labReports}
-              value={from}
-              onChange={setFrom}
-              noun="labs"
-            />
+            {tab === "reports" && (
+              <SourceSelect
+                items={record.labReports}
+                value={from}
+                onChange={setFrom}
+                noun="labs"
+              />
+            )}
+            {addOrder}
           </>
         }
       />
-      <Split
-        list={
-          rows.length === 0 ? (
-            <EmptyList>No lab reports match</EmptyList>
-          ) : (
-            rows.map((r) => {
-              const flagged = r.results.filter((x) => x.flag).length
-              return (
-                <ListItem
-                  key={r.id}
-                  title={r.name}
-                  selected={r.id === current?.id}
-                  onClick={() => onSelect(r.id)}
-                  badge={
-                    (flagged > 0 && (
-                      <Badge variant="destructive" className={PILL}>
-                        {flagged} flagged
-                      </Badge>
-                    )) ||
-                    undefined
-                  }
-                  meta={
-                    <span className="truncate">
-                      Resulted on and by: {usDate(r.date)},{" "}
-                      {source(r.sourceId)?.name}
-                    </span>
-                  }
-                />
+      {tab === "orders" ? (
+        <LabOrders
+          patient={patient}
+          orders={orders.filter((o) =>
+            matches(query, o.id, o.lab, o.diagnosis, ...o.tests)
+          )}
+          selected={selected}
+          onSelect={onSelect}
+          onAdd={() => setOrdering(true)}
+        />
+      ) : (
+        <LabReports
+          patient={patient}
+          rows={record.labReports.filter(
+            (r) =>
+              (from === "all" || r.sourceId === from) &&
+              matches(
+                query,
+                r.name,
+                r.accession,
+                ...r.results.map((x) => x.name)
               )
-            })
-          )
-        }
-        viewer={
-          current ? (
-            <Viewer
-              title={current.name}
-              updated={updatedOf(current.id, current.date, current.reviewer)}
-              badge={
-                <Badge variant="success" className={PILL}>
-                  {current.status}
-                </Badge>
-              }
-              onDownload={() =>
-                download(`${current.name} ${current.date}`, [
-                  `${current.name}, resulted ${usDate(current.date)}`,
-                  `Accession: ${current.accession}`,
-                  `Ordered by: ${current.orderedBy || "Not recorded"}`,
-                  ...current.results.map(
-                    (x) =>
-                      `${x.name}: ${x.value} ${x.unit} (range ${x.range || "none"})${x.flag ? ` ${x.flag}` : ""}`
-                  ),
-                ])
-              }
-            >
-              <LabReportPaper patient={patient} reports={[current]} />
-            </Viewer>
-          ) : (
-            <EmptyList>Select a lab report</EmptyList>
-          )
-        }
+          )}
+          selected={selected}
+          onSelect={onSelect}
+        />
+      )}
+      <LabOrderDialog
+        open={ordering}
+        patientId={patient.id}
+        record={record}
+        onClose={() => setOrdering(false)}
+        onCreated={(order) => {
+          setOrdering(false)
+          onTab("orders", order.id)
+          toast.success(`Lab order ${order.id} placed`)
+        }}
       />
     </Section>
+  )
+}
+
+function LabReports({
+  patient,
+  rows,
+  selected,
+  onSelect,
+}: {
+  patient: Patient
+  rows: HealthRecord["labReports"]
+  selected: string
+  onSelect: (id: string) => void
+}) {
+  const current = rows.find((r) => r.id === selected) ?? rows[0]
+  return (
+    <Split
+      list={
+        rows.length === 0 ? (
+          <EmptyList>No lab reports match</EmptyList>
+        ) : (
+          rows.map((r) => {
+            const flagged = r.results.filter((x) => x.flag).length
+            return (
+              <ListItem
+                key={r.id}
+                title={r.name}
+                selected={r.id === current?.id}
+                onClick={() => onSelect(r.id)}
+                badge={
+                  (flagged > 0 && (
+                    <Badge variant="destructive" className={PILL}>
+                      {flagged} flagged
+                    </Badge>
+                  )) ||
+                  undefined
+                }
+                meta={
+                  <span className="truncate">
+                    Resulted on and by: {usDate(r.date)},{" "}
+                    {source(r.sourceId)?.name}
+                  </span>
+                }
+              />
+            )
+          })
+        )
+      }
+      viewer={
+        current ? (
+          <Viewer
+            title={current.name}
+            updated={updatedOf(current.id, current.date, current.reviewer)}
+            badge={
+              <Badge variant="success" className={PILL}>
+                {current.status}
+              </Badge>
+            }
+            onDownload={() =>
+              download(`${current.name} ${current.date}`, [
+                `${current.name}, resulted ${usDate(current.date)}`,
+                `Accession: ${current.accession}`,
+                `Ordered by: ${current.orderedBy || "Not recorded"}`,
+                ...current.results.map(
+                  (x) =>
+                    `${x.name}: ${x.value} ${x.unit} (range ${x.range || "none"})${x.flag ? ` ${x.flag}` : ""}`
+                ),
+              ])
+            }
+          >
+            <LabReportPaper patient={patient} reports={[current]} />
+          </Viewer>
+        ) : (
+          <EmptyList>Select a lab report</EmptyList>
+        )
+      }
+    />
+  )
+}
+
+function LabOrders({
+  patient,
+  orders,
+  selected,
+  onSelect,
+  onAdd,
+}: {
+  patient: Patient
+  orders: LabOrder[]
+  selected: string
+  onSelect: (id: string) => void
+  onAdd: () => void
+}) {
+  const current = orders.find((o) => o.id === selected) ?? orders[0]
+  return (
+    <Split
+      list={
+        orders.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 px-2 py-6">
+            <p className="text-sm text-muted-foreground">No lab orders yet</p>
+            <Button size="sm" variant="outline" onClick={onAdd}>
+              <IconAdd />
+              Add lab order
+            </Button>
+          </div>
+        ) : (
+          orders.map((o) => (
+            <ListItem
+              key={o.id}
+              title={
+                o.tests.length > 1
+                  ? `${o.tests[0]} +${o.tests.length - 1}`
+                  : o.tests[0]
+              }
+              selected={o.id === current?.id}
+              onClick={() => onSelect(o.id)}
+              badge={
+                <Badge variant={ORDER_BADGE[o.status]} className={PILL}>
+                  {o.status}
+                </Badge>
+              }
+              meta={
+                <>
+                  <span className="shrink-0">
+                    Collect on: {usDate(o.collectOn)}
+                  </span>
+                  <Sep />
+                  <span className="truncate">{o.lab}</span>
+                </>
+              }
+            />
+          ))
+        )
+      }
+      viewer={
+        current ? (
+          <Viewer
+            title={`Lab order ${current.id}`}
+            updated={{ by: current.orderedBy, at: current.orderedAt }}
+            badge={
+              <Badge variant={ORDER_BADGE[current.status]} className={PILL}>
+                {current.status}
+              </Badge>
+            }
+            action={
+              current.status === "Ordered" && (
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    labOrders.patch(current.id, { status: "Cancelled" })
+                    toast.success(`Lab order ${current.id} cancelled`)
+                  }}
+                >
+                  Cancel order
+                </Button>
+              )
+            }
+            onDownload={() =>
+              download(`Lab order ${current.id}`, [
+                `Lab order ${current.id}, ${current.status}`,
+                `Ordered by: ${current.orderedBy}, ${atLabel(current.orderedAt)}`,
+                `Lab: ${current.lab}`,
+                `Priority: ${current.priority}`,
+                `Collect on: ${usDate(current.collectOn)}`,
+                `Fasting: ${current.fasting ? "Yes" : "No"}`,
+                `Diagnosis: ${current.diagnosis || "Not given"}`,
+                ...current.tests.map((t) => `Test: ${t}`),
+                ...(current.note ? [`Note: ${current.note}`] : []),
+              ])
+            }
+          >
+            <LabOrderPaper
+              patient={patient}
+              order={current}
+              orderedOn={atLabel(current.orderedAt)}
+            />
+          </Viewer>
+        ) : (
+          <EmptyList>Select a lab order</EmptyList>
+        )
+      }
+    />
   )
 }

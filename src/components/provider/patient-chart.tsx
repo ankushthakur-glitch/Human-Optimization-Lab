@@ -117,7 +117,7 @@ import { Illustration } from "@/components/illustrations/illustration"
    Charting" frames: a patient banner that collapses, a chart nav on the left
    and the section on the right. Every clinical value comes from the Epic
    sync once the patient has consented in the app; the chart reads it and
-   never adds to it. The care plan is the one thing reviewed here. The provider can pull a fresh copy at any time with
+   never adds to it, except for lab orders placed from Lab results. The care plan is the one thing reviewed here. The provider can pull a fresh copy at any time with
    Sync now, on top of the nightly refresh. */
 
 export type ChartSection =
@@ -330,8 +330,10 @@ export function PatientChart({ patient }: { patient: Patient }) {
             <LabsView
               patient={patient}
               record={chart.record}
+              tab={tab === "orders" ? "orders" : "reports"}
+              onTab={(t, i) => go({ tab: t === "reports" ? "" : t, item: i })}
               selected={item}
-              onSelect={(i) => go({ item: i })}
+              onSelect={(i) => go({ tab, item: i })}
             />
           ) : section === "appointments" ? (
             <AppointmentsView

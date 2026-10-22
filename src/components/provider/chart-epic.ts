@@ -15,7 +15,8 @@ import type { Patient } from "@/components/practice/practice-data"
    FamilyMemberHistory, AllergyIntolerance, Condition, MedicationRequest,
    Observation (vitals and labs), Appointment (the patient's), Encounter,
    DocumentReference (clinical notes), Practitioner and Location.
-   Nothing is written back from the chart, so it has no add forms. Every
+   Nothing is written back from the chart; its one add form is the lab
+   order (chart-lab-orders.tsx). Every
    record carries who changed it last in Epic and when (meta.lastUpdated
    with its Provenance agent). */
 
