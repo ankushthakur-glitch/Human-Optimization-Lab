@@ -92,13 +92,13 @@ export function TopicHead({ topic, intro }: { topic: Topic; intro: string }) {
   )
 }
 
-/** Today's target, on a dark card: what it is, what sits behind it, and
+/** Today's target, on a teal tinted card: what it is, what sits behind it, and
     the figure on the right. */
 export function TargetCard({ icon, title, detail, figure }: { icon: IconKey; title: string; detail: string; figure: string }) {
   return (
     <View style={styles.target} accessible accessibilityLabel={`${title}. ${detail}. ${figure}`}>
       <View style={styles.targetTile}>
-        <TopicIcon name={icon} size={18} color={ink.onColor} />
+        <TopicIcon name={icon} size={18} color={ink.primary} />
       </View>
       <View style={styles.fill}>
         <Text style={styles.targetTitle}>{title}</Text>
@@ -209,11 +209,11 @@ const styles = StyleSheet.create({
   headRow: { flexDirection: "row", alignItems: "center", gap: space.inline, flexWrap: "wrap" },
   title: { ...type.hero, fontSize: 24, lineHeight: 32 },
 
-  target: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 12, backgroundColor: ink.strong },
-  targetTile: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255, 255, 255, 0.14)" },
-  targetTitle: { ...type.title, color: ink.onColor },
-  targetDetail: { ...type.label, color: "rgba(255, 255, 255, 0.72)" },
-  targetFigure: { ...type.stat, color: ink.onColor, fontVariant: ["tabular-nums"] },
+  target: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 8, backgroundColor: color.primarySoft, borderWidth: 1, borderColor: color.primaryEdge },
+  targetTile: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: color.background },
+  targetTitle: { ...type.title },
+  targetDetail: { ...type.label },
+  targetFigure: { ...type.stat, fontVariant: ["tabular-nums"] },
 
   block: { gap: space.item },
   blockHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },

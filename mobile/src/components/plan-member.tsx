@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native"
+import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 
 import { Art } from "@/components/art"
 import { ProgressChart, formatNumber } from "@/components/charts"
@@ -171,27 +171,46 @@ const SECTIONS: { value: Section; label: string }[] = [
   { value: "history", label: "Your history" },
 ]
 
-/** The plan's sections as underlined tabs, equal across the width: the
-    open one in teal over a teal rule, the rest grey over the hairline. */
+/** The plan's sections as underlined tabs: the open one in teal over a
+    teal rule, the rest grey over the hairline. Five labels do not fit a
+    phone with room between them, so the row scrolls sideways, every tab the
+    same 14 either side of its word (28 between words), and the open tab is
+    brought into view. */
 function SectionTabs({ value, onChange }: { value: Section; onChange: (s: Section) => void }) {
+  const scroller = React.useRef<ScrollView>(null)
+  const spots = React.useRef<Record<string, { x: number; w: number }>>({})
+  const [width, setWidth] = React.useState(0)
+  const reveal = React.useCallback(
+    (key: string) => {
+      const spot = spots.current[key]
+      if (spot && width) scroller.current?.scrollTo({ x: Math.max(0, spot.x + spot.w / 2 - width / 2), animated: true })
+    },
+    [width],
+  )
+  React.useEffect(() => reveal(value), [value, reveal])
   return (
-    <View style={styles.sectionTabs} accessibilityRole="tablist">
-      {SECTIONS.map((o) => {
-        const on = o.value === value
-        return (
-          <Pressable
-            key={o.value}
-            onPress={() => onChange(o.value)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: on }}
-            style={({ pressed }) => [styles.sectionTab, { flex: o.label.length }, on && styles.sectionTabOn, pressed && styles.pressed]}
-          >
-            <Text style={[styles.sectionTabText, on && styles.sectionTabTextOn]} numberOfLines={1}>
-              {o.label}
-            </Text>
-          </Pressable>
-        )
-      })}
+    <View style={styles.sectionTabs} accessibilityRole="tablist" onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <ScrollView ref={scroller} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sectionTabsRow}>
+        {SECTIONS.map((o) => {
+          const on = o.value === value
+          return (
+            <Pressable
+              key={o.value}
+              onPress={() => onChange(o.value)}
+              onLayout={(e) => {
+                spots.current[o.value] = { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width }
+              }}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              style={({ pressed }) => [styles.sectionTab, on && styles.sectionTabOn, pressed && styles.pressed]}
+            >
+              <Text style={[styles.sectionTabText, on && styles.sectionTabTextOn]} numberOfLines={1}>
+                {o.label}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </ScrollView>
     </View>
   )
 }
@@ -874,8 +893,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   // The header's day of the plan, right of "Plan".
   day: { ...type.meta },
-  sectionTabs: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: hairline.rule },
-  sectionTab: { flex: 1, minHeight: 44, paddingHorizontal: 2, alignItems: "center", justifyContent: "center", borderBottomWidth: 2, borderBottomColor: "transparent", marginBottom: -1 },
+  sectionTabs: { borderBottomWidth: 1, borderBottomColor: hairline.rule },
+  sectionTabsRow: { flexGrow: 1, justifyContent: "space-between" },
+  sectionTab: { minHeight: 44, paddingHorizontal: 14, alignItems: "center", justifyContent: "center", borderBottomWidth: 2, borderBottomColor: "transparent", marginBottom: -1 },
   sectionTabOn: { borderBottomColor: color.primary },
   sectionTabText: { ...type.title, color: ink.secondary },
   sectionTabTextOn: { color: color.primary },

@@ -142,13 +142,13 @@ function DayView({ day, open, onToggle }: { day: ReviewDay; open: boolean; onTog
 }
 
 /** One day against the six topics (Journey_14 screen 39, "Each topic
-    against its goal"): the day's score on a dark card, then Exercise, Eat,
+    against its goal"): the day's score on a teal tinted card, then Exercise, Eat,
     Sleep, Mind, Medication and Measure, each scored against its own goal
     with what she did printed beside it, and the day is the plain average of
     the six. The screen says so, because a score nobody can reconstruct is a
     score nobody trusts. A miss is already carried into today's plan, so the
     review is not a verdict, it is a handover. Each row opens its topic and
-    the dark card opens the figures under it. */
+    the card opens the figures under it. */
 function TopicDay({ day, planDay }: { day: ReviewDay; planDay: number }) {
   const { scores, average } = topicScores(day.date)
   const yesterday = day.title === "Yesterday"
@@ -157,13 +157,13 @@ function TopicDay({ day, planDay }: { day: ReviewDay; planDay: number }) {
   return (
     <>
       <Pressable onPress={open} accessibilityRole="button" accessibilityLabel={`How ${when} went, ${average} out of 100. ${verdictOf(scores)} Open the numbers behind it.`} style={({ pressed }) => [styles.dark, pressed && styles.pressed]}>
-        <ScoreDial value={average} size={56} stroke={4} tone={color.primaryLine} track="rgba(255, 255, 255, 0.16)" ink={ink.onColor} />
+        <ScoreDial value={average} size={56} stroke={4} tone={chart.data} track={chart.dataTrack} ink={ink.strong} />
         <View style={styles.fill}>
           <Text style={styles.darkTitle}>{planDay > 0 && !yesterday ? `Day ${planDay} · how it went` : `How ${when} went`}</Text>
           <Text style={styles.darkBody}>{verdictOf(scores)}</Text>
           <View style={styles.darkLink}>
             <Text style={styles.darkLinkText}>Tap for the numbers behind it</Text>
-            <CaretRight size={12} color={color.primaryLine} />
+            <CaretRight size={12} color={ink.primary} />
           </View>
         </View>
       </Pressable>
@@ -586,11 +586,11 @@ const styles = StyleSheet.create({
   barPercent: { ...type.metaStrong, color: ink.content },
   barLabel: { ...type.caption },
 
-  dark: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 12, backgroundColor: ink.strong },
-  darkTitle: { ...type.section, color: ink.onColor },
-  darkBody: { ...type.label, color: "rgba(255, 255, 255, 0.78)", marginTop: 2 },
+  dark: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 8, backgroundColor: color.primarySoft, borderWidth: 1, borderColor: color.primaryEdge },
+  darkTitle: { ...type.section },
+  darkBody: { ...type.label, color: ink.detail, marginTop: 2 },
   darkLink: { flexDirection: "row", alignItems: "center", gap: 2, marginTop: space.inline },
-  darkLinkText: { ...type.metaStrong, color: color.primaryLine },
+  darkLinkText: { ...type.metaStrong, color: ink.primary },
   topicHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   topic: { minHeight: 52, flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
   topicScore: { ...type.stat, minWidth: 32, textAlign: "right", fontVariant: ["tabular-nums"] },

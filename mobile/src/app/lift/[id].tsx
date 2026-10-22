@@ -11,7 +11,7 @@ import { CaretLeft, Play, WarningCircle } from "@/components/ph"
 import { Block } from "@/components/record-kit"
 import { Foot, TopicPage } from "@/components/topic-kit"
 import { LIFTS, liftOf, type Lift, type Pose } from "@/lib/topics"
-import { color, font, hairline, ink, space, surface, type } from "@/lib/theme"
+import { card, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
 /* How to do one lift (Journey_14 screen 32), opened by "Form" on any lift
    in today's session. The video is the artefact; the three stills are the
@@ -69,7 +69,7 @@ function LiftBody({ lift }: { lift: Lift }) {
 
       <Pressable onPress={() => setWatching(true)} accessibilityRole="button" accessibilityLabel={`Play the ${lift.name} form video`} style={({ pressed }) => [styles.video, pressed && styles.pressed]}>
         <View style={styles.play}>
-          <Play size={20} weight="fill" color={ink.strong} />
+          <Play size={20} weight="fill" color={color.primary} />
         </View>
         <View style={styles.videoFoot}>
           <Text style={styles.videoText}>Form demonstration · 1:12</Text>
@@ -159,11 +159,11 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: space.inline, paddingVertical: space.line, borderRadius: 16, backgroundColor: color.highTint },
   chipText: { ...type.tag, color: "#A95413" },
 
-  video: { height: 150, borderRadius: 12, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: ink.strong },
-  play: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", paddingLeft: 3, backgroundColor: "rgba(255, 255, 255, 0.94)" },
+  video: { height: 150, borderRadius: 8, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: color.primarySoft, borderWidth: 1, borderColor: color.primaryEdge },
+  play: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", paddingLeft: 3, backgroundColor: color.background, boxShadow: card.shadowXs },
   videoFoot: { position: "absolute", left: space.item, right: space.item, bottom: space.inline, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  videoText: { ...type.metaStrong, color: ink.onColor },
-  angle: { paddingHorizontal: space.inline, paddingVertical: 2, borderRadius: 6, backgroundColor: "rgba(255, 255, 255, 0.92)" },
+  videoText: { ...type.metaStrong, color: ink.content },
+  angle: { paddingHorizontal: space.inline, paddingVertical: 2, borderRadius: 6, backgroundColor: color.background },
   angleText: { ...type.tag, color: ink.strong },
 
   stills: { flexDirection: "row", gap: space.inline },
