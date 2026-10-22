@@ -5,7 +5,7 @@ import Svg, { Circle } from "react-native-svg"
 
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
-import { Barbell, BowlFood, Brain, CaretRight, Check, Flame, Moon, PersonSimpleRun, Play, Target } from "@/components/ph"
+import { Barbell, BowlFood, Brain, CaretRight, Check, Flame, Moon, PersonSimpleRun, Play } from "@/components/ph"
 import { Block, Card, Rise } from "@/components/record-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { reviewDay, type ReviewDay } from "@/lib/daily-review"
@@ -23,7 +23,6 @@ import {
   profileOf,
   today,
   totalsOf,
-  todayFocus,
   type Meal,
 } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
@@ -38,9 +37,8 @@ import { formatNumber } from "@/lib/trends"
       in Plan;
    3. Today's goals: the ring of goals done, then calories, protein,
       exercise, the SMART session and lights out, each updating as she logs;
-   4. the day's one coaching line;
-   5. Today's workout: the session and Start workout;
-   6. Today's meals: what she has logged, and Log a meal.
+   4. Today's workout: the session and Start workout;
+   5. Today's meals: what she has logged, and Log a meal.
    The to do list, energy balance, trends and upcoming that the previous
    home held live on the To do, Plan and Record tabs. */
 
@@ -76,13 +74,10 @@ export function OptimizedHome() {
         <Rise at={2} id="home:goals">
           <TodaysGoals t={t} yesterday={yesterday} now={now} />
         </Rise>
-        <Rise at={3} id="home:note">
-          <CoachingNote text={coachingLine(t, todayFocus(onboarding, now))} />
-        </Rise>
-        <Rise at={4} id="home:workout">
+        <Rise at={3} id="home:workout">
           <TodaysWorkout t={t} onWalk={() => setSheet("walk")} />
         </Rise>
-        <Rise at={5} id="home:meals">
+        <Rise at={4} id="home:meals">
           <TodaysMeals t={t} />
         </Rise>
       </View>
@@ -293,25 +288,6 @@ function GoalLine({ row }: { row: GoalRow }) {
   )
 }
 
-/* -------------------------------------------------------- coaching note -- */
-
-/** The day's one coaching line: what kind of day it is, then the food
-    focus, in the plan's own words. */
-function coachingLine(t: TodayPlan, focus: string) {
-  const session = t.session
-  const lead = session ? (session.id.startsWith("strength") || session.id === "balance-a" ? "Strength day." : "Training day.") : "Rest day."
-  return `${lead} ${focus.replace(/^Today's focus: /, "").replace(/^./, (c) => c.toUpperCase())}${/[.!?]$/.test(focus) ? "" : "."}`
-}
-
-function CoachingNote({ text }: { text: string }) {
-  return (
-    <View style={styles.note} accessible accessibilityLabel={text}>
-      <Target size={14} color={color.primary} style={styles.noteIcon} />
-      <Text style={[type.metaStrong, styles.noteText]}>{text}</Text>
-    </View>
-  )
-}
-
 /* ------------------------------------------------------ today's workout -- */
 
 function TodaysWorkout({ t, onWalk }: { t: TodayPlan; onWalk: () => void }) {
@@ -460,19 +436,6 @@ const styles = StyleSheet.create({
 
   ringLabel: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
   ringText: { ...type.metaStrong, color: ink.strong, fontVariant: ["tabular-nums"] },
-
-  note: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: space.inline,
-    padding: space.compact,
-    borderRadius: 8,
-    backgroundColor: color.primaryTint,
-    borderWidth: 1,
-    borderColor: color.primaryEdge,
-  },
-  noteIcon: { marginTop: 2 },
-  noteText: { flex: 1, lineHeight: 18, fontFamily: type.body.fontFamily },
 
   workout: { gap: space.item },
   workoutTop: { flexDirection: "row", alignItems: "flex-start", gap: space.lead },
