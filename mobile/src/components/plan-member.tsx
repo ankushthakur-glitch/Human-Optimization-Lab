@@ -45,6 +45,8 @@ import { useOnboarding, type Plan } from "@/lib/onboarding"
 import { startingTestsLine } from "@/lib/todo"
 import { PlanReview, planDayNow } from "@/components/plan-review"
 import { YourHistory } from "@/components/plan-history"
+import { YourProgress } from "@/components/plan-your-progress"
+import { PhotoCheckIn, PhotoSheet, type PhotoSheetKind, type Shots } from "@/components/plan-photos"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { ProgressSections } from "@/app/progress"
 import { acceptedPlan, changeRequested, livePlan, proposedPlan } from "@/lib/plans"
@@ -82,6 +84,9 @@ export function PlanMember() {
   const [asking, setAsking] = React.useState(false)
   const [section, setSection] = React.useState<Section>("review")
   const [checkIn, setCheckIn] = React.useState<CheckInKind>()
+  const [photoSheet, setPhotoSheet] = React.useState<PhotoSheetKind>()
+  const [shots, setShots] = React.useState<Shots>({})
+  const [savedOn, setSavedOn] = React.useState<string>()
   const onboarding = useOnboarding()
   // Walked on from the enrolled page: with no portal in this build,
   // Dr. Patel sends the plan after a moment, and again after each change
@@ -103,6 +108,17 @@ export function PlanMember() {
     <DevicesSheet onClose={() => setDevices(false)} />
   ) : checkIn ? (
     <CheckInSheet kind={checkIn} onClose={() => setCheckIn(undefined)} />
+  ) : photoSheet ? (
+    <PhotoSheet
+      kind={photoSheet}
+      onClose={() => setPhotoSheet(undefined)}
+      onSave={(taken) => {
+        setShots(taken)
+        setSavedOn(new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }))
+        setPhotoSheet(undefined)
+        toast("Check-in saved")
+      }}
+    />
   ) : undefined
   // The live plan reads in four sections under the header: Review first.
   const live = experience !== "member-review" && experience !== "paused"
@@ -122,7 +138,7 @@ export function PlanMember() {
       ) : experience === "paused" ? (
         <PausedStage />
       ) : (
-        <LivePlan section={section} onDevices={() => setDevices(true)} onAdd={setCheckIn} />
+        <LivePlan section={section} onDevices={() => setDevices(true)} onAdd={setCheckIn} photos={{ shots, savedOn, open: setPhotoSheet }} />
       )}
     </TabScreen>
   )
@@ -162,17 +178,18 @@ function focusLine(area: FocusArea, s: Snapshot, markers: Biomarker[], week: Wee
   return "Goal: keep your bone density steady. Next scan May 2027."
 }
 
-type Section = "review" | "progress" | "photos" | "outlook" | "history"
+type Section = "review" | "progress" | "photos" | "outlook" | "history" | "yours"
 const SECTIONS: { value: Section; label: string }[] = [
   { value: "review", label: "Review" },
   { value: "progress", label: "Progress" },
+  { value: "yours", label: "Your progress" },
   { value: "photos", label: "Photos" },
   { value: "outlook", label: "Outlook" },
   { value: "history", label: "Your history" },
 ]
 
 /** The plan's sections as underlined tabs: the open one in teal over a
-    teal rule, the rest grey over the hairline. Five labels do not fit a
+    teal rule, the rest grey over the hairline. Six labels do not fit a
     phone with room between them, so the row scrolls sideways, every tab the
     same 14 either side of its word (28 between words), and the open tab is
     brought into view. */
@@ -215,7 +232,7 @@ function SectionTabs({ value, onChange }: { value: Section; onChange: (s: Sectio
   )
 }
 
-function LivePlan({ section, onDevices, onAdd }: { section: Section; onDevices: () => void; onAdd: (kind: CheckInKind) => void }) {
+function LivePlan({ section, onDevices, onAdd, photos }: { section: Section; onDevices: () => void; onAdd: (kind: CheckInKind) => void; photos: { shots: Shots; savedOn?: string; open: (kind: PhotoSheetKind) => void } }) {
   const onboarding = useOnboarding()
   const versions = onboarding.plan?.versions ?? []
   // The version she follows, and a newer one while it is with the doctor
@@ -258,7 +275,9 @@ function LivePlan({ section, onDevices, onAdd }: { section: Section; onDevices: 
 
       {section === "progress" && <ProgressSections s={onboarding} onAdd={onAdd} />}
 
-      {section === "photos" && <PhotosSection />}
+      {section === "yours" && <YourProgress onAdd={onAdd} />}
+
+      {section === "photos" && <PhotoCheckIn shots={photos.shots} savedOn={photos.savedOn} onTake={() => photos.open("capture")} onInfo={() => photos.open("privacy")} />}
 
       {section === "outlook" && <Outlook />}
 
@@ -321,19 +340,6 @@ function Outlook() {
 
       <Text style={styles.meta}>{`Calculated weekly from your logs and check ins. ${MEMBER.doctorShort} reviews it with you at each quarterly review.`}</Text>
     </>
-  )
-}
-
-/** Progress photos: none added yet, so the section says what they are for. */
-function PhotosSection() {
-  return (
-    <Card style={styles.photos}>
-      <Tile hue="teal" size={40}>
-        <Camera size={20} color={color.primary} />
-      </Tile>
-      <Text style={styles.cardSubtitle}>No progress photos yet</Text>
-      <Text style={[styles.meta, styles.photosText]}>Photos taken at the same time each month show changes the scale cannot. Only you and your care team see them.</Text>
-    </Card>
   )
 }
 
