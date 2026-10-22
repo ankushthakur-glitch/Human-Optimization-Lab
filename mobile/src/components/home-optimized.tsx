@@ -498,8 +498,8 @@ function LogAMeal({ slot }: { slot?: MealSlot }) {
       </View>
       <Pressable onPress={() => router.push("/assistant")} accessibilityRole="link" style={({ pressed }) => [styles.askLine, pressed && styles.pressed]}>
         <Sparkle size={12} color={color.primary} />
-        <Text style={type.label}>
-          Or just tell Ask Inlay: <Text style={styles.askQuote}>"had the chicken bowl for lunch."</Text>
+        <Text style={[type.label, styles.askText]} numberOfLines={1}>
+          Or tell Ask Inlay: <Text style={styles.askQuote}>"had the chicken bowl"</Text>
         </Text>
       </Pressable>
     </Card>
@@ -722,7 +722,8 @@ const styles = StyleSheet.create({
   },
   wayTile: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   askLine: { flexDirection: "row", alignItems: "center", gap: space.inline },
-  askQuote: { ...type.label, color: color.primaryText },
+  askText: { flexShrink: 1, fontSize: 11 },
+  askQuote: { ...type.label, fontSize: 11, color: color.primaryText },
 
   tiles: { flexDirection: "row", gap: space.item },
   tile: {
