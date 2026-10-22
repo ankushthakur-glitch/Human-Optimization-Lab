@@ -44,6 +44,7 @@ import { FOCUS_NAME } from "@/lib/offers"
 import { useOnboarding, type Plan } from "@/lib/onboarding"
 import { startingTestsLine } from "@/lib/todo"
 import { PlanReview, planDayNow } from "@/components/plan-review"
+import { YourHistory } from "@/components/plan-history"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { ProgressSections } from "@/app/progress"
 import { acceptedPlan, changeRequested, livePlan, proposedPlan } from "@/lib/plans"
@@ -161,12 +162,13 @@ function focusLine(area: FocusArea, s: Snapshot, markers: Biomarker[], week: Wee
   return "Goal: keep your bone density steady. Next scan May 2027."
 }
 
-type Section = "review" | "progress" | "photos" | "outlook"
+type Section = "review" | "progress" | "photos" | "outlook" | "history"
 const SECTIONS: { value: Section; label: string }[] = [
   { value: "review", label: "Review" },
   { value: "progress", label: "Progress" },
   { value: "photos", label: "Photos" },
   { value: "outlook", label: "Outlook" },
+  { value: "history", label: "Your history" },
 ]
 
 /** The plan's sections as underlined tabs, equal across the width: the
@@ -182,7 +184,7 @@ function SectionTabs({ value, onChange }: { value: Section; onChange: (s: Sectio
             onPress={() => onChange(o.value)}
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
-            style={({ pressed }) => [styles.sectionTab, on && styles.sectionTabOn, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.sectionTab, { flex: o.label.length }, on && styles.sectionTabOn, pressed && styles.pressed]}
           >
             <Text style={[styles.sectionTabText, on && styles.sectionTabTextOn]} numberOfLines={1}>
               {o.label}
@@ -240,6 +242,8 @@ function LivePlan({ section, onDevices, onAdd }: { section: Section; onDevices: 
       {section === "photos" && <PhotosSection />}
 
       {section === "outlook" && <Outlook />}
+
+      {section === "history" && <YourHistory />}
     </>
   )
 }
@@ -871,7 +875,7 @@ const styles = StyleSheet.create({
   // The header's day of the plan, right of "Plan".
   day: { ...type.meta },
   sectionTabs: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: hairline.rule },
-  sectionTab: { flex: 1, minHeight: 44, alignItems: "center", justifyContent: "center", borderBottomWidth: 2, borderBottomColor: "transparent", marginBottom: -1 },
+  sectionTab: { flex: 1, minHeight: 44, paddingHorizontal: 2, alignItems: "center", justifyContent: "center", borderBottomWidth: 2, borderBottomColor: "transparent", marginBottom: -1 },
   sectionTabOn: { borderBottomColor: color.primary },
   sectionTabText: { ...type.title, color: ink.secondary },
   sectionTabTextOn: { color: color.primary },
