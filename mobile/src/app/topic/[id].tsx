@@ -5,8 +5,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 import { PageNotFoundState } from "@/components/error-state"
 import { MeasureSheet } from "@/components/measure-sheet"
 import { CaretRight, Check, Play, Warning } from "@/components/ph"
-import { Block, Card, Tag, toast } from "@/components/record-kit"
-import { Foot, Note, ScoreDial, TONE_INK, TargetCard, TopicHead, TopicPage, Ways, askAbout } from "@/components/topic-kit"
+import { Block, Card, Group, NeedsRow, Tag, toast } from "@/components/record-kit"
+import { Foot, Note, ScoreDial, TopicHead, TopicIcon, TargetCard, TopicPage, Ways, askAbout } from "@/components/topic-kit"
 import { localDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { ALSO_TAKING, CARDIO, INTERACTION, LIFTS, SLEEP_LAST, WARMUP, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
@@ -60,6 +60,15 @@ function TopicBody({ topic }: { topic: Topic }) {
       {topic.id === "medication" && <AlsoTaking />}
       {!!topic.tip && topic.id !== "medication" && <Note>{topic.tip}</Note>}
       <Foot>{topic.foot}</Foot>
+
+      <Group>
+        <NeedsRow
+          icon={<TopicIcon name={topic.id} size={16} />}
+          title={`${topic.id === "medication" ? "Medication" : topic.name} history`}
+          meta="Day, week, month, six months and year"
+          onPress={() => router.push({ pathname: "/topic-history/[id]", params: { id: topic.id } })}
+        />
+      </Group>
     </TopicPage>
   )
 }
