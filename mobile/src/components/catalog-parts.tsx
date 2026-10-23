@@ -34,20 +34,20 @@ export function Rich({ children, style }: { children: string; style?: object }) 
   )
 }
 
-/** The teal tinted card under an item's name: the price a member pays, the
-    standard price struck through, and, on its own line below, when the
-    result or the order arrives. */
+/** The white card under an item's name: the price a member pays and the
+    standard price struck through, with where it is done; a teal strip at
+    the foot says when the result or the order arrives. */
 export function PriceCard({ item }: { item: Item }) {
   return (
     <View style={styles.price} accessible accessibilityLabel={priceWords(item)}>
-      <View style={styles.priceTop}>
+      <View style={styles.priceBody}>
         <View style={styles.priceLeft}>
           <Text style={styles.priceNow}>{money(item.member)}</Text>
           {!!item.standard && <Text style={styles.priceWas}>{money(item.standard)}</Text>}
         </View>
+        <Text style={styles.priceNote}>{item.priceNote}</Text>
       </View>
-      <Text style={styles.priceNote}>{item.priceNote}</Text>
-      <View style={styles.priceRight}>
+      <View style={styles.priceFoot}>
         <Text style={styles.priceLabel}>{item.when.label.toUpperCase()}</Text>
         <Text style={styles.priceWhen}>{item.when.value}</Text>
       </View>
@@ -144,12 +144,12 @@ const CLAY = "#A95413"
 const styles = StyleSheet.create({
   strong: { fontFamily: font.semibold, color: ink.strong },
 
-  price: { backgroundColor: color.primarySoft, borderRadius: cardRadius, borderWidth: 1, borderColor: color.primaryEdge, padding: space.card, gap: space.stack, boxShadow: card.shadow },
-  priceTop: { flexDirection: "row", alignItems: "flex-end", gap: space.item },
+  price: { backgroundColor: color.background, borderRadius: cardRadius, borderWidth: 1, borderColor: hairline.edge, overflow: "hidden", boxShadow: card.shadow },
+  priceBody: { padding: space.card, gap: space.mark },
+  priceFoot: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item, paddingHorizontal: space.card, paddingVertical: space.item, backgroundColor: color.primarySoft, borderTopWidth: 1, borderTopColor: color.primaryEdge },
   priceLeft: { flexDirection: "row", alignItems: "baseline", gap: space.inline },
   priceNow: { fontFamily: font.semibold, fontSize: 24, lineHeight: 30, color: ink.strong },
   priceWas: { ...type.unitLarge, color: ink.tertiary, textDecorationLine: "line-through" },
-  priceRight: { gap: space.mark },
   priceLabel: type.caption,
   priceWhen: { ...type.value, color: ink.primary },
   priceNote: type.label,
