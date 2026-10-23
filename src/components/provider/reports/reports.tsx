@@ -67,7 +67,8 @@ import {
   TooltipTrigger,
 } from "@/design-system/ui/tooltip"
 
-/* The provider portal's Reports, laid out from the Amazing Grace Center
+/* The Reports screen, shared by the provider and clinic manager portals,
+   each with its own list of reports. Laid out from the Amazing Grace Center
    reports page (Figma OulMy5QOcLc2lJ6aX0GpFo, 40019623:451842): the report
    list on the left, the period, location and filters over the page, then the
    report's totals as tiles and its table, one row per provider with a Total
@@ -80,7 +81,7 @@ const PANEL =
 type Option = { label: string; value: string }
 
 /** A toolbar dropdown, sized like the worklist's controls. */
-function ToolbarSelect({
+export function ToolbarSelect({
   label,
   items,
   value,
@@ -126,18 +127,27 @@ function ToolbarSelect({
 export function ReportsScreen() {
   return (
     <ProviderShell active="reports">
-      <Reports />
+      <ReportsView reports={REPORTS} />
     </ProviderShell>
   )
 }
 
 type Row = { id: string; name: string; counts: Counts }
 
-function Reports() {
+export function ReportsView({
+  reports,
+  initialId,
+}: {
+  reports: Report[]
+  /** The report to open on, from a dashboard link. */
+  initialId?: string | null
+}) {
   const { items: provs } = providers.use()
   const { items: locs } = locations.use()
 
-  const [reportId, setReportId] = React.useState(REPORTS[0].id)
+  const [reportId, setReportId] = React.useState(
+    reports.some((r) => r.id === initialId) ? initialId! : reports[0].id
+  )
   const [kind, setKind] = React.useState<PeriodKind>("Month")
   const [periodKey, setPeriodKey] = React.useState("")
   const [from, setFrom] = React.useState("")
@@ -146,7 +156,8 @@ function Reports() {
   const [providerId, setProviderId] = React.useState("")
   const [type, setType] = React.useState<PatientType | "">("")
 
-  const report = REPORTS.find((r) => r.id === reportId) ?? REPORTS[0]
+  const report = reports.find((r) => r.id === reportId) ?? reports[0]
+  const typed = report.typeFilter !== false
   const periods = kind === "Custom range" ? [] : periodsFor(kind)
   const index = Math.max(0, periods.findIndex((p) => p.key === periodKey))
   const period: Period | null =
@@ -164,13 +175,13 @@ function Reports() {
     shown.map((p) => ({
       id: p.id,
       name: providerName(p),
-      counts: countsFor(report, p.id, at, type || null),
+      counts: countsFor(report, p.id, at, (typed && type) || null),
     }))
   const rows = period ? rowsFor(period) : []
   const total = sumCounts(rows.map((r) => r.counts))
   const before = previous ? sumCounts(rowsFor(previous).map((r) => r.counts)) : null
 
-  const filterCount = [providerId, type].filter(Boolean).length
+  const filterCount = [providerId, typed && type].filter(Boolean).length
 
   function exportReport() {
     if (!period || rows.length === 0) return
@@ -269,16 +280,18 @@ function Reports() {
                   value={providerId}
                   onChange={setProviderId}
                 />
-                <ToolbarSelect
-                  label="Patient type"
-                  className="w-full"
-                  items={[
-                    { label: "All patients", value: "" },
-                    ...PATIENT_TYPES.map((t) => ({ label: t, value: t })),
-                  ]}
-                  value={type}
-                  onChange={(v) => setType(v as PatientType | "")}
-                />
+                {typed && (
+                  <ToolbarSelect
+                    label="Patient type"
+                    className="w-full"
+                    items={[
+                      { label: "All patients", value: "" },
+                      ...PATIENT_TYPES.map((t) => ({ label: t, value: t })),
+                    ]}
+                    value={type}
+                    onChange={(v) => setType(v as PatientType | "")}
+                  />
+                )}
                 {filterCount > 0 && (
                   <Button
                     variant="ghost"
@@ -325,7 +338,7 @@ function Reports() {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
-        <ReportList value={report.id} onChange={setReportId} />
+        <ReportList reports={reports} value={report.id} onChange={setReportId} />
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
           <div className="grid shrink-0 grid-cols-2 gap-4 xl:grid-cols-4">
@@ -365,9 +378,11 @@ function Reports() {
 
 /* A card of report names on wide screens; a dropdown on narrow ones. */
 function ReportList({
+  reports,
   value,
   onChange,
 }: {
+  reports: Report[]
   value: string
   onChange: (id: string) => void
 }) {
@@ -376,13 +391,13 @@ function ReportList({
       <ToolbarSelect
         label="Report"
         className="w-full lg:hidden"
-        items={REPORTS.map((r) => ({ label: r.name, value: r.id }))}
+        items={reports.map((r) => ({ label: r.name, value: r.id }))}
         value={value}
         onChange={onChange}
       />
       <Card className={cn(PANEL, "hidden w-60 shrink-0 p-2 lg:flex")}>
         <nav aria-label="Reports" className="flex flex-col gap-0.5">
-          {REPORTS.map((r) => {
+          {reports.map((r) => {
             const on = r.id === value
             return (
               <button

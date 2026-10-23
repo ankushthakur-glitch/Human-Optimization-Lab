@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Bar, BarChart, Rectangle, XAxis, YAxis } from "recharts"
 import {
   IconCalendar,
   IconChartUp,
@@ -23,7 +22,6 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/design-system/ui/button"
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/design-system/ui/chart"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,21 +38,21 @@ import { Illustration } from "@/components/illustrations/illustration"
 import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
 import { fullName } from "@/components/practice/practice-data"
 import {
-  AXIS_PROPS,
   Avatar,
   Badge,
   Card,
   CardHeader,
   DataTable,
-  Grid,
-  Legend,
+  ReBarChart,
+  type ReDatum,
+  ReLegend,
+  type ReSeries,
   Row,
   SegmentedControl,
   Sparkline,
   Td,
   Th,
   type Tone,
-  useReducedMotion,
 } from "@/components/dashboard-kit-v2"
 import { type Appointment, isoDay, useAppointments } from "@/components/provider/schedule/schedule-data"
 import { ItemPanel } from "@/components/provider/home-v2/item-panel"
@@ -111,22 +109,22 @@ const STAGE_TONE: Record<PlanStage, Tone> = {
 
 /* ----------------------------------------------------------- activity -- */
 
-const SCORE_CONFIG = {
-  onTrack: { label: "On track", color: SUBTLE.green },
-  slipping: { label: "Slipping", color: SUBTLE.orange },
-  missed: { label: "Missed", color: SUBTLE.red },
-} satisfies ChartConfig
+/* ReUI's striped run activity: on track striped, slipping dotted, missed solid. */
+const SCORE_SERIES: ReSeries[] = [
+  { key: "onTrack", label: "On track", color: SUBTLE.green, fill: "stripe" },
+  { key: "slipping", label: "Slipping", color: SUBTLE.orange, fill: "dots" },
+  { key: "missed", label: "Missed", color: SUBTLE.red, fill: "solid" },
+]
 
-const VISIT_CONFIG = {
-  seen: { label: "Seen", color: SUBTLE.green },
-  upcoming: { label: "Upcoming", color: SUBTLE.blue },
-  missed: { label: "Missed", color: SUBTLE.red },
-} satisfies ChartConfig
+const VISIT_SERIES: ReSeries[] = [
+  { key: "seen", label: "Seen", color: SUBTLE.green, fill: "stripe" },
+  { key: "upcoming", label: "Upcoming", color: SUBTLE.blue, fill: "dots" },
+  { key: "missed", label: "Missed", color: SUBTLE.red, fill: "solid" },
+]
 
 /** The members' daily optimization score by day, or the visits of this week and next. */
 function Activity({ now, active, className }: { now: string; active: Optimization[]; className?: string }) {
   const all = useAppointments(now)
-  const reduced = useReducedMotion()
   const [mode, setMode] = React.useState<"score" | "visits">("score")
   const today = new Date(`${now.slice(0, 10)}T00:00:00`)
 
@@ -171,9 +169,9 @@ function Activity({ now, active, className }: { now: string; active: Optimizatio
     .filter((a) => a.status !== "Cancelled")
 
   const score = mode === "score"
-  const config: ChartConfig = score ? SCORE_CONFIG : VISIT_CONFIG
-  const keys = Object.keys(config)
-  const rows: Record<string, string | number>[] = score ? scoreRows : visitRows
+  const series = score ? SCORE_SERIES : VISIT_SERIES
+  const rows: ReDatum[] = score ? scoreRows : visitRows
+  const dateOf = new Map(rows.map((r) => [String(r.day), String(r.date)]))
 
   return (
     <Card className={className}>
@@ -208,37 +206,17 @@ function Activity({ now, active, className }: { now: string; active: Optimizatio
           </Empty>
         ) : (
           <>
-            <ChartContainer config={config} className="aspect-auto h-[236px] w-full">
-              <BarChart data={rows} margin={{ top: 4, right: 0, left: -20, bottom: 0 }} barCategoryGap="28%">
-                <Grid />
-                <XAxis dataKey="day" {...AXIS_PROPS} interval="preserveStartEnd" minTickGap={8} />
-                <YAxis allowDecimals={false} {...AXIS_PROPS} />
-                <ChartTooltip
-                  cursor={{ fill: "var(--secondary)", radius: 6 }}
-                  content={
-                    <ChartTooltipContent
-                      indicator="dot"
-                      labelFormatter={(_, p) => (p?.[0]?.payload as { date?: string })?.date ?? ""}
-                    />
-                  }
-                />
-                {keys.map((k, i) => (
-                  <Bar
-                    key={`${mode}-${k}`}
-                    dataKey={k}
-                    stackId="day"
-                    fill={`var(--color-${k})`}
-                    stroke="var(--card)"
-                    strokeWidth={2}
-                    isAnimationActive={!reduced}
-                    shape={(props: React.ComponentProps<typeof Rectangle>) => (
-                      <Rectangle {...props} radius={i === keys.length - 1 ? [4, 4, 0, 0] : 0} />
-                    )}
-                  />
-                ))}
-              </BarChart>
-            </ChartContainer>
-            <Legend items={keys.map((k) => ({ key: k, label: String(config[k]!.label), color: config[k]!.color! }))} />
+            <ReLegend series={series} className="mb-3" />
+            <ReBarChart
+              key={mode}
+              data={rows}
+              xKey="day"
+              series={series}
+              stacked
+              height={236}
+              showYAxis
+              tooltipLabel={(day: string) => dateOf.get(day) ?? day}
+            />
           </>
         )}
       </div>

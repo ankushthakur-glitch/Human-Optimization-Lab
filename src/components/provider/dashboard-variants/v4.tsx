@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts"
 import {
   IconArrowDown,
   IconArrowUp,
@@ -22,7 +21,6 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/design-system/ui/button"
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/design-system/ui/chart"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/design-system/ui/collapsible"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/design-system/ui/input-group"
 import { Item, ItemContent, ItemDescription, ItemTitle } from "@/design-system/ui/item"
@@ -34,20 +32,20 @@ import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
 import { type Patient, fullName } from "@/components/practice/practice-data"
 import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
 import {
-  AXIS_PROPS,
   Avatar,
   Badge,
   Card,
   CardHeader,
   ChartCard,
   DataTable,
-  Grid,
-  Legend,
+  ReAreaChart,
+  ReBarChart,
+  ReLegend,
+  type ReSeries,
   Row,
   Td,
   Th,
   type Tone,
-  useReducedMotion,
 } from "@/components/dashboard-kit-v2"
 import { clockTime } from "@/components/provider/mock-clock"
 import { daysSince } from "@/components/provider/home-v2/clock"
@@ -581,13 +579,12 @@ const PLAN_SHORT: Record<PlanName, string> = {
   "Healthy aging": "Aging",
 }
 
-const PLAN_CONFIG = {
-  members: { label: "Members", color: SUBTLE.blue },
-  suggested: { label: "AI suggested", color: SUBTLE.violet },
-} satisfies ChartConfig
+const PLAN_SERIES: ReSeries[] = [
+  { key: "members", label: "Members", color: SUBTLE.blue, fill: "stripe" },
+  { key: "suggested", label: "AI suggested", color: SUBTLE.blue },
+]
 
 function PlansByGoal({ byPlan }: { byPlan: { name: PlanName; members: number; suggested: number }[] }) {
-  const reduced = useReducedMotion()
   const members = byPlan.reduce((s, r) => s + r.members, 0)
   const suggested = byPlan.reduce((s, r) => s + r.suggested, 0)
   return (
@@ -595,32 +592,29 @@ function PlansByGoal({ byPlan }: { byPlan: { name: PlanName; members: number; su
       title="Plans by goal"
       titleId="v4-plans"
       description={`${members} plans running, ${suggested} suggested to free patients`}
-      footer={<Legend items={Object.entries(PLAN_CONFIG).map(([key, c]) => ({ key, label: c.label, color: c.color }))} />}
+      aside={<ReLegend series={PLAN_SERIES} className="self-center px-4" />}
     >
-      <ChartContainer config={PLAN_CONFIG} className="aspect-auto h-[220px] w-full">
-        <BarChart data={byPlan} margin={{ top: 4, right: 0, left: -20, bottom: 0 }} barGap={4} barCategoryGap="24%">
-          <Grid />
-          <XAxis dataKey="name" {...AXIS_PROPS} interval={0} tickFormatter={(n: PlanName) => PLAN_SHORT[n] ?? n} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-          <YAxis allowDecimals={false} {...AXIS_PROPS} />
-          <ChartTooltip cursor={{ fill: "var(--secondary)", radius: 6 }} content={<ChartTooltipContent indicator="dot" />} />
-          <Bar dataKey="members" fill="var(--color-members)" radius={[4, 4, 0, 0]} maxBarSize={20} isAnimationActive={!reduced} />
-          <Bar dataKey="suggested" fill="var(--color-suggested)" radius={[4, 4, 0, 0]} maxBarSize={20} isAnimationActive={!reduced} />
-        </BarChart>
-      </ChartContainer>
+      <ReBarChart
+        data={byPlan}
+        xKey="name"
+        series={PLAN_SERIES}
+        height={220}
+        xTickFormat={(n) => PLAN_SHORT[n as PlanName] ?? String(n)}
+        tooltipLabel={(n) => String(n)}
+      />
     </ChartCard>
   )
 }
 
-const BIO_CONFIG = {
-  members: { label: "Members", color: SUBTLE.green },
-  others: { label: "Everyone else", color: SUBTLE.orange },
-} satisfies ChartConfig
+const BIO_SERIES: ReSeries[] = [
+  { key: "members", label: "Members", color: SUBTLE.green, fill: "gradient" },
+  { key: "others", label: "Everyone else", color: SUBTLE.orange, fill: "crosshatch", dashed: true },
+]
 
 const MONTH = new Intl.DateTimeFormat("en-US", { month: "short" })
 
 /** The average gap between biological and real age, in years, per month. */
 function BioAgeChart({ now, all }: { now: string; all: Optimization[] }) {
-  const reduced = useReducedMotion()
   const members = all.filter((o) => o.member)
   const others = all.filter((o) => !o.member)
   const avgGap = (list: Optimization[], i: number) =>
@@ -632,10 +626,17 @@ function BioAgeChart({ now, all }: { now: string; all: Optimization[] }) {
   })
   const last = rows[5]!.members
   const change = +(last - rows[0]!.members).toFixed(1)
+  /* Whole years with a year of room; the span is a multiple of the axis's
+     four steps so every tick lands on a whole year. */
+  const values = rows.flatMap((r) => [r.members, r.others])
+  const lo = Math.floor(Math.min(...values) - 1)
+  const top = Math.ceil(Math.max(...values) + 1)
+  const hi = lo + Math.max(4, Math.ceil((top - lo) / 4) * 4)
+  const signed = (v: number) => `${v > 0 ? "+" : ""}${+Number(v).toFixed(1)} y`
 
   return (
     <ChartCard
-      title="Bio age, members vs everyone"
+      title="Bio age gap, members vs everyone"
       titleId="v4-bio"
       description={`Members ${Math.abs(last)} y ${last <= 0 ? "younger" : "older"} than their age on average`}
       aside={
@@ -647,18 +648,20 @@ function BioAgeChart({ now, all }: { now: string; all: Optimization[] }) {
           </Badge>
         </div>
       }
-      footer={<Legend items={Object.entries(BIO_CONFIG).map(([key, c]) => ({ key, label: c.label, color: c.color }))} />}
+      footer={<ReLegend series={BIO_SERIES} className="justify-center pb-1" />}
     >
-      <ChartContainer config={BIO_CONFIG} className="aspect-auto h-[220px] w-full">
-        <AreaChart data={rows} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-          <Grid />
-          <XAxis dataKey="month" {...AXIS_PROPS} />
-          <YAxis {...AXIS_PROPS} width={44} tickCount={5} tickFormatter={(v: number) => `${+v.toFixed(1)} y`} />
-          <ChartTooltip cursor={{ stroke: "var(--border)" }} content={<ChartTooltipContent indicator="dot" />} />
-          <Area type="natural" dataKey="others" stroke="var(--color-others)" strokeWidth={2} fill="var(--color-others)" fillOpacity={0.12} baseValue="dataMin" isAnimationActive={!reduced} />
-          <Area type="natural" dataKey="members" stroke="var(--color-members)" strokeWidth={2} fill="var(--color-members)" fillOpacity={0.16} baseValue="dataMin" isAnimationActive={!reduced} />
-        </AreaChart>
-      </ChartContainer>
+      <ReAreaChart
+        data={rows}
+        xKey="month"
+        series={BIO_SERIES}
+        height={220}
+        showYAxis
+        yDomain={[lo, hi]}
+        baseValue="dataMin"
+        referenceY={lo < 0 && hi > 0 ? { value: 0 } : undefined}
+        yTickFormat={signed}
+        valueFormat={(v) => signed(v)}
+      />
     </ChartCard>
   )
 }

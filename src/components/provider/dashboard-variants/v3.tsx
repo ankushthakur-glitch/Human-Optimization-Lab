@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { Cell, Pie, PieChart } from "recharts"
 import { ArrowDown02Icon, ArrowUp02Icon } from "@hugeicons/core-free-icons"
 import {
   IconCalendar,
@@ -35,7 +34,6 @@ import {
   BreadcrumbSeparator,
 } from "@/design-system/ui/breadcrumb"
 import { Button, buttonVariants } from "@/design-system/ui/button"
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/design-system/ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/design-system/ui/dropdown-menu"
 import { Item } from "@/design-system/ui/item"
 import { Progress } from "@/design-system/ui/progress"
@@ -52,6 +50,11 @@ import {
   FOCUS,
   KitIcon,
   PALETTE,
+  ReBarChart,
+  ReDonut,
+  ReDonutLegend,
+  ReLegend,
+  ReRadial,
   SegmentedControl,
   Sparkline,
 } from "@/components/dashboard-kit-v2"
@@ -783,6 +786,12 @@ function useOptimizationFeed(opt: Opt) {
 
 function PlanCoverage({ opt }: { opt: Opt }) {
   const share = opt.members.length ? opt.active.length / opt.members.length : 0
+  const sent = opt.byStage.find((x) => x.stage === "Sent to patient")?.count ?? 0
+  const rings = [
+    { key: "active", label: "Active", count: opt.active.length, color: HUE.green },
+    { key: "sent", label: "Sent to patient", count: sent, color: HUE.blue },
+    { key: "review", label: "In review", count: opt.reviewing.length, color: HUE.violet },
+  ].map((r) => ({ ...r, value: pct(r.count, opt.members.length) }))
   return (
     <VFrame bodyClassName="gap-4 p-5">
       <div className="flex items-center gap-2">
@@ -796,6 +805,22 @@ function PlanCoverage({ opt }: { opt: Opt }) {
         <span className="text-[13px] text-muted-foreground">on an active plan</span>
       </div>
       <Meter value={share} tone="green" label="Members on an active plan" className="[&_[data-slot=progress-track]]:h-2.5" />
+      {opt.members.length > 0 && (
+        <div className="flex flex-wrap items-center gap-4">
+          <ReRadial
+            height={168}
+            barSize={12}
+            showLabels={false}
+            className="w-[168px] shrink-0"
+            data={rings}
+            valueFormat={(v) => `${v}% of members`}
+          />
+          <ReDonutLegend
+            className="min-w-[180px] flex-1"
+            data={rings.map((r) => ({ ...r, value: r.count }))}
+          />
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2 text-[13px]">
         {opt.byStage.map((s) => (
           <Chip key={s.stage} tone={s.stage === "Active" ? "green" : s.stage === "Changes requested" ? "orange" : s.stage === "Sent to patient" ? "blue" : "violet"}>
@@ -819,6 +844,8 @@ function MembersByPlan({ opt }: { opt: Opt }) {
     .filter((r) => r.value > 0)
     .sort((a, b) => b.value - a.value)
   const total = rows.reduce((s, r) => s + r.value, 0)
+  const slices = rows.map((r) => ({ key: r.label.replace(/[^A-Za-z0-9]+/g, "-"), label: r.label, value: r.value, color: HUE[r.tone] }))
+  const [active, setActive] = React.useState<string | undefined>()
   return (
     <VFrame bodyClassName="gap-4 p-5">
       <div className="flex items-center gap-2">
@@ -834,50 +861,28 @@ function MembersByPlan({ opt }: { opt: Opt }) {
           ]}
         />
       </div>
-      <div className="flex flex-wrap items-center gap-6">
-        <div className="relative size-[136px] shrink-0">
-          <ChartContainer
-            config={Object.fromEntries(rows.map((r) => [r.label, { label: r.label, color: HUE[r.tone] }])) satisfies ChartConfig}
-            className="aspect-square size-[136px]"
-          >
-          <PieChart>
-            <ChartTooltip content={<ChartTooltipContent nameKey="label" hideLabel indicator="dot" />} />
-            <Pie
-              data={rows}
-              dataKey="value"
-              nameKey="label"
-              innerRadius={50}
-              outerRadius={66}
-              paddingAngle={3}
-              cornerRadius={4}
-              stroke="none"
-              startAngle={90}
-              endAngle={-270}
-              isAnimationActive={false}
-            >
-              {rows.map((r) => (
-                <Cell key={r.label} fill={HUE[r.tone]} className="outline-none" />
-              ))}
-            </Pie>
-          </PieChart>
-          </ChartContainer>
-          <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs text-muted-foreground">Plans</span>
-            <span className="text-lg font-semibold tabular-nums">{total}</span>
-          </span>
+      {rows.length === 0 ? (
+        <p className="py-10 text-center text-[13px] text-muted-foreground">No plans yet</p>
+      ) : (
+        <div className="flex flex-wrap items-center gap-6">
+          <ReDonut
+            data={slices}
+            centerValue={total}
+            centerLabel="Plans"
+            active={active}
+            onSelect={(k) => setActive((a) => (a === k ? undefined : k))}
+            height={180}
+            thickness={22}
+            className="w-[180px] shrink-0"
+          />
+          <ReDonutLegend
+            data={slices.slice(0, 6)}
+            active={active}
+            onSelect={(k) => setActive((a) => (a === k ? undefined : k))}
+            className="min-w-[200px] flex-1"
+          />
         </div>
-        <ul className="flex min-w-[200px] flex-1 flex-col">
-          {rows.length === 0 && <li className="text-[13px] text-muted-foreground">No plans yet</li>}
-          {rows.slice(0, 5).map((r) => (
-            <li key={r.label} className="flex items-center gap-2.5 border-b border-border py-2 text-sm last:border-b-0">
-              <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ backgroundColor: HUE[r.tone] }} />
-              <span className="truncate font-medium">{r.label}</span>
-              <span className="ml-auto font-semibold tabular-nums">{r.value}</span>
-              <span className="w-9 text-right text-xs text-muted-foreground tabular-nums">{pct(r.value, total)}%</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      )}
     </VFrame>
   )
 }
@@ -1465,6 +1470,32 @@ function VisitsByDay({ day }: { day: Day }) {
       }
       bodyClassName="overflow-hidden"
     >
+      <div className="flex flex-col gap-1 border-b border-border px-4 pt-3 pb-2">
+        <ReLegend
+          className="justify-end"
+          series={[
+            { key: "booked", label: "Booked", color: HUE.blue },
+            { key: "seen", label: "Seen", color: HUE.green },
+          ]}
+        />
+        <ReBarChart
+          height={200}
+          xKey="day"
+          data={days.map((d) => {
+            const list = all.filter((a) => a.status !== "Cancelled" && a.start.startsWith(isoDay(d)))
+            return {
+              day: `${WEEKDAY.format(d)}, ${SHORT.format(d)}`,
+              booked: list.length,
+              seen: list.filter((a) => a.status === "Completed").length,
+            }
+          })}
+          xTickFormat={(v) => v.split(",")[0]!}
+          series={[
+            { key: "booked", label: "Booked", color: HUE.blue, fill: "stripe" },
+            { key: "seen", label: "Seen", color: HUE.green },
+          ]}
+        />
+      </div>
       <div className="no-scrollbar overflow-x-auto">
         <table className="w-full min-w-[920px] border-collapse text-sm">
           <thead>
@@ -1696,23 +1727,18 @@ function UpgradeView() {
     { label: "Upgrade fit", value: opt.upgrade.length, tone: "amber" },
     { label: "Started plan", value: opt.active.length, tone: "green" },
   ]
-  const max = Math.max(1, ...funnel.map((f) => f.value))
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <VFrame title="Upgrade pipeline" sub={`${opt.upgrade.length} free patients fit the $149 a month plan`} bodyClassName="gap-2.5 p-4">
-          {funnel.map((r) => (
-            <div key={r.label} className="flex flex-col gap-1.5 px-1 py-1">
-              <span className="flex items-center gap-2 text-[13px]">
-                <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: HUE[r.tone] }} />
-                <span className="truncate font-medium">{r.label}</span>
-                <span className="ml-auto font-semibold tabular-nums" style={{ color: ink(r.tone) }}>
-                  {r.value}
-                </span>
-              </span>
-              <Meter value={r.value / max} tone={r.tone} label={r.label} />
-            </div>
-          ))}
+          <ReBarChart
+            layout="vertical"
+            height={200}
+            xKey="stage"
+            data={funnel.map((r) => ({ stage: r.label, patients: r.value }))}
+            series={[{ key: "patients", label: "Patients", color: HUE.amber, fill: "stripe" }]}
+            highlight={2}
+          />
           <dl className="mt-auto grid grid-cols-2 gap-3 border-t border-border pt-4">
             <Item variant="muted" size="xs" className="flex-col items-start gap-0.5">
               <dt className="text-xs text-muted-foreground">Monthly value</dt>

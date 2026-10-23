@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 
-/** The clinic manager's portal opens on users. */
+/** The clinic manager's portal opens on the practice dashboard. */
 export default function PracticeHome() {
-  redirect("/screens/practice/users")
+  redirect("/screens/practice/dashboard")
 }

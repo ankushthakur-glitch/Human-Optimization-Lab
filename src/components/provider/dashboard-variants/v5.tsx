@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Area, AreaChart, XAxis, YAxis } from "recharts"
 import {
   Activity01Icon,
   ArrowDown02Icon,
@@ -36,9 +35,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/design-system/ui/button"
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/design-system/ui/chart"
 import { Empty, EmptyHeader, EmptyTitle } from "@/design-system/ui/empty"
-import { InsightCard, InsightCardLabel, InsightCardValue } from "@/design-system/ui/insight-card"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/design-system/ui/item"
 import { Progress } from "@/design-system/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/design-system/ui/select"
@@ -48,7 +45,6 @@ import { toast } from "@/design-system/ui/sonner"
 import { TableBody, TableHeader, TableRow } from "@/design-system/ui/table"
 import { type Patient, fullName } from "@/components/practice/practice-data"
 import {
-  AXIS_PROPS,
   Avatar,
   Badge,
   Card,
@@ -57,14 +53,17 @@ import {
   CardHeader,
   DataTable,
   FOCUS,
-  Grid,
   MetricCard,
+  ReAreaChart,
+  ReDonut,
+  ReDonutLegend,
+  type ReSeries,
+  type ReSlice,
   Row,
   SegmentedControl,
   Td,
   Th,
   type Tone as BadgeTone,
-  useReducedMotion,
 } from "@/components/dashboard-kit-v2"
 import { AreaSpark } from "@/components/dashboard-kit-v2/charts"
 import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
@@ -605,6 +604,14 @@ function CarePlanReview({ opt }: { opt: Opt }) {
   const total = opt.members.length
   const reviewed = counts["Sent to patient"] + counts.Active
   const oldest = [...opt.reviewing].sort((a, b) => (b.stageDays ?? 0) - (a.stageDays ?? 0))[0]
+  const [stage, setStage] = React.useState<string | undefined>()
+  const slices: ReSlice[] = PLAN_STAGES.map((st) => ({
+    key: st.replace(/\s+/g, "-").toLowerCase(),
+    label: st,
+    value: counts[st],
+    color: STAGE_HUE[st],
+    fill: st === "Pending review" ? "stripe" : "solid",
+  }))
 
   return (
     <Card>
@@ -618,26 +625,20 @@ function CarePlanReview({ opt }: { opt: Opt }) {
         }
       />
       <CardBody className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-baseline justify-between text-[13px]">
-            <span className="font-medium">Reviewed by you</span>
-            <span className="font-semibold tabular-nums">
-              {reviewed} / {total}
-            </span>
-          </div>
-          <Progress value={total ? Math.round((reviewed / total) * 100) : 0} aria-label="Plans reviewed" />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {PLAN_STAGES.map((stage) => (
-            <InsightCard key={stage} className="gap-1 rounded-xl p-3">
-              <InsightCardValue className="text-xl">{counts[stage]}</InsightCardValue>
-              <InsightCardLabel>
-                <Badge tone={STAGE_TONE[stage]} dot>
-                  {stage}
-                </Badge>
-              </InsightCardLabel>
-            </InsightCard>
-          ))}
+        {/* ReUI's donut with a centre total: each stage a slice, the stage
+            still on the physician striped. */}
+        <div className="flex flex-col items-center gap-4 sm:flex-row lg:flex-col xl:flex-row">
+          <ReDonut
+            data={slices}
+            active={stage}
+            onSelect={(k) => setStage((s) => (s === k ? undefined : k))}
+            centerValue={`${reviewed}/${total}`}
+            centerLabel="Reviewed"
+            height={184}
+            thickness={22}
+            className="w-[184px] shrink-0"
+          />
+          <ReDonutLegend data={slices} active={stage} onSelect={(k) => setStage((s) => (s === k ? undefined : k))} className="w-full" />
         </div>
         <p className="text-[13px] text-muted-foreground">
           {oldest ? (
@@ -655,11 +656,17 @@ function CarePlanReview({ opt }: { opt: Opt }) {
 
 /* ---------------------------------------------------- biological age -- */
 
-const BIO_CONFIG = { gap: { label: "Bio age gap, years", color: SUBTLE.blue } } satisfies ChartConfig
+const STAGE_HUE: Record<PlanStage, string> = {
+  "Pending review": SUBTLE.orange,
+  "Changes requested": SUBTLE.red,
+  "Sent to patient": SUBTLE.blue,
+  Active: SUBTLE.green,
+}
+
+const BIO_SERIES: ReSeries[] = [{ key: "gap", label: "Bio age gap, years", color: SUBTLE.blue, fill: "gradient" }]
 
 function BiologicalAge({ opt, today }: { opt: Opt; today: string }) {
   const [who, setWho] = React.useState<"all" | "members">("all")
-  const reduced = useReducedMotion()
   const list = who === "all" ? opt.all.filter((o) => o.patient.status === "Active") : opt.active
   const end = new Date(`${today}T00:00:00`)
   const rows = Array.from({ length: 6 }, (_, i) => ({
@@ -667,6 +674,11 @@ function BiologicalAge({ opt, today }: { opt: Opt; today: string }) {
     gap: +avg(list.map((o) => o.bioTrend[i]! - o.age)).toFixed(1),
   }))
   const now = rows[rows.length - 1]!.gap
+  /* Whole years with a year of room; the span is a multiple of the axis's
+     four steps so every tick lands on a whole year. */
+  const lo = Math.floor(Math.min(...rows.map((r) => r.gap)) - 1)
+  const top = Math.ceil(Math.max(...rows.map((r) => r.gap)) + 1)
+  const hi = lo + Math.max(4, Math.ceil((top - lo) / 4) * 4)
   const change = +(now - rows[0]!.gap).toFixed(1)
   const better = change < 0
 
@@ -694,30 +706,20 @@ function BiologicalAge({ opt, today }: { opt: Opt; today: string }) {
             {years(change)} over 6 months
           </Badge>
         </div>
-        <ChartContainer config={BIO_CONFIG} className="aspect-auto h-[160px] w-full">
-          <AreaChart data={rows} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="v5-bio" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-gap)" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="var(--color-gap)" stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <Grid />
-            <XAxis dataKey="label" {...AXIS_PROPS} />
-            <YAxis {...AXIS_PROPS} domain={["dataMin - 0.6", "dataMax + 0.6"]} tickFormatter={(v: number) => v.toFixed(1)} />
-            <ChartTooltip cursor={{ stroke: "var(--border)" }} content={<ChartTooltipContent indicator="dot" />} />
-            <Area
-              dataKey="gap"
-              type="natural"
-              stroke="var(--color-gap)"
-              strokeWidth={2}
-              fill="url(#v5-bio)"
-              isAnimationActive={!reduced}
-              dot={{ r: 3, fill: "var(--card)", stroke: "var(--color-gap)", strokeWidth: 1.5 }}
-              activeDot={{ r: 4 }}
-            />
-          </AreaChart>
-        </ChartContainer>
+        {/* ReUI's area chart with glowing dot markers. */}
+        <ReAreaChart
+          data={rows}
+          xKey="label"
+          series={BIO_SERIES}
+          dots="glow"
+          height={168}
+          showYAxis
+          yDomain={[lo, hi]}
+          baseValue="dataMin"
+          referenceY={lo < 0 && hi > 0 ? { value: 0 } : undefined}
+          yTickFormat={(v) => `${v > 0 ? "+" : ""}${v} y`}
+          valueFormat={(v) => years(v)}
+        />
       </CardBody>
     </Card>
   )

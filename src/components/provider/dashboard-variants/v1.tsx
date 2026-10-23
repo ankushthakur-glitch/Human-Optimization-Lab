@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Area, AreaChart, ReferenceLine, XAxis, YAxis } from "recharts"
 import {
   IconCopy,
   IconDna,
@@ -17,7 +16,6 @@ import {
 } from "@/design-system/icons"
 
 import { Button, buttonVariants } from "@/design-system/ui/button"
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/design-system/ui/chart"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +47,6 @@ import { Illustration } from "@/components/illustrations/illustration"
 import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
 import { type Patient, fullName } from "@/components/practice/practice-data"
 import {
-  AXIS_PROPS,
   Avatar,
   Badge,
   Card,
@@ -57,13 +54,15 @@ import {
   CardFooter,
   CardHeader,
   DataTable,
-  Grid,
+  ReAreaChart,
+  ReBarChart,
+  ReLegend,
+  type ReSeries,
   Row as TableRow,
   Sparkline,
   Td,
   Th,
   type Tone,
-  useReducedMotion,
 } from "@/components/dashboard-kit-v2"
 import { NOW, daysSince, fmtDateTime } from "@/components/provider/home-v2/clock"
 import { ItemPanel } from "@/components/provider/home-v2/item-panel"
@@ -81,11 +80,15 @@ import {
   type ActionOptions,
   actionLabel,
   applyAction,
+  ITEM_TYPES,
   isOpen,
   oldestSync,
+  openSeries,
   toQueue,
+  urgentSeries,
+  weekDelta,
 } from "@/components/provider/home-v2/selectors"
-import type { ActionKind, QueueItem } from "@/components/provider/home-v2/types"
+import type { ActionKind, ItemType, QueueItem } from "@/components/provider/home-v2/types"
 import { VariantFrame } from "@/components/provider/dashboard-variants/frame"
 import {
   type Marker,
@@ -206,10 +209,12 @@ function Pipeline({ opt }: { opt: ReturnType<typeof useOptimization> }) {
 
 /* --------------------------------------------------- bio age chart -- */
 
-const GAP_CONFIG = { gap: { label: "Average gap, years", color: "var(--primary)" } } satisfies ChartConfig
+const GAP_SERIES: ReSeries[] = [{ key: "gap", label: "Average gap", color: "var(--primary)", fill: "gradient" }]
+
+/** "-1.7 y", signed, for the chart's axis and tooltip. */
+const signedYears = (n: number) => `${n > 0 ? "+" : ""}${+n.toFixed(1)} y`
 
 function BioAgeGap({ opt }: { opt: ReturnType<typeof useOptimization> }) {
-  const reduced = useReducedMotion()
   const group = opt.active.length ? opt.active : opt.members
   const n = group[0]?.bioTrend.length ?? 6
   const now = new Date(`${NOW.slice(0, 10)}T12:00:00`)
@@ -222,6 +227,11 @@ function BioAgeGap({ opt }: { opt: ReturnType<typeof useOptimization> }) {
   const first = data[0]?.gap ?? 0
   const last = data[data.length - 1]?.gap ?? 0
   const change = +(last - first).toFixed(1)
+  /* Whole years with a year of room; the span is a multiple of the axis's
+     four steps so every tick lands on a whole year. */
+  const lo = Math.floor(Math.min(...data.map((x) => x.gap)) - 1)
+  const top = Math.ceil(Math.max(...data.map((x) => x.gap)) + 1)
+  const hi = lo + Math.max(4, Math.ceil((top - lo) / 4) * 4)
 
   return (
     <Card>
@@ -236,38 +246,21 @@ function BioAgeGap({ opt }: { opt: ReturnType<typeof useOptimization> }) {
         }
       />
       <CardBody className="flex-1">
-        <ChartContainer config={GAP_CONFIG} className="aspect-auto h-[300px] w-full">
-          <AreaChart data={data} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
-            <defs>
-              <linearGradient id="v1-gap" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-gap)" stopOpacity={0.2} />
-                <stop offset="100%" stopColor="var(--color-gap)" stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <Grid />
-            <XAxis dataKey="month" {...AXIS_PROPS} />
-            <YAxis
-              {...AXIS_PROPS}
-              width={48}
-              tickCount={5}
-              tickFormatter={(v: number) => `${+v.toFixed(1)} y`}
-              domain={[(m: number) => Math.floor(m - 1), (m: number) => Math.ceil(m + 1)]}
-            />
-            <ReferenceLine y={0} stroke="var(--border)" />
-            <ChartTooltip cursor={{ stroke: "var(--border)" }} content={<ChartTooltipContent indicator="dot" />} />
-            <Area
-              type="monotone"
-              dataKey="gap"
-              stroke="var(--color-gap)"
-              strokeWidth={2}
-              fill="url(#v1-gap)"
-              baseValue="dataMin"
-              isAnimationActive={!reduced}
-              dot={{ r: 3, fill: "var(--card)", stroke: "var(--color-gap)", strokeWidth: 1.5 }}
-              activeDot={{ r: 4 }}
-            />
-          </AreaChart>
-        </ChartContainer>
+        <ReAreaChart
+          data={data}
+          xKey="month"
+          series={GAP_SERIES}
+          dots="glow"
+          curve="monotone"
+          height={300}
+          showYAxis
+          yDomain={[lo, hi]}
+          baseValue="dataMin"
+          referenceY={lo < 0 && hi > 0 ? { value: 0 } : undefined}
+          yTickFormat={signedYears}
+          tooltipLabel={(month) => `${month} · ${signedYears(data.find((x) => x.month === month)?.gap ?? 0)}`}
+          valueFormat={signedYears}
+        />
       </CardBody>
       <CardFooter className="flex flex-wrap items-center gap-2 text-[13px]">
         <span className="font-medium">Trends to watch</span>
@@ -281,6 +274,52 @@ function BioAgeGap({ opt }: { opt: ReturnType<typeof useOptimization> }) {
           {opt.improving.length} improving
         </Badge>
       </CardFooter>
+    </Card>
+  )
+}
+
+/* ------------------------------------------------ open items chart -- */
+
+const OPEN_SERIES: ReSeries[] = [
+  { key: "urgent", label: "Urgent", color: SUBTLE.red, fill: "stripe" },
+  { key: "other", label: "Other open", color: "var(--primary)", fill: "solid" },
+]
+
+/** The last 14 days of the clinical queue: urgent striped over the rest, ReUI's striped and solid bars. */
+function OpenItems({ open, urgent }: { open: QueueItem[]; urgent: QueueItem[] }) {
+  const live = (t: ItemType) => open.filter((i) => i.type === t).length
+  const totals = ITEM_TYPES.map((t) => openSeries(t, live(t))).reduce((acc, s) => acc.map((v, i) => v + (s[i] ?? 0)))
+  const urgentDays = urgentSeries(urgent.length)
+  const now = new Date(`${NOW.slice(0, 10)}T12:00:00`)
+  const data = totals.map((total, i) => {
+    const d = new Date(now)
+    d.setDate(now.getDate() - (totals.length - 1 - i))
+    const u = Math.min(total, urgentDays[i] ?? 0)
+    return { day: SHORT.format(d), urgent: u, other: total - u }
+  })
+  const delta = weekDelta(totals)
+
+  return (
+    <Card>
+      <CardHeader
+        title="Open items, 14 days"
+        count={<Badge tone="light">{open.length}</Badge>}
+        description={`${delta > 0 ? "+" : ""}${delta} on last week, ${plural(urgent.length, "urgent item")} today`}
+        actions={<Badge tone={delta > 0 ? "error" : "success"}>{delta > 0 ? `+${delta}` : delta}</Badge>}
+      />
+      <CardBody className="flex flex-1 flex-col gap-3">
+        <ReLegend series={OPEN_SERIES} />
+        <ReBarChart
+          data={data}
+          xKey="day"
+          series={OPEN_SERIES}
+          stacked
+          height={220}
+          highlight={data.length - 1}
+          xTickFormat={(v) => v.replace(/^[A-Za-z]+ /, "")}
+          valueFormat={(v) => `${v}`}
+        />
+      </CardBody>
     </Card>
   )
 }
@@ -849,9 +888,12 @@ export function DashboardOverview() {
             />
           </section>
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
             <Pipeline opt={opt} />
             <BioAgeGap opt={opt} />
+            <div className="grid lg:col-span-2 2xl:col-span-1">
+              <OpenItems open={open} urgent={urgent} />
+            </div>
           </div>
 
           <ActOn rows={rows} done={done} selectedId={current?.id} onOpen={openRow} onQuick={quick} />
