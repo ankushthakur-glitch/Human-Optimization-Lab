@@ -48,7 +48,7 @@ import { PlanToday } from "@/components/plan-today"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { Outlook } from "@/components/plan-outlook"
 import { PhotoCheckIn, PhotoSheet, type PhotoSheetKind, type Shots } from "@/components/plan-photos"
-import { YourProgress } from "@/components/plan-progress"
+import { ProgressAsk, YourProgress } from "@/components/plan-progress"
 import { acceptedPlan, changeRequested, livePlan, proposedPlan } from "@/lib/plans"
 import { MARKER_CARE, type Biomarker, type FocusArea } from "@/lib/record"
 import { classify, valueText, withUnit } from "@/lib/trends"
@@ -144,7 +144,7 @@ export function PlanMember() {
       pinned={live ? <SectionTabs value={section} onChange={setSection} /> : undefined}
       headless={experience === "member-review"}
       overlay={overlay}
-      footer={proposed ? <ReviewActions onRequest={() => setAsking(true)} /> : undefined}
+      footer={proposed ? <ReviewActions onRequest={() => setAsking(true)} /> : live && section === "progress" ? <ProgressAsk /> : undefined}
     >
       {sharingOff && <ReviewBanner state={{ kind: "sharing-off", since: sharingOff.on ?? "" }} onPress={() => router.push("/connect")} />}
       {experience === "member-review" ? (
@@ -419,6 +419,12 @@ function useDoctorReply(walk?: string) {
   const asked = !!plan?.requests?.length
   React.useEffect(() => {
     if (plan?.status !== "review" || !(walk || asked)) return
+    // Day one: the first plan goes straight to the live Plan tab, with no
+    // review step to accept.
+    if (walk && !asked && !plan.versions.length) {
+      save({ plan: acceptedPlan(plan), planReadySeen: true })
+      return
+    }
     const t = setTimeout(() => save({ plan: proposedPlan(plan) }), WALK_REVIEW_MS)
     return () => clearTimeout(t)
   }, [walk, asked, plan, save])

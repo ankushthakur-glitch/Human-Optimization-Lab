@@ -223,7 +223,7 @@ export const FINDINGS: { icon: IconKey; title: string; sub: string; bad: boolean
 export const TEST_RESULTS = [
   { label: "Body fat", value: "41", unit: "%", via: "DEXA" },
   { label: "Sleep, AHI", value: "18", via: "Home sleep study" },
-  { label: "Resting metabolism", value: "1,310", unit: "kcal", via: "RMR" },
+  { label: "Metabolism", value: "1,310", unit: "kcal", via: "RMR" },
   { label: "hs-CRP", value: "4.2", via: "Blood panel" },
 ]
 

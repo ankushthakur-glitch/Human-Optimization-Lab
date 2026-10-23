@@ -1,6 +1,6 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native"
+import { StyleSheet, Text, TextInput, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
@@ -9,7 +9,7 @@ import { Block, Tag } from "@/components/record-kit"
 import { dayOfAt, localDay, waists, weighIns, type Entry } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { SYMPTOMS, TEST_RESULTS } from "@/lib/topics"
-import { card, chart, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
+import { card, chart, color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* Set your starting point (Journey_14 screen 29), after "All tests
    complete" and before day one. Progress needs a zero, and half of it is
@@ -55,45 +55,37 @@ export default function StartingPointScreen() {
 
   return (
     <FlowScreen page title="Set your starting point" footer={<PrimaryButton onPress={start} disabled={!ready || saving}>Start day one</PrimaryButton>}>
-      <Text style={type.body}>Your tests gave us the numbers. These are the ones only you can give us — and everything from here is measured against today.</Text>
+      <Text style={type.body}>Your tests gave us the numbers. Add the ones only you can give — progress is measured from today.</Text>
 
       <Block title="From your tests" action={<Tag tone="ok">Already in</Tag>}>
-        <View style={styles.panel}>
-          <View style={styles.tiles}>
-            {TEST_RESULTS.map((t) => (
-              <View key={t.label} style={styles.tile} accessible accessibilityLabel={`${t.label}, ${t.value}${t.unit ? ` ${t.unit}` : ""}, ${t.via}`}>
-                <Text style={styles.value}>
-                  {t.value}
-                  {!!t.unit && <Text style={type.unit}>{t.unit === "%" ? t.unit : ` ${t.unit}`}</Text>}
-                </Text>
-                <Text style={styles.tileName}>{t.label}</Text>
-                <Text style={type.meta}>{t.via}</Text>
-              </View>
-            ))}
-          </View>
+        <View style={styles.tiles}>
+          {TEST_RESULTS.map((t) => (
+            <View key={t.label} style={styles.tile} accessible accessibilityLabel={`${t.label}, ${t.value}${t.unit ? ` ${t.unit}` : ""}, ${t.via}`}>
+              <Text style={styles.value}>
+                {t.value}
+                {!!t.unit && <Text style={type.unit}>{t.unit === "%" ? t.unit : ` ${t.unit}`}</Text>}
+              </Text>
+              <Text style={styles.tileName} numberOfLines={1}>{t.label}</Text>
+              <Text style={type.meta} numberOfLines={1}>{t.via}</Text>
+            </View>
+          ))}
         </View>
       </Block>
 
       <Block title="Measured at home" meta="Today">
-        <View style={styles.panel}>
-          <View style={styles.fields}>
-            <Field label="Weight" unit="lb" value={weight} onChange={setWeight} />
-            <Field label="Waist" unit="in" value={waist} onChange={setWaist} />
-          </View>
-          <Text style={type.meta}>You measure these two again every Monday, no appointment needed.</Text>
+        <View style={styles.fields}>
+          <Field label="Weight" unit="lb" value={weight} onChange={setWeight} />
+          <Field label="Waist" unit="in" value={waist} onChange={setWaist} />
         </View>
       </Block>
 
-      <Block title="How much each one bothers you" meta="0 is not at all">
+      <Block title="How much each one bothers you" action={<Text style={styles.today}>today</Text>}>
         <View style={styles.symptoms}>
           {SYMPTOMS.map((sy) => (
             <View key={sy.id} style={styles.symptom}>
               <View style={styles.top}>
-                <View style={styles.fill}>
-                  <Text style={styles.name}>{sy.name}</Text>
-                  <Text style={type.meta}>{sy.note.charAt(0).toUpperCase() + sy.note.slice(1)}</Text>
-                </View>
-                <Text style={[styles.num, { color: bother[sy.id] >= 4 ? "#A95413" : ink.primary }]}>{bother[sy.id]}</Text>
+                <Text style={styles.name}>{sy.name}</Text>
+                <Text style={type.meta}>{sy.note}</Text>
               </View>
               <Score value={bother[sy.id]} label={sy.name} onChange={(n) => setBother((b) => ({ ...b, [sy.id]: n }))} />
             </View>
@@ -126,36 +118,44 @@ function Field({ label, unit, value, onChange }: { label: string; unit: string; 
   )
 }
 
-/** A 0 to 10 score as a row of chips: tap one. The chosen chip takes the
-    colour of how much it bothers her, teal to amber to clay, and the
-    number is always beside the name. */
+/** A 0 to 10 score as a bar with the number beside it: tap or drag along
+    the bar to set it. The bar and the number take the colour of how much it
+    bothers her, teal to amber to clay. */
 function Score({ value, label, onChange }: { value: number; label: string; onChange: (n: number) => void }) {
   const tone = value >= 7 ? CLAY : value >= 4 ? color.amber : color.primary
+  const width = React.useRef(0)
+  const set = (x: number) => {
+    if (width.current > 0) onChange(Math.max(0, Math.min(10, Math.round((x / width.current) * 10))))
+  }
   return (
-    <View
-      style={styles.chips}
-      accessible
-      accessibilityRole="adjustable"
-      accessibilityLabel={`${label}, how much it bothers you`}
-      accessibilityValue={{ min: 0, max: 10, now: value, text: `${value} out of 10` }}
-      accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
-      onAccessibilityAction={(e) => onChange(Math.max(0, Math.min(10, value + (e.nativeEvent.actionName === "increment" ? 1 : -1))))}
-    >
-      {Array.from({ length: 11 }, (_, n) => {
-        const on = n === value
-        return (
-          <Pressable key={n} onPress={() => onChange(n)} style={[styles.chip, on && { borderColor: tone, backgroundColor: `${tone}14` }]}>
-            <Text style={[styles.chipText, on && { color: tone, fontFamily: font.medium }]}>{n}</Text>
-          </Pressable>
-        )
-      })}
+    <View style={styles.score}>
+      <View
+        style={styles.hit}
+        onLayout={(e) => {
+          width.current = e.nativeEvent.layout.width
+        }}
+        onStartShouldSetResponder={() => true}
+        onMoveShouldSetResponder={() => true}
+        onResponderGrant={(e) => set(e.nativeEvent.locationX)}
+        onResponderMove={(e) => set(e.nativeEvent.locationX)}
+        accessible
+        accessibilityRole="adjustable"
+        accessibilityLabel={`${label}, how much it bothers you`}
+        accessibilityValue={{ min: 0, max: 10, now: value, text: `${value} out of 10` }}
+        accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
+        onAccessibilityAction={(e) => onChange(Math.max(0, Math.min(10, value + (e.nativeEvent.actionName === "increment" ? 1 : -1))))}
+      >
+        <View style={styles.track} pointerEvents="none">
+          <View style={[styles.bar, { width: `${value * 10}%`, backgroundColor: tone }]} />
+        </View>
+      </View>
+      <Text style={[styles.num, { color: tone }]}>{value}</Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1, minWidth: 0 },
-  panel: { gap: space.item, padding: space.item, borderRadius: 12, backgroundColor: surface.inset, borderWidth: 1, borderColor: hairline.edge },
   tiles: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
   tile: { flexBasis: "47%", flexGrow: 1, gap: 2, padding: space.item, borderRadius: 10, backgroundColor: color.background, borderWidth: 1, borderColor: hairline.edge, boxShadow: card.shadowXs },
   value: { ...type.hero, fontVariant: ["tabular-nums"] },
@@ -167,13 +167,15 @@ const styles = StyleSheet.create({
   input: { ...type.title, minWidth: 0, padding: 0, color: ink.strong, outlineWidth: 0 } as never,
 
   symptoms: { gap: space.inline },
-  symptom: { gap: space.item, padding: space.item, borderRadius: 12, backgroundColor: surface.inset, borderWidth: 1, borderColor: hairline.edge },
-  top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.inline },
-  name: { ...type.title, fontFamily: font.semibold, color: ink.strong },
-  chips: { flexDirection: "row", justifyContent: "space-between", gap: 3 },
-  chip: { flex: 1, minWidth: 0, height: 28, alignItems: "center", justifyContent: "center", borderRadius: 6, backgroundColor: color.background, borderWidth: 1, borderColor: hairline.outline },
-  chipText: { ...type.meta, color: ink.content, fontVariant: ["tabular-nums"] },
-  num: { ...type.hero, fontVariant: ["tabular-nums"] },
+  today: { ...type.meta, fontFamily: font.medium, color: CLAY },
+  symptom: { gap: 2, paddingHorizontal: space.item, paddingVertical: 10, borderRadius: 12, backgroundColor: color.background, borderWidth: 1, borderColor: hairline.edge, boxShadow: card.shadowXs },
+  top: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space.inline },
+  name: { ...type.title, fontFamily: font.semibold, color: ink.strong, flexShrink: 1 },
+  score: { flexDirection: "row", alignItems: "center", gap: space.item },
+  hit: { flex: 1, minWidth: 0, height: 22, justifyContent: "center" },
+  track: { height: 5, borderRadius: 2.5, overflow: "hidden", backgroundColor: hairline.rule },
+  bar: { height: "100%", borderRadius: 2.5 },
+  num: { ...type.title, fontFamily: font.semibold, minWidth: 18, textAlign: "right", fontVariant: ["tabular-nums"] },
 
   foot: { flexDirection: "row", alignItems: "flex-start", gap: space.inline },
 })
