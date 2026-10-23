@@ -28,8 +28,9 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    test (/schedule-tests); "Confirm schedule" there then opens the
    confirmation (/schedule-confirmed), which leads on to the flourishing
    questions. "Schedule later" leaves them in To do, brought up
-   every other day. Either way she walks on to her plan with Dr. Patel
-   (/plan?walk=1), which this build approves after a moment, so the
+   every other day, and opens the same health profile and flourishing
+   questions (/health-profile). Either way she walks on to her plan with
+   Dr. Patel (/plan?walk=1), which this build approves after a moment, so the
    set-up plays through to "Your personalized plan is ready". The
    payment and its receipt were confirmed in a popup just before. */
 
@@ -99,10 +100,11 @@ export default function EnrolledScreen() {
   const schedule = () => router.push("/schedule-tests")
 
   // Left for later: the tests wait in To do, brought up every other day.
+  // The flourishing questions still follow, as after a confirmed schedule.
   async function later() {
     const paid = onboarding.startingTests
     if (paid) await onboarding.save({ startingTests: { ...paid, laterAt: new Date().toISOString() } })
-    viewPlan()
+    router.replace("/health-profile")
   }
 
   const rise = (i: number) => ({

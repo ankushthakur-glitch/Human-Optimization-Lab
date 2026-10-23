@@ -7,11 +7,10 @@ import { useReducedMotion } from "@/components/chat"
 import { WASH } from "@/components/enrollment-kit"
 import { DarkStatusBar } from "@/components/error-state"
 import { PageFooter, PageGround } from "@/components/hol"
-import { CaretRight, Check, Info } from "@/components/ph"
+import { CaretRight, Check } from "@/components/ph"
 import { Card, Tile, type Hue } from "@/components/record-kit"
 import { TopicIcon } from "@/components/topic-kit"
 import { Button, useTopInset } from "@/components/ui"
-import { MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { FINDINGS } from "@/lib/topics"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
@@ -92,9 +91,6 @@ export default function PlanReadyScreen() {
             </View>
           </Animated.View>
           <Animated.View style={[styles.words, rise(0)]}>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>All tests complete</Text>
-            </View>
             <Text style={styles.title} accessibilityRole="header">
               Congratulations
             </Text>
@@ -122,10 +118,6 @@ export default function PlanReadyScreen() {
               </View>
             ))}
           </Card>
-          <View style={styles.foot}>
-            <Info size={14} color={ink.tertiary} />
-            <Text style={[type.meta, styles.fill]}>{`A copy has gone to ${MEMBER.doctorShort}. You accepted the plan when you enrolled, so it is already running.`}</Text>
-          </View>
         </Animated.View>
       </ScrollView>
       <Animated.View style={rise(2)}>
@@ -150,8 +142,6 @@ const styles = StyleSheet.create({
   halo: { width: BADGE + 20, height: BADGE + 20, borderRadius: (BADGE + 20) / 2, alignItems: "center", justifyContent: "center", backgroundColor: color.primarySoft },
   badge: { width: BADGE, height: BADGE, borderRadius: BADGE / 2, alignItems: "center", justifyContent: "center", backgroundColor: color.primary },
   words: { alignItems: "center", gap: space.inline },
-  pill: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, backgroundColor: color.primarySoft },
-  pillText: { ...type.meta, color: color.primary },
   title: { fontFamily: font.semibold, fontSize: 26, lineHeight: 34, letterSpacing: -0.4, color: ink.strong, textAlign: "center" },
   lead: { ...type.body, textAlign: "center", paddingHorizontal: space.item },
   stack: { gap: space.item },
@@ -161,5 +151,4 @@ const styles = StyleSheet.create({
   rule: { borderTopWidth: 1, borderTopColor: hairline.rule, paddingTop: space.item },
   finding: { ...type.title, color: ink.strong },
   lead1: { color: "#A95413" },
-  foot: { flexDirection: "row", alignItems: "flex-start", gap: space.inline },
 })

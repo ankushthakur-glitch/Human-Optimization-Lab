@@ -4,10 +4,10 @@ import { StyleSheet, Text, View } from "react-native"
 
 import type { CheckInKind } from "@/components/check-in-sheet"
 import { AskButton } from "@/components/hol"
-import { Info } from "@/components/ph"
 import { Block, Group, NeedsRow, SmallAction, StatRow, StatTile } from "@/components/record-kit"
 import { AT_HOME, DAY_ONE, HEADLINES, RESCORED, RETESTED, SYMPTOMS, type Pair } from "@/lib/topics"
 import { chart, color, font, ink, space, type } from "@/lib/theme"
+
 
 /* The Plan screen's "Progress" tab (Journey screen 48, "Day one, and
    today"): every number she has, against the one she started with. A band
@@ -86,14 +86,14 @@ export function YourProgress({ onAdd }: { onAdd: (kind: CheckInKind) => void }) 
         </Group>
       </Block>
 
-      <View style={styles.foot}>
-        <Info size={14} color={ink.tertiary} />
-        <Text style={[type.meta, styles.fill]}>Left column is {DAY_ONE.started.replace(/, \d{4}$/, "")}, the day you started. Right column is today. Nothing appears as a trend without the point it moved from.</Text>
-      </View>
-
-      <AskButton about="your progress" onPress={() => router.push({ pathname: "/assistant", params: { topic: "plan", ask: "What moved most since day one?" } })} />
     </View>
   )
+}
+
+/** The question for Inlay, pinned at the bottom of the Plan screen while
+    the Progress tab is open. */
+export function ProgressAsk() {
+  return <AskButton about="your progress" onPress={() => router.push({ pathname: "/assistant", params: { topic: "plan", ask: "What moved most since day one?" } })} />
 }
 
 function Cell({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
@@ -107,7 +107,6 @@ function Cell({ label, value, strong }: { label: string; value: string; strong?:
 
 const styles = StyleSheet.create({
   wrap: { gap: space.section },
-  fill: { flex: 1, minWidth: 0 },
 
   // The dated band: dark teal, three cells, the day count in the light teal.
   band: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item, paddingHorizontal: space.item, paddingVertical: space.compact, borderRadius: 8, backgroundColor: chart.dataStrong },
@@ -124,6 +123,4 @@ const styles = StyleSheet.create({
   to: { fontFamily: font.regular, color: ink.tertiary },
   now: { fontFamily: font.semibold, color: ink.primary },
   unit: { fontFamily: font.regular, color: ink.tertiary },
-
-  foot: { flexDirection: "row", alignItems: "flex-start", gap: space.inline },
 })

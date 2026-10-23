@@ -184,7 +184,6 @@ export function PhotoSheet({ kind, onClose, onSave }: { kind: PhotoSheetKind; on
           <Slot label="Front" uri={shots.front} onCamera={() => camera("front")} onLibrary={() => library("front")} />
           <Slot label="Side" uri={shots.side} onCamera={() => camera("side")} onLibrary={() => library("side")} />
         </View>
-        <Text style={type.meta}>Photos are saved securely. Only you and your care team see them.</Text>
         <PrimaryButton disabled={!ready} onPress={() => onSave(shots)}>
           Save check-in
         </PrimaryButton>
