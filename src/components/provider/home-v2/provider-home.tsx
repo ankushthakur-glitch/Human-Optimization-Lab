@@ -41,6 +41,7 @@ import {
 } from "@/components/provider/home-v2/selectors"
 import type { ActionKind, QueueItem, WorkItem } from "@/components/provider/home-v2/types"
 import { Worklist, type WorklistTab } from "@/components/provider/home-v2/worklist"
+import { VariantSwitch } from "@/components/provider/dashboard-variants/frame"
 
 /* The provider home (/screens/patients/dashboard): the physician's whole
    day on one page, read top to bottom. Five stat cards (appointments,
@@ -224,6 +225,9 @@ export function ProviderHomeV2() {
   return (
     <ProviderShell active="dashboard">
       <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-surface-sunken">
+        <div className="border-b border-border bg-card px-6 py-2">
+          <VariantSwitch />
+        </div>
         <div className="flex w-full min-w-0 flex-col gap-5 px-6 pt-5 pb-8">
           {/* The greeting, with when the records last synced and Sync now at the row's end. */}
           <header className="flex flex-wrap items-center gap-2.5">
