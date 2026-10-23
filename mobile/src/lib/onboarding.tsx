@@ -321,7 +321,7 @@ export type State = {
   startingPoint?: { at: string; weight: number; waist: number; bother: { wake: number; irritable: number; gain: number } }
   /** How she answered each of the six topics on Today, by day (lib/topics.ts):
       the way she chose and when. */
-  topicLog?: Record<string, Partial<Record<string, { way: string; at: string }>>>
+  topicLog?: Record<string, Partial<Record<string, { way: string; at: string; parts?: string[] }>>>
   /** The measurements beyond weight and waist (entries holds those two),
       by day, in inches. */
   measures?: Record<string, Partial<Record<"chest" | "hips" | "thigh" | "arm", number>>>

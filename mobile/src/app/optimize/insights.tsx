@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   },
   top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   status: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 999 },
-  statusText: { fontFamily: font.medium, fontSize: 11, lineHeight: 14, letterSpacing: 0.8, textTransform: "uppercase" },
+  statusText: { fontFamily: font.medium, fontSize: 11, lineHeight: 14 },
   badge: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   name: { fontFamily: font.medium, fontSize: 20, lineHeight: 26, color: ink.strong },
   why: { alignSelf: "stretch", paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, backgroundColor: color.primaryTint },

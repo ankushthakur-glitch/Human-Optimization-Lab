@@ -415,12 +415,12 @@ function PlannedCard({ slot, idea }: { slot: MealSlot; idea: { name: string; fac
       accessibilityLabel={`${name}, ${idea.name}, ${idea.facts}, logged. Log it`}
     >
       <View style={styles.fill}>
-        <Text style={styles.slot}>{name.toUpperCase()}</Text>
+        <Text style={styles.slot}>{name}</Text>
         <Text style={type.title}>{idea.name}</Text>
         {!!idea.facts && <Text style={type.label}>{idea.facts}</Text>}
       </View>
       <View style={styles.planned}>
-        <Text style={styles.plannedText}>LOGGED</Text>
+        <Text style={styles.plannedText}>Logged</Text>
       </View>
     </Card>
   )
@@ -438,13 +438,13 @@ function MealCard({ meal }: { meal: Meal }) {
   return (
     <Card style={styles.mealCard} accessibilityLabel={`${slot}, ${mealName(meal)}, ${facts}, logged`}>
       <View style={styles.fill}>
-        <Text style={styles.slot}>{slot.toUpperCase()}</Text>
+        <Text style={styles.slot}>{slot}</Text>
         <Text style={type.title}>{mealName(meal)}</Text>
         {!!facts && <Text style={type.label}>{facts}</Text>}
       </View>
       <View style={styles.logged}>
         <Check size={10} weight="bold" color={ink.good} />
-        <Text style={styles.loggedText}>LOGGED</Text>
+        <Text style={styles.loggedText}>Logged</Text>
       </View>
     </Card>
   )
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
 
   meals: { gap: space.item },
   mealCard: { flexDirection: "row", alignItems: "center", gap: space.item },
-  slot: { ...type.caption, color: ink.tertiary, letterSpacing: 0.6 },
+  slot: { ...type.caption, color: ink.tertiary },
   logged: {
     flexDirection: "row",
     alignItems: "center",

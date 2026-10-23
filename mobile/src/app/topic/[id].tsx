@@ -3,10 +3,13 @@ import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { PageNotFoundState } from "@/components/error-state"
+import { PrimaryButton } from "@/components/hol"
 import { MeasureSheet } from "@/components/measure-sheet"
 import { CaretRight, Check, ForkKnife, Play, Warning } from "@/components/ph"
 import { Block, Card, Group, HUE, NeedsRow, Tag, toast } from "@/components/record-kit"
-import { Foot, Note, ScoreDial, TopicIcon, TargetCard, TopicPage, Ways, askAbout } from "@/components/topic-kit"
+import { Switch } from "@/components/settings-rows"
+import { Sheet } from "@/components/sheet"
+import { ScoreDial, TargetCard, TopicPage, Ways, askAbout } from "@/components/topic-kit"
 import { MEAL_SLOTS, localDay, mealName, mealsOn, totalsOf, type Meal } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { ALSO_TAKING, CARDIO, INTERACTION, LIFTS, SLEEP_LAST, WARMUP, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
@@ -34,6 +37,7 @@ export default function TopicScreen() {
 function TopicBody({ topic }: { topic: Topic }) {
   const s = useOnboarding()
   const [sheet, setSheet] = React.useState(false)
+  const [part, setPart] = React.useState(false)
   const day = localDay()
   const row = rowOf(s, topic, day)
   const logged = s.topicLog?.[day]?.[topic.id]
@@ -45,13 +49,14 @@ function TopicBody({ topic }: { topic: Topic }) {
       toast(`${topic.name === "Medication & supplements" ? "Medication" : topic.name} logged. ${way.badge}.`)
     } else if (act.kind === "go") router.push({ pathname: act.href as never, params: act.params })
     else if (act.kind === "ask") askAbout(act.ask)
+    else if (act.kind === "part") setPart(true)
     else setSheet(true)
   }
 
   return (
     <TopicPage
       title={topic.id === "medication" ? "Medication" : topic.name}
-      sheet={sheet && <MeasureSheet onClose={() => setSheet(false)} />}>
+      sheet={(sheet && <MeasureSheet onClose={() => setSheet(false)} />) || (part && <PartSheet onClose={() => setPart(false)} />)}>
       <View style={styles.chip}>
         <Tag tone="primary">{topic.tag}</Tag>
       </View>
@@ -64,19 +69,6 @@ function TopicBody({ topic }: { topic: Topic }) {
       <Ways ways={topic.ways} onPick={pick} picked={logged?.way} />
 
       {topic.id === "medication" && <AlsoTaking />}
-      {!!topic.tip && topic.id !== "medication" && <Note>{topic.tip}</Note>}
-      {topic.id !== "exercise" && topic.id !== "eat" && <Foot>{topic.foot}</Foot>}
-
-      {topic.id !== "exercise" && (
-        <Group>
-          <NeedsRow
-            icon={<TopicIcon name={topic.id} size={16} />}
-            title={`${topic.id === "medication" ? "Medication" : topic.name} history`}
-            meta="Day, week, month, six months and year"
-            onPress={() => router.push({ pathname: "/topic-history/[id]", params: { id: topic.id } })}
-          />
-        </Group>
-      )}
     </TopicPage>
   )
 }
@@ -124,6 +116,58 @@ function Session() {
         <Line name={CARDIO.name} detail={CARDIO.detail} end={CARDIO.say} shaded rule />
       </View>
     </Block>
+  )
+}
+
+/** "Do part of it": every part of today's session with a switch, on for
+    what she finished. Lifts she has already logged start on; saving
+    answers the topic with the parts she did. */
+function PartSheet({ onClose }: { onClose: () => void }) {
+  const s = useOnboarding()
+  const day = localDay()
+  const parts = [
+    { id: "warmup", name: WARMUP.name, detail: WARMUP.detail },
+    ...LIFTS.map((l) => ({ id: l.id, name: l.name, detail: `${l.sets} at ${l.load} lb` })),
+    { id: "cardio", name: CARDIO.name, detail: CARDIO.detail },
+  ]
+  const before = s.topicLog?.[day]?.exercise?.parts
+  const [done, setDone] = React.useState<Set<string>>(() => new Set(before ?? LIFTS.filter((l) => s.exercises?.[day]?.[l.id]).map((l) => l.id)))
+  const flip = (id: string, on: boolean) =>
+    setDone((was) => {
+      const next = new Set(was)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
+
+  async function save() {
+    const list = parts.filter((p) => done.has(p.id)).map((p) => p.id)
+    await s.save({ topicLog: { ...s.topicLog, [day]: { ...s.topicLog?.[day], exercise: { way: "part", at: new Date().toISOString(), parts: list } } } })
+    toast(`Exercise logged: ${list.length} of ${parts.length} done.`)
+    onClose()
+  }
+
+  return (
+    <Sheet title="What you finished" onClose={onClose}>
+      <Text style={type.meta}>{`${done.size} of ${parts.length} done`}</Text>
+      <View style={styles.table}>
+        {parts.map((p, i) => {
+          const on = done.has(p.id)
+          return (
+            <Pressable key={p.id} onPress={() => flip(p.id, !on)} accessibilityRole="switch" accessibilityState={{ checked: on }} style={[styles.line, styles.partRow, i > 0 && styles.rule]}>
+              <View style={styles.fill}>
+                <Text style={styles.lineName}>{p.name}</Text>
+                <Text style={type.label}>{on ? `${p.detail}, done` : `${p.detail}, not done`}</Text>
+              </View>
+              <Switch value={on} onChange={(v) => flip(p.id, v)} label={p.name} />
+            </Pressable>
+          )
+        })}
+      </View>
+      <PrimaryButton onPress={save} disabled={!done.size}>
+        Save what you finished
+      </PrimaryButton>
+    </Sheet>
   )
 }
 
@@ -280,6 +324,7 @@ const styles = StyleSheet.create({
 
   score: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 12, backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge },
   part: { width: 78 },
+  partRow: { paddingVertical: space.item },
 
   flag: { backgroundColor: color.amberTint },
   verdict: { ...type.metaStrong },

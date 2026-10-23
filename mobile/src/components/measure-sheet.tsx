@@ -96,7 +96,7 @@ export function MeasureSheet({ onClose }: { onClose: () => void }) {
               const on = focus === f.id
               return (
                 <View key={f.id} style={[styles.tile, on && styles.tileOn, missing && !on && entered > 0 && styles.tileMissing]}>
-                  <Text style={styles.tileLabel}>{f.label.toUpperCase()}</Text>
+                  <Text style={styles.tileLabel}>{f.label}</Text>
                   <View style={styles.valueRow}>
                     <TextInput
                       value={text[f.id]}
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   tile: { flexBasis: "48%", flexGrow: 1, gap: space.stack, padding: space.item, borderRadius: 10, backgroundColor: color.background, borderWidth: 1, borderColor: hairline.edge },
   tileOn: { borderColor: color.primary, backgroundColor: color.primaryTint },
   tileMissing: { borderColor: color.amberEdge, borderStyle: "dashed", backgroundColor: color.amberTint },
-  tileLabel: { ...type.caption, letterSpacing: 0.6, color: ink.secondary },
+  tileLabel: { ...type.caption, color: ink.secondary },
   valueRow: { flexDirection: "row", alignItems: "baseline", gap: space.stack },
   input: { ...type.hero, minWidth: 56, padding: 0, fontFamily: font.semibold, color: ink.strong, outlineWidth: 0 } as never,
   was: { ...type.meta },

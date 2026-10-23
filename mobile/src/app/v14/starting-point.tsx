@@ -63,7 +63,7 @@ export default function StartingPoint() {
       title="Set your starting point"
       description="Everything from here is measured against today."
       footer={
-        <Button onPress={() => router.replace("/v14/plan" as never)} disabled={!weight || !waist}>
+        <Button onPress={() => router.replace("/plan")} disabled={!weight || !waist}>
           Start day one
         </Button>
       }
@@ -113,7 +113,7 @@ export default function StartingPoint() {
             <NeedsRow icon={<Watch size={16} color={color.primary} />} title="Apple Watch" meta="Exercise and sleep come from here" tag={{ tone: "ok", label: "Connected" }} chevron={false} />
             <NeedsRow icon={<Moon size={16} color={color.primary} />} title="ResMed CPAP" meta="Hours worn each night" tag={{ tone: "ok", label: "Connected" }} chevron={false} />
             <NeedsRow icon={<Heartbeat size={16} color={color.primary} />} title="Withings scale" meta="Not connected yet. You can type your weight instead." action={{ label: "Connect", onPress: () => toast("Opens Connect in the real app") }} />
-            <NeedsRow icon={<Package size={16} color={color.primary} />} title="No wearable?" meta="Most of your plan is measured by one. See options in Care." onPress={() => router.push("/v14/care" as never)} />
+            <NeedsRow icon={<Package size={16} color={color.primary} />} title="No wearable?" meta="Most of your plan is measured by one. See options in Care." onPress={() => router.push("/care")} />
           </Group>
         </Block>
       </View>

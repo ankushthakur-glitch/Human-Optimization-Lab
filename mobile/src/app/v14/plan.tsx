@@ -1,33 +1,12 @@
-import { useLocalSearchParams } from "expo-router"
+import { Redirect, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { Text } from "react-native"
 
-import { TabScreen } from "@/components/tab-bar"
-import { PlanHistory } from "@/components/v14-plan-history"
-import { PlanOutlook } from "@/components/v14-plan-outlook"
-import { PlanProgress } from "@/components/v14-plan-progress"
-import { PlanTodaySection } from "@/components/v14-plan-today"
-import { PlanSections, type Section } from "@/components/v14-kit"
-import { type } from "@/lib/theme"
-import { PATIENT } from "@/lib/v14"
+import { useV14Member } from "@/components/v14-kit"
 
-/* The v14 Plan tab (Journey_14, screens 30 to 51): the member's plan as
-   four sections pinned under the title, Today first, then Progress,
-   History and Outlook, as Dnyaneshwri proposed on the 22 Oct call and Ed
-   and Finn agreed. A dummy beside the current Plan tab; the section is in
-   the link so each one can be shared on its own. */
-
-const SECTIONS: Section[] = ["today", "progress", "history", "outlook"]
-
+/* The v14 plan is the member's Plan tab now (PlanMember's live plan): old
+   /v14/plan links open it, on the section they name, as the paid member. */
 export default function V14Plan() {
-  const { section: asked } = useLocalSearchParams<{ section?: string }>()
-  const section: Section = SECTIONS.includes(asked as Section) ? (asked as Section) : "today"
-  return (
-    <TabScreen tab="plan" title="Plan" headerRight={<Text style={type.meta}>{`Day ${PATIENT.day}`}</Text>} pinned={<PlanSections value={section} />}>
-      {section === "today" && <PlanTodaySection />}
-      {section === "progress" && <PlanProgress />}
-      {section === "history" && <PlanHistory />}
-      {section === "outlook" && <PlanOutlook />}
-    </TabScreen>
-  )
+  useV14Member()
+  const { section } = useLocalSearchParams<{ section?: string }>()
+  return <Redirect href={section ? { pathname: "/plan", params: { section } } : "/plan"} />
 }

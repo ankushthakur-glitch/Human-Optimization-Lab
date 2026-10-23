@@ -54,16 +54,21 @@ function seedFor(pathname: string, query: URLSearchParams, demoPaid: boolean): "
   return MEMBER.includes(first) || demoPaid ? paid(free) : free
 }
 
-/** The paid member: a live plan, version 2, on the weight program. */
+/** The paid member: a live plan, version 2, on the weight program, on the
+    plan's day 97 (lib/v14.ts), which the Plan tab's sample data is drawn for. */
 function paid(free: Partial<State>): Partial<State> {
+  return { ...free, ...paidMember(97) }
+}
+
+/** What makes a signed-in patient the paid member, on `day` of her plan
+    (home reads "Day 97 of your plan" for 97). */
+export function paidMember(day: number): Partial<State> {
   return {
-    ...free,
     membership: {
       tier: "optimization",
       programs: ["weight"],
       startedAt: "2026-05-03T00:00:00.000Z",
-      // Seven days ago, so the home reads "Day 8 of your plan".
-      approvedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+      approvedAt: new Date(Date.now() - (day - 1) * 86400000).toISOString(),
       card: "Visa ending 4242",
       billing: "monthly",
       renewalConsentAt: "2026-05-03T00:00:00.000Z",

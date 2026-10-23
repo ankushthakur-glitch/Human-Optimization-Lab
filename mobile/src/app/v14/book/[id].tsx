@@ -103,7 +103,7 @@ export default function BookDraw() {
             <Button
               onPress={() => {
                 setDone(false)
-                router.replace("/v14/care" as never)
+                router.dismissTo("/care")
               }}
             >
               Done

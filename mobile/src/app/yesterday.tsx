@@ -56,7 +56,7 @@ export default function YesterdayScreen() {
             <View key={m.label} style={styles.move} accessible accessibilityLabel={`${m.value} ${m.label}, ${m.delta} on goal`}>
               <TopicIcon name={m.icon} size={14} color={ink.secondary} />
               <Text style={styles.big}>{m.value}</Text>
-              <Text style={styles.cap}>{m.label.toUpperCase()}</Text>
+              <Text style={styles.cap}>{m.label}</Text>
               <Text style={styles.delta}>{m.delta}</Text>
             </View>
           ))}
@@ -73,7 +73,7 @@ export default function YesterdayScreen() {
 function MacroTile({ label, value, of }: { label: string; value: number; of: number }) {
   return (
     <View style={styles.macro} accessible accessibilityLabel={`${label}, ${value} of ${of} grams`}>
-      <Text style={styles.macroLabel}>{label.toUpperCase()}</Text>
+      <Text style={styles.macroLabel}>{label}</Text>
       <Text style={styles.macroValue}>
         {value}
         <Text style={styles.macroUnit}>{" g"}</Text>
@@ -111,10 +111,10 @@ const styles = StyleSheet.create({
 
   macros: { flexDirection: "row", gap: space.inline },
   macro: { flex: 1, gap: 2, paddingVertical: space.item, paddingHorizontal: space.item, borderRadius: 10, backgroundColor: "#E8ECF0", borderWidth: 1, borderColor: hairline.outline },
-  macroLabel: { ...type.caption, letterSpacing: 0.6, color: ink.secondary },
+  macroLabel: { ...type.caption, color: ink.secondary },
   macroValue: { ...type.hero, fontVariant: ["tabular-nums"] },
   macroUnit: { ...type.meta },
-  cap:{ ...type.caption, letterSpacing: 0.6, color: ink.secondary },
+  cap:{ ...type.caption, color: ink.secondary },
   big: { ...type.hero, fontVariant: ["tabular-nums"] },
 
   moves: { flexDirection: "row", gap: space.inline },

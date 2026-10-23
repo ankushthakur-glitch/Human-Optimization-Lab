@@ -5,8 +5,11 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 import { WeekBars, formatNumber } from "@/components/charts"
 import { Barbell, Brain, CaretRight, ForkKnife, Moon, Pill, Ruler, Watch } from "@/components/ph"
 import { Block, Card, ChipRow, Group, HUE, Tabs, Tag, Tile, type Hue, type Tone } from "@/components/record-kit"
+import { experience } from "@/lib/experience"
+import { useOnboarding } from "@/lib/onboarding"
+import { paidMember } from "@/lib/storage"
 import { color, hairline, ink, space, type } from "@/lib/theme"
-import { WEEKDAYS, WINDOWS, show, type GoalState, type History, type Metric, type TopicId, type Window } from "@/lib/v14"
+import { PATIENT, WEEKDAYS, WINDOWS, show, type GoalState, type History, type Metric, type TopicId, type Window } from "@/lib/v14"
 
 /* The shared pieces of the v14 dummy screens (lib/v14.ts): a topic's icon
    and hue, its state as a tag, the device a number came from, the way a
@@ -14,6 +17,19 @@ import { WEEKDAYS, WINDOWS, show, type GoalState, type History, type Metric, typ
    (window tabs, metric chips, the week's bars against the goal, and the
    average over every window). Composed from the record kit, so the dummy
    reads as the same app. */
+
+/* ----------------------------------------------------------- preview -- */
+
+/** For the v14 preview links: the patient on this device becomes the paid
+    member on the deck's day, whatever she was before, so the Plan and Care
+    tabs draw the member's and the tab bar never offers Upgrade. */
+export function useV14Member() {
+  const s = useOnboarding()
+  const member = experience(s) === "member"
+  React.useEffect(() => {
+    if (!member) s.save(paidMember(PATIENT.day))
+  }, [member])
+}
 
 /* ------------------------------------------------------------ topics -- */
 
@@ -147,8 +163,8 @@ const SECTIONS: { value: Section; label: string }[] = [
 ]
 
 /** The Plan tab's four sections (22 Oct call), pinned under its title. */
-export function PlanSections({ value }: { value: Section }) {
-  return <Tabs options={SECTIONS} value={value} snug onChange={(s) => s !== value && router.replace(`/v14/plan?section=${s}` as never)} />
+export function PlanSections({ value, onChange }: { value: Section; onChange: (s: Section) => void }) {
+  return <Tabs options={SECTIONS} value={value} snug onChange={(s) => s !== value && onChange(s)} />
 }
 
 /* ------------------------------------------------------------ history -- */

@@ -48,7 +48,7 @@ export function PriceCard({ item }: { item: Item }) {
         <Text style={styles.priceNote}>{item.priceNote}</Text>
       </View>
       <View style={styles.priceFoot}>
-        <Text style={styles.priceLabel}>{item.when.label.toUpperCase()}</Text>
+        <Text style={styles.priceLabel}>{item.when.label}</Text>
         <Text style={styles.priceWhen}>{item.when.value}</Text>
       </View>
     </View>

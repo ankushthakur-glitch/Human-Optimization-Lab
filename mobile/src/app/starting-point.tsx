@@ -4,7 +4,6 @@ import { StyleSheet, Text, TextInput, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
-import { Info } from "@/components/ph"
 import { Block, Tag } from "@/components/record-kit"
 import { dayOfAt, localDay, waists, weighIns, type Entry } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
@@ -19,9 +18,7 @@ import { card, chart, color, font, hairline, ink, space, type } from "@/lib/them
    re-measure every week without an appointment. The three symptoms she
    named at the start are scored 0 to 10 today (waking at three, an 8;
    irritability, a 7; weight gain, a 6). Without this the programme has
-   nothing to prove. The same three are asked again at week eight and every
-   quarter, which is how she will know whether any of it worked. "Start day
-   one" opens Today. */
+   nothing to prove. "Start day one" opens Today. */
 
 const CLAY = chart.outsideClay
 
@@ -92,11 +89,6 @@ export default function StartingPointScreen() {
           ))}
         </View>
       </Block>
-
-      <View style={styles.foot}>
-        <Info size={14} color={ink.tertiary} />
-        <Text style={[type.meta, styles.fill]}>We ask these same three at week eight and every quarter. That is how you will know whether any of it worked.</Text>
-      </View>
     </FlowScreen>
   )
 }
@@ -176,6 +168,4 @@ const styles = StyleSheet.create({
   track: { height: 5, borderRadius: 2.5, overflow: "hidden", backgroundColor: hairline.rule },
   bar: { height: "100%", borderRadius: 2.5 },
   num: { ...type.title, fontFamily: font.semibold, minWidth: 18, textAlign: "right", fontVariant: ["tabular-nums"] },
-
-  foot: { flexDirection: "row", alignItems: "flex-start", gap: space.inline },
 })

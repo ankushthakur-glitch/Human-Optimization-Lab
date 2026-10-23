@@ -38,7 +38,7 @@ export type Metric = {
   chip: string
   /** The row in the table across windows; absent for a metric that is only a chip. */
   row: string
-  /** Over the chart, in capitals: "AVERAGE DAILY DEFICIT". */
+  /** Over the chart, in sentence case: "Average daily deficit". */
   title: string
   unit: string
   /** Week, month, six months, year; null where there is no history. */

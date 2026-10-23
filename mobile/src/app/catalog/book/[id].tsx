@@ -32,7 +32,7 @@ import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
    Confirm names the day and the time. From the catalog to a booked
    appointment in three screens. */
 
-const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 export default function CatalogBookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()

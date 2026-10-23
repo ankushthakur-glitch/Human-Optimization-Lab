@@ -67,7 +67,7 @@ export function PlanTodaySection() {
           icon={<CalendarBlank size={16} color={color.primary} />}
           title="Nothing due in Care today"
           meta="Next: DEXA re-scan, Fri Oct 9 at 8:15 am"
-          onPress={() => router.push("/v14/care" as never)}
+          onPress={() => router.push("/care")}
         />
       </Group>
     </View>

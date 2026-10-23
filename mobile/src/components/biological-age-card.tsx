@@ -48,7 +48,7 @@ export function BiologicalAgeCard({ onPress, hint }: { onPress?: () => void; hin
   const body = (
     <>
       <View style={styles.number}>
-        <Text style={styles.cap}>BIOLOGICAL</Text>
+        <Text style={styles.cap}>Biological</Text>
         <Text style={styles.value} maxFontSizeMultiplier={1.2}>
           {biological}
         </Text>
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.9 },
   number: { gap: 2 },
   divider: { alignSelf: "stretch", width: StyleSheet.hairlineWidth * 2, backgroundColor: "rgba(255,255,255,0.45)" },
-  cap: { fontFamily: font.medium, fontSize: 10, lineHeight: 14, letterSpacing: 1, color: ink.onColor },
+  cap: { fontFamily: font.medium, fontSize: 10, lineHeight: 14, color: ink.onColor },
   value: { fontFamily: font.semibold, fontSize: 44, lineHeight: 48, color: ink.onColor, fontVariant: ["tabular-nums"] },
   // The right side stays narrower than the card leaves it: a measure cap and a
   // little room before the caret, so the sentence sits balanced, not edge to edge.

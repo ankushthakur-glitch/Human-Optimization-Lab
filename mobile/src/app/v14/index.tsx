@@ -5,7 +5,7 @@ import { StyleSheet, View } from "react-native"
 import { FlowScreen } from "@/components/flow"
 import { Barbell, Camera, ChartLine, Check, ClipboardText, MagnifyingGlass, Sparkle, Target, Trophy } from "@/components/ph"
 import { Block, Group, NeedsRow } from "@/components/record-kit"
-import { TopicIcon, TOPIC_HUE } from "@/components/v14-kit"
+import { TopicIcon, TOPIC_HUE, useV14Member } from "@/components/v14-kit"
 import { color, space } from "@/lib/theme"
 import { TOPICS } from "@/lib/v14"
 
@@ -32,13 +32,13 @@ const GROUPS: { title: string; rows: Row[] }[] = [
   {
     title: "Plan tab",
     rows: [
-      { title: "Today", meta: "Screen 30", to: "/v14/plan?section=today", icon: <ClipboardText size={16} color={color.primary} /> },
+      { title: "Today", meta: "Screen 30", to: "/plan?section=today", icon: <ClipboardText size={16} color={color.primary} /> },
       { title: "Yesterday, scored", meta: "Screen 39", to: "/v14/review", icon: <Trophy size={16} color={color.primary} /> },
       { title: "Yesterday in numbers", meta: "Screen 40", to: "/v14/numbers", icon: <ChartLine size={16} color={color.primary} /> },
       { title: "History", meta: "Screen 41", to: "/v14/history/all", icon: <ChartLine size={16} color={color.primary} /> },
-      { title: "Progress", meta: "Screen 48", to: "/v14/plan?section=progress", icon: <ChartLine size={16} color={color.primary} /> },
+      { title: "Progress", meta: "Screen 48", to: "/plan?section=progress", icon: <ChartLine size={16} color={color.primary} /> },
       { title: "Photo check in", meta: "Screen 49", to: "/v14/photos", icon: <Camera size={16} color={color.primary} /> },
-      { title: "Outlook", meta: "Screen 50", to: "/v14/plan?section=outlook", icon: <Target size={16} color={color.primary} /> },
+      { title: "Outlook", meta: "Screen 50", to: "/plan?section=outlook", icon: <Target size={16} color={color.primary} /> },
       { title: "Ask Inlay, where this goes", meta: "Screen 51", to: "/v14/ask", icon: <Sparkle size={16} color={color.primary} /> },
     ],
   },
@@ -56,7 +56,7 @@ const GROUPS: { title: string; rows: Row[] }[] = [
   {
     title: "Care",
     rows: [
-      { title: "Catalog", meta: "Screen 52", to: "/v14/care", icon: <MagnifyingGlass size={16} color={color.primary} /> },
+      { title: "Catalog", meta: "Screen 52", to: "/care", icon: <MagnifyingGlass size={16} color={color.primary} /> },
       { title: "Multi cancer blood screening", meta: "Screen 53", to: "/v14/care/galleri", icon: <ClipboardText size={16} color={color.primary} /> },
       { title: "Book your draw", meta: "Screen 54", to: "/v14/book/galleri", icon: <ClipboardText size={16} color={color.primary} /> },
     ],
@@ -64,6 +64,7 @@ const GROUPS: { title: string; rows: Row[] }[] = [
 ]
 
 export default function V14Index() {
+  useV14Member()
   return (
     <FlowScreen page title="Paid app v14 preview" description="Dummy screens from the client's Journey_14 deck, to compare with the current app.">
       <View style={styles.list}>

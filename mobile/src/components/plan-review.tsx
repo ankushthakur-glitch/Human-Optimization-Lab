@@ -427,7 +427,7 @@ function RangeRow({ row }: { row: PeriodRow }) {
 
 /* ------------------------------------------------------------- pieces -- */
 
-const badgeWord = (b: Badge) => (b === "met" ? "MET" : b === "close" ? "CLOSE" : b === "behind" ? "BEHIND" : "NOT SCORED")
+const badgeWord = (b: Badge) => (b === "met" ? "Met" : b === "close" ? "Close" : b === "behind" ? "Behind" : "Not scored")
 
 /** MET (green tint, a check), CLOSE (amber tint, an amber dot) or BEHIND
     (grey): the word always says it, never colour alone. Amber stays on the

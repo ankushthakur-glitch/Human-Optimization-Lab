@@ -99,7 +99,7 @@ export function ProgressAsk() {
 function Cell({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <View style={styles.cell}>
-      <Text style={styles.bandLabel}>{label.toUpperCase()}</Text>
+      <Text style={styles.bandLabel}>{label}</Text>
       <Text style={[styles.bandValue, strong && styles.bandStrong]}>{value}</Text>
     </View>
   )
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   // The dated band: dark teal, three cells, the day count in the light teal.
   band: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item, paddingHorizontal: space.item, paddingVertical: space.compact, borderRadius: 8, backgroundColor: chart.dataStrong },
   cell: { gap: space.line },
-  bandLabel: { ...type.meta, fontSize: 10, lineHeight: 14, letterSpacing: 0.6, color: color.primaryEdge },
+  bandLabel: { ...type.meta, fontSize: 10, lineHeight: 14, color: color.primaryEdge },
   bandValue: { ...type.title, fontFamily: font.semibold, color: ink.onColor },
   bandStrong: { color: color.primaryHalo },
 
