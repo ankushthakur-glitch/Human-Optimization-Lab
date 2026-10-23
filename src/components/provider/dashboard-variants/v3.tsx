@@ -148,7 +148,7 @@ type Tone = "red" | "orange" | "amber" | "green" | "teal" | "blue" | "sky" | "vi
 const HUE: Record<Tone, string> = {
   red: SUBTLE.red,
   orange: SUBTLE.orange,
-  amber: PALETTE.processLight,
+  amber: SUBTLE.orange,
   green: SUBTLE.green,
   teal: PALETTE.primary,
   blue: SUBTLE.blue,
@@ -726,9 +726,7 @@ function Performance({ opt }: { opt: Opt }) {
           <span className="font-medium">Members of active patients</span>
           <span className="font-semibold tabular-nums">{memberShare}%</span>
         </div>
-        <span className="block h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <span className="block h-full rounded-full bg-foreground" style={{ width: `${memberShare}%` }} />
-        </span>
+        <Meter value={memberShare / 100} tone="teal" label="Members of active patients" />
       </div>
 
       <div className="mt-5 flex flex-col gap-3 border-t border-border pt-5">

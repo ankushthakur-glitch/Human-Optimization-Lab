@@ -528,8 +528,8 @@ function Stats({
         value={opt.reviewing.length}
         meta={opt.reviewing.length ? `Oldest waits ${oldest} days` : "All reviewed"}
         segments={[
-          { label: "Pending review", value: stage("Pending review"), color: SUBTLE.violet },
-          { label: "Changes asked", value: stage("Changes requested"), color: SUBTLE.orange },
+          { label: "Pending", value: stage("Pending review"), color: SUBTLE.violet },
+          { label: "Changes", value: stage("Changes requested"), color: SUBTLE.orange },
         ]}
         footer={
           <FooterLink href={oldestPlan ? `${BASE}/${oldestPlan.patient.id}?section=care-plan` : BASE}>
@@ -539,7 +539,7 @@ function Stats({
       />
       <StatCard
         icon={IconTarget}
-        label="Members on track"
+        label="On track"
         when="Members"
         value={onTrack}
         of={opt.members.length}

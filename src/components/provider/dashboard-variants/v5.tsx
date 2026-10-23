@@ -582,7 +582,7 @@ function EventSheet({ event, onClose, onItem }: { event: CalEvent | null; onClos
                 </Button>
               ) : (
                 e.href && (
-                  <Link href={e.href} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                  <Link href={e.href} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
                     {e.stream === "visit" ? "Open schedule" : e.stream === "plan" ? "Review plan" : "Open chart"}
                   </Link>
                 )
@@ -612,7 +612,7 @@ function CarePlanReview({ opt }: { opt: Opt }) {
         title="Care plan review"
         description={`${plural(total, "member plan")} this cycle`}
         actions={
-          <Link href={oldest ? carePlanHref(oldest.patient.id) : BASE} className={buttonVariants({ variant: "outline", size: "sm" })}>
+          <Link href={oldest ? carePlanHref(oldest.patient.id) : BASE} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
             Review next
           </Link>
         }
@@ -917,7 +917,7 @@ function ActionQueue({
                     {r.verb}
                   </Button>
                 ) : (
-                  <Link href={r.href ?? BASE} className={buttonVariants({ variant: "outline", size: "xs" })}>
+                  <Link href={r.href ?? BASE} className={cn(buttonVariants({ variant: "outline", size: "xs" }))}>
                     {r.verb}
                   </Link>
                 )}
@@ -1132,7 +1132,7 @@ export function DashboardBrief() {
             />
             <StatCard
               icon={IconTarget}
-              label="Members on track"
+              label="On track"
               when="This week"
               value={byStatus("On track")}
               of={opt.active.length}

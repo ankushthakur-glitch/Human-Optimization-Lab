@@ -155,7 +155,10 @@ export function optimizationOf(p: Patient, realPlans?: { status: string; names: 
     .map((m, k) => {
       const dir: TrendDir = active && k % 2 === 0 ? "better" : seedOf(p.id, k + 20) % 3 === 0 ? "flat" : "worse"
       const sign = dir === "better" ? -1 : dir === "flat" ? 0 : 1
-      const values = Array.from({ length: 5 }, (_, i) => +(m.base + sign * m.step * i + ((seedOf(p.id, i) % 5) - 2) * m.step * 0.15).toFixed(1))
+      /* Half the worsening markers start further from the limit, so they are
+         still in range: the watchful trends. */
+      const start = m.base - (dir === "worse" && seedOf(p.id, k + 50) % 2 === 0 ? m.step * 5 : 0)
+      const values = Array.from({ length: 5 }, (_, i) => +(start + sign * m.step * i + ((seedOf(p.id, i) % 5) - 2) * m.step * 0.15).toFixed(1))
       const last = values[values.length - 1]!
       const inRange = last >= m.low && last <= m.high
       return { name: m.name, unit: m.unit, values, inRange, dir, watchful: inRange && dir === "worse" }
