@@ -31,3 +31,18 @@ export {
 export { DataTable, Row, Td, Th } from "@/components/dashboard-kit-v2/table"
 export { SegmentedControl, type TabItem } from "@/components/dashboard-kit-v2/tabs"
 export { FlagText, type TrendTone } from "@/components/dashboard-kit-v2/trend-text"
+export {
+  RE_COLORS,
+  ReAreaChart,
+  ReBarChart,
+  type ReDatum,
+  ReDonut,
+  ReDonutLegend,
+  type ReFill,
+  ReLegend,
+  ReRadar,
+  ReRadial,
+  type ReRing,
+  type ReSeries,
+  type ReSlice,
+} from "@/components/dashboard-kit-v2/reui-charts"

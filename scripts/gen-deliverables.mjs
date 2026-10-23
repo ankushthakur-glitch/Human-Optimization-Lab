@@ -83,6 +83,7 @@ const PAGES = {
 
   // The clinic manager's practice portal.
   "/screens/practice": [MANAGER, "", "", { skip: true }],
+  "/screens/practice/dashboard": [MANAGER, "Dashboard", "Practice dashboard (enrollment, activation, encounters, outcomes, alerts, value)"],
   "/screens/practice/users": [MANAGER, "Users", "Users: providers tab (list, bulk add)"],
   "/screens/practice/users/providers/new": [MANAGER, "Users", "Add provider"],
   "/screens/practice/users/providers/[id]": [MANAGER, "Users", "Provider profile", { url: "/screens/practice/users/providers/PR3132" }],
@@ -97,10 +98,11 @@ const PAGES = {
   "/screens/practice/locations/new": [MANAGER, "Locations", "Add location"],
   "/screens/practice/locations/[id]": [MANAGER, "Locations", "Location details", { url: "/screens/practice/locations/LOC1001" }],
   "/screens/practice/locations/[id]/edit": [MANAGER, "Locations", "Edit location", { url: "/screens/practice/locations/LOC1001/edit" }],
+  "/screens/practice/reports": [MANAGER, "Reports", "Reports (enrollment, encounters, outcomes, alerts, value and renewal, membership, care plans)"],
   "/screens/practice/settings": [MANAGER, "Settings", "Settings home"],
   "/screens/practice/settings/[group]/[page]": [MANAGER, "Settings", "", { skip: true }],
   // A provider's portal, reached from the provider invite.
-  "/screens/patients/dashboard": [PROVIDER, "Dashboard", "Abnormal results"],
+  "/screens/patients/dashboard": [PROVIDER, "Dashboard", "Dashboard: overview and worklist (abnormal results)"],
   "/screens/patients": [PROVIDER, "Patients", "Patients (list, status tabs, last sync)"],
   "/screens/patients/tasks": [PROVIDER, "Tasks", "Tasks (all and my tasks, task details)"],
   "/screens/patients/communication": [PROVIDER, "Communication", "Provider chats"],
@@ -167,7 +169,8 @@ const EXTRA = [
   [PROVIDER, "Patient Chart", "Vitals: card view", "/screens/patients/P10240?section=vitals", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Vitals: table view", "/screens/patients/P10240?section=vitals&tab=table", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Vitals: trend view", "/screens/patients/P10318?section=vitals&tab=trends", "/screens/patients/[id]"],
-  [PROVIDER, "Patient Chart", "Lab results", "/screens/patients/P10240?section=labs", "/screens/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Lab results: reports", "/screens/patients/P10240?section=labs", "/screens/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Lab results: lab orders", "/screens/patients/P10240?section=labs&tab=orders", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Family history", "/screens/patients/P10240?section=family", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Profile", "/screens/patients/P10240?section=profile", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Before consent", "/screens/patients/P10257", "/screens/patients/[id]"],
@@ -210,16 +213,16 @@ const EXTRA = [
     ["Audit log", "security/audit-log"],
   ]),
   ...settingsPages(MANAGER, "/screens/practice/settings", [
-    ["Roles and permissions", "people/roles"],
     ["Patient flags", "patients/flags"],
     ["Employer accounts", "employers/list"],
     ["Patient invitation: channels", "invitations/channels"],
     ["Patient invitation: reminders", "invitations/reminders"],
-    ["Alerts", "alerts/notifications"],
+    ["Alerts: notifications", "alerts/notifications"],
     ["Audit log", "security/audit-log"],
   ]),
   ...settingsPages(PROVIDER, "/screens/patients/settings", [
     ["Patient flags", "account/flags"],
+    ["Alerts: notifications", "alerts/notifications"],
     ["Audit log", "security/audit-log"],
   ]),
 
@@ -238,8 +241,9 @@ function settingsPages(portal, base, subs) {
 }
 
 /** The patient app's screens, linked plainly (the demo seed links were
-    removed 16 Oct 2026). A signed-in screen opens once the sample patient
-    has signed in on that browser; otherwise the app shows sign in. */
+    removed 16 Oct 2026). Each link opens its own screen as the sample
+    patient (mobile/src/lib/storage.ts); the bare /app starts at
+    activation, so Home is /app?home=1. */
 function patientApp() {
   const at = (to) => `/app${to}`
   const ONBOARDING = "Patient Onboarding"
@@ -260,7 +264,7 @@ function patientApp() {
     [ONBOARDING, "Record building", at("/onboarding/syncing")],
     [ONBOARDING, "What matters most", at("/onboarding/life")],
     [ONBOARDING, "Record ready", at("/onboarding/syncing?ready=1")],
-    [HOME, "Home", at("")],
+    [HOME, "Home", at("?home=1")],
     [HOME, "Your biological age", at("?age=1")],
     [HOME, "Notifications", at("/notifications")],
     [TODO, "To do tab", at("/gaps")],
@@ -280,12 +284,11 @@ function patientApp() {
     [RECORD, "Record item details (procedure)", at(`/record/item?d=${encodeURIComponent(JSON.stringify(SAMPLE_ITEM))}`)],
     [RECORD, "Add to your record (medicine form)", at("/record/add?kind=medicines")],
     [RECORD, "Tell us something", at("/tell-us")],
-    [CONNECT, "Connect tab", at("/connections")],
     [CONNECT, "Connect your records", at("/connect")],
     [CONNECT, "Connect your records: texts and signature", at("/connect-texts")],
     [CONNECT, "Record building after connecting", at("/building")],
     [AI, "Ask Inlay", at("/assistant")],
-    [UPGRADE, "Upgrade tab", at("/plan")],
+    [UPGRADE, "Plan tab (free patient: plans matched to the record)", at("/plan")],
     [UPGRADE, "Step 1: what your plan would work on", at("/goal-plans")],
     [UPGRADE, "Step 2: what your baseline needs", at("/baseline")],
     [UPGRADE, "Step 3: complete your enrollment", at("/enrollment")],
@@ -298,10 +301,11 @@ function patientApp() {
     [UPGRADE, "Flourishing questions", at("/flourishing-questions")],
     [UPGRADE, "Your flourishing result", at("/flourishing-result")],
     [UPGRADE, "Your plan is ready", at("/plan-ready")],
+    [MEMBER, "Home (paid member)", at("?demo=paid")],
     [MEMBER, "Today", at("/today")],
-    [MEMBER, "Daily review", at("/review")],
+    [MEMBER, "Plan tab: Review (day, week, month), Progress, Photos and Outlook", at("/review")],
     [MEMBER, "Diet plan", at("/diet")],
-    [MEMBER, "Log a meal", at("/log-meal")],
+    [MEMBER, "Log a meal (scan food, voice or typing)", at("/log-meal")],
     [MEMBER, "Today's exercise", at("/exercise")],
     [MEMBER, "Exercise move", at("/exercise/sit-to-stand")],
     [MEMBER, "Yesterday", at("/day/yesterday")],
@@ -310,7 +314,7 @@ function patientApp() {
     [PROFILE, "Profile", at("/profile")],
     [PROFILE, "Access (connected records and devices)", at("/access")],
     [PROFILE, "Renew sharing", at("/access?sheet=renew")],
-    [PROFILE, "Membership", at("/membership")],
+    [PROFILE, "Care tab: membership", at("/membership")],
   ].map(([feature, sub, url]) => [PATIENT, feature, sub, url])
 }
 

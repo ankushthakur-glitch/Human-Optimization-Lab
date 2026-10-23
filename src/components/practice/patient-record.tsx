@@ -26,6 +26,7 @@ import {
   formatPhone,
 } from "@/components/form-kit"
 import { StatusBadge } from "@/components/practice/directory"
+import { useEmployerLookup } from "@/components/settings/settings-data"
 import { PatientChart } from "@/components/provider/patient-chart"
 import {
   CONTACT_METHODS,
@@ -166,6 +167,7 @@ function PatientForm({ patient }: { patient?: Patient }) {
   const { items } = patients.use()
   const loc = useLocationLookup()
   const prov = useProviderLookup()
+  const emp = useEmployerLookup()
   const { patientsHref: LIST_HREF, patientHref, selfProviderId } = usePortal()
   /* In a provider's portal a new patient starts as theirs, at their first
      location. */
@@ -596,6 +598,15 @@ function PatientForm({ patient }: { patient?: Patient }) {
               }
               error={errors.providerId}
             />
+            <SelectField
+              id="patient-employerId"
+              label="Employer"
+              className="xl:col-span-2"
+              placeholder="None"
+              options={emp.active.map((e) => e.name)}
+              value={emp.name(values.employerId)}
+              onChange={(name) => set("employerId")(emp.idFor(name) ?? "")}
+            />
           </div>
         </RecordCard>
 
@@ -811,6 +822,7 @@ export function PatientActions({ patient: p }: { patient: Patient }) {
 /** The profile's cards: demographics, contact, care team and enrollment. */
 export function PatientDetails({ patient: p }: { patient: Patient }) {
   const loc = useLocationLookup()
+  const emp = useEmployerLookup()
   const prov = useProviderLookup()
   return (
     <>
@@ -897,10 +909,11 @@ export function PatientDetails({ patient: p }: { patient: Patient }) {
       <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <RecordCard title="Care team">
           <DetailGrid
-            className="sm:grid-cols-3"
+            className="sm:grid-cols-2"
             items={[
               { label: "Location", value: loc.name(p.locationId) },
               { label: "Primary provider", value: prov.name(p.providerId) },
+              { label: "Employer", value: emp.name(p.employerId ?? "") },
               {
                 label: "Registration date",
                 value: usDate(p.registrationDate),

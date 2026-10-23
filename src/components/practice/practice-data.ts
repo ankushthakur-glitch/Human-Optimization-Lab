@@ -477,6 +477,8 @@ export type Patient = {
   portalAccess: boolean
   locationId: string
   providerId: string
+  /** The employer account (clinic manager Settings) the patient came through; "" for none. */
+  employerId: string
   registrationDate: string
   emergencyContacts: EmergencyContact[]
   status: PatientStatus
@@ -715,6 +717,7 @@ export function emptyPatient(): PatientInput {
     portalAccess: true,
     locationId: "",
     providerId: "",
+    employerId: "",
     registrationDate: isoDaysAgo(0),
     emergencyContacts: [emptyEmergencyContact()],
   }
@@ -1597,6 +1600,9 @@ const PATIENTS: Patient[] = Array.from({ length: 131 }, (_, i) => {
     portalAccess: true,
     locationId,
     providerId: provider.id,
+    /* Most patients come through an employer account (EM01 to EM04 in
+       Settings); every fourth signed up on their own. */
+    employerId: i % 4 === 3 ? "" : `EM0${1 + (i % 4)}`,
     registrationDate: isoDaysAgo(Math.floor(i / 3)),
     emergencyContacts:
       i % 3 === 0
@@ -1861,7 +1867,7 @@ PATIENTS.forEach((p, i) => {
 /*  Stores                                                                     */
 /* -------------------------------------------------------------------------- */
 
-const VERSION = "v20"
+const VERSION = "v21"
 
 /** The sample patients, before any session edits: the duplicate queue seeds from them. */
 export const PATIENT_SEED = PATIENTS

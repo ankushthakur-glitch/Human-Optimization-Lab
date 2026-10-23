@@ -774,3 +774,24 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Removed: Patient Portal / Patient Onboarding / Welcome: AI plan match
 - Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 1: plans updated from your goals
 - Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 2: establish your baseline
+
+## 22-Oct-2026
+
+- Add user link no longer crashes; deliverables sheet 21-Oct-2026
+- Every deliverables link opens its own page, not activation
+- Drop the biological age trend from the card and sheet
+- Paid Patient Dashboard replaces the member home
+- Remove the coaching note from the paid home
+- Scan food replaces Add photo on Log a meal
+- Keep the paid demo session across deep links and refreshes
+- Restyle paid home Yesterday strip and Today's meals timeline
+- Log a meal How much step uses the approved label-table portion picker
+- Planned meals, Log a meal box, Your progress, To do preview
+- Your progress cards use icon tiles and a smaller figure
+- Log a meal nutrition table columns no longer collapse
+- Keep the Ask Inlay hint on one line
+- Notifications in provider settings
+- Plan Review (Day, Week, Month) on the Plan tab replaces the daily review page
+- Outlook tab shows where she is likely to be (screen 36)
+- Update log meal, onboarding, progress, charts, home, plan review, tab bar and web export
+- Merge origin/P1 into main

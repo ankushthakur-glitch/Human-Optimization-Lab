@@ -2,6 +2,8 @@
 
 import * as React from "react"
 import {
+  IconChartColumn,
+  IconDashboard,
   IconLocation,
   IconSettings,
   IconStethoscope,
@@ -18,11 +20,23 @@ import {
 } from "@/components/ehr-shell"
 import { PRACTICE } from "@/components/practice/practice-data"
 
-export type PracticeModule = "users" | "patients" | "locations" | "settings"
+export type PracticeModule =
+  | "dashboard"
+  | "users"
+  | "patients"
+  | "locations"
+  | "reports"
+  | "settings"
 
 const BASE = "/screens/practice"
 
 const PRACTICE_NAV: NavItem[] = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: IconDashboard,
+    href: `${BASE}/dashboard`,
+  },
   { id: "users", label: "Users", icon: IconUsersGroup, href: `${BASE}/users` },
   {
     id: "patients",
@@ -35,6 +49,12 @@ const PRACTICE_NAV: NavItem[] = [
     label: "Locations",
     icon: IconLocation,
     href: `${BASE}/locations`,
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: IconChartColumn,
+    href: `${BASE}/reports`,
   },
   {
     id: "settings",
@@ -83,7 +103,7 @@ export function PracticeShell({
     <EhrShell
       active={active}
       nav={PRACTICE_NAV}
-      homeHref={`${BASE}/users`}
+      homeHref={`${BASE}/dashboard`}
       account={MANAGER_ACCOUNT}
       actions={MANAGER_ACTIONS}
     >

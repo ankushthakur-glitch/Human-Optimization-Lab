@@ -70,12 +70,12 @@ const BASE = "/screens/patients"
 /* Words take the soft hue mixed toward the ink so they read. */
 const word = (hex: string) => `color-mix(in oklab, ${hex} 70%, var(--foreground))`
 
-type Segment = { label: string; value: number; color: string }
+export type Segment = { label: string; value: number; color: string }
 
 /* ------------------------------------------------------------- bits -- */
 
 /** A thin bar split by segment, 2px gaps between fills. */
-function SegmentBar({ segments, label }: { segments: Segment[]; label: string }) {
+export function SegmentBar({ segments, label }: { segments: Segment[]; label: string }) {
   const total = segments.reduce((s, x) => s + x.value, 0)
   return (
     <div role="img" aria-label={label} className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full bg-secondary">
@@ -94,7 +94,7 @@ function SegmentBar({ segments, label }: { segments: Segment[]; label: string })
   )
 }
 
-function LegendGrid({ segments }: { segments: Segment[] }) {
+export function LegendGrid({ segments }: { segments: Segment[] }) {
   return (
     <ul className="grid grid-cols-2 gap-x-4 gap-y-1">
       {segments.map((s) => (
@@ -108,7 +108,7 @@ function LegendGrid({ segments }: { segments: Segment[] }) {
   )
 }
 
-function IconTile({ icon: Icon, glyph, color }: { icon?: typeof IconCalendar; glyph?: IconDef; color?: string }) {
+export function IconTile({ icon: Icon, glyph, color }: { icon?: typeof IconCalendar; glyph?: IconDef; color?: string }) {
   return (
     <span
       aria-hidden
@@ -121,7 +121,7 @@ function IconTile({ icon: Icon, glyph, color }: { icon?: typeof IconCalendar; gl
 }
 
 /** The card's last row: where the number goes next. */
-function FooterLink({ href, onClick, children }: { href?: string; onClick?: () => void; children: React.ReactNode }) {
+export function FooterLink({ href, onClick, children }: { href?: string; onClick?: () => void; children: React.ReactNode }) {
   const cls = cn(
     "group flex items-center justify-between border-t border-border px-4 py-2.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground",
     FOCUS
@@ -143,7 +143,7 @@ function FooterLink({ href, onClick, children }: { href?: string; onClick?: () =
   )
 }
 
-function CardLink({ href, children }: { href: string; children: React.ReactNode }) {
+export function CardLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link href={href} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-muted-foreground")}>
       {children}
@@ -156,7 +156,7 @@ const people = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 
 /* ------------------------------------------------------- stat cards -- */
 
-function StatCard({
+export function StatCard({
   icon,
   label,
   when,

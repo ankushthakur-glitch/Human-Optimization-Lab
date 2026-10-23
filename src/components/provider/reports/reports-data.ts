@@ -95,7 +95,7 @@ export type PatientType = (typeof PATIENT_TYPES)[number]
 /** One provider's raw counts for a report. */
 export type Counts = Record<string, number>
 
-export type Format = "count" | "percent" | "hours" | "days" | "currency"
+export type Format = "count" | "decimal" | "percent" | "hours" | "days" | "years" | "currency"
 
 export type ReportColumn = {
   id: string
@@ -110,26 +110,33 @@ export type Report = {
   columns: ReportColumn[]
   /** The tiles over the table, by column id. */
   tiles: string[]
+  /** False when the report only reads one kind of patient, so the patient
+      type filter doesn't apply. */
+  typeFilter?: false
   /** One provider's counts, from the period's draws. */
   counts: (draw: Draw) => Counts
 }
 
-const rate = (num: string, den: string) => (c: Counts) =>
+export const rate = (num: string, den: string) => (c: Counts) =>
   c[den] ? (c[num] / c[den]) * 100 : 0
-const per = (sum: string, n: string) => (c: Counts) =>
+export const per = (sum: string, n: string) => (c: Counts) =>
   c[n] ? c[sum] / c[n] : 0
-const raw = (key: string) => (c: Counts) => c[key]
+export const raw = (key: string) => (c: Counts) => c[key]
 
 /** `n(lo, hi)`: a whole count for a month of activity, scaled to the period
-    and patient type. `part(of, lo, hi)`: a share of a count already drawn. */
-type Draw = {
+    and patient type. `size(lo, hi)`: a panel size, which doesn't grow with
+    the period. `part(of, lo, hi)`: a share of a count already drawn.
+    `months`: how many months the period holds. */
+export type Draw = {
   n: (lo: number, hi: number) => number
+  size: (lo: number, hi: number) => number
   part: (of: number, lo: number, hi: number) => number
   rand: () => number
+  months: number
 }
 
 /** Price of the one Optimization plan, per month. */
-const PLAN_PRICE = 149
+export const PLAN_PRICE = 149
 
 export const REPORTS: Report[] = [
   {
@@ -144,11 +151,11 @@ export const REPORTS: Report[] = [
       { id: "inactive", header: "Inactive", format: "count", value: raw("inactive") },
       { id: "activeRate", header: "Active rate", format: "percent", value: rate("active", "patients") },
     ],
-    counts: ({ n }) => {
-      const invited = n(6, 22)
-      const active = n(40, 110)
-      const declined = n(1, 9)
-      const inactive = n(0, 6)
+    counts: ({ size }) => {
+      const invited = size(6, 22)
+      const active = size(40, 110)
+      const declined = size(1, 9)
+      const inactive = size(0, 6)
       return { invited, active, declined, inactive, patients: invited + active + declined + inactive }
     },
   },
@@ -156,6 +163,7 @@ export const REPORTS: Report[] = [
     id: "membership",
     name: "Membership conversion",
     tiles: ["free", "newMembers", "conversion", "revenue"],
+    typeFilter: false,
     columns: [
       { id: "free", header: "Free patients", format: "count", value: raw("free") },
       { id: "offered", header: "Upgrade viewed", format: "count", value: raw("offered") },
@@ -319,14 +327,27 @@ export function countsFor(
   type: PatientType | null
 ): Counts {
   const rand = seeded(`${report.id}|${providerId}|${period.key}`)
+  const share = type && report.typeFilter !== false ? TYPE_SHARE[type] : 1
   /* Panel sizes don't grow with the period; activity does. */
-  const flow = report.id === "engagement" ? 1 : period.months
-  const scale = flow * (type ? TYPE_SHARE[type] : 1)
+  const draw = (scale: number) => (lo: number, hi: number) =>
+    Math.round((lo + rand() * (hi - lo)) * scale)
   return report.counts({
-    n: (lo, hi) => Math.round((lo + rand() * (hi - lo)) * scale),
+    n: draw(period.months * share),
+    size: draw(share),
     part: (of, lo, hi) => Math.round(of * (lo + rand() * (hi - lo))),
     rand,
+    months: period.months,
   })
+}
+
+/** One report's counts for a period, summed over the given providers. */
+export function totalFor(
+  report: Report,
+  providerIds: string[],
+  period: Period,
+  type: PatientType | null = null
+): Counts {
+  return sumCounts(providerIds.map((id) => countsFor(report, id, period, type)))
 }
 
 /** Counts summed across rows, for the Total row and the tiles. */
@@ -339,12 +360,16 @@ export function sumCounts(rows: Counts[]): Counts {
 
 export function formatValue(value: number, format: Format) {
   switch (format) {
+    case "decimal":
+      return value.toFixed(1)
     case "percent":
       return `${value.toFixed(2)}%`
     case "hours":
       return `${value.toFixed(1)} hours`
     case "days":
       return `${value.toFixed(1)} days`
+    case "years":
+      return `${value.toFixed(1)} years`
     case "currency":
       return `$${Math.round(value).toLocaleString("en-US")}`
     default:

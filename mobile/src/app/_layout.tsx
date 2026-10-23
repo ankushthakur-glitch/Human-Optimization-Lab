@@ -178,6 +178,22 @@ function Routes() {
           <Stack.Screen name="connect" />
           <Stack.Screen name="connect-texts" />
           <Stack.Screen name="building" />
+          {/* The Journey_14 paid app as a dummy beside the current one
+              (23 Oct 2026): its own screens under v14/, nothing shared. */}
+          <Stack.Screen name="v14/index" />
+          <Stack.Screen name="v14/tests-in" options={{ animation: "fade" }} />
+          <Stack.Screen name="v14/starting-point" />
+          <Stack.Screen name="v14/plan" options={{ animation: "none" }} />
+          <Stack.Screen name="v14/topic/[id]" />
+          <Stack.Screen name="v14/move/[id]" />
+          <Stack.Screen name="v14/review" />
+          <Stack.Screen name="v14/numbers" />
+          <Stack.Screen name="v14/history/[topic]" />
+          <Stack.Screen name="v14/photos" />
+          <Stack.Screen name="v14/ask" options={{ animation: "slide_from_bottom" }} />
+          <Stack.Screen name="v14/care/index" options={{ animation: "none" }} />
+          <Stack.Screen name="v14/care/[id]" />
+          <Stack.Screen name="v14/book/[id]" />
         </Stack.Protected>
         <Stack.Protected guard={status === "expired"}>
           <Stack.Screen name="session-expired" options={{ gestureEnabled: false }} />

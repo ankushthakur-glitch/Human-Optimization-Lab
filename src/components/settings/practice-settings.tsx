@@ -32,12 +32,12 @@ import {
 import { PracticeShell } from "@/components/practice/practice-shell"
 import { PatientFlagsPage } from "@/components/settings/patient-flags"
 import { AuditLogPage } from "@/components/settings/audit-log"
+import { NotificationsPage } from "@/components/settings/notifications"
 import {
   ACTION_EVENTS,
   CHANNELS,
   type Employer,
   MATCH_ATTRIBUTES,
-  NOTIFY_EVENTS,
   type InviteContact,
   type ReminderChannel,
   SENDERS,
@@ -137,7 +137,7 @@ const GROUPS: SettingsGroup[] = [
       {
         id: "notifications",
         label: "Notifications",
-        render: () => <Notifications />,
+        render: () => <NotificationsPage storageKey="notifications-v2" />,
       },
       {
         id: "action-needed",
@@ -922,71 +922,6 @@ function ReminderForm({
 /* -------------------------------------------------------------------------- */
 /*  Alerts                                                                     */
 /* -------------------------------------------------------------------------- */
-
-type ChannelKey = "push" | "text" | "email"
-
-/** What reaches the physician and on which channel, from the AGC
-    "Provider Account > Notification" frame. */
-function Notifications() {
-  const settings = useSettings("notifications-v2", { groups: NOTIFY_EVENTS })
-  const groups = settings.draft.groups
-
-  function set(id: string, key: ChannelKey, on: boolean) {
-    settings.patch({
-      groups: groups.map((g) => ({
-        ...g,
-        items: g.items.map((item) =>
-          item.id === id ? { ...item, [key]: on } : item
-        ),
-      })),
-    })
-  }
-
-  const action = (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => settings.patch({ groups: NOTIFY_EVENTS })}
-      >
-        Default
-      </Button>
-      {settings.actions}
-    </div>
-  )
-
-  return (
-    <SettingsFrame action={action}>
-      {groups.map((group) => (
-        <SettingsSection key={group.group} title={group.group}>
-          <SettingsTable
-            columns={[
-              { header: "Event" },
-              { header: "Push", className: "w-28" },
-              { header: "Text", className: "w-28" },
-              { header: "Email", className: "w-28" },
-            ]}
-          >
-            {group.items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.name}</TableCell>
-                {(["push", "text", "email"] as const).map((key) => (
-                  <TableCell key={key}>
-                    <Checkbox
-                      checked={item[key]}
-                      aria-label={`${key} for ${item.name}`}
-                      onCheckedChange={(on) => set(item.id, key, on === true)}
-                    />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </SettingsTable>
-        </SettingsSection>
-      ))}
-    </SettingsFrame>
-  )
-}
 
 /** The events that put a patient on the Important updates card. */
 function ActionNeeded() {

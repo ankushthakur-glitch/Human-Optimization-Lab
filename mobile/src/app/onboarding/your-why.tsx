@@ -3,14 +3,14 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
-import { CalendarCheck, ChartLineUp, ClipboardText, Heart, Info, Sparkle } from "@/components/ph"
+import { CalendarCheck, ChartLineUp, ClipboardText, Heart, Heartbeat, Info, Sparkle } from "@/components/ph"
 import { Group, HUE, NeedsRow, type Hue } from "@/components/record-kit"
 import { Button } from "@/components/ui"
 import { color, font, ink, space, touchRadius } from "@/lib/theme"
 
 /* Setup's "Your why" page, right after "Updates about your care" (which now
    follows "Connect your health records") and before
-   the eight life questions: what the free account does for her, in five
+   the eight life questions: what the free account does for her, in six
    lines, before anything is asked of her. Read only; Continue goes on to
    "Building your record", which carries on to "About your life". It says plainly that none of
    it needs a purchase. (Not to be confused with the later "Your why"
@@ -21,11 +21,12 @@ const NEXT = "/onboarding/syncing" as const
 type Icon = React.ComponentType<{ size?: number; color?: string }>
 
 const BENEFITS: { title: string; meta: string; icon: Icon; hue: Hue }[] = [
-  { title: "A complete longitudinal record", meta: "Every result from every provider, on one timeline", icon: ChartLineUp, hue: "teal" },
-  { title: "Medication and appointment management", meta: "Kept current by the record itself, not by you", icon: CalendarCheck, hue: "blue" },
-  { title: "Order management and status", meta: "Where every test stands, without a phone call", icon: ClipboardText, hue: "amber" },
-  { title: "Physical and emotional review", meta: "The part no record holds, asked directly", icon: Heart, hue: "red" },
-  { title: "Ask Inlay about your record", meta: "Five questions a week, included free", icon: Sparkle, hue: "violet" },
+  { title: "A comprehensive assessment of your health", meta: "Including your biological age", icon: Heartbeat, hue: "green" },
+  { title: "A complete summary of your medical history", meta: "Every result from every provider, in one place", icon: ChartLineUp, hue: "teal" },
+  { title: "Your medicines and appointments", meta: "Kept up to date from your records, not by you", icon: CalendarCheck, hue: "blue" },
+  { title: "Where your tests stand", meta: "See each test's status without a phone call", icon: ClipboardText, hue: "amber" },
+  { title: "How you feel, in body and mind", meta: "What your records can't show, asked directly", icon: Heart, hue: "red" },
+  { title: "Ask Inlay about your record", meta: "Free questions every week", icon: Sparkle, hue: "violet" },
 ]
 
 export default function YourWhyScreen() {

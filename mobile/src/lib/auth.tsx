@@ -23,6 +23,9 @@ import { VALIDATE } from "@/lib/validate"
 
 const KEY_HASH = "hol.passwordHash"
 const KEY_SIGNED_IN = "hol.signedIn"
+/** Set only by a review link to set password (lib/storage.ts): the code
+    counts as accepted, as it would be in memory after activation. */
+const KEY_CODE_ACCEPTED = "hol.codeAccepted"
 
 /** A signed-in patient who leaves the app untouched this long is signed out,
     as the portal does. Checked every IDLE_CHECK_MS and on returning to the app. */
@@ -74,10 +77,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   React.useEffect(() => {
-    Promise.all([store.getItemAsync(KEY_HASH), store.getItemAsync(KEY_SIGNED_IN)])
-      .then(([saved, signedIn]) => {
+    Promise.all([store.getItemAsync(KEY_HASH), store.getItemAsync(KEY_SIGNED_IN), store.getItemAsync(KEY_CODE_ACCEPTED)])
+      .then(([saved, signedIn, codeAccepted]) => {
         setActivated(!!saved)
-        setStatus(saved && signedIn ? "signedIn" : "signedOut")
+        setStatus(saved && signedIn ? "signedIn" : codeAccepted ? "mustSetPassword" : "signedOut")
+        if (codeAccepted) store.deleteItemAsync(KEY_CODE_ACCEPTED)
       })
       .catch(() => setStatus("signedOut"))
   }, [])

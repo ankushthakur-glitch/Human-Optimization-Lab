@@ -190,6 +190,56 @@ export type Column<T> = {
   cell: (row: T) => React.ReactNode
   /** What the column sorts by; without it the header doesn't sort. */
   sortValue?: (row: T) => SortValue
+  /** Pins the column to that edge while the rest scroll sideways. Left
+      pinned columns must lead the list, right pinned ones end it. */
+  sticky?: "left" | "right"
+}
+
+/* A pinned cell needs its own opaque fill, with the row's hover or selected
+   tint laid over it, or the scrolled columns show through. */
+const STICKY_CELL = cn(
+  "sticky z-[1] bg-card",
+  "[tr:hover>&]:bg-[image:linear-gradient(var(--surface-row-hover),var(--surface-row-hover))]",
+  "[tr[data-state=selected]>&]:bg-[image:linear-gradient(var(--surface-selected),var(--surface-selected))]",
+  "[tr[data-active]>&]:bg-[image:linear-gradient(var(--surface-selected),var(--surface-selected))]"
+)
+const STICKY_HEAD = "sticky z-[2] bg-surface-head"
+/* A hairline on the inner edge of the pinned block marks the scroll seam. */
+const LEFT_EDGE = "shadow-[inset_-1px_0_0_var(--border)]"
+const RIGHT_EDGE = "shadow-[inset_1px_0_0_var(--border)]"
+
+/** Measures the header cells so each pinned column sits right after the
+    pinned columns before it (or before it, on the right edge). */
+function useStickyOffsets(
+  headRow: React.RefObject<HTMLTableRowElement | null>,
+  watch: string
+) {
+  const [offsets, setOffsets] = React.useState<Record<string, number>>({})
+  React.useLayoutEffect(() => {
+    const row = headRow.current
+    if (!row) return
+    const cells = Array.from(row.children) as HTMLElement[]
+    if (!cells.some((cell) => cell.dataset.sticky)) return
+    const measure = () => {
+      const next: Record<string, number> = {}
+      for (const side of ["left", "right"] as const) {
+        let edge = 0
+        for (const cell of side === "left" ? cells : [...cells].reverse()) {
+          if (cell.dataset.sticky !== side) continue
+          next[cell.dataset.col ?? ""] = edge
+          edge += cell.offsetWidth
+        }
+      }
+      setOffsets((prev) =>
+        Object.keys(next).every((key) => prev[key] === next[key]) ? prev : next
+      )
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    cells.forEach((cell) => observer.observe(cell))
+    return () => observer.disconnect()
+  }, [headRow, watch])
+  return offsets
 }
 
 export type FilterDef<T> = {
@@ -378,6 +428,36 @@ export function Directory<T extends { id: string }>({
   const allOnPageSelected =
     visible.length > 0 && visible.every((row) => selected.includes(row.id))
   const clear = () => setSelected([])
+
+  const headRow = React.useRef<HTMLTableRowElement>(null)
+  const pinsLeft = columns.some((column) => column.sticky === "left")
+  const lastLeft = columns.findLast((c) => c.sticky === "left")?.id
+  const firstRight = columns.find((c) => c.sticky === "right")?.id
+  const offsets = useStickyOffsets(
+    headRow,
+    `${visible.length > 0}:${columns.map((c) => c.id).join()}`
+  )
+  /* The select column leads, so it pins whenever any column pins left. */
+  const pin = (
+    id: string,
+    sticky: Column<T>["sticky"],
+    head: boolean,
+    className?: string
+  ) =>
+    sticky
+      ? {
+          "data-sticky": sticky,
+          "data-col": id,
+          style: { [sticky]: offsets[id] ?? 0 },
+          className: cn(
+            className,
+            head ? STICKY_HEAD : STICKY_CELL,
+            id === lastLeft && LEFT_EDGE,
+            id === firstRight && RIGHT_EDGE
+          ),
+        }
+      : { className }
+  const selectSticky = pinsLeft ? ("left" as const) : undefined
 
   function toggleAll() {
     const ids = visible.map((row) => row.id)
@@ -637,8 +717,8 @@ export function Directory<T extends { id: string }>({
             ) : (
               <Table>
                 <TableHeader className="sticky top-0 z-10 bg-surface-head [&_th]:h-9 [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
-                  <TableRow>
-                    <TableHead className="w-10">
+                  <TableRow ref={headRow}>
+                    <TableHead {...pin("select", selectSticky, true, "w-10")}>
                       <Checkbox
                         checked={allOnPageSelected}
                         onCheckedChange={toggleAll}
@@ -649,13 +729,26 @@ export function Directory<T extends { id: string }>({
                       column.sortValue ? (
                         <TableSortHead
                           key={column.id}
-                          className={column.className}
+                          {...pin(
+                            column.id,
+                            column.sticky,
+                            true,
+                            column.className
+                          )}
                           {...sorting.headProps(column.id)}
                         >
                           {column.header}
                         </TableSortHead>
                       ) : (
-                        <TableHead key={column.id} className={column.className}>
+                        <TableHead
+                          key={column.id}
+                          {...pin(
+                            column.id,
+                            column.sticky,
+                            true,
+                            column.className
+                          )}
+                        >
                           {column.header}
                         </TableHead>
                       )
@@ -669,12 +762,13 @@ export function Directory<T extends { id: string }>({
                       <TableRow
                         key={row.id}
                         data-state={isSelected ? "selected" : undefined}
+                        data-active={row.id === activeRowId || undefined}
                         className={cn(
                           (isSelected || row.id === activeRowId) &&
                             "bg-surface-selected"
                         )}
                       >
-                        <TableCell>
+                        <TableCell {...pin("select", selectSticky, false)}>
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={() => toggleOne(row.id)}
@@ -684,7 +778,12 @@ export function Directory<T extends { id: string }>({
                         {columns.map((column) => (
                           <TableCell
                             key={column.id}
-                            className={column.className}
+                            {...pin(
+                              column.id,
+                              column.sticky,
+                              false,
+                              column.className
+                            )}
                           >
                             {column.cell(row)}
                           </TableCell>
