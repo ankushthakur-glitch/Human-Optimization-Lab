@@ -94,13 +94,6 @@ export function Outlook() {
         </Group>
       </Block>
 
-      <View style={styles.note} accessible>
-        <Text style={styles.noteText}>
-          {"This is a projection, not a promise. It is redrawn every Monday from your own numbers and moves when they do. Loss slows over time, so it assumes a slower pace than today. "}
-          {`${MEMBER.doctorShort} sees the same figure you do.`}
-        </Text>
-      </View>
-
       <AskButton label={ask} onPress={() => router.push({ pathname: "/assistant", params: { topic: "plan", outlook: "1" } })} />
     </View>
   )
@@ -127,8 +120,6 @@ const styles = StyleSheet.create({
   fill: { height: "100%", borderRadius: 4, backgroundColor: chart.data },
   goalEnds: { flexDirection: "row", justifyContent: "space-between", gap: space.item },
 
-  note: { padding: space.card, borderRadius: 8, borderWidth: 1, borderColor: HUE.amber.edge, backgroundColor: HUE.amber.tint },
-  noteText: { ...type.body, color: ink.content },
 
   pressed: { opacity: 0.7 },
 })

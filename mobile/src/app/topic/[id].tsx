@@ -3,7 +3,6 @@ import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { PageNotFoundState } from "@/components/error-state"
-import { AskButton } from "@/components/hol"
 import { MeasureSheet } from "@/components/measure-sheet"
 import { CaretRight, Check, ForkKnife, Play, Warning } from "@/components/ph"
 import { Block, Card, Group, HUE, NeedsRow, Tag, toast } from "@/components/record-kit"
@@ -52,7 +51,6 @@ function TopicBody({ topic }: { topic: Topic }) {
   return (
     <TopicPage
       title={topic.id === "medication" ? "Medication" : topic.name}
-      footer={topic.id === "exercise" ? <AskButton about="exercise" params={{ ask: "Tell me about today's exercise" }} /> : undefined}
       sheet={sheet && <MeasureSheet onClose={() => setSheet(false)} />}>
       <View style={styles.chip}>
         <Tag tone="primary">{topic.tag}</Tag>
@@ -69,14 +67,16 @@ function TopicBody({ topic }: { topic: Topic }) {
       {!!topic.tip && topic.id !== "medication" && <Note>{topic.tip}</Note>}
       {topic.id !== "exercise" && topic.id !== "eat" && <Foot>{topic.foot}</Foot>}
 
-      <Group>
-        <NeedsRow
-          icon={<TopicIcon name={topic.id} size={16} />}
-          title={`${topic.id === "medication" ? "Medication" : topic.name} history`}
-          meta="Day, week, month, six months and year"
-          onPress={() => router.push({ pathname: "/topic-history/[id]", params: { id: topic.id } })}
-        />
-      </Group>
+      {topic.id !== "exercise" && (
+        <Group>
+          <NeedsRow
+            icon={<TopicIcon name={topic.id} size={16} />}
+            title={`${topic.id === "medication" ? "Medication" : topic.name} history`}
+            meta="Day, week, month, six months and year"
+            onPress={() => router.push({ pathname: "/topic-history/[id]", params: { id: topic.id } })}
+          />
+        </Group>
+      )}
     </TopicPage>
   )
 }
