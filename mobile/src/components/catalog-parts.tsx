@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   priceLeft: { flexDirection: "row", alignItems: "baseline", gap: space.inline },
   priceNow: { fontFamily: font.semibold, fontSize: 24, lineHeight: 30, color: ink.strong },
   priceWas: { ...type.unitLarge, color: ink.tertiary, textDecorationLine: "line-through" },
-  priceRight: { flexDirection: "row", alignItems: "baseline", gap: space.mark },
+  priceRight: { gap: space.mark },
   priceLabel: type.caption,
   priceWhen: { ...type.value, color: ink.primary },
   priceNote: type.label,

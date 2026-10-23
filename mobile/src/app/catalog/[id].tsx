@@ -89,6 +89,6 @@ const styles = StyleSheet.create({
   // The name first, its badge beside it on the same line; a long name
   // wraps inside its own space and the badge keeps its size.
   nameLine: { flexDirection: "row", alignItems: "center", gap: space.inline },
-  name: { ...type.hero, fontSize: 18, lineHeight: 24, flexShrink: 1 },
+  name: { ...type.hero, fontSize: 15, lineHeight: 20, flexShrink: 1 },
   intro: { ...type.body },
 })
