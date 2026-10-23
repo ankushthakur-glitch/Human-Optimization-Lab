@@ -12,7 +12,7 @@ import { Sheet } from "@/components/sheet"
 import { Block, Group, Tag } from "@/components/record-kit"
 import { amount, decimal, digits, saveLog } from "@/components/today-exercise-parts"
 import { TextField } from "@/components/ui"
-import { Foot, TopicPage } from "@/components/topic-kit"
+import { TopicPage } from "@/components/topic-kit"
 import { localDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { LIFTS, liftOf, type Lift, type Pose } from "@/lib/topics"
@@ -72,7 +72,7 @@ function LiftBody({ lift }: { lift: Lift }) {
   return (
     <TopicPage
       title={lift.name}
-      footer={<PrimaryButton onPress={() => setLogging(true)}>{log ? "Edit your sets" : "Log your sets"}</PrimaryButton>}
+      footer={<PrimaryButton onPress={() => setLogging(true)}>{log ? "Edit your sets" : "Continue"}</PrimaryButton>}
       sheet={
         <>
           <ExerciseVideoModal visible={watching} player={player} title={lift.name} ratio={RATIO} onClose={() => setWatching(false)} />
@@ -181,8 +181,6 @@ function LiftBody({ lift }: { lift: Lift }) {
           ))}
         </View>
       </Block>
-
-      <Foot>Every lift on your plan has this. Open it mid-set without losing your place.</Foot>
     </TopicPage>
   )
 }

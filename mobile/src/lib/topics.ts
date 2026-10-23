@@ -76,7 +76,7 @@ export const TOPICS: Topic[] = [
       { id: "easier", title: "Ask for an easier version", says: "Say why, out loud — it rebuilds", badge: "No one to call", tone: "info", icon: "mic", act: { kind: "ask", ask: "Today's session is too much. Can you make it easier?" } },
       { id: "own", title: "Upload your own programme", says: "Or connect the app it already lives in", badge: "We monitor yours", tone: "info", icon: "upload", act: { kind: "go", href: "/connections" } },
     ],
-    tip: "A partial score is not a failure. Progress is built from what happened, not from what was prescribed.",
+    tip: "",
     foot: "Tap Form on any lift to see how it is done. Loads step up from what you did last time.",
   },
   {
