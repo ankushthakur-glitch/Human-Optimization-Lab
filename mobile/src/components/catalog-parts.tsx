@@ -35,8 +35,8 @@ export function Rich({ children, style }: { children: string; style?: object }) 
 }
 
 /** The teal tinted card under an item's name: the price a member pays, the
-    standard price struck through, and when the result or the order
-    arrives. */
+    standard price struck through, and, on its own line below, when the
+    result or the order arrives. */
 export function PriceCard({ item }: { item: Item }) {
   return (
     <View style={styles.price} accessible accessibilityLabel={priceWords(item)}>
@@ -45,12 +45,12 @@ export function PriceCard({ item }: { item: Item }) {
           <Text style={styles.priceNow}>{money(item.member)}</Text>
           {!!item.standard && <Text style={styles.priceWas}>{money(item.standard)}</Text>}
         </View>
-        <View style={styles.priceRight}>
-          <Text style={styles.priceLabel}>{item.when.label.toUpperCase()}</Text>
-          <Text style={styles.priceWhen}>{item.when.value}</Text>
-        </View>
       </View>
       <Text style={styles.priceNote}>{item.priceNote}</Text>
+      <View style={styles.priceRight}>
+        <Text style={styles.priceLabel}>{item.when.label.toUpperCase()}</Text>
+        <Text style={styles.priceWhen}>{item.when.value}</Text>
+      </View>
     </View>
   )
 }
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   strong: { fontFamily: font.semibold, color: ink.strong },
 
   price: { backgroundColor: color.primarySoft, borderRadius: cardRadius, borderWidth: 1, borderColor: color.primaryEdge, padding: space.card, gap: space.stack, boxShadow: card.shadow },
-  priceTop: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: space.item },
+  priceTop: { flexDirection: "row", alignItems: "flex-end", gap: space.item },
   priceLeft: { flexDirection: "row", alignItems: "baseline", gap: space.inline },
   priceNow: { fontFamily: font.semibold, fontSize: 24, lineHeight: 30, color: ink.strong },
   priceWas: { ...type.unitLarge, color: ink.tertiary, textDecorationLine: "line-through" },
