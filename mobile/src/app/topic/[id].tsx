@@ -3,13 +3,15 @@ import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { PageNotFoundState } from "@/components/error-state"
+import { AskButton } from "@/components/hol"
 import { MeasureSheet } from "@/components/measure-sheet"
-import { CaretRight, Check, Play, Warning } from "@/components/ph"
-import { Block, Card, Group, NeedsRow, Tag, toast } from "@/components/record-kit"
-import { Foot, Note, ScoreDial, TopicHead, TopicIcon, TargetCard, TopicPage, Ways, askAbout } from "@/components/topic-kit"
-import { localDay } from "@/lib/member"
+import { CaretRight, Check, ForkKnife, Play, Warning } from "@/components/ph"
+import { Block, Card, Group, HUE, NeedsRow, Tag, toast } from "@/components/record-kit"
+import { Foot, Note, ScoreDial, TopicIcon, TargetCard, TopicPage, Ways, askAbout } from "@/components/topic-kit"
+import { MEAL_SLOTS, localDay, mealName, mealsOn, totalsOf, type Meal } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { ALSO_TAKING, CARDIO, INTERACTION, LIFTS, SLEEP_LAST, WARMUP, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
+import { formatNumber } from "@/lib/trends"
 import { card, chart, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
 /* One topic of the plan, opened from a row on Today (Journey_14 screens 31
@@ -48,18 +50,24 @@ function TopicBody({ topic }: { topic: Topic }) {
   }
 
   return (
-    <TopicPage sheet={sheet && <MeasureSheet onClose={() => setSheet(false)} />}>
-      <TopicHead topic={topic} intro={topic.intro} />
+    <TopicPage
+      title={topic.id === "medication" ? "Medication" : topic.name}
+      footer={topic.id === "exercise" ? <AskButton about="exercise" params={{ ask: "Tell me about today's exercise" }} /> : undefined}
+      sheet={sheet && <MeasureSheet onClose={() => setSheet(false)} />}>
+      <View style={styles.chip}>
+        <Tag tone="primary">{topic.tag}</Tag>
+      </View>
       <TargetCard icon={topic.id} title={topic.target.replace(/ · 1,000 mg calcium$/, "")} detail={topic.detail} figure={logged ? row.text : topic.figure} />
 
       {topic.id === "exercise" && <Session />}
+      {topic.id === "eat" && <TodaysMeals />}
       {topic.id === "sleep" && <LastNight />}
 
       <Ways ways={topic.ways} onPick={pick} picked={logged?.way} />
 
       {topic.id === "medication" && <AlsoTaking />}
       {!!topic.tip && topic.id !== "medication" && <Note>{topic.tip}</Note>}
-      <Foot>{topic.foot}</Foot>
+      {topic.id !== "exercise" && topic.id !== "eat" && <Foot>{topic.foot}</Foot>}
 
       <Group>
         <NeedsRow
@@ -80,28 +88,39 @@ function TopicBody({ topic }: { topic: Topic }) {
     done. Loads are read straight from what was logged, never prescribed
     blind. */
 function Session() {
+  const s = useOnboarding()
+  const log = s.exercises?.[localDay()]
+  // A lift she has saved is done: it drops to the foot of the list, struck
+  // through and closed, while the rest stay open in the plan's order.
+  const done = (id: string) => !!log?.[id]
+  const lifts = [...LIFTS.filter((l) => !done(l.id)), ...LIFTS.filter((l) => done(l.id))]
   return (
     <Block title="Today's session" meta="built for you">
       <View style={styles.table}>
         <Line name={WARMUP.name} detail={WARMUP.detail} end={WARMUP.say} shaded />
-        {LIFTS.map((l) => (
-          <View key={l.id} style={[styles.line, styles.rule]}>
-            <Text style={[styles.lineName, styles.fill]}>{l.name}</Text>
-            <Pressable
-              onPress={() => router.push({ pathname: "/lift/[id]", params: { id: l.id } })}
-              accessibilityRole="button"
-              accessibilityLabel={`How to do the ${l.name}`}
-              hitSlop={8}
-              style={({ pressed }) => [styles.form, pressed && styles.pressed]}
-            >
-              <Play size={8} weight="fill" color={ink.primary} />
-              <Text style={styles.formText}>Form</Text>
-            </Pressable>
-            <Text style={type.meta}>{l.last === "same" ? "same" : `last ${l.last}`}</Text>
-            <Text style={[styles.sets, type.label]}>{l.sets}</Text>
-            <Text style={styles.load}>{`${l.load} lb`}</Text>
-          </View>
-        ))}
+        {lifts.map((l) => {
+          const finished = done(l.id)
+          return (
+            <View key={l.id} style={[styles.line, styles.rule, finished && styles.closed]}>
+              <Pressable
+                onPress={() => router.push({ pathname: "/lift/[id]", params: { id: l.id } })}
+                disabled={finished}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: finished }}
+                accessibilityLabel={finished ? `${l.name}, done` : `How to do the ${l.name}`}
+                hitSlop={8}
+                style={({ pressed }) => [styles.lift, styles.fill, pressed && styles.pressed]}
+              >
+                <View style={[styles.playDot, finished && styles.playDotDone]}>
+                  {finished ? <Check size={10} weight="bold" color={color.ok} /> : <Play size={10} weight="fill" color={ink.primary} />}
+                </View>
+                <Text style={[styles.lineName, styles.fill, finished && styles.struck]}>{l.name}</Text>
+              </Pressable>
+              <Text style={[styles.sets, type.label, finished && styles.struck]}>{l.sets}</Text>
+              <Text style={[styles.load, finished && styles.struck]}>{`${l.load} lb`}</Text>
+            </View>
+          )
+        })}
         <Line name={CARDIO.name} detail={CARDIO.detail} end={CARDIO.say} shaded rule />
       </View>
     </Block>
@@ -115,6 +134,47 @@ function Line({ name, detail, end, shaded, rule }: { name: string; detail: strin
       <Text style={type.label}>{detail}</Text>
       <Text style={styles.lineEnd}>{end}</Text>
     </View>
+  )
+}
+
+/* ------------------------------------------------------------------ eat -- */
+
+const HOW: Record<Meal["how"], string> = { photo: "Logged by photo", voice: "Logged by voice", typed: "Typed in", again: "Logged again", scan: "Logged by scan" }
+
+/** What she has logged today, once she logs a meal: each with how it was
+    logged, what it was and its energy and protein, and Swap to log it again. */
+function TodaysMeals() {
+  const s = useOnboarding()
+  const logged = mealsOn(s, localDay())
+  if (!logged.length) return null
+  const mains = MEAL_SLOTS.filter((m) => m.main).length
+  const count = new Set(logged.filter((m) => MEAL_SLOTS.find((x) => x.id === m.slot)?.main).map((m) => m.slot)).size
+  return (
+    <Block title="Today's meals" meta={`${count} of ${mains} logged`}>
+      <Group>
+        {logged.map((m) => {
+          const totals = totalsOf([m])
+          const facts = [
+            mealName(m),
+            totals.calories && `${formatNumber(Math.round(totals.calories.value))} kcal`,
+            totals.protein && `${formatNumber(Math.round(totals.protein.value))} g protein`,
+          ]
+            .filter(Boolean)
+            .join(", ")
+          return (
+            <NeedsRow
+              key={m.id}
+              icon={<ForkKnife size={16} color={HUE.teal.ink} />}
+              title={MEAL_SLOTS.find((x) => x.id === m.slot)?.name ?? "Meal"}
+              tag={{ tone: "ok", label: HOW[m.how] }}
+              meta={facts}
+              action={{ label: "Swap", quiet: true, onPress: () => router.push({ pathname: "/log-meal", params: { slot: m.slot } }) }}
+              chevron={false}
+            />
+          )
+        })}
+      </Group>
+    </Block>
   )
 }
 
@@ -196,17 +256,27 @@ function AlsoTaking() {
 const styles = StyleSheet.create({
   fill: { flex: 1, minWidth: 0 },
   pressed: { opacity: 0.7 },
+  // A finished lift: struck through, in the quiet grey.
+  struck: { textDecorationLine: "line-through", color: ink.tertiary },
+  playDotDone: { backgroundColor: color.okTint },
+  // The programme chip sits left, over the target card, at its own width.
+  chip: { alignSelf: "flex-start" },
 
   table: { borderRadius: 10, overflow: "hidden", backgroundColor: color.background, borderWidth: 1, borderColor: hairline.edge, boxShadow: card.shadowXs },
   line: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingHorizontal: space.item, paddingVertical: 10 },
   rule: { borderTopWidth: 1, borderTopColor: hairline.rule },
   shaded: { backgroundColor: surface.inset },
+  // A finished lift: a deeper grey than the warm-up and cardio rows, so it
+  // reads as closed rather than as a heading.
+  closed: { backgroundColor: "#ECEDF0" },
   lineName: { ...type.title, color: ink.strong },
   lineEnd: { ...type.metaStrong, color: ink.strong },
   sets: { minWidth: 34, textAlign: "right" },
   load: { ...type.value, minWidth: 44, textAlign: "right", fontVariant: ["tabular-nums"] },
-  form: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: color.primarySoft },
-  formText: { ...type.tag, fontFamily: font.medium, color: ink.primary },
+  // The play icon leads the lift's name; the pair opens how it is done.
+  lift: { flexDirection: "row", alignItems: "center", gap: space.inline },
+  // The icon sits on the chip's pale teal, in a circle.
+  playDot: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: color.primarySoft },
 
   score: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 12, backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge },
   part: { width: 78 },

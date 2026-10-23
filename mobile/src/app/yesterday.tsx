@@ -1,13 +1,14 @@
 import { useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
+import Svg, { Circle } from "react-native-svg"
 
 import { formatNumber } from "@/components/charts"
 import { Block } from "@/components/record-kit"
 import { Foot, TopicIcon, TopicPage } from "@/components/topic-kit"
 import { addDays, dayFrom, localDay } from "@/lib/member"
 import { NUMBERS } from "@/lib/topics"
-import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
+import { card, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
 /* Yesterday in numbers (Journey_14 screen 40), under the Review's day card:
    "the figures under the score". The level beneath the day: food in,
@@ -18,7 +19,13 @@ import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
    calorie line, because a deficit hit on the wrong macros loses muscle, and
    movement is shown against its goal rather than as a bare total. */
 
-const monthDay = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+const RING = 88
+const RING_STROKE = 9
+const RING_TRACK = "#27353F"
+/** Protein, carbs, fat: blue, amber, pink on the dark panel. */
+const MACRO_TINT = ["#7EB3E8", "#F5A85A", "#F28BAA"]
+
+const monthDay =(d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 
 export default function YesterdayScreen() {
   const { date } = useLocalSearchParams<{ date?: string }>()
@@ -27,14 +34,7 @@ export default function YesterdayScreen() {
   const n = NUMBERS
 
   return (
-    <TopicPage>
-      <View style={styles.head}>
-        <Text style={styles.title} accessibilityRole="header">
-          Yesterday in numbers
-        </Text>
-        <Text style={type.body}>Energy in, energy out, and what moved. Every figure below the score on the last screen.</Text>
-      </View>
-
+    <TopicPage title="Yesterday">
       <Block title="Energy balance" meta={monthDay(day)}>
         <View style={styles.table}>
           {n.energy.map((r, i) => (
@@ -51,15 +51,8 @@ export default function YesterdayScreen() {
           </View>
         </View>
         <View style={styles.macros}>
-          {n.macros.map((m) => (
-            <View key={m.label} style={styles.macro} accessible accessibilityLabel={`${m.label}, ${m.value} of ${m.of} grams`}>
-              <Text style={styles.cap}>{m.label.toUpperCase()}</Text>
-              <Text style={styles.big}>
-                {m.value}
-                <Text style={type.unit}> g</Text>
-              </Text>
-              <Text style={type.caption}>{`of ${m.of}`}</Text>
-            </View>
+          {n.macros.map((m, i) => (
+            <MacroRing key={m.label} label={m.label} value={m.value} of={m.of} tint={MACRO_TINT[i % MACRO_TINT.length]} />
           ))}
         </View>
       </Block>
@@ -82,6 +75,39 @@ export default function YesterdayScreen() {
   )
 }
 
+/** One macro as a ring: grams so far inside it, the target under that, the
+    name below. The ring fills to the target and stops there when it is passed. */
+function MacroRing({ label, value, of, tint }: { label: string; value: number; of: number; tint: string }) {
+  const r = (RING - RING_STROKE) / 2
+  const c = 2 * Math.PI * r
+  const filled = c * Math.min(value / of, 1)
+  return (
+    <View style={styles.macro} accessible accessibilityLabel={`${label}, ${value} of ${of} grams`}>
+      <View style={styles.ring}>
+        <Svg width={RING} height={RING} viewBox={`0 0 ${RING} ${RING}`}>
+          <Circle cx={RING / 2} cy={RING / 2} r={r} stroke={RING_TRACK} strokeWidth={RING_STROKE} fill="none" />
+          <Circle
+            cx={RING / 2}
+            cy={RING / 2}
+            r={r}
+            stroke={tint}
+            strokeWidth={RING_STROKE}
+            strokeLinecap="round"
+            strokeDasharray={`${filled} ${c}`}
+            fill="none"
+            transform={`rotate(-90 ${RING / 2} ${RING / 2})`}
+          />
+        </Svg>
+        <View style={styles.ringWords} pointerEvents="none">
+          <Text style={styles.ringValue}>{`${value}g`}</Text>
+          <Text style={styles.ringOf}>{`of ${of}`}</Text>
+        </View>
+      </View>
+      <Text style={styles.ringLabel}>{label.toUpperCase()}</Text>
+    </View>
+  )
+}
+
 function Row({ label, note, value, strong, rule }: { label: string; note?: string; value: string; strong?: boolean; rule?: boolean }) {
   return (
     <View style={[styles.row, rule && styles.rule, strong && styles.strong]}>
@@ -94,8 +120,6 @@ function Row({ label, note, value, strong, rule }: { label: string; note?: strin
 
 const styles = StyleSheet.create({
   fill: { flex: 1, minWidth: 0 },
-  head: { gap: space.stack },
-  title: { ...type.hero, fontSize: 24, lineHeight: 32 },
 
   table: { borderRadius: 10, overflow: "hidden", backgroundColor: color.background, borderWidth: 1, borderColor: hairline.edge, boxShadow: card.shadowXs },
   row: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingHorizontal: space.item, paddingVertical: 10 },
@@ -110,9 +134,14 @@ const styles = StyleSheet.create({
   over: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6, backgroundColor: color.background },
   overText: { ...type.tag, color: ink.primary },
 
-  macros: { flexDirection: "row", gap: space.inline },
-  macro: { flex: 1, gap: 2, padding: space.item, borderRadius: 10, backgroundColor: surface.inset },
-  cap: { ...type.caption, letterSpacing: 0.6, color: ink.secondary },
+  macros: { flexDirection: "row", justifyContent: "space-around", paddingVertical: space.item, paddingHorizontal: space.inline, borderRadius: 12, backgroundColor: "#111B23" },
+  macro: { alignItems: "center", gap: space.inline },
+  ring: { width: RING, height: RING, alignItems: "center", justifyContent: "center" },
+  ringWords: { ...StyleSheet.absoluteFill,alignItems: "center", justifyContent: "center" },
+  ringValue: { ...type.title, color: "#FFFFFF", fontFamily: font.semibold },
+  ringOf: { ...type.caption, color: "#9AA8B4" },
+  ringLabel: { ...type.caption, letterSpacing: 0.8, color: "#9AA8B4" },
+  cap:{ ...type.caption, letterSpacing: 0.6, color: ink.secondary },
   big: { ...type.hero, fontVariant: ["tabular-nums"] },
 
   moves: { flexDirection: "row", gap: space.inline },

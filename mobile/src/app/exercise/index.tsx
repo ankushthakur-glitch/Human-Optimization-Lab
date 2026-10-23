@@ -77,7 +77,7 @@ export default function TodayExerciseScreen() {
   if (!session) {
     const next = nextSession(profileOf(s).sessionOn, now)
     return (
-      <FlowScreen page title="Today's exercise" footer={<AskButton params={{ topic: "plan" }} />}>
+      <FlowScreen page title="Today's exercise" footer={<AskButton about="exercise" params={{ topic: "plan" }} />}>
         <Header rest>
           <Text style={headText.title} accessibilityRole="header">
             Rest day
@@ -109,7 +109,7 @@ export default function TodayExerciseScreen() {
 
   // The two ways to close the workout sit together at the foot: finish it,
   // or, until every move is ticked, say she did something else instead.
-  const footer = finished ? <AskButton params={{ topic: "plan" }} /> : (
+  const footer = finished ? <AskButton about="exercise" params={{ topic: "plan" }} /> : (
     <>
       <PrimaryButton onPress={() => setSheet("finish")}>Finish workout</PrimaryButton>
     </>

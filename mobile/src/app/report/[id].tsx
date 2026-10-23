@@ -8,7 +8,7 @@ import { FlowScreen } from "@/components/flow"
 import { X } from "@/components/ph"
 import { Block, Card, KeyValue } from "@/components/record-kit"
 import { useReports } from "@/lib/reports"
-import { cardRadius, color, ink, space, type } from "@/lib/theme"
+import { cardRadius, color, hairline, ink, space, type } from "@/lib/theme"
 
 /* One imaging report, opened from a scan measure's "Reports" (Dr.
    Blanchard, 12 Oct 2026): where and when it was done and who ordered it,
@@ -111,7 +111,7 @@ function FullScreen({ images, start, onClose }: { images: ImageSourcePropType[];
         <View style={[styles.bar, { paddingTop: inset.top + space.item }]} pointerEvents="box-none">
           <Text style={styles.barCount}>{`${page + 1} of ${images.length}`}</Text>
           <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close" style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
-            <X size={20} color={color.background} />
+            <X size={20} color={ink.strong} />
           </Pressable>
         </View>
       </View>
@@ -147,8 +147,8 @@ function Zoomable({ source, width, height }: { source: ImageSourcePropType; widt
   )
 }
 
-/** The scans' dark ground, the near black of a viewing screen. */
-const SCAN_GROUND = "#0E1416"
+/** The full screen viewer's ground: the scans sit on the page's tint. */
+const SCAN_GROUND = color.canvas
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
@@ -157,13 +157,13 @@ const styles = StyleSheet.create({
   impression: { ...type.body, lineHeight: 22, color: ink.content },
 
   gallery: { gap: space.item },
-  frames: { borderRadius: cardRadius, backgroundColor: SCAN_GROUND },
+  frames: { borderRadius: cardRadius, backgroundColor: color.canvas, borderWidth: 1, borderColor: hairline.edge, overflow: "hidden" },
   frame: { width: "100%", height: "100%" },
   count: { ...type.label, textAlign: "center" },
 
   dark: { flex: 1, backgroundColor: SCAN_GROUND },
   center: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
   bar: { position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: space.gutter },
-  barCount: { ...type.label, color: color.background },
-  close: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255, 255, 255, 0.14)" },
+  barCount: { ...type.label },
+  close: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: color.background, borderWidth: 1, borderColor: hairline.outline },
 })

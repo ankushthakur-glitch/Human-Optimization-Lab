@@ -1911,20 +1911,42 @@ export function outlookOf(s: Snapshot, now: Date = new Date()) {
   const perLb = lost >= 1 ? Math.min(0.5, Math.max(0.1, (p.waist.start - p.waist.now) / lost)) : 0.25
   const scan = DEXA_SCANS.filter((d) => d.at <= localDay(now)).at(-1)
   const tenth = (v: number) => Math.round(v * 10) / 10
-  const horizons: OutlookHorizon[] = OUTLOOK_HORIZONS.map((h) => {
-    const w = weightAt(h.days)
+  const figures = (days: number) => {
+    const w = weightAt(days)
     return {
-      ...h,
       weight: tenth(w),
       waist: tenth(p.waist.now - perLb * (w0 - w)),
       fatPct: scan ? tenth(((scan.fatLb + (w - scan.weightLb)) / w) * 100) : undefined,
     }
-  })
+  }
+  const horizons: OutlookHorizon[] = OUTLOOK_HORIZONS.map((h) => ({ ...h, ...figures(h.days) }))
+  // The simulated card: where the same trend puts her on 1 January, and the
+  // pace it assumes on the way (lb a week, slower than today as loss eases).
+  const newYear = new Date(now.getFullYear() + 1, 0, 1)
+  const toNewYear = Math.max(7, daysBetween(now, newYear))
+  const ahead = figures(toNewYear)
+  const assumed = k ? Math.round(((w0 - weightAt(toNewYear)) / (toNewYear / 7)) * 100) / 100 : 0
+  const left = Math.max(0, Math.round(gap * 10) / 10)
+  const target = {
+    label: shortDay(newYear),
+    ...ahead,
+    /** lb a week over the last 8 weeks, and the pace assumed ahead. */
+    pace: p.weight.forecast?.perWeek ?? 0,
+    assumed,
+    left,
+    leftWeeks: assumed > 0 ? Math.ceil(left / assumed) : undefined,
+    lost: Math.round((p.weight.start - w0) * 10) / 10,
+    total: Math.round((p.weight.start - goal) * 10) / 10,
+    daysIn: Math.max(1, daysBetween(dayFrom(p.start.at), now)),
+    fatNow: scan ? tenth(((scan.fatLb + (w0 - scan.weightLb)) / w0) * 100) : undefined,
+    waistNow: p.waist.now,
+    weightNow: w0,
+  }
   const today = dayFrom(dayOfAt(p.weight.latestAt))
   const points: { date: string; value: number }[] = []
   for (let d = 0; d < 365; d += 14) points.push({ date: localDay(addDays(today, d)), value: tenth(weightAt(d)) })
   points.push({ date: localDay(addDays(today, 365)), value: tenth(weightAt(365)) })
-  return { horizons, points }
+  return { horizons, points, target }
 }
 
 /* ---------------------------------------------------------- milestones -- */

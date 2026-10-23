@@ -67,7 +67,7 @@ export const TOPICS: Topic[] = [
     target: "Upper body + 30 min Zone 2",
     detail: "Week 4 · your third upper-body session",
     state: { text: "55 min", tone: "plain", note: "Not started" },
-    answered: { text: "Done", note: (at) => `Completed ${at}` },
+    answered: { text: "55 min", note: (at) => `Completed ${at}` },
     figure: "55 min",
     intro: "Today's session in full, then four ways to answer it.",
     ways: [
@@ -96,7 +96,7 @@ export const TOPICS: Topic[] = [
       { id: "say", title: "Say what you ate", says: "Out loud, in your own words", badge: "Nothing to type", tone: "good", icon: "mic", act: { kind: "ask", ask: "Here is what I ate today: " } },
       { id: "import", title: "Import from another app", says: "Apple Health, MyFitnessPal, Cronometer", badge: "Posts itself", tone: "info", icon: "import", act: { kind: "go", href: "/connections" } },
     ],
-    tip: "Four ways in, one record out. However the meal arrives it lands on the same timeline as the blood panel, which is what makes a lipid change attributable.",
+    tip: "Four ways in, one record out. Every meal lands on the same timeline as your blood panel.",
     foot: "Swapping a meal inside today's plan keeps the targets intact — the assistant rebalances the other two meals rather than letting the day drift.",
   },
   {
@@ -187,7 +187,11 @@ export const TOPICS: Topic[] = [
 export const topicOf = (id: string | undefined) => TOPICS.find((t) => t.id === id)
 
 /** Today's note above the list: the plan moving by itself. */
-export const TODAY_INSIGHT = "You slept 6 h 10 m, so today's Zone 2 is ten minutes lighter and caffeine stops at noon. The plan moved; you did not have to ask."
+export const TODAY_INSIGHT = "You slept 6 h 10 m, so today's Zone 2 is ten minutes lighter and caffeine stops at noon."
+
+/** The next thing due today, above the six: the evening dose, moved to 7 pm
+    after last night's miss (see HANDOVER). One tap logs it on Medication. */
+export const NEXT_UP = { topic: "medication", title: "Evening metformin, 7 pm", note: "Missed last night, so a reminder is set" } as const
 
 /** What the day holds in Care, below the six. */
 export const CARE_TODAY = { title: "Nothing due in Care today", next: "Next: DEXA re-scan, Friday October 9 at 8:15 am" }
@@ -217,10 +221,10 @@ export const FINDINGS: { icon: IconKey; title: string; sub: string; bad: boolean
 
 /** The four results carried into the starting point (screen 29). */
 export const TEST_RESULTS = [
-  { label: "Body fat", value: "41", unit: "%" },
-  { label: "Sleep, AHI", value: "18" },
-  { label: "Resting metabolism", value: "1,310", unit: "kcal" },
-  { label: "hs-CRP", value: "4.2" },
+  { label: "Body fat", value: "41", unit: "%", via: "DEXA" },
+  { label: "Sleep, AHI", value: "18", via: "Home sleep study" },
+  { label: "Resting metabolism", value: "1,310", unit: "kcal", via: "RMR" },
+  { label: "hs-CRP", value: "4.2", via: "Blood panel" },
 ]
 
 /** The three symptoms she named at the start, scored 0 to 10 today. */
@@ -229,6 +233,45 @@ export const SYMPTOMS: { id: "wake" | "irritable" | "gain"; name: string; note: 
   { id: "irritable", name: "Irritability", note: "most days", start: 7, tone: "bad" },
   { id: "gain", name: "Weight gain", note: "since the spring", start: 6, tone: "warn" },
 ]
+
+/* ------------------------------------------------------------- progress -- */
+
+/** Day one and today (Journey screen 48): every comparison is dated, the left
+    column is always day one and the right is always today. */
+export const DAY_ONE = {
+  started: "Jul 1, 2026",
+  today: "Oct 6, 2026",
+  day: 97,
+  range: "Jul 1 to Oct 6",
+  goalWeight: 158,
+} as const
+
+export type Pair = { name: string; via: string; from: string; to: string; unit?: string; spoken: string }
+
+/** The five test findings, then and now. */
+export const RETESTED: Pair[] = [
+  { name: "Sleep apnoea, AHI", via: "Home sleep study", from: "18", to: "11", spoken: "18 to 11" },
+  { name: "Body fat", via: "DEXA", from: "41%", to: "37.9%", spoken: "41 percent to 37.9 percent" },
+  { name: "Resting metabolism", via: "RMR", from: "1,310", to: "1,480", unit: "kcal", spoken: "1,310 to 1,480 kilocalories, higher is better" },
+  { name: "Fasting insulin", via: "Blood panel", from: "18", to: "12", spoken: "18 to 12" },
+  { name: "hs-CRP", via: "Blood panel", from: "4.2", to: "2.1", spoken: "4.2 to 2.1" },
+]
+
+/** The three symptoms she named, re-scored on her own 0 to 10 scale at week
+    12 (lower is better). Keyed to SYMPTOMS. */
+export const RESCORED: Record<(typeof SYMPTOMS)[number]["id"], number> = { wake: 2, irritable: 3, gain: 2 }
+
+/** What she measures at home, against what she entered on day one. */
+export const AT_HOME: Pair[] = [
+  { name: "Weight", via: "Goal 158 lb", from: "178", to: "165.6", unit: "lb", spoken: "178 to 165.6 pounds" },
+  { name: "Waist", via: "Monthly check", from: "36.5\"", to: "34.0\"", spoken: "36.5 to 34.0 inches" },
+]
+
+/** The two headline figures above the tests. */
+export const HEADLINES = {
+  weight: { lost: 12.4, from: 178 },
+  fat: { down: 3.1, from: 41 },
+} as const
 
 /* ---------------------------------------------------------------- sleep -- */
 

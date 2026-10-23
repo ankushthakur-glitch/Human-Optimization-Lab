@@ -5,13 +5,13 @@ import { Check, Info, MagnifyingGlass, User, WarningCircle, X } from "@/componen
 import { Card } from "@/components/record-kit"
 import { Pressable } from "react-native"
 import { money, type Item } from "@/lib/catalog"
-import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
+import { card, cardRadius, color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* The Care tab's pieces (client deck screens 52 to 54), built from the
    signed-in kit's tokens:
 
    Rich         a sentence with **bold** words to weigh
-   PriceCard    the dark card: the member price, the standard price struck
+   PriceCard    the teal tinted card: the member price, the standard price struck
                 through, and when it arrives
    DoesList     "What it does": teal checks
    LimitsList   "What it cannot tell you": clay marks, given the same weight
@@ -34,7 +34,7 @@ export function Rich({ children, style }: { children: string; style?: object }) 
   )
 }
 
-/** The dark card under an item's name: the price a member pays, the
+/** The teal tinted card under an item's name: the price a member pays, the
     standard price struck through, and when the result or the order
     arrives. */
 export function PriceCard({ item }: { item: Item }) {
@@ -141,21 +141,18 @@ export function SearchField({ value, onChange, placeholder }: { value: string; o
 
 /** The clay the kit uses for a limit or a late mark, never red. */
 const CLAY = "#A95413"
-/** The dark ground of the price card: the brand teal walked to near black. */
-const DARK = "#17312F"
-
 const styles = StyleSheet.create({
   strong: { fontFamily: font.semibold, color: ink.strong },
 
-  price: { backgroundColor: DARK, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 14, gap: space.stack, boxShadow: card.shadow },
+  price: { backgroundColor: color.primarySoft, borderRadius: cardRadius, borderWidth: 1, borderColor: color.primaryEdge, padding: space.card, gap: space.stack, boxShadow: card.shadow },
   priceTop: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: space.item },
   priceLeft: { flexDirection: "row", alignItems: "baseline", gap: space.inline },
-  priceNow: { fontFamily: font.semibold, fontSize: 24, lineHeight: 30, color: ink.onColor },
-  priceWas: { fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: "#8DB3AF", textDecorationLine: "line-through" },
+  priceNow: { fontFamily: font.semibold, fontSize: 24, lineHeight: 30, color: ink.strong },
+  priceWas: { ...type.unitLarge, color: ink.tertiary, textDecorationLine: "line-through" },
   priceRight: { flexDirection: "row", alignItems: "baseline", gap: space.mark },
-  priceLabel: { fontFamily: font.medium, fontSize: 10, lineHeight: 14, color: "#8DB3AF" },
-  priceWhen: { fontFamily: font.semibold, fontSize: 14, lineHeight: 20, color: color.primaryHalo },
-  priceNote: { ...type.label, color: "#B7D3D0" },
+  priceLabel: type.caption,
+  priceWhen: { ...type.value, color: ink.primary },
+  priceNote: type.label,
 
   list: { gap: space.item, padding: space.card },
   line: { flexDirection: "row", gap: space.lead, alignItems: "flex-start" },

@@ -3,7 +3,7 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { FootNote, SearchField } from "@/components/catalog-parts"
-import { Barbell, Brain, Flask, Leaf, Moon, Package, Scales, Scan, ShieldPlus, Watch } from "@/components/ph"
+import { Barbell, Brain, CalendarCheck, Flask, Heart, Leaf, Moon, Package, Scales, Scan, ShieldPlus, Watch } from "@/components/ph"
 import { Block, EmptyState, Group, HUE, NeedsRow } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { CATEGORIES, ITEMS, matches, money, type Category } from "@/lib/catalog"
@@ -39,18 +39,41 @@ const ICON: Record<string, React.ComponentType<{ size?: number; color?: string }
     nine categories hold. */
 const SEARCH = "Search 118 tests, scans and programmes"
 
-const NINE = "nine categories"
+const NINE = "9 categories"
 
 export default function CareScreen() {
   const [query, setQuery] = React.useState("")
   const found = CATEGORIES.filter((c) => matches(c, query))
   const searching = query.trim().length > 0
+  const multiCancer = ITEMS.find((i) => i.id === "multi-cancer")
 
   return (
-    <TabScreen tab="care" title="Catalog">
+    <TabScreen tab="care" title="Care">
       <View style={styles.page}>
         <Text style={styles.lead}>What your physician can order</Text>
         <SearchField value={query} onChange={setQuery} placeholder={SEARCH} />
+
+        {!searching && (
+          <Block title="For your plan">
+            <Group>
+              <NeedsRow
+                icon={<CalendarCheck size={16} color={HUE.amber.ink} />}
+                hue="amber"
+                title="DEXA re-scan"
+                tag={{ tone: "ok", label: "Booked" }}
+                meta="Fri, Oct 9 at 8:15 am, Fitnescity"
+                onPress={() => router.push({ pathname: "/catalog/[id]", params: { id: "dexa" } })}
+              />
+              <NeedsRow
+                icon={<Heart size={16} color={HUE.red.ink} />}
+                hue="red"
+                title="Multi cancer blood screening"
+                meta={`Suggested in your plan. Member price ${money(multiCancer?.member ?? 854)}`}
+                onPress={() => router.push({ pathname: "/catalog/[id]", params: { id: "multi-cancer" } })}
+              />
+            </Group>
+          </Block>
+        )}
 
         <Block title={searching ? "Results" : "Browse"} meta={searching ? `${found.length} of ${CATEGORIES.length}` : NINE}>
           {found.length === 0 ? (

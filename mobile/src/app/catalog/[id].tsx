@@ -1,17 +1,16 @@
 import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { Pressable, StyleSheet, Text, View } from "react-native"
+import { StyleSheet, Text, View } from "react-native"
 
 import { DoesList, LimitsList, OrderNote, PriceCard } from "@/components/catalog-parts"
 import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
-import { PrimaryButton } from "@/components/hol"
-import { CaretLeft } from "@/components/ph"
+import { AskButton, PrimaryButton } from "@/components/hol"
 import { Block, Tag } from "@/components/record-kit"
 import { toast } from "@/components/toast"
 import { categoryOf, item as findItem, money } from "@/lib/catalog"
 import { CARE_TEAM } from "@/lib/patient"
-import { color, font, ink, space, type } from "@/lib/theme"
+import { space, type } from "@/lib/theme"
 
 /* One catalog item (client deck, screen 53, "A Catalog Item": "What it does,
    and what it cannot"): every catalog row opens into this. The name and
@@ -37,6 +36,10 @@ export default function CatalogItemScreen() {
   if (!it) return <PageNotFoundState />
   const category = categoryOf(it)
 
+  // Named, so the assistant answers at once rather than asking which item.
+  const subject = it.fulfil === "visit" ? (it.visit?.noun === "scan" ? "this scan" : "this test") : "this item"
+  const ask = `What is the ${it.name.charAt(0).toLowerCase()}${it.name.slice(1)} for?`
+
   const order = () => {
     if (it.fulfil === "visit") return router.push({ pathname: "/catalog/book/[id]", params: { id: it.id } })
     // Nothing to book: the order goes to the physician and the patient is
@@ -48,17 +51,12 @@ export default function CatalogItemScreen() {
   return (
     <FlowScreen
       page
-      title={category?.title ?? "Catalog"}
+      title={category?.title ?? "Care"}
       footer={
-        <View style={styles.foot}>
-          <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Back to the catalog" style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
-            <CaretLeft size={14} color={ink.secondary} />
-            <Text style={styles.backText}>Catalog</Text>
-          </Pressable>
-          <View style={styles.order}>
-            <PrimaryButton onPress={order}>{`Order and pay · ${money(it.member)}`}</PrimaryButton>
-          </View>
-        </View>
+        <>
+          <PrimaryButton onPress={order}>{`Order and pay ${money(it.member)}`}</PrimaryButton>
+          <AskButton about={subject} params={{ ask }} />
+        </>
       }
     >
       <View style={styles.head}>
@@ -88,13 +86,9 @@ export default function CatalogItemScreen() {
 
 const styles = StyleSheet.create({
   head: { gap: space.inline },
-  // The name first, its badge after it; the badge wraps under a long name.
-  nameLine: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.inline },
-  name: { ...type.hero, flexShrink: 1 },
+  // The name first, its badge beside it on the same line; a long name
+  // wraps inside its own space and the badge keeps its size.
+  nameLine: { flexDirection: "row", alignItems: "center", gap: space.inline },
+  name: { ...type.hero, fontSize: 18, lineHeight: 24, flexShrink: 1 },
   intro: { ...type.body },
-  foot: { flexDirection: "row", alignItems: "center", gap: space.item },
-  back: { flexDirection: "row", alignItems: "center", gap: space.stack, paddingRight: 4 },
-  backText: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: ink.secondary },
-  order: { flex: 1 },
-  pressed: { opacity: 0.6 },
 })

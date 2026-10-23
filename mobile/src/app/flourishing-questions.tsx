@@ -5,7 +5,7 @@ import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View } from "r
 import { PlanStepPage } from "@/components/plan-steps"
 import { HUE } from "@/components/record-kit"
 import { FLOURISH } from "@/lib/conversation"
-import { AREAS, demoToResult } from "@/lib/flourishing"
+import { AREAS } from "@/lib/flourishing"
 import { useOnboarding } from "@/lib/onboarding"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
@@ -20,7 +20,7 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    as it is tapped, into the same place the chat kept them, so she picks up
    where she stopped; `?q=` opens a given question (for review). The last
    question opens her result (/flourishing-result). Demo only: tapping
-   "Flourishing" in the header jumps to the result (demoToResult). */
+   "Flourishing" in the header jumps straight to the last question. */
 
 const NUMBERS = Array.from({ length: 10 }, (_, i) => i + 1)
 const ROWS = [NUMBERS.slice(0, 5), NUMBERS.slice(5)]
@@ -72,7 +72,9 @@ export default function FlourishingQuestionsScreen() {
   return (
     <PlanStepPage
       headerTitle="Flourishing"
-      onTitlePress={() => void demoToResult(onboarding)}
+      onTitlePress={() => {
+        if (at !== TOTAL - 1) go(TOTAL - 1)
+      }}
       onBack={() => (at === 0 ? router.back() : go(at - 1))}
       onNext={() => (last ? router.push("/flourishing-result") : go(at + 1))}
       nextLabel={last ? "See my result" : "Continue"}

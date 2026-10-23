@@ -22,6 +22,7 @@ import { ChatBar, MyBubble, Options, TheirBubble, TypingBubble, bubbleText } fro
 import { CategoryPicker } from "@/components/chat-categories"
 import { ChatHistory, type ChatGroup } from "@/components/chat-history"
 import { useDragBack } from "@/components/drag-back"
+import { OUTLOOK_ASK, OutlookAnswer } from "@/components/outlook-answer"
 import { DarkStatusBar } from "@/components/error-state"
 import { PageGround, PageHeader } from "@/components/hol"
 import { ChatText, List } from "@/components/ph"
@@ -135,6 +136,8 @@ type Msg = { id: string; at: string } & (
       `followOn` lets it end on the one line about the plan; `asked` is
       what it answered (a result's question, or a plan question). */
   | { kind: "answer"; answer: Answer; scope: string; first?: boolean; followOn?: boolean; asked?: string }
+  /** Where she is likely to be: the four horizons and the weight chart. */
+  | { kind: "outlook" }
   /** Her next visit, saved questions and two suggestions. */
   | { kind: "visit" }
   /** A person first: 911, 988 and the clinic. */
@@ -228,7 +231,7 @@ export default function AssistantScreen() {
   const allowance = useAllowance()
   const { experience, sharingOff } = useExperience()
   const markers = useMarkers()
-  const params = useLocalSearchParams<{ marker?: string; topic?: string; batch?: string; ask?: string }>()
+  const params = useLocalSearchParams<{ marker?: string; topic?: string; batch?: string; ask?: string; outlook?: string }>()
   // Help with today's plan needs a live plan; the counter, any active
   // membership (C.4.1).
   const planLive = experience === "member"
@@ -307,6 +310,8 @@ export default function AssistantScreen() {
   /** What the chat opens on: a result, a new batch, a topic, or the greeting. */
   function opening(): Draft[] {
     if (params.marker) return scopedOpening(params.marker)
+    // The Outlook tab's question, asked and answered (Journey screen 51).
+    if (params.outlook) return [{ kind: "text", from: "patient", text: OUTLOOK_ASK }, { kind: "outlook" }, planFollowUp(OUTLOOK_ASK, new Set())]
     const batch = params.batch ? batchOf(params.batch, onboarding) : undefined
     const explained = batch && batchAnswer(batch.id, markers)
     if (batch && explained && batchFree(batch.id))
@@ -473,8 +478,8 @@ export default function AssistantScreen() {
   }
 
   /** After a plan answer: the plan questions not asked yet. */
-  function planFollowUp(said: string): Draft {
-    const asked = askedIn("plan").add(said)
+  function planFollowUp(said: string, before: Set<string> = askedIn("plan")): Draft {
+    const asked = before.add(said)
     const rest = planAsks().filter((q) => !asked.has(q))
     if (!rest.length || experience === "paused") return anythingElse()
     return { kind: "ask", text: planLive ? "Anything else about today's plan?" : "Anything else about the plan?", options: [...rest, MORE], step: "plan" }
@@ -811,6 +816,8 @@ export default function AssistantScreen() {
             footer={m.first}
           />
         )
+      case "outlook":
+        return <OutlookAnswer at={m.at} />
       case "visit": {
         const v = nextVisit(onboarding)
         const suggestions = visitSuggestions(v)

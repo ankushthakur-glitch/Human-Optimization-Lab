@@ -25,7 +25,6 @@ import {
   IconProgress,
   IconResults,
   IconToDo,
-  IconToday,
   IconUpgrade,
   type TabIconProps,
 } from "@/components/icons"
@@ -44,13 +43,13 @@ import { color, font, space } from "@/lib/theme"
    stack, so Back (the swipe) from any other tab returns home.
 
    A member's plan is a space of its own (user, 15 Oct, after NoBroker's
-   Services): the Plan tab opens the plan on Today, the pill's tabs swap to
-   Back, Today and Progress with a short rise and fade, and Back
+   Services): the Plan tab opens the plan, the pill's tabs swap to
+   Back and Progress with a short rise and fade, and Back
    returns to home and its four tabs the same way. */
 
 export type TabName = "home" | "results" | "todo" | "plan" | "today" | "progress" | "connections" | "care"
 
-type Href = "/" | "/results" | "/gaps" | "/plan" | "/today" | "/progress" | "/connections" | "/care"
+type Href = "/" | "/results" | "/gaps" | "/plan" | "/progress" | "/connections" | "/care"
 
 type Tab = {
   name: TabName | "back"
@@ -72,7 +71,6 @@ const TABS: Tab[] = [
 /** The plan's tabs: Back goes home, Today and Progress switch in place. */
 const PLAN_TABS: Tab[] = [
   { name: "back", label: "Back", href: "/", Icon: IconBack },
-  { name: "today", label: "Today", href: "/today", Icon: IconToday },
   { name: "progress", label: "Progress", href: "/progress", Icon: IconProgress },
 ]
 
@@ -112,6 +110,7 @@ export function TabScreen({
   headerRight,
   pinned,
   footer,
+  solidFooter,
   overlay,
   bare,
   back,
@@ -133,6 +132,8 @@ export function TabScreen({
   /** Stays above the tab bar while the page scrolls beneath it, e.g. the
       Plan tab's "Start my optimization plan". */
   footer?: React.ReactNode
+  /** A solid strip behind the footer, so the page scrolls out of sight under it. */
+  solidFooter?: boolean
   /** Pull down to refresh: the page redoes what it shows (home's to-do). */
   onRefresh?: () => void | Promise<void>
   /** Drawn over everything, tab bar included, e.g. a detail panel. */
@@ -210,6 +211,12 @@ export function TabScreen({
           </ScrollView>
           {/* The footer floats at the foot of the list, right above the bar;
             the page scrolls beneath it and clears it at the end. */}
+          {footer && solidFooter && (
+            <View
+              style={[styles.footerGround, { height: (bare ? bottom : barSpace) + space.inline + FOOTER_SPACE - space.gutter }]}
+              pointerEvents="none"
+            />
+          )}
           {footer && (
             <View style={[styles.footer, { bottom: (bare ? bottom : barSpace) + space.inline }]} pointerEvents="box-none">
               {footer}
@@ -379,6 +386,9 @@ const styles = StyleSheet.create({
   },
   pinned: { paddingTop: space.gutter, gap: space.item },
   footer: { position: "absolute", left: 0, right: 0, paddingHorizontal: space.gutter },
+  // A solid strip under the footer, in the page's own colour at its foot, so
+  // nothing scrolls into view beneath the button.
+  footerGround: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: color.page },
   content: { paddingTop: space.gutter, paddingBottom: space.gutter * 2 },
   contentPinned: { paddingTop: space.item },
   pressed: { opacity: 0.7 },

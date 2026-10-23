@@ -21,7 +21,7 @@ import {
   Scales,
   Watch,
 } from "@/components/ph"
-import { HUE, Tag, Tile, type Hue, type Tone as TagTone } from "@/components/record-kit"
+import { HUE, Block, Tag, Tile, type Hue, type Tone as TagTone } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { type IconKey, type Tone, type Topic, type Way } from "@/lib/topics"
 import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
@@ -62,7 +62,6 @@ export function TopicIcon({ name, size = 16, color: tone = color.primary, weight
     is never words), plain when nothing has happened yet. */
 export const TONE_INK: Record<Tone, string> = { good: ink.good, warn: "#A95413", bad: "#A95413", plain: ink.strong }
 
-const CHIP: Record<Topic["tagTone"], TagTone> = { red: "high", amber: "soon", green: "ok", grey: "muted" }
 const WAY_CHIP: Record<Way["tone"], TagTone> = { good: "ok", warn: "soon", info: "primary" }
 const TILE: Record<Topic["id"], Hue> = { exercise: "red", eat: "red", sleep: "violet", mind: "green", medication: "blue", measure: "teal" }
 
@@ -85,7 +84,6 @@ export function TopicHead({ topic, intro }: { topic: Topic; intro: string }) {
         <Text style={styles.title} accessibilityRole="header">
           {topic.name}
         </Text>
-        <Tag tone={CHIP[topic.tagTone]}>{topic.tag.toUpperCase()}</Tag>
       </View>
       <Text style={type.body}>{intro}</Text>
     </View>
@@ -112,13 +110,7 @@ export function TargetCard({ icon, title, detail, figure }: { icon: IconKey; tit
 /** "How would you like to answer it?": the four ways, one tap each. */
 export function Ways({ ways, onPick, picked }: { ways: Way[]; onPick: (w: Way) => void; picked?: string }) {
   return (
-    <View style={styles.block}>
-      <View style={styles.blockHead}>
-        <Text style={type.section} accessibilityRole="header">
-          How would you like to answer it?
-        </Text>
-        <Text style={type.label}>pick one</Text>
-      </View>
+    <Block title="How would you like to answer it?">
       <View style={styles.ways}>
         {ways.map((w) => {
           const on = picked === w.id
@@ -143,7 +135,7 @@ export function Ways({ ways, onPick, picked }: { ways: Way[]; onPick: (w: Way) =
           )
         })}
       </View>
-    </View>
+    </Block>
   )
 }
 
@@ -170,9 +162,9 @@ export function Foot({ children }: { children: string }) {
 /** A topic's own page: the back caret, the tab bar kept (Plan stays lit),
     the head, the page's own cards, then the four ways, the note and the
     footnote. */
-export function TopicPage({ children, sheet, footer }: { children: React.ReactNode; sheet?: React.ReactNode; footer?: React.ReactNode }) {
+export function TopicPage({ children, sheet, footer, title }: { children: React.ReactNode; sheet?: React.ReactNode; footer?: React.ReactNode; title: string }) {
   return (
-    <TabScreen tab="today" back title="Plan" overlay={sheet} footer={footer}>
+    <TabScreen tab="today" back title={title} overlay={sheet} footer={footer} solidFooter>
       {children}
     </TabScreen>
   )
@@ -211,12 +203,11 @@ const styles = StyleSheet.create({
 
   target: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 8, backgroundColor: color.primarySoft, borderWidth: 1, borderColor: color.primaryEdge },
   targetTile: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: color.background },
-  targetTitle: { ...type.title },
-  targetDetail: { ...type.label },
-  targetFigure: { ...type.stat, fontVariant: ["tabular-nums"] },
+  // A touch smaller than title/label so a long target fits the card; it wraps rather than cuts off.
+  targetTitle: { ...type.title, fontSize: 13, lineHeight: 18 },
+  targetDetail: { ...type.label, fontSize: 11, lineHeight: 15 },
+  targetFigure: { ...type.stat, fontSize: 14, lineHeight: 18, flexShrink: 0, fontVariant: ["tabular-nums"] },
 
-  block: { gap: space.item },
-  blockHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   ways: { gap: space.inline },
   way: {
     flexDirection: "row",

@@ -1,18 +1,17 @@
 import * as ImagePicker from "expo-image-picker"
 import * as React from "react"
-import { Image, PanResponder, Pressable, StyleSheet, Text, View } from "react-native"
+import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 
 import { CalendarBlank, Camera, Images, Info, Lightbulb, Lock, User } from "@/components/ph"
 import { PrimaryButton } from "@/components/hol"
 import { Block, Card, Tile, toast } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
-import { card, chart, color, hairline, ink, space, surface, type } from "@/lib/theme"
+import { card, chart, color, ink, space, surface, type } from "@/lib/theme"
 
 /* The Plan screen's "Photos" tab (Journey_14 screen 49, "Photo check-in"):
    evidence she can see. A line for the last check-in and where the photos
    are kept, one button to take new ones, then front and side views across
-   three dates with the weight and waist under each frame, a slider that
-   draws the first photo over today's, and one line from Inlay about what
+   three dates with the weight and waist under each frame, and one line from Inlay about what
    the pictures show. Taking photos opens a sheet that asks for the front
    and the side; a saved pair becomes "Today". The earlier dates are sample
    photos not yet in the build, so their frames show a silhouette. */
@@ -63,72 +62,6 @@ function Toggle({ value, onChange }: { value: Angle; onChange: (v: Angle) => voi
   )
 }
 
-/** Start against today: the start photo drawn over today's up to the
-    handle, which she drags (or steps with the arrow keys on web). */
-function Compare({ start, today }: { start?: string; today?: string }) {
-  const [at, setAt] = React.useState(0.5)
-  const [w, setW] = React.useState(0)
-  const track = React.useRef({ x: 0, w: 1 })
-  const trackRef = React.useRef<View>(null)
-  const move = (pageX: number) => setAt(Math.min(1, Math.max(0, (pageX - track.current.x) / track.current.w)))
-  const pan = React.useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (e) => {
-          trackRef.current?.measureInWindow((x, _y, w) => {
-            track.current = { x, w: w || 1 }
-            move(e.nativeEvent.pageX)
-          })
-        },
-        onPanResponderMove: (e) => move(e.nativeEvent.pageX),
-      }),
-    [],
-  )
-  return (
-    <View style={styles.compare}>
-      <View style={styles.reveal} onLayout={(e) => setW(e.nativeEvent.layout.width)} accessible accessibilityLabel={`Start and today compared, ${Math.round(at * 100)} percent start`}>
-        <Frame uri={today} label="Today" style={styles.fill} />
-        <View style={[styles.startLayer, { width: `${at * 100}%` }]}>
-          <View style={[styles.startInner, { width: w }]}>
-            <Frame uri={start} label="Start" style={[styles.fill, !start && styles.startTint]} />
-          </View>
-        </View>
-        <View style={[styles.seam, { left: `${at * 100}%` }]} />
-        <View style={[styles.tag, { left: 8 }]}>
-          <Text style={styles.tagText}>Start</Text>
-        </View>
-        <View style={[styles.tag, { right: 8 }]}>
-          <Text style={styles.tagText}>Today</Text>
-        </View>
-      </View>
-      <View style={styles.sliderRow}>
-        <Text style={type.axis}>Start</Text>
-        <View
-          ref={trackRef}
-          style={styles.sliderHit}
-          {...pan.panHandlers}
-          accessible
-          accessibilityRole="adjustable"
-          accessibilityLabel="Compare start with today"
-          accessibilityValue={{ min: 0, max: 100, now: Math.round(at * 100) }}
-          accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
-          onAccessibilityAction={(e) => setAt((v) => Math.min(1, Math.max(0, v + (e.nativeEvent.actionName === "increment" ? 0.1 : -0.1))))}
-        >
-          <View style={styles.sliderTrack}>
-            <View style={[styles.sliderFill, { width: `${at * 100}%` }]} />
-          </View>
-          <View style={[styles.handle, { left: `${at * 100}%` }]}>
-            <View style={styles.handleBar} />
-          </View>
-        </View>
-        <Text style={type.axis}>Today</Text>
-      </View>
-    </View>
-  )
-}
-
 /** The tab's content. `shots` are the photos she has just taken: they stand
     in for today's frames and carry the date she took them. */
 export function PhotoCheckIn({ shots, savedOn, onTake, onInfo }: { shots: Shots; savedOn?: string; onTake: () => void; onInfo: () => void }) {
@@ -138,25 +71,27 @@ export function PhotoCheckIn({ shots, savedOn, onTake, onInfo }: { shots: Shots;
   const mine = shots[view]
   return (
     <View style={styles.wrap}>
-      <View style={styles.intro}>
-        <Text style={type.section}>Photo check-in</Text>
-        <Text style={type.body}>Track your transformation.</Text>
-      </View>
-
-      <Card style={styles.last}>
-        <Tile hue="teal" size={36}>
-          <CalendarBlank size={20} color={color.primary} />
-        </Tile>
-        <View style={styles.fill}>
-          <Text style={type.title}>{`Last check-in: ${last}`}</Text>
-          <Text style={[type.label, { color: ink.primary }]}>Photos saved securely</Text>
+      <Card style={styles.checkIn}>
+        <View style={styles.intro}>
+          <Text style={type.section}>Photo check-in</Text>
+          <Text style={type.body}>Track your transformation.</Text>
         </View>
-        <Pressable onPress={onInfo} hitSlop={10} accessibilityRole="button" accessibilityLabel="Who can see your photos" style={({ pressed }) => pressed && styles.pressed}>
-          <Info size={20} color={card.chevron} />
-        </Pressable>
-      </Card>
 
-      <PrimaryButton onPress={onTake}>Take check-in photos</PrimaryButton>
+        <View style={styles.last}>
+          <Tile hue="teal" size={36}>
+            <CalendarBlank size={20} color={color.primary} />
+          </Tile>
+          <View style={styles.fill}>
+            <Text style={type.title}>{`Last check-in: ${last}`}</Text>
+            <Text style={[type.label, { color: ink.primary }]}>Photos saved securely</Text>
+          </View>
+          <Pressable onPress={onInfo} hitSlop={10} accessibilityRole="button" accessibilityLabel="Who can see your photos" style={({ pressed }) => pressed && styles.pressed}>
+            <Info size={20} color={card.chevron} />
+          </Pressable>
+        </View>
+
+        <PrimaryButton onPress={onTake}>Take check-in photos</PrimaryButton>
+      </Card>
 
       <Block title="Your progress photos">
         <Toggle value={view} onChange={setView} />
@@ -172,7 +107,6 @@ export function PhotoCheckIn({ shots, savedOn, onTake, onInfo }: { shots: Shots;
             </View>
           ))}
         </View>
-        <Compare key={view} start={undefined} today={mine} />
       </Block>
 
       <Card style={styles.insight}>
@@ -264,7 +198,8 @@ const styles = StyleSheet.create({
   fill: { flex: 1, minWidth: 0 },
   pressed: { opacity: 0.7 },
   intro: { gap: space.stack },
-  last: { flexDirection: "row", alignItems: "center", gap: space.lead },
+  checkIn: { gap: space.section },
+  last: { flexDirection: "row", alignItems: "center", gap: space.lead, backgroundColor: color.inputFill, borderRadius: 12, padding: space.item },
   viewLabel: { marginTop: space.inline },
   toggle: { flexDirection: "row", backgroundColor: color.inputFill, borderRadius: 10, padding: 3 },
   toggleItem: { flex: 1, minHeight: 36, alignItems: "center", justifyContent: "center", borderRadius: 8 },
@@ -290,33 +225,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  compare: { gap: space.item },
-  reveal: { aspectRatio: 4 / 3, borderRadius: 8, overflow: "hidden", backgroundColor: surface.inset, borderWidth: 1, borderColor: chart.edge },
-  startLayer: { position: "absolute", top: 0, bottom: 0, left: 0, overflow: "hidden" },
-  startInner: { position: "absolute", top: 0, bottom: 0, left: 0 },
-  startTint: { backgroundColor: color.primarySoft, borderRadius: 0 },
-  seam: { position: "absolute", top: 0, bottom: 0, width: 2, marginLeft: -1, backgroundColor: color.background },
-  tag: { position: "absolute", top: 8, backgroundColor: "rgba(43,43,43,0.72)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
-  tagText: { ...type.captionStrong, color: ink.onColor },
-  sliderRow: { flexDirection: "row", alignItems: "center", gap: space.lead },
-  sliderHit: { flex: 1, height: 44, justifyContent: "center" },
-  sliderTrack: { height: 4, borderRadius: 2, backgroundColor: hairline.outline, overflow: "hidden" },
-  sliderFill: { height: 4, backgroundColor: color.primary },
-  handle: {
-    position: "absolute",
-    top: 6,
-    width: 32,
-    height: 32,
-    marginLeft: -16,
-    borderRadius: 16,
-    backgroundColor: color.background,
-    borderWidth: 2,
-    borderColor: color.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: card.shadowXs,
-  },
-  handleBar: { width: 2, height: 12, borderRadius: 1, backgroundColor: color.primary },
   insight: { flexDirection: "row", alignItems: "flex-start", gap: space.lead, backgroundColor: color.primaryTint, borderColor: color.primarySoft },
   sheetBody: { gap: space.item, paddingBottom: space.item },
   slots: { flexDirection: "row", gap: space.item },

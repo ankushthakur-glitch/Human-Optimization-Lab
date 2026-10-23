@@ -86,7 +86,7 @@ export default function ProgressScreen() {
   return (
     <View style={styles.fill}>
       {/* A plan that has started keeps Progress as one of its tabs. */}
-      <ProgressFrame tab={started} footer={started ? <AskButton params={{ ask: ASK }} /> : <AskButton params={{ topic: "plan" }} />}>
+      <ProgressFrame tab={started} footer={started ? <AskButton about="your progress" params={{ ask: ASK }} /> : <AskButton about="your plan" params={{ topic: "plan" }} />}>
         {started ? <ProgressSections s={s} onAdd={setSheet} /> : <NothingYet />}
       </ProgressFrame>
       {sheet && <CheckInSheet kind={sheet} onClose={() => setSheet(undefined)} />}

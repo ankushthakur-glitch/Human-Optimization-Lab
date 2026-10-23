@@ -3,7 +3,7 @@ import * as React from "react"
 
 import { PageNotFoundState } from "@/components/error-state"
 import { HistoryView } from "@/components/history-view"
-import { TopicHead, TopicPage } from "@/components/topic-kit"
+import { TopicPage } from "@/components/topic-kit"
 import { HISTORY } from "@/lib/history"
 import { topicOf } from "@/lib/topics"
 
@@ -19,8 +19,7 @@ export default function TopicHistoryScreen() {
   if (!topic) return <PageNotFoundState />
   const history = HISTORY[topic.id]
   return (
-    <TopicPage>
-      <TopicHead topic={topic} intro={history.intro} />
+    <TopicPage title={`${topic.id === "medication" ? "Medication" : topic.name} history`}>
       <HistoryView history={history} />
     </TopicPage>
   )

@@ -156,18 +156,19 @@ export function PageFooter({
 }
 
 /** The page's assistant button, the one way to the health agent on a
-    page: flat brand teal, the orb, the words in white and a sparkle at the
-    end. Opens the assistant, with `params` when given. `secondary` draws
-    it as the secondary button (teal tint, teal words) under a page's
-    primary one, the orb and sparkle kept. */
+    page: the secondary button (teal tint, teal words) with the orb, the
+    words and a sparkle at the end. The words are "Ask about {about}" so
+    every screen reads the same; `label` sets them outright. Opens the
+    assistant, with `params` when given. */
 export function AskButton({
-  label = "Ask Inlay",
+  about,
+  label = about ? `Ask about ${about}` : "Ask Inlay",
   onPress,
   params,
-  secondary,
 }: {
+  /** The screen's subject as it reads in a sentence: "your plan", "exercise", "LDL cholesterol". */
+  about?: string
   label?: string
-  secondary?: boolean
   onPress?: () => void
   /** What to open the assistant about: a marker, a topic, or a question. */
   params?: { marker?: string; topic?: string; ask?: string }
@@ -178,11 +179,11 @@ export function AskButton({
       onPress={open}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.ask, secondary && styles.askSecondary, pressed && (secondary ? styles.askSecondaryPressed : styles.askPressed)]}
+      style={({ pressed }) => [styles.ask, styles.askSecondary, pressed && styles.askSecondaryPressed]}
     >
       <Image source={ORB} style={styles.askOrb} accessibilityIgnoresInvertColors />
-      <Text style={[styles.askText, secondary && styles.askTextSecondary]}>{label}</Text>
-      <Sparkle size={14} color={secondary ? ASK_SECONDARY_INK : "#FFFFFF"} weight="fill" />
+      <Text style={[styles.askText, styles.askTextSecondary]}>{label}</Text>
+      <Sparkle size={14} color={ASK_SECONDARY_INK} weight="fill" />
     </Pressable>
   )
 }
@@ -312,7 +313,6 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 14,
   },
-  askPressed: { opacity: 0.85 },
   // The kit's secondary button colours (ui Button "outline").
   askSecondary: { borderWidth: 1, borderColor: "#C2E1E0", backgroundColor: "#F2F7F7" },
   askSecondaryPressed: { backgroundColor: "#E6F3F2" },

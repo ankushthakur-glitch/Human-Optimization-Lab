@@ -9,13 +9,24 @@ import { Platform } from "react-native"
    load, before the providers read anything, so a refresh finds the store
    empty, signed out and not activated, and lands on the first sign-up
    screen. Moving between screens never reloads the page, so the flow itself
-   keeps its state. */
-if (Platform.OS === "web" && typeof localStorage !== "undefined") {
+   keeps its state.
+
+   The one exception is a review link (?demo=paid or ?demo=free): it is
+   seeded once per tab, and a refresh keeps what the reviewer has done since
+   (check-ins, an accepted plan, the open screen) instead of seeding again. */
+const clearStore = () => {
   try {
     Object.keys(localStorage)
       .filter((key) => key.startsWith("hol."))
       .forEach((key) => localStorage.removeItem(key))
   } catch {}
+}
+if (Platform.OS === "web" && typeof localStorage !== "undefined") {
+  let reviewing = false
+  try {
+    reviewing = !!new URLSearchParams(window.location.search).get("demo") || !!sessionStorage.getItem("hol.demo")
+  } catch {}
+  if (!reviewing) clearStore()
 
   /* Review builds only: /?demo=paid opens signed in on the paid member's
      home (a live plan, onboarding done), so the dashboard can be shared by
@@ -30,13 +41,23 @@ if (Platform.OS === "web" && typeof localStorage !== "undefined") {
     const asked = new URLSearchParams(window.location.search).get("demo")
     if (asked) sessionStorage.setItem("hol.demo", asked === "off" ? "" : asked)
     const demo = sessionStorage.getItem("hol.demo")
-    if (demo === "free") {
+    // Seed once per tab: a refresh finds the flag already seeded and keeps
+    // the store as the reviewer left it.
+    const seeded = sessionStorage.getItem("hol.demoSeeded") === demo
+    if (!demo) {
+      clearStore()
+      sessionStorage.removeItem("hol.demoSeeded")
+    } else if (!seeded) {
+      clearStore()
+      sessionStorage.setItem("hol.demoSeeded", demo)
+    }
+    if (demo && !seeded && demo === "free") {
       const now = new Date().toISOString()
       localStorage.setItem("hol.passwordHash", "demo")
       localStorage.setItem("hol.signedIn", "1")
       localStorage.setItem("hol.onboarding", JSON.stringify({ step: "done", consent: "signed", consentAt: now }))
     }
-    if (asked === "paid" || demo === "paid") {
+    if (demo === "paid" && !seeded) {
       const now = new Date().toISOString()
       localStorage.setItem("hol.passwordHash", "demo")
       localStorage.setItem("hol.signedIn", "1")

@@ -345,7 +345,7 @@ function TodaysWorkout({ t, onWalk }: { t: TodayPlan; onWalk: () => void }) {
   const title = session ? (session.id === "balance-a" ? session.title : `${session.title}, ${session.focus.toLowerCase()}`) : "Rest day, an easy walk"
   const meta = session ? `${session.minutes + WALK.minutes} minutes · ${strength?.time}` : `${WALK.minutes} minutes · ${walk?.time ?? ""}`
   return (
-    <Block title="Today's workout" link={{ label: "Full plan", onPress: () => openTab("/today", "home") }}>
+    <Block title="Today's workout" link={{ label: "Full plan", onPress: () => openTab("/plan", "home") }}>
       <Card style={styles.workout}>
         <View style={styles.workoutTop}>
           <Image source={WORKOUT_PHOTO} style={styles.photo} accessibilityIgnoresInvertColors accessibilityLabel="" />
