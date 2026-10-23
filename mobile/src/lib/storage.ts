@@ -54,10 +54,11 @@ function seedFor(pathname: string, query: URLSearchParams, demoPaid: boolean): "
   return MEMBER.includes(first) || demoPaid ? paid(free) : free
 }
 
-/** The paid member: a live plan, version 2, on the weight program, on the
-    plan's day 97 (lib/v14.ts), which the Plan tab's sample data is drawn for. */
+/** The paid member: a live plan, version 2, on the weight program, on day 8
+    of the plan ("Day 8 of your plan" on home). The v14 dummy seeds its own
+    day 97 (useV14Member). */
 function paid(free: Partial<State>): Partial<State> {
-  return { ...free, ...paidMember(97) }
+  return { ...free, ...paidMember(8) }
 }
 
 /** What makes a signed-in patient the paid member, on `day` of her plan

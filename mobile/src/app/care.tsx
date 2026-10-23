@@ -2,13 +2,11 @@ import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { CareMember } from "@/components/care-member"
 import { FootNote, SearchField } from "@/components/catalog-parts"
 import { Barbell, Brain, CalendarCheck, Flask, Heart, Leaf, Moon, Package, Scales, Scan, ShieldPlus, Watch } from "@/components/ph"
 import { Block, EmptyState, Group, HUE, NeedsRow } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { CATEGORIES, ITEMS, matches, money, type Category } from "@/lib/catalog"
-import { useExperience } from "@/lib/experience"
 import { ink, space, type } from "@/lib/theme"
 
 /* Care, a tab (client deck, screen 52, "The Catalog": "Everything we can
@@ -23,10 +21,7 @@ import { ink, space, type } from "@/lib/theme"
    and the prices are cash, nothing here billed to insurance.
 
    Membership and billing are no longer the Care tab: they stay one tap
-   away on Profile and in the Plan tab.
-
-   A member with a live plan gets the Journey_14 catalog instead
-   (components/care-member.tsx, 23 Oct 2026). */
+   away on Profile and in the Plan tab. */
 
 const ICON: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
   lab: Flask,
@@ -47,10 +42,6 @@ const SEARCH = "Search 118 tests, scans and programmes"
 const NINE = "9 categories"
 
 export default function CareScreen() {
-  return useExperience().experience === "member" ? <CareMember /> : <CareCatalog />
-}
-
-function CareCatalog() {
   const [query, setQuery] = React.useState("")
   const found = CATEGORIES.filter((c) => matches(c, query))
   const searching = query.trim().length > 0
