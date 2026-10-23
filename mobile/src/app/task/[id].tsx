@@ -85,7 +85,7 @@ export default function CareGapScreen() {
         page
         title={gap.title}
         footer={
-          <AskButton params={{ ask }} />
+          <AskButton about={gap.title} params={{ ask }} />
         }
       >
         <HeadCard>

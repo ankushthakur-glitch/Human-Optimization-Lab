@@ -50,7 +50,7 @@ function Foot({ id, name }: { id: TopicId; name: string }) {
       <Group>
         <NeedsRow icon={<TopicIcon id={id} />} title={`${name} history`} meta="Day, week, month, 6 months and year" onPress={() => go(`/v14/history/${id}`)} />
       </Group>
-      <AskButton secondary label={`Ask about ${name.toLowerCase()}`} params={{ topic: "plan" }} />
+      <AskButton label={`Ask about ${name.toLowerCase()}`} params={{ topic: "plan" }} />
     </>
   )
 }

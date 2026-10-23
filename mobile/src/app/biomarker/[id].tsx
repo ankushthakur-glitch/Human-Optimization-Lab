@@ -133,7 +133,7 @@ export default function MarkerScreen() {
   const home = homeAverage(homeList)
 
   return (
-    <FlowScreen page title={b.name} footer={<AskButton params={{ marker: b.id }} />}>
+    <FlowScreen page title={b.name} footer={<AskButton about={b.name} params={{ marker: b.id }} />}>
       <Readout b={b} t={t} member={member} review={review} />
       <OverTime b={b} t={t} />
       {!!home && <HomeReadings list={homeList} average={home} />}

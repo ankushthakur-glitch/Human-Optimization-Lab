@@ -128,7 +128,7 @@ export default function DayScreen() {
 
   return (
     <View style={styles.fill}>
-      <FlowScreen page title={relativeDay(day, now)} footer={<AskButton params={{ ask }} />}>
+      <FlowScreen page title={relativeDay(day, now)} footer={<AskButton about="this day" params={{ ask }} />}>
         <ScoreCard score={score} relative={isToday || offset === -1} onAdd={logMeal} />
 
         {score.status !== "none" && (

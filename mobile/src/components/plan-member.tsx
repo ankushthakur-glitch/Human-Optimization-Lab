@@ -1,9 +1,8 @@
 import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native"
+import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 
 import { Art } from "@/components/art"
-import { ProgressChart, formatNumber } from "@/components/charts"
 import { useReducedMotion } from "@/components/chat"
 import { planName } from "@/components/enrollment-kit"
 
@@ -34,18 +33,22 @@ import {
 } from "@/components/record-kit"
 import { keepTogether } from "@/components/care-gap"
 import { TabScreen, openTab } from "@/components/tab-bar"
-import { PrimaryButton } from "@/components/hol"
+import { AskButton, PrimaryButton } from "@/components/hol"
 import { Button, TextField } from "@/components/ui"
 import { BASELINE_TESTS, type BaselineTestId } from "@/lib/baseline-tests"
 import { showDate } from "@/lib/dates"
 import { useExperience, useMarkers } from "@/lib/experience"
-import { MEMBER, PLAN_DRAFT, WALK, dateOfAt, dayLabel, outlookOf, profileOf, progress, progressChartOf, thisWeek, weekPlan, type WeekItem } from "@/lib/member"
+import { MEMBER, PLAN_DRAFT, WALK, dateOfAt, dayLabel, profileOf, progress, thisWeek, weekPlan, type WeekItem } from "@/lib/member"
 import { FOCUS_NAME } from "@/lib/offers"
 import { useOnboarding, type Plan } from "@/lib/onboarding"
 import { startingTestsLine } from "@/lib/todo"
-import { PlanReview, planDayNow } from "@/components/plan-review"
+import { planDayNow } from "@/components/plan-review"
+import { YourHistory } from "@/components/plan-history"
+import { PlanToday } from "@/components/plan-today"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
-import { ProgressSections } from "@/app/progress"
+import { Outlook } from "@/components/plan-outlook"
+import { PhotoCheckIn, PhotoSheet, type PhotoSheetKind, type Shots } from "@/components/plan-photos"
+import { YourProgress } from "@/components/plan-progress"
 import { acceptedPlan, changeRequested, livePlan, proposedPlan } from "@/lib/plans"
 import { MARKER_CARE, type Biomarker, type FocusArea } from "@/lib/record"
 import { classify, valueText, withUnit } from "@/lib/trends"
@@ -79,8 +82,26 @@ export function PlanMember() {
   const { experience, sharingOff } = useExperience()
   const [devices, setDevices] = React.useState(false)
   const [asking, setAsking] = React.useState(false)
-  const [section, setSection] = React.useState<Section>("review")
+  // The open section survives a refresh on the web build (per tab).
+  const [section, setSectionState] = React.useState<Section>(() => {
+    try {
+      const saved = sessionStorage.getItem("hol.planSection") as Section | null
+      if (saved && SECTIONS.some((o) => o.value === saved)) return saved
+    } catch {}
+    return "today"
+  })
+  const setSection = (s: Section) => {
+    setSectionState(s)
+    try {
+      sessionStorage.setItem("hol.planSection", s)
+    } catch {}
+  }
   const [checkIn, setCheckIn] = React.useState<CheckInKind>()
+  // The photo sheets live here, in the page's overlay, so they pass over the
+  // tab bar like the other sheets.
+  const [shots, setShots] = React.useState<Shots>({})
+  const [savedOn, setSavedOn] = React.useState<string>()
+  const [photoSheet, setPhotoSheet] = React.useState<PhotoSheetKind>()
   const onboarding = useOnboarding()
   // Walked on from the enrolled page: with no portal in this build,
   // Dr. Patel sends the plan after a moment, and again after each change
@@ -102,14 +123,24 @@ export function PlanMember() {
     <DevicesSheet onClose={() => setDevices(false)} />
   ) : checkIn ? (
     <CheckInSheet kind={checkIn} onClose={() => setCheckIn(undefined)} />
+  ) : photoSheet ? (
+    <PhotoSheet
+      kind={photoSheet}
+      onClose={() => setPhotoSheet(undefined)}
+      onSave={(s) => {
+        setShots(s)
+        setSavedOn(new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }))
+        setPhotoSheet(undefined)
+      }}
+    />
   ) : undefined
-  // The live plan reads in four sections under the header: Review first.
+  // The live plan reads in four sections under the header: Today first.
   const live = experience !== "member-review" && experience !== "paused"
   return (
     <TabScreen
       tab="plan"
       title="Plan"
-      headerRight={live ? <Text style={styles.day}>{`Day ${Math.max(1, planDayNow(onboarding))} · optimization plan`}</Text> : undefined}
+      headerRight={live ? <Text style={styles.day}>{`Day ${Math.max(1, planDayNow(onboarding))}`}</Text> : undefined}
       pinned={live ? <SectionTabs value={section} onChange={setSection} /> : undefined}
       headless={experience === "member-review"}
       overlay={overlay}
@@ -121,7 +152,7 @@ export function PlanMember() {
       ) : experience === "paused" ? (
         <PausedStage />
       ) : (
-        <LivePlan section={section} onDevices={() => setDevices(true)} onAdd={setCheckIn} />
+        <LivePlan section={section} onDevices={() => setDevices(true)} onAdd={setCheckIn} shots={shots} savedOn={savedOn} onPhotoSheet={setPhotoSheet} />
       )}
     </TabScreen>
   )
@@ -161,20 +192,22 @@ function focusLine(area: FocusArea, s: Snapshot, markers: Biomarker[], week: Wee
   return "Goal: keep your bone density steady. Next scan May 2027."
 }
 
-type Section = "review" | "progress" | "photos" | "outlook"
+type Section = "today" | "progress" | "photos" | "history" | "outlook"
 const SECTIONS: { value: Section; label: string }[] = [
-  { value: "review", label: "Review" },
+  { value: "today", label: "Today" },
   { value: "progress", label: "Progress" },
   { value: "photos", label: "Photos" },
+  { value: "history", label: "History" },
   { value: "outlook", label: "Outlook" },
 ]
 
-/** The plan's sections as underlined tabs, equal across the width: the
-    open one in teal over a teal rule, the rest grey over the hairline. */
+/** The plan's four sections as one segmented control, pinned under the
+    header: equal cells in a single outlined frame, the open one tinted teal
+    with teal words, the rest grey. */
 function SectionTabs({ value, onChange }: { value: Section; onChange: (s: Section) => void }) {
   return (
     <View style={styles.sectionTabs} accessibilityRole="tablist">
-      {SECTIONS.map((o) => {
+      {SECTIONS.map((o, i) => {
         const on = o.value === value
         return (
           <Pressable
@@ -182,9 +215,9 @@ function SectionTabs({ value, onChange }: { value: Section; onChange: (s: Sectio
             onPress={() => onChange(o.value)}
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
-            style={({ pressed }) => [styles.sectionTab, on && styles.sectionTabOn, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.sectionTab, i > 0 && styles.sectionTabRule, on && styles.sectionTabOn, pressed && styles.pressed]}
           >
-            <Text style={[styles.sectionTabText, on && styles.sectionTabTextOn]} numberOfLines={1}>
+            <Text style={[styles.sectionTabText, on && styles.sectionTabTextOn]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
               {o.label}
             </Text>
           </Pressable>
@@ -194,7 +227,21 @@ function SectionTabs({ value, onChange }: { value: Section; onChange: (s: Sectio
   )
 }
 
-function LivePlan({ section, onDevices, onAdd }: { section: Section; onDevices: () => void; onAdd: (kind: CheckInKind) => void }) {
+function LivePlan({
+  section,
+  onDevices,
+  onAdd,
+  shots,
+  savedOn,
+  onPhotoSheet,
+}: {
+  section: Section
+  onDevices: () => void
+  onAdd: (kind: CheckInKind) => void
+  shots: Shots
+  savedOn?: string
+  onPhotoSheet: (kind: PhotoSheetKind) => void
+}) {
   const onboarding = useOnboarding()
   const versions = onboarding.plan?.versions ?? []
   // The version she follows, and a newer one while it is with the doctor
@@ -233,84 +280,16 @@ function LivePlan({ section, onDevices, onAdd }: { section: Section; onDevices: 
         </View>
       )}
 
-      {section === "review" && live && <PlanReview />}
+      {section === "today" && <PlanToday />}
 
-      {section === "progress" && <ProgressSections s={onboarding} onAdd={onAdd} />}
+      {section === "progress" && <YourProgress onAdd={onAdd} />}
 
-      {section === "photos" && <PhotosSection />}
+      {section === "photos" && <PhotoCheckIn shots={shots} savedOn={savedOn} onTake={() => onPhotoSheet("capture")} onInfo={() => onPhotoSheet("privacy")} />}
+
+      {section === "history" && <YourHistory />}
 
       {section === "outlook" && <Outlook />}
     </>
-  )
-}
-
-/** The Outlook (Journey screen 36, "Where she is likely to be"): her own
-    trend carried forward 30, 60 and 120 days and a year, each with weight,
-    waist, body fat and a likelihood, labelled plainly as estimates. Then
-    the weight line joined to the projected one at today, with the goal
-    marked; Ask Inlay for what-ifs; and Dr. Patel's quarterly review. */
-function Outlook() {
-  const onboarding = useOnboarding()
-  const now = new Date()
-  const p = progress(onboarding, now)
-  const { horizons, points } = outlookOf(onboarding, now)
-  const days = Math.max(1, planDayNow(onboarding))
-  const workouts = weekPlan(onboarding).filter((d) => d.session).length
-  const next = ["second", "third", "fourth", "fifth", "sixth"][workouts - 1]
-  const whatIf = next ? `What if I add a ${next} workout?` : "What if I add a workout?"
-  return (
-    <>
-      <Text style={styles.body}>
-        {`If you keep following your plan the way you have for ${days} days, this is where you are likely to be. `}
-        <Text style={styles.strong}>Estimates, not promises</Text>
-        {", from your own trend."}
-      </Text>
-
-      <View style={styles.horizons}>
-        {horizons.map((h) => (
-          <Card key={h.days} style={styles.horizon}>
-            <Text style={styles.meta}>{h.label}</Text>
-            <Text style={styles.horizonValue}>
-              {formatNumber(h.weight, 1)}
-              <Text style={styles.meta}>{" lb"}</Text>
-            </Text>
-            <Text style={styles.meta}>{`${formatNumber(h.waist, 1)} in waist`}</Text>
-            {h.fatPct !== undefined && <Text style={styles.meta}>{`${formatNumber(h.fatPct, 1)}% body fat`}</Text>}
-            <Text style={styles.likely}>{`${h.likely}% likely`}</Text>
-          </Card>
-        ))}
-      </View>
-
-      <Block title="Weight trend">
-        <Card style={styles.chartCard}>
-          <ProgressChart {...progressChartOf(p)} forecast={points} confidence="moderate" caption={null} playKey="outlook:weight" />
-        </Card>
-      </Block>
-
-      <Group>
-        <NeedsRow
-          icon={<Sparkle size={16} color={color.primary} />}
-          hue="teal"
-          title={`Ask Inlay: "${whatIf}"`}
-          onPress={() => router.push({ pathname: "/assistant", params: { topic: "plan", ask: whatIf } })}
-        />
-      </Group>
-
-      <Text style={styles.meta}>{`Calculated weekly from your logs and check ins. ${MEMBER.doctorShort} reviews it with you at each quarterly review.`}</Text>
-    </>
-  )
-}
-
-/** Progress photos: none added yet, so the section says what they are for. */
-function PhotosSection() {
-  return (
-    <Card style={styles.photos}>
-      <Tile hue="teal" size={40}>
-        <Camera size={20} color={color.primary} />
-      </Tile>
-      <Text style={styles.cardSubtitle}>No progress photos yet</Text>
-      <Text style={[styles.meta, styles.photosText]}>Photos taken at the same time each month show changes the scale cannot. Only you and your care team see them.</Text>
-    </Card>
   )
 }
 
@@ -777,14 +756,8 @@ function ReviewStage() {
             meta={onboarding.startingTests ? startingTestsLine(onboarding).line : testsLine(bookings)}
             onPress={() => openTab("/gaps", "plan")}
           />
-          <NeedsRow
-            icon={<Sparkle size={16} color={color.primary} />}
-            hue="teal"
-            title="Ask about your plan"
-            meta={keepEnd("How it was built and what happens next")}
-            onPress={() => router.push("/assistant?topic=plan")}
-          />
         </Group>
+        <AskButton about="your plan" onPress={() => router.push("/assistant?topic=plan")} />
       </Block>
 
       <Group>
@@ -870,10 +843,13 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   // The header's day of the plan, right of "Plan".
   day: { ...type.meta },
-  sectionTabs: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: hairline.rule },
-  sectionTab: { flex: 1, minHeight: 44, alignItems: "center", justifyContent: "center", borderBottomWidth: 2, borderBottomColor: "transparent", marginBottom: -1 },
-  sectionTabOn: { borderBottomColor: color.primary },
-  sectionTabText: { ...type.title, color: ink.secondary },
+  sectionTabs: { flexDirection: "row", borderRadius: 8, borderWidth: 1, borderColor: hairline.outline, backgroundColor: color.background, overflow: "hidden" },
+  // Five equal cells: a slightly smaller label and tighter side padding keep
+  // every word on one line down to a small phone.
+  sectionTab: { flex: 1, minWidth: 0, minHeight: 44, paddingHorizontal: 4, alignItems: "center", justifyContent: "center" },
+  sectionTabRule: { borderLeftWidth: 1, borderLeftColor: hairline.outline },
+  sectionTabOn: { backgroundColor: color.primaryTint },
+  sectionTabText: { ...type.title, fontSize: 13, color: ink.secondary, textAlign: "center" },
   sectionTabTextOn: { color: color.primary },
   photos: { alignItems: "center", gap: space.inline, paddingVertical: space.card * 1.5 },
   photosText: { textAlign: "center" },

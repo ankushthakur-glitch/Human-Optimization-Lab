@@ -45,7 +45,7 @@ export default function CareItem() {
       footer={
         <View style={styles.foot}>
           <Button onPress={() => router.push(`/v14/book/${item.id}` as never)}>{`Order and pay $${item.price}`}</Button>
-          <AskButton secondary label="Ask about this test" params={{ ask: `What would ${item.name.toLowerCase()} tell me?` }} />
+          <AskButton label="Ask about this test" params={{ ask: `What would ${item.name.toLowerCase()} tell me?` }} />
         </View>
       }
     >

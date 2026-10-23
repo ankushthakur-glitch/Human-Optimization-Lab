@@ -141,7 +141,7 @@ function Upcoming({ a }: { a: Appointment }) {
   }
 
   return (
-    <FlowScreen page title={a.name} footer={<AskButton params={a.ask ? { ask: a.ask } : undefined} />}>
+    <FlowScreen page title={a.name} footer={<AskButton about={a.name} params={a.ask ? { ask: a.ask } : undefined} />}>
       <HeadCard>
         <View style={styles.headRow}>
           <DayTile at={at} />
@@ -215,7 +215,7 @@ function RecordReview({ a }: { a: Appointment }) {
   const at = useWhen(a)
   const last = s.review?.status === "checked" && s.review.at ? showDate(dateOfAt(s.review.at)) : "In progress"
   return (
-    <FlowScreen page title={a.name} footer={<AskButton />}>
+    <FlowScreen page title={a.name} footer={<AskButton about={a.name} />}>
       <HeadCard style={styles.headGap}>
         <View style={styles.headRow}>
           <DayTile at={at} />
@@ -262,7 +262,7 @@ function PastVisit({ visit }: { visit: Visit }) {
   }, [s, visit])
 
   return (
-    <FlowScreen page title={visit.name} footer={<AskButton params={visit.outside ? { ask: `Summarize what changed at my ${visit.name.toLowerCase()}` } : undefined} />}>
+    <FlowScreen page title={visit.name} footer={<AskButton about={visit.name} params={visit.outside ? { ask: `Summarize what changed at my ${visit.name.toLowerCase()}` } : undefined} />}>
       <HeadCard>
         <KindLine icon={<RecordIcon name={visit.origin === "hospital" ? "hospital" : "clinic"} size={16} color={HUE.teal.ink} />}>{visit.where}</KindLine>
         <Text style={styles.body}>{visit.date}</Text>

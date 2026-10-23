@@ -9,7 +9,7 @@ import { FlowScreen } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
 import { Play } from "@/components/ph"
 import { Block, Card, Chip, Group, KeyValue } from "@/components/record-kit"
-import { MARK_SIZE, NumberMark, goBack, keepEnd, saveLog } from "@/components/today-exercise-parts"
+import { MARK_SIZE, NumberMark, amount, decimal, digits, goBack, keepEnd, saveLog } from "@/components/today-exercise-parts"
 import { TextField } from "@/components/ui"
 import { EXERCISES, localDay, profileOf, type Exercise } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
@@ -42,14 +42,6 @@ const DEMO_RATIO = 16 / 9
 const MOVE_RATIO: Record<string, number> = {
   "push-up": 1092 / 576,
 }
-
-/* Only digits, for the reps; digits and one point, for a weight. */
-const digits = (text: string) => text.replace(/\D/g, "").slice(0, 3)
-function decimal(text: string) {
-  const [whole, ...rest] = text.replace(/[^\d.]/g, "").split(".")
-  return (rest.length ? `${whole}.${rest.join("")}` : whole).slice(0, 5)
-}
-const amount = (text: string) => (text && Number.isFinite(Number(text)) ? Number(text) : undefined)
 
 function Move({ move }: { move: Exercise }) {
   const s = useOnboarding()

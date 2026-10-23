@@ -63,7 +63,7 @@ export function PlanOutlook() {
         </Text>
       </View>
 
-      <AskButton label="Where will I be if I stay the course?" secondary onPress={() => router.push("/v14/ask" as never)} />
+      <AskButton label="Where will I be if I stay the course?" onPress={() => router.push("/v14/ask" as never)} />
     </View>
   )
 }

@@ -119,7 +119,12 @@ function Routes() {
           <Stack.Screen name="results" options={{ animation: "none" }} />
           <Stack.Screen name="plan" options={{ animation: "none" }} />
           <Stack.Screen name="gaps" options={{ animation: "none" }} />
-          <Stack.Screen name="today" options={{ animation: "none" }} />
+          {/* The six topics of a plan, a lift's form page and yesterday's figures, opened from Today and Review. */}
+          <Stack.Screen name="topic/[id]" />
+          <Stack.Screen name="lift/[id]" />
+          <Stack.Screen name="topic-history/[id]" />
+          <Stack.Screen name="history-trends" />
+          <Stack.Screen name="yesterday" />
           <Stack.Screen name="assistant" options={{ animation: "slide_from_bottom" }} />
           {/* The record, opened from home and Results. */}
           <Stack.Screen name="biomarker/[id]" />
@@ -141,9 +146,15 @@ function Routes() {
           <Stack.Screen name="schedule-confirmed" options={{ animation: "fade" }} />
           <Stack.Screen name="enrolled" options={{ animation: "fade" }} />
           <Stack.Screen name="plan-ready" options={{ animation: "fade" }} />
+          <Stack.Screen name="starting-point" />
           <Stack.Screen name="task/[id]" />
           <Stack.Screen name="order/[id]" />
           <Stack.Screen name="book/[id]" />
+          {/* The Care tab's catalog: the nine categories, an item, and
+              booking its time. */}
+          <Stack.Screen name="care" options={{ animation: "none" }} />
+          <Stack.Screen name="catalog/[id]" />
+          <Stack.Screen name="catalog/book/[id]" />
           <Stack.Screen name="visit/[id]" />
           <Stack.Screen name="notifications" />
           {/* The member's day, opened from the member home's doors and

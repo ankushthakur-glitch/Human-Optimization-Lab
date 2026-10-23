@@ -22,6 +22,14 @@ export function saveLog(s: Store, day: string, id: string, log: ActivityLog | un
   return s.save({ exercises: { ...s.exercises, [day]: log ? { ...rest, [id]: log } : rest } })
 }
 
+/* Only digits, for the reps; digits and one point, for a weight. */
+export const digits = (text: string) => text.replace(/\D/g, "").slice(0, 3)
+export function decimal(text: string) {
+  const [whole, ...rest] = text.replace(/[^\d.]/g, "").split(".")
+  return (rest.length ? `${whole}.${rest.join("")}` : whole).slice(0, 5)
+}
+export const amount = (text: string) => (text && Number.isFinite(Number(text)) ? Number(text) : undefined)
+
 /** A sentence with its last two words joined (a no-break space), so a wrap
     never leaves one word alone on its last line ("feet hip width apart."). */
 export const keepEnd = (text: string) => text.replace(/ (?=\S+$)/, " ")

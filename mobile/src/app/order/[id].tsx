@@ -201,7 +201,7 @@ export default function OrderScreen() {
         action={done ? undefined : { label: "Update test", onPress: () => setSheet("update") }}
         footer={
           <>
-            <AskButton params={{ ask }} />
+            <AskButton about={o.name} params={{ ask }} />
             {done && <PrimaryButton onPress={() => router.push("/results")}>See your results</PrimaryButton>}
           </>
         }

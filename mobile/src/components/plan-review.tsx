@@ -5,10 +5,12 @@ import Svg, { Circle } from "react-native-svg"
 
 import { BowlFood, CaretDown, CaretLeft, CaretRight, Check, Flame, Moon, PersonSimpleRun, Brain } from "@/components/ph"
 import { Card } from "@/components/record-kit"
+import { Foot, ScoreDial, TONE_INK, TopicTile } from "@/components/topic-kit"
 import { openTab } from "@/components/tab-bar"
 import { periodReview, reviewDay, type GoalDay, type GoalState, type PeriodReview, type PeriodRow, type ReviewDay, type ReviewGoalId } from "@/lib/daily-review"
 import { dayOfAt, daysBetween, dayFrom, weekdayOf, MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
+import { HANDOVER, scoreTone, topicOf, topicScores, verdictOf } from "@/lib/topics"
 import { card, chart, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 import { formatNumber } from "@/lib/trends"
 
@@ -136,32 +138,71 @@ function DayView({ day, open, onToggle }: { day: ReviewDay; open: boolean; onTog
       </Card>
     )
 
-  const scored = day.status === "complete"
-  const words = scored ? `${day.met} of ${day.total} goals met · ${verdict(day.percent ?? 0)} day` : "Not every meal was logged, so this day has no score"
-  const bad = scored ? undefined : "Partial"
+  return <TopicDay day={day} planDay={planDay} />
+}
+
+/** One day against the six topics (Journey_14 screen 39, "Each topic
+    against its goal"): the day's score on a teal tinted card, then Exercise, Eat,
+    Sleep, Mind, Medication and Measure, each scored against its own goal
+    with what she did printed beside it, and the day is the plain average of
+    the six. The screen says so, because a score nobody can reconstruct is a
+    score nobody trusts. A miss is already carried into today's plan, so the
+    review is not a verdict, it is a handover. Each row opens its topic and
+    the card opens the figures under it. */
+function TopicDay({ day, planDay }: { day: ReviewDay; planDay: number }) {
+  const { scores, average } = topicScores(day.date)
+  const yesterday = day.title === "Yesterday"
+  const when = yesterday ? "yesterday" : `${weekdayOf(day.date)} ${monthDay(day.date)}`
+  const open = () => router.push({ pathname: "/yesterday", params: { date: yesterday ? "yesterday" : day.day } })
   return (
     <>
-      <Card style={styles.score}>
-        <View style={styles.scoreHead}>
-          <ScoreCircle percent={day.percent} none={bad ?? "No log"} of="Day score" />
-          <View style={styles.fill}>
-            <Text style={type.section}>{planDay > 0 ? `Day ${planDay} score` : "Day score"}</Text>
-            <Text style={type.label}>{words}</Text>
+      <Pressable onPress={open} accessibilityRole="button" accessibilityLabel={`How ${when} went, ${average} out of 100. ${verdictOf(scores)} Open the numbers behind it.`} style={({ pressed }) => [styles.dark, pressed && styles.pressed]}>
+        <ScoreDial value={average} size={56} stroke={4} tone={chart.data} track={chart.dataTrack} ink={ink.strong} />
+        <View style={styles.fill}>
+          <Text style={styles.darkTitle}>{planDay > 0 && !yesterday ? `Day ${planDay} · how it went` : `How ${when} went`}</Text>
+          <Text style={styles.darkBody}>{verdictOf(scores)}</Text>
+          <View style={styles.darkLink}>
+            <Text style={styles.darkLinkText}>Tap for the numbers behind it</Text>
+            <CaretRight size={12} color={ink.primary} />
           </View>
         </View>
-        {day.goals.map((g) => (
-          <GoalRow key={g.goal.id} goal={g} day={day} open={open} onToggle={onToggle} />
-        ))}
-      </Card>
-      <Takeaway text={day.insight} fix={day.fix} />
-      <Logged
-        rows={[
-          { label: "Meals", value: `${day.logged.meals} logged`, detail: day.logged.kcal !== undefined ? `${formatNumber(day.logged.kcal)} kcal` : undefined, to: `/day/${day.day}` },
-          { label: "Workout", value: day.logged.workout?.title ?? "None", detail: day.logged.workout ? `${day.logged.workout.minutes} min` : undefined, to: day.logged.workout ? `/day/${day.day}` : undefined },
-          { label: "Weigh-in", value: `${day.logged.weight.toFixed(1)}`, detail: "lb", to: "/progress" },
-          { label: "Sleep", value: day.logged.sleep ? hoursWords(day.logged.sleep) : "No watch data", detail: day.logged.sleep ? "from your watch" : undefined },
-        ]}
-      />
+      </Pressable>
+
+      <View style={styles.logged}>
+        <View style={styles.topicHead}>
+          <Text style={styles.loggedTitle} accessibilityRole="header">
+            Each topic, against its goal
+          </Text>
+          <Text style={type.label}>{yesterday ? "yesterday" : when}</Text>
+        </View>
+        <Card style={styles.loggedCard}>
+          {scores.map((t, i) => {
+            const topic = topicOf(t.id)!
+            return (
+              <Pressable
+                key={t.id}
+                onPress={() => router.push({ pathname: "/topic/[id]", params: { id: t.id } })}
+                accessibilityRole="button"
+                accessibilityLabel={`${topic.name}, ${t.score} out of 100. ${t.line}`}
+                style={({ pressed }) => [styles.topic, i > 0 && styles.rowRule, pressed && styles.rowPressed]}
+              >
+                <TopicTile topic={topic} size={32} />
+                <View style={styles.fill}>
+                  <Text style={type.title}>{t.id === "medication" ? "Medication" : topic.name}</Text>
+                  <Text style={type.label} numberOfLines={1}>
+                    {t.line}
+                  </Text>
+                </View>
+                <Text style={[styles.topicScore, { color: TONE_INK[scoreTone(t.score)] }]}>{t.score}</Text>
+                <CaretRight size={14} color={card.chevron} />
+              </Pressable>
+            )
+          })}
+        </Card>
+      </View>
+
+      <Takeaway text={HANDOVER} />
+      <Foot>A topic scores against its own goal, and the day is the average of the six. Nothing is weighted behind your back.</Foot>
     </>
   )
 }
@@ -187,8 +228,6 @@ function ScoreCircle({ percent, none, of }: { percent?: number; none: string; of
   )
 }
 
-const verdict = (percent: number) => (percent >= 80 ? "great" : percent >= 65 ? "good" : percent >= 50 ? "steady" : "building")
-const hoursWords = (min: number) => `${Math.floor(min / 60)} h ${String(Math.round(min % 60)).padStart(2, "0")} min`
 
 function GoalRow({ goal: g, day, open, onToggle }: { goal: GoalDay; day: ReviewDay; open: boolean; onToggle: () => void }) {
   const look = LOOK[g.goal.id]
@@ -547,6 +586,14 @@ const styles = StyleSheet.create({
   barPercent: { ...type.metaStrong, color: ink.content },
   barLabel: { ...type.caption },
 
+  dark: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 8, backgroundColor: color.primarySoft, borderWidth: 1, borderColor: color.primaryEdge },
+  darkTitle: { ...type.section },
+  darkBody: { ...type.label, color: ink.detail, marginTop: 2 },
+  darkLink: { flexDirection: "row", alignItems: "center", gap: 2, marginTop: space.inline },
+  darkLinkText: { ...type.metaStrong, color: ink.primary },
+  topicHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  topic: { minHeight: 52, flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
+  topicScore: { ...type.stat, minWidth: 32, textAlign: "right", fontVariant: ["tabular-nums"] },
   takeaway: { gap: space.stack, padding: space.card, borderRadius: 8, backgroundColor: color.primarySoft },
   takeLink: { minHeight: 44, justifyContent: "center" },
 

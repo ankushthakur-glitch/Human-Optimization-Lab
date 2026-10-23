@@ -86,7 +86,7 @@ export default function ProgressScreen() {
   return (
     <View style={styles.fill}>
       {/* A plan that has started keeps Progress as one of its tabs. */}
-      <ProgressFrame tab={started} footer={started ? <AskButton params={{ ask: ASK }} /> : <AskButton params={{ topic: "plan" }} />}>
+      <ProgressFrame tab={started} footer={started ? <AskButton about="your progress" params={{ ask: ASK }} /> : <AskButton about="your plan" params={{ topic: "plan" }} />}>
         {started ? <ProgressSections s={s} onAdd={setSheet} /> : <NothingYet />}
       </ProgressFrame>
       {sheet && <CheckInSheet kind={sheet} onClose={() => setSheet(undefined)} />}
@@ -153,7 +153,7 @@ function Headline({ value, format, unit, words, meta, week }: { value: number; f
 
 /** Ed's sentence: the fat lost between her two DEXA scans. Before a second
     scan exists, the scale says it instead ("11 lb", "down since May 3"). */
-function FatHeadline({ p }: { p: Progress }) {
+export function FatHeadline({ p }: { p: Progress }) {
   const fat = fatLost()
   const lb = fat?.lb ?? Math.abs(Math.round(p.weight.change))
   return (
@@ -194,7 +194,7 @@ const RANGES: { value: Range; label: string }[] = [
 /** Her weight since the start: the weigh ins, the trend through them, the
     goal and the forecast, which calls itself a forecast. Without a forecast
     the caption says why (too few weigh ins, holding steady, goal reached). */
-function WeightCard({ p, onAdd }: { p: Progress; onAdd: () => void }) {
+export function WeightCard({ p, onAdd }: { p: Progress; onAdd: () => void }) {
   const [range, setRange] = React.useState<Range>("all")
   const all = progressChartOf(p)
   const series = range === "all" ? p.weight.series : lastDays(p.weight.series, 91)
@@ -221,7 +221,7 @@ function WeightCard({ p, onAdd }: { p: Progress; onAdd: () => void }) {
 
 /** Body fat and lean mass from her two DEXA scans, and her waist from her
     monthly check, each as a journey from her start toward the plan's goal. */
-function BodyComposition({ p }: { p: Progress }) {
+export function BodyComposition({ p }: { p: Progress }) {
   const first = DEXA_SCANS[0]
   const last = DEXA_SCANS[DEXA_SCANS.length - 1]
   if (!first || !last || first === last) return null

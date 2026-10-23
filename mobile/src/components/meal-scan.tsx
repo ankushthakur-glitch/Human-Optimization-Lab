@@ -25,7 +25,7 @@ import { Sheet, useKeyboardHeight } from "@/components/sheet"
 import { saveLabel, slotName, type LogDay } from "@/components/today-food-meals"
 import { TextField } from "@/components/ui"
 import { MEAL_SLOTS, NUTRIENTS, totalsOf, type Amount, type Meal, type MealSlot, type Nutrients, type NutrientId } from "@/lib/member"
-import { color, hairline, ink, space, type } from "@/lib/theme"
+import { cardRadius, color, hairline, ink, space, type } from "@/lib/theme"
 import { formatNumber } from "@/lib/trends"
 
 /* Scan food on Log a meal. Two steps and a fallback:
@@ -99,7 +99,7 @@ export function ScanStep({
   )
 }
 
-/** The camera view: a dark frame with corner marks and a line sweeping
+/** The camera view: a teal tinted frame with corner marks and a line sweeping
     down it, one line of status under it, and a torch for dim kitchens.
     Reduce Motion keeps the line still. The prototype "reads" the barcode
     after 2.2 s. */
@@ -138,7 +138,7 @@ function Viewfinder({ paused, onFound }: { paused: boolean; onFound: () => void 
           {(["tl", "tr", "bl", "br"] as const).map((c) => (
             <View key={c} style={[styles.corner, CORNER[c], found && styles.cornerFound]} />
           ))}
-          <Barcode size={56} color={found ? HUE.green.ink : "rgba(255,255,255,0.5)"} />
+          <Barcode size={56} color={found ? HUE.green.ink : color.primaryLine} />
           {!found && <Animated.View style={[styles.sweep, still ? styles.sweepStill : { transform: [{ translateY: y }] }]} />}
         </View>
         <Pressable
@@ -149,7 +149,7 @@ function Viewfinder({ paused, onFound }: { paused: boolean; onFound: () => void 
           hitSlop={8}
           style={({ pressed }) => [styles.torch, torch && styles.torchOn, pressed && styles.pressed]}
         >
-          <Flashlight size={20} color={torch ? ink.strong : "#FFFFFF"} />
+          <Flashlight size={20} color={torch ? color.onPrimary : ink.primary} />
         </Pressable>
       </View>
       <Text style={styles.status}>{status}</Text>
@@ -604,14 +604,14 @@ const styles = StyleSheet.create({
 
   // The camera view.
   stage: { gap: space.item },
-  camera: { height: 220, borderRadius: 16, backgroundColor: "#101417", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  camera: { height: 220, borderRadius: cardRadius, borderWidth: 1, borderColor: color.primaryEdge, backgroundColor: color.primarySoft, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   frame: { width: "72%", height: FRAME_H, alignItems: "center", justifyContent: "center" },
-  corner: { position: "absolute", width: 28, height: 28, borderColor: "#FFFFFF" },
+  corner: { position: "absolute", width: 28, height: 28, borderColor: color.primary },
   cornerFound: { borderColor: HUE.green.ink },
-  sweep: { position: "absolute", top: 0, left: 8, right: 8, height: 2, borderRadius: 1, backgroundColor: color.primaryHalo },
+  sweep: { position: "absolute", top: 0, left: 8, right: 8, height: 2, borderRadius: 1, backgroundColor: color.primary },
   sweepStill: { top: FRAME_H / 2 },
-  torch: { position: "absolute", top: 12, right: 12, width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
-  torchOn: { backgroundColor: "#FFFFFF" },
+  torch: { position: "absolute", top: space.item, right: space.item, width: 40, height: 40, borderRadius: 20, backgroundColor: color.background, borderWidth: 1, borderColor: hairline.outline, alignItems: "center", justifyContent: "center" },
+  torchOn: { backgroundColor: color.primary, borderColor: color.primary },
   status: { ...type.title, textAlign: "center" },
 
   item: { gap: space.item },
