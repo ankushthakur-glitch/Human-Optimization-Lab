@@ -79,7 +79,7 @@ const isFrozen = (rel) => FROZEN.some((p) => (p.endsWith("/") ? rel.startsWith(p
 /** A file, or a folder when it ends in "/", matched against a path under src. */
 const matches = (list, rel) => list.some((p) => (p.endsWith("/") ? rel.startsWith(p) : rel === p))
 
-const PRICE_FILES = new Set(["lib/plans.ts", "lib/record.ts", "lib/demo.ts"])
+const PRICE_FILES = new Set(["lib/plans.ts", "lib/record.ts", "lib/demo.ts", "lib/v14.ts"])
 const PRICE_LABEL_FILES = new Set(["components/plan-showroom.tsx", "components/checkout-sheet.tsx", "app/membership.tsx"])
 
 /** Where router.replace( may stay (FINAL-SPEC B.2): the tab bar's openTab,
@@ -98,6 +98,10 @@ const REPLACE_ALLOWED = [
   "app/session-expired.tsx",
   "components/error-state.tsx",
   "app/set-password.tsx",
+  // The Journey_14 dummy (23 Oct 2026): a review set like app/demo; its
+  // section tabs, next lift and day one swap in place.
+  "app/v14/",
+  "components/v14-kit.tsx",
 ]
 const replaceAllowed = (rel) => matches(REPLACE_ALLOWED, rel)
 const isScreen = (rel) => rel.startsWith("app/") && !rel.startsWith("app/demo/") && /\.(tsx|jsx)$/.test(rel)
@@ -140,7 +144,7 @@ const BANNED_RE = BANNED.map((phrase) => ({
 /** The spec's acronyms (C.0.6), and the proper names the record shows as
     their owners write them: the MEDITECH record system, the TEFCA and
     KONZA networks (records window list) and the COVID-19 vaccine. */
-const ACRONYMS = new Set(["HIPAA", "DEXA", "eGFR", "LDL", "HDL", "BMI", "TSH", "ALT", "AST", "BUN", "AI", "AM", "PM", "MEDITECH", "TEFCA", "KONZA", "COVID"])
+const ACRONYMS = new Set(["HIPAA", "DEXA", "eGFR", "LDL", "HDL", "BMI", "TSH", "ALT", "AST", "BUN", "AI", "AM", "PM", "MEDITECH", "TEFCA", "KONZA", "COVID", "CPAP", "SMART", "GRAIL", "RAYUS"])
 
 // ------------------------------------------------------------------ lexer
 

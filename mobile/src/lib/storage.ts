@@ -8,7 +8,7 @@ import { DEMOGRAPHICS } from "@/lib/patient"
 const SIGNED_OUT = ["activate", "sign-in", "errors", "session-expired"]
 
 /** The member's own pages: her day, progress and billing. */
-const MEMBER = ["today", "review", "diet", "log-meal", "exercise", "day", "progress", "history", "membership", "plan-ready"]
+const MEMBER = ["today", "review", "diet", "log-meal", "exercise", "day", "progress", "history", "membership", "plan-ready", "v14"]
 
 /** Each setup screen and the step it belongs to. */
 const STEPS: Record<string, Step> = {
