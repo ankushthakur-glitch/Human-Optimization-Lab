@@ -8,7 +8,7 @@ import { DEMOGRAPHICS } from "@/lib/patient"
 const SIGNED_OUT = ["activate", "sign-in", "errors", "session-expired"]
 
 /** The member's own pages: her day, progress and billing. */
-const MEMBER = ["today", "review", "diet", "log-meal", "exercise", "day", "progress", "history", "membership", "plan-ready", "v14"]
+const MEMBER = ["today", "review", "diet", "day", "progress", "history", "membership", "plan-ready"]
 
 /** Each setup screen and the step it belongs to. */
 const STEPS: Record<string, Step> = {
@@ -19,13 +19,9 @@ const STEPS: Record<string, Step> = {
   "your-why": "yourWhy",
   life: "life",
   "life-question": "life",
-  why: "why",
   syncing: "records",
-  trends: "tour",
-  "biological-age": "tour",
-  "what-is-driving-it": "tour",
 }
-const ORDER: Step[] = ["about", "consent", "connect", "yourWhy", "life", "why", "records", "tour", "done"]
+const ORDER: Step[] = ["about", "consent", "connect", "yourWhy", "life", "records", "done"]
 
 /** What the store starts with for a page load on `pathname`: nothing (a
     signed-out start), "code" (the activation code accepted, for set
@@ -55,8 +51,7 @@ function seedFor(pathname: string, query: URLSearchParams, demoPaid: boolean): "
 }
 
 /** The paid member: a live plan, version 2, on the weight program, on day 8
-    of the plan ("Day 8 of your plan" on home). The v14 dummy seeds its own
-    day 97 (useV14Member). */
+    of the plan ("Day 8 of your plan" on home). */
 function paid(free: Partial<State>): Partial<State> {
   return { ...free, ...paidMember(8) }
 }
@@ -117,7 +112,7 @@ if (Platform.OS === "web" && typeof localStorage !== "undefined") {
      home. */
   try {
     // The ?demo= flag is kept for the tab, so a refresh or a deep link such
-    // as /log-meal?via=scan stays on the paid member. ?demo=off clears it.
+    // as /diet stays on the paid member. ?demo=off clears it.
     const query = new URLSearchParams(window.location.search)
     const asked = query.get("demo")
     if (asked) sessionStorage.setItem("hol.demo", asked === "off" ? "" : asked)

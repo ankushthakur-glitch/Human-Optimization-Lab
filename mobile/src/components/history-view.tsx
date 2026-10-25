@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { WeekBars } from "@/components/charts"
 import { Card, ChipRow, Block, Tabs } from "@/components/record-kit"
-import { Foot } from "@/components/topic-kit"
 import {
   WINDOWS_ALL,
   WINDOWS_TOPIC,
@@ -67,8 +66,6 @@ export function HistoryView({ history, overall }: { history: TopicHistory; overa
       <Block title={overall ? "Averaged across every window" : "Across every window"} meta={overall ? "per day" : "average"}>
         {overall ? <WindowTable metric={metric} /> : <MetricTable history={history} selected={metric.id} onOpen={open} />}
       </Block>
-
-      <Foot>{history.foot}</Foot>
     </View>
   )
 }

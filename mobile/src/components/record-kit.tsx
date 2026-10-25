@@ -736,18 +736,6 @@ export const heroText = {
   meta: { ...type.metaStrong, color: ink.onColor },
 }
 
-/** How far along something is, with round ends: 8 high in teal on a card,
-    6 high in white on a 25% white track on the Hero. `done` may be a part
-    (a meal logged moves the bar). */
-export function ProgressBar({ done, total, onHero = false }: { done: number; total: number; onHero?: boolean }) {
-  const share = total ? Math.min(Math.max(done / total, 0), 1) : 0
-  return (
-    <View style={[styles.track, onHero && styles.trackHero]} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: total, now: done }}>
-      {share > 0 && <View style={[styles.fill, onHero && styles.fillHero, { width: `${Math.max(3, share * 100)}%`, backgroundColor: onHero ? color.onPrimary : color.primary }]} />}
-    </View>
-  )
-}
-
 /* ----------------------------------------------------- dates, steps -- */
 
 export type Step = { label: string; date?: string; state: "done" | "now" | "next" | "alert" }
@@ -1721,7 +1709,8 @@ export function ResultRow({ trend: t, since, onPress }: { trend: MarkerTrend; si
 /* ---------------------------------------------------------- choosers -- */
 
 /** Frontline's segmented control: a grey track, the chosen view white
-    with a soft lift. */
+    with a soft lift. An option's `hue` tints it once chosen (an amber
+    "Changed"), in place of the teal. */
 export function Tabs<T extends string>({
   options,
   value,
@@ -1729,7 +1718,7 @@ export function Tabs<T extends string>({
   scroll = false,
   snug = false,
 }: {
-  options: { value: T; label: string }[]
+  options: { value: T; label: string; hue?: Hue }[]
   value: T
   onChange: (value: T) => void
   /** Many tabs: the track scrolls sideways, to the screen's edges. */
@@ -1742,6 +1731,7 @@ export function Tabs<T extends string>({
     <View style={styles.tabs} accessibilityRole="tablist">
       {options.map((o, i) => {
         const on = o.value === value
+        const hue = on && o.hue ? HUE[o.hue] : undefined
         return (
           <Pressable
             key={o.value}
@@ -1749,9 +1739,9 @@ export function Tabs<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             aria-selected={on}
-            style={[styles.tab, scroll && styles.tabScroll, snug && styles.tabSnug, on && styles.tabOn, i === options.length - 1 && styles.tabLast]}
+            style={[styles.tab, scroll && styles.tabScroll, snug && styles.tabSnug, on && styles.tabOn, hue && { backgroundColor: hue.tint }, i === options.length - 1 && styles.tabLast]}
           >
-            <Text style={[styles.tabText, snug && styles.tabTextSnug, on && styles.tabTextOn]} numberOfLines={1}>
+            <Text style={[styles.tabText, snug && styles.tabTextSnug, on && styles.tabTextOn, hue && { color: hue.ink }]} numberOfLines={1}>
               {o.label}
             </Text>
           </Pressable>
@@ -1997,10 +1987,6 @@ const styles = StyleSheet.create({
   heroTop: { position: "absolute", top: 0, left: 0 },
   heroBottom: { position: "absolute", bottom: 0, right: 0 },
 
-  track: { height: 8, borderRadius: 4, backgroundColor: MARK.track, overflow: "hidden" },
-  trackHero: { height: 6, borderRadius: 3, backgroundColor: "rgba(255, 255, 255, 0.25)" },
-  fill: { height: 8, borderRadius: 4 },
-  fillHero: { height: 6, borderRadius: 3 },
 
   // Figma's reminders: an 18 mark, done filled teal with a check, still to
   // come a 1.6 pt grey ring, late a clay ring; a 2 pt grey rail between.

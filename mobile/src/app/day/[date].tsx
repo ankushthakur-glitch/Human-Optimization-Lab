@@ -107,9 +107,9 @@ export default function DayScreen() {
   const isToday = offset === 0
   const score = dayScore(s, day, now)
   const goal = score.results.find((r) => r.goal.id === nutrient)?.goal
-  // How log-meal and the assistant name this day.
+  // Eat logs into this day's meal: "yesterday" or the day's key.
   const dayParam = isToday ? undefined : offset === -1 ? "yesterday" : key
-  const logMeal = (slot: MealSlot) => router.push({ pathname: "/log-meal", params: dayParam ? { slot, day: dayParam } : { slot } })
+  const logMeal = (slot: MealSlot) => router.push({ pathname: "/topic/[id]", params: { id: "eat", slot, ...(dayParam && { day: dayParam }) } })
 
   // The week the day closes: seven scored days, so today looks back from
   // yesterday (today is never scored).
@@ -370,7 +370,7 @@ function movesOf(s: Store, day: Date, log: Record<string, { minutes?: number }> 
       title: session.title,
       meta: done === of ? `Done, ${of} of ${of} moves` : done ? `${done} of ${of} moves` : isToday ? `${of} moves, about ${session.minutes} minutes` : "Not logged",
       done: done === of,
-      onPress: isToday && done < of ? () => router.push("/exercise") : undefined,
+      onPress: isToday && done < of ? () => router.push({ pathname: "/topic/[id]", params: { id: "exercise" } }) : undefined,
     })
   }
   return out

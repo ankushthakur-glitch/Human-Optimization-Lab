@@ -80,9 +80,8 @@ export default function DietScreen() {
   const ids = profile.goals.map((g) => g.id).filter((id) => id !== "calories")
   const version = s.plan?.versions[0]?.version ?? s.plan?.version
   const focus = todayFocus(s, now)
-  // The meal to log next, the one home's Log a meal door opens (lunch at
-  // 4 PM while lunch is still open, never a breakfast already logged).
-  // Once every main meal is in, log a meal goes by the hour.
+  // The meal to log next (lunch at 4 PM while lunch is still open, never a
+  // breakfast already logged); once every main meal is in, Eat asks which.
   const next = today(s, now).actions.find((a) => a.id === "meal")
   const nextSlot = next && next.status !== "done" ? next.slot : undefined
   const first = nextSlot ?? slotAt(now)
@@ -90,7 +89,7 @@ export default function DietScreen() {
   const focusLine = last.status !== "complete" ? undefined : last.shortfall ? FOCUS_LINE[last.shortfall.goal.id] : "You met every goal yesterday."
   const sheet = meals.find((m) => m.id === open)
 
-  const logSlot = (slot: string) => router.push({ pathname: "/log-meal", params: { slot } })
+  const logSlot = (slot?: string) => router.push({ pathname: "/topic/[id]", params: slot ? { id: "eat", slot } : { id: "eat" } })
 
   async function remove(id: string) {
     const gone = meals.find((m) => m.id === id)
@@ -101,9 +100,7 @@ export default function DietScreen() {
 
   return (
     <View style={styles.fill}>
-      <FlowScreen page title="Diet plan" footer={
-          <PrimaryButton onPress={() => (nextSlot ? logSlot(nextSlot) : router.push("/log-meal"))}>Log a meal</PrimaryButton>
-        }>
+      <FlowScreen page title="Diet plan" footer={<PrimaryButton onPress={() => logSlot(nextSlot)}>Log a meal</PrimaryButton>}>
         <HeadCard>
           <Text style={headText.title} accessibilityRole="header">
             {profile.diet.title}
@@ -192,10 +189,6 @@ export default function DietScreen() {
           meal={sheet}
           ids={ids}
           onClose={() => setOpen(undefined)}
-          onEdit={() => {
-            setOpen(undefined)
-            router.push({ pathname: "/log-meal", params: { slot: sheet.slot, edit: sheet.id } })
-          }}
           onDelete={() => remove(sheet.id)}
         />
       )}
@@ -208,7 +201,7 @@ export default function DietScreen() {
 function NoPlanYet({ stage }: { stage: ReturnType<typeof memberStage> }) {
   const empty =
     stage === "review"
-      ? { title: `Your targets arrive once ${MEMBER.doctorShort} approves your plan`, action: "Log a meal", go: () => router.push("/log-meal") }
+      ? { title: `Your targets arrive once ${MEMBER.doctorShort} approves your plan`, action: "Log a meal", go: () => router.push({ pathname: "/topic/[id]", params: { id: "eat" } }) }
       : stage === "paused"
         ? { title: "Your plan is paused", action: "Resume my plan", go: () => router.push({ pathname: "/membership", params: { sheet: "resume" } }) }
         : { title: "No diet plan yet" }

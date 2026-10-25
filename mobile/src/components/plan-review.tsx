@@ -5,7 +5,7 @@ import Svg, { Circle } from "react-native-svg"
 
 import { BowlFood, CaretDown, CaretLeft, CaretRight, Check, Flame, Moon, PersonSimpleRun, Brain } from "@/components/ph"
 import { Card } from "@/components/record-kit"
-import { Foot, ScoreDial, TONE_INK, TopicTile } from "@/components/topic-kit"
+import { ScoreDial, TONE_INK, TopicTile } from "@/components/topic-kit"
 import { openTab } from "@/components/tab-bar"
 import { periodReview, reviewDay, type GoalDay, type GoalState, type PeriodReview, type PeriodRow, type ReviewDay, type ReviewGoalId } from "@/lib/daily-review"
 import { dayOfAt, daysBetween, dayFrom, weekdayOf, MEMBER } from "@/lib/member"
@@ -202,7 +202,6 @@ function TopicDay({ day, planDay }: { day: ReviewDay; planDay: number }) {
       </View>
 
       <Takeaway text={HANDOVER} />
-      <Foot>A topic scores against its own goal, and the day is the average of the six. Nothing is weighted behind your back.</Foot>
     </>
   )
 }
@@ -238,14 +237,14 @@ function GoalRow({ goal: g, day, open, onToggle }: { goal: GoalDay; day: ReviewD
   const value = valueOf(g)
   const share = g.goal.id === "smart" || g.value === undefined ? undefined : Math.min(1, Math.max(0, g.credit ?? (g.goal.id === "energy" ? 0 : g.value / g.goal.target)))
   const sub = subLine(g, scored)
-  const press = expandable ? onToggle : () => router.push("/history")
   return (
     <View style={styles.rowRule}>
       <Pressable
-        onPress={press}
-        accessibilityRole="button"
+        onPress={expandable ? onToggle : undefined}
+        disabled={!expandable}
+        accessibilityRole={expandable ? "button" : undefined}
         accessibilityState={expandable ? { expanded: open } : undefined}
-        accessibilityLabel={`${nameOf(g.goal)}, ${value.say}, ${sub}${scored ? `, ${badgeWord(badge).toLowerCase()}` : ""}. ${expandable ? (open ? "Collapse energy breakdown" : "Expand energy breakdown") : "Open history"}`}
+        accessibilityLabel={`${nameOf(g.goal)}, ${value.say}, ${sub}${scored ? `, ${badgeWord(badge).toLowerCase()}` : ""}${expandable ? `. ${open ? "Collapse energy breakdown" : "Expand energy breakdown"}` : ""}`}
         style={({ pressed }) => [styles.goal, pressed && styles.rowPressed]}
       >
         <View style={[styles.tile, { backgroundColor: look.tint }]}>
@@ -269,7 +268,11 @@ function GoalRow({ goal: g, day, open, onToggle }: { goal: GoalDay; day: ReviewD
             <StateBadge badge={badge} />
           </View>
         </View>
-        <View style={styles.caret}>{expandable ? <CaretDown size={16} color={card.chevron} style={open ? styles.flip : undefined} /> : <CaretRight size={16} color={card.chevron} />}</View>
+        {expandable && (
+          <View style={styles.caret}>
+            <CaretDown size={16} color={card.chevron} style={open ? styles.flip : undefined} />
+          </View>
+        )}
       </Pressable>
       {expandable && open && energy && (
         <View style={styles.energy}>
@@ -396,11 +399,10 @@ function RangeRow({ row }: { row: PeriodRow }) {
   const look = LOOK[row.goal.id]
   const share = row.of ? row.met / row.of : 0
   return (
-    <Pressable
-      onPress={() => router.push("/history")}
-      accessibilityRole="button"
-      accessibilityLabel={`${nameOf(row.goal)}, ${row.title}, ${row.note}, ${badgeWord(row.state).toLowerCase()}. Open history`}
-      style={({ pressed }) => [styles.goal, styles.rowRule, pressed && styles.rowPressed]}
+    <View
+      accessible
+      accessibilityLabel={`${nameOf(row.goal)}, ${row.title}, ${row.note}, ${badgeWord(row.state).toLowerCase()}`}
+      style={[styles.goal, styles.rowRule]}
     >
       <View style={[styles.tile, { backgroundColor: look.tint }]}>
         <look.Icon size={16} color={look.ink} />
@@ -418,10 +420,7 @@ function RangeRow({ row }: { row: PeriodRow }) {
           <StateBadge badge={row.state} />
         </View>
       </View>
-      <View style={styles.caret}>
-        <CaretRight size={16} color={card.chevron} />
-      </View>
-    </Pressable>
+    </View>
   )
 }
 
@@ -454,7 +453,7 @@ function Takeaway({ text, fix }: { text: string; fix?: string }) {
       <Text style={type.body}>{text}</Text>
       {!!fix && (
         <Pressable
-          onPress={() => router.push({ pathname: "/log-meal", params: { slot: "dinner", via: "type" } })}
+          onPress={() => router.push({ pathname: "/topic/[id]", params: { id: "eat", slot: "dinner" } })}
           accessibilityRole="link"
           style={({ pressed }) => [styles.takeLink, pressed && styles.pressed]}
         >

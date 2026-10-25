@@ -9,7 +9,6 @@ import {
   Camera,
   Check,
   DownloadSimple,
-  Info,
   Leaf,
   Lightbulb,
   MagnifyingGlass,
@@ -21,7 +20,7 @@ import {
   Scales,
   Watch,
 } from "@/components/ph"
-import { HUE, Block, Tag, Tile, type Hue, type Tone as TagTone } from "@/components/record-kit"
+import { HUE, Block, Tile, type Hue } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { type IconKey, type Tone, type Topic, type Way } from "@/lib/topics"
 import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
@@ -30,8 +29,7 @@ import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
    the figures Today, Review and Yesterday in numbers draw: a topic's icon,
    its programme chip, the dark card holding today's target, the four ways
    to answer it, a quiet note, and the footnote. The ways are the same four
-   on every topic, so a new programme lands in a row that already exists.
-   A way's badge says what the answer scores, in words as well as colour. */
+   on every topic, so a new programme lands in a row that already exists. */
 
 type IconProps = { size?: number; color?: string; weight?: "regular" | "bold" | "fill" }
 
@@ -62,7 +60,6 @@ export function TopicIcon({ name, size = 16, color: tone = color.primary, weight
     is never words), plain when nothing has happened yet. */
 export const TONE_INK: Record<Tone, string> = { good: ink.good, warn: "#A95413", bad: "#A95413", plain: ink.strong }
 
-const WAY_CHIP: Record<Way["tone"], TagTone> = { good: "ok", warn: "soon", info: "primary" }
 const TILE: Record<Topic["id"], Hue> = { exercise: "red", eat: "red", sleep: "violet", mind: "green", medication: "blue", measure: "teal" }
 
 /** A topic's round tile in its own hue, on Today, Review and the pages. */
@@ -92,9 +89,9 @@ export function TopicHead({ topic, intro }: { topic: Topic; intro: string }) {
 
 /** Today's target, on a teal tinted card: what it is, what sits behind it, and
     the figure on the right. */
-export function TargetCard({ icon, title, detail, figure }: { icon: IconKey; title: string; detail: string; figure: string }) {
+export function TargetCard({ icon, title, detail, figure }: { icon: IconKey; title: string; detail: string; figure?: string }) {
   return (
-    <View style={styles.target} accessible accessibilityLabel={`${title}. ${detail}. ${figure}`}>
+    <View style={styles.target} accessible accessibilityLabel={[title, detail, figure].filter(Boolean).join(". ")}>
       <View style={styles.targetTile}>
         <TopicIcon name={icon} size={18} color={ink.primary} />
       </View>
@@ -102,7 +99,7 @@ export function TargetCard({ icon, title, detail, figure }: { icon: IconKey; tit
         <Text style={styles.targetTitle}>{title}</Text>
         <Text style={styles.targetDetail}>{detail}</Text>
       </View>
-      <Text style={styles.targetFigure}>{figure}</Text>
+      {!!figure && <Text style={styles.targetFigure}>{figure}</Text>}
     </View>
   )
 }
@@ -120,7 +117,7 @@ export function Ways({ ways, onPick, picked }: { ways: Way[]; onPick: (w: Way) =
               onPress={() => onPick(w)}
               accessibilityRole="button"
               accessibilityState={{ selected: on }}
-              accessibilityLabel={`${w.title}. ${w.says}. ${w.badge}`}
+              accessibilityLabel={`${w.title}. ${w.says}`}
               style={({ pressed }) => [styles.way, on && styles.wayOn, pressed && styles.pressed]}
             >
               <View style={[styles.wayTile, on && styles.wayTileOn]}>
@@ -130,7 +127,6 @@ export function Ways({ ways, onPick, picked }: { ways: Way[]; onPick: (w: Way) =
                 <Text style={styles.wayTitle}>{w.title}</Text>
                 <Text style={type.label}>{w.says}</Text>
               </View>
-              <Tag tone={WAY_CHIP[w.tone]}>{w.badge}</Tag>
             </Pressable>
           )
         })}
@@ -149,19 +145,8 @@ export function Note({ children }: { children: string }) {
   )
 }
 
-/** The footnote under a page: an (i) and a line of grey. */
-export function Foot({ children }: { children: string }) {
-  return (
-    <View style={styles.foot}>
-      <Info size={14} color={ink.tertiary} />
-      <Text style={[type.meta, styles.fill]}>{children}</Text>
-    </View>
-  )
-}
-
 /** A topic's own page: the back caret, the tab bar kept (Plan stays lit),
-    the head, the page's own cards, then the four ways, the note and the
-    footnote. */
+    the head, the page's own cards, then the four ways, and the note. */
 export function TopicPage({ children, sheet, footer, title }: { children: React.ReactNode; sheet?: React.ReactNode; footer?: React.ReactNode; title: string }) {
   return (
     <TabScreen tab="today" back title={title} overlay={sheet} footer={footer} solidFooter>
@@ -226,7 +211,6 @@ const styles = StyleSheet.create({
   wayTitle: { ...type.title, color: ink.strong },
 
   note: { flexDirection: "row", gap: space.lead, padding: space.card, borderRadius: 8, backgroundColor: color.primarySoft },
-  foot: { flexDirection: "row", alignItems: "flex-start", gap: space.inline },
 
   dialMiddle: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
   dialOf: { fontSize: 7, lineHeight: 9, letterSpacing: 0.4 },

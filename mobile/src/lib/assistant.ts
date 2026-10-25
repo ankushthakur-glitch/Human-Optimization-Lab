@@ -972,7 +972,7 @@ export function planAnswer(question: string, s: Snapshot, now: Date = new Date()
     return session
       ? {
           text: `Today is ${session.title}, ${lower(session.focus)}: ${session.exercises.length} moves, about ${session.minutes} minutes, at ${lower(session.effort)} effort.`,
-          link: { label: "Open today's exercise", href: "/exercise" },
+          link: { label: "Open today's exercise", href: "/topic/exercise" },
         }
       : { text: "Today is a rest day. An easy walk after dinner still counts toward your plan." }
   }

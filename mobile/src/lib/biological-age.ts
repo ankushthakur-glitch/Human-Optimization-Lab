@@ -2,8 +2,8 @@ import { DEMOGRAPHICS } from "@/lib/patient"
 import type { Biomarker } from "@/lib/record"
 import { classify, watchList, type Trend } from "@/lib/trends"
 
-/* What the two biological age screens (onboarding/biological-age.tsx and
-   onboarding/what-is-driving-it.tsx) read. Agreed on the 16 Oct 2026 call
+/* What the biological age card on home (components/biological-age-card.tsx)
+   reads. Agreed on the 16 Oct 2026 call
    with Dr. Blanchard: after "trending the wrong way" comes the biological
    age, then what is driving it (e.g. BMI, blood sugar, blood pressure), then
    the plans that can help. BMI is taken from the record.

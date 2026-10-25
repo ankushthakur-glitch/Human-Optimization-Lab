@@ -3,7 +3,6 @@ import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { CaretRight, ChartLine } from "@/components/ph"
-import { RecordIcon } from "@/components/record-icons"
 import { Block, Group, HUE, NeedsRow, Tag } from "@/components/record-kit"
 import { ScoreDial, TONE_INK, TopicTile } from "@/components/topic-kit"
 import { addDays, dayFrom, localDay } from "@/lib/member"
@@ -15,8 +14,7 @@ import { card, chart, color, ink, space, type } from "@/lib/theme"
    row to the trends over time (deficit, steps, exercise and weight, on their
    own page), then every topic with yesterday's score. A topic opens its own
    history (Journey_14 screens 42 to 47). The day's figures sit one tap
-   under the score card, and the long view of weigh-ins, blood pressure and
-   labs stays on the History page, one row further. Nothing is shown twice:
+   under the score card. Nothing is shown twice:
    the score is here, the graphs are one tap away. */
 
 /** Green at 80 and over, amber below, red when it is far short. */
@@ -79,15 +77,6 @@ export function YourHistory() {
           })}
         </Group>
       </Block>
-
-      <Group>
-        <NeedsRow
-          icon={<RecordIcon name="labs" size={16} color={HUE.teal.ink} />}
-          title="Weigh-ins, blood pressure and lab results"
-          meta="Day by day, since you started"
-          onPress={() => router.push("/history")}
-        />
-      </Group>
     </View>
   )
 }

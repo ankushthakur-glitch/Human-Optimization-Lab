@@ -20,8 +20,7 @@ import type { Attachment } from "@/components/attach-sheet"
 import { ArrowUp, CaretRight, Check, File, Microphone, PaperPlaneRight, Plus, StopSquare, Warning, X } from "@/components/ph"
 import { VoiceBeam } from "@/components/voice-beam"
 import { useVoiceInput } from "@/lib/voice"
-import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from "react-native-svg"
-import { card, chart, color, font, gutter, hairline, ink, type } from "@/lib/theme"
+import { card, color, font, gutter, hairline, ink, type } from "@/lib/theme"
 
 /* Every chat in the app (the assistant, and the "your why" conversation in
    setup) is drawn from these pieces, after the support chats in food and
@@ -599,97 +598,6 @@ export function TypingBubble({ style }: { style?: StyleProp<ViewStyle> }) {
   )
 }
 
-/** Reveals `text` a word at a time. The words still to come are laid out
-    but clear, so the bubble keeps its size and the thread never jumps. */
-export function StreamedText({
-  text,
-  playing = true,
-  speed = 38,
-  onDone,
-  style,
-}: {
-  text: string
-  playing?: boolean
-  speed?: number
-  onDone?: () => void
-  style?: StyleProp<TextStyle>
-}) {
-  const still = useReducedMotion()
-  const words = React.useMemo(() => text.match(/\S+\s*/g) ?? [], [text])
-  const [shown, setShown] = React.useState(playing ? 0 : words.length)
-  const all = still || shown >= words.length
-
-  const done = React.useRef(onDone)
-  done.current = onDone
-  React.useEffect(() => {
-    if (all) {
-      done.current?.()
-      return
-    }
-    const id = setTimeout(() => setShown((n) => n + 1), speed)
-    return () => clearTimeout(id)
-  }, [all, shown, speed])
-
-  if (all) return <Text style={style}>{text}</Text>
-  return (
-    <Text style={style} accessibilityLabel={text}>
-      {words.slice(0, shown).join("")}
-      <Text style={styles.clear}>{words.slice(shown).join("")}</Text>
-    </Text>
-  )
-}
-
-/** The flourishing intro's scale: a 1 to 10 strip (never red: gauge amber to
-    green) with its three anchors, then the one rule and the Okay chip. Sits
-    inside the assistant's message under its one-line title. */
-export function ScaleIntro({ done, onOkay }: { done?: boolean; onOkay?: () => void }) {
-  const anchors = [
-    { n: "1", word: "Worst" },
-    { n: "5", word: "Mixed" },
-    { n: "10", word: "Best" },
-  ]
-  return (
-    <View style={styles.scale}>
-      <View style={styles.strip}>
-        <Svg width="100%" height={8} preserveAspectRatio="none">
-          <Defs>
-            <SvgGradient id="scaleStrip" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor={chart.gaugeLow} />
-              <Stop offset="1" stopColor={chart.gaugeHigh} />
-            </SvgGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="8" rx="4" fill="url(#scaleStrip)" />
-        </Svg>
-        <View style={[styles.stop, { left: 0 }]} />
-        <View style={[styles.stop, { left: "50%", marginLeft: -7 }]} />
-        <View style={[styles.stop, { right: 0 }]} />
-      </View>
-      <View style={styles.anchors}>
-        {anchors.map((x, i) => (
-          <View key={x.n} style={[styles.anchor, { alignItems: i === 0 ? "flex-start" : i === 1 ? "center" : "flex-end" }]}>
-            <Text style={styles.anchorN}>{x.n}</Text>
-            <Text style={styles.anchorWord}>{x.word}</Text>
-          </View>
-        ))}
-      </View>
-      <Text style={styles.scaleRule}>Higher is always better.</Text>
-      <Pressable
-        onPress={onOkay}
-        disabled={done}
-        accessibilityRole="button"
-        accessibilityLabel="Okay"
-        accessibilityState={{ disabled: !!done }}
-        style={({ pressed }) => [styles.option, done && styles.optionOff, pressed && styles.pressed]}
-      >
-        <View style={styles.optionBody}>
-          <Text style={styles.optionText}>Okay</Text>
-        </View>
-        {done ? <Check size={16} color={color.primary} weight="bold" /> : <CaretRight size={16} color={card.chevron} />}
-      </Pressable>
-    </View>
-  )
-}
-
 /** A 1 to 10 rating as a grid of small chips. Tapping one answers at
     once, with no selected state or press effect. Any other option (not
     applicable) is a quiet link underneath. */
@@ -869,17 +777,7 @@ const styles = StyleSheet.create({
   typing: { alignSelf: "flex-start", backgroundColor: color.primaryTint, borderWidth: 1, borderColor: color.primaryEdge, borderRadius: 12, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 14 },
   dots: { flexDirection: "row", alignItems: "center", gap: 5 },
   dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: color.primary },
-  clear: { color: "transparent" },
 
-  // The scale intro, on a 12 grid: strip, anchors, then the rule and chip.
-  scale: { gap: 8, marginTop: 6 },
-  strip: { height: 14, justifyContent: "center", marginHorizontal: 0 },
-  stop: { position: "absolute", top: 0, width: 14, height: 14, borderRadius: 7, backgroundColor: color.background, borderWidth: 2, borderColor: color.primary },
-  anchors: { flexDirection: "row" },
-  anchor: { flex: 1 },
-  anchorN: { fontFamily: font.semibold, fontSize: 14, lineHeight: 18, color: ink.strong },
-  anchorWord: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: ink.secondary },
-  scaleRule: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: ink.secondary },
 
   // The rating chips: 6 a row, 44 square, 8 apart.
   scores: { gap: 10, marginTop: 6 },

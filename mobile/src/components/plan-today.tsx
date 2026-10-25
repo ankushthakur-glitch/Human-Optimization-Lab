@@ -76,8 +76,10 @@ export function PlanToday() {
                         <Text style={[styles.figureText, { color: TONE_INK[row.tone] }]}>{row.text}</Text>
                       </View>
                     </View>
-                    <Text style={type.meta}>{t.target}</Text>
-                    <Text style={styles.note2}>{row.note}</Text>
+                    <Text style={type.meta} numberOfLines={1}>
+                      {t.target}
+                      <Text style={styles.note2}>{` · ${row.note}`}</Text>
+                    </Text>
                   </View>
                   <CaretRight size={14} color={card.chevron} />
                 </Pressable>
@@ -106,8 +108,8 @@ const styles = StyleSheet.create({
 
 
   // The tile at the top of the row, the words in one column beside it: the
-  // name and the figure on one line, then the target and the note under,
-  // each at the full width and free to wrap.
+  // name and the figure on one line, then the target and the note under it
+  // on a single line.
   row: { flexDirection: "row", alignItems: "flex-start", gap: space.lead, paddingVertical: 16 },
   body: { flex: 1, minWidth: 0, gap: 4 },
   top: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: space.item },

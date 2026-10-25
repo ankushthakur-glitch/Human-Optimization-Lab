@@ -14,7 +14,6 @@ import {
   dayLabel,
   localDay,
   mealLine,
-  mealName,
   totalsOf,
   type Amount,
   type Meal,
@@ -93,29 +92,6 @@ export function saveLabel(slot: MealSlot, day: LogDay) {
 }
 
 /* ------------------------------------------------------- log again -- */
-
-/** Meals she can log again in one tap (M-19), for the slot she picked:
-    the latest checked snacks for a snack, else the latest checked main
-    meals; newest first, one of each, never an estimate. */
-export function recentMeals(meals: Record<string, Meal[]> | undefined, now: Date = new Date(), max = 2, slot?: MealSlot): Meal[] {
-  const today = localDay(now)
-  const snack = slot === "snack"
-  const days = Object.keys(meals ?? {})
-    .filter((d) => d <= today)
-    .sort()
-    .reverse()
-  const out: Meal[] = []
-  for (const d of days) {
-    const list = [...(meals?.[d] ?? [])].sort((a, b) => minutesOf(b.time) - minutesOf(a.time))
-    for (const m of list) {
-      if (m.status !== "confirmed" || (m.slot === "snack") !== snack || !m.foods.length) continue
-      if (out.some((o) => mealName(o) === mealName(m))) continue
-      out.push(m)
-      if (out.length === max) return out
-    }
-  }
-  return out
-}
 
 /* ---------------------------------------------------------- pieces -- */
 
@@ -201,7 +177,6 @@ export function MealSheet({
   meal,
   ids,
   dayWord = "today's",
-  onEdit,
   onDelete,
   onClose,
 }: {
@@ -210,7 +185,6 @@ export function MealSheet({
   ids: NutrientId[]
   /** Whose totals it comes off: "today's". */
   dayWord?: string
-  onEdit: () => void
   onDelete: () => void
   onClose: () => void
 }) {
@@ -260,11 +234,6 @@ export function MealSheet({
         {!!meal.note && <Text style={styles.meta}>{meal.note}</Text>}
       </View>
       <View style={styles.buttons}>
-        <View style={styles.button}>
-          <Button variant="outline" onPress={onEdit}>
-            Edit
-          </Button>
-        </View>
         <View style={styles.button}>
           <Button variant="destructive" onPress={() => setConfirming(true)}>
             Delete

@@ -15,6 +15,7 @@ import {
   providers,
 } from "@/components/practice/practice-data"
 import { PracticeShell } from "@/components/practice/practice-shell"
+import { VariantSwitch } from "@/components/practice/dashboard-variants/frame"
 import {
   ALERTS,
   ALERT_TYPES,
@@ -163,6 +164,9 @@ function Dashboard() {
 
   return (
     <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-surface-sunken">
+      <div className="border-b border-border bg-card px-6 py-2">
+        <VariantSwitch />
+      </div>
       <div className="flex w-full min-w-0 flex-col gap-5 px-6 pt-5 pb-8">
         <header className="flex flex-wrap items-center gap-3">
           <h1 className="text-lg leading-7 font-semibold">Practice dashboard</h1>

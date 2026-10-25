@@ -9,9 +9,9 @@ import { ExerciseVideoModal } from "@/components/exercise-video"
 import { PrimaryButton } from "@/components/hol"
 import { Play } from "@/components/ph"
 import { Sheet } from "@/components/sheet"
-import { Block, Group, Tag } from "@/components/record-kit"
-import { amount, decimal, digits, saveLog } from "@/components/today-exercise-parts"
-import { TextField } from "@/components/ui"
+import { Block, Tag } from "@/components/record-kit"
+import { SetTable } from "@/components/set-table"
+import { amount, saveLog } from "@/components/today-exercise-parts"
 import { TopicPage } from "@/components/topic-kit"
 import { localDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
@@ -53,7 +53,9 @@ function LiftBody({ lift }: { lift: Lift }) {
     if (saved?.length) return saved
     return Array.from({ length: parseInt(lift.sets, 10) || 3 }, () => ({ reps: "", weight: String(lift.load) }))
   })
-  const ready = rows.every((r) => amount(r.reps) !== undefined && amount(r.weight) !== undefined)
+  // Only the sets she has filled in are saved; the plan's reps show as the hint.
+  const filled = rows.filter((r) => amount(r.reps) !== undefined && amount(r.weight) !== undefined)
+  const target = lift.sets.split("×")[1]?.trim()
   const edit = (i: number, part: Partial<{ reps: string; weight: string }>) => setRows((list) => list.map((r, j) => (j === i ? { ...r, ...part } : r)))
   // The next lift still to do, in the day's order; none once the rest are in.
   const pending = LIFTS.filter((l) => l.id !== lift.id && !store.exercises?.[day]?.[l.id])
@@ -62,7 +64,7 @@ function LiftBody({ lift }: { lift: Lift }) {
   /* Saving writes her sets under this lift, so it reads as done in the
      session, and carries her on to the next one in place of this page. */
   async function save() {
-    const list = rows.map((r) => ({ reps: amount(r.reps)!, weightLb: amount(r.weight)! }))
+    const list = filled.map((r) => ({ reps: amount(r.reps)!, weightLb: amount(r.weight)! }))
     await saveLog(store, day, lift.id, { at: new Date().toISOString(), sets: list.length, reps: list[0].reps, weightLb: list[0].weightLb, entries: list })
     if (next) router.replace({ pathname: "/lift/[id]", params: { id: next.id } })
     else router.back()
@@ -84,33 +86,10 @@ function LiftBody({ lift }: { lift: Lift }) {
               <Sheet title="Your sets" onClose={() => setLogging(false)}>
                 <Text style={type.meta}>{`${lift.name}, ${lift.sets} at ${lift.load} lb`}</Text>
                 <ScrollView style={styles.setsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                  <Group>
-                    {rows.map((row, i) => (
-                      <View key={i} style={styles.setBlock}>
-                        <Text style={type.title}>{`Set ${i + 1}`}</Text>
-                        <View style={styles.fields}>
-                          <View style={styles.fieldHalf}>
-                            <TextField label="Reps" value={row.reps} onChangeText={(t) => edit(i, { reps: digits(t) })} keyboardType="number-pad" returnKeyType="done" style={styles.input} compact />
-                          </View>
-                          <View style={styles.fieldHalf}>
-                            <TextField
-                              label="Weight"
-                              value={row.weight}
-                              onChangeText={(t) => edit(i, { weight: decimal(t) })}
-                              keyboardType="decimal-pad"
-                              returnKeyType="done"
-                              style={styles.input}
-                              compact
-                              trailing={<Text style={styles.unit}>lb</Text>}
-                            />
-                          </View>
-                        </View>
-                      </View>
-                    ))}
-                  </Group>
+                  <SetTable rows={rows} onEdit={edit} target={target} />
                 </ScrollView>
-                <PrimaryButton onPress={save} disabled={!ready}>
-                  Save
+                <PrimaryButton onPress={save} disabled={!filled.length}>
+                  {filled.length ? `Save ${filled.length} ${filled.length === 1 ? "set" : "sets"}` : "Save"}
                 </PrimaryButton>
               </Sheet>
             </KeyboardAvoidingView>
@@ -210,12 +189,6 @@ function bold(text: string) {
 const styles = StyleSheet.create({
   fill: { flex: 1, minWidth: 0 },
   pressed: { opacity: 0.7 },
-  // The same set rows as a move's page: a rule between sets, 12 above and below.
-  setBlock: { gap: space.item, paddingVertical: space.rowY },
-  fields: { flexDirection: "row", gap: space.item },
-  fieldHalf: { flex: 1 },
-  input: { minWidth: 0 },
-  unit: { ...type.unitLarge, paddingRight: 14 },
   setsScroll: { maxHeight: 360 },
   // The chip sits left and the sets and weight right, on one line.
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.inline },

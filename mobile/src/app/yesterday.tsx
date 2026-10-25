@@ -3,10 +3,10 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { formatNumber } from "@/components/charts"
-import { Block } from "@/components/record-kit"
-import { Foot, TopicIcon, TopicPage } from "@/components/topic-kit"
+import { Block, Group, Tag } from "@/components/record-kit"
+import { TopicIcon, TopicPage, TopicTile } from "@/components/topic-kit"
 import { addDays, dayFrom, localDay } from "@/lib/member"
-import { NUMBERS } from "@/lib/topics"
+import { NUMBERS, topicOf } from "@/lib/topics"
 import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
 
 /* Yesterday in numbers (Journey_14 screen 40), under the Review's day card:
@@ -16,7 +16,8 @@ import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
    from her own test, not an estimate from height and weight, which is what
    turns the deficit from a guess into a number. The macros sit under the
    calorie line, because a deficit hit on the wrong macros loses muscle, and
-   movement is shown against its goal rather than as a bare total. */
+   movement is shown against its goal rather than as a bare total. Last,
+   the six goals of the day, each marked done or not done. */
 
 const monthDay =(d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 
@@ -25,6 +26,7 @@ export default function YesterdayScreen() {
   const today = dayFrom(localDay())
   const day = !date || date === "yesterday" ? addDays(today, -1) : /^\d{4}-\d{2}-\d{2}$/.test(date) ? dayFrom(date) : addDays(today, -1)
   const n = NUMBERS
+  const done = n.tasks.filter((t) => t.done).length
 
   return (
     <TopicPage title="Yesterday">
@@ -63,7 +65,27 @@ export default function YesterdayScreen() {
         </View>
       </Block>
 
-      <Foot>RMR is the measured figure from her own test, not an estimate from height and weight. That is what makes the deficit a number rather than a guess.</Foot>
+      <Block title="Tasks" meta={`${done} of ${n.tasks.length} done`}>
+        <Group>
+          {n.tasks.map((t) => {
+            const topic = topicOf(t.id)
+            if (!topic) return null
+            const name = t.id === "medication" ? "Medication" : topic.name
+            return (
+              <View key={t.id} style={styles.task} accessible accessibilityLabel={`${name}, ${t.done ? "done" : "not done"}. ${t.note}`}>
+                <TopicTile topic={topic} />
+                <View style={styles.fill}>
+                  <Text style={styles.rowLabel}>{name}</Text>
+                  <Text style={type.meta} numberOfLines={1}>
+                    {t.note}
+                  </Text>
+                </View>
+                <Tag tone={t.done ? "ok" : "muted"}>{t.done ? "Done" : "Not done"}</Tag>
+              </View>
+            )
+          })}
+        </Group>
+      </Block>
     </TopicPage>
   )
 }
@@ -120,5 +142,7 @@ const styles = StyleSheet.create({
   moves: { flexDirection: "row", gap: space.inline },
   move: { flex: 1, alignItems: "center", gap: 2, paddingVertical: space.item, paddingHorizontal: 4, borderRadius: 10, backgroundColor: color.background, borderWidth: 1, borderColor: hairline.edge, boxShadow: card.shadowXs },
   delta: { ...type.tag, color: ink.good },
+
+  task: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: 14 },
 })
 

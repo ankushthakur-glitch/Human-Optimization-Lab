@@ -24,13 +24,22 @@ export type IconKey = "exercise" | "eat" | "sleep" | "mind" | "medication" | "me
 /** What a way does when she taps it. `done` answers the topic and says so on
     Today; `go` opens the screen that already does it; `ask` hands it to the
     assistant in her own words; `sheet` opens the measurements sheet; `part`
-    opens the session's parts, each marked done or not done. */
+    opens the session's parts, each done or skipped; `short` how many
+    minutes of the practice she did and what; `meal` asks which meal
+    she is adding, then opens that way of logging it; `dose` opens one of
+    Medication's sheets: tick the doses taken, log one missed, report a side
+    effect to the physician, or photograph a new label; `night` opens
+    Sleep's log of the night she actually had. */
 export type Act =
   | { kind: "done" }
   | { kind: "go"; href: string; params?: Record<string, string> }
   | { kind: "ask"; ask: string }
   | { kind: "sheet" }
   | { kind: "part" }
+  | { kind: "short" }
+  | { kind: "night" }
+  | { kind: "meal" }
+  | { kind: "dose"; sheet: "taken" | "missed" | "side" | "photo" }
 
 export type Way = { id: string; title: string; says: string; badge: string; tone: "good" | "warn" | "info"; icon: IconKey; act: Act }
 
@@ -72,7 +81,7 @@ export const TOPICS: Topic[] = [
     intro: "Today's session in full, then two ways to answer it.",
     ways: [
       { id: "written", title: "Do it as written", says: "All four lifts, then the cardio block", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "done" } },
-      { id: "part", title: "Do part of it", says: "Log what you actually finished", badge: "Scores on what you did", tone: "warn", icon: "pencil", act: { kind: "part" } },
+      { id: "part", title: "Do part of it", says: "Log your sets, or skip an exercise", badge: "Scores on what you did", tone: "warn", icon: "pencil", act: { kind: "part" } },
     ],
   },
   {
@@ -82,15 +91,12 @@ export const TOPICS: Topic[] = [
     tagTone: "red",
     target: "−500 cal · 150 g protein · 1,000 mg calcium",
     detail: "1,000 mg calcium · three meals already built",
-    state: { text: "1 of 3", tone: "warn", note: "Breakfast logged" },
+    state: { text: "0 of 3", tone: "plain", note: "Not started" },
     answered: { text: "3 of 3", note: () => "Every meal logged" },
-    figure: "1 of 3",
+    figure: "0 of 3",
     intro: FOUR,
     ways: [
-      { id: "database", title: "Pick from the meal database", says: "Pre-planned meals, one tap to add", badge: "Macros already known", tone: "good", icon: "search", act: { kind: "go", href: "/log-meal", params: { via: "type" } } },
-      { id: "photo", title: "Photograph the plate", says: "Snap it and we read the macros", badge: "Scores what you ate", tone: "warn", icon: "camera", act: { kind: "go", href: "/log-meal", params: { via: "scan" } } },
-      { id: "say", title: "Say what you ate", says: "Out loud, in your own words", badge: "Nothing to type", tone: "good", icon: "mic", act: { kind: "ask", ask: "Here is what I ate today: " } },
-      { id: "import", title: "Import from another app", says: "Apple Health, MyFitnessPal, Cronometer", badge: "Posts itself", tone: "info", icon: "import", act: { kind: "go", href: "/connections" } },
+      { id: "photo", title: "Photograph the plate", says: "Snap it and we read the macros", badge: "Scores what you ate", tone: "warn", icon: "camera", act: { kind: "meal" } },
     ],
   },
   {
@@ -103,12 +109,10 @@ export const TOPICS: Topic[] = [
     state: { text: "6 h 10 m", tone: "bad", note: "Short by 1 h 20 m" },
     answered: { text: "Window set", note: (at) => `Tonight's window, ${at}` },
     figure: "6 h 10 m",
-    intro: "Last night scored, then four ways to answer tonight.",
+    intro: "Last night scored, then the ways to answer tonight.",
     ways: [
       { id: "window", title: "Follow tonight's window", says: "In bed 10:30, up at 6:00", badge: "Scores 100% for tonight", tone: "good", icon: "check", act: { kind: "done" } },
-      { id: "log", title: "Log what actually happened", says: "Time in bed, and the times you woke", badge: "Scores on actual", tone: "warn", icon: "pencil", act: { kind: "ask", ask: "Last night I got into bed at " } },
-      { id: "shift", title: "Ask to shift the window", says: "A late flight, a sick child — say why", badge: "Rebuilds tonight", tone: "info", icon: "mic", act: { kind: "ask", ask: "I need to shift tonight's sleep window because " } },
-      { id: "device", title: "Connect your device", says: "CPAP, Oura, Apple Watch, Eight Sleep", badge: "Logged for you", tone: "info", icon: "device", act: { kind: "go", href: "/connections" } },
+      { id: "log", title: "Log what actually happened", says: "Time in bed, and the times you woke", badge: "Scores on actual", tone: "warn", icon: "pencil", act: { kind: "night" } },
     ],
   },
   {
@@ -118,17 +122,15 @@ export const TOPICS: Topic[] = [
     tagTone: "green",
     target: "SMART relaxation response, 20 min",
     detail: "Week 3 of 8 · Benson–Henry Institute",
-    state: { text: "Done", tone: "good", note: "Completed 7:10 am" },
+    state: { text: "20 min", tone: "plain", note: "Not started" },
     answered: { text: "Done", note: (at) => `Completed ${at}` },
     figure: "20 min",
     intro: FOUR,
     ways: [
       { id: "session", title: "Do today's session", says: "Twenty minutes, guided end to end", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "done" } },
-      { id: "short", title: "Do the short version", says: "Eight minutes when the day is full", badge: "Partial credit", tone: "warn", icon: "pencil", act: { kind: "done" } },
-      { id: "swap", title: "Swap the practice", says: "Say what is not working for you", badge: "Rebuilds the week", tone: "info", icon: "mic", act: { kind: "ask", ask: "The relaxation practice is not working for me because " } },
-      { id: "own", title: "Log your own practice", says: "Yoga, prayer, a walk without a phone", badge: "Counts if you log it", tone: "good", icon: "mind", act: { kind: "ask", ask: "I did my own practice today: " } },
+      { id: "short", title: "Do the short version", says: "Eight minutes when the day is full", badge: "Partial credit", tone: "warn", icon: "pencil", act: { kind: "short" } },
     ],
-    done: true,
+    done: false,
   },
   {
     id: "medication",
@@ -137,15 +139,15 @@ export const TOPICS: Topic[] = [
     tagTone: "grey",
     target: "Metformin, vitamin D · 3 supplements",
     detail: "Prescribed by Dr. Patel · evening dose at 7 pm",
-    state: { text: "Morning", tone: "warn", note: "Evening dose at 7 pm" },
+    state: { text: "2 doses", tone: "plain", note: "Not started" },
     answered: { text: "Taken", note: (at) => `Logged ${at}` },
-    figure: "Morning",
+    figure: "2 doses",
     intro: FOUR,
     ways: [
-      { id: "taken", title: "Mark it taken", says: "One tap per dose", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "done" } },
-      { id: "missed", title: "Mark a dose missed", says: "No judgement — we need the truth", badge: "Logged honestly", tone: "warn", icon: "pencil", act: { kind: "done" } },
-      { id: "side", title: "Report a side effect", says: "Say what happened, in your words", badge: "Goes to Dr. Patel", tone: "good", icon: "phone", act: { kind: "ask", ask: "I want to report a side effect: " } },
-      { id: "photo", title: "Photograph a new one", says: "A medication or supplement label", badge: "Checked for interactions", tone: "good", icon: "camera", act: { kind: "go", href: "/medications" } },
+      { id: "taken", title: "Mark it taken", says: "One tap per dose", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "dose", sheet: "taken" } },
+      { id: "missed", title: "Mark a dose missed", says: "No judgement, we just need the truth", badge: "Logged honestly", tone: "warn", icon: "pencil", act: { kind: "dose", sheet: "missed" } },
+      { id: "side", title: "Report a side effect", says: "Say what happened, in your words", badge: "Goes to Dr. Patel", tone: "good", icon: "phone", act: { kind: "dose", sheet: "side" } },
+      { id: "photo", title: "Photograph a new one", says: "A medication or supplement label", badge: "Checked for interactions", tone: "good", icon: "camera", act: { kind: "dose", sheet: "photo" } },
     ],
     done: false,
   },
@@ -156,17 +158,15 @@ export const TOPICS: Topic[] = [
     tagTone: "grey",
     target: "Weight and waist, Mondays",
     detail: "Last entered October 6 · 178 lb, 36.5″",
-    state: { text: "Done", tone: "good", note: "178 lb · 36.5″" },
+    state: { text: "Due today", tone: "warn", note: "Last 178 lb · 36.5″" },
     answered: { text: "Done", note: () => "Entered today" },
     figure: "Weekly",
     intro: FOUR,
     ways: [
       { id: "enter", title: "Enter today's numbers", says: "Weight, waist, blood pressure", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "sheet" } },
       { id: "skip", title: "Skip today", says: "Say why — the gap stays in the series", badge: "No penalty", tone: "warn", icon: "pencil", act: { kind: "ask", ask: "I am skipping today's measurements because " } },
-      { id: "cadence", title: "Change the cadence", says: "Weekly is heavy for some; ask for monthly", badge: "Rebuilds the schedule", tone: "info", icon: "mic", act: { kind: "ask", ask: "Can I measure monthly instead of weekly?" } },
-      { id: "device", title: "Connect a scale or cuff", says: "Withings, Omron, Apple Health", badge: "Posts itself", tone: "info", icon: "device", act: { kind: "go", href: "/connections" } },
     ],
-    done: true,
+    done: false,
   },
 ]
 
@@ -179,11 +179,17 @@ export const NEXT_UP = { topic: "medication", title: "Evening metformin, 7 pm", 
 /** The topic's row today: her answer if she gave one, else where it stands. */
 export function rowOf(s: Store, t: Topic, day = localDay()) {
   const logged = s.topicLog?.[day]?.[t.id]
+  if (logged?.night) return { done: true, text: inBed(logged.night), tone: "good" as Tone, note: `Logged ${clockWords(logged.at)}` }
   if (logged) return { done: true, text: t.answered.text, tone: "good" as Tone, note: t.answered.note(clockWords(logged.at)) }
   return { done: !!t.done, text: t.state.text, tone: t.state.tone, note: t.state.note }
 }
 
 export const doneCount = (s: Store, day = localDay()) => TOPICS.filter((t) => rowOf(s, t, day).done).length
+
+/** Hours and minutes in bed for a logged night, as "6 h 10 m". */
+export const inBed = (n: { bed: number; up: number }) => hm(n.up - n.bed)
+
+export const hm = (min: number) => `${Math.floor(min / 60)} h ${min % 60} m`
 
 const clockWords = (at: string) => new Date(at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(" AM", " am").replace(" PM", " pm")
 
@@ -245,6 +251,33 @@ export const RESCORED: Record<(typeof SYMPTOMS)[number]["id"], number> = { wake:
 export const AT_HOME: Pair[] = [
   { name: "Weight", via: "Goal 158 lb", from: "178", to: "165.6", unit: "lb", spoken: "178 to 165.6 pounds" },
   { name: "Waist", via: "Monthly check", from: "36.5\"", to: "34.0\"", spoken: "36.5 to 34.0 inches" },
+]
+
+/** The weekly weigh ins behind the Weight pair, day one to today. */
+export const WEIGHT_SERIES = [
+  { date: "2026-07-01", value: 178 },
+  { date: "2026-07-08", value: 177.2 },
+  { date: "2026-07-15", value: 176.8 },
+  { date: "2026-07-22", value: 175.9 },
+  { date: "2026-07-29", value: 175.1 },
+  { date: "2026-08-05", value: 174.6 },
+  { date: "2026-08-12", value: 173.4 },
+  { date: "2026-08-19", value: 172.9 },
+  { date: "2026-08-26", value: 171.6 },
+  { date: "2026-09-02", value: 171.0 },
+  { date: "2026-09-09", value: 169.8 },
+  { date: "2026-09-16", value: 169.1 },
+  { date: "2026-09-23", value: 167.9 },
+  { date: "2026-09-30", value: 166.8 },
+  { date: "2026-10-06", value: 165.6 },
+]
+
+/** The monthly waist checks behind the Waist pair, in inches. */
+export const WAIST_SERIES = [
+  { date: "2026-07-01", value: 36.5 },
+  { date: "2026-08-01", value: 35.9 },
+  { date: "2026-09-01", value: 35.1 },
+  { date: "2026-10-06", value: 34.0 },
 ]
 
 /** The two headline figures above the tests. */
@@ -364,6 +397,21 @@ export const CARDIO = { name: "Zone 2 cardio", detail: "30 min", say: "HR 118–
 
 /* ----------------------------------------------------------- medication -- */
 
+/** Today's doses, prescribed first, then what she added herself; the two
+    nothing is taken when the day opens. */
+export const DOSES = [
+  { id: "metformin-am", name: "Metformin", dose: "500 mg", when: "Morning" },
+  { id: "vitamin-d", name: "Vitamin D", dose: "2,000 IU", when: "Morning" },
+  { id: "metformin-pm", name: "Metformin", dose: "500 mg", when: "Evening, 7 pm" },
+  { id: "magnesium", name: "Magnesium glycinate", dose: "400 mg", when: "Nightly" },
+  { id: "fish-oil", name: "Fish oil", dose: "1,000 mg", when: "With dinner" },
+  { id: "berberine", name: "Berberine", dose: "500 mg", when: "Twice daily" },
+] as const
+
+export const MISSED_WHY = ["Forgot", "Felt unwell", "Ran out", "Side effects", "Other"] as const
+
+export const SEVERITY = ["Mild", "Moderate", "Severe"] as const
+
 export const ALSO_TAKING = [
   { name: "Magnesium glycinate", dose: "400 mg, nightly", interacts: false },
   { name: "Fish oil", dose: "1,000 mg, with dinner", interacts: false },
@@ -457,5 +505,14 @@ export const NUMBERS = {
     { label: "Steps", value: "11,240", unit: "", delta: "+2,240", icon: "device" as IconKey },
     { label: "Exercise min", value: "55", unit: "", delta: "+10 min", icon: "exercise" as IconKey },
   ],
+  /** The six goals as the day closed: what was done and what was not. */
+  tasks: [
+    { id: "exercise", done: true, note: "Upper body + 30 min Zone 2" },
+    { id: "eat", done: true, note: "3 of 3 meals logged" },
+    { id: "sleep", done: false, note: "6 h 10 m, short by 1 h 20 m" },
+    { id: "mind", done: true, note: "20 min session" },
+    { id: "medication", done: false, note: "Evening metformin missed" },
+    { id: "measure", done: true, note: "178 lb, 36.5″" },
+  ] as { id: TopicId; done: boolean; note: string }[],
 }
 

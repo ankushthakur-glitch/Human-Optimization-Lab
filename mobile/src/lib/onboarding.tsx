@@ -8,7 +8,7 @@ import { dayKey } from "@/lib/dates"
 import { dayOfAt } from "@/lib/member"
 import type { OfferLog } from "@/lib/offers"
 import type { Cadence, ProgramId, Sex, Tier } from "@/lib/plans"
-import type { Intake, SetupStep } from "@/lib/program"
+import type { Intake } from "@/lib/program"
 import type { MedAnswer, Origin } from "@/lib/record"
 import { store } from "@/lib/storage"
 
@@ -36,7 +36,7 @@ import { store } from "@/lib/storage"
    A prototype with no backend: when the API exists, `save` posts each step
    and the server holds the state. */
 
-export type Step = "about" | "consent" | "connect" | "yourWhy" | "life" | "why" | "records" | "tour" | "done"
+export type Step = "about" | "consent" | "connect" | "yourWhy" | "life" | "records" | "done"
 
 export type Profile = {
   firstName: string
@@ -231,8 +231,6 @@ export type State = {
   /** Notifications the patient has opened. */
   seen?: string[]
   devices?: string[]
-  /** Set-up steps she has finished. */
-  setupDone?: SetupStep[]
   /** Her set-up answers: goals and a few questions about her. */
   intake?: Intake
   plan?: Plan
@@ -320,8 +318,12 @@ export type State = {
       0 to 10. Progress pairs every later number with these. */
   startingPoint?: { at: string; weight: number; waist: number; bother: { wake: number; irritable: number; gain: number } }
   /** How she answered each of the six topics on Today, by day (lib/topics.ts):
-      the way she chose and when. */
-  topicLog?: Record<string, Partial<Record<string, { way: string; at: string; parts?: string[] }>>>
+      the way she chose and when. `night` is Sleep's "Log what actually
+      happened": bed and up as minutes after 6 pm, times woken, CPAP minutes. */
+  topicLog?: Record<
+    string,
+    Partial<Record<string, { way: string; at: string; parts?: string[]; skipped?: string[]; minutes?: number; note?: string; night?: { bed: number; up: number; woke: number; cpap: number } }>>
+  >
   /** The measurements beyond weight and waist (entries holds those two),
       by day, in inches. */
   measures?: Record<string, Partial<Record<"chest" | "hips" | "thigh" | "arm", number>>>
@@ -359,13 +361,15 @@ const START: State = { step: "about" }
 const OLD_MED_ANSWER: Record<string, MedAnswer> = { not: "not-taking", different: "dose" }
 
 /** A store saved by an earlier build, brought up to date: setup used to
-    end on a plans step (that's on the dashboard now); a medicine answer
+    end on a plans step (that's on the dashboard now), and had a why
+    conversation and a record tour, both gone (25 Oct 2026); a medicine answer
     used to be a bare word; the free questions used to be a bare count
     (`asked`), now this week's AI credit (`allowance`), with one
     placeholder conversation for each question already asked; their
     tokens are estimated on load (lib/allowance.ts). */
 function migrate(parsed: State & Record<string, unknown>): State {
-  if ((parsed.step as string) === "plans") parsed.step = "done"
+  if ((parsed.step as string) === "plans" || (parsed.step as string) === "tour") parsed.step = "done"
+  if ((parsed.step as string) === "why") parsed.step = "records"
   if (parsed.meds) {
     const at = new Date().toISOString()
     parsed.meds = Object.fromEntries(
@@ -385,13 +389,14 @@ function migrate(parsed: State & Record<string, unknown>): State {
 }
 
 /** For now a refresh starts today over: what was ticked off today (meals,
-    exercises, the walk, weigh ins and blood pressure) is cleared, so the
-    to-do reads as not done. Earlier days stay for the trends. */
+    exercises, the walk, weigh ins, blood pressure and the Plan's topics) is
+    cleared, so the to-do reads as not done. Earlier days stay for the trends. */
 function startToday(state: State): State {
   const today = dayKey()
   const { [today]: _meals, ...meals } = state.meals ?? {}
   const { [today]: _exercises, ...exercises } = state.exercises ?? {}
-  return { ...state, meals, exercises, entries: state.entries?.filter((e) => dayOfAt(e.at) !== today) }
+  const { [today]: _topics, ...topicLog } = state.topicLog ?? {}
+  return { ...state, meals, exercises, topicLog, entries: state.entries?.filter((e) => dayOfAt(e.at) !== today) }
 }
 
 const OnboardingContext = React.createContext<Onboarding | null>(null)
@@ -451,7 +456,5 @@ export const STEP_ROUTE = {
   connect: "/onboarding/connect-records",
   yourWhy: "/onboarding/your-why",
   life: "/onboarding/life",
-  why: "/onboarding/why",
   records: "/onboarding/syncing?ready=1",
-  tour: "/onboarding/syncing?ready=1",
 } as const

@@ -56,9 +56,7 @@ export const RECORD_READY = "/onboarding/syncing?ready=1" as const
 export default function SyncingScreen() {
   const onboarding = useOnboarding()
   const { ready } = useLocalSearchParams<{ ready?: string }>()
-  // The record is ready, and that is the last step of setup (the trends,
-  // biological age and "what is driving it" pages are no longer part of it):
-  // finish it so the dashboard opens, then open the plans page over it (as an
+  // The record is ready, and that is the last step of setup: finish it so the dashboard opens, then open the plans page over it (as an
   // offer anywhere in the app does), so Back lands on Home. Finishing swaps
   // the guarded screens and takes this one with it, so the moves after it run
   // from here, not from an effect.

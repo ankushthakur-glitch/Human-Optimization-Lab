@@ -1,8 +1,8 @@
 import * as ImagePicker from "expo-image-picker"
 import * as React from "react"
-import { Image, Pressable, StyleSheet, Text, View } from "react-native"
+import { Image, type ImageSourcePropType, Pressable, StyleSheet, Text, View } from "react-native"
 
-import { CalendarBlank, Camera, Images, Info, Lightbulb, Lock, User } from "@/components/ph"
+import { CalendarBlank, Camera, Images, Info, Lock, User } from "@/components/ph"
 import { PrimaryButton } from "@/components/hol"
 import { Block, Card, Tile, toast } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
@@ -11,10 +11,9 @@ import { card, chart, color, ink, space, surface, type } from "@/lib/theme"
 /* The Plan screen's "Photos" tab (Journey_14 screen 49, "Photo check-in"):
    evidence she can see. A line for the last check-in and where the photos
    are kept, one button to take new ones, then front and side views across
-   three dates with the weight and waist under each frame, and one line from Inlay about what
-   the pictures show. Taking photos opens a sheet that asks for the front
-   and the side; a saved pair becomes "Today". The earlier dates are sample
-   photos not yet in the build, so their frames show a silhouette. */
+   three dates with the weight and waist under each frame. Taking photos opens a sheet that asks for the front
+   and the side; a saved pair becomes "Today". Every date shows a sample
+   photo (assets/images/progress, credits there) until she takes her own. */
 
 export type Angle = "front" | "side"
 export type Shots = Partial<Record<Angle, string>>
@@ -26,16 +25,23 @@ const FRAMES = [
   { id: "today", label: "Today", date: "Oct 5, 2026", weight: "165.6 lb", waist: "34.0\"" },
 ] as const
 
+/** Sample photos for each date and view, until she takes her own. */
+const SAMPLES: Record<(typeof FRAMES)[number]["id"], Record<Angle, ImageSourcePropType>> = {
+  start: { front: require("../../assets/images/progress/front-start.jpg"), side: require("../../assets/images/progress/side-start.jpg") },
+  day30: { front: require("../../assets/images/progress/front-30.jpg"), side: require("../../assets/images/progress/side-30.jpg") },
+  today: { front: require("../../assets/images/progress/front-today.jpg"), side: require("../../assets/images/progress/side-today.jpg") },
+}
+
 const VIEWS: { value: Angle; label: string }[] = [
   { value: "front", label: "Front" },
   { value: "side", label: "Side" },
 ]
 
 /** A photo's ground: the photo, or a quiet silhouette where there is none. */
-function Frame({ uri, label, style }: { uri?: string; label: string; style?: object }) {
+function Frame({ source, label, style }: { source?: ImageSourcePropType; label: string; style?: object }) {
   return (
-    <View style={[styles.frame, style]} accessible accessibilityLabel={uri ? label : `${label}, no photo`}>
-      {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : <User size={28} color={color.primaryLine} weight="light" />}
+    <View style={[styles.frame, style]} accessible accessibilityLabel={source ? label : `${label}, no photo`}>
+      {source ? <Image source={source} style={StyleSheet.absoluteFill} resizeMode="cover" /> : <User size={28} color={color.primaryLine} weight="light" />}
     </View>
   )
 }
@@ -101,7 +107,7 @@ export function PhotoCheckIn({ shots, savedOn, onTake, onInfo }: { shots: Shots;
             <View key={f.id} style={styles.cell} accessible accessibilityLabel={`${f.label}, ${f.date}, ${f.weight}, waist ${f.waist}`}>
               <Text style={type.metaStrong}>{f.label}</Text>
               <Text style={type.caption}>{f.date}</Text>
-              <Frame uri={f.id === "today" ? mine : undefined} label={`${f.label} ${view} photo`} />
+              <Frame source={f.id === "today" && mine ? { uri: mine } : SAMPLES[f.id][view]} label={`${f.label} ${view} photo`} />
               <Text style={type.value}>{f.weight}</Text>
               <Text style={type.caption}>{`${f.waist} waist`}</Text>
             </View>
@@ -109,15 +115,6 @@ export function PhotoCheckIn({ shots, savedOn, onTake, onInfo }: { shots: Shots;
         </View>
       </Block>
 
-      <Card style={styles.insight}>
-        <Tile hue="teal" size={32}>
-          <Lightbulb size={18} color={color.primary} />
-        </Tile>
-        <View style={styles.fill}>
-          <Text style={type.title}>Inlay Insight</Text>
-          <Text style={type.body}>Visible changes from both front and side show your hard work is paying off!</Text>
-        </View>
-      </Card>
     </View>
   )
 }
@@ -224,7 +221,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  insight: { flexDirection: "row", alignItems: "flex-start", gap: space.lead, backgroundColor: color.primaryTint, borderColor: color.primarySoft },
   sheetBody: { gap: space.item, paddingBottom: space.item },
   slots: { flexDirection: "row", gap: space.item },
   slot: { flex: 1, alignItems: "center", gap: space.inline },

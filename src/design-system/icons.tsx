@@ -151,6 +151,7 @@ import {
   TaskAdd01Icon,
   TaskDaily01Icon,
   TestTube01Icon,
+  ThumbsDownIcon,
   ThumbsUpIcon,
   Tick02Icon,
   TickDouble02Icon,
@@ -341,6 +342,7 @@ export const IconTable = createIcon(Table01Icon)
 export const IconTarget = createIcon(Target02Icon)
 export const IconTaskAdd = createIcon(TaskAdd01Icon)
 export const IconTeam = createIcon(UserGroupIcon)
+export const IconThumbsDown = createIcon(ThumbsDownIcon)
 export const IconThumbsUp = createIcon(ThumbsUpIcon)
 export const IconTickDouble = createIcon(TickDouble02Icon)
 export const IconToolbox = createIcon(ToolboxIcon)
@@ -513,6 +515,7 @@ export const ICON_CATALOG: { name: string; source: string; Icon: (props: IconPro
   { name: "IconTarget", source: "Target02Icon", Icon: IconTarget },
   { name: "IconTaskAdd", source: "TaskAdd01Icon", Icon: IconTaskAdd },
   { name: "IconTeam", source: "UserGroupIcon", Icon: IconTeam },
+  { name: "IconThumbsDown", source: "ThumbsDownIcon", Icon: IconThumbsDown },
   { name: "IconThumbsUp", source: "ThumbsUpIcon", Icon: IconThumbsUp },
   { name: "IconTickDouble", source: "TickDouble02Icon", Icon: IconTickDouble },
   { name: "IconToolbox", source: "ToolboxIcon", Icon: IconToolbox },

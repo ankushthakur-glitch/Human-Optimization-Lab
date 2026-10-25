@@ -14,6 +14,7 @@ import {
   IconLock,
   IconLockOpen,
   IconMail,
+  IconSwitch,
   IconUserAdd,
 } from "@/design-system/icons"
 
@@ -66,6 +67,10 @@ import {
   syncStatusFor,
 } from "@/components/practice/health-record"
 import { DeactivateDialog } from "@/components/practice/sheets"
+import {
+  ReassignProviderDialog,
+  canReassign,
+} from "@/components/practice/reassign-provider"
 import { InviteTimelineSheet } from "@/components/practice/invite-timeline"
 import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
 import { SOFT_TEXT } from "@/components/patient-dashboard/widgets/charting-dashboard"
@@ -275,6 +280,29 @@ function BulkInviteAgain({
     >
       <IconMail />
       Invite again ({declined.length})
+    </Button>
+  )
+}
+
+/** The selection's bulk action to hand open records to another provider. */
+function BulkReassign({
+  rows,
+  onOpen,
+}: {
+  rows: Patient[]
+  onOpen: (rows: Patient[]) => void
+}) {
+  const open = rows.filter(canReassign)
+  if (open.length === 0) return null
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="rounded-md"
+      onClick={() => onOpen(open)}
+    >
+      <IconSwitch />
+      Reassign provider ({open.length})
     </Button>
   )
 }
@@ -564,6 +592,11 @@ export function PatientsScreen() {
   const [deactivating, setDeactivating] = React.useState<Patient | null>(null)
   const [reactivating, setReactivating] = React.useState<Patient | null>(null)
   const [timeline, setTimeline] = React.useState<Patient | null>(null)
+  const [reassigning, setReassigning] = React.useState<Patient[] | null>(null)
+  /* The clinic manager hands a patient to another provider; a provider
+     doesn't. A bulk reassign clears the selection once it's done. */
+  const canManage = portal.key === "practice"
+  const clearAfter = React.useRef<(() => void) | null>(null)
 
   const precheck = usePatientPrecheck()
   const openCreate = precheck.open
@@ -715,6 +748,12 @@ export function PatientsScreen() {
             <IconEdit />
             Edit
           </DropdownMenuItem>
+          {canManage && canReassign(p) && (
+            <DropdownMenuItem onClick={() => setReassigning([p])}>
+              <IconSwitch />
+              Reassign provider
+            </DropdownMenuItem>
+          )}
           {(p.status === "Invited" || p.status === "Declined") && (
             <DropdownMenuItem onClick={() => setTimeline(p)}>
               <IconClock />
@@ -815,6 +854,15 @@ export function PatientsScreen() {
           <>
             <BulkInviteAgain rows={rows} onDone={clear} />
             <BulkResend rows={rows} onDone={clear} />
+            {canManage && (
+              <BulkReassign
+                rows={rows}
+                onOpen={(open) => {
+                  clearAfter.current = clear
+                  setReassigning(open)
+                }}
+              />
+            )}
           </>
         )}
         exportName="Patients"
@@ -852,6 +900,15 @@ export function PatientsScreen() {
       <ReactivateDialog
         patient={reactivating}
         onClose={() => setReactivating(null)}
+      />
+
+      <ReassignProviderDialog
+        rows={reassigning}
+        onClose={() => {
+          setReassigning(null)
+          clearAfter.current = null
+        }}
+        onDone={() => clearAfter.current?.()}
       />
 
       <InviteTimelineSheet

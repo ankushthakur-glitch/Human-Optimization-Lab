@@ -47,7 +47,6 @@ import { YourHistory } from "@/components/plan-history"
 import { PlanToday } from "@/components/plan-today"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { Outlook } from "@/components/plan-outlook"
-import { PhotoCheckIn, PhotoSheet, type PhotoSheetKind, type Shots } from "@/components/plan-photos"
 import { ProgressAsk, YourProgress } from "@/components/plan-progress"
 import { acceptedPlan, changeRequested, livePlan, proposedPlan } from "@/lib/plans"
 import { MARKER_CARE, type Biomarker, type FocusArea } from "@/lib/record"
@@ -97,17 +96,16 @@ export function PlanMember() {
     } catch {}
   }
   const [checkIn, setCheckIn] = React.useState<CheckInKind>()
-  // The photo sheets live here, in the page's overlay, so they pass over the
-  // tab bar like the other sheets.
-  const [shots, setShots] = React.useState<Shots>({})
-  const [savedOn, setSavedOn] = React.useState<string>()
-  const [photoSheet, setPhotoSheet] = React.useState<PhotoSheetKind>()
   const onboarding = useOnboarding()
   // Walked on from the enrolled page: with no portal in this build,
   // Dr. Patel sends the plan after a moment, and again after each change
   // she requests.
-  const { walk } = useLocalSearchParams<{ walk?: string }>()
+  const { walk, section: asked } = useLocalSearchParams<{ walk?: string; section?: string }>()
   useDoctorReply(walk)
+  // Home's See more opens Plan straight on a section (Today's goals → Today).
+  React.useEffect(() => {
+    if (asked && SECTIONS.some((o) => o.value === asked)) setSection(asked as Section)
+  }, [asked])
   // Version 1, once Dr. Patel sends it, opens "Your personalized plan is
   // ready" once; "View my plan" comes back to it here to accept.
   const firstReady = experience === "member-review" && onboarding.plan?.status === "proposed" && onboarding.plan.version === 1 && !onboarding.planReadySeen
@@ -123,16 +121,6 @@ export function PlanMember() {
     <DevicesSheet onClose={() => setDevices(false)} />
   ) : checkIn ? (
     <CheckInSheet kind={checkIn} onClose={() => setCheckIn(undefined)} />
-  ) : photoSheet ? (
-    <PhotoSheet
-      kind={photoSheet}
-      onClose={() => setPhotoSheet(undefined)}
-      onSave={(s) => {
-        setShots(s)
-        setSavedOn(new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }))
-        setPhotoSheet(undefined)
-      }}
-    />
   ) : undefined
   // The live plan reads in four sections under the header: Today first.
   const live = experience !== "member-review" && experience !== "paused"
@@ -152,7 +140,7 @@ export function PlanMember() {
       ) : experience === "paused" ? (
         <PausedStage />
       ) : (
-        <LivePlan section={section} onDevices={() => setDevices(true)} onAdd={setCheckIn} shots={shots} savedOn={savedOn} onPhotoSheet={setPhotoSheet} />
+        <LivePlan section={section} onDevices={() => setDevices(true)} onAdd={setCheckIn} />
       )}
     </TabScreen>
   )
@@ -192,12 +180,11 @@ function focusLine(area: FocusArea, s: Snapshot, markers: Biomarker[], week: Wee
   return "Goal: keep your bone density steady. Next scan May 2027."
 }
 
-type Section = "today" | "progress" | "photos" | "history" | "outlook"
+type Section = "today" | "history" | "progress" | "outlook"
 const SECTIONS: { value: Section; label: string }[] = [
   { value: "today", label: "Today" },
-  { value: "progress", label: "Progress" },
-  { value: "photos", label: "Photos" },
   { value: "history", label: "History" },
+  { value: "progress", label: "Progress" },
   { value: "outlook", label: "Outlook" },
 ]
 
@@ -231,16 +218,10 @@ function LivePlan({
   section,
   onDevices,
   onAdd,
-  shots,
-  savedOn,
-  onPhotoSheet,
 }: {
   section: Section
   onDevices: () => void
   onAdd: (kind: CheckInKind) => void
-  shots: Shots
-  savedOn?: string
-  onPhotoSheet: (kind: PhotoSheetKind) => void
 }) {
   const onboarding = useOnboarding()
   const versions = onboarding.plan?.versions ?? []
@@ -284,7 +265,6 @@ function LivePlan({
 
       {section === "progress" && <YourProgress onAdd={onAdd} />}
 
-      {section === "photos" && <PhotoCheckIn shots={shots} savedOn={savedOn} onTake={() => onPhotoSheet("capture")} onInfo={() => onPhotoSheet("privacy")} />}
 
       {section === "history" && <YourHistory />}
 
@@ -673,7 +653,7 @@ function Workouts() {
               title={`${session.title}, ${session.focus.toLowerCase()}`}
               meta={`${days.join(", ")}. About ${session.minutes} minutes, ${session.exercises.length} moves: ${session.exercises.map((e) => e.name.toLowerCase()).join(", ")}.`}
               tag={live ? { tone: "primary", label: "Today" } : undefined}
-              onPress={live ? () => router.push("/exercise") : undefined}
+              onPress={live ? () => router.push({ pathname: "/topic/[id]", params: { id: "exercise" } }) : undefined}
             />
           )
         })}

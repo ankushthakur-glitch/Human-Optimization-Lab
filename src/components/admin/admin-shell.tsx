@@ -5,6 +5,7 @@ import {
   IconDashboard,
   IconHospital,
   IconSettings,
+  IconStethoscope,
 } from "@/design-system/icons"
 
 import {
@@ -14,7 +15,7 @@ import {
   type ShellAction,
 } from "@/components/ehr-shell"
 
-export type AdminModule = "dashboard" | "practices" | "settings"
+export type AdminModule = "dashboard" | "practices" | "clinical" | "settings"
 
 const ADMIN_NAV: NavItem[] = [
   {
@@ -28,6 +29,12 @@ const ADMIN_NAV: NavItem[] = [
     label: "Practices",
     icon: IconHospital,
     href: "/screens/admin/practices",
+  },
+  {
+    id: "clinical",
+    label: "Clinical content",
+    icon: IconStethoscope,
+    href: "/screens/admin/clinical",
   },
   {
     id: "settings",

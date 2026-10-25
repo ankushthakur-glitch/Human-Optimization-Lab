@@ -36,8 +36,7 @@ const FONTS = {
                          one, what's open, a test to book,
                          notifications), care (booking a test with a
                          partner, an appointment), the member's day
-                         (today's exercise and one move, the diet plan,
-                         logging a meal, one day, progress, history),
+                         (the diet plan, one day, progress, history),
                          membership, profile and connect later
    signed out for idling session-expired
    The error states (+not-found, and the review index under errors/) sit
@@ -107,11 +106,7 @@ function Routes() {
           <Stack.Screen name="onboarding/your-why" />
           <Stack.Screen name="onboarding/life" />
           <Stack.Screen name="onboarding/life-question" />
-          <Stack.Screen name="onboarding/why" />
           <Stack.Screen name="onboarding/syncing" />
-          <Stack.Screen name="onboarding/trends" />
-          <Stack.Screen name="onboarding/biological-age" />
-          <Stack.Screen name="onboarding/what-is-driving-it" />
         </Stack.Protected>
         <Stack.Protected guard={status === "signedIn" && onboarded}>
           {/* The four tabs swap in place; the assistant rises over them. */}
@@ -158,15 +153,11 @@ function Routes() {
           <Stack.Screen name="visit/[id]" />
           <Stack.Screen name="notifications" />
           {/* The member's day, opened from the member home's doors and
-              cards: today's exercise and each move, the diet plan, logging
-              a meal, one day, progress since the start, and history. */}
-          <Stack.Screen name="exercise/index" />
-          <Stack.Screen name="exercise/[id]" />
+              cards: the diet plan, one day, progress since the start, and
+              history. */}
           <Stack.Screen name="diet" />
-          <Stack.Screen name="log-meal" />
           <Stack.Screen name="day/[date]" />
           <Stack.Screen name="progress" options={{ animation: "none" }} />
-          <Stack.Screen name="history" />
           {/* The member's own billing page: pause, resume and cancel. */}
           <Stack.Screen name="membership" />
           <Stack.Screen name="profile" />
@@ -178,22 +169,6 @@ function Routes() {
           <Stack.Screen name="connect" />
           <Stack.Screen name="connect-texts" />
           <Stack.Screen name="building" />
-          {/* The Journey_14 paid app as a dummy beside the current one
-              (23 Oct 2026): its own screens under v14/, nothing shared. */}
-          <Stack.Screen name="v14/index" />
-          <Stack.Screen name="v14/tests-in" options={{ animation: "fade" }} />
-          <Stack.Screen name="v14/starting-point" />
-          <Stack.Screen name="v14/plan" options={{ animation: "none" }} />
-          <Stack.Screen name="v14/topic/[id]" />
-          <Stack.Screen name="v14/move/[id]" />
-          <Stack.Screen name="v14/review" />
-          <Stack.Screen name="v14/numbers" />
-          <Stack.Screen name="v14/history/[topic]" />
-          <Stack.Screen name="v14/photos" />
-          <Stack.Screen name="v14/ask" options={{ animation: "slide_from_bottom" }} />
-          <Stack.Screen name="v14/care/index" options={{ animation: "none" }} />
-          <Stack.Screen name="v14/care/[id]" />
-          <Stack.Screen name="v14/book/[id]" />
         </Stack.Protected>
         <Stack.Protected guard={status === "expired"}>
           <Stack.Screen name="session-expired" options={{ gestureEnabled: false }} />
