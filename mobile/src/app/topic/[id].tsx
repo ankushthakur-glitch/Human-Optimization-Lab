@@ -59,6 +59,7 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
   const [meal, setMeal] = React.useState<"scan" | "voice">()
   const [speak, setSpeak] = React.useState<MealSlot>()
   const [guide, setGuide] = React.useState(false)
+  const [drinks, setDrinks] = React.useState(false)
   const [dose, setDose] = React.useState<"taken" | "missed" | "side">()
   const [planned, setPlanned] = React.useState(false)
   const [apps, setApps] = React.useState<Extract<Way["act"], { kind: "apps" }>>()
@@ -104,6 +105,7 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
       title={topic.id === "medication" ? "Medication" : topic.name}
       sheet={
         (sheet && <MeasureSheet onClose={() => setSheet(false)} />) ||
+        (drinks && <DrinksSheet onClose={() => setDrinks(false)} />) ||
         (guide && <WaistGuideSheet onClose={() => setGuide(false)} onEnter={() => setSheet(true)} />) ||
         (part && <PartSheet onClose={() => setPart(false)} />) ||
         (short && <ShortSheet onClose={() => setShort(false)} />) ||
@@ -154,7 +156,7 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
 
       <Ways ways={topic.ways} onPick={pick} picked={logged?.way} />
 
-      {topic.id === "eat" && <AlcoholLog />}
+      {topic.id === "eat" && <AlcoholLog onLog={() => setDrinks(true)} />}
 
       {topic.id === "measure" && <WaistGuideButton onPress={() => setGuide(true)} />}
     </TopicPage>
@@ -515,6 +517,38 @@ function TodaysMeals() {
         })}
       </Group>
     </Block>
+  )
+}
+
+const DRINK_DAYS = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+] as const
+
+/** "Log drinks": one sitting, how many standard drinks and which day. */
+function DrinksSheet({ onClose }: { onClose: () => void }) {
+  const s = useOnboarding()
+  const [count, setCount] = React.useState(1)
+  const [when, setWhen] = React.useState<(typeof DRINK_DAYS)[number]["value"]>("today")
+  const keyboard = useKeyboardHeight()
+
+  async function save() {
+    const date = new Date()
+    if (when === "yesterday") date.setDate(date.getDate() - 1)
+    const at = new Date().toISOString()
+    await s.save({ drinks: [...(s.drinks ?? []), { id: `d-${Date.now().toString(36)}`, day: localDay(date), count, at }] })
+    toast(`${count} ${count === 1 ? "drink" : "drinks"} logged`)
+    onClose()
+  }
+
+  return (
+    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
+      <Sheet title="Log drinks" onClose={onClose}>
+        <ChipRow label="When" options={[...DRINK_DAYS]} value={when} onChange={setWhen} />
+        <SliderField label="Drinks at this sitting" value={count} min={1} max={12} show={(n) => String(n)} parse={(t) => (/^\d+/.test(t.trim()) ? parseInt(t, 10) : undefined)} onChange={setCount} keyboardType="number-pad" />
+        <PrimaryButton onPress={save}>Save</PrimaryButton>
+      </Sheet>
+    </View>
   )
 }
 
