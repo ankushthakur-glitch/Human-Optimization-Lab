@@ -300,8 +300,12 @@ export function PatientChart({ patient }: { patient: Patient }) {
           ) : section === "care-plan" ? (
             <CarePlanView
               patient={patient}
-              tab={tab === "history" ? "history" : "plan"}
-              onTab={(t) => go({ tab: t === "plan" ? "" : t })}
+              tab={
+                tab === "baseline" || tab === "plan" || tab === "history"
+                  ? tab
+                  : undefined
+              }
+              onTab={(t) => go({ tab: t })}
             />
           ) : chart.state !== "Active" ? (
             <RecordNotReady patient={patient} chart={chart} />

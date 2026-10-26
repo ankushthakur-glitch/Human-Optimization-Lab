@@ -162,15 +162,21 @@ export const PLAN_VERSIONS: PlanVersion[] = [
       "Added sugar: at most 25 g a day",
       "Strength three times a week",
       "Walk after dinner three evenings a week",
-      "Weigh in every Thursday morning",
+      "Weigh in every morning, before breakfast",
     ],
   },
 ]
 
+/** The weigh-in default, set from the evidence: daily self-weighing, first
+    thing in the morning, works best for anyone in active weight management,
+    and every 1 to 3 days is the least that still helps; weekly is too long.
+    Replaces the earlier spaced Thursday schedule (user, 26 Oct 2026). */
+export const WEIGH_IN = { often: "Every morning", detail: "First thing, before breakfast", every: "every 1 to 3 days" } as const
+
 /** The next version while it is with the doctor (sample data until plans
     come from the server, C.16.1 item 2): what is changing in it. */
 export const PLAN_DRAFT = {
-  changes: ["Protein up to 120 g a day", "Strength sessions up to 25 minutes", "Weigh in on Mondays too"],
+  changes: ["Protein up to 120 g a day", "Strength sessions up to 25 minutes"],
 } as const
 
 /** Physician reviews are quarterly (M-56). */
@@ -1311,20 +1317,16 @@ export function today(s: Snapshot, now: Date = new Date()) {
       counts: false,
       order: 0,
     },
-    // The weigh in, Thursday mornings (FINAL-SPEC E.3).
-    ...(now.getDay() === 4
-      ? [
-          {
-            id: "weigh" as const,
-            title: "Weigh in",
-            detail: "Before breakfast",
-            time: clock(7),
-            status: weighDone ? ("done" as const) : ("open" as const),
-            counts: true,
-            order: 7 * 60,
-          },
-        ]
-      : []),
+    // The weigh in, every morning (WEIGH_IN).
+    {
+      id: "weigh" as const,
+      title: "Weigh in",
+      detail: WEIGH_IN.detail,
+      time: clock(7),
+      status: weighDone ? ("done" as const) : ("open" as const),
+      counts: true,
+      order: 7 * 60,
+    },
     {
       id: "meal",
       title: "Log a meal",

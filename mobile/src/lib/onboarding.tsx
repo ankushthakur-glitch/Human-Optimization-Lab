@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import type { Allowance } from "@/lib/allowance"
+import type { TestPay, TestReview } from "@/lib/baseline-tests"
 import type { Answers } from "@/lib/conversation"
 import type { Life } from "@/lib/wellbeing"
 import type { ActivityLog, Entry, Meal, SavedQuestion } from "@/lib/member"
@@ -306,6 +307,11 @@ export type State = {
   /** How she chose to pay on /enrollment, before any membership exists;
       unset means yearly. */
   billingPick?: Cadence
+  /** When she chose to pay for the tests on /enrollment; unset means now. */
+  testPay?: TestPay
+  /** Her physician's sorting of the paid tests into insurance or Inlay
+      (/your-tests); unset until it is done. */
+  testReview?: TestReview
   /** The baseline tests her membership paid for (/payment), and when she
       chose to schedule them later (/schedule-tests): until each is booked
       it waits in To do, brought up every other day. */
@@ -324,6 +330,9 @@ export type State = {
     string,
     Partial<Record<string, { way: string; at: string; parts?: string[]; skipped?: string[]; minutes?: number; note?: string; night?: { bed: number; up: number; woke: number; cpap: number } }>>
   >
+  /** Apps and devices she connected from a topic's ways ("Connect your
+      device", "Import from another app"), by name. */
+  linkedApps?: string[]
   /** The measurements beyond weight and waist (entries holds those two),
       by day, in inches. */
   measures?: Record<string, Partial<Record<"chest" | "hips" | "thigh" | "arm", number>>>

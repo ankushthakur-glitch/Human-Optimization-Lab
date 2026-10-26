@@ -1,12 +1,13 @@
+import * as DocumentPicker from "expo-document-picker"
 import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
 
 import { PageNotFoundState } from "@/components/error-state"
 import { PrimaryButton } from "@/components/hol"
 import { ProductStep, ScanStep } from "@/components/meal-scan"
 import { MeasureSheet } from "@/components/measure-sheet"
-import { Check, ForkKnife, Play, Warning } from "@/components/ph"
+import { Check, DeviceMobile, ForkKnife, Play, UploadSimple, Warning } from "@/components/ph"
 import { SheetRows } from "@/components/care-orders-rows"
 import { Block, Card, ChipRow, Group, HUE, NeedsRow, Tabs, Tag, TickCircle, toast, type Hue } from "@/components/record-kit"
 import { AddToRecordSheet } from "@/components/record-rows"
@@ -17,9 +18,10 @@ import { isSlot, logDay, slotName } from "@/components/today-food-meals"
 import type { Product } from "@/components/scan-food"
 import { TextField } from "@/components/ui"
 import { ScoreDial, TargetCard, TopicPage, Ways, askAbout } from "@/components/topic-kit"
+import { WaistGuideButton, WaistGuideSheet } from "@/components/waist-guide"
 import { MEAL_SLOTS, clockOf, localDay, mealName, mealsOn, profileOf, totalsOf, type Meal, type MealSlot } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { ALSO_TAKING, CARDIO, DOSES, INTERACTION, LIFTS, MISSED_WHY, SEVERITY, SLEEP_LAST, WARMUP, hm, inBed, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
+import { ALSO_TAKING, CARDIO, DOSES, INTERACTION, LIFTS, MISSED_WHY, PLANNED_MEALS, SEVERITY, SLEEP_LAST, WARMUP, hm, inBed, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
 import { formatNumber } from "@/lib/trends"
 import { card, chart, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
@@ -51,7 +53,10 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
   const [short, setShort] = React.useState(false)
   const [night, setNight] = React.useState(false)
   const [meal, setMeal] = React.useState(false)
+  const [guide, setGuide] = React.useState(false)
   const [dose, setDose] = React.useState<"taken" | "missed" | "side" | "photo">()
+  const [planned, setPlanned] = React.useState(false)
+  const [apps, setApps] = React.useState<Extract<Way["act"], { kind: "apps" }>>()
   // The scan opens over this page as its popup.
   const [scan, setScan] = React.useState<MealSlot>()
   const [found, setFound] = React.useState<{ product: Product; servings?: number }>()
@@ -78,6 +83,8 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
     else if (act.kind === "short") setShort(true)
     else if (act.kind === "night") setNight(true)
     else if (act.kind === "dose") setDose(act.sheet)
+    else if (act.kind === "pick") setPlanned(true)
+    else if (act.kind === "apps") setApps(act)
     else if (act.kind === "meal") {
       if (slot) setScan(slot)
       else setMeal(true)
@@ -89,6 +96,7 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
       title={topic.id === "medication" ? "Medication" : topic.name}
       sheet={
         (sheet && <MeasureSheet onClose={() => setSheet(false)} />) ||
+        (guide && <WaistGuideSheet onClose={() => setGuide(false)} onEnter={() => setSheet(true)} />) ||
         (part && <PartSheet onClose={() => setPart(false)} />) ||
         (short && <ShortSheet onClose={() => setShort(false)} />) ||
         (night && <NightSheet onClose={() => setNight(false)} />) ||
@@ -96,6 +104,8 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
         (dose === "missed" && <MissedSheet onClose={() => setDose(undefined)} />) ||
         (dose === "side" && <SideEffectSheet onClose={() => setDose(undefined)} />) ||
         (dose === "photo" && <AddToRecordSheet kind="medicines" onClose={() => setDose(undefined)} />) ||
+        (planned && <PlannedMeals slot={slot} onSave={(m) => (setPlanned(false), saveScan(m))} onClose={() => setPlanned(false)} />) ||
+        (apps && <AppsSheet act={apps} onClose={() => setApps(undefined)} />) ||
         (meal && (
           <WhichMeal
             onPick={(to) => {
@@ -136,6 +146,7 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
       <Ways ways={topic.ways} onPick={pick} picked={logged?.way} />
 
       {topic.id === "medication" && <AlsoTaking />}
+      {topic.id === "measure" && <WaistGuideButton onPress={() => setGuide(true)} />}
     </TopicPage>
   )
 }
@@ -327,6 +338,29 @@ function WhichMeal({ onPick, onClose }: { onPick: (slot: MealSlot) => void; onCl
           <NeedsRow key={m.id} icon={<ForkKnife size={16} color={HUE.teal.ink} />} title={m.name} onPress={() => onPick(m.id)} />
         ))}
       </SheetRows>
+    </Sheet>
+  )
+}
+
+/** The meal database: the plan's pre-planned meals, the ones for this meal
+    first when the door already knows it, each added whole in one tap. */
+function PlannedMeals({ slot, onSave, onClose }: { slot?: MealSlot; onSave: (meal: Omit<Meal, "id" | "time">) => void; onClose: () => void }) {
+  const list = slot ? PLANNED_MEALS.filter((m) => m.slot === slot) : PLANNED_MEALS
+  return (
+    <Sheet title={slot ? `Pick a ${slotName(slot).toLowerCase()}` : "Pick a meal"} onClose={onClose}>
+      <ScrollView style={styles.plannedList}>
+        <SheetRows>
+          {list.map((m) => (
+            <NeedsRow
+              key={m.id}
+              icon={<ForkKnife size={16} color={HUE.teal.ink} />}
+              title={m.name}
+              meta={`${slotName(m.slot)}, ${formatNumber(m.nutrients.calories)} kcal, ${m.nutrients.protein} g protein`}
+              action={{ label: "Add", onPress: () => onSave({ title: m.name, slot: slot ?? m.slot, how: "typed", status: "confirmed", foods: [{ name: m.name, portion: m.portion, confidence: "high", nutrients: m.nutrients }] }) }}
+            />
+          ))}
+        </SheetRows>
+      </ScrollView>
     </Sheet>
   )
 }
@@ -749,8 +783,70 @@ function AlsoTaking() {
   )
 }
 
+/* ----------------------------------------------------------------- apps -- */
+
+/** The apps and devices a topic can post itself from: Connect shows a
+    loader, then the row says Connected. Exercise adds a file of her own
+    programme above them, which the plan then monitors. */
+function AppsSheet({ act, onClose }: { act: Extract<Way["act"], { kind: "apps" }>; onClose: () => void }) {
+  const s = useOnboarding()
+  const linked = s.linkedApps ?? []
+  const [busy, setBusy] = React.useState<string>()
+  const [file, setFile] = React.useState<string>()
+
+  function connect(app: string) {
+    setBusy(app)
+    setTimeout(async () => {
+      await s.save({ linkedApps: [...linked.filter((a) => a !== app), app] })
+      setBusy(undefined)
+      toast(`${app} connected`)
+    }, 1200)
+  }
+
+  async function upload() {
+    const r = await DocumentPicker.getDocumentAsync({ type: ["application/pdf", "image/*", "text/plain", "text/csv"], copyToCacheDirectory: true })
+    if (r.canceled) return
+    setFile(r.assets[0].name)
+    toast("Programme uploaded. We monitor yours.")
+  }
+
+  return (
+    <Sheet title={act.title} onClose={onClose}>
+      <SheetRows>
+        {act.upload && (
+          <NeedsRow
+            icon={<UploadSimple size={16} color={HUE.teal.ink} />}
+            title="Upload a file"
+            meta={file ?? "PDF, a photo or a spreadsheet"}
+            tag={file ? { tone: "ok", label: "Uploaded" } : undefined}
+            action={file ? undefined : { label: "Upload", onPress: upload }}
+            chevron={false}
+          />
+        )}
+        {act.apps.map((app) => {
+          const on = linked.includes(app)
+          return (
+            <NeedsRow
+              key={app}
+              icon={<DeviceMobile size={16} color={HUE.teal.ink} />}
+              title={app}
+              tag={on ? { tone: "ok", label: "Connected" } : undefined}
+              right={busy === app ? <ActivityIndicator color={color.primary} /> : undefined}
+              action={on || busy === app ? undefined : { label: "Connect", onPress: () => connect(app) }}
+              chevron={false}
+            />
+          )
+        })}
+      </SheetRows>
+    </Sheet>
+  )
+}
+
+/* -------------------------------------------------------------- measure -- */
+
 const styles = StyleSheet.create({
   fill: { flex: 1, minWidth: 0 },
+  plannedList: { maxHeight: 420 },
   pressed: { opacity: 0.7 },
   // A finished lift: struck through, in the quiet grey.
   struck: { textDecorationLine: "line-through", color: ink.tertiary },

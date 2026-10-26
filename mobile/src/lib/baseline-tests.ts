@@ -16,13 +16,19 @@ export type BaselineTest = {
   /** The Why? sheet: what the test is, then what the plan gets from it. */
   what: string
   why: string
+  /** What AI found about her insurance: likely covers it, or may with a
+      referral. Unset: not covered. Her physician decides (/your-tests). */
+  insurance?: Coverage
 }
+
+export type Coverage = "likely" | "maybe"
 
 export const BASELINE_TESTS: Record<BaselineTestId, BaselineTest> = {
   panel: {
     id: "panel",
     name: "Comprehensive Blood Panel",
     price: 189,
+    insurance: "likely",
     what: "One blood draw that checks blood sugar, cholesterol, kidney and liver function, blood counts, and key hormones and vitamins.",
     why: "It shows how your body is working on the inside today. These become the starting values your plan tracks, so every change can be measured against them.",
   },
@@ -68,8 +74,8 @@ export type AddOnId = "sleep" | "smart"
 
 /** What /baseline offers beyond the three tests: the prices live here so
     every screen that totals them agrees. Not part of the yearly test discount. */
-export const ADD_ONS: Record<AddOnId, { id: AddOnId; name: string; price: number }> = {
-  sleep: { id: "sleep", name: "Home Sleep Study", price: 299 },
+export const ADD_ONS: Record<AddOnId, { id: AddOnId; name: string; price: number; insurance?: Coverage }> = {
+  sleep: { id: "sleep", name: "Home Sleep Study", price: 299, insurance: "maybe" },
   smart: { id: "smart", name: "SMART program", price: 100 },
 }
 
@@ -103,6 +109,29 @@ export function testCosts(ids: string[] | undefined) {
       BUNDLE.price
     : 0
   return { tests, subtotal, saving, total: subtotal - saving }
+}
+
+/* -------------------------------------------- insurance or Inlay -- */
+
+/** When she pays for the tests (/enrollment): with the membership, and
+    covered ones are refunded; or after her physician has sorted them,
+    only for those booked through Inlay. Unset means now. */
+export type TestPay = "now" | "later"
+
+/** Her physician's sorting of the paid tests (/your-tests): the ids that go
+    through her insurance, ordered by the office; every other one is booked
+    in the app through Inlay. */
+export type TestReview = { at: string; insurance: string[]; message: string }
+
+/** What AI suggests to her physician: every test insurance likely covers
+    goes through insurance. */
+export function suggestedInsurance(ids: string[]) {
+  return ids.filter((id) => (BASELINE_TESTS[id as BaselineTestId] ?? ADD_ONS[id as AddOnId])?.insurance === "likely")
+}
+
+/** A test or add-on by id, for the lists after payment. */
+export function itemOf(id: string): { id: string; name: string; price: number } | undefined {
+  return BASELINE_TESTS[id as BaselineTestId] ?? ADD_ONS[id as AddOnId]
 }
 
 /* ----------------------------------------------------------- scheduling -- */

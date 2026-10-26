@@ -29,7 +29,10 @@ export type IconKey = "exercise" | "eat" | "sleep" | "mind" | "medication" | "me
     she is adding, then opens that way of logging it; `dose` opens one of
     Medication's sheets: tick the doses taken, log one missed, report a side
     effect to the physician, or photograph a new label; `night` opens
-    Sleep's log of the night she actually had. */
+    Sleep's log of the night she actually had; `pick` the plan's pre-planned
+    meals, one tap to add; `apps` the apps and devices the topic can post
+    itself from, each connected in place (`upload` adds a file of her own
+    programme above them). */
 export type Act =
   | { kind: "done" }
   | { kind: "go"; href: string; params?: Record<string, string> }
@@ -40,6 +43,8 @@ export type Act =
   | { kind: "night" }
   | { kind: "meal" }
   | { kind: "dose"; sheet: "taken" | "missed" | "side" | "photo" }
+  | { kind: "pick" }
+  | { kind: "apps"; title: string; apps: string[]; upload?: boolean }
 
 export type Way = { id: string; title: string; says: string; badge: string; tone: "good" | "warn" | "info"; icon: IconKey; act: Act }
 
@@ -58,7 +63,8 @@ export type Topic = {
   /** What the row says once she has answered it. */
   answered: { text: string; note: (at: string) => string }
   /** The target card's figure on the topic page. */
-  figure: string
+  /** The figure on the target card's right; left out where the target already says how often. */
+  figure?: string
   intro: string
   ways: Way[]
   /** Counts as done on Today before she does anything (already answered). */
@@ -78,10 +84,12 @@ export const TOPICS: Topic[] = [
     state: { text: "55 min", tone: "plain", note: "Not started" },
     answered: { text: "55 min", note: (at) => `Completed ${at}` },
     figure: "55 min",
-    intro: "Today's session in full, then two ways to answer it.",
+    intro: "Today's session in full, then four ways to answer it.",
     ways: [
       { id: "written", title: "Do it as written", says: "All four lifts, then the cardio block", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "done" } },
       { id: "part", title: "Do part of it", says: "Log your sets, or skip an exercise", badge: "Scores on what you did", tone: "warn", icon: "pencil", act: { kind: "part" } },
+      { id: "easier", title: "Ask for an easier version", says: "Say why, out loud, it rebuilds", badge: "No one to call", tone: "info", icon: "mic", act: { kind: "ask", ask: "Today's session is too much. Can you make it easier? " } },
+      { id: "own", title: "Upload your own programme", says: "Or connect the app it already lives in", badge: "We monitor yours", tone: "info", icon: "upload", act: { kind: "apps", title: "Your own programme", apps: ["Apple Health", "Strava", "Garmin Connect", "Peloton"], upload: true } },
     ],
   },
   {
@@ -96,7 +104,10 @@ export const TOPICS: Topic[] = [
     figure: "0 of 3",
     intro: FOUR,
     ways: [
+      { id: "database", title: "Pick from the meal database", says: "Pre-planned meals, one tap to add", badge: "Macros already known", tone: "good", icon: "search", act: { kind: "pick" } },
       { id: "photo", title: "Photograph the plate", says: "Snap it and we read the macros", badge: "Scores what you ate", tone: "warn", icon: "camera", act: { kind: "meal" } },
+      { id: "say", title: "Say what you ate", says: "Out loud, in your own words", badge: "Nothing to type", tone: "good", icon: "mic", act: { kind: "ask", ask: "Here is what I ate: " } },
+      { id: "import", title: "Import from another app", says: "Apple Health, MyFitnessPal, Cronometer", badge: "Posts itself", tone: "info", icon: "import", act: { kind: "apps", title: "Import your meals", apps: ["Apple Health", "MyFitnessPal", "Cronometer"] } },
     ],
   },
   {
@@ -109,10 +120,12 @@ export const TOPICS: Topic[] = [
     state: { text: "6 h 10 m", tone: "bad", note: "Short by 1 h 20 m" },
     answered: { text: "Window set", note: (at) => `Tonight's window, ${at}` },
     figure: "6 h 10 m",
-    intro: "Last night scored, then the ways to answer tonight.",
+    intro: "Last night scored, then four ways to answer tonight.",
     ways: [
       { id: "window", title: "Follow tonight's window", says: "In bed 10:30, up at 6:00", badge: "Scores 100% for tonight", tone: "good", icon: "check", act: { kind: "done" } },
       { id: "log", title: "Log what actually happened", says: "Time in bed, and the times you woke", badge: "Scores on actual", tone: "warn", icon: "pencil", act: { kind: "night" } },
+      { id: "shift", title: "Ask to shift the window", says: "A late flight, a sick child, say why", badge: "Rebuilds tonight", tone: "info", icon: "mic", act: { kind: "ask", ask: "I need to shift tonight's sleep window because " } },
+      { id: "device", title: "Connect your device", says: "CPAP, Oura, Apple Watch, Eight Sleep", badge: "Logged for you", tone: "info", icon: "device", act: { kind: "apps", title: "Connect your device", apps: ["ResMed CPAP", "Oura", "Apple Watch", "Eight Sleep"] } },
     ],
   },
   {
@@ -129,6 +142,8 @@ export const TOPICS: Topic[] = [
     ways: [
       { id: "session", title: "Do today's session", says: "Twenty minutes, guided end to end", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "done" } },
       { id: "short", title: "Do the short version", says: "Eight minutes when the day is full", badge: "Partial credit", tone: "warn", icon: "pencil", act: { kind: "short" } },
+      { id: "swap", title: "Swap the practice", says: "Say what is not working for you", badge: "Rebuilds the week", tone: "info", icon: "mic", act: { kind: "ask", ask: "The relaxation practice is not working for me because " } },
+      { id: "own", title: "Log your own practice", says: "Yoga, prayer, a walk without a phone", badge: "Counts if you log it", tone: "good", icon: "mind", act: { kind: "ask", ask: "I did my own practice today: " } },
     ],
     done: false,
   },
@@ -156,18 +171,33 @@ export const TOPICS: Topic[] = [
     name: "Measure",
     tag: "All plans",
     tagTone: "grey",
-    target: "Weight and waist, Mondays",
+    target: "Weight each morning, waist monthly",
     detail: "Last entered October 6 · 178 lb, 36.5″",
     state: { text: "Due today", tone: "warn", note: "Last 178 lb · 36.5″" },
     answered: { text: "Done", note: () => "Entered today" },
-    figure: "Weekly",
     intro: FOUR,
     ways: [
       { id: "enter", title: "Enter today's numbers", says: "Weight, waist, blood pressure", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "sheet" } },
-      { id: "skip", title: "Skip today", says: "Say why — the gap stays in the series", badge: "No penalty", tone: "warn", icon: "pencil", act: { kind: "ask", ask: "I am skipping today's measurements because " } },
+      { id: "skip", title: "Skip today", says: "Say why, the gap stays in the series", badge: "No penalty", tone: "warn", icon: "pencil", act: { kind: "ask", ask: "I am skipping today's measurements because " } },
+      { id: "cadence", title: "Change the cadence", says: "Every morning is a lot for some, ask for less often", badge: "Rebuilds the schedule", tone: "info", icon: "mic", act: { kind: "ask", ask: "Can I weigh in less often than every morning? " } },
+      { id: "device", title: "Connect a scale or cuff", says: "Withings, Omron, Apple Health", badge: "Posts itself", tone: "info", icon: "device", act: { kind: "apps", title: "Connect a scale or cuff", apps: ["Withings scale", "Omron cuff", "Apple Health"] } },
     ],
     done: false,
   },
+]
+
+/** How to measure a waist the same way every month, a step a slide in the
+    sheet behind "How to measure" on the Measure page. Taken where the tape
+    crosses the belly button, so the reading lines up with the clinic's own.
+    Each step has its drawing in components/waist-guide.tsx, in this order. */
+export const WAIST_GUIDE: { title: string; says: string; tips: string[] }[] = [
+  { title: "Get ready", says: "Use a soft cloth or plastic sewing tape, not a metal tool tape or a string. Stand in front of a mirror on bare skin, feet together, arms relaxed at your sides.", tips: ["Soft tape", "Bare skin", "Mirror in front"] },
+  { title: "Find your belly button", says: "Your belly button is the landmark. The tape goes right across it, not at your belt line and not up at your ribs.", tips: ["Across the belly button", "Not the belt line"] },
+  { title: "Wrap it level", says: "Hold the zero end on your belly button and wrap the tape all the way round. Check in the mirror that it sits level at the back, flat and not twisted.", tips: ["Level all round", "Flat, not twisted", "Snug, not pressing in"] },
+  { title: "Breathe out, don't suck in", says: "Relax your stomach and breathe out normally. Read the tape at the end of that breath, never while holding your stomach in.", tips: ["Relaxed stomach", "End of a normal breath out"] },
+  { title: "Read it, then check", says: "Read where the tape meets the zero end, to the nearest quarter inch. Measure once more. If the two differ by more than half an inch, measure a third time and use the two closest.", tips: ["Nearest quarter inch", "Measure twice"] },
+  { title: "Inches or centimeters", says: "We record inches. A centimeter tape works too: divide by 2.54, so 92 cm is 36.2 in.", tips: ["Inches recorded", "cm divided by 2.54"] },
+  { title: "Same way every time", says: "Same spot, same tape, same time of day, ideally first thing in the morning before breakfast, once a month. Then a change is your waist, not your method.", tips: ["Morning, before breakfast", "Once a month"] },
 ]
 
 export const topicOf = (id: string | undefined) => TOPICS.find((t) => t.id === id)
@@ -394,6 +424,20 @@ export const liftOf = (id: string | undefined) => LIFTS.find((l) => l.id === id)
 
 export const WARMUP = { name: "Warm-up", detail: "5 min", say: "Easy bike" }
 export const CARDIO = { name: "Zone 2 cardio", detail: "30 min", say: "HR 118–132" }
+
+/* ------------------------------------------------------------------ eat -- */
+
+/** The meal database behind "Pick from the meal database": the plan's
+    pre-planned meals, macros already known, so one tap adds one whole. */
+export const PLANNED_MEALS: { id: string; name: string; slot: "breakfast" | "lunch" | "dinner" | "snack"; portion: string; nutrients: { calories: number; protein: number; fiber: number; calcium: number } }[] = [
+  { id: "yogurt-bowl", name: "Greek yogurt, berries and chia", slot: "breakfast", portion: "1 bowl", nutrients: { calories: 380, protein: 34, fiber: 9, calcium: 350 } },
+  { id: "egg-scramble", name: "Egg white scramble with spinach and toast", slot: "breakfast", portion: "1 plate", nutrients: { calories: 360, protein: 32, fiber: 6, calcium: 180 } },
+  { id: "chicken-quinoa", name: "Chicken, quinoa and greens", slot: "lunch", portion: "1 bowl", nutrients: { calories: 540, protein: 48, fiber: 8, calcium: 160 } },
+  { id: "lentil-soup", name: "Lentil and chicken soup", slot: "lunch", portion: "2 cups", nutrients: { calories: 420, protein: 38, fiber: 11, calcium: 120 } },
+  { id: "salmon-veg", name: "Salmon, sweet potato and broccoli", slot: "dinner", portion: "1 plate", nutrients: { calories: 610, protein: 52, fiber: 9, calcium: 140 } },
+  { id: "turkey-chili", name: "Turkey and black bean chili", slot: "dinner", portion: "1 bowl", nutrients: { calories: 520, protein: 46, fiber: 14, calcium: 190 } },
+  { id: "cottage-cheese", name: "Cottage cheese and pear", slot: "snack", portion: "1 cup", nutrients: { calories: 210, protein: 24, fiber: 4, calcium: 220 } },
+]
 
 /* ----------------------------------------------------------- medication -- */
 

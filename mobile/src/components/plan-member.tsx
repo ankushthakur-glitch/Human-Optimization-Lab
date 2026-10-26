@@ -38,7 +38,7 @@ import { Button, TextField } from "@/components/ui"
 import { BASELINE_TESTS, type BaselineTestId } from "@/lib/baseline-tests"
 import { showDate } from "@/lib/dates"
 import { useExperience, useMarkers } from "@/lib/experience"
-import { MEMBER, PLAN_DRAFT, WALK, dateOfAt, dayLabel, profileOf, progress, thisWeek, weekPlan, type WeekItem } from "@/lib/member"
+import { MEMBER, PLAN_DRAFT, WALK, WEIGH_IN, dateOfAt, dayLabel, profileOf, progress, thisWeek, weekPlan, type WeekItem } from "@/lib/member"
 import { FOCUS_NAME } from "@/lib/offers"
 import { useOnboarding, type Plan } from "@/lib/onboarding"
 import { startingTestsLine } from "@/lib/todo"
@@ -359,7 +359,7 @@ function PlanSections() {
 
       <Block title="Check ins">
         <Group>
-          <NeedsRow icon={<Scales size={16} color={color.primary} />} hue="teal" title="Weigh in" meta="Thursday mornings" />
+          <NeedsRow icon={<Scales size={16} color={color.primary} />} hue="teal" title="Weigh in" meta={WEIGH_IN.often} />
           {bone ? (
             <NeedsRow icon={<Barbell size={16} color={color.primary} />} hue="teal" title="Chair stands" meta="Once a month" />
           ) : (
@@ -476,7 +476,7 @@ function useOptimizationPlans(s: Snapshot): OptimizationPlan[] {
       ...food("weight"),
       { area: "Nutrition", text: "Log breakfast, lunch and dinner", often: "Daily" },
       workout,
-      { area: "Check in", text: "Weigh in, before breakfast", often: "Thursdays" },
+      { area: "Check in", text: "Weigh in, before breakfast", often: "Daily" },
       { area: "Check in", text: "Waist", often: "Once a month" },
     ],
     heart: [...food("heart"), { area: "Check in", text: "Blood pressure, seated", often: "Every evening" }, { area: "Tests", text: "Repeat lipid panel", often: "January" }],

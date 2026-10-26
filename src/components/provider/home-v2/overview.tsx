@@ -12,6 +12,7 @@ import {
   IconEqual,
   IconFileCheck,
   IconFileList,
+  IconLab,
   IconLocation,
   IconUsersGroup,
   IconVideo,
@@ -44,7 +45,10 @@ import {
   SegmentedControl,
   useReducedMotion,
 } from "@/components/dashboard-kit-v2"
-import { useCarePlansToReview } from "@/components/provider/chart-care-plan"
+import {
+  useBaselinesToSort,
+  useCarePlansToReview,
+} from "@/components/provider/chart-care-plan"
 import { CHAT_ME, chats, lastOf } from "@/components/provider/communication/chat-data"
 import { clockTime, ms } from "@/components/provider/mock-clock"
 import { PROVIDER_ID } from "@/components/provider/provider-shell"
@@ -501,6 +505,7 @@ export function NeedsYou({
   className?: string
 }) {
   const plans = useCarePlansToReview()
+  const baselines = useBaselinesToSort()
   const allTasks = tasks.use().items
   const threads = chats.use().items
   const staff = providers.use().items
@@ -531,6 +536,15 @@ export function NeedsYou({
       meta: name(p.patientId),
       verb: "Review",
       href: `${BASE}/${p.patientId}?section=care-plan`,
+    })),
+    ...baselines.map<Action>((b) => ({
+      id: `baseline-${b.patientId}`,
+      icon: IconLab,
+      color: SUBTLE.blue,
+      title: "Baseline tests to sort",
+      meta: name(b.patientId),
+      verb: "Sort",
+      href: `${BASE}/${b.patientId}?section=care-plan&tab=baseline`,
     })),
     ...allTasks
       .filter((t) => t.assigneeId === ME && isOverdue(t))

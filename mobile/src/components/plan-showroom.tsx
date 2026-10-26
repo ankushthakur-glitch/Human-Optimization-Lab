@@ -7,8 +7,8 @@ import { logEvent, useOffer, useShown } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
 
 /* The plan showroom (FINAL-SPEC C.14.3, D.4), cut back on 16 Oct 2026 to
-   what the upgrade screen needs: the AI plan match (components/plan-match.tsx),
-   "Welcome, Liv" and the plans her record supports,
+   what the upgrade screen needs: the AI plan builder (components/plan-match.tsx),
+   "Welcome, Liv" and what her record adds to the six steps,
    then "Start my optimization plan" (ShowroomActions) pinned below it. What
    a member gets, the prices, what stays free and what is charged apart are
    gone from this screen. */
@@ -21,7 +21,7 @@ function startLabelOf(s: Snapshot) {
   return s.membership?.cancelledAt || s.planHistory?.length ? "Start again" : "Start my optimization plan"
 }
 
-export function PlanShowroom({ onSeeAll }: { onSeeAll: () => void }) {
+export function PlanShowroom() {
   const onboarding = useOnboarding()
   const offer = useOffer("plan-tab", { key: "tab" })
   useShown(offer)
@@ -34,7 +34,7 @@ export function PlanShowroom({ onSeeAll }: { onSeeAll: () => void }) {
   }, [onboarding])
 
   return (
-    <PlanMatchSection onSeeAll={onSeeAll} />
+    <PlanMatchSection />
   )
 }
 
