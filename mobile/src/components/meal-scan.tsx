@@ -553,7 +553,7 @@ function NutritionTable({ product, rows, totals }: { product: Product; rows: Nut
   )
 }
 
-function StepButton({ label, onPress, disabled, children }: { label: string; onPress: () => void; disabled?: boolean; children: React.ReactNode }) {
+export function StepButton({ label, onPress, disabled, children }: { label: string; onPress: () => void; disabled?: boolean; children: React.ReactNode }) {
   return (
     <Pressable
       onPress={onPress}

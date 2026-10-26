@@ -44,7 +44,7 @@ export type Act =
   | { kind: "night" }
   | { kind: "meal" }
   | { kind: "voice" }
-  | { kind: "dose"; sheet: "taken" | "missed" | "side" | "photo" }
+  | { kind: "dose"; sheet: "taken" | "missed" | "side" }
   | { kind: "pick" }
   | { kind: "apps"; title: string; apps: string[]; upload?: boolean }
 
@@ -159,12 +159,11 @@ export const TOPICS: Topic[] = [
     state: { text: "2 doses", tone: "plain", note: "Not started" },
     answered: { text: "Taken", note: (at) => `Logged ${at}` },
     figure: "2 doses",
-    intro: FOUR,
+    intro: "Today's doses, and three ways to answer them.",
     ways: [
       { id: "taken", title: "Mark it taken", says: "One tap per dose", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "dose", sheet: "taken" } },
       { id: "missed", title: "Mark a dose missed", says: "No judgement, we just need the truth", badge: "Logged honestly", tone: "warn", icon: "pencil", act: { kind: "dose", sheet: "missed" } },
       { id: "side", title: "Report a side effect", says: "Say what happened, in your words", badge: "Goes to Dr. Patel", tone: "good", icon: "phone", act: { kind: "dose", sheet: "side" } },
-      { id: "photo", title: "Photograph a new one", says: "A medication or supplement label", badge: "Checked for interactions", tone: "good", icon: "camera", act: { kind: "dose", sheet: "photo" } },
     ],
     done: false,
   },
@@ -517,19 +516,6 @@ export const DOSES = [
 export const MISSED_WHY = ["Forgot", "Felt unwell", "Ran out", "Side effects", "Other"] as const
 
 export const SEVERITY = ["Mild", "Moderate", "Severe"] as const
-
-export const ALSO_TAKING = [
-  { name: "Magnesium glycinate", dose: "400 mg, nightly", interacts: false },
-  { name: "Fish oil", dose: "1,000 mg, with dinner", interacts: false },
-  { name: "Berberine", dose: "500 mg, twice daily", interacts: true },
-]
-
-export const INTERACTION = {
-  title: "Berberine and metformin both lower blood glucose",
-  body: "Together they can push it too low. Do not start or stop either on your own.",
-  bold: "Dr. Patel was notified in the physician portal",
-  tail: " and will review it with you.",
-}
 
 /* -------------------------------------------------------------- measure -- */
 

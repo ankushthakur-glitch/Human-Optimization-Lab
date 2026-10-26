@@ -2,26 +2,62 @@ import * as React from "react"
 import { router } from "expo-router"
 import { StyleSheet, Text, View } from "react-native"
 
-import { Block, Card, LEVEL_COLOR, LEVEL_TEXT } from "@/components/record-kit"
-import { WayRow } from "@/components/topic-kit"
+import { PrimaryButton } from "@/components/hol"
+import { StepButton } from "@/components/meal-scan"
+import { Minus, Plus } from "@/components/ph"
+import { Block, Card, LEVEL_COLOR, LEVEL_TEXT, Tabs, toast } from "@/components/record-kit"
 import { WEEK_LIMIT, drinksWord, sittingsOf, weeksOf } from "@/lib/alcohol"
+import { localDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { chart, hairline, ink, space, type } from "@/lib/theme"
+import { chart, color, hairline, ink, space, type } from "@/lib/theme"
 
 /* Alcohol in Eat history: this week's total against the seven drink line,
    six weeks of bars, and how many weeks went over it and how many
-   sittings had four or more. Eat itself keeps only the
-   "Log drinks" row (AlcoholLog). */
+   sittings had four or more. Eat itself keeps the logger (AlcoholLog). */
 
 const BAR_AREA = 72
+const MAX_DRINKS = 12
 
 const short = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 
-/** Eat's alcohol section: the one row to log a sitting, and the way to its history. */
-export function AlcoholLog({ onLog }: { onLog: () => void }) {
+const DAYS = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+] as const
+
+/** Eat's alcohol section: which day, how many drinks at that sitting on a
+    stepper, and one button to log it; See history goes to the weeks. */
+export function AlcoholLog() {
+  const s = useOnboarding()
+  const [count, setCount] = React.useState(1)
+  const [when, setWhen] = React.useState<(typeof DAYS)[number]["value"]>("today")
+
+  async function log() {
+    const date = new Date()
+    if (when === "yesterday") date.setDate(date.getDate() - 1)
+    await s.save({ drinks: [...(s.drinks ?? []), { id: `d-${Date.now().toString(36)}`, day: localDay(date), count, at: new Date().toISOString() }] })
+    toast(`${drinksWord(count)} logged`)
+    setCount(1)
+  }
+
   return (
     <Block title="Alcohol" link={{ label: "See history", onPress: () => router.push({ pathname: "/topic-history/[id]", params: { id: "eat" } }) }}>
-      <WayRow icon="drink" title="Log drinks" says="How many at one sitting, today or yesterday" onPress={onLog} />
+      <Card style={styles.card}>
+        <Tabs options={[...DAYS]} value={when} onChange={setWhen} snug />
+        <View style={styles.count}>
+          <Text style={[type.title, styles.fill]}>Number of drinks</Text>
+          <StepButton label="One fewer" onPress={() => setCount((n) => n - 1)} disabled={count <= 1}>
+            <Minus size={20} color={color.primary} />
+          </StepButton>
+          <Text style={styles.number} accessibilityLiveRegion="polite">
+            {count}
+          </Text>
+          <StepButton label="One more" onPress={() => setCount((n) => n + 1)} disabled={count >= MAX_DRINKS}>
+            <Plus size={20} color={color.primary} />
+          </StepButton>
+        </View>
+        <PrimaryButton onPress={log}>{`Log ${drinksWord(count)}`}</PrimaryButton>
+      </Card>
     </Block>
   )
 }
@@ -82,6 +118,8 @@ export function AlcoholHistory() {
 const styles = StyleSheet.create({
   card: { gap: space.item },
   fill: { flex: 1 },
+  count: { flexDirection: "row", alignItems: "center", gap: space.item },
+  number: { ...type.hero, minWidth: 32, textAlign: "center" },
   sum: { flexDirection: "row", alignItems: "flex-end" },
   right: { alignItems: "flex-end" },
 

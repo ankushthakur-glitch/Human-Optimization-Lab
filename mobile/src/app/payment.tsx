@@ -23,7 +23,7 @@ import {
 } from "@/components/ph"
 import { PaidPopup } from "@/components/paid-popup"
 import { PlanStepPage } from "@/components/plan-steps"
-import { Card, KeyValue, TextAction } from "@/components/record-kit"
+import { Card, KeyValue, Tabs, TextAction } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
 import { dollarsExact, type TestPay } from "@/lib/baseline-tests"
@@ -112,9 +112,10 @@ export default function PaymentScreen() {
   const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns, testPay)
   const count = cost.tests.length + cost.addOns.length
   const testOptions: { key: TestPay; name: string; amount: string; says: string }[] = [
-    { key: "now", name: "Pay now", amount: dollarsExact(cost.testsTotal), says: "Covered tests are refunded" },
+    { key: "now", name: "Pay now", amount: `${dollarsExact(cost.testsTotal)} today`, says: "Covered tests are refunded" },
     { key: "later", name: "Pay after review", amount: "$0 today", says: `Only the tests ${MEMBER.doctorShort} sends to Inlay` },
   ]
+  const chosen = testOptions.find((o) => o.key === testPay) ?? testOptions[0]
   const [method, setMethod] = React.useState<Method>("card")
   // A saved card per kind; the prototype's demo credit card to start.
   const [cards, setCards] = React.useState<Partial<Record<CardMethod, SavedCard>>>({
@@ -247,43 +248,19 @@ export default function PaymentScreen() {
           <Text style={styles.heading} accessibilityRole="header">
             {`When to pay for your ${count === 1 ? "test" : `${count} tests`}`}
           </Text>
-          <View accessibilityRole="radiogroup" accessibilityLabel="When to pay for your tests" style={styles.options}>
-            {testOptions.map((o) => {
-              const on = testPay === o.key
-              return (
-                <Pressable
-                  key={o.key}
-                  onPress={() => onboarding.save({ testPay: o.key })}
-                  accessibilityRole="radio"
-                  accessibilityLabel={`${o.name}, ${o.amount}. ${o.says}`}
-                  accessibilityState={{ checked: on }}
-                  style={({ pressed }) => [styles.option, on && styles.methodOn, pressed && styles.pressed]}
-                >
-                  <View style={[styles.radio, on && styles.radioOn]}>{on && <View style={styles.radioDot} />}</View>
-                  <View style={styles.optionWords}>
-                    <Text style={[styles.optionName, on && styles.methodTextOn]}>{o.name}</Text>
-                    <Text style={styles.optionSays} numberOfLines={1}>
-                      {o.says}
-                    </Text>
-                  </View>
-                  <Text style={styles.optionPrice}>{o.amount}</Text>
-                </Pressable>
-              )
-            })}
-          </View>
+          <Tabs
+            options={testOptions.map((o) => ({ value: o.key, label: o.name }))}
+            value={testPay}
+            onChange={(key) => onboarding.save({ testPay: key })}
+          />
+          <Text style={styles.optionSays}>{`${chosen.amount}. ${chosen.says}`}</Text>
         </View>
       )}
 
       <View style={styles.section}>
-        <View style={styles.headRow}>
-          <Text style={styles.heading} accessibilityRole="header">
-            Pay with
-          </Text>
-          <View style={styles.secure}>
-            <Lock size={14} color={ink.tertiary} />
-            <Text style={styles.secureText}>Secure and encrypted</Text>
-          </View>
-        </View>
+        <Text style={styles.heading} accessibilityRole="header">
+          Pay with
+        </Text>
         <View
           style={styles.methods}
           accessibilityRole="radiogroup"
@@ -321,6 +298,10 @@ export default function PaymentScreen() {
         ) : (
           <WalletPanel wallet={method} />
         )}
+        <View style={styles.secure}>
+          <Lock size={14} color={ink.tertiary} />
+          <Text style={styles.secureText}>Secure and encrypted</Text>
+        </View>
 
         <View style={styles.agree}>
           <Checkbox
@@ -525,7 +506,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: space.item,
     marginTop: space.line,
-    paddingVertical: space.inline,
+    paddingVertical: space.item,
     paddingHorizontal: space.gutter,
     borderRadius: 14,
     borderWidth: 1,
@@ -559,35 +540,12 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
 
-  // Tighter than a screen's sections so the whole step fits without a
-  // scroll, Complete enrollment in view.
-  section: { gap: space.inline, marginTop: space.gutter },
-  headRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },
+  section: { gap: space.inline, marginTop: space.section },
   heading: { ...type.section },
 
-  // When to pay: two slim radio rows, edged in teal when chosen like the
-  // ways to pay below.
-  options: { gap: space.inline },
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.item,
-    minHeight: 48,
-    paddingVertical: space.stack,
-    paddingHorizontal: space.rowX,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: hairline.edge,
-    backgroundColor: color.background,
-  },
-  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: hairline.edge, alignItems: "center", justifyContent: "center" },
-  radioOn: { borderColor: color.primary },
-  radioDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: color.primary },
-  optionWords: { flex: 1, minWidth: 0, gap: 2 },
-  optionName: { ...type.title, fontSize: 14, color: ink.strong },
+  // When to pay: the chosen option's amount and what it means, one quiet
+  // line under the segmented control.
   optionSays: { ...type.label, fontSize: 12, lineHeight: 16, color: ink.secondary },
-  // Digits of one width, as in the totals.
-  optionPrice: { ...type.value, fontVariant: ["tabular-nums"] },
 
   // Four ways to pay, two to a row.
   methods: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
@@ -600,7 +558,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: space.mark,
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: space.mark,
     borderRadius: 12,
     borderWidth: 1,
@@ -623,21 +581,21 @@ const styles = StyleSheet.create({
   secure: { flexDirection: "row", alignItems: "center", gap: space.mark },
   secureText: { ...type.meta, flexShrink: 1 },
   // The agreement stands apart from the card fields it follows.
-  agree: { marginTop: space.inline },
+  agree: { marginTop: space.item },
 
   wallet: {
     flexDirection: "row",
     alignItems: "center",
     gap: space.item,
-    minHeight: 48,
-    paddingVertical: space.stack,
+    minHeight: 52,
+    paddingVertical: space.inline,
     paddingHorizontal: space.rowX,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: hairline.edge,
     backgroundColor: color.background,
   },
-  walletWords: { flex: 1, gap: 0 },
+  walletWords: { flex: 1, gap: space.line },
   walletName: { ...type.title, color: ink.strong },
   walletLine: { ...type.label },
 

@@ -8,10 +8,9 @@ import { PageNotFoundState } from "@/components/error-state"
 import { PrimaryButton } from "@/components/hol"
 import { ProductStep, ScanStep } from "@/components/meal-scan"
 import { MeasureSheet } from "@/components/measure-sheet"
-import { Check, DeviceMobile, ForkKnife, Microphone, Play, StopSquare, UploadSimple, Warning } from "@/components/ph"
+import { Check, DeviceMobile, ForkKnife, Microphone, Play, StopSquare, UploadSimple } from "@/components/ph"
 import { SheetRows } from "@/components/care-orders-rows"
 import { Block, Card, ChipRow, Group, HUE, NeedsRow, Tabs, Tag, TickCircle, toast, type Hue } from "@/components/record-kit"
-import { AddToRecordSheet } from "@/components/record-rows"
 import { Sheet, useKeyboardHeight } from "@/components/sheet"
 import { SetTable } from "@/components/set-table"
 import { amount } from "@/components/today-exercise-parts"
@@ -23,11 +22,11 @@ import { VoiceBeam } from "@/components/voice-beam"
 import { WaistGuideButton, WaistGuideSheet } from "@/components/waist-guide"
 import { MEAL_SLOTS, clockOf, localDay, mealName, mealsOn, profileOf, totalsOf, type Meal, type MealSlot } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { ALSO_TAKING, CARDIO, DOSES, INTERACTION, LIFTS, MISSED_WHY, PLANNED_MEALS, SEVERITY, SLEEP_LAST, SPOKEN_FOODS, SPOKEN_SAMPLE, WARMUP, hm, inBed, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
+import { CARDIO, DOSES, LIFTS, MISSED_WHY, PLANNED_MEALS, SEVERITY, SLEEP_LAST, SPOKEN_FOODS, SPOKEN_SAMPLE, WARMUP, hm, inBed, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
 import { formatNumber } from "@/lib/trends"
 import { loadShort, setsText, targetOf, type Target } from "@/lib/strength"
 import { useVoiceInput } from "@/lib/voice"
-import { card, chart, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
+import { card, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
 /* One topic of the plan, opened from a row on Today (Journey_14 screens 31
    and 33 to 37; the lift's own page is /lift/[id]). Every topic opens the
@@ -60,8 +59,7 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
   const [meal, setMeal] = React.useState<"scan" | "voice">()
   const [speak, setSpeak] = React.useState<MealSlot>()
   const [guide, setGuide] = React.useState(false)
-  const [drinks, setDrinks] = React.useState(false)
-  const [dose, setDose] = React.useState<"taken" | "missed" | "side" | "photo">()
+  const [dose, setDose] = React.useState<"taken" | "missed" | "side">()
   const [planned, setPlanned] = React.useState(false)
   const [apps, setApps] = React.useState<Extract<Way["act"], { kind: "apps" }>>()
   // The scan opens over this page as its popup.
@@ -106,7 +104,6 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
       title={topic.id === "medication" ? "Medication" : topic.name}
       sheet={
         (sheet && <MeasureSheet onClose={() => setSheet(false)} />) ||
-        (drinks && <DrinksSheet onClose={() => setDrinks(false)} />) ||
         (guide && <WaistGuideSheet onClose={() => setGuide(false)} onEnter={() => setSheet(true)} />) ||
         (part && <PartSheet onClose={() => setPart(false)} />) ||
         (short && <ShortSheet onClose={() => setShort(false)} />) ||
@@ -114,7 +111,6 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
         (dose === "taken" && <TakenSheet onClose={() => setDose(undefined)} />) ||
         (dose === "missed" && <MissedSheet onClose={() => setDose(undefined)} />) ||
         (dose === "side" && <SideEffectSheet onClose={() => setDose(undefined)} />) ||
-        (dose === "photo" && <AddToRecordSheet kind="medicines" onClose={() => setDose(undefined)} />) ||
         (planned && <PlannedMeals slot={slot} onSave={(m) => (setPlanned(false), saveScan(m))} onClose={() => setPlanned(false)} />) ||
         (apps && <AppsSheet act={apps} onClose={() => setApps(undefined)} />) ||
         (meal && (
@@ -158,9 +154,8 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
 
       <Ways ways={topic.ways} onPick={pick} picked={logged?.way} />
 
-      {topic.id === "eat" && <AlcoholLog onLog={() => setDrinks(true)} />}
+      {topic.id === "eat" && <AlcoholLog />}
 
-      {topic.id === "medication" && <AlsoTaking />}
       {topic.id === "measure" && <WaistGuideButton onPress={() => setGuide(true)} />}
     </TopicPage>
   )
@@ -523,37 +518,6 @@ function TodaysMeals() {
   )
 }
 
-const DRINK_DAYS = [
-  { value: "today", label: "Today" },
-  { value: "yesterday", label: "Yesterday" },
-] as const
-
-/** "Log drinks": one sitting, how many standard drinks and which day. */
-function DrinksSheet({ onClose }: { onClose: () => void }) {
-  const s = useOnboarding()
-  const [count, setCount] = React.useState(1)
-  const [when, setWhen] = React.useState<(typeof DRINK_DAYS)[number]["value"]>("today")
-
-  async function save() {
-    const date = new Date()
-    if (when === "yesterday") date.setDate(date.getDate() - 1)
-    const at = new Date().toISOString()
-    await s.save({ drinks: [...(s.drinks ?? []), { id: `d-${Date.now().toString(36)}`, day: localDay(date), count, at }] })
-    toast(`${count} ${count === 1 ? "drink" : "drinks"} logged`)
-    onClose()
-  }
-
-  return (
-    <View style={styles.sheetFrame} pointerEvents="box-none">
-      <Sheet title="Log drinks" onClose={onClose}>
-        <ChipRow label="When" options={[...DRINK_DAYS]} value={when} onChange={setWhen} />
-        <SliderField label="Drinks at this sitting" value={count} min={1} max={12} show={(n) => String(n)} parse={(t) => (/^\d+/.test(t.trim()) ? parseInt(t, 10) : undefined)} onChange={setCount} keyboardType="number-pad" />
-        <PrimaryButton onPress={save}>Save</PrimaryButton>
-      </Sheet>
-    </View>
-  )
-}
-
 /* ---------------------------------------------------------------- sleep -- */
 
 /** Last night's score under the target, and the parts that made it:
@@ -900,42 +864,6 @@ function SideEffectSheet({ onClose }: { onClose: () => void }) {
   )
 }
 
-/** What she takes that nobody prescribed, screened against the
-    prescribed list as it is entered, and the one interaction that went to
-    her doctor. The assistant runs the plan; the physician owns the
-    prescription, and this is the one topic whose third path goes to a
-    human, so the screen says so. */
-function AlsoTaking() {
-  return (
-    <>
-      <Block title="Also taking — added by you">
-        <View style={styles.table}>
-          {ALSO_TAKING.map((m, i) => (
-            <View key={m.name} style={[styles.line, i > 0 && styles.rule, m.interacts && styles.flag]}>
-              {m.interacts ? <Warning size={14} color="#A95413" /> : <Check size={14} weight="bold" color={chart.inRange} />}
-              <Text style={styles.lineName}>{m.name}</Text>
-              <Text style={[type.label, styles.fill]} numberOfLines={1}>
-                {m.dose}
-              </Text>
-              <Text style={[styles.verdict, { color: m.interacts ? "#A95413" : ink.good }]}>{m.interacts ? "Interaction" : "No interaction"}</Text>
-            </View>
-          ))}
-        </View>
-      </Block>
-      <Card style={styles.alert}>
-        <Warning size={16} color="#A95413" />
-        <View style={styles.fill}>
-          <Text style={styles.alertTitle}>{INTERACTION.title}</Text>
-          <Text style={[type.body, styles.alertBody]}>
-            {INTERACTION.body} <Text style={styles.alertBold}>{INTERACTION.bold}</Text>
-            {INTERACTION.tail}
-          </Text>
-        </View>
-      </Card>
-    </>
-  )
-}
-
 /* ----------------------------------------------------------------- apps -- */
 
 /** The apps and devices a topic can post itself from: Connect shows a
@@ -1045,15 +973,9 @@ const styles = StyleSheet.create({
   micLabel: { color: ink.detail },
   speakProblem: { flexDirection: "row", alignItems: "center", gap: space.inline, padding: space.item, borderRadius: 10, backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge },
 
-  flag: { backgroundColor: color.amberTint },
   urgent: { color: "#A95413" },
-  verdict: { ...type.metaStrong },
   doses: { gap: space.inline, paddingBottom: space.item },
   dose: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 10, backgroundColor: color.background, borderWidth: 1, borderColor: hairline.edge },
   doseOn: { borderColor: color.primaryLine, backgroundColor: color.primaryTint },
   field: { gap: space.inline },
-  alert: { flexDirection: "row", gap: space.lead, backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge },
-  alertTitle: { ...type.title, color: "#A95413" },
-  alertBody: { fontSize: 13, lineHeight: 19, marginTop: space.stack },
-  alertBold: { fontFamily: font.semibold, color: ink.strong },
 })

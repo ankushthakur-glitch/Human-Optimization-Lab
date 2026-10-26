@@ -5,10 +5,12 @@ import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { ChoiceRow, SheetRows } from "@/components/care-orders-rows"
+import { ProgressChart } from "@/components/charts"
 import { PageNotFoundState } from "@/components/error-state"
 import { ExerciseVideoModal } from "@/components/exercise-video"
 import { PrimaryButton } from "@/components/hol"
 import { Play } from "@/components/ph"
+import { Readout, entryDay } from "@/components/progress-parts"
 import { Block, Tag, TextAction, toast } from "@/components/record-kit"
 import { SetTable, type SetEntry } from "@/components/set-table"
 import { Sheet, useKeyboardHeight } from "@/components/sheet"
@@ -16,7 +18,7 @@ import { amount, saveLog } from "@/components/today-exercise-parts"
 import { TopicPage } from "@/components/topic-kit"
 import { localDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { EFFORT, loadShort, setsText, targetOf, type SetLog } from "@/lib/strength"
+import { EFFORT, loadShort, resistanceOf, sessionsOf, setsText, targetOf, type SetLog } from "@/lib/strength"
 import { LIFTS, liftOf, type Lift } from "@/lib/topics"
 import { card, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
@@ -28,7 +30,8 @@ import { card, color, font, hairline, ink, space, surface, type } from "@/lib/th
 
    Logging is optional: the footer's Log your sets opens her sets in a
    sheet, reps and weight per set, and once saved asks how many more reps
-   her last set had left; next week's target steps on from it (lib/strength.ts). */
+   her last set had left; next week's target steps on from it (lib/strength.ts).
+   View progress under it opens the load she has lifted, week by week. */
 
 const CLIP = require("../../../assets/videos/exercise-demo.mp4")
 const RATIO = 16 / 9
@@ -47,7 +50,7 @@ function LiftBody({ lift }: { lift: Lift }) {
   const s = useOnboarding()
   const [watching, setWatching] = React.useState(false)
   // The log sheet, then once saved the question about her last set.
-  const [open, setOpen] = React.useState<"log">()
+  const [open, setOpen] = React.useState<"log" | "progress">()
   const [asking, setAsking] = React.useState(false)
   const keyboard = useKeyboardHeight()
   const day = localDay()
@@ -87,7 +90,14 @@ function LiftBody({ lift }: { lift: Lift }) {
   return (
     <TopicPage
       title={lift.name}
-      footer={<PrimaryButton onPress={() => setOpen("log")}>{saved.some((e) => e.reps !== undefined) ? "Edit your sets" : "Log your sets"}</PrimaryButton>}
+      footer={
+        <View style={styles.footer}>
+          <PrimaryButton onPress={() => setOpen("log")}>{saved.some((e) => e.reps !== undefined) ? "Edit your sets" : "Log your sets"}</PrimaryButton>
+          <View style={styles.tertiary}>
+            <TextAction onPress={() => setOpen("progress")}>View progress</TextAction>
+          </View>
+        </View>
+      }
       sheet={
         (asking && <EffortSheet onPick={felt} />) ||
         (open === "log" && (
@@ -100,7 +110,7 @@ function LiftBody({ lift }: { lift: Lift }) {
             </Sheet>
           </View>
         )) ||
- (
+        (open === "progress" && <ProgressSheet lift={lift} onClose={() => setOpen(undefined)} />) || (
           <ExerciseVideoModal visible={watching} player={player} title={lift.name} ratio={RATIO} onClose={() => setWatching(false)} />
         )
       }
@@ -203,6 +213,25 @@ function EffortSheet({ onPick }: { onPick: (rir: number | undefined) => void }) 
   )
 }
 
+/** The heaviest load of every session, oldest first. */
+function ProgressSheet({ lift, onClose }: { lift: Lift; onClose: () => void }) {
+  const s = useOnboarding()
+  const points = resistanceOf(sessionsOf(s, lift))
+  const latest = points[points.length - 1]
+  const first = points[0]
+  const up = latest ? latest.value - first.value : 0
+  return (
+    <Sheet title={`${lift.name} progress`} onClose={onClose}>
+      {latest && (
+        <>
+          <Readout value={String(latest.value)} unit="lb" label={up > 0 ? `Up ${up} lb since ${entryDay(String(first.date))}` : `Since ${entryDay(String(first.date))}`} />
+          <ProgressChart readings={points} trend={points} name={`${lift.name.toLowerCase()} load`} readingsLabel="Sessions" unit="lb" caption={null} playKey={`lift:${lift.id}`} />
+        </>
+      )}
+    </Sheet>
+  )
+}
+
 /** "**bold**" inside a cue, in the heavier weight. */
 function bold(text: string) {
   return text.split("**").map((part, i) =>
@@ -255,6 +284,8 @@ const styles = StyleSheet.create({
 
   skip: { alignItems: "center" },
 
+  footer: { gap: space.inline },
+  tertiary: { alignItems: "center" },
   sheetFrame: { position: "absolute", top: 0, left: 0, right: 0 },
 
 })
