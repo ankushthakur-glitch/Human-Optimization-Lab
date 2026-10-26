@@ -104,14 +104,16 @@ function pageHref(base: string, group: SettingsGroup, page: SettingsPage) {
 export function SettingsHome({
   base,
   groups,
+  title = "Settings",
 }: {
   base: string
   groups: SettingsGroup[]
+  title?: string
 }) {
   groups = visible(groups)
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface-sunken px-4 pt-4 pb-6">
-      <h1 className="mb-3 text-lg font-semibold tracking-tight">Settings</h1>
+      <h1 className="mb-3 text-lg font-semibold tracking-tight">{title}</h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {groups.map((group) => (
           <Card key={group.id} className={cn(RECORD_CARD, "min-h-56 gap-2")}>

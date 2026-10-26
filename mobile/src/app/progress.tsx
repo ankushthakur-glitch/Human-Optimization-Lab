@@ -1,4 +1,3 @@
-import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
@@ -9,7 +8,6 @@ import { AskButton } from "@/components/hol"
 import { Scan, Trophy } from "@/components/ph"
 import { HeadCard } from "@/components/plan-tab-pieces"
 import { NothingYet, Readout, SinceStartRows, changeSince, entryDay, lastDays } from "@/components/progress-parts"
-import { RecordIcon } from "@/components/record-icons"
 import { TabScreen } from "@/components/tab-bar"
 import { Block, Card, Group, HUE, NeedsRow, SmallAction, StatRow, StatTile, Status, TREND_WORD, Tabs, Tag, TextAction, TrendPill, type Trend } from "@/components/record-kit"
 import { useExperience, useInlayScore, useMarkers } from "@/lib/experience"
@@ -112,7 +110,6 @@ export function ProgressSections({ s, onAdd }: { s: Store; onAdd: (kind: CheckIn
       <LastThirtyDays s={s} />
       <Milestones s={s} />
       <ScoreCard s={s} />
-      <HistoryLink />
     </>
   ) : (
     <>
@@ -124,7 +121,6 @@ export function ProgressSections({ s, onAdd }: { s: Store; onAdd: (kind: CheckIn
       <LastThirtyDays s={s} />
       <Milestones s={s} />
       <ScoreCard s={s} />
-      <HistoryLink />
     </>
   )
 }
@@ -397,14 +393,6 @@ function ScoreCard({ s }: { s: Store }) {
   )
 }
 
-/** Every day, weigh in and reading since she started. */
-function HistoryLink() {
-  return (
-    <Group>
-      <NeedsRow icon={<RecordIcon name="chart" size={18} color={HUE.teal.ink} />} title="See your history" onPress={() => router.push("/history")} />
-    </Group>
-  )
-}
 
 /* ----------------------------------------------------------- bone plan -- */
 

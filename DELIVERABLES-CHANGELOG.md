@@ -795,3 +795,50 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Outlook tab shows where she is likely to be (screen 36)
 - Update log meal, onboarding, progress, charts, home, plan review, tab bar and web export
 - Merge origin/P1 into main
+
+## 23-Oct-2026
+
+- Journey_14 screens 28-40: all tests complete, starting point, six-topic Today, topic pages, lift form, measurements sheet, review and yesterday in numbers
+- Your history tab on the Plan screen
+- Even, roomier spacing between the Plan section tabs
+- Your history tab, screens 41-47: week/month/6 months/year history and one history page per topic
+- Photo check-in on the Plan screen's Photos tab (Journey_14 screen 49)
+- Your progress tab on the Plan screen (Journey_16 screen 39)
+- Care tab catalog, screens 52-54: nine categories, an item with what it does and cannot, and booking a time
+- V14 paid app as a separate dummy under /app/v14
+- Plan outlook and progress screens, history trends, and Today/Plan restructure
+- Care price card shows the results time on its own lines below the note
+- Five provider dashboard variations at /screens/patients/dashboard/v1..v5
+- Yesterday macros as grey tiles; Care item heading smaller, results line stacked
+- Care price card as a white card with a teal results footer
+- Merge origin/P1 into main
+- Practice dashboard and reports, ReUI charts in the provider dashboard variants
+- Merge remote-tracking branch 'origin/main'
+- Remove photo privacy note from the check-in photos card
+- Update enrolled, plan-ready, starting-point, plan member and progress screens
+- Merge remote-tracking branch 'origin/P1'
+- Update lift, topic, plan outlook and topics
+- Make the v14 Plan and Care the main paid flow
+- Bring back the previous member Plan and Care as the main paid flow
+- Added: Provider Portal / Dashboard / Dashboard: overview and worklist (abnormal results)
+- Added: Provider Portal / Dashboard / Dashboard
+- Added: Clinic Manager Portal / Dashboard / Practice dashboard (enrollment, activation, encounters, outcomes, alerts, value)
+- Added: Clinic Manager Portal / Reports / Reports (enrollment, encounters, outcomes, alerts, value and renewal, membership, care plans)
+- Added: Provider Portal / Patient Chart / Lab results: reports
+- Added: Provider Portal / Patient Chart / Lab results: lab orders
+- Added: Clinic Manager Portal / Settings / Alerts: notifications
+- Added: Provider Portal / Settings / Alerts: notifications
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Plan tab (free patient: plans matched to the record)
+- Added: Patient Portal / Mobile App: Optimization Member / Home (paid member)
+- Added: Patient Portal / Mobile App: Optimization Member / Plan tab: Review (day, week, month), Progress, Photos and Outlook
+- Added: Patient Portal / Mobile App: Optimization Member / Log a meal (scan food, voice or typing)
+- Added: Patient Portal / Mobile App: Profile and Settings / Care tab: membership
+- Removed: Patient Portal / Mobile App: Optimization Member / Log a meal
+- Removed: Patient Portal / Mobile App: Profile and Settings / Membership
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Upgrade tab
+- Removed: Provider Portal / Patient Chart / Lab results
+- Removed: Patient Portal / Mobile App: Optimization Member / Daily review
+- Removed: Provider Portal / Dashboard / Abnormal results
+- Removed: Clinic Manager Portal / Settings / Roles and permissions
+- Removed: Clinic Manager Portal / Settings / Alerts
+- Removed: Patient Portal / Mobile App: Connect / Connect tab

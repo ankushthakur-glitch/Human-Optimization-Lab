@@ -27,7 +27,7 @@ export const WINDOWS_ALL: { value: Win; label: string }[] = [
   { value: "half", label: "6 months" },
   { value: "year", label: "Year" },
 ]
-export const WINDOWS_TOPIC: { value: Win; label: string }[] = [{ value: "day", label: "Day" }, ...WINDOWS_ALL.map((w) => (w.value === "half" ? { ...w, label: "6 mo" } : w))]
+export const WINDOWS_TOPIC: { value: Win; label: string }[] = WINDOWS_ALL.map((w) => (w.value === "half" ? { ...w, label: "6 mo" } : w))
 
 /** How a figure is written: whole numbers, one decimal, hours:minutes. */
 type Fmt = "num" | "dec1" | "hm"
@@ -38,7 +38,7 @@ export type Metric = {
   chip: string
   /** The row in the table across windows; absent for a metric that is only a chip. */
   row: string
-  /** Over the chart, in capitals: "AVERAGE DAILY DEFICIT". */
+  /** Over the chart, in sentence case: "Average daily deficit". */
   title: string
   unit: string
   /** Week, month, six months, year; null where there is no history. */
@@ -67,7 +67,6 @@ export type TopicHistory = {
   /** Under the page's name. */
   intro: string
   metrics: Metric[]
-  foot: string
   /** Shown instead of a chart when the window has no history. */
   young?: string
 }
@@ -84,7 +83,6 @@ export const OVERALL: TopicHistory = {
     m({ id: "exercise", chip: "Exercise", row: "min a day", title: "Average exercise minutes", unit: "min", avg: [42, 38, 31, 26], target: 40, noise: 0.5, additive: true }),
     m({ id: "weight", chip: "Weight", row: "lb, latest", title: "Weight, latest entry", unit: "lb", avg: [178.4, 180.1, 183.6, 186.4], fmt: "dec1", better: "down", shape: "trend", noise: 0.002, axisMin: 170, latest: 178.0, start: 186.4 }),
   ],
-  foot: "Switch the metric and the window independently. Weight, steps and exercise minutes carry the same four averages and the same graph.",
 }
 
 /* -------------------------------------------------------------- topics -- */
@@ -100,7 +98,6 @@ export const HISTORY: Record<TopicId, TopicHistory> = {
       m({ id: "steps", chip: "Steps", row: "Steps", title: "Steps, daily average", unit: "steps", avg: [10400, 9800, 8900, 7600], target: 10000, noise: 0.22, additive: true }),
       m({ id: "sessions", chip: "Sessions", row: "Sessions a week", title: "Sessions a week", unit: "", avg: [4.0, 3.6, 3.1, 2.4], fmt: "dec1", target: 4, noise: 0.15 }),
     ],
-    foot: "Rest days are zeroes, not gaps. An average that quietly drops them would read forty per cent higher and mean nothing.",
   },
   eat: {
     intro: EVERY,
@@ -110,7 +107,6 @@ export const HISTORY: Record<TopicId, TopicHistory> = {
       m({ id: "deficit", chip: "Deficit", row: "Deficit", title: "Average daily deficit", unit: "kcal", avg: [505, 463, 410, 349], target: 500, noise: 0.16 }),
       m({ id: "ontarget", chip: "On target", row: "Days on target", title: "Days on target", unit: "%", avg: [71, 73, 65, 54], cells: ["5 of 7", "22/30", "118/182", "198/365"], noise: 0.12, chart: "pct" }),
     ],
-    foot: "Protein climbing while calories fall is the pattern that keeps muscle. Either number alone would hide it.",
   },
   sleep: {
     intro: EVERY,
@@ -121,7 +117,6 @@ export const HISTORY: Record<TopicId, TopicHistory> = {
       m({ id: "cpap", chip: "CPAP", row: "CPAP worn", title: "CPAP worn, nightly average", unit: "h", avg: [348, 330, 302, null], fmt: "hm", noise: 0.12 }),
       m({ id: "ahi", chip: "AHI", row: "AHI", title: "AHI, events an hour", unit: "", avg: [11, 13, 18, null], better: "down", noise: 0.1 }),
     ],
-    foot: "AHI and CPAP hours only exist from the night the study came back. Before that the row is empty, not zero.",
   },
   mind: {
     intro: EVERY,
@@ -131,7 +126,6 @@ export const HISTORY: Record<TopicId, TopicHistory> = {
       m({ id: "irritability", chip: "Irritability", row: "Irritability, 0–10", title: "Irritability, 0 to 10", unit: "", avg: [3, 4, null, null], better: "down", noise: 0.2 }),
       m({ id: "week", chip: "", row: "Week of eight", title: "Week of eight", unit: "", avg: [3, null, null, null], noise: 0 }),
     ],
-    foot: "The programme is eight weeks old, so it has no six-month or year column. An empty cell is more honest than a short average dressed up as a long one.",
     young: "The programme is eight weeks old, so this window has no history yet.",
   },
   medication: {
@@ -142,7 +136,6 @@ export const HISTORY: Record<TopicId, TopicHistory> = {
       m({ id: "held", chip: "Supplements", row: "Supplements held", title: "Supplements held", unit: "", avg: [3, 3, 2, 1], noise: 0 }),
       m({ id: "flagged", chip: "", row: "Interactions flagged", title: "Interactions flagged", unit: "", avg: [1, 1, 2, 3], better: "down", noise: 0 }),
     ],
-    foot: "One missed evening dose drops a perfect week to 88%. The scale is unforgiving on purpose, because so is the blood panel that gets read against it.",
   },
   measure: {
     intro: EVERY,
@@ -153,7 +146,6 @@ export const HISTORY: Record<TopicId, TopicHistory> = {
       m({ id: "hips", chip: "Hips", row: "Hips, in", title: "Hips, latest entry", unit: "in", avg: [41.1, 41.8, 42.9, 43.6], fmt: "dec1", better: "down", shape: "trend", noise: 0.002, axisMin: 39, latest: 41.1, start: 43.6 }),
       m({ id: "thigh", chip: "", row: "Thigh, in", title: "Thigh, latest entry", unit: "in", avg: [22.5, 22.8, 23.4, 23.9], fmt: "dec1", better: "down", shape: "trend", noise: 0.002, axisMin: 20, latest: 22.5, start: 23.9 }),
     ],
-    foot: "The axis starts above zero on purpose: eight pounds on a zero axis is a flat line, and a flat line is the wrong answer.",
   },
 }
 

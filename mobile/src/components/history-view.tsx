@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { WeekBars } from "@/components/charts"
 import { Card, ChipRow, Block, Tabs } from "@/components/record-kit"
-import { Foot } from "@/components/topic-kit"
 import {
   WINDOWS_ALL,
   WINDOWS_TOPIC,
@@ -67,8 +66,6 @@ export function HistoryView({ history, overall }: { history: TopicHistory; overa
       <Block title={overall ? "Averaged across every window" : "Across every window"} meta={overall ? "per day" : "average"}>
         {overall ? <WindowTable metric={metric} /> : <MetricTable history={history} selected={metric.id} onOpen={open} />}
       </Block>
-
-      <Foot>{history.foot}</Foot>
     </View>
   )
 }
@@ -95,7 +92,7 @@ function Chart({ metric, win, bars, picked, onPick }: { metric: Metric; win: Win
 
   return (
     <View style={styles.chart}>
-      <Text style={styles.cap}>{(yesterday ? metric.title.replace(/, (nightly|daily) average/, ", last night") : metric.title).toUpperCase()}</Text>
+      <Text style={styles.cap}>{(yesterday ? metric.title.replace(/, (nightly|daily) average/, ", last night") : metric.title)}</Text>
       <View style={styles.headRow}>
         <Text style={styles.headValue} accessibilityRole="header">
           {metric.shape === "trend" ? figure(metric, metric.latest ?? head) : figure(metric, head)}
@@ -165,7 +162,7 @@ function MetricTable({ history, selected, onOpen }: { history: TopicHistory; sel
   return (
     <View style={styles.table}>
       <View style={[styles.row, styles.headRowTable]}>
-        <Text style={[styles.th, styles.fill]}>METRIC</Text>
+        <Text style={[styles.th, styles.fill]}>Metric</Text>
         {["WK", "MO", "6 MO", "YR"].map((h) => (
           <Text key={h} style={[styles.th, styles.col]}>
             {h}
@@ -204,7 +201,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   card: { gap: space.inline },
   chart: { gap: space.inline },
-  cap: { ...type.caption, letterSpacing: 0.6, color: ink.secondary },
+  cap: { ...type.caption, color: ink.secondary },
   headRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space.item },
   headValue: { ...type.display, fontSize: 28, lineHeight: 34, fontVariant: ["tabular-nums"] },
   change: { ...type.metaStrong },
@@ -215,7 +212,7 @@ const styles = StyleSheet.create({
   rule: { borderTopWidth: 1, borderTopColor: hairline.rule },
   rowOn: { backgroundColor: color.primaryTint },
   headRowTable: { minHeight: 30, paddingVertical: 6, backgroundColor: surface.inset },
-  th: { ...type.caption, letterSpacing: 0.6, color: ink.secondary },
+  th: { ...type.caption, color: ink.secondary },
   col: { width: 52, textAlign: "right" },
   rowName: { ...type.title, color: ink.strong },
   rowNameOn: { color: ink.primary },

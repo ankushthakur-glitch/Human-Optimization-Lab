@@ -53,20 +53,6 @@ export type Answers = {
   said: Record<string, string>
 }
 
-export const EMPTY: Answers = {
-  values: "",
-  healthyFor: "",
-  future: "",
-  reason: "",
-  improve: [],
-  step: "",
-  flourish: [],
-  priorities: [],
-  importanceBy: [],
-  confidenceBy: [],
-  said: {},
-}
-
 /* ------------------------------------------------------------ options -- */
 
 export const FOCUS = [
@@ -92,10 +78,6 @@ export const DOMAINS = [
   "Financial & material well-being",
   "Health agency & self-efficacy",
 ]
-
-/** The one scale: 1 to 10, as taps. */
-const RATING = Array.from({ length: 10 }, (_, i) => String(i + 1))
-const NOT_APPLICABLE = "Not applicable / I prefer not to answer"
 
 type Item = { domain: number; text: string; optional?: boolean }
 
@@ -172,11 +154,6 @@ export const FLOURISH: Item[] = [
   ),
 ]
 
-/** Opening prompts the write up gives a domain. */
-const OPENING: Record<number, string> = {
-  0: "Thinking about your health and how you have felt recently...",
-}
-
 /** Overall (the mean of every answered item) and each domain. A "not
     applicable" answer (-1) is left out of both. */
 export function flourishScore(answers: number[]) {
@@ -200,16 +177,6 @@ export function interpret(score: number) {
 
 /** What they said at a turn, or nothing if they skipped it. */
 export const own = (a: Answers, id: string) => (a.said[id] && a.said[id] !== "Skip" ? a.said[id] : "")
-
-/** The areas of her record each priority points to, for the watch list and goals. */
-const IMPROVE_OF_DOMAIN: Record<string, string[]> = {
-  [DOMAINS[0]]: ["Energy", "Fitness"],
-  [DOMAINS[1]]: ["Stress"],
-}
-
-const mean = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length
-/** A 1 to 10 mean on the app's 1 to 5 scale. */
-const toFive = (xs: number[]) => Math.min(5, Math.max(1, Math.round(mean(xs) / 2)))
 
 /** Words that stop the script and point to a person right away. A stand in
     for the clinician designed escalation pathway. */
@@ -241,144 +208,12 @@ export type Turn = {
   save: (a: Answers, value: Value) => Partial<Answers>
 }
 
-/** A 1 to 10 rating from a tap or typed words, kept in range. */
-const rating = (v: Value) => {
-  const n = Number(v)
-  return Number.isFinite(n) ? Math.min(10, Math.max(1, Math.round(n))) : -1
-}
-
 /** The words under the five faces, lowest first (the face scale is still
     part of the chat's inputs). */
 export const SCALE_WORDS = ["Not at all", "A little", "Somewhat", "Quite", "Very"]
-
-/** A 1 to 10 question for the priority at `i`: importance or confidence. */
-function priorityTurn(i: number, kind: "importance" | "confidence"): Turn {
-  const key = kind === "importance" ? "importanceBy" : "confidenceBy"
-  return {
-    id: `${kind}${i}`,
-    skip: (a) => !a.priorities[i],
-    say: (a) =>
-      kind === "importance"
-        ? [`${a.priorities[i]}. How important is it to you to improve this area? 0 = not important, 10 = extremely important.`]
-        : ["How confident are you that you could make meaningful progress in this area over the next six months? 0 = not confident, 10 = extremely confident."],
-    input: () => ({ type: "reply", options: RATING }),
-    save: (a, v) => {
-      const next = [...a[key]]
-      next[i] = rating(v)
-      const importanceBy = key === "importanceBy" ? next : a.importanceBy
-      const confidenceBy = key === "confidenceBy" ? next : a.confidenceBy
-      return {
-        [key]: next,
-        ...(importanceBy.length ? { importance: toFive(importanceBy) } : {}),
-        ...(confidenceBy.length ? { confidence: toFive(confidenceBy), readiness: toFive(confidenceBy) } : {}),
-      } as Partial<Answers>
-    },
-  }
-}
-
-export const TURNS: Turn[] = [
-  {
-    id: "hello",
-    say: (_, name) => [
-      `Hi ${name}, I'm your Inlay Health assistant. Before we talk about your health numbers, I'd like to understand what matters most to you.`,
-      "There are no right answers, and you decide what, if anything, you want to change. It takes about ten minutes, and you can skip any question.",
-    ],
-    input: () => ({ type: "reply", options: ["Sounds good"] }),
-    save: () => ({}),
-  },
-  {
-    id: "flourishIntro",
-    say: () => [
-      "8 areas of your life, a few questions each",
-    ],
-    input: () => ({ type: "reply", options: ["Okay"] }),
-    save: () => ({}),
-  },
-
-  // 1. The eight domains, 1 to 10.
-  ...FLOURISH.map<Turn>((item, i) => {
-    const firstOfDomain = i === 0 || FLOURISH[i - 1].domain !== item.domain
-    return {
-      id: `flourish${i}`,
-      say: () => [...(firstOfDomain && OPENING[item.domain] ? [OPENING[item.domain]] : []), item.text],
-      input: () => ({ type: "reply", options: item.optional ? [...RATING, NOT_APPLICABLE] : RATING }),
-      save: (a, v) => {
-        const next = [...a.flourish]
-        next[i] = v === NOT_APPLICABLE ? -1 : rating(v)
-        return { flourish: next }
-      },
-    }
-  }),
-
-  // 2. Priority.
-  {
-    id: "priorities",
-    say: () => ["Of all the areas we just discussed, which three would you most like to improve?"],
-    input: () => ({ type: "pick", options: DOMAINS }),
-    save: (_, v) => {
-      const priorities = (Array.isArray(v) ? v : [String(v)]).slice(0, 3)
-      return {
-        priorities,
-        focus: priorities[0],
-        improve: [...new Set(priorities.flatMap((p) => IMPROVE_OF_DOMAIN[p] ?? []))],
-      }
-    },
-  },
-
-  // 3. Importance, then confidence, for each of the three.
-  priorityTurn(0, "importance"),
-  priorityTurn(0, "confidence"),
-  priorityTurn(1, "importance"),
-  priorityTurn(1, "confidence"),
-  priorityTurn(2, "importance"),
-  priorityTurn(2, "confidence"),
-
-  // 4. The profile.
-  {
-    id: "result",
-    say: () => [
-      "Thank you. Here's your Flourishing Profile.",
-      { card: "flourish" },
-      "We'll track this alongside your record over time as part of your Inlay score, so you can watch it move.",
-    ],
-    input: () => ({ type: "reply", options: ["Continue"] }),
-    save: () => ({}),
-  },
-
-  // 5. In her own words.
-  {
-    id: "oneYear",
-    say: () => ["If your health and life were meaningfully better one year from today, what would be different?"],
-    input: () => ({
-      type: "text",
-      placeholder: "In a year, I'd be...",
-      ideas: ["More energy", "Less stress", "More time with family", "Feeling confident about my health"],
-    }),
-    save: (_, v) => ({ reason: String(v).trim() }),
-  },
-  {
-    id: "whyCard",
-    say: () => ["Here's what you told me, in your words. It goes into your care plan, and you can change it any time.", { card: "why" }],
-    input: () => ({ type: "reply", options: ["Looks right"] }),
-    save: () => ({}),
-  },
-]
-
-/** A 1 to 5 answer typed rather than tapped, or undefined if there isn't one. */
-export function typedScale(text: string) {
-  const m = text.match(/\b([1-5])\b/)
-  return m ? Number(m[1]) : undefined
-}
 
 /** How an answer reads in the thread, in the patient's bubble. */
 export function spoken(value: Value) {
   if (Array.isArray(value)) return value.map((v, i) => (i ? v.charAt(0).toLowerCase() + v.slice(1) : v)).join(", ")
   return String(value)
-}
-
-/** The next turn from `from`, passing any the answers so far rule out. */
-export function nextTurn(from: number, a: Answers) {
-  let i = from
-  while (i < TURNS.length && TURNS[i].skip?.(a)) i++
-  return i
 }

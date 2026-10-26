@@ -9,6 +9,8 @@ import {
   IconHelp,
   IconSend,
   IconSparkles,
+  IconThumbsDown,
+  IconThumbsUp,
   IconTrash,
   IconUser,
 } from "@/design-system/icons"
@@ -43,6 +45,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/design-system/ui/dialog"
@@ -84,6 +87,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/design-system/ui/table"
+import { Textarea } from "@/design-system/ui/textarea"
 
 /* The care plan's review loop (15 Oct call). AI checks the patient's record
    against Dr. Blanchard's plans and proposes up to five optimization plans;
@@ -424,6 +428,48 @@ const STATUS_TONE: Record<
   Accepted: "success",
 }
 
+/* ---------------------------------------------------------- feedback -- */
+
+/* The physician's verdict on a plan the AI suggested: right, or wrong and
+   why. Kept per patient and plan so the clinical team can tune the rules
+   and the AI; one verdict per plan, the latest wins. */
+
+const FEEDBACK_REASONS = [
+  "Not supported by the record",
+  "Not right for this patient",
+  "Unsafe or contraindicated",
+  "Plan items not right",
+  "Duplicate of another plan",
+  "Other",
+] as const
+type FeedbackReason = (typeof FEEDBACK_REASONS)[number]
+
+export type AiFeedback = {
+  /** `${patientId}/${planId}` */
+  id: string
+  patientId: string
+  planId: string
+  planName: string
+  rating: "Right" | "Wrong"
+  reasons: FeedbackReason[]
+  note?: string
+  by: string
+  at: string
+}
+
+export const aiFeedback = createCollection<AiFeedback>(
+  "hol-ai-plan-feedback",
+  [],
+  "v1"
+)
+
+function saveFeedback(next: Omit<AiFeedback, "id" | "by" | "at">) {
+  const id = `${next.patientId}/${next.planId}`
+  const entry: AiFeedback = { ...next, id, by: ME, at: nowAt() }
+  if (aiFeedback.get().some((f) => f.id === id)) aiFeedback.patch(id, entry)
+  else aiFeedback.add([entry])
+}
+
 /* -------------------------------------------------------------- diff -- */
 
 /** What one version changed from the one before, in plain lines. */
@@ -555,6 +601,14 @@ export function CarePlanView({
     })
   }
 
+  /* A plan flagged as wrong can be dropped at once: Edit plan opens
+     without it, so the physician still approves the change. */
+  const dropPlan = (id: string) => {
+    const base = draft ?? { plans: latest.plans, tests: latest.tests }
+    onTab("plan")
+    setDraft({ ...base, plans: base.plans.filter((p) => p.id !== id) })
+  }
+
   const approve = () => {
     const kept = plans.map((p) => ({
       ...p,
@@ -671,6 +725,10 @@ export function CarePlanView({
               edited={edited}
               onChange={(next) => draft && setDraft({ ...draft, plans: next })}
               onAdd={open || editing ? addPlan : undefined}
+              feedback={{
+                patientId: patient.id,
+                onDrop: open || editing ? dropPlan : undefined,
+              }}
             />
             <BaselineCard
               tests={tests}
@@ -768,6 +826,7 @@ function PlansBlock({
   edited,
   onChange,
   onAdd,
+  feedback,
 }: {
   plans: OptimizationPlan[]
   editing: boolean
@@ -775,6 +834,8 @@ function PlansBlock({
   onChange: (plans: OptimizationPlan[]) => void
   /** Set while the plan can still change. */
   onAdd?: (name: string) => void
+  /** Set on the live plan, not on saved versions: AI plans get a verdict. */
+  feedback?: FeedbackTarget
 }) {
   const items = plans.reduce((n, p) => n + p.actions.length, 0)
   const left = PLAN_CATALOG.filter(
@@ -820,6 +881,7 @@ function PlansBlock({
             onChange(plans.map((x) => (x.id === p.id ? next : x)))
           }
           onRemove={() => onChange(plans.filter((x) => x.id !== p.id))}
+          feedback={feedback}
         />
       ))}
     </section>
@@ -833,12 +895,14 @@ function PlanCard({
   edited,
   onChange,
   onRemove,
+  feedback,
 }: {
   plan: OptimizationPlan
   editing: boolean
   edited: Set<string>
   onChange: (plan: OptimizationPlan) => void
   onRemove: () => void
+  feedback?: FeedbackTarget
 }) {
   return (
     <article className="overflow-hidden rounded-lg border bg-card">
@@ -849,6 +913,9 @@ function PlanCard({
           {edited.has(plan.id) && <ChangedTag label="New" />}
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {feedback && plan.source === "AI" && (
+            <PlanFeedback plan={plan} target={feedback} />
+          )}
           <SourceTag source={plan.source} />
           {editing && (
             <Button
@@ -869,6 +936,205 @@ function PlanCard({
         onChange={(actions) => onChange({ ...plan, actions })}
       />
     </article>
+  )
+}
+
+type FeedbackTarget = {
+  patientId: string
+  /** Set while the plan can still change: drops the plan into Edit plan. */
+  onDrop?: (planId: string) => void
+}
+
+/* Right or wrong on an AI plan. Wrong asks why, and can take the plan out
+   of the care plan in the same step. */
+function PlanFeedback({
+  plan,
+  target,
+}: {
+  plan: OptimizationPlan
+  target: FeedbackTarget
+}) {
+  const { items } = aiFeedback.use()
+  const given = items.find((f) => f.id === `${target.patientId}/${plan.id}`)
+  const [asking, setAsking] = React.useState(false)
+
+  const markRight = () => {
+    if (given?.rating === "Right") {
+      aiFeedback.remove(given.id)
+      return
+    }
+    saveFeedback({
+      patientId: target.patientId,
+      planId: plan.id,
+      planName: plan.name,
+      rating: "Right",
+      reasons: [],
+    })
+    toast.success("Feedback saved", {
+      description: `${plan.name} marked as a right suggestion.`,
+    })
+  }
+
+  return (
+    <>
+      {given?.rating === "Wrong" && (
+        <button
+          type="button"
+          onClick={() => setAsking(true)}
+          className="inline-flex h-5.5 items-center gap-1.5 rounded-full bg-destructive/8 px-2 text-xs text-[#C4554E] outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
+          <span aria-hidden className="size-1.5 rounded-full bg-[#DE6F68]" />
+          Flagged as wrong
+        </button>
+      )}
+      <div className="flex items-center">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`${plan.name} is a right suggestion`}
+          aria-pressed={given?.rating === "Right"}
+          className={cn(given?.rating === "Right" && "text-primary")}
+          onClick={markRight}
+        >
+          <IconThumbsUp />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`${plan.name} is a wrong suggestion`}
+          aria-pressed={given?.rating === "Wrong"}
+          className={cn(given?.rating === "Wrong" && "text-[#C4554E]")}
+          onClick={() => setAsking(true)}
+        >
+          <IconThumbsDown />
+        </Button>
+      </div>
+      {asking && (
+        <FeedbackDialog
+          plan={plan}
+          given={given?.rating === "Wrong" ? given : undefined}
+          canDrop={target.onDrop !== undefined}
+          onClose={() => setAsking(false)}
+          onSave={(reasons, note, drop) => {
+            saveFeedback({
+              patientId: target.patientId,
+              planId: plan.id,
+              planName: plan.name,
+              rating: "Wrong",
+              reasons,
+              note,
+            })
+            setAsking(false)
+            if (drop) target.onDrop?.(plan.id)
+            toast.success("Feedback saved", {
+              description: drop
+                ? `${plan.name} removed. Approve and send to save the plan.`
+                : `${plan.name} flagged as a wrong suggestion.`,
+            })
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+function FeedbackDialog({
+  plan,
+  given,
+  canDrop,
+  onClose,
+  onSave,
+}: {
+  plan: OptimizationPlan
+  given?: AiFeedback
+  canDrop: boolean
+  onClose: () => void
+  onSave: (reasons: FeedbackReason[], note: string | undefined, drop: boolean) => void
+}) {
+  const [reasons, setReasons] = React.useState<FeedbackReason[]>(
+    given?.reasons ?? []
+  )
+  const [note, setNote] = React.useState(given?.note ?? "")
+  const [drop, setDrop] = React.useState(canDrop && !given)
+  const text = note.trim().replace(/\s+/g, " ")
+  const needsNote = reasons.includes("Other") && !text
+  const ready = reasons.length > 0 && !needsNote
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Wrong suggestion: {plan.name}</DialogTitle>
+          <DialogDescription className="sr-only">
+            Tell the clinical team what is wrong with this AI suggested plan.
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          id="ai-feedback-form"
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (ready) onSave(reasons, text || undefined, drop)
+          }}
+        >
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-2 text-sm font-medium">
+              What is wrong
+            </legend>
+            {FEEDBACK_REASONS.map((r) => (
+              <label
+                key={r}
+                className="flex cursor-pointer items-center gap-2.5 text-sm"
+              >
+                <Checkbox
+                  checked={reasons.includes(r)}
+                  onCheckedChange={(c) =>
+                    setReasons(
+                      c === true
+                        ? FEEDBACK_REASONS.filter(
+                            (x) => x === r || reasons.includes(x)
+                          )
+                        : reasons.filter((x) => x !== r)
+                    )
+                  }
+                />
+                {r}
+              </label>
+            ))}
+          </fieldset>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="ai-feedback-note" className="text-sm font-medium">
+              Details{reasons.includes("Other") ? "" : " (optional)"}
+            </label>
+            <Textarea
+              id="ai-feedback-note"
+              rows={3}
+              maxLength={500}
+              value={note}
+              placeholder="What should the AI have suggested"
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+          {canDrop && (
+            <label className="flex cursor-pointer items-center gap-2.5 border-t pt-4 text-sm">
+              <Checkbox
+                checked={drop}
+                onCheckedChange={(c) => setDrop(c === true)}
+              />
+              Remove {plan.name} from this care plan
+            </label>
+          )}
+        </form>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form="ai-feedback-form" disabled={!ready}>
+            Send feedback
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

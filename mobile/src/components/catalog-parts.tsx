@@ -1,7 +1,7 @@
 import * as React from "react"
 import { StyleSheet, Text, TextInput, View } from "react-native"
 
-import { Check, Info, MagnifyingGlass, User, WarningCircle, X } from "@/components/ph"
+import { Check, MagnifyingGlass, User, WarningCircle, X } from "@/components/ph"
 import { Card } from "@/components/record-kit"
 import { Pressable } from "react-native"
 import { money, type Item } from "@/lib/catalog"
@@ -48,7 +48,7 @@ export function PriceCard({ item }: { item: Item }) {
         <Text style={styles.priceNote}>{item.priceNote}</Text>
       </View>
       <View style={styles.priceFoot}>
-        <Text style={styles.priceLabel}>{item.when.label.toUpperCase()}</Text>
+        <Text style={styles.priceLabel}>{item.when.label}</Text>
         <Text style={styles.priceWhen}>{item.when.value}</Text>
       </View>
     </View>
@@ -103,16 +103,6 @@ export function OrderNote({ doctor, inlay }: { doctor: string; inlay: string }) 
   )
 }
 
-/** A quiet line with an info mark, for a footnote. */
-export function FootNote({ children }: { children: string }) {
-  return (
-    <View style={styles.foot}>
-      <Info size={14} color={ink.tertiary} />
-      <Text style={styles.footText}>{children}</Text>
-    </View>
-  )
-}
-
 /** The catalog's search: a filled field with a magnifier, and a clear
     button once there are words in it. */
 export function SearchField({ value, onChange, placeholder }: { value: string; onChange: (t: string) => void; placeholder: string }) {
@@ -163,8 +153,6 @@ const styles = StyleSheet.create({
   order: { flexDirection: "row", gap: space.lead, alignItems: "flex-start", padding: space.card, borderRadius: 8, borderWidth: 1, borderColor: hairline.edge, backgroundColor: color.primaryTint },
   orderText: { flex: 1, fontSize: 12, lineHeight: 18 },
 
-  foot: { flexDirection: "row", gap: space.inline, alignItems: "flex-start", paddingHorizontal: 2 },
-  footText: { ...type.label, flex: 1, color: ink.tertiary },
 
   search: {
     flexDirection: "row",

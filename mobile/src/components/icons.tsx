@@ -5,16 +5,16 @@ import Calendar03Icon from "@hugeicons/core-free-icons/Calendar03Icon"
 import ChartUpIcon from "@hugeicons/core-free-icons/ChartUpIcon"
 import CheckmarkSquare02Icon from "@hugeicons/core-free-icons/CheckmarkSquare02Icon"
 import CircleArrowLeft01Icon from "@hugeicons/core-free-icons/CircleArrowLeft01Icon"
-import ClipboardListIcon from "@hugeicons/core-free-icons/ClipboardListIcon"
 import FaceIdIcon from "@hugeicons/core-free-icons/FaceIdIcon"
 import HappyIcon from "@hugeicons/core-free-icons/HappyIcon"
-import HeartCheckIcon from "@hugeicons/core-free-icons/HeartCheckIcon"
+import HeartPulseIcon from "@hugeicons/core-free-icons/HeartPulseIcon"
 import Home09Icon from "@hugeicons/core-free-icons/Home09Icon"
 import InLoveIcon from "@hugeicons/core-free-icons/InLoveIcon"
 import Mail01Icon from "@hugeicons/core-free-icons/Mail01Icon"
 import NeutralIcon from "@hugeicons/core-free-icons/NeutralIcon"
 import Sad01Icon from "@hugeicons/core-free-icons/Sad01Icon"
 import SquareLock02Icon from "@hugeicons/core-free-icons/SquareLock02Icon"
+import Task01Icon from "@hugeicons/core-free-icons/Task01Icon"
 import Tick02Icon from "@hugeicons/core-free-icons/Tick02Icon"
 import ViewIcon from "@hugeicons/core-free-icons/ViewIcon"
 import ViewOffSlashIcon from "@hugeicons/core-free-icons/ViewOffSlashIcon"
@@ -38,9 +38,6 @@ export const IconChevronLeft = ({ size = 20, color }: IconProps) => (
 
 /** The assistant's rating, worst to best. */
 export const RATING_FACES = [AngryIcon, Sad01Icon, NeutralIcon, HappyIcon, InLoveIcon]
-export const IconFace = ({ face, size = 34, color }: IconProps & { face: number }) => (
-  <HugeIcon icon={RATING_FACES[face]} size={size} color={color} />
-)
 
 /** Checkboxes, done rows and plan features. */
 export function IconCheck({ size = 16, color, strokeWidth = 2 }: IconProps & { strokeWidth?: number }) {
@@ -60,10 +57,10 @@ function tabIcon(icon: typeof Home09Icon, body: readonly number[], keep?: readon
 
 export const IconHome = tabIcon(Home09Icon, [0])
 export const IconResults = tabIcon(Analytics01Icon, [3])
-export const IconPlan = tabIcon(ClipboardListIcon, [1])
+export const IconPlan = tabIcon(Task01Icon, [0, 2])
 export const IconUpgrade = IconPlan
 export const IconToDo = tabIcon(CheckmarkSquare02Icon, [0])
-export const IconCare = tabIcon(HeartCheckIcon, [0])
+export const IconCare = tabIcon(HeartPulseIcon, [0])
 /* The plan's own tabs (Back, Today, Progress): Back is never selected.
    Progress fills its three bars and keeps its arrow as a line. */
 export const IconBack = tabIcon(CircleArrowLeft01Icon, [0])

@@ -3,16 +3,19 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import type { CheckInKind } from "@/components/check-in-sheet"
+import { ProgressChart, type Dated } from "@/components/charts"
 import { AskButton } from "@/components/hol"
-import { Block, Group, NeedsRow, SmallAction, StatRow, StatTile } from "@/components/record-kit"
-import { AT_HOME, DAY_ONE, HEADLINES, RESCORED, RETESTED, SYMPTOMS, type Pair } from "@/lib/topics"
+import { Readout } from "@/components/progress-parts"
+import { Block, Card, Group, SmallAction, StatRow, StatTile } from "@/components/record-kit"
+import { AT_HOME, DAY_ONE, HEADLINES, RESCORED, RETESTED, SYMPTOMS, WAIST_SERIES, WEIGHT_SERIES, type Pair } from "@/lib/topics"
 import { chart, color, font, ink, space, type } from "@/lib/theme"
 
 
 /* The Plan screen's "Progress" tab (Journey screen 48, "Day one, and
    today"): every number she has, against the one she started with. A band
    at the top carries the start date, today's date and the day count; the
-   two figures she shows people come next (pounds lost, body fat down); then
+   two figures she shows people come next (pounds lost, body fat down), then
+   her weight and waist as graphs from day one to today; then
    three dated groups, each repeating the two dates above its columns: what
    the tests found (day one's value, then today's), the three symptoms she
    named re-scored on her own 0 to 10 scale, and what she measures at home.
@@ -62,6 +65,9 @@ export function YourProgress({ onAdd }: { onAdd: (kind: CheckInKind) => void }) 
         <StatTile value={String(fat.down)} unit="pts" label="Body fat down" meta={`From ${fat.from}%`} />
       </StatRow>
 
+      <TrendCard title="Weight" readings={WEIGHT_SERIES} unit="lb" goal={DAY_ONE.goalWeight} readingsLabel="Weigh ins" onAdd={() => onAdd("weight")} />
+      <TrendCard title="Waist" readings={WAIST_SERIES} unit="in" readingsLabel="Monthly checks" />
+
       <Block title="What the tests found" meta={DAY_ONE.range}>
         <Group>
           {RETESTED.map((p) => (
@@ -78,7 +84,7 @@ export function YourProgress({ onAdd }: { onAdd: (kind: CheckInKind) => void }) 
         </Group>
       </Block>
 
-      <Block title="Measured at home" meta={DAY_ONE.range} action={<SmallAction onPress={() => onAdd("weight")}>Add</SmallAction>}>
+      <Block title="Measured at home" meta={DAY_ONE.range}>
         <Group>
           {AT_HOME.map((p) => (
             <PairRow key={p.name} {...p} />
@@ -87,6 +93,23 @@ export function YourProgress({ onAdd }: { onAdd: (kind: CheckInKind) => void }) 
       </Block>
 
     </View>
+  )
+}
+
+/** One measure as a graph from day one to today: today's value and the
+    change since day one above it, the goal as a line when there is one. */
+function TrendCard({ title, readings, unit, goal, readingsLabel, onAdd }: { title: string; readings: Dated[]; unit: string; goal?: number; readingsLabel: string; onAdd?: () => void }) {
+  const first = readings[0]
+  const last = readings[readings.length - 1]
+  const change = Math.round((last.value - first.value) * 10) / 10
+  const words = `${change < 0 ? "Down" : "Up"} ${Math.abs(change)} ${unit} since ${DAY_ONE.started.replace(/, \d{4}$/, "")}`
+  return (
+    <Block title={title} meta={DAY_ONE.range} action={onAdd ? <SmallAction onPress={onAdd}>Add</SmallAction> : undefined}>
+      <Card style={styles.chartCard}>
+        <Readout value={String(last.value)} unit={unit} label={words} />
+        <ProgressChart readings={readings} goal={goal} unit={unit} name={title.toLowerCase()} readingsLabel={readingsLabel} caption={null} playKey={`plan:progress:${title}`} />
+      </Card>
+    </Block>
   )
 }
 
@@ -99,7 +122,7 @@ export function ProgressAsk() {
 function Cell({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <View style={styles.cell}>
-      <Text style={styles.bandLabel}>{label.toUpperCase()}</Text>
+      <Text style={styles.bandLabel}>{label}</Text>
       <Text style={[styles.bandValue, strong && styles.bandStrong]}>{value}</Text>
     </View>
   )
@@ -107,11 +130,12 @@ function Cell({ label, value, strong }: { label: string; value: string; strong?:
 
 const styles = StyleSheet.create({
   wrap: { gap: space.section },
+  chartCard: { gap: space.card },
 
   // The dated band: dark teal, three cells, the day count in the light teal.
   band: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item, paddingHorizontal: space.item, paddingVertical: space.compact, borderRadius: 8, backgroundColor: chart.dataStrong },
   cell: { gap: space.line },
-  bandLabel: { ...type.meta, fontSize: 10, lineHeight: 14, letterSpacing: 0.6, color: color.primaryEdge },
+  bandLabel: { ...type.meta, fontSize: 10, lineHeight: 14, color: color.primaryEdge },
   bandValue: { ...type.title, fontFamily: font.semibold, color: ink.onColor },
   bandStrong: { color: color.primaryHalo },
 

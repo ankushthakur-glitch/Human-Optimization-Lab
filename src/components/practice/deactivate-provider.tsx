@@ -908,7 +908,7 @@ function SearchBox({
   )
 }
 
-function ProviderSelect({
+export function ProviderSelect({
   label,
   className,
   items,
@@ -918,7 +918,8 @@ function ProviderSelect({
 }: {
   label: string
   className?: string
-  items: { value: string; label: string; load: number }[]
+  /** note replaces the patient count, for an item that can't be picked. */
+  items: { value: string; label: string; load: number; note?: string }[]
   value: string
   placeholder: string
   onChange: (id: string) => void
@@ -935,11 +936,15 @@ function ProviderSelect({
       <SelectContent className="min-w-72">
         <SelectGroup>
           {items.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
+            <SelectItem
+              key={item.value}
+              value={item.value}
+              disabled={Boolean(item.note)}
+            >
               <span className="flex w-full items-center justify-between gap-4">
                 {item.label}
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {plural(item.load, "patient")}
+                  {item.note ?? plural(item.load, "patient")}
                 </span>
               </span>
             </SelectItem>
@@ -950,7 +955,7 @@ function ProviderSelect({
   )
 }
 
-function PersonAvatar({
+export function PersonAvatar({
   name,
   photo,
   size,
@@ -980,7 +985,7 @@ function PersonAvatar({
   )
 }
 
-function PatientStack({ rows }: { rows: Patient[] }) {
+export function PatientStack({ rows }: { rows: Patient[] }) {
   if (rows.length === 0) return null
   const shown = rows.slice(0, 4)
   return (
@@ -997,6 +1002,6 @@ function PatientStack({ rows }: { rows: Patient[] }) {
   )
 }
 
-function plural(n: number, noun: string) {
+export function plural(n: number, noun: string) {
   return `${n} ${noun}${n === 1 ? "" : "s"}`
 }

@@ -8,7 +8,7 @@ import { PageNotFoundState } from "@/components/error-state"
 import { FlowScreen } from "@/components/flow"
 import { PageGround, PrimaryButton } from "@/components/hol"
 import { IconAction } from "@/components/care-orders-rows"
-import { CalendarBlank, Check, Info, MapPin } from "@/components/ph"
+import { CalendarBlank, Check, MapPin } from "@/components/ph"
 import { Block, Group } from "@/components/record-kit"
 import { SITES, SLOTS, atSlot, bookingDays, firstOpen, goneOn, item as findItem, money, nextWord, type Site } from "@/lib/catalog"
 import { addToCalendar, directions } from "@/lib/links"
@@ -32,7 +32,7 @@ import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
    Confirm names the day and the time. From the catalog to a booked
    appointment in three screens. */
 
-const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 export default function CatalogBookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -155,10 +155,6 @@ export default function CatalogBookScreen() {
         <Rich style={styles.noteText}>{`**Nothing to bring and nothing to print.** ${bring} Give your name at the desk.`}</Rich>
       </View>
 
-      <View style={styles.signed}>
-        <Info size={14} color={ink.tertiary} />
-        <Text style={styles.signedText}>Dr. Patel’s order went to her portal the moment you paid and is signed in the background. Your appointment does not wait on it.</Text>
-      </View>
     </FlowScreen>
   )
 }
@@ -223,8 +219,6 @@ const styles = StyleSheet.create({
   note: { flexDirection: "row", gap: space.lead, alignItems: "flex-start", padding: space.card, borderRadius: 8, borderWidth: 1, borderColor: hairline.edge, backgroundColor: color.primaryTint },
   noteMark: { width: 18, height: 18, borderRadius: 9, backgroundColor: color.primarySoft, alignItems: "center", justifyContent: "center" },
   noteText: { flex: 1, fontSize: 12, lineHeight: 18 },
-  signed: { flexDirection: "row", gap: space.inline, alignItems: "flex-start", paddingHorizontal: 2 },
-  signedText: { ...type.label, flex: 1, color: ink.tertiary },
 
   done: { alignItems: "center", gap: space.item, paddingVertical: 24, paddingHorizontal: 20, borderRadius: 8, borderWidth: 1, borderColor: hairline.edge, overflow: "hidden" },
   doneWords: { alignItems: "center", gap: space.inline },

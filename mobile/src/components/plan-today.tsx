@@ -2,12 +2,11 @@ import { router } from "expo-router"
 import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
-import { CalendarBlank, CaretRight, Check, Lightbulb } from "@/components/ph"
+import { CaretRight, Check } from "@/components/ph"
 import { Block, Group, Rise, Tag } from "@/components/record-kit"
 import { TONE_INK, TopicTile } from "@/components/topic-kit"
-import { openTab } from "@/components/tab-bar"
 import { useOnboarding } from "@/lib/onboarding"
-import { CARE_TODAY, TODAY_INSIGHT, TOPICS, doneCount, rowOf, type Topic } from "@/lib/topics"
+import { TOPICS, doneCount, rowOf, type Topic } from "@/lib/topics"
 import { card, chart, color, hairline, ink, space, type } from "@/lib/theme"
 
 /* The Plan screen's "Today" tab (Journey_14 screen 30, "Six topics, every
@@ -20,8 +19,7 @@ import { card, chart, color, hairline, ink, space, type } from "@/lib/theme"
    honestly: done, partial, short, not started. A topic she has answered
    turns to done here. Tapping a row opens that topic, and every topic opens
    the same four ways to answer it. Above the six: how many are done, the
-   next thing due (one tap to mark a dose taken) and the note that says when
-   the plan moved by itself. Care says what is due there. */
+   next thing due (one tap to mark a dose taken). */
 
 const WEEKDAY_DATE = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
 
@@ -53,13 +51,6 @@ export function PlanToday() {
         </View>
       </Rise>
 
-      <Rise at={3} id="today:note">
-        <View style={styles.note}>
-          <Lightbulb size={16} color={color.primary} />
-          <Text style={[type.label, styles.fill]}>{TODAY_INSIGHT}</Text>
-        </View>
-      </Rise>
-
       <Rise at={4} id="today:goals">
         <Block title="Today's goals" meta="Same six every day">
           <Group>
@@ -78,15 +69,17 @@ export function PlanToday() {
                     <View style={styles.top}>
                       <View style={styles.nameRow}>
                         <Text style={styles.name}>{t.id === "medication" ? "Medication" : t.name}</Text>
-                        <Tag tone={CHIP[t.tagTone]}>{t.tag.toUpperCase()}</Tag>
+                        <Tag tone={CHIP[t.tagTone]}>{t.tag}</Tag>
                       </View>
                       <View style={styles.figure}>
                         {row.done && row.tone === "good" && <Check size={12} weight="bold" color={ink.good} />}
                         <Text style={[styles.figureText, { color: TONE_INK[row.tone] }]}>{row.text}</Text>
                       </View>
                     </View>
-                    <Text style={type.meta}>{t.target}</Text>
-                    <Text style={styles.note2}>{row.note}</Text>
+                    <Text style={type.meta} numberOfLines={1}>
+                      {t.target}
+                      <Text style={styles.note2}>{` · ${row.note}`}</Text>
+                    </Text>
                   </View>
                   <CaretRight size={14} color={card.chevron} />
                 </Pressable>
@@ -94,16 +87,6 @@ export function PlanToday() {
             })}
           </Group>
         </Block>
-      </Rise>
-
-      <Rise at={5} id="today:care">
-        <Pressable onPress={() => openTab("/gaps", "plan")} accessibilityRole="button" style={({ pressed }) => [styles.care, pressed && styles.pressed]}>
-          <CalendarBlank size={16} color={color.amber} />
-          <View style={styles.fill}>
-            <Text style={styles.careTitle}>{CARE_TODAY.title}</Text>
-            <Text style={type.meta}>{CARE_TODAY.next}</Text>
-          </View>
-        </Pressable>
       </Rise>
     </View>
   )
@@ -123,11 +106,10 @@ const styles = StyleSheet.create({
   fillBar: { height: 4, borderRadius: 2, backgroundColor: color.primary },
 
 
-  note: { flexDirection: "row", gap: space.lead, padding: space.card, borderRadius: 8, backgroundColor: color.primarySoft },
 
   // The tile at the top of the row, the words in one column beside it: the
-  // name and the figure on one line, then the target and the note under,
-  // each at the full width and free to wrap.
+  // name and the figure on one line, then the target and the note under it
+  // on a single line.
   row: { flexDirection: "row", alignItems: "flex-start", gap: space.lead, paddingVertical: 16 },
   body: { flex: 1, minWidth: 0, gap: 4 },
   top: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: space.item },
@@ -137,6 +119,4 @@ const styles = StyleSheet.create({
   figureText: { ...type.value, fontVariant: ["tabular-nums"] },
   note2: { ...type.meta, color: ink.tertiary },
 
-  care: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.card, borderRadius: 8, backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge },
-  careTitle: { ...type.title, color: ink.strong },
 })
