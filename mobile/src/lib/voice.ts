@@ -74,8 +74,9 @@ function synthetic() {
   return Math.max(0, Math.min(1, swell * 0.7 + Math.sin(t * 7.3) * 0.12))
 }
 
-/** `onText` gets the field's whole text: what was typed before, then what was heard. */
-export function useVoiceInput(onText: (text: string) => void) {
+/** `onText` gets the field's whole text: what was typed before, then what
+    was heard. `sample` is what is written in where nothing can transcribe. */
+export function useVoiceInput(onText: (text: string) => void, sample: string = SAMPLE) {
   const [state, setState] = React.useState<VoiceState>("idle")
   const [problem, setProblem] = React.useState<VoiceProblem>()
   const meter = React.useRef(0)
@@ -263,7 +264,7 @@ export function useVoiceInput(onText: (text: string) => void) {
         r.stop()
         return
       }
-      text.current(before.current + SAMPLE)
+      text.current(before.current + sample)
       setState("idle")
     }, r ? 500 : 900)
   }

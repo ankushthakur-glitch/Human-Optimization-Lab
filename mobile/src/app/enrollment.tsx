@@ -1,6 +1,6 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import {
   BillingToggle,
@@ -8,50 +8,50 @@ import {
   PlanCard,
   firstMonth,
 } from "@/components/enrollment-kit"
-import { Card as Option } from "@/components/flow"
+import { CheckMark } from "@/components/flow"
 import { PlanStepPage } from "@/components/plan-steps"
-import { dollarsExact, type TestPay } from "@/lib/baseline-tests"
-import { MEMBER } from "@/lib/member"
+import { chosenAddOns, chosenTests, dollars, dollarsExact, OFFERED_ADD_ONS, toggleTest, type AddOnId, type BaselineTestId } from "@/lib/baseline-tests"
 import { useOnboarding } from "@/lib/onboarding"
 import { type Cadence } from "@/lib/plans"
-import { color, ink, space, type } from "@/lib/theme"
+import { card, color, hairline, ink, space, type } from "@/lib/theme"
 
 /* Step 3 of the plan's set-up, "Complete your enrollment" (Journey_7
    screen 6): opens after the tests her numbers call for (/baseline).
    Monthly or yearly (yearly the default, saving 10% and taking 10% off
    the tests), the plan named from her goals with its price and what it
-   includes, then (26 Oct 2026) when to pay for the tests: now, with any
-   her insurance covers refunded after her physician sorts them, or after
-   that review, only for the ones booked through Inlay. The total over
-   Continue follows the choice. "Continue to payment" opens step 4
+   includes, then (26 Oct 2026) the tests she ticked on /baseline, each
+   with its checkbox and price; one cleared here stays listed, greyed with
+   its price struck through. When to pay for the tests is chosen on
+   /payment. The total over Continue follows the ticks. "Continue to payment" opens step 4
    (/payment). */
 
 export default function EnrollmentScreen() {
   const onboarding = useOnboarding()
   const billing = onboarding.billingPick ?? "yearly"
-  const testPay: TestPay = onboarding.testPay ?? "now"
   const [included, setIncluded] = React.useState(false)
-  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns, testPay)
-  const count = cost.tests.length + cost.addOns.length
+  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns, onboarding.testPay)
+  // The tests ticked on /baseline, held as she arrived so one cleared here
+  // stays in the list to tick again.
+  const [listed] = React.useState(() => [
+    ...chosenTests(onboarding.baselinePicks).map((t) => ({ key: t.id as string, name: t.name, price: t.price })),
+    ...chosenAddOns(onboarding.addOns).map((a) => ({ key: a.id as string, name: a.name, price: a.price })),
+  ])
+  const on = new Set<string>([...cost.tests.map((t) => t.id), ...cost.addOns.map((a) => a.id)])
+
+  function flip(key: string) {
+    if ((OFFERED_ADD_ONS as string[]).includes(key)) {
+      const next = new Set(cost.addOns.map((a) => a.id as string))
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      onboarding.save({ addOns: OFFERED_ADD_ONS.filter((id: AddOnId) => next.has(id)) })
+    } else {
+      onboarding.save({ baselinePicks: toggleTest(onboarding.baselinePicks, key as BaselineTestId) })
+    }
+  }
 
   function pay(next: Cadence) {
     onboarding.save({ billingPick: next })
   }
-
-  const options: { key: TestPay; name: string; amount: string; says: string }[] = [
-    {
-      key: "now",
-      name: "Pay now",
-      amount: dollarsExact(cost.testsTotal),
-      says: `Book as soon as ${MEMBER.doctorShort} has checked them. Anything your insurance covers is refunded.`,
-    },
-    {
-      key: "later",
-      name: "Pay after review",
-      amount: "$0 today",
-      says: `Pay only for the tests ${MEMBER.doctorShort} sends to Inlay. Nothing to refund.`,
-    },
-  ]
 
   return (
     <PlanStepPage
@@ -84,19 +84,29 @@ export default function EnrollmentScreen() {
 
       <View style={styles.section}>
         <Text style={styles.heading} accessibilityRole="header">
-          {`When to pay for your ${count === 1 ? "test" : `${count} tests`}`}
+          {`Your ${listed.length === 1 ? "test" : `${listed.length} tests`}`}
         </Text>
-        {options.map((o) => (
-          <Option key={o.key} selected={testPay === o.key} onPress={() => onboarding.save({ testPay: o.key })}>
-            <View style={styles.option}>
-              <View style={styles.optionTop}>
-                <Text style={styles.name}>{o.name}</Text>
-                <Text style={styles.price}>{o.amount}</Text>
-              </View>
-              <Text style={styles.says}>{o.says}</Text>
-            </View>
-          </Option>
-        ))}
+        <View style={styles.tests}>
+          {listed.map((t, i) => {
+            const checked = on.has(t.key)
+            return (
+              <Pressable
+                key={t.key}
+                onPress={() => flip(t.key)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked }}
+                accessibilityLabel={`${t.name}, ${dollars(t.price)}`}
+                style={({ pressed }) => [styles.test, i > 0 && styles.rule, pressed && styles.pressed]}
+              >
+                <CheckMark checked={checked} centered />
+                <Text style={[styles.name, !checked && styles.dim]} numberOfLines={1}>
+                  {t.name}
+                </Text>
+                <Text style={[styles.price, !checked && styles.dim, !checked && styles.struck]}>{dollars(t.price)}</Text>
+              </Pressable>
+            )
+          })}
+        </View>
       </View>
     </PlanStepPage>
   )
@@ -108,12 +118,24 @@ const styles = StyleSheet.create({
   section: { gap: space.inline, marginTop: space.item },
   heading: { ...type.title, color: ink.strong },
 
-  option: { gap: space.mark },
-  optionTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },
-  name: { ...type.title, fontSize: 14, color: ink.strong },
-  says: { ...type.label, fontSize: 12, lineHeight: 17, color: ink.secondary },
+  // The tests in one white card, a hairline between rows, as on /baseline.
+  tests: {
+    overflow: "hidden",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+    backgroundColor: color.background,
+    boxShadow: card.shadow,
+  },
+  test: { flexDirection: "row", alignItems: "center", gap: space.item, paddingVertical: space.rowY, paddingHorizontal: space.rowX },
+  rule: { borderTopWidth: 1, borderTopColor: hairline.rule },
+  pressed: { opacity: 0.7 },
+  name: { ...type.title, flex: 1, fontSize: 14, color: ink.strong },
   // Digits of one width, as in the totals.
   price: { ...type.value, fontVariant: ["tabular-nums"] },
+  // A cleared test: quieter words, the price struck through.
+  dim: { color: ink.tertiary },
+  struck: { textDecorationLine: "line-through" },
 
   // The total, fixed over Continue on a deeper teal: the page's one big number.
   total: {

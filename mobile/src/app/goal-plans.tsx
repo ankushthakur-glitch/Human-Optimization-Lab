@@ -1,9 +1,9 @@
 import { router } from "expo-router"
 import { StyleSheet, Text, View } from "react-native"
 
-import { usePlanMatches } from "@/components/plan-match"
+import { STEP_ICON, usePlanMatches } from "@/components/plan-match"
 import { PlanStepPage } from "@/components/plan-steps"
-import { Barbell, Bone, Brain, Drop, Flame, ForkKnife, Heart, Lightning, Moon, Pill, Ruler, Scales } from "@/components/ph"
+import { Bone, Drop, Flame, Heart, Lightning, Moon, Scales } from "@/components/ph"
 import { Card, HUE, Heading, Tag, Tile, type Hue } from "@/components/record-kit"
 import { ADDS, SHORT_NAME, planHue, type PlanKind, type SixStep } from "@/lib/plan-match"
 import { color, ink, space, type } from "@/lib/theme"
@@ -20,12 +20,12 @@ type Row = { key: string; name: string; says: string; Icon: Icon; hue: Hue; step
 
 /** The six steps, each with what it starts with. */
 const STEPS: { step: SixStep; says: string; Icon: Icon; hue: Hue }[] = [
-  { step: "Exercise", says: "3 strength days and 8,000 steps", Icon: Barbell, hue: "teal" },
-  { step: "Eat", says: "Protein at every meal, fiber 30 g", Icon: ForkKnife, hue: "green" },
-  { step: "Sleep", says: "7 hours, the same bedtime", Icon: Moon, hue: "blue" },
-  { step: "Mind", says: "Rate stress, coping and distress each day", Icon: Brain, hue: "violet" },
-  { step: "Medication", says: "Your medicines, and supplement checks", Icon: Pill, hue: "amber" },
-  { step: "Measure", says: "Weigh in every morning", Icon: Ruler, hue: "red" },
+  { step: "Exercise", says: "3 strength days and 8,000 steps", Icon: STEP_ICON.Exercise, hue: "teal" },
+  { step: "Eat", says: "Protein at every meal, fiber 30 g", Icon: STEP_ICON.Eat, hue: "green" },
+  { step: "Sleep", says: "7 hours, the same bedtime", Icon: STEP_ICON.Sleep, hue: "blue" },
+  { step: "Mind", says: "Rate stress, coping and distress each day", Icon: STEP_ICON.Mind, hue: "violet" },
+  { step: "Medication", says: "Your medicines, and supplement checks", Icon: STEP_ICON.Medication, hue: "amber" },
+  { step: "Measure", says: "Weigh in every morning", Icon: STEP_ICON.Measure, hue: "red" },
 ]
 
 /** What her answers to the life questions add, with the line she said. */
@@ -68,7 +68,6 @@ export default function GoalPlansScreen() {
     <PlanStepPage
       step={1}
       title="Your plan works on six steps"
-      lead="The same six for everyone. What each one asks of you comes from your record."
       nextLabel="Next"
       nextOneLine
       onNext={() => router.push("/baseline")}

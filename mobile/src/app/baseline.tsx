@@ -6,7 +6,6 @@ import { CheckMark } from "@/components/flow"
 import { Info } from "@/components/ph"
 import { usePlanMatches } from "@/components/plan-match"
 import { PlanStepPage } from "@/components/plan-steps"
-import { Tag } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { ADD_ONS, BASELINE_TESTS, chosenAddOns, chosenTests, dollars, type AddOnId, type BaselineTestId, type Coverage } from "@/lib/baseline-tests"
 import { MEMBER } from "@/lib/member"
@@ -14,9 +13,9 @@ import { useOnboarding } from "@/lib/onboarding"
 import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* Step 2 of the plan's set-up, "What your baseline needs" (26 Oct 2026):
-   the tests her numbers call for, not tests tied to a plan. Grouped by the
-   kind of test; each test has its own checkbox, says the number it was
-   picked for, and is marked when AI finds her insurance may cover it. A
+   the tests her numbers call for, not tests tied to a plan. One plain
+   list, no grouping; each test has its own checkbox, says the number it was
+   picked for. A
    test she clears greys out with its price struck through. The (i) beside
    a test opens what it is and why it matters in a bottom sheet. A note
    says her physician sorts the tests into insurance or Inlay before she
@@ -35,8 +34,6 @@ type Item = {
   info: Info
   insurance?: Coverage
 }
-
-type Group = { key: string; name: string; items: Item[] }
 
 const SLEEP: Info = {
   what: "A home sleep test worn for two nights. It tracks your breathing, oxygen and sleep stages while you sleep in your own bed.",
@@ -85,29 +82,15 @@ export default function BaselineScreen() {
   // Each test names the numbers it was picked for, when her record has them.
   const blood = matches.filter((m) => m.kind === "lipid" || m.kind === "insulin").map((m, i) => (i ? inSentence(valueOf(m.matchedOn)) : valueOf(m.matchedOn)))
   const weight = matches.find((m) => m.kind === "metabolic")
-  const groups: Group[] = [
-    {
-      key: "blood",
-      name: "Blood tests",
-      items: [TEST_ITEM("panel", blood.length ? `${blood.join(" and ")}, also covers insulin` : "Sets your starting values")],
-    },
-    {
-      key: "body",
-      name: "Body and metabolism",
-      items: [
-        TEST_ITEM("dexa", weight ? `${valueOf(weight.matchedOn)}, separates fat from lean mass` : "Separates fat from lean mass"),
-        TEST_ITEM("rmr", "No metabolic rate on file"),
-      ],
-    },
-    {
-      key: "sleep",
-      name: "Sleep",
-      items: [{ key: "sleep", name: ADD_ONS.sleep.name, says: "Two nights at home, you said you wake at three", price: ADD_ONS.sleep.price, info: SLEEP, insurance: ADD_ONS.sleep.insurance }],
-    },
+  const items: Item[] = [
+    TEST_ITEM("panel", blood.length ? `${blood.join(" and ")}, also covers insulin` : "Sets your starting values"),
+    TEST_ITEM("dexa", weight ? `${valueOf(weight.matchedOn)}, separates fat from lean mass` : "Separates fat from lean mass"),
+    TEST_ITEM("rmr", "No metabolic rate on file"),
+    { key: "sleep", name: ADD_ONS.sleep.name, says: "Two nights at home, you said you wake at three", price: ADD_ONS.sleep.price, info: SLEEP, insurance: ADD_ONS.sleep.insurance },
   ]
 
-  const openItem = groups.flatMap((g) => g.items).find((i) => i.key === open)
-  const ticked = groups.flatMap((g) => g.items).filter((i) => on(i.key))
+  const openItem = items.find((i) => i.key === open)
+  const ticked = items.filter((i) => on(i.key))
   const total = ticked.reduce((sum, i) => sum + i.price, 0)
 
   return (
@@ -139,56 +122,42 @@ export default function BaselineScreen() {
       }
     >
       <View style={styles.groups}>
-        {groups.map((g) => {
-          const chosen = g.items.filter((i) => on(i.key)).length
-          return (
-            <View key={g.key} style={styles.group}>
-              <View style={styles.head}>
-                <Text style={styles.groupName}>{g.name}</Text>
-                <Text style={styles.tag}>{g.items.length === 1 ? (chosen ? "1 test" : "Skipped") : `${chosen} of ${g.items.length}`}</Text>
-              </View>
-              {g.items.map((item) => {
-                const checked = on(item.key)
-                return (
-                  <Pressable
-                    key={item.key}
-                    onPress={() => flip(item.key)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked }}
-                    accessibilityLabel={`${item.name}, ${dollars(item.price)}. ${item.says}${item.insurance === "likely" ? ". May be covered by insurance" : ""}`}
-                    style={({ pressed }) => [styles.item, pressed && styles.pressed]}
-                  >
-                    <CheckMark checked={checked} centered />
-                    <View style={styles.body}>
-                      {/* The info button sits right after the test's name. */}
-                      <View style={styles.nameRow}>
-                        <Text style={[styles.name, !checked && styles.dim]} numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                        <Pressable
-                          onPress={() => setOpen(item.key)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`About ${item.name}`}
-                          hitSlop={8}
-                          style={({ pressed }) => [styles.more, pressed && styles.pressed]}
-                        >
-                          <Info size={14} color={ink.primary} />
-                        </Pressable>
-                      </View>
-                      <Text style={[styles.says, !checked && styles.dim]}>{item.says}</Text>
-                      {item.insurance === "likely" && checked && (
-                        <View style={styles.cover}>
-                          <Tag tone="low">May be covered by insurance</Tag>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={[styles.price, !checked && styles.dim, !checked && styles.struck]}>{dollars(item.price)}</Text>
-                  </Pressable>
-                )
-              })}
-            </View>
-          )
-        })}
+        <View style={styles.group}>
+          {items.map((item, i) => {
+            const checked = on(item.key)
+            return (
+              <Pressable
+                key={item.key}
+                onPress={() => flip(item.key)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked }}
+                accessibilityLabel={`${item.name}, ${dollars(item.price)}. ${item.says}`}
+                style={({ pressed }) => [styles.item, i > 0 && styles.rule, pressed && styles.pressed]}
+              >
+                <CheckMark checked={checked} centered />
+                <View style={styles.body}>
+                  {/* The info button sits right after the test's name. */}
+                  <View style={styles.nameRow}>
+                    <Text style={[styles.name, !checked && styles.dim]} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Pressable
+                      onPress={() => setOpen(item.key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`About ${item.name}`}
+                      hitSlop={8}
+                      style={({ pressed }) => [styles.more, pressed && styles.pressed]}
+                    >
+                      <Info size={14} color={ink.primary} />
+                    </Pressable>
+                  </View>
+                  <Text style={[styles.says, !checked && styles.dim]}>{item.says}</Text>
+                </View>
+                <Text style={[styles.price, !checked && styles.dim, !checked && styles.struck]}>{dollars(item.price)}</Text>
+              </Pressable>
+            )
+          })}
+        </View>
         <View style={styles.note}>
           <Info size={16} color={color.amber} />
           <Text style={styles.noteText}>{`${MEMBER.doctorShort} checks each test against your insurance before you book. Anything covered goes through the office.`}</Text>
@@ -200,8 +169,7 @@ export default function BaselineScreen() {
 
 const styles = StyleSheet.create({
   groups: { gap: space.inline, marginTop: space.mark, paddingBottom: space.inline },
-  // One white card per kind of test: its name and how many are ticked on
-  // an inset header, the tests under it.
+  // One white card holding every test, a hairline between rows.
   group: {
     overflow: "hidden",
     borderRadius: 12,
@@ -210,32 +178,18 @@ const styles = StyleSheet.create({
     backgroundColor: color.background,
     boxShadow: card.shadow,
   },
-  head: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.inline,
-    paddingVertical: space.inline + 2,
-    paddingHorizontal: space.rowX,
-    backgroundColor: color.primarySoft,
-    borderBottomWidth: 1,
-    borderBottomColor: color.primaryEdge,
-  },
-  groupName: { ...type.title, flex: 1, fontSize: 13, color: ink.strong },
-  tag: { ...type.label, fontSize: 12, color: ink.secondary },
   item: {
     flexDirection: "row",
     alignItems: "center",
     gap: space.item,
     paddingVertical: space.rowY,
     paddingHorizontal: space.rowX,
-    borderTopWidth: 1,
-    borderTopColor: hairline.rule,
   },
+  rule: { borderTopWidth: 1, borderTopColor: hairline.rule },
   body: { flex: 1, gap: 2 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: space.mark },
   name: { ...type.title, flexShrink: 1, fontSize: 14, color: ink.strong },
   says: { ...type.label, fontSize: 12, color: ink.secondary },
-  cover: { flexDirection: "row", marginTop: space.mark },
   // Digits of one width, so the prices line up down the column.
   price: { ...type.value, fontVariant: ["tabular-nums"] },
   more: { flexDirection: "row", alignItems: "center" },

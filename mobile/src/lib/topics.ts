@@ -19,14 +19,15 @@ export type TopicId = "exercise" | "eat" | "sleep" | "mind" | "medication" | "me
 /** How a figure reads: green is done or on target, amber short, red missed. */
 export type Tone = "good" | "warn" | "bad" | "plain"
 
-export type IconKey = "exercise" | "eat" | "sleep" | "mind" | "medication" | "measure" | "check" | "pencil" | "mic" | "import" | "search" | "camera" | "upload" | "phone" | "device"
+export type IconKey = "exercise" | "eat" | "sleep" | "mind" | "medication" | "measure" | "check" | "pencil" | "mic" | "import" | "search" | "camera" | "upload" | "phone" | "device" | "shift" | "swap" | "practice"
 
 /** What a way does when she taps it. `done` answers the topic and says so on
     Today; `go` opens the screen that already does it; `ask` hands it to the
     assistant in her own words; `sheet` opens the measurements sheet; `part`
     opens the session's parts, each done or skipped; `short` how many
     minutes of the practice she did and what; `meal` asks which meal
-    she is adding, then opens that way of logging it; `dose` opens one of
+    she is adding, then opens that way of logging it; `voice` asks the
+    same, then listens while she says what she ate; `dose` opens one of
     Medication's sheets: tick the doses taken, log one missed, report a side
     effect to the physician, or photograph a new label; `night` opens
     Sleep's log of the night she actually had; `pick` the plan's pre-planned
@@ -42,6 +43,7 @@ export type Act =
   | { kind: "short" }
   | { kind: "night" }
   | { kind: "meal" }
+  | { kind: "voice" }
   | { kind: "dose"; sheet: "taken" | "missed" | "side" | "photo" }
   | { kind: "pick" }
   | { kind: "apps"; title: string; apps: string[]; upload?: boolean }
@@ -89,7 +91,7 @@ export const TOPICS: Topic[] = [
       { id: "written", title: "Do it as written", says: "All four lifts, then the cardio block", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "done" } },
       { id: "part", title: "Do part of it", says: "Log your sets, or skip an exercise", badge: "Scores on what you did", tone: "warn", icon: "pencil", act: { kind: "part" } },
       { id: "easier", title: "Ask for an easier version", says: "Say why, out loud, it rebuilds", badge: "No one to call", tone: "info", icon: "mic", act: { kind: "ask", ask: "Today's session is too much. Can you make it easier? " } },
-      { id: "own", title: "Upload your own programme", says: "Or connect the app it already lives in", badge: "We monitor yours", tone: "info", icon: "upload", act: { kind: "apps", title: "Your own programme", apps: ["Apple Health", "Strava", "Garmin Connect", "Peloton"], upload: true } },
+      { id: "own", title: "Upload your own programme", says: "PDF, a photo or a spreadsheet", badge: "We monitor yours", tone: "info", icon: "upload", act: { kind: "apps", title: "Your own programme", apps: [], upload: true } },
     ],
   },
   {
@@ -106,7 +108,7 @@ export const TOPICS: Topic[] = [
     ways: [
       { id: "database", title: "Pick from the meal database", says: "Pre-planned meals, one tap to add", badge: "Macros already known", tone: "good", icon: "search", act: { kind: "pick" } },
       { id: "photo", title: "Photograph the plate", says: "Snap it and we read the macros", badge: "Scores what you ate", tone: "warn", icon: "camera", act: { kind: "meal" } },
-      { id: "say", title: "Say what you ate", says: "Out loud, in your own words", badge: "Nothing to type", tone: "good", icon: "mic", act: { kind: "ask", ask: "Here is what I ate: " } },
+      { id: "say", title: "Say what you ate", says: "Out loud, in your own words", badge: "Nothing to type", tone: "good", icon: "mic", act: { kind: "voice" } },
       { id: "import", title: "Import from another app", says: "Apple Health, MyFitnessPal, Cronometer", badge: "Posts itself", tone: "info", icon: "import", act: { kind: "apps", title: "Import your meals", apps: ["Apple Health", "MyFitnessPal", "Cronometer"] } },
     ],
   },
@@ -124,7 +126,7 @@ export const TOPICS: Topic[] = [
     ways: [
       { id: "window", title: "Follow tonight's window", says: "In bed 10:30, up at 6:00", badge: "Scores 100% for tonight", tone: "good", icon: "check", act: { kind: "done" } },
       { id: "log", title: "Log what actually happened", says: "Time in bed, and the times you woke", badge: "Scores on actual", tone: "warn", icon: "pencil", act: { kind: "night" } },
-      { id: "shift", title: "Ask to shift the window", says: "A late flight, a sick child, say why", badge: "Rebuilds tonight", tone: "info", icon: "mic", act: { kind: "ask", ask: "I need to shift tonight's sleep window because " } },
+      { id: "shift", title: "Ask to shift the window", says: "A late flight, a sick child, say why", badge: "Rebuilds tonight", tone: "info", icon: "shift", act: { kind: "ask", ask: "I need to shift tonight's sleep window because " } },
       { id: "device", title: "Connect your device", says: "CPAP, Oura, Apple Watch, Eight Sleep", badge: "Logged for you", tone: "info", icon: "device", act: { kind: "apps", title: "Connect your device", apps: ["ResMed CPAP", "Oura", "Apple Watch", "Eight Sleep"] } },
     ],
   },
@@ -142,8 +144,8 @@ export const TOPICS: Topic[] = [
     ways: [
       { id: "session", title: "Do today's session", says: "Twenty minutes, guided end to end", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "done" } },
       { id: "short", title: "Do the short version", says: "Eight minutes when the day is full", badge: "Partial credit", tone: "warn", icon: "pencil", act: { kind: "short" } },
-      { id: "swap", title: "Swap the practice", says: "Say what is not working for you", badge: "Rebuilds the week", tone: "info", icon: "mic", act: { kind: "ask", ask: "The relaxation practice is not working for me because " } },
-      { id: "own", title: "Log your own practice", says: "Yoga, prayer, a walk without a phone", badge: "Counts if you log it", tone: "good", icon: "mind", act: { kind: "ask", ask: "I did my own practice today: " } },
+      { id: "swap", title: "Swap the practice", says: "Say what is not working for you", badge: "Rebuilds the week", tone: "info", icon: "swap", act: { kind: "ask", ask: "The relaxation practice is not working for me because " } },
+      { id: "own", title: "Log your own practice", says: "Yoga, prayer, a walk without a phone", badge: "Counts if you log it", tone: "good", icon: "practice", act: { kind: "ask", ask: "I did my own practice today: " } },
     ],
     done: false,
   },
@@ -175,11 +177,10 @@ export const TOPICS: Topic[] = [
     detail: "Last entered October 6 · 178 lb, 36.5″",
     state: { text: "Due today", tone: "warn", note: "Last 178 lb · 36.5″" },
     answered: { text: "Done", note: () => "Entered today" },
-    intro: FOUR,
+    intro: "Today's target, and three ways to answer it.",
     ways: [
       { id: "enter", title: "Enter today's numbers", says: "Weight, waist, blood pressure", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "sheet" } },
       { id: "skip", title: "Skip today", says: "Say why, the gap stays in the series", badge: "No penalty", tone: "warn", icon: "pencil", act: { kind: "ask", ask: "I am skipping today's measurements because " } },
-      { id: "cadence", title: "Change the cadence", says: "Every morning is a lot for some, ask for less often", badge: "Rebuilds the schedule", tone: "info", icon: "mic", act: { kind: "ask", ask: "Can I weigh in less often than every morning? " } },
       { id: "device", title: "Connect a scale or cuff", says: "Withings, Omron, Apple Health", badge: "Posts itself", tone: "info", icon: "device", act: { kind: "apps", title: "Connect a scale or cuff", apps: ["Withings scale", "Omron cuff", "Apple Health"] } },
     ],
     done: false,
@@ -189,7 +190,7 @@ export const TOPICS: Topic[] = [
 /** How to measure a waist the same way every month, a step a slide in the
     sheet behind "How to measure" on the Measure page. Taken where the tape
     crosses the belly button, so the reading lines up with the clinic's own.
-    Each step has its drawing in components/waist-guide.tsx, in this order. */
+    Each step has its illustration in assets/images/waist, in this order. */
 export const WAIST_GUIDE: { title: string; says: string; tips: string[] }[] = [
   { title: "Get ready", says: "Use a soft cloth or plastic sewing tape, not a metal tool tape or a string. Stand in front of a mirror on bare skin, feet together, arms relaxed at your sides.", tips: ["Soft tape", "Bare skin", "Mirror in front"] },
   { title: "Find your belly button", says: "Your belly button is the landmark. The tape goes right across it, not at your belt line and not up at your ribs.", tips: ["Across the belly button", "Not the belt line"] },
@@ -437,6 +438,39 @@ export const PLANNED_MEALS: { id: string; name: string; slot: "breakfast" | "lun
   { id: "salmon-veg", name: "Salmon, sweet potato and broccoli", slot: "dinner", portion: "1 plate", nutrients: { calories: 610, protein: 52, fiber: 9, calcium: 140 } },
   { id: "turkey-chili", name: "Turkey and black bean chili", slot: "dinner", portion: "1 bowl", nutrients: { calories: 520, protein: 46, fiber: 14, calcium: 190 } },
   { id: "cottage-cheese", name: "Cottage cheese and pear", slot: "snack", portion: "1 cup", nutrients: { calories: 210, protein: 24, fiber: 4, calcium: 220 } },
+]
+
+/** What the prototype "hears" where nothing can transcribe (Expo Go, a
+    browser without speech recognition), one sentence per meal. */
+export const SPOKEN_SAMPLE: Record<"breakfast" | "lunch" | "dinner", string> = {
+  breakfast: "Two scrambled eggs, a slice of whole grain toast and a black coffee",
+  lunch: "A grilled chicken salad with olive oil and an apple",
+  dinner: "Salmon with rice and broccoli, and a glass of water",
+}
+
+/** The foods a spoken meal is read against: a word she might say, and
+    what one usual portion of it holds. Anything not here is still kept,
+    by name, with nothing known about it until she checks it. */
+export const SPOKEN_FOODS: { says: RegExp; name: string; portion: string; nutrients: { calories: number; protein: number; fiber: number; calcium: number } }[] = [
+  { says: /\begg/, name: "Scrambled eggs", portion: "2 eggs", nutrients: { calories: 180, protein: 12, fiber: 0, calcium: 50 } },
+  { says: /\btoast|\bbread/, name: "Whole grain toast", portion: "1 slice", nutrients: { calories: 80, protein: 4, fiber: 2, calcium: 30 } },
+  { says: /\bcoffee/, name: "Black coffee", portion: "1 cup", nutrients: { calories: 2, protein: 0, fiber: 0, calcium: 5 } },
+  { says: /\byogh?urt/, name: "Greek yogurt", portion: "1 cup", nutrients: { calories: 150, protein: 20, fiber: 0, calcium: 230 } },
+  { says: /\boat/, name: "Oatmeal", portion: "1 cup", nutrients: { calories: 160, protein: 6, fiber: 4, calcium: 20 } },
+  { says: /\bberr/, name: "Berries", portion: "Half a cup", nutrients: { calories: 35, protein: 1, fiber: 4, calcium: 15 } },
+  { says: /\bsalad/, name: "Grilled chicken salad", portion: "1 bowl", nutrients: { calories: 350, protein: 35, fiber: 5, calcium: 80 } },
+  { says: /\bchicken/, name: "Chicken breast", portion: "5 oz", nutrients: { calories: 230, protein: 43, fiber: 0, calcium: 20 } },
+  { says: /\bolive oil|\bdressing/, name: "Olive oil", portion: "1 tablespoon", nutrients: { calories: 120, protein: 0, fiber: 0, calcium: 0 } },
+  { says: /\bapple/, name: "Apple", portion: "1 medium", nutrients: { calories: 95, protein: 0, fiber: 4, calcium: 10 } },
+  { says: /\bbanana/, name: "Banana", portion: "1 medium", nutrients: { calories: 105, protein: 1, fiber: 3, calcium: 6 } },
+  { says: /\bsalmon/, name: "Salmon", portion: "5 oz", nutrients: { calories: 290, protein: 32, fiber: 0, calcium: 15 } },
+  { says: /\brice/, name: "White rice", portion: "1 cup", nutrients: { calories: 205, protein: 4, fiber: 1, calcium: 15 } },
+  { says: /\bbroccoli/, name: "Broccoli", portion: "1 cup", nutrients: { calories: 30, protein: 3, fiber: 2, calcium: 45 } },
+  { says: /\bsandwich/, name: "Turkey sandwich", portion: "1 sandwich", nutrients: { calories: 380, protein: 26, fiber: 4, calcium: 120 } },
+  { says: /\bpasta|\bspaghetti/, name: "Pasta", portion: "1.5 cups", nutrients: { calories: 330, protein: 12, fiber: 3, calcium: 20 } },
+  { says: /\bpizza/, name: "Pizza", portion: "2 slices", nutrients: { calories: 570, protein: 24, fiber: 4, calcium: 400 } },
+  { says: /\bmilk/, name: "Milk", portion: "1 cup", nutrients: { calories: 120, protein: 8, fiber: 0, calcium: 300 } },
+  { says: /\bwater/, name: "Water", portion: "1 glass", nutrients: { calories: 0, protein: 0, fiber: 0, calcium: 0 } },
 ]
 
 /* ----------------------------------------------------------- medication -- */

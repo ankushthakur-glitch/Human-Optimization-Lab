@@ -1,8 +1,7 @@
-import { router } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { Info, ShieldCheck } from "@/components/ph"
 import { PlanStepPage } from "@/components/plan-steps"
 import { Card, Steps, Tag, type Step } from "@/components/record-kit"
 import { toast } from "@/components/toast"
@@ -17,8 +16,7 @@ import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
    baseline tests into insurance or Inlay before any is booked. Opened
    from the enrolled page. Until the sorting is in, the page says so with
    the steps ahead. Once in: the physician's note, the tests that go
-   through her insurance ("Don't book these here": the office orders them
-   and calls her), then those she books with Inlay. The bar over the
+   through her insurance (the office orders them and calls her), then those she books with Inlay. The bar over the
    button says what changes hands: a refund for the covered tests when she
    paid for all of them up front, else what the Inlay ones cost now.
    "Schedule tests" opens /schedule-tests, which lists only the Inlay ones.
@@ -31,6 +29,8 @@ const SORT_MS = 2800
 
 export default function YourTestsScreen() {
   const onboarding = useOnboarding()
+  // ?now=1, from the enrolled page's secret tap: the sorting lands at once.
+  const now = useLocalSearchParams<{ now?: string }>().now === "1"
   const review = onboarding.testReview
   const paid = onboarding.startingTests
   const name = onboarding.profile?.preferredName || onboarding.profile?.firstName || PATIENT.firstName
@@ -64,9 +64,9 @@ export default function YourTestsScreen() {
         // Only the Inlay tests wait to be booked (To do, /schedule-tests).
         ...(tests ? { startingTests: { ...tests, ids: tests.ids.filter((t) => !insurance.includes(t)) } } : {}),
       })
-    }, SORT_MS)
+    }, now ? 0 : SORT_MS)
     return () => clearTimeout(id)
-  }, [review, loaded])
+  }, [review, loaded, now])
 
   if (!review) {
     const steps: Step[] = [
@@ -116,7 +116,10 @@ export default function YourTestsScreen() {
       nextWide
       aboveFoot={
         <View style={styles.summary} accessibilityLiveRegion="polite">
-          <Text style={styles.summaryText}>{later ? `Due for ${plural(inlay.length)}` : refund ? "Refund to your card" : "Nothing to refund"}</Text>
+          <View style={styles.summaryWords}>
+            <Text style={styles.summaryText}>{later ? `Due for ${plural(inlay.length)}` : refund ? "Refund to your card" : "Nothing to refund"}</Text>
+            {!later && refund > 0 && <Text style={styles.summaryMeta}>In 5 to 7 days</Text>}
+          </View>
           <Text style={styles.totalValue}>{dollarsExact(later ? due : refund)}</Text>
         </View>
       }
@@ -127,45 +130,34 @@ export default function YourTestsScreen() {
       </Card>
 
       {insured.length > 0 && (
-        <>
+        <View style={styles.section}>
+          <Text style={styles.label} accessibilityRole="header">
+            Through your insurance
+          </Text>
           <View style={styles.group}>
-            <View style={[styles.head, styles.headBlue]}>
-              <Text style={styles.groupName}>Through your insurance</Text>
-              <Text style={styles.tag}>{plural(insured.length)}</Text>
-            </View>
-            {insured.map((i) => (
-              <View key={i.id} style={styles.row}>
+            {insured.map((i, n) => (
+              <View key={i.id} style={[styles.row, n > 0 && styles.rule]}>
                 <Text style={styles.name}>{i.name}</Text>
-                <Tag tone="muted">Insurance</Tag>
+                <Text style={styles.meta}>Office calls you</Text>
               </View>
             ))}
           </View>
-          <View style={styles.note}>
-            <Info size={16} color={color.blue} />
-            <Text style={styles.noteText}>{`Don't book these in the app. ${MEMBER.doctorShort}'s office orders them and calls you with a time.`}</Text>
-          </View>
-        </>
+        </View>
       )}
 
-      <View style={styles.group}>
-        <View style={styles.head}>
-          <Text style={styles.groupName}>Book with Inlay</Text>
-          <Text style={styles.tag}>{plural(inlay.length)}</Text>
+      <View style={styles.section}>
+        <Text style={styles.label} accessibilityRole="header">
+          Book with Inlay
+        </Text>
+        <View style={styles.group}>
+          {inlay.map((i, n) => (
+            <View key={i.id} style={[styles.row, n > 0 && styles.rule]}>
+              <Text style={styles.name}>{i.name}</Text>
+              <Text style={styles.price}>{dollars(i.price)}</Text>
+            </View>
+          ))}
         </View>
-        {inlay.map((i) => (
-          <View key={i.id} style={styles.row}>
-            <Text style={styles.name}>{i.name}</Text>
-            <Text style={styles.price}>{dollars(i.price)}</Text>
-          </View>
-        ))}
       </View>
-
-      {insured.length > 0 && !later && (
-        <View style={styles.paidLine}>
-          <ShieldCheck size={14} color={ink.tertiary} />
-          <Text style={styles.meta}>The refund goes back to the card you paid with, in 5 to 7 days.</Text>
-        </View>
-      )}
     </PlanStepPage>
   )
 }
@@ -176,54 +168,27 @@ const styles = StyleSheet.create({
   from: { ...type.title, fontSize: 13, color: ink.strong },
   message: { ...type.body, fontSize: 14, lineHeight: 21 },
 
-  // The same cards as /baseline: a tinted header, the tests under it.
+  // Two plain lists under a label: who books them, then the tests.
+  section: { gap: space.inline },
+  label: { ...type.title, fontSize: 13, color: ink.secondary },
   group: {
     overflow: "hidden",
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: hairline.edge,
     backgroundColor: color.background,
     boxShadow: card.shadow,
   },
-  head: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.inline,
-    paddingVertical: space.inline + 2,
-    paddingHorizontal: space.rowX,
-    backgroundColor: color.primarySoft,
-    borderBottomWidth: 1,
-    borderBottomColor: color.primaryEdge,
-  },
-  // Insurance on the blue tint: someone else orders these.
-  headBlue: { backgroundColor: color.blueTint, borderBottomColor: "#C7D5FF" },
-  groupName: { ...type.title, flex: 1, fontSize: 13, color: ink.strong },
-  tag: { ...type.label, fontSize: 12, color: ink.secondary },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: space.item,
     paddingVertical: space.rowY,
     paddingHorizontal: space.rowX,
-    borderTopWidth: 1,
-    borderTopColor: hairline.rule,
   },
+  rule: { borderTopWidth: 1, borderTopColor: hairline.rule },
   name: { ...type.title, flex: 1, fontSize: 14, color: ink.strong },
   // Digits of one width, so the prices line up down the column.
   price: { ...type.value, fontVariant: ["tabular-nums"] },
-  note: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: space.inline,
-    padding: space.item,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#C7D5FF",
-    backgroundColor: color.blueTint,
-  },
-  noteText: { ...type.label, flex: 1, fontSize: 12, lineHeight: 17, fontFamily: font.medium, color: "#233F99" },
-  paidLine: { flexDirection: "row", alignItems: "center", gap: space.line },
-  meta: { ...type.meta, flex: 1 },
+  meta: { ...type.meta },
   summary: {
     flexDirection: "row",
     alignItems: "center",
@@ -235,7 +200,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: color.primaryEdge,
   },
-  summaryText: { ...type.label, flex: 1, fontFamily: font.medium, fontSize: 13, color: color.primaryText },
+  summaryWords: { flex: 1, gap: 2 },
+  summaryMeta: { ...type.meta, fontSize: 12 },
+  summaryText: { ...type.label, fontFamily: font.medium, fontSize: 13, color: color.primaryText },
   totalValue: {
     fontFamily: font.semibold,
     fontSize: 18,

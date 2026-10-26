@@ -115,9 +115,6 @@ export function matchPlans(watched: Trend[]): PlanMatch[] {
   return out
 }
 
-/** The count word in "The three your numbers add". */
-export const COUNT_WORD = ["no", "one", "two", "three"] as const
-
 /* Since 26 Oct 2026 there is no plan to pick: every optimization plan has
    the same six steps, and AI adds to them from her out of range markers.
    A record match no longer names a plan of its own; it says what it adds

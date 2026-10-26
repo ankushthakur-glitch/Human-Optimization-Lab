@@ -1,6 +1,6 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { Animated, Easing, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
+import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { useReducedMotion } from "@/components/chat"
@@ -99,6 +99,10 @@ export default function EnrolledScreen() {
     { label: "Your plan is ready", date: "We let you know right away", state: "next" },
   ]
 
+  // The secret button: a tap on the tick skips the physician's wait and
+  // opens her tests already sorted (/your-tests?now=1), for demos.
+  const reviewed = () => router.push("/your-tests?now=1")
+
   const viewPlan = () => router.replace("/plan?walk=1")
 
   // The schedule comes first; the assistant's chat opens only once she
@@ -168,13 +172,15 @@ export default function EnrolledScreen() {
                 />
               )
             })}
-            <Animated.View style={[styles.halo, { opacity: t.badge, transform: [{ scale: t.badge }] }]}>
-              <View style={styles.badge}>
-                <Animated.View style={{ opacity: t.tick, transform: [{ scale: t.tick.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }] }}>
-                  <Check size={34} color={color.onPrimary} weight="bold" />
-                </Animated.View>
-              </View>
-            </Animated.View>
+            <Pressable onPress={reviewed} accessible={false}>
+              <Animated.View style={[styles.halo, { opacity: t.badge, transform: [{ scale: t.badge }] }]}>
+                <View style={styles.badge}>
+                  <Animated.View style={{ opacity: t.tick, transform: [{ scale: t.tick.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }] }}>
+                    <Check size={34} color={color.onPrimary} weight="bold" />
+                  </Animated.View>
+                </View>
+              </Animated.View>
+            </Pressable>
           </View>
 
           <Animated.View style={[styles.words, rise(0)]}>

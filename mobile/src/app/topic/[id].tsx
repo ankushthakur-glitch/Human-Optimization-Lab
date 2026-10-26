@@ -7,7 +7,7 @@ import { PageNotFoundState } from "@/components/error-state"
 import { PrimaryButton } from "@/components/hol"
 import { ProductStep, ScanStep } from "@/components/meal-scan"
 import { MeasureSheet } from "@/components/measure-sheet"
-import { Check, DeviceMobile, ForkKnife, Play, UploadSimple, Warning } from "@/components/ph"
+import { Check, DeviceMobile, ForkKnife, Microphone, Play, StopSquare, UploadSimple, Warning } from "@/components/ph"
 import { SheetRows } from "@/components/care-orders-rows"
 import { Block, Card, ChipRow, Group, HUE, NeedsRow, Tabs, Tag, TickCircle, toast, type Hue } from "@/components/record-kit"
 import { AddToRecordSheet } from "@/components/record-rows"
@@ -18,11 +18,13 @@ import { isSlot, logDay, slotName } from "@/components/today-food-meals"
 import type { Product } from "@/components/scan-food"
 import { TextField } from "@/components/ui"
 import { ScoreDial, TargetCard, TopicPage, Ways, askAbout } from "@/components/topic-kit"
+import { VoiceBeam } from "@/components/voice-beam"
 import { WaistGuideButton, WaistGuideSheet } from "@/components/waist-guide"
 import { MEAL_SLOTS, clockOf, localDay, mealName, mealsOn, profileOf, totalsOf, type Meal, type MealSlot } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { ALSO_TAKING, CARDIO, DOSES, INTERACTION, LIFTS, MISSED_WHY, PLANNED_MEALS, SEVERITY, SLEEP_LAST, WARMUP, hm, inBed, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
+import { ALSO_TAKING, CARDIO, DOSES, INTERACTION, LIFTS, MISSED_WHY, PLANNED_MEALS, SEVERITY, SLEEP_LAST, SPOKEN_FOODS, SPOKEN_SAMPLE, WARMUP, hm, inBed, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
 import { formatNumber } from "@/lib/trends"
+import { useVoiceInput } from "@/lib/voice"
 import { card, chart, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
 /* One topic of the plan, opened from a row on Today (Journey_14 screens 31
@@ -52,7 +54,9 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
   const [part, setPart] = React.useState(false)
   const [short, setShort] = React.useState(false)
   const [night, setNight] = React.useState(false)
-  const [meal, setMeal] = React.useState(false)
+  // Which way asked for the meal: the photo opens the scan, voice the speaking sheet.
+  const [meal, setMeal] = React.useState<"scan" | "voice">()
+  const [speak, setSpeak] = React.useState<MealSlot>()
   const [guide, setGuide] = React.useState(false)
   const [dose, setDose] = React.useState<"taken" | "missed" | "side" | "photo">()
   const [planned, setPlanned] = React.useState(false)
@@ -87,7 +91,10 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
     else if (act.kind === "apps") setApps(act)
     else if (act.kind === "meal") {
       if (slot) setScan(slot)
-      else setMeal(true)
+      else setMeal("scan")
+    } else if (act.kind === "voice") {
+      if (slot) setSpeak(slot)
+      else setMeal("voice")
     } else setSheet(true)
   }
 
@@ -109,12 +116,14 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
         (meal && (
           <WhichMeal
             onPick={(to) => {
-              setMeal(false)
-              setScan(to)
+              setMeal(undefined)
+              if (meal === "voice") setSpeak(to)
+              else setScan(to)
             }}
-            onClose={() => setMeal(false)}
+            onClose={() => setMeal(undefined)}
           />
         )) ||
+        (speak && <SpeakMeal slot={speak} onSave={(m) => (setSpeak(undefined), saveScan(m))} onClose={() => setSpeak(undefined)} />) ||
         (scan && (
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             {found ? (
@@ -363,6 +372,102 @@ function PlannedMeals({ slot, onSave, onClose }: { slot?: MealSlot; onSave: (mea
       </ScrollView>
     </Sheet>
   )
+}
+
+/** Say what you ate: the sheet opens listening, the words written into
+    the box as they are heard, the voice beam along its edge. When she stops,
+    what she said is read into foods, each with its usual portion, and the
+    box stays editable to correct a word; a food the app does not know is
+    kept by name. Saved as an estimate, logged by voice. */
+function SpeakMeal({ slot, onSave, onClose }: { slot: MealSlot; onSave: (meal: Omit<Meal, "id" | "time">) => void; onClose: () => void }) {
+  const [said, setSaid] = React.useState("")
+  const speech = useVoiceInput(setSaid, SPOKEN_SAMPLE[slot as keyof typeof SPOKEN_SAMPLE] ?? SPOKEN_SAMPLE.lunch)
+  const keyboard = useKeyboardHeight()
+  const listening = speech.state === "listening"
+  const hearing = speech.state !== "idle"
+  const foods = hearing ? [] : foodsIn(said)
+  const name = slotName(slot).toLowerCase()
+
+  // Opened from "Say what you ate", so it starts listening at once.
+  React.useEffect(() => {
+    speech.start("")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
+      <Sheet title={`Say your ${name}`} onClose={onClose} dismissOnScrim={!hearing}>
+        <VoiceBeam level={speech.level} active={listening} processing={speech.state === "processing"} radius={16} style={styles.speakBox}>
+          <TextInput
+            value={said}
+            onChangeText={setSaid}
+            editable={!hearing}
+            multiline
+            placeholder={listening ? "Listening…" : "What did you eat?"}
+            placeholderTextColor={ink.tertiary}
+            accessibilityLabel={`What you had for ${name}`}
+            style={styles.speakText}
+          />
+        </VoiceBeam>
+        <View style={styles.speakMic}>
+          <Pressable
+            onPress={() => (hearing ? speech.stop() : speech.start(said))}
+            disabled={speech.state === "processing"}
+            accessibilityRole="button"
+            accessibilityLabel={hearing ? "Stop listening" : "Speak"}
+            hitSlop={8}
+            style={({ pressed }) => [styles.micButton, hearing && styles.micButtonOn, pressed && styles.pressed]}
+          >
+            {hearing ? <StopSquare size={22} color={color.primary} weight="fill" /> : <Microphone size={26} color={color.onPrimary} />}
+          </Pressable>
+          <Text style={[type.label, styles.micLabel]}>{listening ? "Tap to stop" : speech.state === "processing" ? "Finishing up…" : said ? "Tap to add more" : "Tap to speak"}</Text>
+        </View>
+        {speech.problem && (
+          <View style={styles.speakProblem}>
+            <Text style={[type.label, styles.fill, { color: ink.primary }]}>{speech.problem.words}</Text>
+            {speech.problem.action && (
+              <Pressable onPress={speech.problem.action.onPress} accessibilityRole="button" hitSlop={8} style={({ pressed }) => pressed && styles.pressed}>
+                <Text style={[type.metaStrong, { color: color.primary }]}>{speech.problem.action.label}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+        {foods.length > 0 && (
+          <SheetRows>
+            {foods.map((f) => (
+              <NeedsRow
+                key={f.name}
+                icon={<ForkKnife size={16} color={HUE.teal.ink} />}
+                title={f.name}
+                meta={[f.portion, f.nutrients.calories !== undefined && `${formatNumber(f.nutrients.calories)} kcal`, f.nutrients.protein !== undefined && `${f.nutrients.protein} g protein`].filter(Boolean).join(", ")}
+                chevron={false}
+              />
+            ))}
+          </SheetRows>
+        )}
+        <PrimaryButton onPress={() => onSave({ slot, how: "voice", status: "estimated", foods })} disabled={!foods.length}>
+          {`Save ${name}`}
+        </PrimaryButton>
+      </Sheet>
+    </View>
+  )
+}
+
+/** What she said, read into foods: split at commas, "and" and "with", each
+    piece matched to a known food and its usual portion, the rest kept by
+    name with nothing known about it. */
+function foodsIn(said: string): Meal["foods"] {
+  const out: Meal["foods"] = []
+  for (const raw of said.toLowerCase().split(/,|\.|\band\b|\bwith\b|\bplus\b/)) {
+    const piece = raw.replace(/^(\s*(i (had|ate)|for (breakfast|lunch|dinner)|some|a|an|the|two|one)\b)+/, "").trim()
+    if (piece.length < 3) continue
+    const known = SPOKEN_FOODS.find((f) => f.says.test(piece))
+    const food = known
+      ? { name: known.name, portion: known.portion, confidence: "medium" as const, nutrients: known.nutrients }
+      : { name: piece[0].toUpperCase() + piece.slice(1), portion: "One serving", confidence: "low" as const, nutrients: {} }
+    if (!out.some((f) => f.name === food.name)) out.push(food)
+  }
+  return out
 }
 
 const HOW: Record<Meal["how"], string> = { photo: "Logged by photo", voice: "Logged by voice", typed: "Typed in", again: "Logged again", scan: "Logged by scan" }
@@ -884,6 +989,13 @@ const styles = StyleSheet.create({
   sliderFill: { height: "100%", borderRadius: 3, backgroundColor: color.primary },
   sliderThumb: { position: "absolute", top: 5, width: 22, height: 22, marginLeft: -11, borderRadius: 11, backgroundColor: color.background, borderWidth: 2, borderColor: color.primary },
   sheetFrame: { position: "absolute", top: 0, left: 0, right: 0 },
+  speakBox: { minHeight: 112, borderRadius: 16, borderWidth: 1, borderColor: hairline.edge, backgroundColor: surface.inset },
+  speakText: { ...type.body, color: ink.strong, minHeight: 112, padding: space.item, textAlignVertical: "top" },
+  speakMic: { alignItems: "center", gap: space.inline },
+  micButton: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", backgroundColor: color.primary },
+  micButtonOn: { backgroundColor: color.primarySoft },
+  micLabel: { color: ink.detail },
+  speakProblem: { flexDirection: "row", alignItems: "center", gap: space.inline, padding: space.item, borderRadius: 10, backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge },
 
   flag: { backgroundColor: color.amberTint },
   urgent: { color: "#A95413" },

@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from "react-native"
 import { DatePickerSheet, TimePickerSheet } from "@/components/date-time-picker"
 import { Bone, CalendarBlank, CheckCircle, Clock, Drop, MapPin, ShieldCheck, Wind } from "@/components/ph"
 import { PlanStepPage } from "@/components/plan-steps"
-import { Card, HUE, Tag, Tile, toast } from "@/components/record-kit"
+import { Card, HUE, Tile, toast } from "@/components/record-kit"
 import { SelectField } from "@/components/ui"
 import { BASELINE_TESTS, TEST_SLOTS, chosenTests, itemOf, openDays, type BaselineTest, type BaselineTestId } from "@/lib/baseline-tests"
 import { MEMBER, clock, dayFrom, dayLabel, localDay } from "@/lib/member"
@@ -138,14 +138,13 @@ export default function ScheduleTestsScreen() {
           <Text style={styles.officeHead} accessibilityRole="header">{`Through ${MEMBER.doctorShort}'s office`}</Text>
           {insured.map((name) => (
             <Card key={name} style={styles.officeRow}>
-              <Tile hue="blue" size={36}>
-                <ShieldCheck size={18} color={HUE.blue.ink} />
+              <Tile hue="blue" size={32}>
+                <ShieldCheck size={16} color={HUE.blue.ink} />
               </Tile>
               <View style={styles.words}>
-                <Text style={styles.name} numberOfLines={2}>{name}</Text>
-                <Text style={styles.placeText}>Ordered through your insurance, the office calls you</Text>
+                <Text style={styles.officeName} numberOfLines={1}>{name}</Text>
+                <Text style={styles.placeText} numberOfLines={1}>Insurance, the office calls you</Text>
               </View>
-              <Tag tone="muted">Tracking</Tag>
             </Card>
           ))}
         </View>
@@ -230,5 +229,7 @@ const styles = StyleSheet.create({
   half: { flex: 1 },
   office: { gap: space.inline, marginTop: space.section },
   officeHead: { ...type.title, color: ink.secondary },
-  officeRow: { flexDirection: "row", alignItems: "center", gap: space.item },
+  // One compact row per test: no fields to fill, so it stays short.
+  officeRow: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingVertical: space.rowY },
+  officeName: { ...type.title, fontSize: 14, color: ink.strong },
 })

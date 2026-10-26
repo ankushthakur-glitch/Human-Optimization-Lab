@@ -4,11 +4,14 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 import Svg, { Circle } from "react-native-svg"
 
 import {
+  ArrowsLeftRight,
   Barbell,
   Brain,
   Camera,
   Check,
+  ClockClockwise,
   DownloadSimple,
+  FlowerLotus,
   Leaf,
   Lightbulb,
   MagnifyingGlass,
@@ -49,6 +52,9 @@ const ICON: Record<IconKey, React.ComponentType<IconProps>> = {
   upload: DownloadSimple,
   phone: Phone,
   device: Watch,
+  shift: ClockClockwise,
+  swap: ArrowsLeftRight,
+  practice: FlowerLotus,
 }
 
 export function TopicIcon({ name, size = 16, color: tone = color.primary, weight }: { name: IconKey; size?: number; color?: string; weight?: IconProps["weight"] }) {
