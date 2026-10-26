@@ -1,27 +1,32 @@
+import * as DocumentPicker from "expo-document-picker"
 import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
 
+import { AlcoholLog } from "@/components/alcohol-week"
 import { PageNotFoundState } from "@/components/error-state"
 import { PrimaryButton } from "@/components/hol"
 import { ProductStep, ScanStep } from "@/components/meal-scan"
 import { MeasureSheet } from "@/components/measure-sheet"
-import { Check, ForkKnife, Play, Warning } from "@/components/ph"
-import { SheetRows } from "@/components/care-orders-rows"
+import { Check, DeviceMobile, ForkKnife, Microphone, Play, StopSquare, UploadSimple } from "@/components/ph"
+import { ChoiceRow, SheetRows } from "@/components/care-orders-rows"
 import { Block, Card, ChipRow, Group, HUE, NeedsRow, Tabs, Tag, TickCircle, toast, type Hue } from "@/components/record-kit"
-import { AddToRecordSheet } from "@/components/record-rows"
 import { Sheet, useKeyboardHeight } from "@/components/sheet"
 import { SetTable } from "@/components/set-table"
 import { amount } from "@/components/today-exercise-parts"
 import { isSlot, logDay, slotName } from "@/components/today-food-meals"
 import type { Product } from "@/components/scan-food"
-import { TextField } from "@/components/ui"
+import { SelectField, TextField } from "@/components/ui"
 import { ScoreDial, TargetCard, TopicPage, Ways, askAbout } from "@/components/topic-kit"
+import { VoiceBeam } from "@/components/voice-beam"
+import { WaistGuideButton, WaistGuideSheet } from "@/components/waist-guide"
 import { MEAL_SLOTS, clockOf, localDay, mealName, mealsOn, profileOf, totalsOf, type Meal, type MealSlot } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { ALSO_TAKING, CARDIO, DOSES, INTERACTION, LIFTS, MISSED_WHY, SEVERITY, SLEEP_LAST, WARMUP, hm, inBed, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
+import { CARDIO, DOSES, LIFTS, MISSED_WHY, PLANNED_MEALS, SEVERITY, SLEEP_LAST, SPOKEN_FOODS, SPOKEN_SAMPLE, WARMUP, hm, inBed, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
 import { formatNumber } from "@/lib/trends"
-import { card, chart, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
+import { loadShort, setsText, targetOf, type Target } from "@/lib/strength"
+import { useVoiceInput } from "@/lib/voice"
+import { card, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
 /* One topic of the plan, opened from a row on Today (Journey_14 screens 31
    and 33 to 37; the lift's own page is /lift/[id]). Every topic opens the
@@ -50,8 +55,14 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
   const [part, setPart] = React.useState(false)
   const [short, setShort] = React.useState(false)
   const [night, setNight] = React.useState(false)
-  const [meal, setMeal] = React.useState(false)
-  const [dose, setDose] = React.useState<"taken" | "missed" | "side" | "photo">()
+  // Which way asked for the meal: the photo opens the scan, voice the speaking sheet.
+  const [meal, setMeal] = React.useState<"scan" | "voice">()
+  const [speak, setSpeak] = React.useState<MealSlot>()
+  const [guide, setGuide] = React.useState(false)
+  const [drinks, setDrinks] = React.useState(false)
+  const [dose, setDose] = React.useState<"taken" | "missed" | "side">()
+  const [planned, setPlanned] = React.useState(false)
+  const [apps, setApps] = React.useState<Extract<Way["act"], { kind: "apps" }>>()
   // The scan opens over this page as its popup.
   const [scan, setScan] = React.useState<MealSlot>()
   const [found, setFound] = React.useState<{ product: Product; servings?: number }>()
@@ -78,9 +89,14 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
     else if (act.kind === "short") setShort(true)
     else if (act.kind === "night") setNight(true)
     else if (act.kind === "dose") setDose(act.sheet)
+    else if (act.kind === "pick") setPlanned(true)
+    else if (act.kind === "apps") setApps(act)
     else if (act.kind === "meal") {
       if (slot) setScan(slot)
-      else setMeal(true)
+      else setMeal("scan")
+    } else if (act.kind === "voice") {
+      if (slot) setSpeak(slot)
+      else setMeal("voice")
     } else setSheet(true)
   }
 
@@ -89,22 +105,27 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
       title={topic.id === "medication" ? "Medication" : topic.name}
       sheet={
         (sheet && <MeasureSheet onClose={() => setSheet(false)} />) ||
+        (drinks && <DrinksSheet onClose={() => setDrinks(false)} />) ||
+        (guide && <WaistGuideSheet onClose={() => setGuide(false)} onEnter={() => setSheet(true)} />) ||
         (part && <PartSheet onClose={() => setPart(false)} />) ||
         (short && <ShortSheet onClose={() => setShort(false)} />) ||
         (night && <NightSheet onClose={() => setNight(false)} />) ||
         (dose === "taken" && <TakenSheet onClose={() => setDose(undefined)} />) ||
         (dose === "missed" && <MissedSheet onClose={() => setDose(undefined)} />) ||
         (dose === "side" && <SideEffectSheet onClose={() => setDose(undefined)} />) ||
-        (dose === "photo" && <AddToRecordSheet kind="medicines" onClose={() => setDose(undefined)} />) ||
+        (planned && <PlannedMeals slot={slot} onSave={(m) => (setPlanned(false), saveScan(m))} onClose={() => setPlanned(false)} />) ||
+        (apps && <AppsSheet act={apps} onClose={() => setApps(undefined)} />) ||
         (meal && (
           <WhichMeal
             onPick={(to) => {
-              setMeal(false)
-              setScan(to)
+              setMeal(undefined)
+              if (meal === "voice") setSpeak(to)
+              else setScan(to)
             }}
-            onClose={() => setMeal(false)}
+            onClose={() => setMeal(undefined)}
           />
         )) ||
+        (speak && <SpeakMeal slot={speak} onSave={(m) => (setSpeak(undefined), saveScan(m))} onClose={() => setSpeak(undefined)} />) ||
         (scan && (
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             {found ? (
@@ -135,7 +156,9 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
 
       <Ways ways={topic.ways} onPick={pick} picked={logged?.way} />
 
-      {topic.id === "medication" && <AlsoTaking />}
+      {topic.id === "eat" && <AlcoholLog onLog={() => setDrinks(true)} />}
+
+      {topic.id === "measure" && <WaistGuideButton onPress={() => setGuide(true)} />}
     </TopicPage>
   )
 }
@@ -143,23 +166,29 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
 /* ------------------------------------------------------------- exercise -- */
 
 /** Today's session in full: the warm-up, every lift with its sets and
-    reps, the load, and what was lifted last time; Form opens how it is
-    done. Loads are read straight from what was logged, never prescribed
-    blind. */
+    reps and the load; Form opens how it is done. Reps and loads are this
+    week's targets, stepped on from what she logged (lib/strength.ts), never
+    prescribed blind; with nothing logged they stay as written. */
 function Session() {
   const s = useOnboarding()
   const log = s.exercises?.[localDay()]
   const skipped = s.topicLog?.[localDay()]?.exercise?.skipped
   // A lift she has saved or skipped is closed: it drops to the foot of the
   // list, struck through, while the rest stay open in the plan's order.
-  const done = (id: string) => !!log?.[id] || !!skipped?.includes(id)
+  // A lift ticked set by set on its page closes once every set is in.
+  const done = (id: string) => {
+    const l = LIFTS.find((x) => x.id === id)!
+    const entries = log?.[id]?.entries
+    return !!skipped?.includes(id) || (!!log?.[id] && (!entries || entries.filter((e) => e.reps !== undefined).length >= targetOf(s, l).sets))
+  }
   const lifts = [...LIFTS.filter((l) => !done(l.id)), ...LIFTS.filter((l) => done(l.id))]
   return (
-    <Block title="Today's session" meta="built for you">
+    <Block title="Today's session">
       <View style={styles.table}>
         <Line name={WARMUP.name} detail={WARMUP.detail} end={WARMUP.say} shaded />
         {lifts.map((l) => {
           const finished = done(l.id)
+          const t = targetOf(s, l)
           return (
             <View key={l.id} style={[styles.line, styles.rule, finished && styles.closed]}>
               <Pressable
@@ -176,8 +205,8 @@ function Session() {
                 </View>
                 <Text style={[styles.lineName, styles.fill, finished && styles.struck]}>{l.name}</Text>
               </Pressable>
-              <Text style={[styles.sets, type.label, finished && styles.struck]}>{l.sets}</Text>
-              <Text style={[styles.load, finished && styles.struck]}>{skipped?.includes(l.id) ? "Skipped" : `${l.load} lb`}</Text>
+              <Text style={[styles.sets, type.label, finished && styles.struck]}>{setsText(t)}</Text>
+              <Text style={[styles.load, finished && styles.struck]}>{skipped?.includes(l.id) ? "Skipped" : loadShort(l, t.load)}</Text>
             </View>
           )
         })}
@@ -203,7 +232,7 @@ function PartSheet({ onClose }: { onClose: () => void }) {
     Object.fromEntries(
       LIFTS.map((l) => {
         const logged = saved?.[l.id]?.entries?.map((e) => ({ reps: e.reps !== undefined ? String(e.reps) : "", weight: e.weightLb !== undefined ? String(e.weightLb) : "" }))
-        return [l.id, logged?.length ? logged : planOf(l)]
+        return [l.id, logged?.length ? logged : planOf(targetOf(s, l))]
       }),
     ),
   )
@@ -214,7 +243,7 @@ function PartSheet({ onClose }: { onClose: () => void }) {
       all.map((id) => {
         if (before?.skipped?.includes(id)) return [id, "skipped"]
         const lift = LIFTS.find((l) => l.id === id)
-        return [id, lift && sets[id] && JSON.stringify(sets[id]) !== JSON.stringify(planOf(lift)) ? "changed" : "done"]
+        return [id, lift && sets[id] && JSON.stringify(sets[id]) !== JSON.stringify(planOf(targetOf(s, lift))) ? "changed" : "done"]
       }),
     )
   })
@@ -236,7 +265,9 @@ function PartSheet({ onClose }: { onClose: () => void }) {
         delete day_[l.id]
         continue
       }
-      const list = (status[l.id] === "changed" ? sets[l.id] : planOf(l)).map((r) => ({ reps: amount(r.reps)!, weightLb: amount(r.weight)! }))
+      // Her after-set answers from the lift's page stay with their sets.
+      const felt = saved?.[l.id]?.entries
+      const list = (status[l.id] === "changed" ? sets[l.id] : planOf(targetOf(s, l))).map((r, i) => ({ reps: amount(r.reps)!, weightLb: amount(r.weight)!, rir: felt?.[i]?.rir }))
       day_[l.id] = { at, sets: list.length, reps: list[0].reps, weightLb: list[0].weightLb, entries: list }
     }
     const skipped = ids.filter((id) => status[id] === "skipped")
@@ -256,8 +287,8 @@ function PartSheet({ onClose }: { onClose: () => void }) {
           <View style={styles.parts}>
             <PartCard name={WARMUP.name} detail={`${WARMUP.detail}, ${WARMUP.say.toLowerCase()}`} options={PLAIN} status={status[WARMUP_ID]} onStatus={(v) => setStatus((was) => ({ ...was, [WARMUP_ID]: v }))} />
             {LIFTS.map((l) => (
-              <PartCard key={l.id} name={l.name} detail={`${l.sets} at ${l.load} lb`} options={STATUS} status={status[l.id]} onStatus={(v) => setStatus((was) => ({ ...was, [l.id]: v }))}>
-                <SetTable rows={sets[l.id]} onEdit={(i, part) => edit(l.id, i, part)} target={l.sets.split("×")[1]?.trim()} onInset />
+              <PartCard key={l.id} name={l.name} detail={`${setsText(targetOf(s, l))} at ${loadShort(l, targetOf(s, l).load)}`} options={STATUS} status={status[l.id]} onStatus={(v) => setStatus((was) => ({ ...was, [l.id]: v }))}>
+                <SetTable rows={sets[l.id]} onEdit={(i, part) => edit(l.id, i, part)} target={String(targetOf(s, l).reps)} onInset />
               </PartCard>
             ))}
             <PartCard name={CARDIO.name} detail={`${CARDIO.detail}, ${CARDIO.say}`} options={PLAIN} status={status[CARDIO_ID]} onStatus={(v) => setStatus((was) => ({ ...was, [CARDIO_ID]: v }))} />
@@ -284,10 +315,9 @@ const STATUS: { value: Status; label: string; hue?: Hue }[] = [
 ]
 const PLAIN = STATUS.filter((o) => o.value !== "changed")
 
-/** A lift's planned sets, one row each with its reps and weight. */
-function planOf(l: (typeof LIFTS)[number]): SetRow[] {
-  const [count, reps] = l.sets.split("×").map((n) => parseInt(n, 10))
-  return Array.from({ length: count || 3 }, () => ({ reps: reps ? String(reps) : "", weight: String(l.load) }))
+/** A lift's target sets, one row each with its reps and weight. */
+function planOf(t: Target): SetRow[] {
+  return Array.from({ length: t.sets }, () => ({ reps: String(t.reps), weight: String(t.load) }))
 }
 
 /** One part of the session in the log sheet, on a grey card: its name and
@@ -331,6 +361,127 @@ function WhichMeal({ onPick, onClose }: { onPick: (slot: MealSlot) => void; onCl
   )
 }
 
+/** The meal database: the plan's pre-planned meals, the ones for this meal
+    first when the door already knows it, each added whole in one tap. */
+function PlannedMeals({ slot, onSave, onClose }: { slot?: MealSlot; onSave: (meal: Omit<Meal, "id" | "time">) => void; onClose: () => void }) {
+  const list = slot ? PLANNED_MEALS.filter((m) => m.slot === slot) : PLANNED_MEALS
+  return (
+    <Sheet title={slot ? `Pick a ${slotName(slot).toLowerCase()}` : "Pick a meal"} onClose={onClose}>
+      <ScrollView style={styles.plannedList}>
+        <SheetRows>
+          {list.map((m) => (
+            <NeedsRow
+              key={m.id}
+              icon={<ForkKnife size={16} color={HUE.teal.ink} />}
+              title={m.name}
+              meta={`${slotName(m.slot)}, ${formatNumber(m.nutrients.calories)} kcal, ${m.nutrients.protein} g protein`}
+              action={{ label: "Add", onPress: () => onSave({ title: m.name, slot: slot ?? m.slot, how: "typed", status: "confirmed", foods: [{ name: m.name, portion: m.portion, confidence: "high", nutrients: m.nutrients }] }) }}
+            />
+          ))}
+        </SheetRows>
+      </ScrollView>
+    </Sheet>
+  )
+}
+
+/** Say what you ate: the sheet opens listening, the words written into
+    the box as they are heard, the voice beam along its edge. When she stops,
+    what she said is read into foods, each with its usual portion, and the
+    box stays editable to correct a word; a food the app does not know is
+    kept by name. Saved as an estimate, logged by voice. */
+function SpeakMeal({ slot, onSave, onClose }: { slot: MealSlot; onSave: (meal: Omit<Meal, "id" | "time">) => void; onClose: () => void }) {
+  const [said, setSaid] = React.useState("")
+  const speech = useVoiceInput(setSaid, { sample: SPOKEN_SAMPLE[slot as keyof typeof SPOKEN_SAMPLE] ?? SPOKEN_SAMPLE.lunch, keep: true })
+  const keyboard = useKeyboardHeight()
+  const listening = speech.state === "listening"
+  const hearing = speech.state !== "idle"
+  const foods = hearing ? [] : foodsIn(said)
+  const name = slotName(slot).toLowerCase()
+
+  // Opened from "Say what you ate", so it starts listening once the sheet
+  // is up. Deferred so a development double mount starts it only once.
+  React.useEffect(() => {
+    const t = setTimeout(() => speech.start(""), 350)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
+      <Sheet title={`Say your ${name}`} onClose={onClose} dismissOnScrim={!hearing}>
+        <VoiceBeam level={speech.level} active={listening} processing={speech.state === "processing"} radius={16} style={styles.speakBox}>
+          <TextInput
+            value={said}
+            onChangeText={setSaid}
+            editable={!hearing}
+            multiline
+            placeholder={listening ? "Listening…" : "What did you eat?"}
+            placeholderTextColor={ink.tertiary}
+            accessibilityLabel={`What you had for ${name}`}
+            style={styles.speakText}
+          />
+        </VoiceBeam>
+        <View style={styles.speakMic}>
+          <Pressable
+            onPress={() => (hearing ? speech.stop() : speech.start(said))}
+            disabled={speech.state === "processing"}
+            accessibilityRole="button"
+            accessibilityLabel={hearing ? "Stop listening" : "Speak"}
+            hitSlop={8}
+            style={({ pressed }) => [styles.micButton, hearing && styles.micButtonOn, pressed && styles.pressed]}
+          >
+            {hearing ? <StopSquare size={22} color={color.primary} weight="fill" /> : <Microphone size={26} color={color.onPrimary} />}
+          </Pressable>
+          <Text style={[type.label, styles.micLabel]}>{listening ? "Tap to stop" : speech.state === "processing" ? "Finishing up…" : said ? "Tap to add more" : "Tap to speak"}</Text>
+        </View>
+        {speech.problem && (
+          <View style={styles.speakProblem}>
+            <Text style={[type.label, styles.fill, { color: ink.primary }]}>{speech.problem.words}</Text>
+            {speech.problem.action && (
+              <Pressable onPress={speech.problem.action.onPress} accessibilityRole="button" hitSlop={8} style={({ pressed }) => pressed && styles.pressed}>
+                <Text style={[type.metaStrong, { color: color.primary }]}>{speech.problem.action.label}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+        {foods.length > 0 && (
+          <SheetRows>
+            {foods.map((f) => (
+              <NeedsRow
+                key={f.name}
+                icon={<ForkKnife size={16} color={HUE.teal.ink} />}
+                title={f.name}
+                meta={[f.portion, f.nutrients.calories !== undefined && `${formatNumber(f.nutrients.calories)} kcal`, f.nutrients.protein !== undefined && `${f.nutrients.protein} g protein`].filter(Boolean).join(", ")}
+                chevron={false}
+              />
+            ))}
+          </SheetRows>
+        )}
+        <PrimaryButton onPress={() => onSave({ slot, how: "voice", status: "estimated", foods })} disabled={!foods.length}>
+          {`Save ${name}`}
+        </PrimaryButton>
+      </Sheet>
+    </View>
+  )
+}
+
+/** What she said, read into foods: split at commas, "and" and "with", each
+    piece matched to a known food and its usual portion, the rest kept by
+    name with nothing known about it. */
+function foodsIn(said: string): Meal["foods"] {
+  const out: Meal["foods"] = []
+  for (const raw of said.toLowerCase().split(/,|\.|\band\b|\bwith\b|\bplus\b/)) {
+    const piece = raw.replace(/^(\s*(i (had|ate)|for (breakfast|lunch|dinner)|some|a|an|the|two|one)\b)+/, "").trim()
+    if (piece.length < 3) continue
+    const known = SPOKEN_FOODS.find((f) => f.says.test(piece))
+    const food = known
+      ? { name: known.name, portion: known.portion, confidence: "medium" as const, nutrients: known.nutrients }
+      : { name: piece[0].toUpperCase() + piece.slice(1), portion: "One serving", confidence: "low" as const, nutrients: {} }
+    if (!out.some((f) => f.name === food.name)) out.push(food)
+  }
+  return out
+}
+
 const HOW: Record<Meal["how"], string> = { photo: "Logged by photo", voice: "Logged by voice", typed: "Typed in", again: "Logged again", scan: "Logged by scan" }
 
 /** What she has logged today, once she logs a meal: each with how it was
@@ -369,9 +520,53 @@ function TodaysMeals() {
   )
 }
 
+const DRINK_DAYS = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+] as const
+
+/** "Log drinks": one sitting, which day and how many standard drinks,
+    both as fields. */
+function DrinksSheet({ onClose }: { onClose: () => void }) {
+  const s = useOnboarding()
+  const [count, setCount] = React.useState("1")
+  const [when, setWhen] = React.useState<(typeof DRINK_DAYS)[number]["value"]>("today")
+  const [picking, setPicking] = React.useState(false)
+  const keyboard = useKeyboardHeight()
+  const n = /^\d+$/.test(count.trim()) ? parseInt(count, 10) : 0
+  const valid = n >= 1 && n <= 12
+
+  async function save() {
+    if (!valid) return
+    const date = new Date()
+    if (when === "yesterday") date.setDate(date.getDate() - 1)
+    const at = new Date().toISOString()
+    await s.save({ drinks: [...(s.drinks ?? []), { id: `d-${Date.now().toString(36)}`, day: localDay(date), count: n, at }] })
+    toast(`${n} ${n === 1 ? "drink" : "drinks"} logged`)
+    onClose()
+  }
+
+  return (
+    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
+      <Sheet title="Log drinks" onClose={onClose}>
+        <SelectField label="When" value={DRINK_DAYS.find((d) => d.value === when)?.label} placeholder="Choose a day" onPress={() => setPicking((p) => !p)} />
+        {picking && (
+          <SheetRows>
+            {DRINK_DAYS.map((d) => (
+              <ChoiceRow key={d.value} title={d.label} selected={d.value === when} onPress={() => (setWhen(d.value), setPicking(false))} />
+            ))}
+          </SheetRows>
+        )}
+        <TextField label="Drinks at this sitting" value={count} onChangeText={setCount} keyboardType="number-pad" placeholder="1" />
+        <PrimaryButton onPress={save} disabled={!valid}>Save</PrimaryButton>
+      </Sheet>
+    </View>
+  )
+}
+
 /* ---------------------------------------------------------------- sleep -- */
 
-/** Last night's score under the target, and the four parts that made it:
+/** Last night's score under the target, and the parts that made it:
     a score with no breakdown is a horoscope, naming what cost her the
     points is what makes it something to act on tonight. */
 function LastNight() {
@@ -384,7 +579,7 @@ function LastNight() {
           <Text style={type.label}>{SLEEP_LAST.line}</Text>
         </View>
       </View>
-      <Block title={`What made it ${SLEEP_LAST.score}`} meta="four parts">
+      <Block title={`What made it ${SLEEP_LAST.score}`} meta={`${SLEEP_LAST.parts.length} parts`}>
         <View style={styles.table}>
           {SLEEP_LAST.parts.map((p, i) => (
             <View key={p.name} style={[styles.line, i > 0 && styles.rule]}>
@@ -438,6 +633,7 @@ function NightSheet({ onClose }: { onClose: () => void }) {
   const before = s.topicLog?.[day]?.sleep
   const [bed, setBed] = React.useState(before?.night?.bed ?? 350)
   const [up, setUp] = React.useState(before?.night?.up ?? 720)
+  const [latency, setLatency] = React.useState(before?.night?.latency ?? 15)
   const [woke, setWoke] = React.useState(before?.night?.woke ?? 2)
   const [cpap, setCpap] = React.useState(before?.night?.cpap ?? 340)
   const [note, setNote] = React.useState(before?.note ?? "")
@@ -445,7 +641,7 @@ function NightSheet({ onClose }: { onClose: () => void }) {
   const total = up - bed
 
   async function save() {
-    const night = { bed, up, woke, cpap: Math.min(cpap, total) }
+    const night = { bed, up, latency, woke, cpap: Math.min(cpap, total) }
     await s.save({ topicLog: { ...s.topicLog, [day]: { ...s.topicLog?.[day], sleep: { way: "log", at: new Date().toISOString(), night, note: note.trim() || undefined } } } })
     toast(`Sleep logged: ${inBed(night)} in bed.`)
     onClose()
@@ -459,6 +655,7 @@ function NightSheet({ onClose }: { onClose: () => void }) {
           <View style={styles.parts}>
             <ValueField label="In bed at" value={bed} min={180} max={480} show={clockAt} parse={(t) => parseClock(t, 180, 480)} onChange={setBed} placeholder="11:30 pm" />
             <ValueField label="Up at" value={up} min={600} max={960} show={clockAt} parse={(t) => parseClock(t, 600, 960)} onChange={setUp} placeholder="6:30 am" />
+            <ValueField label="Minutes to fall asleep" value={latency} min={0} max={180} show={(n) => `${n} min`} parse={(t) => (/^\d+/.test(t.trim()) ? parseInt(t, 10) : undefined)} onChange={setLatency} keyboardType="number-pad" />
             <ValueField label="Times you woke" value={woke} min={0} max={20} show={(n) => String(n)} parse={(t) => (/^\d+$/.test(t.trim()) ? Number(t) : undefined)} onChange={setWoke} keyboardType="number-pad" />
             <ValueField label="CPAP worn" value={Math.min(cpap, total)} min={0} max={total} show={hm} parse={parseHours} onChange={setCpap} placeholder="5 h 40 m" />
             <TextField label="Note" value={note} onChangeText={setNote} placeholder="Anything that woke you" multiline autoCapitalize="sentences" />
@@ -713,44 +910,70 @@ function SideEffectSheet({ onClose }: { onClose: () => void }) {
   )
 }
 
-/** What she takes that nobody prescribed, screened against the
-    prescribed list as it is entered, and the one interaction that went to
-    her doctor. The assistant runs the plan; the physician owns the
-    prescription, and this is the one topic whose third path goes to a
-    human, so the screen says so. */
-function AlsoTaking() {
+/* ----------------------------------------------------------------- apps -- */
+
+/** The apps and devices a topic can post itself from: Connect shows a
+    loader, then the row says Connected. Exercise adds a file of her own
+    programme above them, which the plan then monitors. */
+function AppsSheet({ act, onClose }: { act: Extract<Way["act"], { kind: "apps" }>; onClose: () => void }) {
+  const s = useOnboarding()
+  const linked = s.linkedApps ?? []
+  const [busy, setBusy] = React.useState<string>()
+  const [file, setFile] = React.useState<string>()
+
+  function connect(app: string) {
+    setBusy(app)
+    setTimeout(async () => {
+      await s.save({ linkedApps: [...linked.filter((a) => a !== app), app] })
+      setBusy(undefined)
+      toast(`${app} connected`)
+    }, 1200)
+  }
+
+  async function upload() {
+    const r = await DocumentPicker.getDocumentAsync({ type: ["application/pdf", "image/*", "text/plain", "text/csv"], copyToCacheDirectory: true })
+    if (r.canceled) return
+    setFile(r.assets[0].name)
+    toast("Programme uploaded. We monitor yours.")
+  }
+
   return (
-    <>
-      <Block title="Also taking — added by you" meta="screened on entry">
-        <View style={styles.table}>
-          {ALSO_TAKING.map((m, i) => (
-            <View key={m.name} style={[styles.line, i > 0 && styles.rule, m.interacts && styles.flag]}>
-              {m.interacts ? <Warning size={14} color="#A95413" /> : <Check size={14} weight="bold" color={chart.inRange} />}
-              <Text style={styles.lineName}>{m.name}</Text>
-              <Text style={[type.label, styles.fill]} numberOfLines={1}>
-                {m.dose}
-              </Text>
-              <Text style={[styles.verdict, { color: m.interacts ? "#A95413" : ink.good }]}>{m.interacts ? "Interaction" : "No interaction"}</Text>
-            </View>
-          ))}
-        </View>
-      </Block>
-      <Card style={styles.alert}>
-        <Warning size={16} color="#A95413" />
-        <View style={styles.fill}>
-          <Text style={styles.alertTitle}>{INTERACTION.title}</Text>
-          <Text style={[type.body, styles.alertBody]}>
-            {INTERACTION.body} <Text style={styles.alertBold}>{INTERACTION.bold}</Text>
-            {INTERACTION.tail}
-          </Text>
-        </View>
-      </Card>
-    </>
+    <Sheet title={act.title} onClose={onClose}>
+      <SheetRows>
+        {act.upload && (
+          <NeedsRow
+            icon={<UploadSimple size={16} color={HUE.teal.ink} />}
+            title="Upload a file"
+            meta={file ?? "PDF, a photo or a spreadsheet"}
+            tag={file ? { tone: "ok", label: "Uploaded" } : undefined}
+            action={file ? undefined : { label: "Upload", onPress: upload }}
+            chevron={false}
+          />
+        )}
+        {act.apps.map((app) => {
+          const on = linked.includes(app)
+          return (
+            <NeedsRow
+              key={app}
+              icon={<DeviceMobile size={16} color={HUE.teal.ink} />}
+              title={app}
+              tag={on ? { tone: "ok", label: "Connected" } : undefined}
+              right={busy === app ? <ActivityIndicator color={color.primary} /> : undefined}
+              action={on || busy === app ? undefined : { label: "Connect", onPress: () => connect(app) }}
+              chevron={false}
+            />
+          )
+        })}
+      </SheetRows>
+    </Sheet>
   )
 }
 
+/* -------------------------------------------------------------- measure -- */
+
 const styles = StyleSheet.create({
   fill: { flex: 1, minWidth: 0 },
+  plannedList: { maxHeight: 420 },
   pressed: { opacity: 0.7 },
   // A finished lift: struck through, in the quiet grey.
   struck: { textDecorationLine: "line-through", color: ink.tertiary },
@@ -775,7 +998,7 @@ const styles = StyleSheet.create({
   playDot: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: color.primarySoft },
 
   score: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 12, backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge },
-  part: { width: 78 },
+  part: { width: 104 },
   partScroll: { flexGrow: 0, flexShrink: 1 },
   parts: { gap: space.item, paddingBottom: space.item },
   partCard: { gap: space.item, padding: space.item, borderRadius: 16, backgroundColor: surface.inset },
@@ -788,16 +1011,17 @@ const styles = StyleSheet.create({
   sliderFill: { height: "100%", borderRadius: 3, backgroundColor: color.primary },
   sliderThumb: { position: "absolute", top: 5, width: 22, height: 22, marginLeft: -11, borderRadius: 11, backgroundColor: color.background, borderWidth: 2, borderColor: color.primary },
   sheetFrame: { position: "absolute", top: 0, left: 0, right: 0 },
+  speakBox: { minHeight: 112, borderRadius: 16, borderWidth: 1, borderColor: hairline.edge, backgroundColor: surface.inset },
+  speakText: { ...type.body, color: ink.strong, minHeight: 112, padding: space.item, textAlignVertical: "top" },
+  speakMic: { alignItems: "center", gap: space.inline },
+  micButton: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", backgroundColor: color.primary },
+  micButtonOn: { backgroundColor: color.primarySoft },
+  micLabel: { color: ink.detail },
+  speakProblem: { flexDirection: "row", alignItems: "center", gap: space.inline, padding: space.item, borderRadius: 10, backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge },
 
-  flag: { backgroundColor: color.amberTint },
   urgent: { color: "#A95413" },
-  verdict: { ...type.metaStrong },
   doses: { gap: space.inline, paddingBottom: space.item },
   dose: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 10, backgroundColor: color.background, borderWidth: 1, borderColor: hairline.edge },
   doseOn: { borderColor: color.primaryLine, backgroundColor: color.primaryTint },
   field: { gap: space.inline },
-  alert: { flexDirection: "row", gap: space.lead, backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge },
-  alertTitle: { ...type.title, color: "#A95413" },
-  alertBody: { fontSize: 13, lineHeight: 19, marginTop: space.stack },
-  alertBold: { fontFamily: font.semibold, color: ink.strong },
 })

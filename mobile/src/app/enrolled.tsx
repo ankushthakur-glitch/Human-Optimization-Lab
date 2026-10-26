@@ -1,6 +1,6 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { Animated, Easing, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
+import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { useReducedMotion } from "@/components/chat"
@@ -23,9 +23,11 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    header bar and no tab bar. It opens on a moment: the teal tick pops in,
    two rings and a ring of dots spread from it, then the words, the steps
    and the buttons rise in turn (all still under Reduce Motion). The steps
-   are the kit's track: enrolled done today, scheduling the paid tests now,
-   the rest to come. "Schedule my tests" opens the day and time for each
-   test (/schedule-tests); "Confirm schedule" there then opens the
+   are the kit's track: enrolled done today, her physician sorting the
+   tests into insurance or Inlay now (26 Oct 2026), then scheduling, the
+   rest to come. "See my tests" opens that sorting (/your-tests); once it
+   is in, "Schedule my tests" opens the day and time for each Inlay test
+   (/schedule-tests); "Confirm schedule" there then opens the
    confirmation (/schedule-confirmed), which leads on to the flourishing
    questions. "Schedule later" leaves them in To do, brought up
    every other day, and opens the same health profile and flourishing
@@ -84,20 +86,28 @@ export default function EnrolledScreen() {
   // Scheduled on the step before, the first test's day; left for later,
   // To do with its reminders.
   const tests = startingTestsLine(onboarding)
+  // Her physician sorts the tests into insurance or Inlay before any is
+  // booked (/your-tests).
+  const sorted = !!onboarding.testReview
   const steps: Step[] = [
     { label: "Enrolled in Inlay", date: dayLabel(membership?.startedAt), state: "done" },
+    { label: `${MEMBER.doctorShort} checks your tests`, date: sorted ? "Insurance or Inlay, done" : "Insurance or Inlay, within 2 days", state: sorted ? "done" : "now" },
     tests.booked
       ? { label: "Complete your scheduled tests", date: tests.line, state: "now" }
-      : { label: "Schedule your tests", date: tests.line, state: "now" },
+      : { label: "Schedule your tests", date: sorted ? tests.line : "Only the ones booked through Inlay", state: sorted ? "now" : "next" },
     { label: `${MEMBER.doctorShort} reviews your personalized plan`, date: "Once your results are in", state: "next" },
     { label: "Your plan is ready", date: "We let you know right away", state: "next" },
   ]
+
+  // The secret button: a tap on the tick skips the physician's wait and
+  // opens her tests already sorted (/your-tests?now=1), for demos.
+  const reviewed = () => router.push("/your-tests?now=1")
 
   const viewPlan = () => router.replace("/plan?walk=1")
 
   // The schedule comes first; the assistant's chat opens only once she
   // confirms it (app/schedule-tests.tsx).
-  const schedule = () => router.push("/schedule-tests")
+  const schedule = () => router.push(sorted ? "/schedule-tests" : "/your-tests")
 
   // Left for later: the tests wait in To do, brought up every other day.
   // The flourishing questions still follow, as after a confirmed schedule.
@@ -162,13 +172,15 @@ export default function EnrolledScreen() {
                 />
               )
             })}
-            <Animated.View style={[styles.halo, { opacity: t.badge, transform: [{ scale: t.badge }] }]}>
-              <View style={styles.badge}>
-                <Animated.View style={{ opacity: t.tick, transform: [{ scale: t.tick.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }] }}>
-                  <Check size={34} color={color.onPrimary} weight="bold" />
-                </Animated.View>
-              </View>
-            </Animated.View>
+            <Pressable onPress={reviewed} accessible={false}>
+              <Animated.View style={[styles.halo, { opacity: t.badge, transform: [{ scale: t.badge }] }]}>
+                <View style={styles.badge}>
+                  <Animated.View style={{ opacity: t.tick, transform: [{ scale: t.tick.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }] }}>
+                    <Check size={34} color={color.onPrimary} weight="bold" />
+                  </Animated.View>
+                </View>
+              </Animated.View>
+            </Pressable>
           </View>
 
           <Animated.View style={[styles.words, rise(0)]}>
@@ -201,7 +213,7 @@ export default function EnrolledScreen() {
           ) : (
             <>
               <Button onPress={schedule} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
-                Schedule my tests
+                {sorted ? "Schedule my tests" : "See my tests"}
               </Button>
               <View style={styles.later}>
                 <TextAction tone="muted" onPress={() => void later()}>

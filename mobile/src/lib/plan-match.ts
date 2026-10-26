@@ -115,5 +115,22 @@ export function matchPlans(watched: Trend[]): PlanMatch[] {
   return out
 }
 
-/** The count word in "The three your numbers point to". */
-export const COUNT_WORD = ["no", "one", "two", "three"] as const
+/* Since 26 Oct 2026 there is no plan to pick: every optimization plan has
+   the same six steps, and AI adds to them from her out of range markers.
+   A record match no longer names a plan of its own; it says what it adds
+   and to which step. */
+
+export type SixStep = "Exercise" | "Eat" | "Sleep" | "Mind" | "Medication" | "Measure"
+
+/** The six steps every plan has, in their order. */
+export const SIX_STEPS: SixStep[] = ["Exercise", "Eat", "Sleep", "Mind", "Medication", "Measure"]
+
+/** What a record match adds to her plan: the focus, the step it sits in,
+    and the target it starts with. */
+export const ADDS: Record<PlanKind, { focus: string; step: SixStep; target: string }> = {
+  lipid: { focus: "Lipid focus", step: "Eat", target: "Saturated fat under 13 g a day" },
+  insulin: { focus: "Sugar and alcohol", step: "Eat", target: "7 drinks a week at most" },
+  metabolic: { focus: "Weight and waist", step: "Measure", target: "Waist every 2 weeks" },
+  bone: { focus: "Bone strength", step: "Exercise", target: "Impact and balance work" },
+  other: { focus: "A focus of its own", step: "Measure", target: "Tracked with your physician" },
+}

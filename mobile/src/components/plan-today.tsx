@@ -52,7 +52,7 @@ export function PlanToday() {
       </Rise>
 
       <Rise at={4} id="today:goals">
-        <Block title="Today's goals" meta="Same six every day">
+        <Block title="Today's goals">
           <Group>
             {TOPICS.map((t) => {
               const row = rowOf(s, t)

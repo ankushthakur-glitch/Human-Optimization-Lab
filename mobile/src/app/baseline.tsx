@@ -2,62 +2,42 @@ import { router } from "expo-router"
 import * as React from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
+import { CheckMark } from "@/components/flow"
 import { Info } from "@/components/ph"
+import { usePlanMatches } from "@/components/plan-match"
 import { PlanStepPage } from "@/components/plan-steps"
-import { Switch } from "@/components/settings-rows"
 import { Sheet } from "@/components/sheet"
-import {
-  ADD_ONS,
-  BASELINE_TESTS,
-  chosenAddOns,
-  chosenTests,
-  dollars,
-  type AddOnId,
-  type BaselineTestId,
-} from "@/lib/baseline-tests"
+import { ADD_ONS, BASELINE_TESTS, chosenAddOns, chosenTests, dollars, type AddOnId, type BaselineTestId, type Coverage } from "@/lib/baseline-tests"
+import { MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
 
-/* Step 2 of the plan's set-up, "What your baseline needs": the tests and
-   the program her plan calls for, each under the part of the plan that
-   needs it. A group's switch turns the whole part off and its tests come
-   off with it; a skipped one greys out with its price struck through. The
-   (i) beside a test opens what it is and why it matters in a bottom sheet.
-   "Triglyceride & insulin" is covered by the blood panel above, so it
-   costs nothing and follows the panel. A summary bar totals what is added
-   to the plan, and a line under it says what her record already holds.
-   Continue opens step 3 (/enrollment). The blood panel, DEXA and RMR are
-   kept in the onboarding picks, which enrollment and payment charge from;
-   the sleep study and SMART program are held on this screen. */
+/* Step 2 of the plan's set-up, "What your baseline needs" (26 Oct 2026):
+   the tests her numbers call for, not tests tied to a plan. One plain
+   list, no grouping; each test has its own checkbox, says the number it was
+   picked for. A
+   test she clears greys out with its price struck through. The (i) beside
+   a test opens what it is and why it matters in a bottom sheet. A note
+   says her physician sorts the tests into insurance or Inlay before she
+   books. Continue opens step 3
+   (/enrollment). The blood panel, DEXA and RMR are kept in the onboarding
+   picks, the sleep study in the add-ons; enrollment and payment charge
+   from both. */
 
 type Info = { what: string; why: string }
 
 type Item = {
-  key: string
+  key: BaselineTestId | AddOnId
   name: string
   says: string
   price: number
-  info?: Info
-  /** Costs nothing here: another test covers it. */
-  shared?: boolean
-}
-
-type Group = {
-  key: "metabolic" | "lipid" | "insulin" | "sleep" | "smart"
-  name: string
-  /** "2 tests", "shared", "program". */
-  tag: string
-  on: boolean
-  items: Item[]
+  info: Info
+  insurance?: Coverage
 }
 
 const SLEEP: Info = {
   what: "A home sleep test worn for two nights. It tracks your breathing, oxygen and sleep stages while you sleep in your own bed.",
   why: "You told us you wake at three. This shows whether something like disrupted breathing is behind it, so your plan can target the cause.",
-}
-const SMART: Info = {
-  what: "An eight-week stress and resiliency program from the Benson-Henry Institute, with short guided practices you do at home.",
-  why: "Stress shapes sleep, blood pressure and blood sugar. The program gives your plan a way to work on it directly.",
 }
 
 const TEST_ITEM = (id: BaselineTestId, says: string): Item => ({
@@ -66,106 +46,61 @@ const TEST_ITEM = (id: BaselineTestId, says: string): Item => ({
   says,
   price: BASELINE_TESTS[id].price,
   info: { what: BASELINE_TESTS[id].what, why: BASELINE_TESTS[id].why },
+  insurance: BASELINE_TESTS[id].insurance,
 })
+
+/** "LDL 162", from "Matched on LDL 162 · up 34 since Apr 2022". */
+const valueOf = (matchedOn: string) => matchedOn.replace(/^Matched on /, "").split(" · ")[0]
+
+/** The same mid-sentence: "triglycerides 188", while "LDL 162" keeps its capitals. */
+const inSentence = (value: string) => (/^[A-Z][a-z]/.test(value) ? value.charAt(0).toLowerCase() + value.slice(1) : value)
 
 export default function BaselineScreen() {
   const onboarding = useOnboarding()
+  const { matches } = usePlanMatches()
   const [open, setOpen] = React.useState<string | null>(null)
-  const addOns = new Set<string>(chosenAddOns(onboarding.addOns).map((a) => a.id))
-  const sleep = addOns.has("sleep")
-  const smart = addOns.has("smart")
-  function setAddOn(id: AddOnId, on: boolean) {
-    const next = new Set(addOns)
-    if (on) next.add(id)
-    else next.delete(id)
-    onboarding.save({ addOns: (["sleep", "smart"] as AddOnId[]).filter((k) => next.has(k)) })
-  }
+
   const picks = new Set<string>(chosenTests(onboarding.baselinePicks).map((t) => t.id))
+  const addOns = new Set<string>(chosenAddOns(onboarding.addOns).map((a) => a.id))
+  const on = (key: string) => picks.has(key) || addOns.has(key)
 
-  function setTests(ids: BaselineTestId[], on: boolean) {
-    const next = new Set(picks)
-    for (const id of ids) {
-      if (on) next.add(id)
-      else next.delete(id)
+  function flip(key: Item["key"]) {
+    if (key in BASELINE_TESTS) {
+      const next = new Set(picks)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      const order: BaselineTestId[] = ["panel", "dexa", "rmr"]
+      onboarding.save({ baselinePicks: order.filter((id) => next.has(id)) })
+    } else {
+      const next = new Set(addOns)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      onboarding.save({ addOns: (["sleep", "smart"] as AddOnId[]).filter((k) => next.has(k)) })
     }
-    const order: BaselineTestId[] = ["panel", "dexa", "rmr"]
-    onboarding.save({ baselinePicks: order.filter((id) => next.has(id)) })
   }
 
-  const metabolicOn = picks.has("dexa") || picks.has("rmr")
-  const panelOn = picks.has("panel")
-
-  const groups: Group[] = [
-    {
-      key: "metabolic",
-      name: "Metabolic & weight",
-      tag: "2 tests",
-      on: metabolicOn,
-      items: [
-        TEST_ITEM("dexa", "Separates fat from lean mass"),
-        TEST_ITEM("rmr", "No metabolic rate on file"),
-      ],
-    },
-    {
-      key: "lipid",
-      name: "Lipid & cardiovascular",
-      tag: "1 test",
-      on: panelOn,
-      items: [TEST_ITEM("panel", "Also covers triglycerides and insulin")],
-    },
-    {
-      key: "insulin",
-      name: "Triglyceride & insulin",
-      tag: "shared",
-      on: panelOn,
-      items: [{ key: "insulin", name: "", says: "Covered by the blood panel above", price: 0, shared: true }],
-    },
-    {
-      key: "sleep",
-      name: "Sleep restoration",
-      tag: "1 test",
-      on: sleep,
-      items: [{ key: "sleep", name: "Home Sleep Study", says: "Two nights at home - you said you wake at three", price: ADD_ONS.sleep.price, info: SLEEP }],
-    },
-    {
-      key: "smart",
-      name: "SMART stress & resiliency",
-      tag: "program",
-      on: smart,
-      items: [{ key: "smart", name: "SMART program", says: "Benson-Henry Institute · 8 weeks", price: ADD_ONS.smart.price, info: SMART }],
-    },
+  // Each test names the numbers it was picked for, when her record has them.
+  const blood = matches.filter((m) => m.kind === "lipid" || m.kind === "insulin").map((m, i) => (i ? inSentence(valueOf(m.matchedOn)) : valueOf(m.matchedOn)))
+  const weight = matches.find((m) => m.kind === "metabolic")
+  const items: Item[] = [
+    TEST_ITEM("panel", blood.length ? `${blood.join(" and ")}, also covers insulin` : "Sets your starting values"),
+    TEST_ITEM("dexa", weight ? `${valueOf(weight.matchedOn)}, separates fat from lean mass` : "Separates fat from lean mass"),
+    TEST_ITEM("rmr", "No metabolic rate on file"),
+    { key: "sleep", name: ADD_ONS.sleep.name, says: "Two nights at home, you said you wake at three", price: ADD_ONS.sleep.price, info: SLEEP, insurance: ADD_ONS.sleep.insurance },
   ]
 
-  // For now the screen shows three cards; the shared insulin card and the
-  // SMART program stay defined above and return by adding their keys here
-  // (and "smart" to OFFERED_ADD_ONS, so enrollment and payment follow).
-  const SHOWN: Group["key"][] = ["metabolic", "lipid", "sleep"]
-  const shown = groups.filter((g) => SHOWN.includes(g.key))
-
-  function toggle(g: Group) {
-    if (g.key === "metabolic") setTests(["dexa", "rmr"], !g.on)
-    else if (g.key === "lipid" || g.key === "insulin") setTests(["panel"], !g.on)
-    else if (g.key === "sleep") setAddOn("sleep", !g.on)
-    else setAddOn("smart", !g.on)
-  }
-
-  const openItem = shown.flatMap((g) => g.items).find((i) => i.key === open)
-  const onItems = shown.filter((g) => g.on).flatMap((g) => g.items)
-  const total = onItems.reduce((sum, i) => sum + i.price, 0)
-  const programs = smart ? 1 : 0
-  const tests = onItems.filter((i) => !i.shared && i.key !== "smart").length
-  const added = [
-    `${tests} ${tests === 1 ? "test" : "tests"}`,
-    ...(programs ? [`${programs} ${programs === 1 ? "program" : "programs"}`] : []),
-  ].join(" and ")
+  const openItem = items.find((i) => i.key === open)
+  const ticked = items.filter((i) => on(i.key))
 
   return (
     <PlanStepPage
       step={2}
       title="What your baseline needs"
+      lead="Picked from your numbers. We test these again later to show your progress."
       onNext={() => router.push("/enrollment")}
+      nextDisabled={ticked.length === 0}
       overlay={
-        openItem?.info && (
+        openItem && (
           <Sheet title={openItem.name} onClose={() => setOpen(null)}>
             <View style={styles.whyPart}>
               <Text style={styles.whyHead}>What it is</Text>
@@ -178,54 +113,48 @@ export default function BaselineScreen() {
           </Sheet>
         )
       }
-      aboveFoot={
-        <View style={styles.summary} accessibilityLiveRegion="polite">
-          <Text style={styles.summaryText}>{`${added} added to your plan`}</Text>
-          <Text style={styles.totalValue}>{dollars(total)}</Text>
-        </View>
-      }
     >
       <View style={styles.groups}>
-        {shown.map((g) => (
-          <View key={g.key} style={styles.group}>
-            <View style={styles.head}>
-              <Text style={styles.groupName}>{g.name}</Text>
-              <Text style={styles.tag}>{g.tag}</Text>
-              <Switch value={g.on} onChange={() => toggle(g)} label={g.name} />
-            </View>
-            {g.items.map((item) => (
-              <View key={item.key} style={styles.item}>
-                <View style={styles.row}>
-                  <View style={styles.body}>
-                    {!!item.name && (
-                      // The info button sits right after the test's name.
-                      <View style={styles.nameRow}>
-                        <Text style={[styles.name, !g.on && styles.dim]} numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                        {item.info && (
-                          <Pressable
-                            onPress={() => setOpen(item.key)}
-                            accessibilityRole="button"
-                            accessibilityLabel={`About ${item.name}`}
-                            hitSlop={8}
-                            style={({ pressed }) => [styles.more, pressed && styles.pressed]}
-                          >
-                            <Info size={14} color={ink.primary} />
-                          </Pressable>
-                        )}
-                      </View>
-                    )}
-                    <Text style={[styles.says, item.shared && styles.shared, !g.on && styles.dim]}>{item.says}</Text>
+        <View style={styles.group}>
+          {items.map((item, i) => {
+            const checked = on(item.key)
+            return (
+              <Pressable
+                key={item.key}
+                onPress={() => flip(item.key)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked }}
+                accessibilityLabel={`${item.name}, ${dollars(item.price)}. ${item.says}`}
+                style={({ pressed }) => [styles.item, i > 0 && styles.rule, pressed && styles.pressed]}
+              >
+                <CheckMark checked={checked} centered />
+                <View style={styles.body}>
+                  {/* The info button sits right after the test's name. */}
+                  <View style={styles.nameRow}>
+                    <Text style={[styles.name, !checked && styles.dim]} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Pressable
+                      onPress={() => setOpen(item.key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`About ${item.name}`}
+                      hitSlop={8}
+                      style={({ pressed }) => [styles.more, pressed && styles.pressed]}
+                    >
+                      <Info size={14} color={ink.primary} />
+                    </Pressable>
                   </View>
-                  <View style={styles.side}>
-                    <Text style={[styles.price, !g.on && styles.dim, !g.on && styles.struck]}>{dollars(item.price)}</Text>
-                  </View>
+                  <Text style={[styles.says, !checked && styles.dim]}>{item.says}</Text>
                 </View>
-              </View>
-            ))}
-          </View>
-        ))}
+                <Text style={[styles.price, !checked && styles.dim, !checked && styles.struck]}>{dollars(item.price)}</Text>
+              </Pressable>
+            )
+          })}
+        </View>
+        <View style={styles.note}>
+          <Info size={16} color={color.amber} />
+          <Text style={styles.noteText}>{`${MEMBER.doctorShort} checks each test against your insurance before you book. Anything covered goes through the office.`}</Text>
+        </View>
       </View>
     </PlanStepPage>
   )
@@ -233,8 +162,7 @@ export default function BaselineScreen() {
 
 const styles = StyleSheet.create({
   groups: { gap: space.inline, marginTop: space.mark, paddingBottom: space.inline },
-  // One white card per part of the plan: its name and switch on an inset
-  // header, the tests under it.
+  // One white card holding every test, a hairline between rows.
   group: {
     overflow: "hidden",
     borderRadius: 12,
@@ -243,52 +171,37 @@ const styles = StyleSheet.create({
     backgroundColor: color.background,
     boxShadow: card.shadow,
   },
-  head: {
+  item: {
     flexDirection: "row",
     alignItems: "center",
-    gap: space.inline,
-    paddingVertical: space.inline,
+    gap: space.item,
+    paddingVertical: space.rowY,
     paddingHorizontal: space.rowX,
-    backgroundColor: color.primarySoft,
-    borderBottomWidth: 1,
-    borderBottomColor: color.primaryEdge,
   },
-  groupName: { ...type.title, flex: 1, fontSize: 13, color: ink.strong },
-  tag: { ...type.label, fontSize: 12, color: ink.secondary },
-  item: { paddingHorizontal: space.rowX, borderTopWidth: 1, borderTopColor: hairline.rule },
-  row: { flexDirection: "row", alignItems: "center", gap: space.item, paddingVertical: space.rowY },
+  rule: { borderTopWidth: 1, borderTopColor: hairline.rule },
   body: { flex: 1, gap: 2 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: space.mark },
   name: { ...type.title, flexShrink: 1, fontSize: 14, color: ink.strong },
   says: { ...type.label, fontSize: 12, color: ink.secondary },
-  shared: { fontStyle: "italic" },
-  side: { alignItems: "flex-end", gap: space.mark },
   // Digits of one width, so the prices line up down the column.
   price: { ...type.value, fontVariant: ["tabular-nums"] },
   more: { flexDirection: "row", alignItems: "center" },
   pressed: { opacity: 0.7 },
-  // A skipped part: quieter words, the price struck through.
+  // A cleared test: quieter words, the price struck through.
   dim: { color: ink.tertiary },
   struck: { textDecorationLine: "line-through" },
+  note: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: space.inline,
+    padding: space.item,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: color.amberEdge,
+    backgroundColor: color.amberTint,
+  },
+  noteText: { ...type.label, flex: 1, fontSize: 12, lineHeight: 17, fontFamily: font.medium, color: "#7A4210" },
   whyPart: { gap: space.line },
   whyHead: { ...type.title, fontSize: 13, color: ink.strong },
   whyBody: { ...type.body, fontSize: 13, lineHeight: 19 },
-  summary: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: space.item,
-    padding: space.item,
-    borderRadius: 12,
-    backgroundColor: color.primarySoft,
-    borderWidth: 1,
-    borderColor: color.primaryEdge,
-  },
-  summaryText: { ...type.label, flex: 1, fontFamily: font.medium, fontSize: 13, color: color.primaryText },
-  totalValue: {
-    fontFamily: font.semibold,
-    fontSize: 18,
-    lineHeight: 24,
-    fontVariant: ["tabular-nums"],
-    color: color.primaryText,
-  },})
+})

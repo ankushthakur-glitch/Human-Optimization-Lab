@@ -74,8 +74,11 @@ function synthetic() {
   return Math.max(0, Math.min(1, swell * 0.7 + Math.sin(t * 7.3) * 0.12))
 }
 
-/** `onText` gets the field's whole text: what was typed before, then what was heard. */
-export function useVoiceInput(onText: (text: string) => void) {
+/** `onText` gets the field's whole text: what was typed before, then what
+    was heard. `sample` is what is written in where nothing can transcribe;
+    `keep` keeps listening through pauses until the patient taps stop (the
+    recogniser ends itself after a pause, so it is started again). */
+export function useVoiceInput(onText: (text: string) => void, { sample = SAMPLE, keep = false }: { sample?: string; keep?: boolean } = {}) {
   const [state, setState] = React.useState<VoiceState>("idle")
   const [problem, setProblem] = React.useState<VoiceProblem>()
   const meter = React.useRef(0)
@@ -88,6 +91,13 @@ export function useVoiceInput(onText: (text: string) => void) {
   const asking = React.useRef(false)
   const said = React.useRef("")
   const before = React.useRef("")
+  // Listening until stop is tapped: an end the patient did not ask for restarts.
+  const holding = React.useRef(false)
+  /** Carry what was heard into the text before a restart, so it is not lost. */
+  const carry = () => {
+    if (said.current.trim()) before.current = `${before.current}${said.current.trim()} `
+    said.current = ""
+  }
   const text = React.useRef(onText)
   text.current = onText
 
@@ -115,6 +125,7 @@ export function useVoiceInput(onText: (text: string) => void) {
 
   React.useEffect(
     () => () => {
+      holding.current = false
       rec.current?.abort()
       native()?.ExpoSpeechRecognitionModule.abort()
       release()
@@ -142,6 +153,9 @@ export function useVoiceInput(onText: (text: string) => void) {
       }),
       M.addListener("error", (e) => {
         if (e.error === "aborted") return
+        // A pause is not a problem while it keeps listening: it starts again.
+        if (holding.current && (e.error === "no-speech" || e.error === "speech-timeout")) return
+        holding.current = false
         if (e.error === "not-allowed") report(SETTINGS)
         else if (e.error === "no-speech" || e.error === "speech-timeout") report(NOT_HEARD, true)
         else if (e.error === "network") report({ words: "Voice typing needs a connection. Check it and try again." }, true)
@@ -149,6 +163,15 @@ export function useVoiceInput(onText: (text: string) => void) {
         else report({ words: "Voice typing stopped. Tap the microphone to try again." }, true)
       }),
       M.addListener("end", () => {
+        if (holding.current) {
+          carry()
+          try {
+            M.start({ lang: "en-US", interimResults: true, continuous: true, addsPunctuation: true, volumeChangeEventOptions: { enabled: true, intervalMillis: 80 } })
+            return
+          } catch {
+            holding.current = false
+          }
+        }
         clearTimeout(settle.current)
         meter.current = 0
         setState("idle")
@@ -198,7 +221,8 @@ export function useVoiceInput(onText: (text: string) => void) {
         report(p.canAskAgain ? { words: "Allow the microphone to speak your answer.", action: { label: "Try again", onPress: () => again.current() } } : SETTINGS)
         return
       }
-      M.start({ lang: "en-US", interimResults: true, continuous: false, addsPunctuation: true, volumeChangeEventOptions: { enabled: true, intervalMillis: 80 } })
+      holding.current = keep
+      M.start({ lang: "en-US", interimResults: true, continuous: keep, addsPunctuation: true, volumeChangeEventOptions: { enabled: true, intervalMillis: 80 } })
       setState("listening")
     } catch {
       report({ words: "Voice typing isn't available right now. Tap the microphone to try again." }, true)
@@ -224,18 +248,35 @@ export function useVoiceInput(onText: (text: string) => void) {
       r.continuous = true
       r.interimResults = true
       r.lang = "en-US"
+      holding.current = keep
       r.onresult = (e) => {
+        if (rec.current !== r) return
         said.current = Array.from(e.results, (x) => x[0].transcript).join("")
         text.current(before.current + said.current)
       }
       r.onerror = (e) => {
+        if (rec.current !== r) return
+        if (holding.current && e.error === "no-speech") return
+        if (e.error !== "aborted") holding.current = false
         if (e.error === "not-allowed" || e.error === "service-not-allowed") {
           report({ words: "Microphone access is blocked. Allow it for this site in your browser's settings." })
         } else if (e.error === "no-speech") {
           report(NOT_HEARD, true)
         }
       }
+      // A recogniser replaced by a newer start (or closed) ends quietly,
+      // leaving the newer one listening.
       r.onend = () => {
+        if (rec.current !== r) return
+        if (holding.current) {
+          carry()
+          try {
+            r.start()
+            return
+          } catch {
+            holding.current = false
+          }
+        }
         rec.current = null
         release()
         setState("idle")
@@ -249,6 +290,7 @@ export function useVoiceInput(onText: (text: string) => void) {
   /** Stop listening: a short "processing" while the last words settle. */
   function stop() {
     if (state !== "listening") return
+    holding.current = false
     setState("processing")
     const n = native()
     if (n) {
@@ -263,7 +305,7 @@ export function useVoiceInput(onText: (text: string) => void) {
         r.stop()
         return
       }
-      text.current(before.current + SAMPLE)
+      text.current(before.current + sample)
       setState("idle")
     }, r ? 500 : 900)
   }

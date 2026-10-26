@@ -49,7 +49,8 @@ export function useStartMembership() {
       planHistory: kept.length ? kept : undefined,
       // The set-up's baseline tests, paid with the membership, to schedule
       // from the enrolled page.
-      ...(enrolled ? { startingTests: { ids: chosenTests(onboarding.baselinePicks).map((t) => t.id), at: now.toISOString() } } : {}),
+      // Her physician sorts them into insurance or Inlay first (/your-tests).
+      ...(enrolled ? { startingTests: { ids: chosenTests(onboarding.baselinePicks).map((t) => t.id), at: now.toISOString() }, testReview: undefined } : {}),
     })
     logEvent(onboarding, "checkout_completed")
     setPending(false)

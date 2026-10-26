@@ -23,10 +23,11 @@ import {
 } from "@/components/ph"
 import { PaidPopup } from "@/components/paid-popup"
 import { PlanStepPage } from "@/components/plan-steps"
-import { Card, KeyValue, TextAction } from "@/components/record-kit"
+import { Card, KeyValue, Tabs, TextAction } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
-import { dollarsExact } from "@/lib/baseline-tests"
+import { dollarsExact, type TestPay } from "@/lib/baseline-tests"
+import { MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { priceLabel, YEARLY_TEST_DISCOUNT } from "@/lib/plans"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
@@ -34,7 +35,10 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
 /* Step 4 of the plan's set-up, "Payment method": opens from "Continue to
    payment" on step 3 (/enrollment), in the same frame and with the same
    small pieces as every step. The first month's total on one row, its
-   breakdown a tap away, how she pays, and her agreement. "Complete
+   breakdown a tap away, when she pays for the tests (now, with any her
+   insurance covers refunded after her physician sorts them, or after that
+   review, only for the ones booked through Inlay; the total follows),
+   how she pays, and her agreement. "Complete
    enrollment" stays off until she has a way to pay and has ticked the
    agreement; then the membership starts and she lands on the enrolled
    page (/enrolled).
@@ -44,7 +48,10 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    opens the wallet's own confirm sheet (the card, who is paid, the
    amount) before anything is charged.
 
-   An HSA or FSA card pays like any card, with the same fields.
+   Choosing Credit card or HSA or FSA opens a sheet to add the card's
+   number, expiry and CVC; once saved, the card shows as one row with
+   Change to open the sheet again. An HSA or FSA card pays like any card,
+   with the same fields.
 
    Once the payment goes through, a small popup says so: the amount, the
    card, and "Download receipt" for the itemized receipt; Continue opens
@@ -52,6 +59,8 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
 type Method = "card" | "hsa" | "apple" | "google"
 type Wallet = Exclude<Method, "card" | "hsa">
+type CardMethod = Exclude<Method, Wallet>
+type SavedCard = { number: string; expiry: string; cvc: string }
 
 const METHODS: { id: Method; name: string }[] = [
   { id: "card", name: "Credit card" },
@@ -99,22 +108,37 @@ export default function PaymentScreen() {
   const onboarding = useOnboarding()
   const { start, pending } = useStartMembership()
   const billing = onboarding.billingPick ?? "yearly"
-  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns)
+  const testPay: TestPay = onboarding.testPay ?? "now"
+  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns, testPay)
+  const count = cost.tests.length + cost.addOns.length
+  const testOptions: { key: TestPay; name: string; amount: string; says: string }[] = [
+    { key: "now", name: "Pay now", amount: `${dollarsExact(cost.testsTotal)} today`, says: "Covered tests are refunded" },
+    { key: "later", name: "Pay after review", amount: "$0 today", says: `Only the tests ${MEMBER.doctorShort} sends to Inlay` },
+  ]
+  const chosen = testOptions.find((o) => o.key === testPay) ?? testOptions[0]
   const [method, setMethod] = React.useState<Method>("card")
-  // The prototype's demo card, as the reference shows it.
-  const [number, setNumber] = React.useState("4242 4242 4242 4242")
-  const [expiry, setExpiry] = React.useState("08 / 29")
-  const [cvc, setCvc] = React.useState("123")
+  // A saved card per kind; the prototype's demo credit card to start.
+  const [cards, setCards] = React.useState<Partial<Record<CardMethod, SavedCard>>>({
+    card: { number: "4242 4242 4242 4242", expiry: "08 / 29", cvc: "123" },
+  })
   // When she ticked the agreement, kept as her consent (S-70).
   const [agreedAt, setAgreedAt] = React.useState<string>()
-  const [sheet, setSheet] = React.useState<"breakdown" | "wallet">()
+  const [sheet, setSheet] = React.useState<"breakdown" | "wallet" | "card">()
 
   // Paid: the popup is up, and Continue opens the enrolled page.
   const [paid, setPaid] = React.useState<() => void>()
 
-  const digits = number.replace(/\D/g, "")
-  // Demo: the card fields are not checked, only the agreement.
-  const ready = !!agreedAt
+  const isCard = method === "card" || method === "hsa"
+  const saved = isCard ? cards[method] : undefined
+  const digits = saved?.number.replace(/\D/g, "") ?? ""
+  // Demo: the card fields are not checked, only that a card is added and
+  // the agreement ticked.
+  const ready = !!agreedAt && (!isCard || !!saved)
+
+  function choose(m: Method) {
+    setMethod(m)
+    if (m === "card" || m === "hsa") setSheet("card")
+  }
 
   async function pay(details: Parameters<typeof start>[0]) {
     const open = await start({ ...details, hold: true })
@@ -156,10 +180,21 @@ export default function PaymentScreen() {
           <PaidPopup onContinue={paid} />
         ) : doc ? (
           <ConsentSheets page={{ sheet: doc, setSheet: setDoc }} />
+        ) : sheet === "card" && isCard ? (
+          <CardSheet
+            hsa={method === "hsa"}
+            initial={saved}
+            onSave={(c) => {
+              setCards((all) => ({ ...all, [method]: c }))
+              setSheet(undefined)
+            }}
+            onClose={() => setSheet(undefined)}
+          />
         ) : sheet === "breakdown" ? (
           <CostBreakdownSheet
             tests={onboarding.baselinePicks}
             addOns={onboarding.addOns}
+            testPay={onboarding.testPay}
             billing={billing}
             goals={onboarding.goals}
             onClose={() => setSheet(undefined)}
@@ -208,6 +243,20 @@ export default function PaymentScreen() {
         </View>
       </Pressable>
 
+      {count > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.heading} accessibilityRole="header">
+            {`When to pay for your ${count === 1 ? "test" : `${count} tests`}`}
+          </Text>
+          <Tabs
+            options={testOptions.map((o) => ({ value: o.key, label: o.name }))}
+            value={testPay}
+            onChange={(key) => onboarding.save({ testPay: key })}
+          />
+          <Text style={styles.optionSays}>{`${chosen.amount}. ${chosen.says}`}</Text>
+        </View>
+      )}
+
       <View style={styles.section}>
         <Text style={styles.heading} accessibilityRole="header">
           Pay with
@@ -222,7 +271,7 @@ export default function PaymentScreen() {
             return (
               <Pressable
                 key={m.id}
-                onPress={() => setMethod(m.id)}
+                onPress={() => choose(m.id)}
                 accessibilityRole="radio"
                 accessibilityLabel={m.name}
                 accessibilityState={{ checked: on }}
@@ -243,61 +292,15 @@ export default function PaymentScreen() {
             )
           })}
         </View>
-      </View>
 
-      <View style={styles.section}>
-        {method === "card" || method === "hsa" ? (
-          <>
-            <TextField
-              label={method === "hsa" ? "HSA or FSA card number" : "Card number"}
-              compact
-              icon={({ color: c }) => <CreditCard size={18} color={c} />}
-              value={number}
-              onChangeText={(v) => setNumber(cardText(v))}
-              placeholder="1234 5678 9012 3456"
-              keyboardType="number-pad"
-              autoComplete="cc-number"
-              textContentType="creditCardNumber"
-            />
-            <View style={styles.pair}>
-              <View style={styles.half}>
-                <TextField
-                  label="Expiry date"
-                  compact
-                  icon={({ color: c }) => <CalendarBlank size={18} color={c} />}
-                  value={expiry}
-                  onChangeText={(v) => setExpiry(expiryText(v))}
-                  placeholder="MM / YY"
-                  keyboardType="number-pad"
-                  autoComplete="cc-exp"
-                />
-              </View>
-              <View style={styles.half}>
-                <TextField
-                  label="CVC"
-                  compact
-                  icon={({ color: c }) => <Lock size={18} color={c} />}
-                  value={cvc}
-                  onChangeText={(v) => setCvc(v.replace(/\D/g, "").slice(0, 4))}
-                  placeholder="123"
-                  keyboardType="number-pad"
-                  autoComplete="cc-csc"
-                  secureTextEntry
-                />
-              </View>
-            </View>
-          </>
+        {isCard ? (
+          <CardPanel hsa={method === "hsa"} saved={saved} onEdit={() => setSheet("card")} />
         ) : (
           <WalletPanel wallet={method} />
         )}
-
         <View style={styles.secure}>
           <Lock size={14} color={ink.tertiary} />
-          <Text style={styles.secureText}>
-            {method === "card" || method === "hsa"
-              ? "Secure and encrypted"
-              : "Secure and encrypted. Inlay never sees your card number."}
-          </Text>
+          <Text style={styles.secureText}>Secure and encrypted</Text>
         </View>
 
         <View style={styles.agree}>
@@ -327,6 +330,99 @@ function MethodMark({ method, size = 24 }: { method: Method; size?: number }) {
   if (method === "apple")
     return <AppleLogo size={size} weight="fill" color="#000000" />
   return <GoogleLogo size={size} weight="bold" color="#4285F4" />
+}
+
+/** The added card as one row with Change, or, before one is added, a row
+    that opens the sheet to add it. */
+function CardPanel({ hsa, saved, onEdit }: { hsa: boolean; saved?: SavedCard; onEdit: () => void }) {
+  if (!saved)
+    return (
+      <Pressable
+        onPress={onEdit}
+        accessibilityRole="button"
+        accessibilityLabel={hsa ? "Add HSA or FSA card" : "Add card"}
+        style={({ pressed }) => [styles.wallet, pressed && styles.pressed]}
+      >
+        <MethodMark method={hsa ? "hsa" : "card"} size={18} />
+        <Text style={[styles.walletName, styles.walletWords]}>{hsa ? "Add HSA or FSA card" : "Add card"}</Text>
+        <CaretRight size={14} color={ink.tertiary} />
+      </Pressable>
+    )
+  return (
+    <View style={styles.wallet}>
+      <MethodMark method={hsa ? "hsa" : "card"} size={18} />
+      <View style={styles.walletWords}>
+        <Text style={styles.walletName}>{`${hsa ? "HSA or FSA card" : "Card"} ending ${saved.number.replace(/\D/g, "").slice(-4)}`}</Text>
+        <Text style={styles.walletLine}>{`Expires ${saved.expiry}`}</Text>
+      </View>
+      <TextAction onPress={onEdit}>Change</TextAction>
+    </View>
+  )
+}
+
+/** The card's number, expiry and CVC in a bottom sheet; Save keeps them. */
+function CardSheet({
+  hsa,
+  initial,
+  onSave,
+  onClose,
+}: {
+  hsa: boolean
+  initial?: SavedCard
+  onSave: (card: SavedCard) => void
+  onClose: () => void
+}) {
+  const [number, setNumber] = React.useState(initial?.number ?? "")
+  const [expiry, setExpiry] = React.useState(initial?.expiry ?? "")
+  const [cvc, setCvc] = React.useState(initial?.cvc ?? "")
+  const filled = number.replace(/\D/g, "").length >= 15 && expiry.replace(/\D/g, "").length === 4 && cvc.length >= 3
+  return (
+    <Sheet title={hsa ? "HSA or FSA card" : "Card details"} onClose={onClose}>
+      <View style={styles.sheetFields}>
+        <TextField
+          label="Card number"
+          compact
+          icon={({ color: c }) => <CreditCard size={18} color={c} />}
+          value={number}
+          onChangeText={(v) => setNumber(cardText(v))}
+          placeholder="1234 5678 9012 3456"
+          keyboardType="number-pad"
+          autoComplete="cc-number"
+          textContentType="creditCardNumber"
+        />
+        <View style={styles.pair}>
+          <View style={styles.half}>
+            <TextField
+              label="Expiry date"
+              compact
+              icon={({ color: c }) => <CalendarBlank size={18} color={c} />}
+              value={expiry}
+              onChangeText={(v) => setExpiry(expiryText(v))}
+              placeholder="MM / YY"
+              keyboardType="number-pad"
+              autoComplete="cc-exp"
+            />
+          </View>
+          <View style={styles.half}>
+            <TextField
+              label="CVC"
+              compact
+              icon={({ color: c }) => <Lock size={18} color={c} />}
+              value={cvc}
+              onChangeText={(v) => setCvc(v.replace(/\D/g, "").slice(0, 4))}
+              placeholder="123"
+              keyboardType="number-pad"
+              autoComplete="cc-csc"
+              secureTextEntry
+            />
+          </View>
+        </View>
+      </View>
+      <Button onPress={() => onSave({ number, expiry, cvc })} disabled={!filled}>
+        Save card
+      </Button>
+    </Sheet>
+  )
 }
 
 /** In place of the card fields, one row: the card her wallet pays with
@@ -439,13 +535,17 @@ const styles = StyleSheet.create({
   totalValue: {
     fontFamily: font.semibold,
     fontSize: 24,
-    lineHeight: 30,
+    lineHeight: 28,
     color: ink.strong,
     fontVariant: ["tabular-nums"],
   },
 
   section: { gap: space.inline, marginTop: space.section },
   heading: { ...type.section },
+
+  // When to pay: the chosen option's amount and what it means, one quiet
+  // line under the segmented control.
+  optionSays: { ...type.label, fontSize: 12, lineHeight: 16, color: ink.secondary },
 
   // Four ways to pay, two to a row.
   methods: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
@@ -499,6 +599,7 @@ const styles = StyleSheet.create({
   walletName: { ...type.title, color: ink.strong },
   walletLine: { ...type.label },
 
+  sheetFields: { gap: space.item },
   sheetRows: { paddingVertical: space.card - space.rowY },
   sheetActions: { gap: space.stack },
   quiet: { alignItems: "center" },

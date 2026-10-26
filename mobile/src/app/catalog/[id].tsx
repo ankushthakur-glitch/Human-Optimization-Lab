@@ -71,11 +71,11 @@ export default function CatalogItemScreen() {
 
       <PriceCard item={it} />
 
-      <Block title="What it does" meta="plainly">
+      <Block title="What it does">
         <DoesList lines={it.does} />
       </Block>
 
-      <Block title="What it cannot tell you" meta="the limits">
+      <Block title="What it cannot tell you">
         <LimitsList lines={it.cannot} />
       </Block>
 

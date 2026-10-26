@@ -24,7 +24,7 @@ export type Receipt = {
 export function receiptOf(onboarding: State): Receipt {
   const m = onboarding.membership
   const billing = m?.billing ?? "yearly"
-  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns)
+  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns, onboarding.testPay)
   const at = new Date(m?.startedAt ?? Date.now())
   return {
     number: `INL-${at.getTime().toString().slice(-8)}`,
@@ -32,9 +32,14 @@ export function receiptOf(onboarding: State): Receipt {
     paidWith: m?.card ?? "Card",
     lines: [
       { label: `${planName(onboarding.goals)}, ${priceLabel(billing)}`, amount: dollarsExact(cost.membership) },
-      ...cost.tests.map((t) => ({ label: t.name, amount: dollarsExact(t.price) })),
-      ...cost.addOns.map((a) => ({ label: a.name, amount: dollarsExact(a.price) })),
-      ...(cost.discount ? [{ label: "Yearly discount on tests", amount: `-${dollarsExact(cost.discount)}` }] : []),
+      // Tests paid after her physician's review are on a receipt of their own.
+      ...(cost.later
+        ? []
+        : [
+            ...cost.tests.map((t) => ({ label: t.name, amount: dollarsExact(t.price) })),
+            ...cost.addOns.map((a) => ({ label: a.name, amount: dollarsExact(a.price) })),
+            ...(cost.discount ? [{ label: "Yearly discount on tests", amount: `-${dollarsExact(cost.discount)}` }] : []),
+          ]),
     ],
     total: dollarsExact(cost.total),
     amount: cost.total,

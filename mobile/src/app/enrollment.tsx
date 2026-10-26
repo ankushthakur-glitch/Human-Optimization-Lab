@@ -1,6 +1,6 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import {
   BillingToggle,
@@ -8,116 +8,50 @@ import {
   PlanCard,
   firstMonth,
 } from "@/components/enrollment-kit"
+import { CheckMark } from "@/components/flow"
 import { PlanStepPage } from "@/components/plan-steps"
-import { Switch } from "@/components/settings-rows"
-import {
-  ADD_ONS,
-  BASELINE_TESTS,
-  chosenAddOns,
-  chosenTests,
-  type AddOnId,
-  dollars,
-  dollarsExact,
-  type BaselineTestId,
-} from "@/lib/baseline-tests"
+import { chosenAddOns, chosenTests, dollars, dollarsExact, OFFERED_ADD_ONS, toggleTest, type AddOnId, type BaselineTestId } from "@/lib/baseline-tests"
 import { useOnboarding } from "@/lib/onboarding"
 import { type Cadence } from "@/lib/plans"
-import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
+import { card, color, hairline, ink, space, type } from "@/lib/theme"
 
 /* Step 3 of the plan's set-up, "Complete your enrollment" (Journey_7
-   screen 6): opens after the tests her record is missing (/baseline). The
+   screen 6): opens after the tests her numbers call for (/baseline).
    Monthly or yearly (yearly the default, saving 10% and taking 10% off
    the tests), the plan named from her goals with its price and what it
-   includes, then a summary of the tests she kept on
-   step 2, each part with a switch to drop or restore it, grouped as there, with their prices, and in the same card what she pays today, with
-   the tests and membership that make it up in one line under it. All on
-   one screen, no scrolling.
-   "Continue to payment" opens step 4 (/payment). */
-
-/** What each test tells her, as on step 2. */
-const SAYS: Record<BaselineTestId, string> = {
-  dexa: "Separates fat from lean mass",
-  rmr: "No metabolic rate on file",
-  panel: "Also covers triglycerides and insulin",
-}
-
-type Line = { key: string; name: string; says: string; price: number }
-type Part = { key: string; name: string; lines: Line[]; on: boolean; set: (on: boolean) => void }
+   includes, then (26 Oct 2026) the tests she ticked on /baseline, each
+   with its checkbox and price; one cleared here stays listed, greyed with
+   its price struck through. When to pay for the tests is chosen on
+   /payment. The total over Continue follows the ticks. "Continue to payment" opens step 4
+   (/payment). */
 
 export default function EnrollmentScreen() {
   const onboarding = useOnboarding()
   const billing = onboarding.billingPick ?? "yearly"
   const [included, setIncluded] = React.useState(false)
-  const chosen = new Set(chosenTests(onboarding.baselinePicks).map((t) => t.id))
-  const addOns = new Set<string>(chosenAddOns(onboarding.addOns).map((a) => a.id))
-  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns)
+  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns, onboarding.testPay)
+  // The tests ticked on /baseline, held as she arrived so one cleared here
+  // stays in the list to tick again.
+  const [listed] = React.useState(() => [
+    ...chosenTests(onboarding.baselinePicks).map((t) => ({ key: t.id as string, name: t.name, price: t.price })),
+    ...chosenAddOns(onboarding.addOns).map((a) => ({ key: a.id as string, name: a.name, price: a.price })),
+  ])
+  const on = new Set<string>([...cost.tests.map((t) => t.id), ...cost.addOns.map((a) => a.id)])
 
-  // The parts she kept on step 2, fixed when the screen opens, so one she
-  // switches off here stays listed and can come back on.
-  const [kept] = React.useState(() => new Set<string>([...chosen, ...addOns]))
-
-  function setTests(ids: BaselineTestId[], on: boolean) {
-    const next = new Set<string>(chosen)
-    for (const id of ids) {
-      if (on) next.add(id)
-      else next.delete(id)
+  function flip(key: string) {
+    if ((OFFERED_ADD_ONS as string[]).includes(key)) {
+      const next = new Set(cost.addOns.map((a) => a.id as string))
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      onboarding.save({ addOns: OFFERED_ADD_ONS.filter((id: AddOnId) => next.has(id)) })
+    } else {
+      onboarding.save({ baselinePicks: toggleTest(onboarding.baselinePicks, key as BaselineTestId) })
     }
-    const order: BaselineTestId[] = ["panel", "dexa", "rmr"]
-    onboarding.save({ baselinePicks: order.filter((id) => next.has(id)) })
-  }
-  function setAddOn(id: AddOnId, on: boolean) {
-    const next = new Set(addOns)
-    if (on) next.add(id)
-    else next.delete(id)
-    onboarding.save({ addOns: (["sleep", "smart"] as AddOnId[]).filter((k) => next.has(k)) })
   }
 
   function pay(next: Cadence) {
     onboarding.save({ billingPick: next })
   }
-
-  const line = (id: BaselineTestId): Line => ({
-    key: id,
-    name: BASELINE_TESTS[id].name,
-    says: SAYS[id],
-    price: BASELINE_TESTS[id].price,
-  })
-  // The parts of the plan she kept on step 2, as that screen grouped them.
-  const metabolic = (["dexa", "rmr"] as BaselineTestId[]).filter((id) => kept.has(id))
-  const parts: Part[] = [
-    {
-      key: "metabolic",
-      name: "Metabolic & weight",
-      lines: metabolic.map(line),
-      on: metabolic.some((id) => chosen.has(id)),
-      set: (on: boolean) => setTests(metabolic, on),
-    },
-    {
-      key: "lipid",
-      name: "Lipid & cardiovascular",
-      lines: kept.has("panel") ? [line("panel")] : [],
-      on: chosen.has("panel"),
-      set: (on: boolean) => setTests(["panel"], on),
-    },
-    {
-      key: "sleep",
-      name: "Sleep restoration",
-      lines: kept.has("sleep")
-        ? [{ key: "sleep", name: ADD_ONS.sleep.name, says: "Two nights at home - you said you wake at three", price: ADD_ONS.sleep.price }]
-        : [],
-      on: addOns.has("sleep"),
-      set: (on: boolean) => setAddOn("sleep", on),
-    },
-    {
-      key: "smart",
-      name: "SMART stress & resiliency",
-      lines: kept.has("smart")
-        ? [{ key: "smart", name: ADD_ONS.smart.name, says: "Benson-Henry Institute · 8 weeks", price: ADD_ONS.smart.price }]
-        : [],
-      on: addOns.has("smart"),
-      set: (on: boolean) => setAddOn("smart", on),
-    },
-  ].filter((p) => p.lines.length > 0)
 
   return (
     <PlanStepPage
@@ -150,28 +84,29 @@ export default function EnrollmentScreen() {
 
       <View style={styles.section}>
         <Text style={styles.heading} accessibilityRole="header">
-          Your plan summary
+          {`Your ${listed.length === 1 ? "test" : `${listed.length} tests`}`}
         </Text>
-        {parts.map((p) => (
-          <View key={p.key} style={styles.group}>
-            <View style={styles.head}>
-              <Text style={styles.groupName}>{p.name}</Text>
-              <Text style={styles.tag}>{p.lines.length === 1 ? "1 test" : `${p.lines.length} tests`}</Text>
-              <Switch value={p.on} onChange={p.set} label={p.name} />
-            </View>
-            {p.lines.map((l, i) => (
-              <View key={l.key} style={[styles.row, i > 0 && styles.rule, !p.on && styles.off]}>
-                <View style={styles.body}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {l.name}
-                  </Text>
-                  <Text style={styles.says}>{l.says}</Text>
-                </View>
-                <Text style={styles.price}>{dollars(l.price)}</Text>
-              </View>
-            ))}
-          </View>
-        ))}
+        <View style={styles.tests}>
+          {listed.map((t, i) => {
+            const checked = on.has(t.key)
+            return (
+              <Pressable
+                key={t.key}
+                onPress={() => flip(t.key)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked }}
+                accessibilityLabel={`${t.name}, ${dollars(t.price)}`}
+                style={({ pressed }) => [styles.test, i > 0 && styles.rule, pressed && styles.pressed]}
+              >
+                <CheckMark checked={checked} centered />
+                <Text style={[styles.name, !checked && styles.dim]} numberOfLines={1}>
+                  {t.name}
+                </Text>
+                <Text style={[styles.price, !checked && styles.dim, !checked && styles.struck]}>{dollars(t.price)}</Text>
+              </Pressable>
+            )
+          })}
+        </View>
       </View>
     </PlanStepPage>
   )
@@ -183,7 +118,8 @@ const styles = StyleSheet.create({
   section: { gap: space.inline, marginTop: space.item },
   heading: { ...type.title, color: ink.strong },
 
-  group: {
+  // The tests in one white card, a hairline between rows, as on /baseline.
+  tests: {
     overflow: "hidden",
     borderRadius: 12,
     borderWidth: 1,
@@ -191,33 +127,15 @@ const styles = StyleSheet.create({
     backgroundColor: color.background,
     boxShadow: card.shadow,
   },
-  head: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.inline,
-    paddingVertical: space.inline,
-    paddingHorizontal: space.rowX,
-    backgroundColor: surface.inset,
-    borderBottomWidth: 1,
-    borderBottomColor: hairline.edge,
-  },
-  groupName: { ...type.title, flex: 1, fontSize: 13, color: ink.strong },
-  tag: { ...type.label, fontSize: 12, color: ink.secondary },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.item,
-    paddingVertical: space.rowY,
-    paddingHorizontal: space.rowX,
-  },
+  test: { flexDirection: "row", alignItems: "center", gap: space.item, paddingVertical: space.rowY, paddingHorizontal: space.rowX },
   rule: { borderTopWidth: 1, borderTopColor: hairline.rule },
-  // A part she switched off: still listed, faded, not in the total.
-  off: { opacity: 0.4 },
-  body: { flex: 1, gap: 2 },
-  name: { ...type.title, fontSize: 14, color: ink.strong },
-  says: { ...type.label, fontSize: 12, color: ink.secondary },
-  // Digits of one width, so the prices line up down the column.
+  pressed: { opacity: 0.7 },
+  name: { ...type.title, flex: 1, fontSize: 14, color: ink.strong },
+  // Digits of one width, as in the totals.
   price: { ...type.value, fontVariant: ["tabular-nums"] },
+  // A cleared test: quieter words, the price struck through.
+  dim: { color: ink.tertiary },
+  struck: { textDecorationLine: "line-through" },
 
   // The total, fixed over Continue on a deeper teal: the page's one big number.
   total: {

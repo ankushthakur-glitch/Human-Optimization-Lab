@@ -17,6 +17,7 @@ import {
   MEAL_SLOTS,
   MEMBER,
   WALK,
+  WEIGH_IN,
   addDays,
   averageOf,
   clockOf,
@@ -385,7 +386,7 @@ const timeOf = (m: { at: string }) => (m.at.length > 10 ? `, ${clockOf(new Date(
 
 /** The day's readings, entered by hand: weight, waist, blood pressure and,
     on a bone plan, chair stands. Today shows only what she has entered,
-    and the evening blood pressure check (and Thursday's weigh in) while
+    and the evening blood pressure check (and the morning weigh in) while
     still to do. */
 function checkInsOf(s: Store, day: Date, isToday: boolean, now: Date, open: (kind: CheckInKind) => void): CheckIn[] {
   const key = localDay(day)
@@ -405,8 +406,8 @@ function checkInsOf(s: Store, day: Date, isToday: boolean, now: Date, open: (kin
   weight.forEach((m, i) =>
     out.push({ id: `weight${i}`, icon: <Scales size={16} color={HUE.teal.ink} />, title: "Weight", meta: `${formatNumber(m.value, 1)} lb${timeOf(m)}` })
   )
-  if (isToday && !weight.length && day.getDay() === 4)
-    out.push({ id: "weight-due", icon: <Scales size={16} color={HUE.teal.ink} />, title: "Weight", meta: "Before breakfast", onAdd: () => open("weight") })
+  if (isToday && !weight.length)
+    out.push({ id: "weight-due", icon: <Scales size={16} color={HUE.teal.ink} />, title: "Weight", meta: WEIGH_IN.detail, onAdd: () => open("weight") })
   waist.forEach((m, i) => out.push({ id: `waist${i}`, icon: <Ruler size={16} color={HUE.teal.ink} />, title: "Waist", meta: `${formatNumber(m.value, 1)} in${timeOf(m)}` }))
   bp.forEach((m, i) =>
     out.push({ id: `bp${i}`, icon: <Heartbeat size={16} color={HUE.teal.ink} />, title: "Blood pressure", meta: `${m.value}/${m.value2}${timeOf(m)}` })

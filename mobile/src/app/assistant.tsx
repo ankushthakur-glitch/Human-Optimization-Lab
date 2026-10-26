@@ -71,9 +71,10 @@ import {
   type Fact,
   type Topic,
 } from "@/lib/assistant"
+import { coachAnswer, coachOpen, coachQuestion, todaysQuestion, type CoachQuestion } from "@/lib/coach"
 import { relativeDay } from "@/lib/dates"
 import { canOffer, useExperience, useMarkers } from "@/lib/experience"
-import { clockOf, questionsFor } from "@/lib/member"
+import { clockOf, localDay, questionsFor } from "@/lib/member"
 import { changeCourse } from "@/lib/offers"
 import { useOnboarding, type Chat, type ChatTopic, type PastChat } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
@@ -120,7 +121,7 @@ const MORE = "Ask about something else"
 const PAUSED: Answer = { text: "Your plan is paused. Everything about it, and how to resume it, is on the Plan tab.", link: { label: "Open the Plan tab", href: "/plan" } }
 
 /** What a tap on an option list answers. */
-type Step = "topic" | "scoped" | "urgent" | "concern" | "plan" | "batch" | "test"
+type Step = "topic" | "scoped" | "urgent" | "concern" | "plan" | "batch" | "test" | "coach"
 
 type Msg = { id: string; at: string } & (
   | { kind: "text"; from: "patient" | "assistant"; text: string; files?: Attachment[] }
@@ -231,7 +232,7 @@ export default function AssistantScreen() {
   const allowance = useAllowance()
   const { experience, sharingOff } = useExperience()
   const markers = useMarkers()
-  const params = useLocalSearchParams<{ marker?: string; topic?: string; batch?: string; ask?: string; outlook?: string }>()
+  const params = useLocalSearchParams<{ marker?: string; topic?: string; batch?: string; ask?: string; outlook?: string; coach?: string; answer?: string }>()
   // Help with today's plan needs a live plan; the counter, any active
   // membership (C.4.1).
   const planLive = experience === "member"
@@ -273,9 +274,33 @@ export default function AssistantScreen() {
   /** The history with a thread filed in it, newest first; a thread she
       asked nothing in is not kept. */
   const filed = (list: PastChat[], t: Thread) => (hasQuestion(t) ? [toPast(t), ...list.filter((c) => c.id !== t.id)].slice(0, 50) : list)
-  /** Opened about a result, a new batch or a topic: its group from the start. */
+  /** The coach's question it opens on: the one tapped on Home, or, opened
+      with nothing else by a member with a live plan, today's while it is
+      still unanswered (lib/coach.ts). */
+  const coach = params.coach
+    ? coachQuestion(onboarding, params.coach)
+    : planLive && !params.marker && !params.batch && !params.topic && !params.ask && !params.outlook && coachOpen(onboarding)
+      ? todaysQuestion(onboarding)
+      : undefined
+  /** Opened about a result, a new batch, a topic or the coach's question:
+      its group from the start. */
   const paramTopic: ChatTopic | undefined =
-    params.marker || params.batch ? "result" : params.topic && TOPIC_PARAM[params.topic] ? GROUP_OF[TOPIC_PARAM[params.topic]] : undefined
+    params.marker || params.batch ? "result" : params.topic && TOPIC_PARAM[params.topic] ? GROUP_OF[TOPIC_PARAM[params.topic]] : coach ? "plan" : undefined
+
+  /** The coach starts the chat: what her data shows and its question, with
+      her replies to tap. Opened from Home with a reply, that reply is
+      already said and answered. */
+  function coachOpening(q: CoachQuestion): Draft[] {
+    const ask: Draft = { kind: "ask", text: `${q.signal} ${q.question}`, options: q.replies.map((r) => r.label), step: "coach", scope: q.id }
+    const answer = params.answer ? coachAnswer(q, params.answer) : undefined
+    if (!answer) return [ask]
+    return [
+      { ...ask, picked: params.answer },
+      { kind: "text", from: "patient", text: params.answer! },
+      { kind: "answer", answer, scope: `coach:${q.id}` },
+      anythingElse(),
+    ]
+  }
 
   /** One result: its card, then the questions in its own words. */
   function scopedOpening(id: string): Draft[] {
@@ -310,6 +335,7 @@ export default function AssistantScreen() {
   /** What the chat opens on: a result, a new batch, a topic, or the greeting. */
   function opening(): Draft[] {
     if (params.marker) return scopedOpening(params.marker)
+    if (coach) return coachOpening(coach)
     // The Outlook tab's question, asked and answered (Journey screen 51).
     if (params.outlook) return [{ kind: "text", from: "patient", text: OUTLOOK_ASK }, { kind: "outlook" }, planFollowUp(OUTLOOK_ASK, new Set())]
     const batch = params.batch ? batchOf(params.batch, onboarding) : undefined
@@ -335,7 +361,7 @@ export default function AssistantScreen() {
   // the last one is filed in the history (the drawer) to carry on from.
   // With nothing to open it about, it waits for a category first.
   const previous = React.useRef(onboarding.chat as unknown as Thread | undefined)
-  const [thread, setThread] = React.useState<Thread>(() => (paramTopic ? fresh(opening(), params.marker ?? params.topic ?? params.batch, paramTopic) : fresh([])))
+  const [thread, setThread] = React.useState<Thread>(() => (paramTopic ? fresh(opening(), params.marker ?? params.topic ?? params.batch ?? (coach && `coach:${coach.id}`), paramTopic) : fresh([])))
   const limitShown = thread.messages.some((m) => m.kind === "limit" && !m.gone)
   /** No category yet: the picker shows in place of the thread. */
   const choosing = !thread.topic && !thread.messages.length
@@ -345,12 +371,16 @@ export default function AssistantScreen() {
   const asking = onboarding.demo?.assistantVersion !== 1
   // A question it was opened with waits in the composer, unsent (A-42).
   const [draft, setDraft] = React.useState(params.ask ?? "")
+  // Opened from a page with the question already started (a topic's ways),
+  // or a paid member: just the composer, no suggestion pills or upgrade
+  // banner.
+  const bare = !!params.ask || allowance.member
   /** Borrowing or adding AI credit, asked in a sheet first. */
   const [credit, setCredit] = React.useState(false)
   // This week's AI credit from 75% used, joined to the composer as
   // Claude's session limit is; closed, it stays hidden until it says
   // something new (75% becoming 100%), and the limit card says it alone.
-  const creditNotice = useCreditNotice(() => setCredit(true))
+  const creditNotice = useCreditNotice()
   const [hiddenNotice, setHiddenNotice] = React.useState<string>()
   const [thinking, setThinking] = React.useState(false)
   /** "Something else": her own words answer it next. */
@@ -417,6 +447,18 @@ export default function AssistantScreen() {
     onboarding.save({ chatCategories: [...(onboarding.chatCategories ?? []), { id, name: categoryName }] }).catch(() => {})
     return { topic: id, name: categoryName, Icon: ChatText }
   }
+
+  /** Her reply to the coach's question: today's is answered, so Home and
+      the next open of the chat stop asking it. */
+  function saveCoach(id: string, answer: string) {
+    onboarding.save({ coach: { day: localDay(new Date()), id, answer } }).catch(() => {})
+  }
+  // A reply tapped on Home arrives already said.
+  React.useEffect(() => {
+    if (coach && params.answer && coachAnswer(coach, params.answer)) saveCoach(coach.id, params.answer)
+    // Once, for the reply it was opened with.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   /** A topic tapped on the Ask Inlay opening: as the greeting's own list. */
   function pickTopic(option: string) {
@@ -624,6 +666,14 @@ export default function AssistantScreen() {
         const test = openTests().find((x) => x.name === option)
         if (test) askTest(test.id, option, m)
         return
+      }
+      case "coach": {
+        const q = coachQuestion(onboarding, m.scope ?? "")
+        const answer = q && coachAnswer(q, option)
+        if (!q || !answer) return
+        choose()
+        saveCoach(q.id, option)
+        return reply([{ kind: "answer", answer, scope: `coach:${q.id}` }, anythingElse()])
       }
       case "batch": {
         const id = m.scope ?? ""
@@ -883,7 +933,7 @@ export default function AssistantScreen() {
         <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={styles.fill}>
           {choosing ? (
-            <AskWelcome options={topics()} onPick={pickTopic} />
+            <AskWelcome options={bare ? [] : topics()} onPick={pickTopic} />
           ) : (
           <ScrollView
             ref={scroll}
@@ -908,7 +958,7 @@ export default function AssistantScreen() {
 
           {!ended && (
             <View>
-              {asking && experience === "free" && <AskUpgrade onPress={() => router.push("/plan")} />}
+              {asking && experience === "free" && !bare && <AskUpgrade onPress={() => router.push("/plan")} />}
               <ChatBar
                 notice={creditNotice && creditNotice.words !== hiddenNotice && !limitShown ? { ...creditNotice, onClose: () => setHiddenNotice(creditNotice.words) } : undefined}
                 value={draft}

@@ -4,7 +4,8 @@ import { addDays } from "@/lib/member"
    54, stage 07 "Catalog and ordering"): everything Inlay can order for a
    patient, priced. Nine categories drawn from the vetted partner
    directory, each naming the national partner behind it and the price it
-   starts at; every category opens one item, with what it does, what it
+   starts at; a category opens its one item, or, for Laboratory, the list
+   of its panels to pick several and order them in one draw. An item has what it does, what it
    cannot tell you, who writes the order, and one button that orders and
    pays; a test or scan then goes straight to a time.
 
@@ -30,7 +31,7 @@ export type Category = {
 
 /** Screen 52's nine categories, in the client's order. */
 export const CATEGORIES: readonly Category[] = [
-  { id: "lab", title: "Laboratory", meta: "42 panels · Quest, Labcorp, Boston Heart", price: 89, hue: "teal", item: "blood-panel" },
+  { id: "lab", title: "Laboratory", meta: "12 panels · Quest, Labcorp, Boston Heart", price: 39, hue: "teal", item: "blood-panel" },
   { id: "body", title: "Body composition & metabolism", meta: "DEXA, RMR, VO₂ max · Fitnescity", price: 129, hue: "red", item: "dexa" },
   { id: "imaging", title: "Imaging", meta: "MRI, CT, whole-body · SimonMed, RAYUS", price: 699, hue: "teal", item: "whole-body-mri" },
   { id: "cancer", title: "Cancer screening", meta: "Galleri, Shield, hereditary · GRAIL, Guardant", price: 249, hue: "red", item: "multi-cancer" },
@@ -95,6 +96,248 @@ export const ITEMS: readonly Item[] = [
     fulfil: "visit",
     site: "Quest Diagnostics",
     visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "Fasting, if needed, is on your physician's order." },
+  },
+  {
+    id: "lipid-advanced",
+    category: "lab",
+    name: "Advanced lipid panel",
+    tag: "Laboratory",
+    intro: "Boston Heart. LDL particles, ApoB and Lp(a) in one draw.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 129,
+    when: { label: "Results", value: "2–4 days" },
+    does: [
+      "Counts **ApoB, LDL particles and Lp(a)**, which say more about heart risk than LDL alone.",
+      "The result lands in your longitudinal record and is read beside everything else.",
+    ],
+    cannot: [
+      "**It is not a diagnosis.** Your physician reads it with your history.",
+      "**Lp(a) is mostly inherited.** One result is usually enough for life.",
+    ],
+    inlay: "sends the order to Quest, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "Quest has the order before you arrive." },
+  },
+  {
+    id: "a1c",
+    category: "lab",
+    name: "HbA1c and fasting insulin",
+    tag: "Laboratory",
+    intro: "Quest Diagnostics. Your average blood sugar over three months.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 49,
+    when: { label: "Results", value: "1–2 days" },
+    does: [
+      "Shows your **average blood sugar over three months** and how hard insulin is working.",
+      "The result lands in your longitudinal record and is read beside everything else.",
+    ],
+    cannot: [
+      "**It is not a diagnosis.** Your physician reads it with your history.",
+      "**It does not show daily swings.** A glucose monitor does that.",
+    ],
+    inlay: "sends the order to Quest, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "Fasting for eight hours." },
+  },
+  {
+    id: "thyroid",
+    category: "lab",
+    name: "Thyroid panel",
+    tag: "Laboratory",
+    intro: "Quest Diagnostics. TSH, free T4, free T3 and antibodies.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 79,
+    when: { label: "Results", value: "1–3 days" },
+    does: [
+      "Checks **how your thyroid is working** and whether antibodies are present.",
+      "The result lands in your longitudinal record and is read beside everything else.",
+    ],
+    cannot: [
+      "**It is not a diagnosis.** Your physician reads it with your history.",
+      "**Results move with illness and some supplements.** Biotin can skew it.",
+    ],
+    inlay: "sends the order to Quest, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "Quest has the order before you arrive." },
+  },
+  {
+    id: "vitamin-d",
+    category: "lab",
+    name: "Vitamin D",
+    tag: "Laboratory",
+    intro: "Quest Diagnostics. One marker, one draw.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 39,
+    when: { label: "Results", value: "1–2 days" },
+    does: [
+      "Measures your **vitamin D level**, which affects bone, muscle and mood.",
+      "The result lands in your longitudinal record and is read beside everything else.",
+    ],
+    cannot: [
+      "**It is not a diagnosis.** Your physician reads it with your history.",
+      "**It changes with the seasons.** Compare readings from the same time of year.",
+    ],
+    inlay: "sends the order to Quest, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "Quest has the order before you arrive." },
+  },
+  {
+    id: "hormones",
+    category: "lab",
+    name: "Hormone panel",
+    tag: "Laboratory",
+    intro: "Labcorp. Testosterone, estradiol, SHBG, DHEA-S and cortisol.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 149,
+    when: { label: "Results", value: "2–4 days" },
+    does: [
+      "Measures the **sex and stress hormones** behind energy, sleep and body composition.",
+      "The result lands in your longitudinal record and is read beside everything else.",
+    ],
+    cannot: [
+      "**It is not a diagnosis.** Your physician reads it with your history.",
+      "**Levels change through the day.** A morning draw is best.",
+    ],
+    inlay: "sends the order to Quest, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "A morning draw, before 10 am." },
+  },
+  {
+    id: "inflammation",
+    category: "lab",
+    name: "Inflammation panel",
+    tag: "Laboratory",
+    intro: "Quest Diagnostics. hs-CRP and homocysteine.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 59,
+    when: { label: "Results", value: "1–3 days" },
+    does: [
+      "Measures **low grade inflammation** linked to heart and metabolic health.",
+      "The result lands in your longitudinal record and is read beside everything else.",
+    ],
+    cannot: [
+      "**It is not a diagnosis.** Your physician reads it with your history.",
+      "**A cold or a hard workout can raise it** for a few days.",
+    ],
+    inlay: "sends the order to Quest, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "Quest has the order before you arrive." },
+  },
+  {
+    id: "iron",
+    category: "lab",
+    name: "Iron and ferritin",
+    tag: "Laboratory",
+    intro: "Quest Diagnostics. Iron, ferritin, TIBC and saturation.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 45,
+    when: { label: "Results", value: "1–2 days" },
+    does: [
+      "Shows whether your **iron stores** are low, normal or high.",
+      "The result lands in your longitudinal record and is read beside everything else.",
+    ],
+    cannot: [
+      "**It is not a diagnosis.** Your physician reads it with your history.",
+      "**Ferritin rises with inflammation**, so it can look normal when stores are low.",
+    ],
+    inlay: "sends the order to Quest, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "Quest has the order before you arrive." },
+  },
+  {
+    id: "kidney",
+    category: "lab",
+    name: "Kidney function",
+    tag: "Laboratory",
+    intro: "Labcorp. Cystatin C, creatinine and urine albumin.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 69,
+    when: { label: "Results", value: "1–3 days" },
+    does: [
+      "Measures **how well your kidneys filter**, with a marker that muscle mass does not skew.",
+      "The result lands in your longitudinal record and is read beside everything else.",
+    ],
+    cannot: [
+      "**It is not a diagnosis.** Your physician reads it with your history.",
+      "**One reading is a snapshot.** Kidney function is judged over months.",
+    ],
+    inlay: "sends the order to Quest, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "Quest has the order before you arrive." },
+  },
+  {
+    id: "liver",
+    category: "lab",
+    name: "Liver panel",
+    tag: "Laboratory",
+    intro: "Quest Diagnostics. ALT, AST, GGT, bilirubin and albumin.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 39,
+    when: { label: "Results", value: "1–2 days" },
+    does: [
+      "Checks **liver enzymes and function**, which alcohol, weight and medicines can move.",
+      "The result lands in your longitudinal record and is read beside everything else.",
+    ],
+    cannot: [
+      "**It is not a diagnosis.** Your physician reads it with your history.",
+      "**It does not show liver fat directly.** An ultrasound does that.",
+    ],
+    inlay: "sends the order to Quest, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "Quest has the order before you arrive." },
+  },
+  {
+    id: "omega-3",
+    category: "lab",
+    name: "Omega-3 index",
+    tag: "Laboratory",
+    intro: "Boston Heart. The share of omega-3 in your red cells.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 89,
+    when: { label: "Results", value: "1–2 wks" },
+    does: [
+      "Shows how much **omega-3** your diet actually delivers.",
+      "The result lands in your longitudinal record and is read beside everything else.",
+    ],
+    cannot: [
+      "**It is not a diagnosis.** Your physician reads it with your history.",
+      "**It reflects the last few months**, not what you ate this week.",
+    ],
+    inlay: "sends the order to Quest, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "Quest has the order before you arrive." },
+  },
+  {
+    id: "micronutrients",
+    category: "lab",
+    name: "Micronutrient panel",
+    tag: "Laboratory",
+    intro: "Labcorp. B12, folate, magnesium and zinc.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 99,
+    when: { label: "Results", value: "2–4 days" },
+    does: [
+      "Checks the **vitamins and minerals** most often low in adults.",
+      "The result lands in your longitudinal record and is read beside everything else.",
+    ],
+    cannot: [
+      "**It is not a diagnosis.** Your physician reads it with your history.",
+      "**Blood levels do not always match what is in your tissues.**",
+    ],
+    inlay: "sends the order to Quest, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes.", bring: "Quest has the order before you arrive." },
   },
   {
     id: "dexa",
@@ -271,6 +514,10 @@ export const ITEMS: readonly Item[] = [
 
 export const item = (id: string) => ITEMS.find((i) => i.id === id)
 
+/** Every item in a category, in catalog order. A category with more than
+    one (Laboratory) opens as a list to pick from. */
+export const itemsIn = (category: string) => ITEMS.filter((i) => i.category === category)
+
 /** "$854" */
 export const money = (n: number) => `$${n.toLocaleString("en-US")}`
 
@@ -282,8 +529,7 @@ export const categoryOf = (it: Item) => CATEGORIES.find((c) => c.id === it.categ
 export function matches(c: Category, query: string) {
   const q = query.trim().toLowerCase()
   if (!q) return true
-  const it = item(c.item)
-  return [c.title, c.meta, it?.name, it?.intro].some((s) => s?.toLowerCase().includes(q))
+  return [c.title, c.meta, ...itemsIn(c.id).flatMap((it) => [it.name, it.intro])].some((s) => s?.toLowerCase().includes(q))
 }
 
 /* ------------------------------------------------------------- booking -- */

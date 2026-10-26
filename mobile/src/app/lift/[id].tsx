@@ -1,20 +1,24 @@
-import { router, useLocalSearchParams } from "expo-router"
+import { useLocalSearchParams } from "expo-router"
 import { useVideoPlayer } from "expo-video"
 import * as React from "react"
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
+import { ChoiceRow, SheetRows } from "@/components/care-orders-rows"
+import { ProgressChart } from "@/components/charts"
 import { PageNotFoundState } from "@/components/error-state"
 import { ExerciseVideoModal } from "@/components/exercise-video"
 import { PrimaryButton } from "@/components/hol"
 import { Play } from "@/components/ph"
-import { Sheet } from "@/components/sheet"
-import { Block, Tag } from "@/components/record-kit"
-import { SetTable } from "@/components/set-table"
+import { Readout, entryDay } from "@/components/progress-parts"
+import { Block, Tag, TextAction, toast } from "@/components/record-kit"
+import { SetTable, type SetEntry } from "@/components/set-table"
+import { Sheet, useKeyboardHeight } from "@/components/sheet"
 import { amount, saveLog } from "@/components/today-exercise-parts"
 import { TopicPage } from "@/components/topic-kit"
 import { localDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
+import { EFFORT, loadShort, resistanceOf, sessionsOf, setsText, targetOf, type SetLog } from "@/lib/strength"
 import { LIFTS, liftOf, type Lift } from "@/lib/topics"
 import { card, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
@@ -22,9 +26,12 @@ import { card, color, font, hairline, ink, space, surface, type } from "@/lib/th
    in today's session. The video is the artefact; the three stills are the
    glanceable version for someone already standing at the rack, frames
    taken from the video itself, with the one cue that matters under each. Then three cues in plain language and the two
-   mistakes that actually happen. It opens mid-set without losing her place:
-   Session goes back to the lift list, Start set 1 to logging the sets.
-   Every lift on every plan carries one. */
+   mistakes that actually happen. Every lift on every plan carries one.
+
+   Logging is optional: the footer's Log your sets opens her sets in a
+   sheet, reps and weight per set, and once saved asks how many more reps
+   her last set had left; next week's target steps on from it (lib/strength.ts).
+   View progress under it opens the load she has lifted, week by week. */
 
 const CLIP = require("../../../assets/videos/exercise-demo.mp4")
 const RATIO = 16 / 9
@@ -40,35 +47,42 @@ export default function LiftScreen() {
 }
 
 function LiftBody({ lift }: { lift: Lift }) {
+  const s = useOnboarding()
   const [watching, setWatching] = React.useState(false)
-  const [logging, setLogging] = React.useState(false)
-  const at = LIFTS.findIndex((l) => l.id === lift.id) + 1
-  const store = useOnboarding()
+  // The log sheet, then once saved the question about her last set.
+  const [open, setOpen] = React.useState<"log" | "progress">()
+  const [asking, setAsking] = React.useState(false)
+  const keyboard = useKeyboardHeight()
   const day = localDay()
-  const log = store.exercises?.[day]?.[lift.id]
-  // The sets she has saved, else one row per planned set. Each carries the plan's
-  // load ready to confirm; she types the reps she did.
-  const [rows, setRows] = React.useState<{ reps: string; weight: string }[]>(() => {
-    const saved = log?.entries?.map((e) => ({ reps: e.reps !== undefined ? String(e.reps) : "", weight: e.weightLb !== undefined ? String(e.weightLb) : "" }))
-    if (saved?.length) return saved
-    return Array.from({ length: parseInt(lift.sets, 10) || 3 }, () => ({ reps: "", weight: String(lift.load) }))
-  })
-  // Only the sets she has filled in are saved; the plan's reps show as the hint.
-  const filled = rows.filter((r) => amount(r.reps) !== undefined && amount(r.weight) !== undefined)
-  const target = lift.sets.split("×")[1]?.trim()
-  const edit = (i: number, part: Partial<{ reps: string; weight: string }>) => setRows((list) => list.map((r, j) => (j === i ? { ...r, ...part } : r)))
-  // The next lift still to do, in the day's order; none once the rest are in.
-  const pending = LIFTS.filter((l) => l.id !== lift.id && !store.exercises?.[day]?.[l.id])
-  const next = pending.find((l) => LIFTS.indexOf(l) > at - 1) ?? pending[0]
+  const target = targetOf(s, lift)
+  const saved = s.exercises?.[day]?.[lift.id]?.entries ?? []
+  // Her rows as she types: what she saved today, else this week's target.
+  const [rows, setRows] = React.useState<SetEntry[]>(() =>
+    Array.from({ length: target.sets }, (_, i) => ({
+      reps: String(saved[i]?.reps ?? target.reps),
+      weight: String(saved[i]?.weightLb ?? target.load),
+    })),
+  )
+  const ready = rows.every((r) => amount(r.reps) !== undefined && amount(r.weight) !== undefined)
+  const edit = (i: number, part: Partial<SetEntry>) => setRows((was) => was.map((r, j) => (j === i ? { ...r, ...part } : r)))
 
-  /* Saving writes her sets under this lift, so it reads as done in the
-     session, and carries her on to the next one in place of this page. */
-  async function save() {
-    const list = filled.map((r) => ({ reps: amount(r.reps)!, weightLb: amount(r.weight)! }))
-    await saveLog(store, day, lift.id, { at: new Date().toISOString(), sets: list.length, reps: list[0].reps, weightLb: list[0].weightLb, entries: list })
-    if (next) router.replace({ pathname: "/lift/[id]", params: { id: next.id } })
-    else router.back()
+  /** Writes the day's sets, the last one carrying how it felt. */
+  function write(rir?: number) {
+    const entries: SetLog[] = rows.map((r, i) => ({ reps: amount(r.reps), weightLb: amount(r.weight), rir: i === rows.length - 1 ? rir : undefined }))
+    return saveLog(s, day, lift.id, { at: new Date().toISOString(), sets: entries.length, reps: entries[0].reps, weightLb: entries[0].weightLb, entries })
   }
+  async function save() {
+    await write(saved[rows.length - 1]?.rir)
+    setOpen(undefined)
+    setAsking(true)
+  }
+  async function felt(rir: number | undefined) {
+    setAsking(false)
+    if (rir !== undefined) await write(rir)
+    toast(`${lift.name} logged`)
+  }
+
+  const at = LIFTS.findIndex((l) => l.id === lift.id) + 1
   const player = useVideoPlayer(CLIP, (p) => {
     p.loop = true
   })
@@ -76,25 +90,29 @@ function LiftBody({ lift }: { lift: Lift }) {
   return (
     <TopicPage
       title={lift.name}
-      footer={<PrimaryButton onPress={() => setLogging(true)}>{log ? "Edit your sets" : "Log your sets"}</PrimaryButton>}
+      footer={
+        <View style={styles.footer}>
+          <PrimaryButton onPress={() => setOpen("log")}>{saved.some((e) => e.reps !== undefined) ? "Edit your sets" : "Log your sets"}</PrimaryButton>
+          <View style={styles.tertiary}>
+            <TextAction onPress={() => setOpen("progress")}>View progress</TextAction>
+          </View>
+        </View>
+      }
       sheet={
-        <>
+        (asking && <EffortSheet onPick={felt} />) ||
+        (open === "log" && (
+          <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
+            <Sheet title="Log your sets" onClose={() => setOpen(undefined)}>
+              <SetTable rows={rows} onEdit={edit} target={String(target.reps)} />
+              <PrimaryButton onPress={save} disabled={!ready}>
+                Save your sets
+              </PrimaryButton>
+            </Sheet>
+          </View>
+        )) ||
+        (open === "progress" && <ProgressSheet lift={lift} onClose={() => setOpen(undefined)} />) || (
           <ExerciseVideoModal visible={watching} player={player} title={lift.name} ratio={RATIO} onClose={() => setWatching(false)} />
-          {logging && (
-            // The sheet rises with the keyboard while she types her reps.
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={StyleSheet.absoluteFill} pointerEvents="box-none">
-              <Sheet title="Your sets" onClose={() => setLogging(false)}>
-                <Text style={type.meta}>{`${lift.name}, ${lift.sets} at ${lift.load} lb`}</Text>
-                <ScrollView style={styles.setsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                  <SetTable rows={rows} onEdit={edit} target={target} />
-                </ScrollView>
-                <PrimaryButton onPress={save} disabled={!filled.length}>
-                  {filled.length ? `Save ${filled.length} ${filled.length === 1 ? "set" : "sets"}` : "Save"}
-                </PrimaryButton>
-              </Sheet>
-            </KeyboardAvoidingView>
-          )}
-        </>
+        )
       }
     >
       <View style={styles.head}>
@@ -102,8 +120,8 @@ function LiftBody({ lift }: { lift: Lift }) {
           <Tag tone="primary">{`Lift ${at} of ${LIFTS.length}`}</Tag>
         </View>
         <Text style={type.body}>
-          {`${lift.sets} at `}
-          <Text style={styles.load}>{`${lift.load} lb`}</Text>
+          {`${setsText(target)} at `}
+          <Text style={styles.load}>{loadShort(lift, target.load)}</Text>
         </Text>
       </View>
 
@@ -163,13 +181,54 @@ function LiftBody({ lift }: { lift: Lift }) {
               </View>
               <Text style={[type.body, styles.fill]}>
                 <Text style={styles.mistakeName}>{m.name}</Text>
-                {` — ${m.fix}`}
+                {`: ${m.fix}`}
               </Text>
             </View>
           ))}
         </View>
       </Block>
     </TopicPage>
+  )
+}
+
+/** After saving: how close to failure her last set was. One tap answers and closes;
+    Skip saves the sets with no answer. */
+function EffortSheet({ onPick }: { onPick: (rir: number | undefined) => void }) {
+  return (
+    <Sheet title="Last set: to failure?" onClose={() => onPick(undefined)}>
+      <Text style={type.body}>How many more reps could you have done?</Text>
+      <View accessibilityRole="radiogroup">
+        <SheetRows>
+          {EFFORT.map((e) => (
+            <ChoiceRow key={e.rir} title={e.label} selected={false} onPress={() => onPick(e.rir)} />
+          ))}
+        </SheetRows>
+      </View>
+      <View style={styles.skip}>
+        <TextAction tone="muted" onPress={() => onPick(undefined)}>
+          Skip
+        </TextAction>
+      </View>
+    </Sheet>
+  )
+}
+
+/** The heaviest load of every session, oldest first. */
+function ProgressSheet({ lift, onClose }: { lift: Lift; onClose: () => void }) {
+  const s = useOnboarding()
+  const points = resistanceOf(sessionsOf(s, lift))
+  const latest = points[points.length - 1]
+  const first = points[0]
+  const up = latest ? latest.value - first.value : 0
+  return (
+    <Sheet title={`${lift.name} progress`} onClose={onClose}>
+      {latest && (
+        <>
+          <Readout value={String(latest.value)} unit="lb" label={up > 0 ? `Up ${up} lb since ${entryDay(String(first.date))}` : `Since ${entryDay(String(first.date))}`} />
+          <ProgressChart readings={points} trend={points} name={`${lift.name.toLowerCase()} load`} readingsLabel="Sessions" unit="lb" caption={null} playKey={`lift:${lift.id}`} />
+        </>
+      )}
+    </Sheet>
   )
 }
 
@@ -189,7 +248,6 @@ function bold(text: string) {
 const styles = StyleSheet.create({
   fill: { flex: 1, minWidth: 0 },
   pressed: { opacity: 0.7 },
-  setsScroll: { maxHeight: 360 },
   // The chip sits left and the sets and weight right, on one line.
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.inline },
   chip: { alignSelf: "center" },
@@ -223,6 +281,12 @@ const styles = StyleSheet.create({
   bold: { fontFamily: font.semibold, color: ink.strong },
 
   mistakeName: { fontFamily: font.semibold, color: ink.strong },
+
+  skip: { alignItems: "center" },
+
+  footer: { gap: space.inline },
+  tertiary: { alignItems: "center" },
+  sheetFrame: { position: "absolute", top: 0, left: 0, right: 0 },
 
 })
 

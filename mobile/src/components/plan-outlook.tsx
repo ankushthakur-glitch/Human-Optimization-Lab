@@ -77,7 +77,7 @@ export function Outlook() {
         </View>
       </View>
 
-      <Block title="What the projection assumes" meta="From your own data">
+      <Block title="What the projection assumes">
         <Group>
           <KeyValue label={`Lost in ${days} days`} value={lb(target.lost)} />
           <KeyValue label="Your pace, 8 week average" value={`${formatNumber(target.pace, 1)} lb a week`} />

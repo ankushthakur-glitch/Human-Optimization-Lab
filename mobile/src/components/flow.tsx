@@ -335,6 +335,16 @@ export function Card({
   )
 }
 
+/** The checkbox's box alone, for a row that draws its own words (a test
+    on /baseline): teal and ticked when checked. */
+export function CheckMark({ checked, centered }: { checked: boolean; /** In a row centred on its words, not on the first line. */ centered?: boolean }) {
+  return (
+    <View style={[styles.box, checked && styles.boxOn, centered && styles.boxCentered]}>
+      {checked && <Check size={12} color={color.onPrimary} weight="bold" />}
+    </View>
+  )
+}
+
 export function Checkbox({
   checked,
   onChange,
@@ -353,9 +363,7 @@ export function Checkbox({
       style={styles.checkRow}
       hitSlop={6}
     >
-      <View style={[styles.box, checked && styles.boxOn]}>
-        {checked && <Check size={12} color={color.onPrimary} weight="bold" />}
-      </View>
+      <CheckMark checked={checked} />
       <Text style={styles.checkText}>{children}</Text>
     </Pressable>
   )
@@ -546,6 +554,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   boxOn: { backgroundColor: color.primary, borderColor: color.primary },
+  boxCentered: { marginTop: 0, width: 20, height: 20, borderRadius: 5 },
   checkText: { flex: 1, fontFamily: font.regular, fontSize: 14, lineHeight: 22, color: ink.content },
 
   chip: {

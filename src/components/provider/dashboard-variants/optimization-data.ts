@@ -209,7 +209,7 @@ export function useOptimization() {
   const plans = carePlans.use()
   return React.useMemo(() => {
     const real = new Map(
-      plans.items.map((c) => [c.id, { status: c.status, names: c.versions[c.versions.length - 1]?.plans.map((x) => x.name) ?? [] }])
+      plans.items.map((c) => [c.id, { status: c.status, names: [] }])
     )
     /* The practice's whole panel, as the provider's Patients list shows it
        (the 16 Oct call asked for a practice level view); the provider's own

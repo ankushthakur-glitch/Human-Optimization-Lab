@@ -35,8 +35,10 @@ import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 export default function CatalogBookScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const { id, more } = useLocalSearchParams<{ id: string; more?: string }>()
   const it = id ? findItem(id) : undefined
+  // Several lab panels ordered together share one draw.
+  const extra = (more ? more.split(",") : []).map(findItem).filter((x): x is NonNullable<typeof x> => !!x)
   const [siteId, setSiteId] = React.useState(SITES[0].id)
   const [day, setDay] = React.useState(0)
   const [time, setTime] = React.useState<string | undefined>(() => firstOpen(0))
@@ -49,6 +51,9 @@ export default function CatalogBookScreen() {
   const when = time ? atSlot(days[day], time) : undefined
   const where = `${it.site} — ${site.town}, ${site.address}`
   const { noun, about, bring } = it.visit
+  const all = [it, ...extra]
+  const total = all.reduce((sum, i) => sum + i.member, 0)
+  const named = all.length > 1 ? `${all.length} tests` : it.name
   const title = `Book your ${noun}`
 
   const pickSite = (s: Site) => {
@@ -75,11 +80,11 @@ export default function CatalogBookScreen() {
           <Art name="calendar" size={60} />
           <View style={styles.doneWords}>
             <Text style={styles.doneTitle} accessibilityRole="header">{`Booked for ${dayLabel(when)}, ${slotWords(time!)}`}</Text>
-            <Text style={styles.doneMeta}>{`${where}. Paid ${money(it.member)}. Dr. Patel will see the result when it's done.`}</Text>
+            <Text style={styles.doneMeta}>{`${where}. Paid ${money(total)}. Dr. Patel will see the result when it's done.`}</Text>
           </View>
         </View>
         <View style={styles.pair}>
-          <IconAction grow icon={<CalendarBlank size={14} color={ink.primary} />} onPress={() => addToCalendar({ title: it.name, start: when, where })}>
+          <IconAction grow icon={<CalendarBlank size={14} color={ink.primary} />} onPress={() => addToCalendar({ title: named, start: when, where })}>
             Add to calendar
           </IconAction>
           <IconAction grow icon={<MapPin size={14} color={ink.primary} />} onPress={() => directions(where)}>
@@ -99,9 +104,9 @@ export default function CatalogBookScreen() {
         </PrimaryButton>
       }
     >
-      <Text style={styles.intro}>{`${it.name}, paid. ${about}`}</Text>
+      <Text style={styles.intro}>{`${all.length > 1 ? all.map((i) => i.name).join(", ") : it.name}, paid ${money(total)}. ${about}`}</Text>
 
-      <Block title="Where" meta="nearest three">
+      <Block title="Where">
         <View accessibilityRole="radiogroup">
           <Group>
             {SITES.map((s) => (

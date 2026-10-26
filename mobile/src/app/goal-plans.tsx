@@ -1,104 +1,56 @@
 import { router } from "expo-router"
-import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { goalOf, GOALS } from "@/components/goal-list"
-import { usePlanList, usePlanMatches } from "@/components/plan-match"
+import { STEP_ICON, usePlanMatches } from "@/components/plan-match"
 import { PlanStepPage } from "@/components/plan-steps"
-import { Barbell, Bone, Drop, Heart, Heartbeat, Lightning, Moon, Plus, Scales, Sparkle } from "@/components/ph"
-import { Card, HUE, Heading, Tile, type Hue } from "@/components/record-kit"
-import { useOnboarding } from "@/lib/onboarding"
-import { SHORT_NAME, planHue, type PlanKind } from "@/lib/plan-match"
+import { Bone, Drop, Flame, Heart, Lightning, Moon, Scales } from "@/components/ph"
+import { Card, HUE, Heading, Tag, Tile, type Hue } from "@/components/record-kit"
+import { ADDS, SHORT_NAME, planHue, type PlanKind, type SixStep } from "@/lib/plan-match"
 import { color, ink, space, type } from "@/lib/theme"
 
-/* After the goals (step 1 of the plan's set-up): the plans her record
-   points to, then what her goals added on top. Record plans come first and
-   say so; a goal a record plan already covers adds nothing; every other
-   goal adds its own plan, with the test that sets its starting point when
-   one does. Up to five in all. "Want a different plan?" opens all 81 by
-   area, where she adds any other plan; each one she adds joins the list
-   as "Added", and a tap in the list takes it off again. Continue opens step 2, the tests her record is missing (/baseline). */
+/* Step 1 of the plan's set-up (since 26 Oct 2026 there is no plan to
+   pick): the six steps every plan has, each with what it asks of her,
+   then what her record adds to them and what she told us adds. Every
+   addition says which step it sits in. A step that has an addition says
+   how many. Continue opens step 2, the tests her numbers call for
+   (/baseline). */
 
 type Icon = typeof Heart
-type Row = { key: string; name: string; says: string; Icon: Icon; hue: Hue; from: "record" | "goal" | "life" | "added" }
+type Row = { key: string; name: string; says: string; Icon: Icon; hue: Hue; step: SixStep }
 
-/** What her answers to the life questions add: a plan of its own, with the
-    line she said. */
-const LIFE_PLANS: { name: string; Icon: Icon; says: string }[] = [
-  {
-    name: "Sleep restoration",
-    Icon: Moon,
-    says: "You said you wake at three and cannot get back off",
-  },
-  {
-    name: "SMART stress & resiliency",
-    Icon: Lightning,
-    says: "You said you are snapping at everyone",
-  },
+/** The six steps, each with what it starts with. */
+const STEPS: { step: SixStep; says: string; Icon: Icon; hue: Hue }[] = [
+  { step: "Exercise", says: "3 strength days and 8,000 steps", Icon: STEP_ICON.Exercise, hue: "teal" },
+  { step: "Eat", says: "Protein at every meal, fiber 30 g", Icon: STEP_ICON.Eat, hue: "green" },
+  { step: "Sleep", says: "7 hours, the same bedtime", Icon: STEP_ICON.Sleep, hue: "blue" },
+  { step: "Mind", says: "Rate stress, coping and distress each day", Icon: STEP_ICON.Mind, hue: "violet" },
+  { step: "Medication", says: "Your medicines, and supplement checks", Icon: STEP_ICON.Medication, hue: "amber" },
+  { step: "Measure", says: "Weigh in every morning", Icon: STEP_ICON.Measure, hue: "red" },
 ]
 
-/** The most plans one set-up starts with. */
-const MAX = 5
+/** What her answers to the life questions add, with the line she said. */
+const LIFE: Row[] = [
+  { key: "life-sleep", name: "Back to sleep after waking", says: "You said you wake at three and cannot get back off", Icon: Moon, hue: "violet", step: "Sleep" },
+  { key: "life-mind", name: "SMART stress program", says: "You said you are snapping at everyone", Icon: Lightning, hue: "violet", step: "Mind" },
+]
 
-const RECORD_ICON: Record<PlanKind, Icon> = { metabolic: Scales, insulin: Drop, lipid: Heart, bone: Bone, other: Sparkle }
-
-/** The plan each listed goal adds: a record plan's kind, or a plan of its own. */
-const GOAL_PLAN: Record<string, { kind?: PlanKind; name: string; Icon: Icon; test?: string }> = {
-  "Lose weight or reduce body fat": { kind: "metabolic", name: "Metabolic health", Icon: Scales },
-  "Improve metabolic health": { kind: "metabolic", name: "Metabolic health", Icon: Scales },
-  "Improve cholesterol and heart health": { kind: "lipid", name: "Lipid control", Icon: Heart },
-  "Gain or preserve muscle": { name: "Muscle strength", Icon: Barbell, test: "A body composition scan" },
-  "Improve bone health": { kind: "bone", name: "Bone strength", Icon: Bone, test: "A bone density scan" },
-  "Improve sleep": { name: "Better sleep", Icon: Moon, test: "A sleep study" },
-  "Increase energy": { name: "More energy", Icon: Lightning },
-  "Improve fitness and VO₂ max": { name: "Fitness and VO₂ max", Icon: Heartbeat, test: "A VO₂ max test" },
-  "Improve kidney health": { name: "Kidney health", Icon: Drop },
-}
-
-const COUNT = ["none", "one", "two", "three", "four", "five"]
+const RECORD_ICON: Record<PlanKind, Icon> = { metabolic: Scales, insulin: Drop, lipid: Heart, bone: Bone, other: Flame }
 
 export default function GoalPlansScreen() {
-  const onboarding = useOnboarding()
   const { matches } = usePlanMatches()
-  const [added, setAdded] = React.useState<string[]>(() => onboarding.addedPlans ?? [])
 
-  const rows: Row[] = matches.map((m) => ({ key: `record-${m.kind}-${m.markerId}`, name: m.name, says: m.matchedOn.replace(/^Matched on /, ""), Icon: RECORD_ICON[m.kind], hue: planHue(SHORT_NAME[m.kind]), from: "record" }))
-  const covered = new Set<string>(matches.map((m) => SHORT_NAME[m.kind]))
-  for (const goal of onboarding.goals ?? []) {
-    const plan = GOAL_PLAN[goal]
-    const listed = GOALS.some((g) => g.label === goal)
-    const name = plan?.name ?? goal
-    if (covered.has(name)) continue
-    covered.add(name)
-    const says = plan?.test ? `From your goals. ${plan.test} is suggested to set your starting point.` : listed ? "From your goals" : "From your goals. Your physician builds it into your plan."
-    rows.push({ key: `goal-${goal}`, name, says, Icon: plan?.Icon ?? goalOf(goal).icon, hue: plan ? planHue(name) : goalOf(goal).hue, from: "goal" })
-  }
-  for (const p of LIFE_PLANS) {
-    if (covered.has(p.name)) continue
-    covered.add(p.name)
-    rows.push({ key: `life-${p.name}`, name: p.name, says: p.says, Icon: p.Icon, hue: planHue(p.name), from: "life" })
-  }
-  const picked = rows.slice(0, MAX)
-  const pickedNames = picked.map((r) => r.name)
-  const shown = [
-    ...picked,
-    ...added.filter((name) => !pickedNames.includes(name)).map((name): Row => ({ key: `added-${name}`, name, says: "Added by you", Icon: Plus, hue: planHue(name), from: "added" })),
-  ]
-  const fromGoals = picked.filter((r) => r.from === "goal").length
-
-  function toggle(name: string) {
-    const next = added.includes(name) ? added.filter((n) => n !== name) : [...added, name]
-    setAdded(next)
-    onboarding.save({ addedPlans: next.length ? next : undefined }).catch(() => {})
-  }
-  const list = usePlanList({ chosen: pickedNames, added, toggle })
-
-  const fromRecord = shown.filter((r) => r.from === "record")
-  const fromYou = shown.filter((r) => r.from !== "record")
-  const total = shown.length
+  const fromRecord: Row[] = matches.map((m) => ({
+    key: `record-${m.kind}-${m.markerId}`,
+    name: ADDS[m.kind].target,
+    says: m.matchedOn.replace(/^Matched on /, ""),
+    Icon: RECORD_ICON[m.kind],
+    hue: planHue(SHORT_NAME[m.kind]),
+    step: ADDS[m.kind].step,
+  }))
+  const added = (step: SixStep) => [...fromRecord, ...LIFE].filter((r) => r.step === step).length
 
   const renderRow = (r: Row) => (
-    <Card key={r.key} style={styles.rowCard} accessibilityLabel={`${r.name}. ${r.says}`}>
+    <Card key={r.key} style={styles.rowCard} accessibilityLabel={`${r.name}, in ${r.step}. ${r.says}`}>
       <View style={styles.rowTop}>
         <Tile hue={r.hue} size={36}>
           <r.Icon size={20} color={HUE[r.hue].ink} />
@@ -107,6 +59,7 @@ export default function GoalPlansScreen() {
           <Text style={styles.name}>{r.name}</Text>
           <Text style={styles.says}>{r.says}</Text>
         </View>
+        <Tag tone="muted">{r.step}</Tag>
       </View>
     </Card>
   )
@@ -114,34 +67,48 @@ export default function GoalPlansScreen() {
   return (
     <PlanStepPage
       step={1}
-      title={`Your plan would work on ${COUNT[total] ?? total} ${total === 1 ? "thing" : "things"}`}
-      lead="What we would work on, from your record and what you told us."
+      title="Your plan works on six steps"
       nextLabel="Next"
       nextOneLine
       onNext={() => router.push("/baseline")}
-      overlay={list.sheet}
     >
+      <View style={styles.section}>
+        <Heading title="Every plan" action={<Text style={[styles.count, { color: color.primaryText }]}>6 steps</Text>} />
+        {STEPS.map((s) => {
+          const n = added(s.step)
+          return (
+            <Card key={s.step} style={styles.rowCard} accessibilityLabel={`${s.step}. ${s.says}${n ? `. ${n} added for you` : ""}`}>
+              <View style={styles.rowTop}>
+                <Tile hue={s.hue} size={36}>
+                  <s.Icon size={20} color={HUE[s.hue].ink} />
+                </Tile>
+                <View style={styles.words}>
+                  <Text style={styles.name}>{s.step}</Text>
+                  <Text style={styles.says}>{s.says}</Text>
+                </View>
+                {n > 0 && <Tag tone="primary">{`+${n} for you`}</Tag>}
+              </View>
+            </Card>
+          )
+        })}
+      </View>
       {fromRecord.length > 0 && (
         <View style={styles.section}>
           <Heading title="From your record" action={<Text style={[styles.count, { color: color.high }]}>{`${fromRecord.length} biomarker ${fromRecord.length === 1 ? "match" : "matches"}`}</Text>} />
           {fromRecord.map(renderRow)}
         </View>
       )}
-      {fromYou.length > 0 && (
-        <View style={styles.section}>
-          <Heading title="From what you told us" action={<Text style={[styles.count, { color: color.ok }]}>{`${fromYou.length} the record missed`}</Text>} />
-          {fromYou.map(renderRow)}
-        </View>
-      )}
+      <View style={styles.section}>
+        <Heading title="From what you told us" action={<Text style={[styles.count, { color: color.ok }]}>{`${LIFE.length} the record missed`}</Text>} />
+        {LIFE.map(renderRow)}
+      </View>
     </PlanStepPage>
   )
 }
 
-
 const styles = StyleSheet.create({
   section: { gap: space.inline },
   count: { ...type.label },
-  row: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.item, paddingHorizontal: space.rowX },
   rowCard: { gap: space.inline, paddingVertical: space.item, paddingHorizontal: space.rowX },
   rowTop: { flexDirection: "row", alignItems: "center", gap: space.lead },
   words: { flex: 1, gap: 2 },

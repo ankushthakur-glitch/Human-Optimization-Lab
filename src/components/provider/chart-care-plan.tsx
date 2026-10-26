@@ -12,7 +12,6 @@ import {
   IconThumbsDown,
   IconThumbsUp,
   IconTrash,
-  IconUser,
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
@@ -70,14 +69,6 @@ import {
   DropdownMenuTrigger,
 } from "@/design-system/ui/dropdown-menu"
 import { Input } from "@/design-system/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/design-system/ui/select"
 import { toast } from "@/design-system/ui/sonner"
 import {
   Table,
@@ -88,17 +79,19 @@ import {
   TableRow,
 } from "@/design-system/ui/table"
 import { Textarea } from "@/design-system/ui/textarea"
+import { ToggleGroup, ToggleGroupItem } from "@/design-system/ui/toggle-group"
 
-/* The care plan's review loop (15 Oct call). AI checks the patient's record
-   against Dr. Blanchard's plans and proposes up to five optimization plans;
-   the patient can add their own. Each plan carries its Why: the biomarkers
-   that led to it with their trend, or "Patient selected". Then the tests each
-   plan needs that the record doesn't have yet, the proposed baseline. The
-   physician reads it here, approves or deselects each test, edits what needs
-   editing and approves, which sends it to the patient. The patient accepts it
-   or asks for changes, and the physician revises. Every version is kept.
-   Built to be read in about a minute: Why on the left, what to do on the
-   right, tests ticked by default. */
+/* The care plan's two physician steps (23 Oct call). First the baseline:
+   when the patient enrols, AI suggests the tests her record is missing,
+   each with the number behind it and a check of whether insurance is
+   likely to cover it. The physician sends each one through insurance or
+   Inlay, or removes it, and sends one message. Then, once the results are
+   in, the plan: the same six steps for everyone (Exercise, Eat, Sleep,
+   Mind, Medication, Measure), with the items AI added from the record
+   marked and the biomarker behind each. The physician edits what needs
+   editing and approves, which sends it to the patient. The patient accepts
+   it or asks for changes, and the physician revises. Every version is
+   kept. Built to be read in about a minute. */
 
 /* -------------------------------------------------------------- model -- */
 
@@ -113,56 +106,35 @@ export type Evidence = {
   range: string
 }
 
-const AREAS = [
-  "Nutrition",
+/** Every plan has these six steps, in this order. */
+const STEPS = [
   "Exercise",
+  "Eat",
   "Sleep",
+  "Mind",
   "Medication",
-  "Supplements",
-  "Tests",
+  "Measure",
 ] as const
-type Area = (typeof AREAS)[number]
+type Step = (typeof STEPS)[number]
 
 export type PlanAction = {
   id: string
-  area: Area
+  /** "Strength", "Lipids": what the item is about. */
+  label: string
   text: string
   often: string
+  /** Set when the item is more than the step's own: AI added it from the
+      record, or the physician added it. */
+  source?: "AI" | "Physician"
+  /** The biomarker behind an AI item. */
+  evidence?: Evidence
+  /** How the biomarker moved, in words: "up 34 since Apr 2022". */
+  trend?: string
 }
 
-export type OptimizationPlan = {
-  id: string
-  name: string
-  /** AI matched it from the record; the patient or the physician added
-      it. Only AI plans carry evidence. */
-  source: "AI" | "Patient" | "Physician"
-  evidence: Evidence[]
-  /** The patient's own words, for a plan they added. */
-  note?: string
+export type PlanStep = {
+  id: Step
   actions: PlanAction[]
-}
-
-/** Plans the physician can add, from Dr. Blanchard's list (sample). */
-const PLAN_CATALOG = [
-  "Weight loss",
-  "Muscle building",
-  "Bone health",
-  "Diabetes and A1C",
-  "Heart health",
-  "Kidney health",
-  "Metabolic health",
-  "Healthy aging",
-  "Better sleep",
-  "Maintenance",
-] as const
-
-export type BaselineTest = {
-  id: string
-  name: string
-  /** Plan ids that need it. */
-  for: string[]
-  why: string
-  approved: boolean
 }
 
 type PlanVersion = {
@@ -170,8 +142,7 @@ type PlanVersion = {
   by: string
   role: "Patient" | "Provider"
   at: string
-  plans: OptimizationPlan[]
-  tests: BaselineTest[]
+  steps: PlanStep[]
 }
 
 type PlanEvent = {
@@ -189,12 +160,50 @@ type PlanEvent = {
 type PlanStatus =
   "Pending review" | "Changes requested" | "Sent to patient" | "Accepted"
 
+type Route = "Insurance" | "Inlay" | "Remove"
+const ROUTES: Route[] = ["Insurance", "Inlay", "Remove"]
+
+export type BaselineTest = {
+  id: string
+  name: string
+  /** "Blood tests", "Sleep": the kind of test. */
+  kind: string
+  /** The out of range numbers that led to it, shown in colour. */
+  markers: { name: string; value: string }[]
+  /** The rest of the Why, or all of it when no number led to it. */
+  note?: string
+  /** AI's read of the patient's plan and history. */
+  coverage: "Likely" | "Maybe" | "No"
+  coverageText: string
+  price: number
+  route: Route
+  /** The physician added it; AI didn't suggest it. */
+  added?: boolean
+}
+
+type Baseline = {
+  status: "Tests to sort" | "Tests sorted"
+  /** When the patient enrolled and asked for the review. */
+  at: string
+  insurance: string
+  /** True when the patient paid for the tests up front: what goes through
+      insurance or is removed is refunded. False: she pays Inlay after the
+      review for what's left. */
+  paid: boolean
+  tests: BaselineTest[]
+  /** What the physician sent with the sorted tests. */
+  message?: string
+  sortedAt?: string
+  sortedBy?: string
+}
+
 type CarePlan = {
   /** The patient's id. */
   id: string
   status: PlanStatus
   versions: PlanVersion[]
   events: PlanEvent[]
+  baseline?: Baseline
 }
 
 function shift(days: number, time: string) {
@@ -205,122 +214,201 @@ function shift(days: number, time: string) {
 
 /* --------------------------------------------------------------- seed -- */
 
-const OLIVIA_PLANS: OptimizationPlan[] = [
+const OLIVIA_STEPS: PlanStep[] = [
   {
-    id: "OP-1",
-    name: "Diabetes and A1C",
-    source: "AI",
-    evidence: [
-      { name: "HbA1c", unit: "%", values: [5.5, 5.6, 5.8, 5.9], high: 5.6, range: "Under 5.7" },
-      { name: "Fasting glucose", unit: "mg/dL", values: [96, 99, 104, 108], low: 70, high: 99, range: "70-99" },
-    ],
+    id: "Exercise",
     actions: [
-      { id: "A-1", area: "Nutrition", text: "Keep added sugar under 25 g a day", often: "Daily" },
-      { id: "A-2", area: "Exercise", text: "Brisk walk after dinner, 20 minutes", often: "5 days a week" },
-      { id: "A-3", area: "Tests", text: "Repeat HbA1c", often: "In 12 weeks" },
+      { id: "A-1", label: "Strength", text: "Full body, bands and light weights", often: "3 days a week" },
+      { id: "A-2", label: "Steps", text: "8,000 a day, from the watch", often: "Daily" },
+      { id: "A-3", label: "Walk", text: "Brisk walk after dinner, 20 minutes", often: "5 days a week" },
     ],
   },
   {
-    id: "OP-2",
-    name: "Heart health",
-    source: "AI",
-    evidence: [
-      { name: "LDL-C", unit: "mg/dL", values: [112, 118, 126, 132], high: 99, range: "Under 100" },
-      { name: "Blood pressure", unit: "mmHg", values: [126, 129, 131, 134], high: 129, range: "Under 130/80" },
-    ],
+    id: "Eat",
     actions: [
-      { id: "A-1", area: "Medication", text: "Atorvastatin 10 mg at bedtime, as prescribed", often: "Daily" },
-      { id: "A-2", area: "Nutrition", text: "Fibre 30 g a day, oats or beans at breakfast", often: "Daily" },
-      { id: "A-3", area: "Tests", text: "Repeat lipid panel", often: "In 12 weeks" },
+      { id: "A-1", label: "Calories", text: "1,650 a day, from RMR 1,310 kcal", often: "Daily" },
+      { id: "A-2", label: "Protein", text: "Protein at every meal, 90 g a day", often: "Daily" },
+      {
+        id: "A-3",
+        label: "Lipids",
+        text: "Saturated fat under 13 g, fiber 30 g",
+        often: "Daily",
+        source: "AI",
+        evidence: { name: "LDL", unit: "mg/dL", values: [128, 141, 150, 162], high: 99, range: "Under 100" },
+        trend: "up 34 since Apr 2022",
+      },
+      {
+        id: "A-4",
+        label: "Alcohol",
+        text: "7 drinks a week, no more than 3 at once",
+        often: "Weekly",
+        source: "AI",
+        evidence: { name: "Triglycerides", unit: "mg/dL", values: [150, 166, 174, 188], high: 149, range: "Under 150" },
+      },
     ],
   },
   {
-    id: "OP-3",
-    name: "Weight loss",
-    source: "AI",
-    evidence: [
-      { name: "Weight", unit: "kg", values: [74, 75.5, 77, 78], high: 72, range: "Goal 72" },
-      { name: "BMI", unit: "", values: [26.4, 27.0, 27.5, 27.9], low: 18.5, high: 24.9, range: "18.5-24.9" },
-    ],
+    id: "Sleep",
     actions: [
-      { id: "A-1", area: "Nutrition", text: "Protein at every meal, 90 g a day", often: "Daily" },
-      { id: "A-2", area: "Exercise", text: "Strength training, full body", often: "2 days a week" },
+      { id: "A-1", label: "Duration", text: "7 hours, bedtime within 30 minutes", often: "Daily" },
+      { id: "A-2", label: "Wind down", text: "No screens 30 minutes before bed", often: "Daily" },
     ],
   },
   {
-    id: "OP-4",
-    name: "Better sleep",
-    source: "Patient",
-    evidence: [],
-    note: "I wake up tired most days and want to sleep through the night.",
+    id: "Mind",
     actions: [
-      { id: "A-1", area: "Sleep", text: "In bed by 10:30 PM, 7 to 8 hours", often: "Daily" },
-      { id: "A-2", area: "Sleep", text: "No screens 30 minutes before bed", often: "Daily" },
+      { id: "A-1", label: "Check in", text: "Rate stress, coping and distress", often: "Daily" },
+    ],
+  },
+  {
+    id: "Medication",
+    actions: [
+      { id: "A-1", label: "Current", text: "Atorvastatin 10 mg at bedtime, as prescribed", often: "Daily" },
+    ],
+  },
+  {
+    id: "Measure",
+    actions: [
+      { id: "A-1", label: "Weight", text: "Weigh in every 2 days", often: "Every 2 days" },
+      {
+        id: "A-2",
+        label: "Waist",
+        text: "Tape at the navel, with the guide",
+        often: "Every 2 weeks",
+        source: "AI",
+        evidence: { name: "BMI", unit: "", values: [30.2, 30.9, 31.6, 32.4], low: 18.5, high: 24.9, range: "18.5-24.9" },
+        trend: "up 2.2",
+      },
+      { id: "A-3", label: "Retest", text: "Repeat lipid panel and HbA1c", often: "In 12 weeks" },
     ],
   },
 ]
 
+/* Prices match the patient app's baseline screen. */
 const OLIVIA_TESTS: BaselineTest[] = [
-  { id: "T-1", name: "Fasting insulin", for: ["OP-1"], why: "Not on record, shows insulin resistance", approved: true },
-  { id: "T-2", name: "ApoB", for: ["OP-2"], why: "Not on record, sharper risk than LDL-C", approved: true },
-  { id: "T-3", name: "hs-CRP", for: ["OP-2"], why: "Not on record", approved: true },
-  { id: "T-4", name: "DEXA scan", for: ["OP-3"], why: "No body composition on record", approved: true },
-  { id: "T-5", name: "RMR test", for: ["OP-3"], why: "Sets the daily calorie target", approved: true },
+  {
+    id: "T-1",
+    name: "Comprehensive Blood Panel",
+    kind: "Blood tests",
+    markers: [
+      { name: "LDL", value: "162" },
+      { name: "triglycerides", value: "188" },
+    ],
+    coverage: "Likely",
+    coverageText: "Likely covered, last panel 14 months ago",
+    price: 189,
+    route: "Insurance",
+  },
+  {
+    id: "T-2",
+    name: "DEXA Body Composition",
+    kind: "Body and metabolism",
+    markers: [{ name: "BMI", value: "32.4" }],
+    note: "separates fat from lean mass",
+    coverage: "No",
+    coverageText: "Not covered",
+    price: 149,
+    route: "Inlay",
+  },
+  {
+    id: "T-3",
+    name: "Resting Metabolic Rate (RMR)",
+    kind: "Body and metabolism",
+    markers: [],
+    note: "No metabolic rate on file",
+    coverage: "No",
+    coverageText: "Not covered",
+    price: 129,
+    route: "Inlay",
+  },
+  {
+    id: "T-4",
+    name: "Home Sleep Study",
+    kind: "Sleep",
+    markers: [],
+    note: "Wakes at three most nights",
+    coverage: "Maybe",
+    coverageText: "May be covered with a referral",
+    price: 299,
+    route: "Inlay",
+  },
 ]
 
-const MARCUS_V1: OptimizationPlan[] = [
+/** Tests the physician can add to a baseline (sample). */
+const TEST_CATALOG: Omit<BaselineTest, "id">[] = [
+  { name: "HbA1c", kind: "Blood tests", markers: [], note: "Added by you", added: true, coverage: "Likely", coverageText: "Likely covered, prediabetes on file", price: 45, route: "Insurance" },
+  { name: "Fasting insulin", kind: "Blood tests", markers: [], note: "Added by you", added: true, coverage: "Maybe", coverageText: "May be covered with a referral", price: 39, route: "Inlay" },
+  { name: "ApoB", kind: "Blood tests", markers: [], note: "Added by you", added: true, coverage: "No", coverageText: "Not covered", price: 59, route: "Inlay" },
+  { name: "hs-CRP", kind: "Blood tests", markers: [], note: "Added by you", added: true, coverage: "Maybe", coverageText: "May be covered with a referral", price: 35, route: "Inlay" },
+  { name: "VO2 max", kind: "Body and metabolism", markers: [], note: "Added by you", added: true, coverage: "No", coverageText: "Not covered", price: 199, route: "Inlay" },
+]
+
+const MARCUS_V1: PlanStep[] = [
   {
-    id: "OP-1",
-    name: "Muscle building",
-    source: "AI",
-    evidence: [
-      { name: "Lean mass", unit: "kg", values: [59.6, 59.1, 58.4, 58], low: 61, range: "Goal 61" },
-    ],
+    id: "Exercise",
     actions: [
-      { id: "A-1", area: "Exercise", text: "Strength training, full body", often: "4 days a week" },
-      { id: "A-2", area: "Nutrition", text: "Protein 1.6 g per kg a day, about 130 g", often: "Daily" },
-      { id: "A-3", area: "Supplements", text: "Creatine 5 g", often: "Daily" },
+      { id: "A-1", label: "Strength", text: "Strength training, full body", often: "4 days a week" },
+      { id: "A-2", label: "Steps", text: "7,000 a day, from the watch", often: "Daily" },
     ],
   },
   {
-    id: "OP-2",
-    name: "Bone health",
-    source: "AI",
-    evidence: [
-      { name: "T-score, spine", unit: "", values: [-0.8, -1.0, -1.2], low: -1, range: "Above -1.0" },
-      { name: "Vitamin D", unit: "ng/mL", values: [34, 29, 24], low: 30, high: 100, range: "30-100" },
-    ],
+    id: "Eat",
     actions: [
-      { id: "A-1", area: "Supplements", text: "Vitamin D3 2,000 IU with calcium 600 mg", often: "Daily" },
-      { id: "A-2", area: "Tests", text: "Repeat DEXA scan", often: "In 6 months" },
+      {
+        id: "A-1",
+        label: "Protein",
+        text: "Protein 1.6 g per kg a day, about 130 g",
+        often: "Daily",
+        source: "AI",
+        evidence: { name: "Lean mass", unit: "kg", values: [59.6, 59.1, 58.4, 58], low: 61, range: "Goal 61" },
+        trend: "down 1.6 in a year",
+      },
     ],
   },
   {
-    id: "OP-3",
-    name: "Better sleep",
-    source: "Patient",
-    evidence: [],
-    note: "My CPAP use is low and I want to fix that.",
+    id: "Sleep",
     actions: [
-      { id: "A-1", area: "Sleep", text: "Wear CPAP all night", often: "Nightly" },
+      { id: "A-1", label: "CPAP", text: "Wear CPAP all night", often: "Nightly" },
+    ],
+  },
+  {
+    id: "Mind",
+    actions: [
+      { id: "A-1", label: "Check in", text: "Rate stress, coping and distress", often: "Daily" },
+    ],
+  },
+  {
+    id: "Medication",
+    actions: [
+      {
+        id: "A-1",
+        label: "Supplements",
+        text: "Vitamin D3 2,000 IU with calcium 600 mg",
+        often: "Daily",
+        source: "AI",
+        evidence: { name: "Vitamin D", unit: "ng/mL", values: [34, 29, 24], low: 30, high: 100, range: "30-100" },
+        trend: "down 10 in 6 months",
+      },
+    ],
+  },
+  {
+    id: "Measure",
+    actions: [
+      { id: "A-1", label: "Weight", text: "Weigh in", often: "Weekly" },
+      { id: "A-2", label: "Retest", text: "Repeat DEXA scan", often: "In 6 months" },
     ],
   },
 ]
-const MARCUS_V2: OptimizationPlan[] = MARCUS_V1.map((p) =>
-  p.id === "OP-1"
+const MARCUS_V2: PlanStep[] = MARCUS_V1.map((s) =>
+  s.id === "Exercise"
     ? {
-        ...p,
-        actions: p.actions.map((a) =>
+        ...s,
+        actions: s.actions.map((a) =>
           a.id === "A-1" ? { ...a, often: "3 days a week" } : a
         ),
       }
-    : p
+    : s
 )
-const MARCUS_TESTS: BaselineTest[] = [
-  { id: "T-1", name: "DEXA scan", for: ["OP-1", "OP-2"], why: "Last on record Mar 2025", approved: true },
-  { id: "T-2", name: "Total testosterone", for: ["OP-1"], why: "Not on record", approved: true },
-  { id: "T-3", name: "Sleep study", for: ["OP-3"], why: "Last on record 2022", approved: false },
-]
 
 function seed(): CarePlan[] {
   return [
@@ -333,8 +421,7 @@ function seed(): CarePlan[] {
           by: "Olivia Bennett",
           role: "Patient",
           at: shift(-1, "08:42"),
-          plans: OLIVIA_PLANS,
-          tests: OLIVIA_TESTS,
+          steps: OLIVIA_STEPS,
         },
       ],
       events: [
@@ -347,6 +434,13 @@ function seed(): CarePlan[] {
           version: 1,
         },
       ],
+      baseline: {
+        status: "Tests to sort",
+        at: shift(0, "08:42"),
+        insurance: "Aetna PPO · active",
+        paid: true,
+        tests: OLIVIA_TESTS,
+      },
     },
     {
       id: "P10318",
@@ -357,16 +451,14 @@ function seed(): CarePlan[] {
           by: "Marcus Hale",
           role: "Patient",
           at: shift(-6, "19:05"),
-          plans: MARCUS_V1,
-          tests: MARCUS_TESTS.map((t) => ({ ...t, approved: true })),
+          steps: MARCUS_V1,
         },
         {
           version: 2,
           by: ME,
           role: "Provider",
           at: shift(-4, "15:20"),
-          plans: MARCUS_V2,
-          tests: MARCUS_TESTS,
+          steps: MARCUS_V2,
         },
       ],
       events: [
@@ -403,7 +495,7 @@ function seed(): CarePlan[] {
 export const carePlans = createCollection<CarePlan>(
   "hol-care-plans",
   seed(),
-  "v2"
+  "v3"
 )
 
 const isOpen = (s: PlanStatus) =>
@@ -418,6 +510,15 @@ export function useCarePlansToReview() {
     .sort((a, b) => b.event.at.localeCompare(a.event.at))
 }
 
+/** Baselines waiting for the physician to sort, newest first. */
+export function useBaselinesToSort() {
+  const { items } = carePlans.use()
+  return items
+    .filter((p) => p.baseline?.status === "Tests to sort")
+    .map((p) => ({ patientId: p.id, at: p.baseline!.at }))
+    .sort((a, b) => b.at.localeCompare(a.at))
+}
+
 const STATUS_TONE: Record<
   PlanStatus,
   "warning" | "destructive" | "info" | "success"
@@ -428,18 +529,25 @@ const STATUS_TONE: Record<
   Accepted: "success",
 }
 
+const usd = (n: number) => `$${n.toLocaleString("en-US")}`
+
+const countOf = (steps: PlanStep[]) => {
+  const all = steps.flatMap((s) => s.actions)
+  return { items: all.length, ai: all.filter((a) => a.source === "AI").length }
+}
+
 /* ---------------------------------------------------------- feedback -- */
 
-/* The physician's verdict on a plan the AI suggested: right, or wrong and
-   why. Kept per patient and plan so the clinical team can tune the rules
-   and the AI; one verdict per plan, the latest wins. */
+/* The physician's verdict on a step as AI built it: right, or wrong and
+   why. Kept per patient and step so the clinical team can tune the rules
+   and the AI; one verdict per step, the latest wins. */
 
 const FEEDBACK_REASONS = [
   "Not supported by the record",
   "Not right for this patient",
   "Unsafe or contraindicated",
   "Plan items not right",
-  "Duplicate of another plan",
+  "Duplicate of another item",
   "Other",
 ] as const
 type FeedbackReason = (typeof FEEDBACK_REASONS)[number]
@@ -448,6 +556,7 @@ export type AiFeedback = {
   /** `${patientId}/${planId}` */
   id: string
   patientId: string
+  /** The step: "Eat". */
   planId: string
   planName: string
   rating: "Right" | "Wrong"
@@ -475,81 +584,67 @@ function saveFeedback(next: Omit<AiFeedback, "id" | "by" | "at">) {
 /** What one version changed from the one before, in plain lines. */
 function changesBetween(before: PlanVersion, after: PlanVersion) {
   const lines: string[] = []
-  for (const p of after.plans) {
-    const old = before.plans.find((x) => x.id === p.id)
-    if (!old) {
-      lines.push(`Added plan: ${p.name}`)
-      continue
-    }
-    for (const a of p.actions) {
-      const was = old.actions.find((x) => x.id === a.id)
-      if (!was) lines.push(`${p.name}, added: ${a.text}, ${a.often.toLowerCase()}`)
+  for (const s of after.steps) {
+    const old = before.steps.find((x) => x.id === s.id)?.actions ?? []
+    for (const a of s.actions) {
+      const was = old.find((x) => x.id === a.id)
+      if (!was) lines.push(`${s.id}, added: ${a.text}, ${a.often.toLowerCase()}`)
       else {
         if (was.text !== a.text)
-          lines.push(`${p.name}, changed: ${was.text} to ${a.text}`)
+          lines.push(`${s.id}, changed: ${was.text} to ${a.text}`)
         if (was.often !== a.often)
           lines.push(
             `${a.text}: ${was.often.toLowerCase()} to ${a.often.toLowerCase()}`
           )
       }
     }
-    for (const a of old.actions)
-      if (!p.actions.some((x) => x.id === a.id))
-        lines.push(`${p.name}, removed: ${a.text}`)
-  }
-  for (const p of before.plans)
-    if (!after.plans.some((x) => x.id === p.id))
-      lines.push(`Removed plan: ${p.name}`)
-  for (const t of after.tests) {
-    const old = before.tests.find((x) => x.id === t.id)
-    if (old && old.approved !== t.approved)
-      lines.push(`${t.name}: ${t.approved ? "approved" : "deselected"}`)
+    for (const a of old)
+      if (!s.actions.some((x) => x.id === a.id))
+        lines.push(`${s.id}, removed: ${a.text}`)
   }
   return lines
 }
 
-/** Ids of plans, items and tests that differ between two versions. */
+/** Ids of items that differ between two versions. */
 function changedIds(
-  before: Pick<PlanVersion, "plans" | "tests"> | undefined,
-  after: Pick<PlanVersion, "plans" | "tests">
+  before: Pick<PlanVersion, "steps"> | undefined,
+  after: Pick<PlanVersion, "steps">
 ) {
   const ids = new Set<string>()
   if (!before) return ids
-  for (const p of after.plans) {
-    const old = before.plans.find((x) => x.id === p.id)
-    if (!old) ids.add(p.id)
-    for (const a of p.actions)
+  for (const s of after.steps) {
+    const old = before.steps.find((x) => x.id === s.id)
+    for (const a of s.actions)
       if (
         JSON.stringify(a) !==
         JSON.stringify(old?.actions.find((x) => x.id === a.id))
       )
-        ids.add(`${p.id}/${a.id}`)
+        ids.add(`${s.id}/${a.id}`)
   }
-  for (const t of after.tests)
-    if (before.tests.find((x) => x.id === t.id)?.approved !== t.approved)
-      ids.add(t.id)
   return ids
 }
 
 /* -------------------------------------------------------------- view -- */
 
-type Draft = { plans: OptimizationPlan[]; tests: BaselineTest[] }
+export type CarePlanTab = "baseline" | "plan" | "history"
 
 export function CarePlanView({
   patient,
-  tab,
+  tab: asked,
   onTab,
 }: {
   patient: Patient
-  tab: "plan" | "history"
-  onTab: (tab: "plan" | "history") => void
+  /** Unset: the baseline while its tests wait to be sorted, else the plan. */
+  tab?: CarePlanTab
+  onTab: (tab: CarePlanTab) => void
 }) {
   const { items } = carePlans.use()
   const plan = items.find((p) => p.id === patient.id)
   /* Plan edits, only while Edit plan is on. */
-  const [draft, setDraft] = React.useState<Draft | null>(null)
-  /* Test picks: the physician approves or deselects without Edit plan. */
-  const [picks, setPicks] = React.useState<Record<string, boolean>>({})
+  const [draft, setDraft] = React.useState<PlanStep[] | null>(null)
+  /* The physician's own words for the baseline message; unset, the
+     message follows the choices. */
+  const [message, setMessage] = React.useState<string | null>(null)
 
   if (!plan)
     return (
@@ -560,8 +655,8 @@ export function CarePlanView({
             <EmptyHeader>
               <EmptyTitle>No care plan yet</EmptyTitle>
               <EmptyDescription>
-                When {patient.firstName} picks optimization plans in the app
-                and sends them for review, they show here.
+                When {patient.firstName} enrolls in optimization, the
+                baseline tests and plan show here.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -569,6 +664,11 @@ export function CarePlanView({
       </Section>
     )
 
+  const baseline = plan.baseline
+  const tab: CarePlanTab =
+    asked === "baseline" && !baseline
+      ? "plan"
+      : (asked ?? (baseline?.status === "Tests to sort" ? "baseline" : "plan"))
   const latest = plan.versions[plan.versions.length - 1]
   const lastEvent = plan.events[plan.events.length - 1]
   const lastApproval = [...plan.events]
@@ -576,43 +676,27 @@ export function CarePlanView({
     .find((e) => e.kind === "Approved and sent")
   const editing = draft !== null
   const open = isOpen(plan.status)
-  const plans = (draft ?? latest).plans
-  const tests = latest.tests.map((t) =>
-    t.id in picks ? { ...t, approved: picks[t.id] } : t
-  )
-  const edited = changedIds(latest, { plans, tests })
+  const steps = draft ?? latest.steps
+  const edited = changedIds(latest, { steps })
 
-  /* Adding a plan opens Edit plan with the new card ready for its items. */
-  const addPlan = (name: string) => {
-    const base = draft ?? { plans: latest.plans, tests: latest.tests }
+  /* A step flagged as wrong can lose what AI added to it at once: Edit
+     plan opens without those items, so the physician still approves. */
+  const dropAi = (id: string) => {
+    const base = draft ?? latest.steps
     onTab("plan")
-    setDraft({
-      ...base,
-      plans: [
-        ...base.plans,
-        {
-          id: nextId("OP", base.plans),
-          name,
-          source: "Physician",
-          evidence: [],
-          actions: [{ id: "A-1", area: "Nutrition", text: "", often: "Daily" }],
-        },
-      ],
-    })
-  }
-
-  /* A plan flagged as wrong can be dropped at once: Edit plan opens
-     without it, so the physician still approves the change. */
-  const dropPlan = (id: string) => {
-    const base = draft ?? { plans: latest.plans, tests: latest.tests }
-    onTab("plan")
-    setDraft({ ...base, plans: base.plans.filter((p) => p.id !== id) })
+    setDraft(
+      base.map((s) =>
+        s.id === id
+          ? { ...s, actions: s.actions.filter((a) => a.source !== "AI") }
+          : s
+      )
+    )
   }
 
   const approve = () => {
-    const kept = plans.map((p) => ({
-      ...p,
-      actions: p.actions.filter((a) => a.text.trim()),
+    const kept = steps.map((s) => ({
+      ...s,
+      actions: s.actions.filter((a) => a.text.trim()),
     }))
     const at = nowAt()
     const version = latest.version + 1
@@ -620,7 +704,7 @@ export function CarePlanView({
       status: "Sent to patient",
       versions: [
         ...plan.versions,
-        { version, by: ME, role: "Provider", at, plans: kept, tests },
+        { version, by: ME, role: "Provider", at, steps: kept },
       ],
       events: [
         ...plan.events,
@@ -643,55 +727,98 @@ export function CarePlanView({
       )
         setTaskStatus(t.id, "Completed")
     setDraft(null)
-    setPicks({})
-    const n = tests.filter((t) => t.approved).length
+    const n = countOf(kept).items
     toast.success("Care plan approved", {
-      description: `Version ${version} sent to ${patient.firstName} with ${n} baseline ${n === 1 ? "test" : "tests"}.`,
+      description: `Version ${version} sent to ${patient.firstName} with ${n} ${n === 1 ? "item" : "items"}.`,
     })
   }
 
-  const actions = editing ? (
-    <>
-      <Button variant="outline" size="sm" onClick={() => setDraft(null)}>
-        Cancel
-      </Button>
-      <Button size="sm" onClick={approve}>
-        <IconSend />
-        Approve and send
-      </Button>
-    </>
-  ) : (
-    <>
-      <Badge
-        variant={STATUS_TONE[plan.status]}
-        className="h-6 rounded-full px-2.5 text-[13px] font-normal"
-      >
-        {plan.status}
-      </Badge>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          onTab("plan")
-          setDraft({ plans: latest.plans, tests: latest.tests })
-        }}
-      >
-        <IconEdit />
-        {open ? "Edit plan" : "Revise plan"}
-      </Button>
-      {open && (
+  const setBaseline = (patch: Partial<Baseline>) =>
+    baseline && carePlans.patch(plan.id, { baseline: { ...baseline, ...patch } })
+  const composed = baseline ? composeMessage(patient, baseline.tests) : ""
+
+  const sortTests = () => {
+    if (!baseline) return
+    setBaseline({
+      status: "Tests sorted",
+      message: (message ?? composed).trim() || composed,
+      sortedAt: nowAt(),
+      sortedBy: ME,
+    })
+    setMessage(null)
+    const n = baseline.tests.filter((t) => t.route !== "Remove").length
+    toast.success("Baseline tests sent", {
+      description: `${n} ${n === 1 ? "test" : "tests"} and your message sent to ${patient.firstName}.`,
+    })
+  }
+
+  const pill = "h-6 rounded-full px-2.5 text-[13px] font-normal"
+  const actions =
+    tab === "baseline" && baseline ? (
+      <>
+        <Badge
+          variant={baseline.status === "Tests to sort" ? "warning" : "success"}
+          className={pill}
+        >
+          {baseline.status}
+        </Badge>
+        {baseline.status === "Tests to sort" && (
+          <>
+            <AddTest
+              tests={baseline.tests}
+              onAdd={(t) =>
+                setBaseline({
+                  tests: [...baseline.tests, { ...t, id: nextId("T", baseline.tests) }],
+                })
+              }
+            />
+            <Button size="sm" onClick={sortTests}>
+              <IconCheck />
+              Send to patient
+            </Button>
+          </>
+        )}
+      </>
+    ) : editing ? (
+      <>
+        <Button variant="outline" size="sm" onClick={() => setDraft(null)}>
+          Cancel
+        </Button>
         <Button size="sm" onClick={approve}>
-          <IconCheck />
+          <IconSend />
           Approve and send
         </Button>
-      )}
-    </>
-  )
+      </>
+    ) : (
+      <>
+        <Badge variant={STATUS_TONE[plan.status]} className={pill}>
+          {plan.status}
+        </Badge>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            onTab("plan")
+            setDraft(latest.steps)
+          }}
+        >
+          <IconEdit />
+          {open ? "Edit plan" : "Revise plan"}
+        </Button>
+        {open && (
+          <Button size="sm" onClick={approve}>
+            <IconCheck />
+            Approve and send
+          </Button>
+        )}
+      </>
+    )
 
   return (
     <Section>
       <SectionBar
         tabs={[
+          ...(baseline ? [{ id: "baseline", label: "Baseline tests" }] : []),
           {
             id: "plan",
             label: `Plan (version ${editing ? latest.version + 1 : latest.version})`,
@@ -699,11 +826,25 @@ export function CarePlanView({
           { id: "history", label: `History (${plan.events.length})` },
         ]}
         value={tab}
-        onTab={(t) => onTab(t as "plan" | "history")}
+        onTab={(t) => onTab(t as CarePlanTab)}
         actions={actions}
       />
       <SectionBody className="flex flex-col gap-3 *:shrink-0">
-        {tab === "history" ? (
+        {tab === "baseline" && baseline ? (
+          <BaselineView
+            patient={patient}
+            baseline={baseline}
+            message={baseline.message ?? message ?? composed}
+            onMessage={setMessage}
+            onRoute={(id, route) =>
+              setBaseline({
+                tests: baseline.tests.map((t) =>
+                  t.id === id ? { ...t, route } : t
+                ),
+              })
+            }
+          />
+        ) : tab === "history" ? (
           <History plan={plan} />
         ) : (
           <>
@@ -719,28 +860,15 @@ export function CarePlanView({
                 lastApproval={lastApproval}
               />
             )}
-            <PlansBlock
-              plans={plans}
+            <StepsBlock
+              steps={steps}
               editing={editing}
               edited={edited}
-              onChange={(next) => draft && setDraft({ ...draft, plans: next })}
-              onAdd={open || editing ? addPlan : undefined}
+              onChange={(next) => draft && setDraft(next)}
               feedback={{
                 patientId: patient.id,
-                onDrop: open || editing ? dropPlan : undefined,
+                onDrop: open || editing ? dropAi : undefined,
               }}
-            />
-            <BaselineCard
-              tests={tests}
-              plans={plans}
-              decidable={open || editing}
-              edited={edited}
-              onPick={(id, approved) => setPicks({ ...picks, [id]: approved })}
-              onPickAll={(approved) =>
-                setPicks(
-                  Object.fromEntries(tests.map((t) => [t.id, approved]))
-                )
-              }
             />
           </>
         )}
@@ -778,13 +906,7 @@ function StatusNote({
           ? `${name} accepted the plan`
           : `Sent to ${patient.firstName}, waiting for a reply`
   return (
-    <div className={cn("rounded-lg px-4 py-3", tone)}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <div className="text-sm font-semibold">{title}</div>
-        <div className="text-xs text-muted-foreground tabular-nums">
-          {atLabel(lastEvent.at)}
-        </div>
-      </div>
+    <Banner tone={tone} title={title} at={lastEvent.at}>
       {lastEvent.kind === "Changes requested" && lastEvent.note && (
         <p className="mt-1.5 text-sm text-foreground/85">
           &ldquo;{lastEvent.note}&rdquo;
@@ -806,6 +928,31 @@ function StatusNote({
           </span>
         </div>
       )}
+    </Banner>
+  )
+}
+
+/* The tinted line at the top of a view: what happened, and when. */
+function Banner({
+  tone,
+  title,
+  at,
+  children,
+}: {
+  tone: string
+  title: string
+  at: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div className={cn("rounded-lg px-4 py-3", tone)}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <div className="text-sm font-semibold">{title}</div>
+        <div className="text-xs text-muted-foreground tabular-nums">
+          {atLabel(at)}
+        </div>
+      </div>
+      {children}
     </div>
   )
 }
@@ -818,69 +965,43 @@ function ChangedTag({ label = "Changed" }: { label?: string }) {
   )
 }
 
-/* ------------------------------------------------------------- plans -- */
+/* ------------------------------------------------------------- steps -- */
 
-function PlansBlock({
-  plans,
+function StepsBlock({
+  steps,
   editing,
   edited,
   onChange,
-  onAdd,
   feedback,
 }: {
-  plans: OptimizationPlan[]
+  steps: PlanStep[]
   editing: boolean
   edited: Set<string>
-  onChange: (plans: OptimizationPlan[]) => void
-  /** Set while the plan can still change. */
-  onAdd?: (name: string) => void
-  /** Set on the live plan, not on saved versions: AI plans get a verdict. */
+  onChange: (steps: PlanStep[]) => void
+  /** Set on the live plan, not on saved versions: each step gets a verdict. */
   feedback?: FeedbackTarget
 }) {
-  const items = plans.reduce((n, p) => n + p.actions.length, 0)
-  const left = PLAN_CATALOG.filter(
-    (name) => !plans.some((p) => p.name === name)
+  const { items, ai } = countOf(steps)
+  const ordered = STEPS.map(
+    (id) => steps.find((s) => s.id === id) ?? { id, actions: [] }
   )
   return (
     <section className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-3 px-1">
-        <h3 className="flex items-baseline gap-2 text-[15px] font-semibold">
-          Optimization plans
-          <span className="text-[13px] font-normal text-muted-foreground tabular-nums">
-            {plans.length} plans · {items} items
-          </span>
-        </h3>
-        {onAdd && left.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button variant="outline" size="sm" />}
-            >
-              <IconAdd />
-              Add plan
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Optimization plans</DropdownMenuLabel>
-                {left.map((name) => (
-                  <DropdownMenuItem key={name} onClick={() => onAdd(name)}>
-                    {name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
-      {plans.map((p) => (
-        <PlanCard
-          key={p.id}
-          plan={p}
+      <h3 className="flex items-baseline gap-2 px-1 text-[15px] font-semibold">
+        Optimization plan
+        <span className="text-[13px] font-normal text-muted-foreground tabular-nums">
+          {STEPS.length} steps · {items} items · {ai} from the record
+        </span>
+      </h3>
+      {ordered.map((s) => (
+        <StepCard
+          key={s.id}
+          step={s}
           editing={editing}
           edited={edited}
           onChange={(next) =>
-            onChange(plans.map((x) => (x.id === p.id ? next : x)))
+            onChange(ordered.map((x) => (x.id === s.id ? next : x)))
           }
-          onRemove={() => onChange(plans.filter((x) => x.id !== p.id))}
           feedback={feedback}
         />
       ))}
@@ -888,52 +1009,42 @@ function PlansBlock({
   )
 }
 
-/* One plan: what the patient will do, with its Why one hover away. */
-function PlanCard({
-  plan,
+/* One step: what the patient will do, with its Why one hover away. */
+function StepCard({
+  step,
   editing,
   edited,
   onChange,
-  onRemove,
   feedback,
 }: {
-  plan: OptimizationPlan
+  step: PlanStep
   editing: boolean
   edited: Set<string>
-  onChange: (plan: OptimizationPlan) => void
-  onRemove: () => void
+  onChange: (step: PlanStep) => void
   feedback?: FeedbackTarget
 }) {
   return (
     <article className="overflow-hidden rounded-lg border bg-card">
       <header className="flex items-center justify-between gap-3 border-b px-4 py-2">
         <div className="flex min-w-0 items-center gap-3">
-          <h4 className="truncate text-[15px] font-semibold">{plan.name}</h4>
-          <Why plan={plan} />
-          {edited.has(plan.id) && <ChangedTag label="New" />}
+          <h4 className="truncate text-[15px] font-semibold">{step.id}</h4>
+          <Why step={step} />
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {feedback && plan.source === "AI" && (
-            <PlanFeedback plan={plan} target={feedback} />
-          )}
-          <SourceTag source={plan.source} />
-          {editing && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Remove ${plan.name}`}
-              onClick={onRemove}
-            >
-              <IconTrash />
-            </Button>
-          )}
+          {feedback && <StepFeedback step={step} target={feedback} />}
+          <Badge
+            variant="outline"
+            className="h-5.5 rounded-full px-2 text-xs font-normal"
+          >
+            Every plan
+          </Badge>
         </div>
       </header>
-      <PlanItems
-        plan={plan}
+      <StepItems
+        step={step}
         editing={editing}
         edited={edited}
-        onChange={(actions) => onChange({ ...plan, actions })}
+        onChange={(actions) => onChange({ ...step, actions })}
       />
     </article>
   )
@@ -941,22 +1052,24 @@ function PlanCard({
 
 type FeedbackTarget = {
   patientId: string
-  /** Set while the plan can still change: drops the plan into Edit plan. */
-  onDrop?: (planId: string) => void
+  /** Set while the plan can still change: drops the step's AI items into
+      Edit plan. */
+  onDrop?: (stepId: string) => void
 }
 
-/* Right or wrong on an AI plan. Wrong asks why, and can take the plan out
-   of the care plan in the same step. */
-function PlanFeedback({
-  plan,
+/* Right or wrong on a step as AI built it. Wrong asks why, and can take
+   what AI added to the step out in the same step. */
+function StepFeedback({
+  step,
   target,
 }: {
-  plan: OptimizationPlan
+  step: PlanStep
   target: FeedbackTarget
 }) {
   const { items } = aiFeedback.use()
-  const given = items.find((f) => f.id === `${target.patientId}/${plan.id}`)
+  const given = items.find((f) => f.id === `${target.patientId}/${step.id}`)
   const [asking, setAsking] = React.useState(false)
+  const aiItems = step.actions.filter((a) => a.source === "AI").length
 
   const markRight = () => {
     if (given?.rating === "Right") {
@@ -965,13 +1078,13 @@ function PlanFeedback({
     }
     saveFeedback({
       patientId: target.patientId,
-      planId: plan.id,
-      planName: plan.name,
+      planId: step.id,
+      planName: step.id,
       rating: "Right",
       reasons: [],
     })
     toast.success("Feedback saved", {
-      description: `${plan.name} marked as a right suggestion.`,
+      description: `${step.id} marked as right.`,
     })
   }
 
@@ -991,7 +1104,7 @@ function PlanFeedback({
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label={`${plan.name} is a right suggestion`}
+          aria-label={`${step.id} is right`}
           aria-pressed={given?.rating === "Right"}
           className={cn(given?.rating === "Right" && "text-primary")}
           onClick={markRight}
@@ -1001,7 +1114,7 @@ function PlanFeedback({
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label={`${plan.name} is a wrong suggestion`}
+          aria-label={`${step.id} is wrong`}
           aria-pressed={given?.rating === "Wrong"}
           className={cn(given?.rating === "Wrong" && "text-[#C4554E]")}
           onClick={() => setAsking(true)}
@@ -1011,25 +1124,25 @@ function PlanFeedback({
       </div>
       {asking && (
         <FeedbackDialog
-          plan={plan}
+          step={step}
           given={given?.rating === "Wrong" ? given : undefined}
-          canDrop={target.onDrop !== undefined}
+          canDrop={target.onDrop !== undefined && aiItems > 0}
           onClose={() => setAsking(false)}
           onSave={(reasons, note, drop) => {
             saveFeedback({
               patientId: target.patientId,
-              planId: plan.id,
-              planName: plan.name,
+              planId: step.id,
+              planName: step.id,
               rating: "Wrong",
               reasons,
               note,
             })
             setAsking(false)
-            if (drop) target.onDrop?.(plan.id)
+            if (drop) target.onDrop?.(step.id)
             toast.success("Feedback saved", {
               description: drop
-                ? `${plan.name} removed. Approve and send to save the plan.`
-                : `${plan.name} flagged as a wrong suggestion.`,
+                ? `Items from the record removed from ${step.id}. Approve and send to save the plan.`
+                : `${step.id} flagged as wrong.`,
             })
           }}
         />
@@ -1039,13 +1152,13 @@ function PlanFeedback({
 }
 
 function FeedbackDialog({
-  plan,
+  step,
   given,
   canDrop,
   onClose,
   onSave,
 }: {
-  plan: OptimizationPlan
+  step: PlanStep
   given?: AiFeedback
   canDrop: boolean
   onClose: () => void
@@ -1064,9 +1177,9 @@ function FeedbackDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Wrong suggestion: {plan.name}</DialogTitle>
+          <DialogTitle>Wrong suggestion: {step.id}</DialogTitle>
           <DialogDescription className="sr-only">
-            Tell the clinical team what is wrong with this AI suggested plan.
+            Tell the clinical team what is wrong with this step as AI built it.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -1121,7 +1234,7 @@ function FeedbackDialog({
                 checked={drop}
                 onCheckedChange={(c) => setDrop(c === true)}
               />
-              Remove {plan.name} from this care plan
+              Remove the items from the record in {step.id}
             </label>
           )}
         </form>
@@ -1138,35 +1251,20 @@ function FeedbackDialog({
   )
 }
 
-const SOURCE_LABEL: Record<OptimizationPlan["source"], string> = {
-  AI: "From the record",
-  Patient: "Patient selected",
-  Physician: "Added by physician",
-}
-
-function SourceTag({ source }: { source: OptimizationPlan["source"] }) {
-  if (source === "Physician")
-    return (
-      <Badge
-        variant="outline"
-        className="h-5.5 gap-1 rounded-full px-2 text-xs font-normal"
-      >
-        <IconEdit className="size-3.5" />
-        Added by physician
-      </Badge>
-    )
-  return source === "Patient" ? (
+/* The chip on an item that is more than the step's own. */
+function SourceTag({ source }: { source: NonNullable<PlanAction["source"]> }) {
+  return source === "Physician" ? (
     <Badge
-      variant="info"
-      className="h-5.5 gap-1 rounded-full px-2 text-xs font-normal"
+      variant="outline"
+      className="h-5.5 gap-1 rounded-full px-2 align-middle text-xs font-normal"
     >
-      <IconUser className="size-3.5" />
-      Patient selected
+      <IconEdit className="size-3.5" />
+      Added by physician
     </Badge>
   ) : (
     <Badge
       variant="secondary"
-      className="h-5.5 gap-1 rounded-full px-2 text-xs font-normal"
+      className="h-5.5 gap-1 rounded-full px-2 align-middle text-xs font-normal"
     >
       <IconSparkles className="size-3.5" />
       From the record
@@ -1178,9 +1276,9 @@ const fmt = (v: number) =>
   Number.isInteger(v) ? String(v) : v.toFixed(1).replace(/\.0$/, "")
 
 /* The evidence, opened by hovering the word "Why", drawn as the
-   dashboard's peek card: the plan and where it came from, then each
-   biomarker with its status in colour, the range, the chart and how it
-   moved. A plan the patient added shows their own words. */
+   dashboard's peek card: the step, then each biomarker behind its items
+   from the record with its status in colour, the range, the chart and how
+   it moved. */
 const PEEK = "w-80 rounded-2xl p-4 shadow-[0_16px_40px_rgba(16,24,40,.12)]"
 
 /* Readings are quarterly, the latest from Sep 2026. */
@@ -1200,7 +1298,7 @@ const flagOf = (e: Evidence) => {
       : null
 }
 
-function Why({ plan }: { plan: OptimizationPlan }) {
+function Why({ step }: { step: PlanStep }) {
   return (
     <HoverCard>
       <HoverCardTrigger
@@ -1225,18 +1323,19 @@ function Why({ plan }: { plan: OptimizationPlan }) {
         followCursor={false}
         className={PEEK}
       >
-        <WhyCard plan={plan} />
+        <WhyCard step={step} />
       </HoverCardContent>
     </HoverCard>
   )
 }
 
+/** A dot and a word; no tone is the grey of "nothing to flag". */
 function StatusLine({
   tone,
   word,
   qualifier,
 }: {
-  tone: ToneKey
+  tone?: ToneKey
   word: string
   qualifier?: string
 }) {
@@ -1244,9 +1343,17 @@ function StatusLine({
     <span className="flex items-center gap-1.5 text-[13px]">
       <span
         aria-hidden
-        className={cn("size-1.5 shrink-0 rounded-full", SOFT_DOT[tone])}
+        className={cn(
+          "size-1.5 shrink-0 rounded-full",
+          tone ? SOFT_DOT[tone] : "bg-muted-foreground/40"
+        )}
       />
-      <span className={cn("font-medium", SOFT_TEXT[tone])}>
+      <span
+        className={cn(
+          "font-medium",
+          tone ? SOFT_TEXT[tone] : "text-muted-foreground"
+        )}
+      >
         {word}
         {qualifier && (
           <span className="font-normal text-muted-foreground tabular-nums">
@@ -1258,113 +1365,124 @@ function StatusLine({
   )
 }
 
-function WhyCard({ plan }: { plan: OptimizationPlan }) {
-  const out = plan.evidence.filter((e) => flagOf(e)).length
+function WhyCard({ step }: { step: PlanStep }) {
+  const evidence = step.actions.flatMap((a) => a.evidence ?? [])
+  const out = evidence.filter((e) => flagOf(e)).length
   return (
     <div className="flex flex-col">
       <HoverCardSection className="gap-1.5">
         <div className="flex items-baseline justify-between gap-3">
           <span className="min-w-0 truncate text-[15px] leading-5 font-semibold">
-            {plan.name}
+            {step.id}
           </span>
           <span className="shrink-0 text-xs text-muted-foreground">
-            {SOURCE_LABEL[plan.source]}
+            Every plan
           </span>
         </div>
-        {plan.source === "Physician" ? (
-          <StatusLine tone="violet" word="Added by the physician" />
-        ) : plan.source === "Patient" ? (
-          <StatusLine tone="blue" word="Added by the patient" />
-        ) : (
+        {evidence.length ? (
           <StatusLine
             tone={out ? "red" : "green"}
             word={
               out
-                ? `${out} of ${plan.evidence.length} markers out of range`
+                ? `${out} of ${evidence.length} markers out of range`
                 : "Markers in range"
             }
           />
+        ) : (
+          <StatusLine word="Nothing added from the record" />
         )}
       </HoverCardSection>
-      {plan.source === "Patient" ? (
-        <HoverCardSection>
-          <p className="text-[13px] leading-5 text-foreground/80">
-            {plan.note ? <>&ldquo;{plan.note}&rdquo;</> : "No note from the patient."}
-          </p>
-        </HoverCardSection>
-      ) : plan.source === "Physician" ? null : (
-        plan.evidence.map((e) => {
-          const flag = flagOf(e)
-          const dates = readingDates(e.values.length)
-          const points = e.values.map((value, i) => ({ date: dates[i], value }))
-          const last = e.values[e.values.length - 1]
-          const prev = e.values[e.values.length - 2]
-          return (
-            <HoverCardSection key={e.name} className="gap-2.5">
-              <div className="flex flex-col gap-1">
-                <span className="text-[13px] font-semibold">{e.name}</span>
-                <StatusLine
-                  tone={flag ? "red" : "green"}
-                  word={flag ?? "In range"}
-                  qualifier={`range ${e.range}${e.unit ? ` ${e.unit}` : ""}`}
-                />
-              </div>
-              <PeekChart
-                points={points}
-                low={e.low}
-                high={e.high}
-                unit={e.unit}
-                digits={e.values.some((v) => !Number.isInteger(v)) ? 1 : 0}
+      {evidence.map((e) => {
+        const flag = flagOf(e)
+        const dates = readingDates(e.values.length)
+        const points = e.values.map((value, i) => ({ date: dates[i], value }))
+        const last = e.values[e.values.length - 1]
+        const prev = e.values[e.values.length - 2]
+        return (
+          <HoverCardSection key={e.name} className="gap-2.5">
+            <div className="flex flex-col gap-1">
+              <span className="text-[13px] font-semibold">{e.name}</span>
+              <StatusLine
+                tone={flag ? "red" : "green"}
+                word={flag ?? "In range"}
+                qualifier={`range ${e.range}${e.unit ? ` ${e.unit}` : ""}`}
               />
-              {prev !== undefined && (
-                <p className="text-[13px] leading-5 text-foreground/80">
-                  {last > prev ? "Up" : last < prev ? "Down" : "Unchanged"} from{" "}
-                  {fmt(prev)} in {monthYear(dates[dates.length - 2])}.
-                </p>
-              )}
-            </HoverCardSection>
-          )
-        })
-      )}
+            </div>
+            <PeekChart
+              points={points}
+              low={e.low}
+              high={e.high}
+              unit={e.unit}
+              digits={e.values.some((v) => !Number.isInteger(v)) ? 1 : 0}
+            />
+            {prev !== undefined && (
+              <p className="text-[13px] leading-5 text-foreground/80">
+                {last > prev ? "Up" : last < prev ? "Down" : "Unchanged"} from{" "}
+                {fmt(prev)} in {monthYear(dates[dates.length - 2])}.
+              </p>
+            )}
+          </HoverCardSection>
+        )
+      })}
     </div>
   )
 }
 
-function PlanItems({
-  plan,
+/* The biomarker behind an item from the record: its latest reading, in
+   colour when out of range, and how it moved. */
+function Marker({ evidence: e, trend }: { evidence: Evidence; trend?: string }) {
+  const last = e.values[e.values.length - 1]
+  return (
+    <span className="ml-2 text-[13px] whitespace-nowrap text-muted-foreground tabular-nums">
+      {e.name}{" "}
+      <span className={cn("font-medium", flagOf(e) && SOFT_TEXT.red)}>
+        {fmt(last)}
+      </span>
+      {trend && ` · ${trend}`}
+    </span>
+  )
+}
+
+function StepItems({
+  step,
   editing,
   edited,
   onChange,
 }: {
-  plan: OptimizationPlan
+  step: PlanStep
   editing: boolean
   edited: Set<string>
   onChange: (actions: PlanAction[]) => void
 }) {
-  const actions = plan.actions
+  const actions = step.actions
   const set = (id: string, patch: Partial<PlanAction>) =>
     onChange(actions.map((a) => (a.id === id ? { ...a, ...patch } : a)))
-  const ordered = editing
-    ? actions
-    : [...actions].sort((a, b) => AREAS.indexOf(a.area) - AREAS.indexOf(b.area))
 
   if (!editing)
-    return (
+    return actions.length ? (
       <ul className="divide-y">
-        {ordered.map((a) => (
+        {actions.map((a) => (
           <li
             key={a.id}
             className="grid grid-cols-[96px_minmax(0,1fr)_auto] items-baseline gap-x-3 px-4 py-2.5 text-sm"
           >
-            <span className="text-[13px] text-muted-foreground">{a.area}</span>
+            <span className="text-[13px] text-muted-foreground">{a.label}</span>
             <span>
               {a.text}
-              {edited.has(`${plan.id}/${a.id}`) && <ChangedTag />}
+              {a.source && (
+                <span className="ml-2">
+                  <SourceTag source={a.source} />
+                </span>
+              )}
+              {a.evidence && <Marker evidence={a.evidence} trend={a.trend} />}
+              {edited.has(`${step.id}/${a.id}`) && <ChangedTag />}
             </span>
             <span className="text-[13px] text-muted-foreground">{a.often}</span>
           </li>
         ))}
       </ul>
+    ) : (
+      <p className="px-4 py-2.5 text-sm text-muted-foreground">No items</p>
     )
 
   return (
@@ -1374,27 +1492,15 @@ function PlanItems({
           key={a.id}
           className={cn(
             "flex flex-wrap items-center gap-2 rounded-md p-1",
-            edited.has(`${plan.id}/${a.id}`) && "bg-info-surface/60"
+            edited.has(`${step.id}/${a.id}`) && "bg-info-surface/60"
           )}
         >
-          <Select
-            items={AREAS.map((x) => ({ label: x, value: x }))}
-            value={a.area}
-            onValueChange={(v) => set(a.id, { area: (v as Area) ?? a.area })}
-          >
-            <SelectTrigger className="h-8! w-32" aria-label="Area">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {AREAS.map((x) => (
-                  <SelectItem key={x} value={x}>
-                    {x}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <Input
+            aria-label="Label"
+            value={a.label}
+            onChange={(e) => set(a.id, { label: e.target.value })}
+            className="h-8 w-32"
+          />
           <Input
             aria-label="What to do"
             value={a.text}
@@ -1424,7 +1530,7 @@ function PlanItems({
         onClick={() =>
           onChange([
             ...actions,
-            { id: nextId("A", actions), area: "Nutrition", text: "", often: "Daily" },
+            { id: nextId("A", actions), label: "", text: "", often: "Daily", source: "Physician" },
           ])
         }
       >
@@ -1437,96 +1543,260 @@ function PlanItems({
 
 /* ---------------------------------------------------------- baseline -- */
 
-/* The tests the plans need that the record doesn't have: ticked means
-   approved. Open plans can be decided right here; sent ones are read only. */
-function BaselineCard({
+/* The tests AI suggested from the record, each sent through insurance or
+   Inlay, or removed. The summary adds up what each way costs and what the
+   patient gets back or still pays; the message tells her in one line. */
+
+const ROUTE_ON: Record<Route, string> = {
+  Insurance: "aria-pressed:bg-info-surface aria-pressed:text-info",
+  Inlay: "aria-pressed:bg-primary-surface aria-pressed:text-primary-tint",
+  Remove: "aria-pressed:bg-destructive/8 aria-pressed:text-[#C4554E]",
+}
+
+const COVERAGE_TONE: Record<BaselineTest["coverage"], ToneKey | undefined> = {
+  Likely: "green",
+  Maybe: "orange",
+  No: undefined,
+}
+
+/** "Resting Metabolic Rate (RMR)" reads as "Resting Metabolic Rate". */
+const plain = (name: string) => name.replace(/\s*\(.*\)/, "").trim()
+
+function listOf(tests: BaselineTest[]) {
+  const names = tests.map((t) => plain(t.name))
+  return names.length < 2
+    ? names.join("")
+    : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`
+}
+
+function composeMessage(patient: Patient, tests: BaselineTest[]) {
+  const by = (r: Route) => tests.filter((t) => t.route === r)
+  const ins = by("Insurance")
+  const inlay = by("Inlay")
+  const removed = by("Remove")
+  const covered = ins.length
+    ? `Your insurance covers the ${listOf(ins)}, so my office will order ${ins.length > 1 ? "those" : "that"} and call you.`
+    : "None of your tests go through insurance this time."
+  const off = removed.length ? ` I took off the ${listOf(removed)} for now.` : ""
+  const book =
+    inlay.length === 1
+      ? ` Please book the ${plain(inlay[0].name)} in the app.`
+      : inlay.length
+        ? ` Please book ${ins.length ? "the other" : "all"} ${inlay.length} in the app.`
+        : ""
+  return `Hi ${patient.firstName}, I went through your baseline tests. ${covered}${off}${book}`
+}
+
+function BaselineView({
+  patient,
+  baseline,
+  message,
+  onMessage,
+  onRoute,
+}: {
+  patient: Patient
+  baseline: Baseline
+  message: string
+  onMessage: (message: string) => void
+  onRoute: (id: string, route: Route) => void
+}) {
+  const sorting = baseline.status === "Tests to sort"
+  const her = patient.sex === "Male" ? "his" : patient.sex === "Female" ? "her" : "their"
+  const sum = (r: Route) => {
+    const list = baseline.tests.filter((t) => t.route === r)
+    return { n: list.length, total: list.reduce((s, t) => s + t.price, 0) }
+  }
+  const ins = sum("Insurance")
+  const inlay = sum("Inlay")
+  const removed = sum("Remove")
+  const added = baseline.tests.filter((t) => t.added).length
+
+  return (
+    <>
+      {sorting ? (
+        <Banner
+          tone="bg-warning-surface"
+          title={`${fullName(patient)} enrolled and asked you to sort ${her} baseline tests`}
+          at={baseline.at}
+        />
+      ) : (
+        <Banner
+          tone="bg-card"
+          title={`Tests sorted and sent to ${patient.firstName}`}
+          at={baseline.sortedAt ?? baseline.at}
+        >
+          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-[13px]">
+            <span>
+              <span className="text-muted-foreground">Sorted by : </span>
+              {baseline.sortedBy}
+            </span>
+            <span className="tabular-nums">
+              <span className="text-muted-foreground">Sorted on : </span>
+              {atLabel(baseline.sortedAt)}
+            </span>
+          </div>
+        </Banner>
+      )}
+      <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <section className="flex min-w-0 flex-col gap-2">
+          <h3 className="flex items-baseline gap-2 px-1 text-[15px] font-semibold">
+            Suggested tests
+            <span className="text-[13px] font-normal text-muted-foreground tabular-nums">
+              {baseline.tests.length} tests
+              {added > 0 && ` · ${added} added by you`}
+            </span>
+          </h3>
+          <div className="overflow-hidden rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-40">Test</TableHead>
+                  <TableHead className="min-w-36">Why</TableHead>
+                  <TableHead className="min-w-40">AI coverage check</TableHead>
+                  <TableHead className="text-right">Price</TableHead>
+                  <TableHead>Send through</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {baseline.tests.map((t) => {
+                  const gone = t.route === "Remove"
+                  return (
+                    <TableRow
+                      key={t.id}
+                      className={cn(gone && "[&>td:not(:last-child)]:opacity-50")}
+                    >
+                      <TableCell className="whitespace-normal">
+                        <div className={cn("font-medium", gone && "line-through")}>
+                          {t.name}
+                        </div>
+                        <div className="text-[13px] text-muted-foreground">
+                          {t.kind}
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-normal text-[13px] text-muted-foreground">
+                        {t.markers.map((m, i) => (
+                          <React.Fragment key={m.name}>
+                            {i > 0 && ", "}
+                            {m.name}{" "}
+                            <span className={cn("font-medium tabular-nums", SOFT_TEXT.red)}>
+                              {m.value}
+                            </span>
+                          </React.Fragment>
+                        ))}
+                        {t.note && `${t.markers.length ? ", " : ""}${t.note}`}
+                      </TableCell>
+                      <TableCell className="whitespace-normal">
+                        <StatusLine
+                          tone={COVERAGE_TONE[t.coverage]}
+                          word={t.coverageText}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {usd(t.price)}
+                      </TableCell>
+                      <TableCell>
+                        <ToggleGroup
+                          aria-label={`Send ${t.name} through`}
+                          value={[t.route]}
+                          onValueChange={(v) =>
+                            v[0] && onRoute(t.id, v[0] as Route)
+                          }
+                          disabled={!sorting}
+                          variant="outline"
+                          size="sm"
+                          spacing={0}
+                        >
+                          {ROUTES.map((r) => (
+                            <ToggleGroupItem
+                              key={r}
+                              value={r}
+                              className={cn(
+                                "h-7 min-w-0 px-2.5! text-[13px] font-normal",
+                                ROUTE_ON[r]
+                              )}
+                            >
+                              {r}
+                            </ToggleGroupItem>
+                          ))}
+                        </ToggleGroup>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+        <aside className="flex flex-col gap-4 rounded-lg border bg-card p-4">
+          <section className="flex flex-col gap-2">
+            <h3 className="text-[15px] font-semibold">Summary</h3>
+            <dl className="flex flex-col gap-1.5 text-sm">
+              {[
+                { label: "Insurance", ...ins },
+                { label: "Inlay", ...inlay },
+                { label: "Removed", ...removed },
+              ].map((row) => (
+                <div key={row.label} className="flex items-baseline justify-between gap-3">
+                  <dt className="text-muted-foreground tabular-nums">
+                    {row.label} · {row.n}
+                  </dt>
+                  <dd className="font-medium tabular-nums">{usd(row.total)}</dd>
+                </div>
+              ))}
+              <div className="mt-1 flex items-baseline justify-between gap-3 rounded-md bg-primary-surface px-3 py-2 font-semibold">
+                <dt>{baseline.paid ? "Refund to patient" : "Patient pays Inlay"}</dt>
+                <dd className="tabular-nums">
+                  {usd(baseline.paid ? ins.total + removed.total : inlay.total)}
+                </dd>
+              </div>
+            </dl>
+          </section>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="baseline-message" className="text-sm font-medium">
+              Message to patient
+            </label>
+            <Textarea
+              id="baseline-message"
+              rows={7}
+              maxLength={1000}
+              value={message}
+              readOnly={!sorting}
+              onChange={(e) => onMessage(e.target.value)}
+            />
+          </div>
+        </aside>
+      </div>
+    </>
+  )
+}
+
+/* Add a test the AI didn't suggest, from the practice's list. */
+function AddTest({
   tests,
-  plans,
-  decidable,
-  edited,
-  onPick,
-  onPickAll,
+  onAdd,
 }: {
   tests: BaselineTest[]
-  plans: OptimizationPlan[]
-  decidable: boolean
-  edited: Set<string>
-  onPick?: (id: string, approved: boolean) => void
-  onPickAll?: (approved: boolean) => void
+  onAdd: (test: Omit<BaselineTest, "id">) => void
 }) {
-  const approved = tests.filter((t) => t.approved).length
-  const all = approved === tests.length
-  const planName = (id: string) => plans.find((p) => p.id === id)?.name
+  const left = TEST_CATALOG.filter((c) => !tests.some((t) => t.name === c.name))
+  if (!left.length) return null
   return (
-    <section className="overflow-hidden rounded-lg border bg-card">
-      <div className="flex items-center justify-between gap-3 border-b px-4 py-2">
-        <h3 className="flex items-baseline gap-2 text-[15px] font-semibold">
-          Proposed baseline tests
-          <span className="text-[13px] font-normal text-muted-foreground tabular-nums">
-            {approved} of {tests.length} approved
-          </span>
-        </h3>
-      </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {decidable && (
-              <TableHead className="w-10">
-                <Checkbox
-                  aria-label="Approve all tests"
-                  checked={all}
-                  indeterminate={approved > 0 && !all}
-                  onCheckedChange={(c) => onPickAll?.(c === true)}
-                />
-              </TableHead>
-            )}
-            <TableHead className="min-w-44">Test</TableHead>
-            <TableHead>For</TableHead>
-            <TableHead className="min-w-56">Why</TableHead>
-            <TableHead className="w-32">Decision</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tests.map((t) => (
-            <TableRow
-              key={t.id}
-              className={cn(!t.approved && "text-muted-foreground")}
-            >
-              {decidable && (
-                <TableCell>
-                  <Checkbox
-                    aria-label={`Approve ${t.name}`}
-                    checked={t.approved}
-                    onCheckedChange={(c) => onPick?.(t.id, c === true)}
-                  />
-                </TableCell>
-              )}
-              <TableCell className="font-medium">
-                {t.name}
-                {edited.has(t.id) && <ChangedTag />}
-              </TableCell>
-              <TableCell className="whitespace-normal">
-                {t.for.map(planName).filter(Boolean).join(", ") || "None"}
-              </TableCell>
-              <TableCell className="whitespace-normal text-muted-foreground">
-                {t.why}
-              </TableCell>
-              <TableCell>
-                <span className="inline-flex items-center gap-1.5 text-[13px]">
-                  <span
-                    className={cn(
-                      "size-2 rounded-full",
-                      t.approved ? "bg-primary" : "bg-muted-foreground/40"
-                    )}
-                  />
-                  {t.approved ? "Approved" : "Deselected"}
-                </span>
-              </TableCell>
-            </TableRow>
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+        <IconAdd />
+        Add test
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Baseline tests</DropdownMenuLabel>
+          {left.map((c) => (
+            <DropdownMenuItem key={c.name} onClick={() => onAdd(c)}>
+              {c.name}
+            </DropdownMenuItem>
           ))}
-        </TableBody>
-      </Table>
-    </section>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -1649,17 +1919,11 @@ function VersionDialog({
         </DialogHeader>
         {v && (
           <div className="-mx-1 flex max-h-[65dvh] flex-col gap-3 overflow-y-auto px-1">
-            <PlansBlock
-              plans={v.plans}
+            <StepsBlock
+              steps={v.steps}
               editing={false}
               edited={changed}
               onChange={() => {}}
-            />
-            <BaselineCard
-              tests={v.tests}
-              plans={v.plans}
-              decidable={false}
-              edited={changed}
             />
           </div>
         )}

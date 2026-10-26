@@ -3,19 +3,20 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { DatePickerSheet, TimePickerSheet } from "@/components/date-time-picker"
-import { Bone, CalendarBlank, CheckCircle, Clock, Drop, MapPin, Wind } from "@/components/ph"
+import { Bone, CalendarBlank, CheckCircle, Clock, Drop, MapPin, ShieldCheck, Wind } from "@/components/ph"
 import { PlanStepPage } from "@/components/plan-steps"
 import { Card, HUE, Tile, toast } from "@/components/record-kit"
 import { SelectField } from "@/components/ui"
-import { BASELINE_TESTS, TEST_SLOTS, chosenTests, openDays, type BaselineTest, type BaselineTestId } from "@/lib/baseline-tests"
-import { clock, dayFrom, dayLabel, localDay } from "@/lib/member"
+import { BASELINE_TESTS, TEST_SLOTS, chosenTests, itemOf, openDays, type BaselineTest, type BaselineTestId } from "@/lib/baseline-tests"
+import { MEMBER, clock, dayFrom, dayLabel, localDay } from "@/lib/member"
 import type { Booking } from "@/lib/onboarding"
 import { useOnboarding } from "@/lib/onboarding"
 import { color, ink, space, type } from "@/lib/theme"
 import { bookingOf, localIso } from "@/lib/todo"
 
 /* "Schedule your tests": opens from "Schedule my tests" on the enrolled
-   page (/enrolled), once payment goes through. Each paid test with its
+   page (/enrolled) or "Your tests" (/your-tests), once her physician has
+   sorted the tests. Each Inlay test with its
    place, a Date and a Time field; "Confirm schedule" books
    them all and only then opens the confirmation (/schedule-confirmed):
    "Personalize my care" there leads to the flourishing questions,
@@ -48,7 +49,9 @@ export default function ScheduleTestsScreen() {
   const { test: one } = useLocalSearchParams<{ test?: string }>()
   const onboarding = useOnboarding()
   const single = one && one in BASELINE_TESTS ? BASELINE_TESTS[one as BaselineTestId] : undefined
-  const tests = single ? [single] : chosenTests(onboarding.startingTests?.ids ?? onboarding.baselinePicks)
+  // Tests her physician sent to her insurance are ordered by the office, never booked here.
+  const sent = new Set(onboarding.testReview?.insurance ?? [])
+  const tests = single ? [single] : chosenTests(onboarding.startingTests?.ids ?? onboarding.baselinePicks).filter((t) => !sent.has(t.id))
   // Three weeks of weekdays open on the calendar.
   const [days] = React.useState(() => openDays(new Date(), 15))
   const [slots, setSlots] = React.useState<Record<string, Slot>>(() => {
@@ -73,6 +76,8 @@ export default function ScheduleTestsScreen() {
     const test = picking?.test
     setPicking(slot.day && test && !slots[id]?.time ? { test, field: "time" } : undefined)
   }
+  // The tests her physician sent to her insurance: tracked here, not booked.
+  const insured = (onboarding.testReview?.insurance ?? []).map((id) => itemOf(id)?.name).filter((n): n is string => !!n)
   const booked = tests.every((t) => slots[t.id]?.day && slots[t.id]?.time)
 
   async function next() {
@@ -128,6 +133,22 @@ export default function ScheduleTestsScreen() {
           <TestSlots key={t.id} test={t} slot={slots[t.id] ?? {}} onPick={(field) => setPicking({ test: t, field })} named={!single} />
         ))}
       </View>
+      {!single && insured.length > 0 && (
+        <View style={styles.office}>
+          <Text style={styles.officeHead} accessibilityRole="header">{`Through ${MEMBER.doctorShort}'s office`}</Text>
+          {insured.map((name) => (
+            <Card key={name} style={styles.officeRow}>
+              <Tile hue="blue" size={32}>
+                <ShieldCheck size={16} color={HUE.blue.ink} />
+              </Tile>
+              <View style={styles.words}>
+                <Text style={styles.officeName} numberOfLines={1}>{name}</Text>
+                <Text style={styles.placeText} numberOfLines={1}>Insurance, the office calls you</Text>
+              </View>
+            </Card>
+          ))}
+        </View>
+      )}
     </PlanStepPage>
   )
 }
@@ -206,4 +227,9 @@ const styles = StyleSheet.create({
   placeText: { ...type.meta, flexShrink: 1 },
   pair: { flexDirection: "row", gap: space.inline },
   half: { flex: 1 },
+  office: { gap: space.inline, marginTop: space.section },
+  officeHead: { ...type.title, color: ink.secondary },
+  // One compact row per test: no fields to fill, so it stays short.
+  officeRow: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingVertical: space.rowY },
+  officeName: { ...type.title, fontSize: 14, color: ink.strong },
 })

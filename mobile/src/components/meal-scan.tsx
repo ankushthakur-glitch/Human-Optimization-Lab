@@ -181,10 +181,7 @@ function scanDraft(product: Product, servings: number, slot: MealSlot): Omit<Mea
 }
 
 function ScannedItem({ product, onSave }: { product: Product; onSave: (servings: number) => void | Promise<void> }) {
-  const [text, setText] = React.useState("")
   const [saving, setSaving] = React.useState(false)
-  const qty = Number(text)
-  const valid = text !== "" && Number.isFinite(qty) && qty > 0
   return (
     <View style={styles.item}>
       <View style={styles.productTop}>
@@ -216,32 +213,16 @@ function ScannedItem({ product, onSave }: { product: Product; onSave: (servings:
           )
         })}
       </Card>
-      <View style={styles.item}>
-        <TextField
-          label="How much did you have?"
-          value={text}
-          onChangeText={(t) => setText(amountText(t))}
-          placeholder="e.g., serving 170g"
-          placeholderTextColor="#A8A6AC"
-          keyboardType="decimal-pad"
-          returnKeyType="done"
-          trailing={<Text style={styles.unit}>servings</Text>}
-          style={[styles.input, !text && styles.inputEmpty]}
-        />
-        <Text style={styles.label} accessibilityLiveRegion="polite">
-          {valid ? `${qty === 1 ? "serving" : "servings"}, ${trim(qty * product.serving.amount)} ${product.measure}` : "Enter an amount"}
-        </Text>
-      </View>
       <PrimaryButton
         onPress={async () => {
           setSaving(true)
           try {
-            await onSave(qty)
+            await onSave(1)
           } finally {
             setSaving(false)
           }
         }}
-        disabled={!valid || saving}
+        disabled={saving}
       >
         Save
       </PrimaryButton>
@@ -572,7 +553,7 @@ function NutritionTable({ product, rows, totals }: { product: Product; rows: Nut
   )
 }
 
-function StepButton({ label, onPress, disabled, children }: { label: string; onPress: () => void; disabled?: boolean; children: React.ReactNode }) {
+export function StepButton({ label, onPress, disabled, children }: { label: string; onPress: () => void; disabled?: boolean; children: React.ReactNode }) {
   return (
     <Pressable
       onPress={onPress}
@@ -597,8 +578,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   unit: { ...type.unitLarge, paddingRight: 14 },
   input: { minWidth: 0 },
-  // The hint reads smaller than what she types.
-  inputEmpty: { fontSize: 13 },
   form: { gap: space.item },
   sheetFrame: { position: "absolute", top: 0, left: 0, right: 0 },
 
