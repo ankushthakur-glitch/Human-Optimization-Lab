@@ -18,7 +18,7 @@ import { color, hairline, ink, space, type } from "@/lib/theme"
 export function WaistGuideButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable onPress={onPress} hitSlop={10} accessibilityRole="button" style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
-      <Text style={styles.linkText}>How to measure</Text>
+      <Text style={styles.linkText}>How to measure?</Text>
     </Pressable>
   )
 }

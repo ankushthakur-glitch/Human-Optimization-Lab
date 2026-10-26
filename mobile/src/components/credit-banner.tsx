@@ -11,11 +11,10 @@ import { space } from "@/lib/theme"
    2026): no page of its own and no line on the tabs, only the orb's arc
    there. Over the assistant's composer, from 75% used, a strip joined to
    the field (ChatBar `notice`): amber with how much is used, then red at
-   100% with when it comes back and one small action, upgrade (the free
-   record) or add more (a member). A chat in progress when the credit runs
+   100% with when it comes back and upgrade, for the free record only; a
+   member adds more from the limit card. A chat in progress when the credit runs
    out finishes on its own (lib/allowance.ts grace), so nothing here
-   borrows. Adding asks once in CreditSheet first, which the screen draws
-   over everything through `onAsk`. */
+   borrows. Adding asks once in CreditSheet first. */
 
 /** From this share the line shows. */
 export const CREDIT_WARN = 0.75
@@ -24,17 +23,19 @@ export const CREDIT_WARN = 0.75
     and the one small action. */
 export type CreditNotice = { words: string; hue: "amber" | "red"; action?: { label: string; onPress: () => void } }
 
-export function useCreditNotice(onAsk: () => void): CreditNotice | null {
+export function useCreditNotice(): CreditNotice | null {
   const credit = useAllowance()
   const upgrade = { label: "Upgrade", onPress: () => router.push("/plan") }
   // The free record's share is always shown, with the upgrade prompt from
-  // 75% used; a member's only from 75%, with adding more.
-  if (credit.member && credit.share < CREDIT_WARN) return null
+  // 75% used. A paid member's Ask Inlay has no banner at all (user, 26 Oct
+  // 2026): the orb's arc shows the share, and the limit card in the chat
+  // offers adding more when it runs out.
+  if (credit.member) return null
   const high = credit.share >= CREDIT_WARN
   return {
     words: credit.line,
     hue: credit.out ? "red" : "amber",
-    action: credit.member ? { label: "Add more", onPress: onAsk } : high ? upgrade : undefined,
+    action: high ? upgrade : undefined,
   }
 }
 

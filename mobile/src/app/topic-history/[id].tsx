@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from "expo-router"
 import * as React from "react"
 
+import { AlcoholHistory } from "@/components/alcohol-week"
 import { PageNotFoundState } from "@/components/error-state"
 import { HistoryView } from "@/components/history-view"
 import { TopicPage } from "@/components/topic-kit"
@@ -21,6 +22,7 @@ export default function TopicHistoryScreen() {
   return (
     <TopicPage title={`${topic.id === "medication" ? "Medication" : topic.name} history`}>
       <HistoryView history={history} />
+      {topic.id === "eat" && <AlcoholHistory />}
     </TopicPage>
   )
 }

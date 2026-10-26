@@ -19,7 +19,7 @@ import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
    test she clears greys out with its price struck through. The (i) beside
    a test opens what it is and why it matters in a bottom sheet. A note
    says her physician sorts the tests into insurance or Inlay before she
-   books, and a summary bar totals the ticked ones. Continue opens step 3
+   books. Continue opens step 3
    (/enrollment). The blood panel, DEXA and RMR are kept in the onboarding
    picks, the sleep study in the add-ons; enrollment and payment charge
    from both. */
@@ -91,7 +91,6 @@ export default function BaselineScreen() {
 
   const openItem = items.find((i) => i.key === open)
   const ticked = items.filter((i) => on(i.key))
-  const total = ticked.reduce((sum, i) => sum + i.price, 0)
 
   return (
     <PlanStepPage
@@ -113,12 +112,6 @@ export default function BaselineScreen() {
             </View>
           </Sheet>
         )
-      }
-      aboveFoot={
-        <View style={styles.summary} accessibilityLiveRegion="polite">
-          <Text style={styles.summaryText}>{`${ticked.length} ${ticked.length === 1 ? "test" : "tests"} for your baseline`}</Text>
-          <Text style={styles.totalValue}>{dollars(total)}</Text>
-        </View>
       }
     >
       <View style={styles.groups}>
@@ -211,23 +204,4 @@ const styles = StyleSheet.create({
   whyPart: { gap: space.line },
   whyHead: { ...type.title, fontSize: 13, color: ink.strong },
   whyBody: { ...type.body, fontSize: 13, lineHeight: 19 },
-  summary: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: space.item,
-    padding: space.item,
-    borderRadius: 12,
-    backgroundColor: color.primarySoft,
-    borderWidth: 1,
-    borderColor: color.primaryEdge,
-  },
-  summaryText: { ...type.label, flex: 1, fontFamily: font.medium, fontSize: 13, color: color.primaryText },
-  totalValue: {
-    fontFamily: font.semibold,
-    fontSize: 18,
-    lineHeight: 24,
-    fontVariant: ["tabular-nums"],
-    color: color.primaryText,
-  },
 })

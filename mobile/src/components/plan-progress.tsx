@@ -7,7 +7,7 @@ import { ProgressChart, type Dated } from "@/components/charts"
 import { AskButton } from "@/components/hol"
 import { Readout } from "@/components/progress-parts"
 import { Block, Card, Group, SmallAction, StatRow, StatTile } from "@/components/record-kit"
-import { AT_HOME, DAY_ONE, HEADLINES, RESCORED, RETESTED, SYMPTOMS, WAIST_SERIES, WEIGHT_SERIES, type Pair } from "@/lib/topics"
+import { AT_HOME, DAY_ONE, HEADLINES, RETESTED, WAIST_SERIES, WEIGHT_SERIES, type Pair } from "@/lib/topics"
 import { chart, color, font, ink, space, type } from "@/lib/theme"
 
 
@@ -16,9 +16,9 @@ import { chart, color, font, ink, space, type } from "@/lib/theme"
    at the top carries the start date, today's date and the day count; the
    two figures she shows people come next (pounds lost, body fat down), then
    her weight and waist as graphs from day one to today; then
-   three dated groups, each repeating the two dates above its columns: what
-   the tests found (day one's value, then today's), the three symptoms she
-   named re-scored on her own 0 to 10 scale, and what she measures at home.
+   two dated groups, each repeating the two dates above its columns: what
+   the tests found (day one's value, then today's) and what she measures at
+   home.
    The left column is always day one and the right is always today, so
    nothing reads as a trend without the point it moved from. Under them, the
    way to the forecast (the Outlook tab) and one question for Inlay. The
@@ -72,14 +72,6 @@ export function YourProgress({ onAdd }: { onAdd: (kind: CheckInKind) => void }) 
         <Group>
           {RETESTED.map((p) => (
             <PairRow key={p.name} {...p} />
-          ))}
-        </Group>
-      </Block>
-
-      <Block title="The three you named" meta="0 to 10, lower is better">
-        <Group>
-          {SYMPTOMS.map((s) => (
-            <PairRow key={s.id} name={s.name} via="Re-scored at week 12" from={String(s.start)} to={String(RESCORED[s.id])} spoken={`${s.start} to ${RESCORED[s.id]} out of 10`} />
           ))}
         </Group>
       </Block>

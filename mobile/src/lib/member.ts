@@ -973,7 +973,7 @@ export const EXERCISES: Record<string, Exercise> = {
     reps: 10,
     rest: 60,
     effort: 6,
-    equipment: "A light barbell or two light dumbbells",
+    equipment: "Two light dumbbells",
     cues: ["Sit or stand tall with the weights at shoulder height.", "Press up until your arms are straight, without arching your back.", "Lower slowly."],
     stop: "Stop if you feel pain in your shoulders or lower back.",
     video: "0:30",
@@ -1219,8 +1219,10 @@ export type ActivityLog = {
   sets?: number
   reps?: number
   weightLb?: number
-  /** Each set's own reps and weight, in order; `sets` counts those filled. */
-  entries?: { reps?: number; weightLb?: number }[]
+  /** Each set's own reps and weight, in order; `sets` counts those filled.
+      `rir` is her answer after the set, how many more reps she could have
+      done (0 is to failure), when she gave one (lib/strength.ts). */
+  entries?: { reps?: number; weightLb?: number; rir?: number }[]
   minutes?: number
   note?: string
 }

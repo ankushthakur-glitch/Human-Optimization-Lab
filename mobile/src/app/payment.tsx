@@ -275,9 +275,15 @@ export default function PaymentScreen() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.heading} accessibilityRole="header">
-          Pay with
-        </Text>
+        <View style={styles.headRow}>
+          <Text style={styles.heading} accessibilityRole="header">
+            Pay with
+          </Text>
+          <View style={styles.secure}>
+            <Lock size={14} color={ink.tertiary} />
+            <Text style={styles.secureText}>Secure and encrypted</Text>
+          </View>
+        </View>
         <View
           style={styles.methods}
           accessibilityRole="radiogroup"
@@ -309,23 +315,12 @@ export default function PaymentScreen() {
             )
           })}
         </View>
-      </View>
 
-      <View style={styles.section}>
         {isCard ? (
           <CardPanel hsa={method === "hsa"} saved={saved} onEdit={() => setSheet("card")} />
         ) : (
           <WalletPanel wallet={method} />
         )}
-
-        <View style={styles.secure}>
-          <Lock size={14} color={ink.tertiary} />
-          <Text style={styles.secureText}>
-            {isCard
-              ? "Secure and encrypted"
-              : "Secure and encrypted. Inlay never sees your card number."}
-          </Text>
-        </View>
 
         <View style={styles.agree}>
           <Checkbox
@@ -530,7 +525,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: space.item,
     marginTop: space.line,
-    paddingVertical: space.item,
+    paddingVertical: space.inline,
     paddingHorizontal: space.gutter,
     borderRadius: 14,
     borderWidth: 1,
@@ -559,12 +554,15 @@ const styles = StyleSheet.create({
   totalValue: {
     fontFamily: font.semibold,
     fontSize: 24,
-    lineHeight: 30,
+    lineHeight: 28,
     color: ink.strong,
     fontVariant: ["tabular-nums"],
   },
 
-  section: { gap: space.inline, marginTop: space.section },
+  // Tighter than a screen's sections so the whole step fits without a
+  // scroll, Complete enrollment in view.
+  section: { gap: space.inline, marginTop: space.gutter },
+  headRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },
   heading: { ...type.section },
 
   // When to pay: two slim radio rows, edged in teal when chosen like the
@@ -574,8 +572,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: space.item,
-    minHeight: 56,
-    paddingVertical: space.inline,
+    minHeight: 48,
+    paddingVertical: space.stack,
     paddingHorizontal: space.rowX,
     borderRadius: 12,
     borderWidth: 1,
@@ -602,7 +600,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: space.mark,
-    minHeight: 44,
+    minHeight: 40,
     paddingHorizontal: space.mark,
     borderRadius: 12,
     borderWidth: 1,
@@ -625,21 +623,21 @@ const styles = StyleSheet.create({
   secure: { flexDirection: "row", alignItems: "center", gap: space.mark },
   secureText: { ...type.meta, flexShrink: 1 },
   // The agreement stands apart from the card fields it follows.
-  agree: { marginTop: space.item },
+  agree: { marginTop: space.inline },
 
   wallet: {
     flexDirection: "row",
     alignItems: "center",
     gap: space.item,
-    minHeight: 52,
-    paddingVertical: space.inline,
+    minHeight: 48,
+    paddingVertical: space.stack,
     paddingHorizontal: space.rowX,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: hairline.edge,
     backgroundColor: color.background,
   },
-  walletWords: { flex: 1, gap: space.line },
+  walletWords: { flex: 1, gap: 0 },
   walletName: { ...type.title, color: ink.strong },
   walletLine: { ...type.label },
 

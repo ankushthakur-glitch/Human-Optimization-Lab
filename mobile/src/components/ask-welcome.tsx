@@ -31,6 +31,7 @@ export function AskWelcome({ options, onPick }: { options: string[]; onPick: (op
         <Text style={styles.line}>Ask questions about your results, medicines, appointments or anything in your record.</Text>
       </View>
 
+      {options.length > 0 && (
       <View style={styles.tries}>
         <Text style={styles.label}>Try asking one of these</Text>
         <View style={styles.pills}>
@@ -46,6 +47,7 @@ export function AskWelcome({ options, onPick }: { options: string[]; onPick: (op
           ))}
         </View>
       </View>
+      )}
     </ScrollView>
   )
 }

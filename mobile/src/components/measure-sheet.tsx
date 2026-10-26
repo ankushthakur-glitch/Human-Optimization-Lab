@@ -1,23 +1,20 @@
 import * as React from "react"
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, type TextInput, View } from "react-native"
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, type TextInput, View } from "react-native"
 
-import { Microphone } from "@/components/ph"
 import { toast } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
-import { askAbout } from "@/components/topic-kit"
 import { Button, TextField } from "@/components/ui"
 import { dayOfAt, localDay, waists, weighIns, type Entry } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { SIX, type SixId } from "@/lib/topics"
-import { color, ink, space, type } from "@/lib/theme"
+import { ink, space, type } from "@/lib/theme"
 
 /* Today's measurements (Journey_14 screen 38): choosing "Enter today's
    numbers" opens a sheet over the Measure page carrying the exact fields
    she set on day one (all six), so a missed waist cannot quietly become a
    gap in the chart. Each is a plain number field with its unit inside and
    the last value under it, so a typo is obvious on sight; Next on the
-   keyboard moves down the six. Voice or keypad: say all six in one breath,
-   or type them.
+   keyboard moves down the six.
    Weight and waist are entries like any weigh-in, the other four are kept
    beside them by day. Saving with some missing is possible, forgetting
    silently is not: the sheet says how many are still needed. */
@@ -71,24 +68,6 @@ export function MeasureSheet({ onClose }: { onClose: () => void }) {
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <View style={styles.fill} pointerEvents="box-none">
         <Sheet title="Today's measurements" onClose={onClose}>
-          <Pressable
-            onPress={() => {
-              onClose()
-              askAbout("Log my measurements: ")
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Say all six measurements at once"
-            style={({ pressed }) => [styles.voice, pressed && styles.pressed]}
-          >
-            <View style={styles.fill}>
-              <Text style={styles.voiceTitle}>Say them all at once, instead of typing</Text>
-              <Text style={type.label}>“Waist thirty-six and a quarter, arm twelve”</Text>
-            </View>
-            <View style={styles.mic}>
-              <Microphone size={16} color={color.onPrimary} weight="fill" />
-            </View>
-          </Pressable>
-
           <View style={styles.grid}>
             {SIX.map((f, i) => {
               const last = i === SIX.length - 1
@@ -103,6 +82,7 @@ export function MeasureSheet({ onClose }: { onClose: () => void }) {
                     value={text[f.id]}
                     onChangeText={(v) => setText((t) => ({ ...t, [f.id]: v }))}
                     keyboardType="decimal-pad"
+                    style={styles.num}
                     returnKeyType={last ? "done" : "next"}
                     blurOnSubmit={last}
                     onSubmitEditing={() => inputs.current[i + 1]?.focus()}
@@ -127,12 +107,10 @@ export function MeasureSheet({ onClose }: { onClose: () => void }) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  pressed: { opacity: 0.8 },
-  voice: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 12, backgroundColor: color.primarySoft, borderWidth: 1, borderColor: color.primaryEdge },
-  voiceTitle: { ...type.title, color: ink.primary },
-  mic: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: color.primary },
   grid: { flexDirection: "row", flexWrap: "wrap", columnGap: space.inline, rowGap: space.item },
   cell: { flexBasis: "45%", flexGrow: 1, gap: space.mark },
+  // On web an input keeps its default width; let it shrink so the unit shows.
+  num: { width: 0, minWidth: 0 },
   unit: { ...type.meta, paddingRight: space.item },
   countText: { ...type.metaStrong, color: ink.good },
   countLeft: { color: "#A95413" },

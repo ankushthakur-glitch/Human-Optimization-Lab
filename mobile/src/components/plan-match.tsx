@@ -4,7 +4,6 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 import { Barbell, Brain, CaretRight, ForkKnife, Moon, Pill, Ruler } from "@/components/ph"
 import { Card } from "@/components/record-kit"
 import { useMarkers } from "@/lib/experience"
-import { MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { ADDS, SIX_STEPS, matchPlans, type PlanMatch, type SixStep } from "@/lib/plan-match"
@@ -17,8 +16,7 @@ import { watchList } from "@/lib/trends"
    them from her record. The step grid (picked by the user, 26 Oct 2026):
    "Welcome, Liv", the six steps as a 3 by 2 grid where a step her numbers
    add to is filled teal with "+n", then "Added from your numbers", one
-   row each with the focus, its step and the number it came from, then
-   one line that her physician reviews the tests and the plan first. The
+   row each with the focus, its step and the number it came from. The
    pinned "Start my optimization plan" (ShowroomActions) stays the one
    action.
 
@@ -109,7 +107,6 @@ export function PlanMatchSection() {
         </View>
       )}
 
-      <Text style={styles.reviewText}>{`${MEMBER.doctorShort} reviews your tests and your plan before anything starts.`}</Text>
     </View>
   )
 }
@@ -178,5 +175,4 @@ const styles = StyleSheet.create({
   body: { ...type.body },
 
   // Her physician comes before anything starts: one teal line.
-  reviewText: { ...type.label, fontSize: 13, lineHeight: 19, fontFamily: font.medium, color: color.primaryText },
 })

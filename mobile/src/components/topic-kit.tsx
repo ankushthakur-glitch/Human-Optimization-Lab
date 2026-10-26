@@ -22,6 +22,7 @@ import {
   Pill,
   Scales,
   Watch,
+  Wine,
 } from "@/components/ph"
 import { HUE, Block, Tile, type Hue } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
@@ -55,6 +56,7 @@ const ICON: Record<IconKey, React.ComponentType<IconProps>> = {
   shift: ClockClockwise,
   swap: ArrowsLeftRight,
   practice: FlowerLotus,
+  drink: Wine,
 }
 
 export function TopicIcon({ name, size = 16, color: tone = color.primary, weight }: { name: IconKey; size?: number; color?: string; weight?: IconProps["weight"] }) {
@@ -115,29 +117,33 @@ export function Ways({ ways, onPick, picked }: { ways: Way[]; onPick: (w: Way) =
   return (
     <Block title="How would you like to answer it?">
       <View style={styles.ways}>
-        {ways.map((w) => {
-          const on = picked === w.id
-          return (
-            <Pressable
-              key={w.id}
-              onPress={() => onPick(w)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: on }}
-              accessibilityLabel={`${w.title}. ${w.says}`}
-              style={({ pressed }) => [styles.way, on && styles.wayOn, pressed && styles.pressed]}
-            >
-              <View style={[styles.wayTile, on && styles.wayTileOn]}>
-                <TopicIcon name={w.icon} size={16} color={on ? color.primary : ink.secondary} weight={on ? "bold" : "regular"} />
-              </View>
-              <View style={styles.fill}>
-                <Text style={styles.wayTitle}>{w.title}</Text>
-                <Text style={type.label}>{w.says}</Text>
-              </View>
-            </Pressable>
-          )
-        })}
+        {ways.map((w) => (
+          <WayRow key={w.id} icon={w.icon} title={w.title} says={w.says} on={picked === w.id} onPress={() => onPick(w)} />
+        ))}
       </View>
     </Block>
+  )
+}
+
+/** One way to answer: an icon tile, the title and a line under it, the
+    whole card the button. Eat's "Log drinks" is the same row. */
+export function WayRow({ icon, title, says, on, onPress }: { icon: IconKey; title: string; says: string; on?: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: !!on }}
+      accessibilityLabel={`${title}. ${says}`}
+      style={({ pressed }) => [styles.way, on && styles.wayOn, pressed && styles.pressed]}
+    >
+      <View style={[styles.wayTile, on && styles.wayTileOn]}>
+        <TopicIcon name={icon} size={16} color={on ? color.primary : ink.secondary} weight={on ? "bold" : "regular"} />
+      </View>
+      <View style={styles.fill}>
+        <Text style={styles.wayTitle}>{title}</Text>
+        <Text style={type.label}>{says}</Text>
+      </View>
+    </Pressable>
   )
 }
 

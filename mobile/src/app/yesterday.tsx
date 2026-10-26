@@ -52,7 +52,7 @@ export default function YesterdayScreen() {
         </View>
       </Block>
 
-      <Block title="Movement" meta="against goal">
+      <Block title="Movement">
         <View style={styles.moves}>
           {n.movement.map((m) => (
             <View key={m.label} style={styles.move} accessible accessibilityLabel={`${m.value} ${m.label}, ${m.delta} on goal`}>

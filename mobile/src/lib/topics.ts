@@ -19,7 +19,7 @@ export type TopicId = "exercise" | "eat" | "sleep" | "mind" | "medication" | "me
 /** How a figure reads: green is done or on target, amber short, red missed. */
 export type Tone = "good" | "warn" | "bad" | "plain"
 
-export type IconKey = "exercise" | "eat" | "sleep" | "mind" | "medication" | "measure" | "check" | "pencil" | "mic" | "import" | "search" | "camera" | "upload" | "phone" | "device" | "shift" | "swap" | "practice"
+export type IconKey = "exercise" | "eat" | "sleep" | "mind" | "medication" | "measure" | "check" | "pencil" | "mic" | "import" | "search" | "camera" | "upload" | "phone" | "device" | "shift" | "swap" | "practice" | "drink"
 
 /** What a way does when she taps it. `done` answers the topic and says so on
     Today; `go` opens the screen that already does it; `ask` hands it to the
@@ -125,7 +125,7 @@ export const TOPICS: Topic[] = [
     intro: "Last night scored, then four ways to answer tonight.",
     ways: [
       { id: "window", title: "Follow tonight's window", says: "In bed 10:30, up at 6:00", badge: "Scores 100% for tonight", tone: "good", icon: "check", act: { kind: "done" } },
-      { id: "log", title: "Log what actually happened", says: "Time in bed, and the times you woke", badge: "Scores on actual", tone: "warn", icon: "pencil", act: { kind: "night" } },
+      { id: "log", title: "Log what actually happened", says: "Time in bed, time to fall asleep, times you woke", badge: "Scores on actual", tone: "warn", icon: "pencil", act: { kind: "night" } },
       { id: "shift", title: "Ask to shift the window", says: "A late flight, a sick child, say why", badge: "Rebuilds tonight", tone: "info", icon: "shift", act: { kind: "ask", ask: "I need to shift tonight's sleep window because " } },
       { id: "device", title: "Connect your device", says: "CPAP, Oura, Apple Watch, Eight Sleep", badge: "Logged for you", tone: "info", icon: "device", act: { kind: "apps", title: "Connect your device", apps: ["ResMed CPAP", "Oura", "Apple Watch", "Eight Sleep"] } },
     ],
@@ -322,32 +322,54 @@ export const HEADLINES = {
 export const SLEEP_LAST = {
   score: 64,
   line: "Fair. Seven-night average 71 · the week you started, 52.",
+  // Minutes from lights out to asleep.
+  latency: 32,
   parts: [
     { name: "Duration", value: "6 h 10 m", verdict: "1 h 20 short", tone: "warn" as Tone },
-    { name: "Efficiency", value: "88% asleep", verdict: "good", tone: "good" as Tone },
-    { name: "To bed at", value: "11:50 pm", verdict: "80 min late", tone: "warn" as Tone },
+    { name: "Fell asleep in", value: "32 min", verdict: "17 min over", tone: "warn" as Tone },
+    { name: "Awakenings", value: "3 times", verdict: "1 more than usual", tone: "warn" as Tone },
+    { name: "Deep sleep", value: "58 m", verdict: "16% of the night", tone: "good" as Tone },
+    { name: "REM sleep", value: "1 h 22 m", verdict: "22% of the night", tone: "good" as Tone },
     { name: "CPAP worn", value: "5 h 40 m", verdict: "92% of the night", tone: "good" as Tone },
   ],
 }
 
 /* ------------------------------------------------------------- exercise -- */
 
-export type Lift = { id: string; name: string; load: number; last: string; sets: string; cues: string[]; mistakes: { name: string; fix: string }[]; steps: { name: string; cue: string }[] }
+/** A lift of the default programme. Minimal equipment only (HOL, 26 Oct):
+    light dumbbells or a band, plus the treadmill or rower for cardio.
+    `start` is the load the plan began on, `reps` the bottom of the range
+    and `top` where the reps stop climbing and the load steps up
+    (lib/strength.ts). */
+export type Lift = {
+  id: string
+  name: string
+  gear: "dumbbell" | "band"
+  start: number
+  sets: number
+  reps: number
+  top: number
+  cues: string[]
+  mistakes: { name: string; fix: string }[]
+  steps: { name: string; cue: string }[]
+}
 
 export const LIFTS: Lift[] = [
   {
     id: "goblet-squat",
     name: "Goblet squat",
-    load: 35,
-    last: "30 lb",
-    sets: "3 × 10",
+    gear: "dumbbell",
+    start: 10,
+    sets: 3,
+    reps: 10,
+    top: 12,
     steps: [
       { name: "Start", cue: "Weight at chest" },
       { name: "Descend", cue: "Hips back first" },
       { name: "Bottom", cue: "Thighs parallel" },
     ],
     cues: [
-      "Hold the weight at your chest, **elbows tucked in**, feet a little wider than your hips.",
+      "Hold one dumbbell at your chest, **elbows tucked in**, feet a little wider than your hips.",
       "Send your hips back, then down. **Keep your chest up** and your weight through your mid-foot.",
       "Stop when your thighs are parallel to the floor, then **drive up through your heels**.",
     ],
@@ -357,41 +379,45 @@ export const LIFTS: Lift[] = [
     ],
   },
   {
-    id: "db-bench",
-    name: "Dumbbell bench press",
-    load: 20,
-    last: "17.5 lb",
-    sets: "3 × 8",
+    id: "floor-press",
+    name: "Dumbbell floor press",
+    gear: "dumbbell",
+    start: 8,
+    sets: 3,
+    reps: 10,
+    top: 12,
     steps: [
       { name: "Start", cue: "Arms straight up" },
-      { name: "Lower", cue: "Elbows at 45°" },
+      { name: "Lower", cue: "Elbows to the floor" },
       { name: "Press", cue: "Drive back up" },
     ],
     cues: [
-      "Lie back with your **feet flat** and a dumbbell over each shoulder, arms straight.",
-      "Lower slowly until your **elbows are just below the bench**, wrists stacked over elbows.",
+      "Lie on the floor with your **knees bent, feet flat** and a dumbbell over each shoulder.",
+      "Lower slowly until your **upper arms rest on the floor**, elbows about 45° from your body.",
       "Press up and slightly in, and **stop short of locking out** your elbows.",
     ],
     mistakes: [
       { name: "Elbows flaring wide", fix: "angle them about 45° from your body" },
-      { name: "Back arching off the bench", fix: "keep your ribs down and feet planted" },
+      { name: "Dropping onto the floor", fix: "touch down softly, then press" },
     ],
   },
   {
-    id: "cable-row",
-    name: "Seated cable row",
-    load: 40,
-    last: "same",
-    sets: "3 × 12",
+    id: "band-row",
+    name: "Band row",
+    gear: "band",
+    start: 15,
+    sets: 3,
+    reps: 12,
+    top: 15,
     steps: [
       { name: "Reach", cue: "Arms long" },
       { name: "Pull", cue: "Elbows back" },
       { name: "Squeeze", cue: "Shoulder blades together" },
     ],
     cues: [
-      "Sit tall with a **soft bend in your knees**, arms long and shoulders down.",
-      "Pull the handle to your lower ribs, **driving your elbows straight back**.",
-      "Squeeze your shoulder blades together for a beat, then **let the weight stretch you forward** under control.",
+      "Loop the band round a post or door anchor at chest height and **stand tall**, arms long.",
+      "Pull the handles to your lower ribs, **driving your elbows straight back**.",
+      "Squeeze your shoulder blades together for a beat, then **let the band draw you forward** under control.",
     ],
     mistakes: [
       { name: "Leaning back to pull", fix: "keep your torso still and let your back do the work" },
@@ -401,30 +427,32 @@ export const LIFTS: Lift[] = [
   {
     id: "rdl",
     name: "Romanian deadlift",
-    load: 45,
-    last: "40 lb",
-    sets: "3 × 10",
+    gear: "dumbbell",
+    start: 12,
+    sets: 3,
+    reps: 10,
+    top: 12,
     steps: [
-      { name: "Stand", cue: "Weight at your thighs" },
+      { name: "Stand", cue: "Weights at your thighs" },
       { name: "Hinge", cue: "Hips back, back flat" },
       { name: "Stand tall", cue: "Squeeze your glutes" },
     ],
     cues: [
-      "Stand with the weight at your thighs, a **soft bend in your knees**, and your back flat.",
-      "Push your hips straight back and **slide the weight down your legs** until you feel your hamstrings stretch.",
+      "Stand with a dumbbell in each hand at your thighs, a **soft bend in your knees**, and your back flat.",
+      "Push your hips straight back and **slide the weights down your legs** until you feel your hamstrings stretch.",
       "Squeeze your glutes to **stand tall**, finishing with your hips under your shoulders.",
     ],
     mistakes: [
       { name: "Rounding the lower back", fix: "stop where your back stays flat" },
-      { name: "Squatting the weight down", fix: "keep your shins close to vertical" },
+      { name: "Squatting the weights down", fix: "keep your shins close to vertical" },
     ],
   },
 ]
 
 export const liftOf = (id: string | undefined) => LIFTS.find((l) => l.id === id)
 
-export const WARMUP = { name: "Warm-up", detail: "5 min", say: "Easy bike" }
-export const CARDIO = { name: "Zone 2 cardio", detail: "30 min", say: "HR 118–132" }
+export const WARMUP = { name: "Warm-up", detail: "5 min", say: "Easy treadmill walk" }
+export const CARDIO = { name: "Zone 2 cardio", detail: "30 min", say: "Treadmill or rower" }
 
 /* ------------------------------------------------------------------ eat -- */
 

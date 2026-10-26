@@ -101,7 +101,7 @@ export default function CatalogBookScreen() {
     >
       <Text style={styles.intro}>{`${it.name}, paid. ${about}`}</Text>
 
-      <Block title="Where" meta="nearest three">
+      <Block title="Where">
         <View accessibilityRole="radiogroup">
           <Group>
             {SITES.map((s) => (

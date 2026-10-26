@@ -7,6 +7,7 @@ import type { Life } from "@/lib/wellbeing"
 import type { ActivityLog, Entry, Meal, SavedQuestion } from "@/lib/member"
 import { dayKey } from "@/lib/dates"
 import { dayOfAt } from "@/lib/member"
+import type { DrinkLog } from "@/lib/alcohol"
 import type { OfferLog } from "@/lib/offers"
 import type { Cadence, ProgramId, Sex, Tier } from "@/lib/plans"
 import type { Intake } from "@/lib/program"
@@ -256,11 +257,16 @@ export type State = {
   offers?: OfferLog
   /** Meals the member logged, by local day key (lib/member.ts `localDay`). */
   meals?: Record<string, Meal[]>
+  /** Drinks she logged on Eat, one entry per sitting (lib/alcohol.ts). */
+  drinks?: DrinkLog[]
   /** Weights, waist sizes and blood pressure readings entered by hand. */
   entries?: Entry[]
   /** Exercises and activities marked done, by local day key, then by
       exercise, session ("strength-a") or "walk". */
   exercises?: Record<string, Record<string, ActivityLog>>
+  /** False when she turned off the weekly change to her lifts' weights and
+      reps (lib/strength.ts); unset reads as on. */
+  liftProgress?: boolean
   /** Questions saved for the doctor. */
   questions?: SavedQuestion[]
   /** Banners and cards the patient closed, by id, with when. */
@@ -328,7 +334,7 @@ export type State = {
       happened": bed and up as minutes after 6 pm, times woken, CPAP minutes. */
   topicLog?: Record<
     string,
-    Partial<Record<string, { way: string; at: string; parts?: string[]; skipped?: string[]; minutes?: number; note?: string; night?: { bed: number; up: number; woke: number; cpap: number } }>>
+    Partial<Record<string, { way: string; at: string; parts?: string[]; skipped?: string[]; minutes?: number; note?: string; night?: { bed: number; up: number; latency?: number; woke: number; cpap: number } }>>
   >
   /** Apps and devices she connected from a topic's ways ("Connect your
       device", "Import from another app"), by name. */
@@ -341,6 +347,9 @@ export type State = {
   memberFocus?: "weight" | "bone"
   /** Inlay score check ins, oldest first (ISO day, score). */
   scores?: { at: string; value: number }[]
+  /** Today's coach question (lib/coach.ts): which one was asked on which
+      day, her reply, or "Not now". */
+  coach?: { day: string; id: string; answer?: string; later?: boolean }
   /** Care gaps the record shows as done, with the day (ISO). */
   gapsDone?: Record<string, string>
   /** Review build switches, set from /demo only: the steady record for
