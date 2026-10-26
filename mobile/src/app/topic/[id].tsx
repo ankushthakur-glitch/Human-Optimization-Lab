@@ -9,14 +9,14 @@ import { PrimaryButton } from "@/components/hol"
 import { ProductStep, ScanStep } from "@/components/meal-scan"
 import { MeasureSheet } from "@/components/measure-sheet"
 import { Check, DeviceMobile, ForkKnife, Microphone, Play, StopSquare, UploadSimple } from "@/components/ph"
-import { SheetRows } from "@/components/care-orders-rows"
+import { ChoiceRow, SheetRows } from "@/components/care-orders-rows"
 import { Block, Card, ChipRow, Group, HUE, NeedsRow, Tabs, Tag, TickCircle, toast, type Hue } from "@/components/record-kit"
 import { Sheet, useKeyboardHeight } from "@/components/sheet"
 import { SetTable } from "@/components/set-table"
 import { amount } from "@/components/today-exercise-parts"
 import { isSlot, logDay, slotName } from "@/components/today-food-meals"
 import type { Product } from "@/components/scan-food"
-import { TextField } from "@/components/ui"
+import { SelectField, TextField } from "@/components/ui"
 import { ScoreDial, TargetCard, TopicPage, Ways, askAbout } from "@/components/topic-kit"
 import { VoiceBeam } from "@/components/voice-beam"
 import { WaistGuideButton, WaistGuideSheet } from "@/components/waist-guide"
@@ -525,28 +525,40 @@ const DRINK_DAYS = [
   { value: "yesterday", label: "Yesterday" },
 ] as const
 
-/** "Log drinks": one sitting, how many standard drinks and which day. */
+/** "Log drinks": one sitting, which day and how many standard drinks,
+    both as fields. */
 function DrinksSheet({ onClose }: { onClose: () => void }) {
   const s = useOnboarding()
-  const [count, setCount] = React.useState(1)
+  const [count, setCount] = React.useState("1")
   const [when, setWhen] = React.useState<(typeof DRINK_DAYS)[number]["value"]>("today")
+  const [picking, setPicking] = React.useState(false)
   const keyboard = useKeyboardHeight()
+  const n = /^\d+$/.test(count.trim()) ? parseInt(count, 10) : 0
+  const valid = n >= 1 && n <= 12
 
   async function save() {
+    if (!valid) return
     const date = new Date()
     if (when === "yesterday") date.setDate(date.getDate() - 1)
     const at = new Date().toISOString()
-    await s.save({ drinks: [...(s.drinks ?? []), { id: `d-${Date.now().toString(36)}`, day: localDay(date), count, at }] })
-    toast(`${count} ${count === 1 ? "drink" : "drinks"} logged`)
+    await s.save({ drinks: [...(s.drinks ?? []), { id: `d-${Date.now().toString(36)}`, day: localDay(date), count: n, at }] })
+    toast(`${n} ${n === 1 ? "drink" : "drinks"} logged`)
     onClose()
   }
 
   return (
     <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
       <Sheet title="Log drinks" onClose={onClose}>
-        <ChipRow label="When" options={[...DRINK_DAYS]} value={when} onChange={setWhen} />
-        <SliderField label="Drinks at this sitting" value={count} min={1} max={12} show={(n) => String(n)} parse={(t) => (/^\d+/.test(t.trim()) ? parseInt(t, 10) : undefined)} onChange={setCount} keyboardType="number-pad" />
-        <PrimaryButton onPress={save}>Save</PrimaryButton>
+        <SelectField label="When" value={DRINK_DAYS.find((d) => d.value === when)?.label} placeholder="Choose a day" onPress={() => setPicking((p) => !p)} />
+        {picking && (
+          <SheetRows>
+            {DRINK_DAYS.map((d) => (
+              <ChoiceRow key={d.value} title={d.label} selected={d.value === when} onPress={() => (setWhen(d.value), setPicking(false))} />
+            ))}
+          </SheetRows>
+        )}
+        <TextField label="Drinks at this sitting" value={count} onChangeText={setCount} keyboardType="number-pad" placeholder="1" />
+        <PrimaryButton onPress={save} disabled={!valid}>Save</PrimaryButton>
       </Sheet>
     </View>
   )
