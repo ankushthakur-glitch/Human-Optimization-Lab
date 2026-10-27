@@ -31,7 +31,7 @@ export function PlanFree() {
   return (
     <TabScreen
       tab="plan"
-      title="Plan"
+      title="Your personalized care plan"
       fit={showroom && past.length === 0}
       footer={showroom ? <ShowroomActions onStart={() => router.push("/goal-plans")} /> : undefined}
     >
