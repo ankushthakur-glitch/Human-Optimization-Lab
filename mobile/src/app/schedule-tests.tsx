@@ -3,15 +3,15 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { DatePickerSheet, TimePickerSheet } from "@/components/date-time-picker"
-import { Bone, CalendarBlank, CheckCircle, Clock, Drop, MapPin, ShieldCheck, Wind } from "@/components/ph"
+import { Bone, CalendarBlank, CheckCircle, Clock, Drop, MapPin, Wind } from "@/components/ph"
 import { PlanStepPage } from "@/components/plan-steps"
 import { Card, HUE, Tile, toast } from "@/components/record-kit"
 import { SelectField } from "@/components/ui"
-import { BASELINE_TESTS, TEST_SLOTS, chosenTests, itemOf, openDays, type BaselineTest, type BaselineTestId } from "@/lib/baseline-tests"
-import { MEMBER, clock, dayFrom, dayLabel, localDay } from "@/lib/member"
+import { BASELINE_TESTS, TEST_SLOTS, chosenTests, openDays, type BaselineTest, type BaselineTestId } from "@/lib/baseline-tests"
+import { clock, dayFrom, dayLabel, localDay } from "@/lib/member"
 import type { Booking } from "@/lib/onboarding"
 import { useOnboarding } from "@/lib/onboarding"
-import { color, ink, space, type } from "@/lib/theme"
+import { color, space, type } from "@/lib/theme"
 import { bookingOf, localIso } from "@/lib/todo"
 
 /* "Schedule your tests": opens from "Schedule my tests" on the enrolled
@@ -76,8 +76,6 @@ export default function ScheduleTestsScreen() {
     const test = picking?.test
     setPicking(slot.day && test && !slots[id]?.time ? { test, field: "time" } : undefined)
   }
-  // The tests her physician sent to her insurance: tracked here, not booked.
-  const insured = (onboarding.testReview?.insurance ?? []).map((id) => itemOf(id)?.name).filter((n): n is string => !!n)
   const booked = tests.every((t) => slots[t.id]?.day && slots[t.id]?.time)
 
   async function next() {
@@ -130,25 +128,9 @@ export default function ScheduleTestsScreen() {
     >
       <View style={styles.tests}>
         {tests.map((t) => (
-          <TestSlots key={t.id} test={t} slot={slots[t.id] ?? {}} onPick={(field) => setPicking({ test: t, field })} named={!single} />
+          <TestSlots key={t.id} test={t} slot={slots[t.id] ?? {}} onPick={(field) => setPicking({ test: t, field })} />
         ))}
       </View>
-      {!single && insured.length > 0 && (
-        <View style={styles.office}>
-          <Text style={styles.officeHead} accessibilityRole="header">{`Through ${MEMBER.doctorShort}'s office`}</Text>
-          {insured.map((name) => (
-            <Card key={name} style={styles.officeRow}>
-              <Tile hue="blue" size={32}>
-                <ShieldCheck size={16} color={HUE.blue.ink} />
-              </Tile>
-              <View style={styles.words}>
-                <Text style={styles.officeName} numberOfLines={1}>{name}</Text>
-                <Text style={styles.placeText} numberOfLines={1}>Insurance, the office calls you</Text>
-              </View>
-            </Card>
-          ))}
-        </View>
-      )}
     </PlanStepPage>
   )
 }
@@ -163,10 +145,10 @@ const MARK: Record<BaselineTestId, React.ComponentType<{ size?: number; color?: 
   rmr: Wind,
 }
 
-/** One test on its own card: its mark, its name over its place, then the
+/** One test on its own card: its mark, its name, then the Location field and the
     Date and Time fields side by side, each opening its sheet. A teal check
     shows beside the name once both are chosen. */
-function TestSlots({ test, slot, onPick, named }: { test: BaselineTest; slot: Slot; onPick: (field: "day" | "time") => void; named: boolean }) {
+function TestSlots({ test, slot, onPick }: { test: BaselineTest; slot: Slot; onPick: (field: "day" | "time") => void }) {
   const where = TEST_SLOTS[test.id].where
   const Mark = MARK[test.id]
   const set = !!slot.day && !!slot.time
@@ -177,20 +159,22 @@ function TestSlots({ test, slot, onPick, named }: { test: BaselineTest; slot: Sl
           <Mark size={18} color={HUE.teal.ink} />
         </Tile>
         <View style={styles.words}>
-          {named && (
-            <Text style={styles.name} numberOfLines={2}>
-              {test.name}
-            </Text>
-          )}
-          <View style={styles.place}>
-            <MapPin size={12} color={ink.tertiary} />
-            <Text style={named ? styles.placeText : styles.name} numberOfLines={1}>
-              {where}
-            </Text>
-          </View>
+          <Text style={styles.name} numberOfLines={2}>
+            {test.name}
+          </Text>
         </View>
         {set && <CheckCircle size={22} weight="fill" color={color.primary} />}
       </View>
+      {/* Each test has one place today, so the field shows it and has no
+          other opening to offer. */}
+      <SelectField
+        label={`Location for ${test.name}`}
+        hideLabel
+        placeholder="Select location"
+        value={where}
+        icon={({ color: c }) => <MapPin size={18} color={c} />}
+        onPress={() => {}}
+      />
       <View style={styles.pair}>
         <View style={styles.half}>
           <SelectField
@@ -223,13 +207,6 @@ const styles = StyleSheet.create({
   head: { flexDirection: "row", alignItems: "center", gap: space.item },
   words: { flex: 1, gap: 2 },
   name: { ...type.section },
-  place: { flexDirection: "row", alignItems: "center", gap: 4 },
-  placeText: { ...type.meta, flexShrink: 1 },
   pair: { flexDirection: "row", gap: space.inline },
   half: { flex: 1 },
-  office: { gap: space.inline, marginTop: space.section },
-  officeHead: { ...type.title, color: ink.secondary },
-  // One compact row per test: no fields to fill, so it stays short.
-  officeRow: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingVertical: space.rowY },
-  officeName: { ...type.title, fontSize: 14, color: ink.strong },
 })

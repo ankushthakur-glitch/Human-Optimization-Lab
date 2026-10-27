@@ -8,6 +8,7 @@ import { ChoiceRow, SheetRows } from "@/components/care-orders-rows"
 import { ProgressChart } from "@/components/charts"
 import { PageNotFoundState } from "@/components/error-state"
 import { ExerciseVideoModal } from "@/components/exercise-video"
+import { Checkbox } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
 import { Play } from "@/components/ph"
 import { Readout, entryDay } from "@/components/progress-parts"
@@ -63,6 +64,9 @@ function LiftBody({ lift }: { lift: Lift }) {
       weight: String(saved[i]?.weightLb ?? target.load),
     })),
   )
+  // Ticked, today's sets hold as the target from now on; ticked already for
+  // a lift she has held before.
+  const [keep, setKeep] = React.useState(!!s.liftHolds?.[lift.id])
   const ready = rows.every((r) => amount(r.reps) !== undefined && amount(r.weight) !== undefined)
   const edit = (i: number, part: Partial<SetEntry>) => setRows((was) => was.map((r, j) => (j === i ? { ...r, ...part } : r)))
 
@@ -73,6 +77,11 @@ function LiftBody({ lift }: { lift: Lift }) {
   }
   async function save() {
     await write(saved[rows.length - 1]?.rir)
+    // Held at the first set's numbers; unticked, the lift goes back to the plan.
+    const liftHolds = { ...s.liftHolds }
+    if (keep) liftHolds[lift.id] = { sets: rows.length, reps: amount(rows[0].reps)!, load: amount(rows[0].weight)! }
+    else delete liftHolds[lift.id]
+    await s.save({ liftHolds })
     setOpen(undefined)
     setAsking(true)
   }
@@ -104,6 +113,9 @@ function LiftBody({ lift }: { lift: Lift }) {
           <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
             <Sheet title="Log your sets" onClose={() => setOpen(undefined)}>
               <SetTable rows={rows} onEdit={edit} target={String(target.reps)} />
+              <Checkbox checked={keep} onChange={setKeep}>
+                Keep these weights and reps
+              </Checkbox>
               <PrimaryButton onPress={save} disabled={!ready}>
                 Save your sets
               </PrimaryButton>

@@ -86,16 +86,15 @@ export default function EnrolledScreen() {
   // Scheduled on the step before, the first test's day; left for later,
   // To do with its reminders.
   const tests = startingTestsLine(onboarding)
-  // Her physician sorts the tests into insurance or Inlay before any is
-  // booked (/your-tests).
-  const sorted = !!onboarding.testReview
+  // Every test is cash pay and nothing waits on her physician (26 Oct
+  // 2026 call): scheduling is the next step, and Dr. Patel is sent a copy
+  // of the plan.
   const steps: Step[] = [
     { label: "Enrolled in Inlay", date: dayLabel(membership?.startedAt), state: "done" },
-    { label: `${MEMBER.doctorShort} checks your tests`, date: sorted ? "Insurance or Inlay, done" : "Insurance or Inlay, within 2 days", state: sorted ? "done" : "now" },
     tests.booked
       ? { label: "Complete your scheduled tests", date: tests.line, state: "now" }
-      : { label: "Schedule your tests", date: sorted ? tests.line : "Only the ones booked through Inlay", state: sorted ? "now" : "next" },
-    { label: `${MEMBER.doctorShort} reviews your personalized plan`, date: "Once your results are in", state: "next" },
+      : { label: "Schedule your tests", date: onboarding.startingTests?.laterAt ? tests.line : "The new tests you paid for", state: "now" },
+    { label: `${MEMBER.doctorShort} gets a copy of your plan`, date: "Your plan does not wait on review", state: "next" },
     { label: "Your plan is ready", date: "We let you know right away", state: "next" },
   ]
 
@@ -107,7 +106,7 @@ export default function EnrolledScreen() {
 
   // The schedule comes first; the assistant's chat opens only once she
   // confirms it (app/schedule-tests.tsx).
-  const schedule = () => router.push(sorted ? "/schedule-tests" : "/your-tests")
+  const schedule = () => router.push("/schedule-tests")
 
   // Left for later: the tests wait in To do, brought up every other day.
   // The flourishing questions still follow, as after a confirmed schedule.
@@ -213,7 +212,7 @@ export default function EnrolledScreen() {
           ) : (
             <>
               <Button onPress={schedule} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
-                {sorted ? "Schedule my tests" : "See my tests"}
+                Schedule my tests
               </Button>
               <View style={styles.later}>
                 <TextAction tone="muted" onPress={() => void later()}>

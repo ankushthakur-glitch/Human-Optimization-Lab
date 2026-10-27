@@ -267,6 +267,10 @@ export type State = {
   /** False when she turned off the weekly change to her lifts' weights and
       reps (lib/strength.ts); unset reads as on. */
   liftProgress?: boolean
+  /** Sets, reps and weight she asked to keep going forward ("Use the same
+      weights and reps going forward"), by lift id; today's target holds at
+      these until she clears it (lib/strength.ts). */
+  liftHolds?: Record<string, { sets: number; reps: number; load: number }>
   /** Questions saved for the doctor. */
   questions?: SavedQuestion[]
   /** Banners and cards the patient closed, by id, with when. */

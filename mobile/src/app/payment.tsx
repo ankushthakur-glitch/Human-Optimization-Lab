@@ -23,11 +23,10 @@ import {
 } from "@/components/ph"
 import { PaidPopup } from "@/components/paid-popup"
 import { PlanStepPage } from "@/components/plan-steps"
-import { Card, KeyValue, Tabs, TextAction } from "@/components/record-kit"
+import { Card, KeyValue, TextAction } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
 import { dollarsExact, type TestPay } from "@/lib/baseline-tests"
-import { MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { priceLabel, YEARLY_TEST_DISCOUNT } from "@/lib/plans"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
@@ -110,12 +109,6 @@ export default function PaymentScreen() {
   const billing = onboarding.billingPick ?? "yearly"
   const testPay: TestPay = onboarding.testPay ?? "now"
   const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns, testPay)
-  const count = cost.tests.length + cost.addOns.length
-  const testOptions: { key: TestPay; name: string; amount: string; says: string }[] = [
-    { key: "now", name: "Pay now", amount: `${dollarsExact(cost.testsTotal)} today`, says: "Covered tests are refunded" },
-    { key: "later", name: "Pay after review", amount: "$0 today", says: `Only the tests ${MEMBER.doctorShort} sends to Inlay` },
-  ]
-  const chosen = testOptions.find((o) => o.key === testPay) ?? testOptions[0]
   const [method, setMethod] = React.useState<Method>("card")
   // A saved card per kind; the prototype's demo credit card to start.
   const [cards, setCards] = React.useState<Partial<Record<CardMethod, SavedCard>>>({
@@ -242,20 +235,6 @@ export default function PaymentScreen() {
           <CaretRight size={14} color={ink.primary} weight="bold" />
         </View>
       </Pressable>
-
-      {count > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.heading} accessibilityRole="header">
-            {`When to pay for your ${count === 1 ? "test" : `${count} tests`}`}
-          </Text>
-          <Tabs
-            options={testOptions.map((o) => ({ value: o.key, label: o.name }))}
-            value={testPay}
-            onChange={(key) => onboarding.save({ testPay: key })}
-          />
-          <Text style={styles.optionSays}>{`${chosen.amount}. ${chosen.says}`}</Text>
-        </View>
-      )}
 
       <View style={styles.section}>
         <Text style={styles.heading} accessibilityRole="header">
@@ -545,7 +524,6 @@ const styles = StyleSheet.create({
 
   // When to pay: the chosen option's amount and what it means, one quiet
   // line under the segmented control.
-  optionSays: { ...type.label, fontSize: 12, lineHeight: 16, color: ink.secondary },
 
   // Four ways to pay, two to a row.
   methods: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },

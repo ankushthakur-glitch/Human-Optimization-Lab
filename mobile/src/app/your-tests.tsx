@@ -6,7 +6,7 @@ import { PlanStepPage } from "@/components/plan-steps"
 import { Card, Steps, Tag, type Step } from "@/components/record-kit"
 import { toast } from "@/components/toast"
 import { chosenAddOns, chosenTests, dollars, dollarsExact, itemOf, suggestedInsurance } from "@/lib/baseline-tests"
-import { MEMBER } from "@/lib/member"
+import { MEMBER, shortDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { YEARLY_TEST_DISCOUNT } from "@/lib/plans"
@@ -70,10 +70,10 @@ export default function YourTestsScreen() {
 
   if (!review) {
     const steps: Step[] = [
-      { label: "Enrolled in Inlay", state: "done" },
-      { label: `${MEMBER.doctorShort} checks your tests`, date: "Insurance or Inlay, within 2 days", state: "now" },
-      { label: "Schedule your tests", date: "Only the ones booked through Inlay", state: "next" },
-      { label: "Your plan is ready", date: `Built from your results, approved by ${MEMBER.doctorShort}`, state: "next" },
+      { label: "Enrolled in Inlay", date: shortDay(onboarding.membership?.startedAt ?? new Date()), state: "done" },
+      { label: "Schedule your tests", date: "The new tests you paid for", state: "now" },
+      { label: `${MEMBER.doctorShort} gets a copy of your plan`, date: "Your plan does not wait on review", state: "next" },
+      { label: "Your plan is ready", date: "We let you know right away", state: "next" },
     ]
     return (
       <PlanStepPage

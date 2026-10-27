@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 
 import { AlcoholLog } from "@/components/alcohol-week"
 import { PageNotFoundState } from "@/components/error-state"
+import { Checkbox } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
 import { ProductStep, ScanStep } from "@/components/meal-scan"
 import { MeasureSheet } from "@/components/measure-sheet"
@@ -247,6 +248,9 @@ function PartSheet({ onClose }: { onClose: () => void }) {
       }),
     )
   })
+  // Lifts whose Changed numbers she wants to keep going forward; ticked
+  // already for a lift held from an earlier session.
+  const [keep, setKeep] = React.useState<Record<string, boolean>>(() => Object.fromEntries(LIFTS.map((l) => [l.id, !!s.liftHolds?.[l.id]])))
   const [note, setNote] = React.useState(before?.note ?? "")
   const keyboard = useKeyboardHeight()
   const edit = (id: string, i: number, part: Partial<SetRow>) => setSets((was) => ({ ...was, [id]: was[id].map((r, j) => (j === i ? { ...r, ...part } : r)) }))
@@ -271,7 +275,16 @@ function PartSheet({ onClose }: { onClose: () => void }) {
       day_[l.id] = { at, sets: list.length, reps: list[0].reps, weightLb: list[0].weightLb, entries: list }
     }
     const skipped = ids.filter((id) => status[id] === "skipped")
+    // A Changed lift ticked to keep holds at its first set's numbers from
+    // now on; unticked, it goes back to the plan.
+    const liftHolds = { ...s.liftHolds }
+    for (const l of LIFTS) {
+      if (status[l.id] !== "changed") continue
+      if (keep[l.id]) liftHolds[l.id] = { sets: sets[l.id].length, reps: amount(sets[l.id][0].reps)!, load: amount(sets[l.id][0].weight)! }
+      else delete liftHolds[l.id]
+    }
     await s.save({
+      liftHolds,
       exercises: { ...s.exercises, [day]: day_ },
       topicLog: { ...s.topicLog, [day]: { ...s.topicLog?.[day], exercise: { way: "part", at, parts: done, skipped, note: note.trim() || undefined } } },
     })
@@ -289,6 +302,9 @@ function PartSheet({ onClose }: { onClose: () => void }) {
             {LIFTS.map((l) => (
               <PartCard key={l.id} name={l.name} detail={`${setsText(targetOf(s, l))} at ${loadShort(l, targetOf(s, l).load)}`} options={STATUS} status={status[l.id]} onStatus={(v) => setStatus((was) => ({ ...was, [l.id]: v }))}>
                 <SetTable rows={sets[l.id]} onEdit={(i, part) => edit(l.id, i, part)} target={String(targetOf(s, l).reps)} onInset />
+                <Checkbox checked={keep[l.id]} onChange={(on) => setKeep((was) => ({ ...was, [l.id]: on }))}>
+                  Keep these weights and reps
+                </Checkbox>
               </PartCard>
             ))}
             <PartCard name={CARDIO.name} detail={`${CARDIO.detail}, ${CARDIO.say}`} options={PLAIN} status={status[CARDIO_ID]} onStatus={(v) => setStatus((was) => ({ ...was, [CARDIO_ID]: v }))} />

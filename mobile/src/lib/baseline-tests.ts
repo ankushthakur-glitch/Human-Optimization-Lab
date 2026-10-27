@@ -54,7 +54,9 @@ const BUNDLE: { ids: BaselineTestId[]; price: number } = {
   price: 399,
 }
 
-const ALL = Object.values(BASELINE_TESTS) as BaselineTest[]
+/** The blood panel is already in her record (/baseline, "No charge"), so it
+    is never one of the tests she ticks, lists or pays for. */
+const ALL = (Object.values(BASELINE_TESTS) as BaselineTest[]).filter((t) => t.id !== "panel")
 
 /** "$149", "$1,080". */
 export const dollars = (n: number) => `$${n.toLocaleString("en-US")}`

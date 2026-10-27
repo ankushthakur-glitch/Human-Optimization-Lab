@@ -128,8 +128,10 @@ export const progressOn = (s: Store) => s.liftProgress !== false
 
 /** Today's target: the plan as written, stepped on from each logged
     session before today. With the weekly change off it holds at the last
-    load she used. */
+    load she used; a set she asked to keep going forward holds as saved. */
 export function targetOf(s: Store, lift: Lift, today: Date = new Date()): Target {
+  const held = s.liftHolds?.[lift.id]
+  if (held) return held
   const key = dayKey(today)
   const before = sessionsOf(s, lift, today).filter((x) => x.day < key)
   let planned: Target = { sets: lift.sets, reps: lift.reps, load: lift.start }
