@@ -84,17 +84,17 @@ const ROLE_COLOR: Record<string, string> = {
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /** "Today", "Yesterday" or "5 days ago" for a last login. */
-function lastSeen(iso: string, today: string) {
+export function lastSeen(iso: string, today: string) {
   if (!iso) return "Never"
   const d = daysAgo(iso, today)
   return d === 0 ? "Today" : d === 1 ? "Yesterday" : `${d} days ago`
 }
 
-const shortName = (p: Provider) => `${p.firstName[0]}. ${p.lastName}`
+export const shortName = (p: Provider) => `${p.firstName[0]}. ${p.lastName}`
 
 /* ------------------------------------------------------- licences -- */
 
-type Renewal = {
+export type Renewal = {
   provider: Provider
   type: string
   state: string
@@ -103,7 +103,7 @@ type Renewal = {
 }
 
 /** Every licence on a current provider, soonest renewal first. */
-function renewalsOf(ops: PracticeOps): Renewal[] {
+export function renewalsOf(ops: PracticeOps): Renewal[] {
   return ops.providers
     .filter((p) => p.status !== "Inactive")
     .flatMap((provider) =>
@@ -114,7 +114,7 @@ function renewalsOf(ops: PracticeOps): Renewal[] {
     .sort((a, b) => a.days - b.days)
 }
 
-function renewalTone(days: number): { tone: Tone; label: string } {
+export function renewalTone(days: number): { tone: Tone; label: string } {
   if (days < 0) return { tone: "error", label: "Expired" }
   if (days <= 90) return { tone: "warning", label: "Within 90 days" }
   if (days <= 365) return { tone: "info", label: "Within 12 months" }

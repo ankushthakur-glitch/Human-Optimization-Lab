@@ -244,7 +244,7 @@ function WeeklyAdds({ ops }: { ops: PracticeOps }) {
 
 type Kind = "patients" | "team" | "records"
 
-type Event = {
+export type Event = {
   id: string
   kind: Kind
   /** Local "2026-10-12". */
@@ -267,7 +267,7 @@ const FILTERS: { value: "all" | Kind; label: string }[] = [
 
 /** Everything the practice did in the last 30 days, newest first, from the
     live lists, so every row matches Users and Patients. */
-function buildFeed(ops: PracticeOps): Event[] {
+export function buildFeed(ops: PracticeOps): Event[] {
   const doctor = new Map(ops.providers.map((p) => [p.id, providerName(p)]))
   const under = (p: Patient) => doctor.get(p.providerId) ?? "No provider"
   const events: Event[] = []
@@ -418,7 +418,7 @@ function buildFeed(ops: PracticeOps): Event[] {
     .sort((a, b) => b.day.localeCompare(a.day) || a.title.localeCompare(b.title))
 }
 
-function dayHeading(day: string, today: string) {
+export function dayHeading(day: string, today: string) {
   const d = daysAgo(day, today)
   if (d === 0) return "Today"
   if (d === 1) return "Yesterday"

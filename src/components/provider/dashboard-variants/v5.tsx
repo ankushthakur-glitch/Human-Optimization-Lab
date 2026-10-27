@@ -599,7 +599,7 @@ function EventSheet({ event, onClose, onItem }: { event: CalEvent | null; onClos
 
 /* ------------------------------------------------- care plan review -- */
 
-function CarePlanReview({ opt }: { opt: Opt }) {
+export function CarePlanReview({ opt }: { opt: Opt }) {
   const counts = Object.fromEntries(opt.byStage.map((s) => [s.stage, s.count])) as Record<PlanStage, number>
   const total = opt.members.length
   const reviewed = counts["Sent to patient"] + counts.Active

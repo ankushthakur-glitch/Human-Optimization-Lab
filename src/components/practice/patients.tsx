@@ -588,7 +588,11 @@ export function PatientsScreen() {
   const { patientHref } = portal
   const syncOf = useSyncLookup()
   /* The dashboard's record status bar links here with ?record=. */
-  const recordParam = useSearchParams().get("record")
+  const params = useSearchParams()
+  const recordParam = params.get("record")
+  /* The dashboard links here with ?location= and ?provider= (names). */
+  const locationParam = params.get("location")
+  const providerParam = params.get("provider")
   const [importing, setImporting] = React.useState(false)
   const [deactivating, setDeactivating] = React.useState<Patient | null>(null)
   const [reactivating, setReactivating] = React.useState<Patient | null>(null)
@@ -891,8 +895,12 @@ export function PatientsScreen() {
         })}
         emptyIllustration="patients-empty"
         initialFilters={
-          recordParam && SYNC_FILTER.includes(recordParam)
-            ? { record: recordParam }
+          (recordParam && SYNC_FILTER.includes(recordParam)) || locationParam || providerParam
+            ? {
+                ...(recordParam && SYNC_FILTER.includes(recordParam) ? { record: recordParam } : {}),
+                ...(locationParam ? { location: locationParam } : {}),
+                ...(providerParam ? { provider: providerParam } : {}),
+              }
             : undefined
         }
       />

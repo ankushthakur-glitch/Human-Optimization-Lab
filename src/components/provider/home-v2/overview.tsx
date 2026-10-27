@@ -12,7 +12,6 @@ import {
   IconEqual,
   IconFileList,
   IconLocation,
-  IconUsersGroup,
   IconVideo,
   IconWarning,
 } from "@/design-system/icons"
@@ -40,6 +39,8 @@ import {
   Grid,
   type IconDef,
   KitIcon,
+  ReDonut,
+  type ReSlice,
   SegmentedControl,
   useReducedMotion,
 } from "@/components/dashboard-kit-v2"
@@ -797,6 +798,13 @@ export function MyPatients({ today, className }: { today: string; className?: st
     value: mine.filter((p) => p.status === s).length,
     color: STATUS_COLOR[s],
   }))
+  const slices: ReSlice[] = segments.map((s) => ({
+    key: s.label.toLowerCase(),
+    label: s.label,
+    value: s.value,
+    color: s.color,
+    fill: "solid",
+  }))
   const active = mine.filter((p) => p.status === "Active")
   const quiet = active.filter((p) => !p.lastEngagedAt || daysAgo(p.lastEngagedAt, today) > 30).length
   const members = mine.filter((p) => p.membership === "optimization").length
@@ -805,13 +813,14 @@ export function MyPatients({ today, className }: { today: string; className?: st
     <Card className={className}>
       <CardHeader title="My patients" actions={<CardLink href={BASE}>All patients</CardLink>} />
       <div className="flex flex-1 flex-col gap-4 p-4">
-        <div className="flex items-center gap-3">
-          <IconTile icon={IconUsersGroup} />
-          <span className="text-[28px] leading-9 font-semibold tabular-nums">{mine.length}</span>
-        </div>
-        <SegmentBar
-          segments={segments}
-          label={`Patients by status: ${segments.map((s) => `${s.label} ${s.value}`).join(", ")}`}
+        {/* The panel by status as a pie, the total at its centre. */}
+        <ReDonut
+          data={slices}
+          centerValue={mine.length}
+          centerLabel="Patients"
+          height={176}
+          thickness={22}
+          className="mx-auto w-[176px]"
         />
         <ul className="flex flex-col divide-y divide-border">
           {segments.map((s) => (

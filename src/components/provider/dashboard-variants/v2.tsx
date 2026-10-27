@@ -123,7 +123,7 @@ const VISIT_SERIES: ReSeries[] = [
 ]
 
 /** The members' daily optimization score by day, or the visits of this week and next. */
-function Activity({ now, active, className }: { now: string; active: Optimization[]; className?: string }) {
+export function Activity({ now, active, className }: { now: string; active: Optimization[]; className?: string }) {
   const all = useAppointments(now)
   const [mode, setMode] = React.useState<"score" | "visits">("score")
   const today = new Date(`${now.slice(0, 10)}T00:00:00`)
