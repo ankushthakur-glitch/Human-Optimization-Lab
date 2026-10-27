@@ -5,7 +5,6 @@ import Svg, { Circle } from "react-native-svg"
 
 import { BiologicalAgeSheet } from "@/components/biological-age-sheet"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
-import { EnergyBalance } from "@/components/energy-balance"
 import { Upcoming } from "@/components/home-free"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
 import {
@@ -21,7 +20,6 @@ import { Block, Card, Heading, HUE, Rise, Tag } from "@/components/record-kit"
 import { TONE_INK, TopicTile } from "@/components/topic-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { biologicalAge } from "@/lib/biological-age"
-import { reviewDay } from "@/lib/daily-review"
 import {
   MEAL_SLOTS,
   MEMBER,
@@ -55,9 +53,7 @@ import { formatNumber } from "@/lib/trends"
    5. Log a meal: one box, four ways in, so nothing has to be typed;
    6. Your progress: weight and biological age side by side, each opening
       its page in Plan;
-   7. Energy balance: energy out, food in and the deficit for the last
-      finished day, then the past seven days, Details opening Plan;
-   8. Upcoming: the next appointment or test, See all opening To do. */
+   7. Upcoming: the next appointment or test, See all opening To do. */
 
 const WORKOUT_PHOTO = require("../../assets/images/exercise-demo.jpg")
 
@@ -73,7 +69,6 @@ export function OptimizedHome() {
 
   const now = new Date()
   const t = today(onboarding, now)
-  const yesterday = reviewDay(onboarding, 1, now)
   const started = dayOfAt(onboarding.membership?.approvedAt ?? onboarding.membership?.startedAt ?? MEMBER.start)
   const planDay = Math.max(1, daysBetween(dayFrom(started), now) + 1)
 
@@ -100,11 +95,6 @@ export function OptimizedHome() {
         <Rise at={2} id="home:goals">
           <TodaysGoals />
         </Rise>
-        {yesterday.energy && (
-          <Rise at={3} id="home:energy">
-            <EnergyBalance day={yesterday} onDetails={() => openTab("/plan", "home")} />
-          </Rise>
-        )}
         <Rise at={4} id="home:workout">
           <TodaysWorkout t={t} onWalk={() => setSheet("walk")} />
         </Rise>

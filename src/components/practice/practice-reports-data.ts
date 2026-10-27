@@ -1,8 +1,8 @@
 /* The clinic manager's reports: how the practice is doing as a whole, one
    row per provider. Five are the practice's own (enrollment and activation,
    engagement by encounter type, outcomes, alert volume, value and renewal);
-   membership conversion and care plan review are shared with the provider
-   portal, so both portals show the same numbers for them. Built on the
+   membership conversion is shared with the provider portal, so both
+   portals show the same numbers for it. Built on the
    provider Reports engine: raw counts per row, every column worked out from
    them, numbers seeded by report, provider and period. */
 
@@ -198,5 +198,4 @@ export const PRACTICE_REPORTS: Report[] = [
   ALERTS,
   VALUE,
   shared("membership"),
-  shared("care-plans"),
 ]
