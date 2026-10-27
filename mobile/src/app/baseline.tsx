@@ -119,6 +119,7 @@ export default function BaselineScreen() {
             <Text style={styles.pillText}>No charge</Text>
           </View>
         </View>
+        <Text style={styles.sectionHead}>NEW TESTS TO BOOK</Text>
         <View style={styles.group}>
           {items.map((item, i) => {
             const checked = on(item.key)
