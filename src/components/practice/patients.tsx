@@ -16,6 +16,7 @@ import {
   IconMail,
   IconSwitch,
   IconUserAdd,
+  IconUserMinus,
 } from "@/design-system/icons"
 
 import { EMAIL, VALIDATE, digits, formatPhone } from "@/components/form-kit"
@@ -591,6 +592,7 @@ export function PatientsScreen() {
   const [importing, setImporting] = React.useState(false)
   const [deactivating, setDeactivating] = React.useState<Patient | null>(null)
   const [reactivating, setReactivating] = React.useState<Patient | null>(null)
+  const [discharging, setDischarging] = React.useState<Patient | null>(null)
   const [timeline, setTimeline] = React.useState<Patient | null>(null)
   const [reassigning, setReassigning] = React.useState<Patient[] | null>(null)
   /* The clinic manager hands a patient to another provider; a provider
@@ -772,6 +774,12 @@ export function PatientsScreen() {
               Resend invite
             </DropdownMenuItem>
           )}
+          {p.status === "Active" && (
+            <DropdownMenuItem onClick={() => setDischarging(p)}>
+              <IconUserMinus />
+              Discharge
+            </DropdownMenuItem>
+          )}
           {REACTIVATABLE.includes(p.status) ? (
             <DropdownMenuItem onClick={() => setReactivating(p)}>
               <IconLockOpen />
@@ -929,6 +937,23 @@ export function PatientsScreen() {
           })
           toast.success(`${fullName(deactivating)} is deactivated`)
           setDeactivating(null)
+        }}
+      />
+
+      <DeactivateDialog
+        illustration="deactivate-person"
+        verb="Discharge"
+        target={discharging ? fullName(discharging) : null}
+        message="Their care with the practice ends and they can no longer sign in to the patient app. Their record stays with the practice."
+        onCancel={() => setDischarging(null)}
+        onConfirm={() => {
+          if (!discharging) return
+          patients.patch(discharging.id, {
+            status: "Inactive",
+            inactiveReason: "Discharged",
+          })
+          toast.success(`${fullName(discharging)} is discharged`)
+          setDischarging(null)
         }}
       />
     </PatientsFrame>

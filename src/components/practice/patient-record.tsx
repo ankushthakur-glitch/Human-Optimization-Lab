@@ -11,6 +11,7 @@ import {
   IconLockOpen,
   IconMail,
   IconMoreVertical,
+  IconUserMinus,
 } from "@/design-system/icons"
 
 import {
@@ -738,6 +739,7 @@ export function PatientActions({ patient: p }: { patient: Patient }) {
   const { patientHref } = usePortal()
   const [deactivating, setDeactivating] = React.useState(false)
   const [reactivating, setReactivating] = React.useState(false)
+  const [discharging, setDischarging] = React.useState(false)
   const closed = REACTIVATABLE.includes(p.status)
 
   return (
@@ -785,6 +787,12 @@ export function PatientActions({ patient: p }: { patient: Patient }) {
                 Resend invite
               </DropdownMenuItem>
             )}
+            {p.status === "Active" && (
+              <DropdownMenuItem onClick={() => setDischarging(true)}>
+                <IconUserMinus />
+                Discharge
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onClick={() =>
                 closed ? setReactivating(true) : setDeactivating(true)
@@ -809,6 +817,21 @@ export function PatientActions({ patient: p }: { patient: Patient }) {
           })
           toast.success(`${fullName(p)} is deactivated`)
           setDeactivating(false)
+        }}
+      />
+      <DeactivateDialog
+        illustration="deactivate-person"
+        verb="Discharge"
+        target={discharging ? fullName(p) : null}
+        message="Their care with the practice ends and they can no longer sign in to the patient app. Their record stays with the practice."
+        onCancel={() => setDischarging(false)}
+        onConfirm={() => {
+          patients.patch(p.id, {
+            status: "Inactive",
+            inactiveReason: "Discharged",
+          })
+          toast.success(`${fullName(p)} is discharged`)
+          setDischarging(false)
         }}
       />
       <ReactivateDialog
