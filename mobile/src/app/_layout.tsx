@@ -154,10 +154,8 @@ function Routes() {
           <Stack.Screen name="visit/[id]" />
           <Stack.Screen name="notifications" />
           {/* The member's day, opened from the member home's doors and
-              cards: the diet plan, one day, progress since the start, and
-              history. */}
+              cards: the diet plan, progress since the start, and history. */}
           <Stack.Screen name="diet" />
-          <Stack.Screen name="day/[date]" />
           <Stack.Screen name="progress" options={{ animation: "none" }} />
           {/* The member's own billing page: pause, resume and cancel. */}
           <Stack.Screen name="membership" />

@@ -116,8 +116,6 @@ export default function DietScreen() {
                   <GoalRows
                     rows={rows}
                     playKey="diet:today"
-                    onRowPress={(row) => row.id && router.push({ pathname: "/day/[date]", params: { date: "today", nutrient: row.id } })}
-                    rowHint="Shows the week and where it came from"
                   />
                   {!!day.estimateNote && <Text style={styles.meta}>{day.estimateNote}</Text>}
                 </View>

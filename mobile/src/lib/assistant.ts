@@ -905,7 +905,8 @@ export const PLAN_ASKS = ["How much fiber is left today?", "What's my exercise t
 
 /** "How did yesterday go?", "How is today going so far?", "How did Sun,
     Oct 4 go?": a member's day from her own log, kindly, with the day page
-    one tap away. Partial days are never scored. */
+    one tap away (a past day's figures; today has no page). Partial days are
+    never scored. */
 export function dayAnswer(question: string, s: Snapshot, now: Date = new Date()): Answer | undefined {
   let date: Date | undefined
   if (/yesterday/i.test(question)) date = addDays(now, -1)
@@ -928,12 +929,12 @@ export function dayAnswer(question: string, s: Snapshot, now: Date = new Date())
       : meals
         ? `${meals}, and the rest of today's list is still ahead.`
         : "Today's list is still ahead, and no meals are logged yet."
-    return { text, link: { label: "Open today", href: "/day/today" } }
+    return { text }
   }
   const d = dayScore(s, date, now)
   const yest = localDay(date) === localDay(addDays(now, -1))
   const name = yest ? "Yesterday" : d.label
-  const href = `/day/${yest ? "yesterday" : d.day}`
+  const href = `/yesterday${yest ? "" : `?date=${d.day}`}`
   if (d.status === "none") return { text: `Nothing was logged ${yest ? "yesterday" : `on ${d.label}`}, so there's no score. Today's list starts fresh.`, link: { label: "Open the day", href } }
   if (d.status === "partial" || d.percent === undefined)
     return { text: `${name} is a partial day, so it isn't scored: ${list(d.missing)} wasn't logged.`, link: { label: "Open the day", href } }
