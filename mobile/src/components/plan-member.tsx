@@ -127,7 +127,7 @@ export function PlanMember() {
   return (
     <TabScreen
       tab="plan"
-      title="Plan"
+      title="Your personalized care plan"
       headerRight={live ? <Text style={styles.day}>{`Day ${Math.max(1, planDayNow(onboarding))}`}</Text> : undefined}
       pinned={live ? <SectionTabs value={section} onChange={setSection} /> : undefined}
       headless={experience === "member-review"}
