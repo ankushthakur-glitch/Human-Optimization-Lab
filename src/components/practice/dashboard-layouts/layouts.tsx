@@ -289,7 +289,7 @@ function Overview({ board }: { board: Board }) {
     },
     {
       key: "critical",
-      label: "Critical alerts",
+      label: "Alerts",
       icon: IconWarning,
       color: SUBTLE.red,
       value: a.critical,
@@ -304,7 +304,7 @@ function Overview({ board }: { board: Board }) {
     },
     {
       key: "members",
-      label: "Active optimization members",
+      label: "Optimization member",
       icon: IconCreditCard,
       color: "var(--primary)",
       value: v.members,
@@ -684,7 +684,6 @@ function ActionsCard({ board }: { board: Board }) {
                 </span>
                 <span className="truncate text-xs text-muted-foreground">{a.detail}</span>
               </span>
-              <span className="w-8 shrink-0 text-right text-lg font-semibold tabular-nums">{a.count}</span>
               <Link href={a.href} className={buttonVariants({ variant: "outline", size: "sm" }) + " shrink-0 bg-card"}>
                 {a.cta}
               </Link>
