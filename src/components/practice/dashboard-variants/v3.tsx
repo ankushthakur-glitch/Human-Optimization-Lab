@@ -183,7 +183,7 @@ function SectionSkeleton({ h = 220 }: { h?: number }) {
 
 /* ------------------------------------------------------------- page -- */
 
-type Ctx = { ops: PracticeOps; totals: ReportTotals; kind: PeriodKind; locationId: string }
+export type Ctx = { ops: PracticeOps; totals: ReportTotals; kind: PeriodKind; locationId: string }
 
 export function PracticeDashboardV3() {
   const params = useSearchParams()
@@ -458,7 +458,7 @@ function OverviewView({ ctx, go }: { ctx: Ctx; go: (v: View) => void }) {
 
 /** The enrollment pipeline: each stage as a column with its count, its
     share of everyone added and the conversion from the stage before. */
-function Pipeline({ ctx, footer }: { ctx: Ctx; footer?: React.ReactNode }) {
+export function Pipeline({ ctx, footer, tiles = "sm:grid-cols-5", hideReport }: { ctx: Ctx; footer?: React.ReactNode; hideReport?: boolean; /** The stage tiles' column classes, for a narrower card. */ tiles?: string }) {
   const { now } = ctx.totals
   const e = now.enroll
   const stages: { label: string; value: number; tone: Tone }[] = [
@@ -472,11 +472,11 @@ function Pipeline({ ctx, footer }: { ctx: Ctx; footer?: React.ReactNode }) {
     <VFrame
       title="Patient pipeline"
       sub={now.period.label}
-      actions={<CardLink href={HREF.report(ENROLLMENT)}>Report</CardLink>}
+      actions={hideReport ? undefined : <CardLink href={HREF.report(ENROLLMENT)}>Report</CardLink>}
       footer={footer}
       bodyClassName="gap-4 p-4"
     >
-      <ol className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <ol className={cn("grid grid-cols-2 gap-2", tiles)}>
         {stages.map((s, i) => (
           <li key={s.label} className="flex min-w-0 flex-col gap-2 rounded-[7.2px] bg-muted/60 p-3">
             <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">

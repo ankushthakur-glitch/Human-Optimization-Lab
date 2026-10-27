@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import { FOCUS } from "@/components/dashboard-kit-v2"
 import { ProviderShell } from "@/components/provider/provider-shell"
 
-/* Five dashboard variations for review, each after one ReUI template, in
+/* Six dashboard variations for review, each after one ReUI template, in
    the provider's frame. The strip on top walks between them and the live
    dashboard; it goes once a variation is picked. */
 
@@ -21,6 +21,7 @@ export const VARIANTS = [
   { href: `${BASE}/v3`, label: "3 Practice" },
   { href: `${BASE}/v4`, label: "4 Clinic day" },
   { href: `${BASE}/v5`, label: "5 Panel" },
+  { href: `${BASE}/v6`, label: "6 Briefing" },
 ] as const
 
 export function VariantSwitch({ className }: { className?: string }) {

@@ -21,16 +21,18 @@ export const VARIANTS = [
   { href: `${BASE}/v3`, label: "3 Growth" },
   { href: `${BASE}/v4`, label: "4 Team" },
   { href: `${BASE}/v5`, label: "5 Locations" },
+  /* Layouts on the current page itself (see dashboard-layouts). */
+  { href: `${BASE}?layout=d3`, label: "6 Strip" },
 ] as const
 
-export function VariantSwitch({ className }: { className?: string }) {
+export function VariantSwitch({ className, current }: { className?: string; /** The href that is open, when the path alone cannot tell. */ current?: string }) {
   const path = usePathname()
   return (
     <nav aria-label="Dashboard variations" className={cn("flex items-center gap-2 overflow-x-auto no-scrollbar", className)}>
       <span className="shrink-0 text-xs text-muted-foreground">Variation</span>
       <div className="flex shrink-0 gap-0.5 rounded-full border border-border bg-card p-0.5">
         {VARIANTS.map((v) => {
-          const active = path === v.href
+          const active = (current ?? path) === v.href
           return (
             <Link
               key={v.href}
