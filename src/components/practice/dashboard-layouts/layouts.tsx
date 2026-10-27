@@ -259,7 +259,7 @@ function Overview({ board }: { board: Board }) {
       value: e.enrolled,
       of: e.added,
       meaning: e.added
-        ? `${rate(e.enrolled, e.added)}% of patients added and invited this period have enrolled`
+        ? `${rate(e.enrolled, e.added)}% of added patients enrolled`
         : "No patients added this period",
       segments: [
         { label: "Enrolled", value: e.enrolled, color: SUBTLE.green },
@@ -277,7 +277,7 @@ function Overview({ board }: { board: Board }) {
       value: e.activated,
       of: e.enrolled,
       meaning: e.enrolled
-        ? `${rate(e.activated, e.enrolled)}% of enrolled patients finished onboarding`
+        ? `${rate(e.activated, e.enrolled)}% of enrolled finished onboarding`
         : "No enrolled patients this period",
       segments: [
         { label: "Activated", value: e.activated, color: SUBTLE.green },
@@ -294,7 +294,7 @@ function Overview({ board }: { board: Board }) {
       color: SUBTLE.red,
       value: a.critical,
       of: a.raised,
-      meaning: `Critical results out of ${plural(a.raised, "alert")} raised; ${a.open} alerts of any kind still open`,
+      meaning: `${a.open} alerts of any kind still open`,
       segments: [
         { label: "Critical results", value: a.critical, color: SUBTLE.red },
         { label: "Routine alerts", value: a.raised - a.critical, color: GREY },
@@ -324,7 +324,7 @@ function Overview({ board }: { board: Board }) {
       color: SUBTLE.blue,
       value: active,
       of: board.providers.length,
-      meaning: `${invited} invited and not joined, ${left} left the practice`,
+      meaning: `${invited} invited, ${left} left the practice`,
       segments: [
         { label: "Active", value: active, color: SUBTLE.green },
         { label: "Invited", value: invited, color: SUBTLE.blue },
@@ -340,17 +340,17 @@ function Overview({ board }: { board: Board }) {
       {cards.map((c) => (
         <Card key={c.key}>
           <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <IconTile icon={c.icon} color={c.color} />
-              <span className="min-w-0 text-sm leading-tight font-medium">{c.label}</span>
-              <span className="ml-auto shrink-0 text-xs text-muted-foreground">{c.key === "providers" ? "Now" : board.when}</span>
+              <span className="min-w-0 truncate text-[13px] font-medium whitespace-nowrap">{c.label}</span>
+              <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">{c.key === "providers" ? "Now" : board.when}</span>
             </div>
             <div className="flex flex-col">
               <span className="flex items-baseline gap-0.5 tabular-nums">
                 <span className="text-[28px] leading-9 font-semibold">{c.value}</span>
                 {c.of !== undefined && <span className="text-base text-muted-foreground">/{c.of}</span>}
               </span>
-              <span className="text-xs text-muted-foreground">{c.meaning}</span>
+              <span className="truncate text-xs text-muted-foreground">{c.meaning}</span>
             </div>
             <SegmentBar segments={c.segments} label={`${c.label}: ${c.segments.map((s) => `${s.label} ${s.value}`).join(", ")}`} />
             <LegendGrid segments={c.segments} />
