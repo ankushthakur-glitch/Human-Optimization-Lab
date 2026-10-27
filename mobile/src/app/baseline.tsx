@@ -51,9 +51,6 @@ const TEST_ITEM = (id: BaselineTestId, says: string): Item => ({
 /** "LDL 162", from "Matched on LDL 162 · up 34 since Apr 2022". */
 const valueOf = (matchedOn: string) => matchedOn.replace(/^Matched on /, "").split(" · ")[0]
 
-/** The same mid-sentence: "triglycerides 188", while "LDL 162" keeps its capitals. */
-const inSentence = (value: string) => (/^[A-Z][a-z]/.test(value) ? value.charAt(0).toLowerCase() + value.slice(1) : value)
-
 export default function BaselineScreen() {
   const onboarding = useOnboarding()
   const { matches } = usePlanMatches()
@@ -79,10 +76,8 @@ export default function BaselineScreen() {
   }
 
   // Each test names the numbers it was picked for, when her record has them.
-  const blood = matches.filter((m) => m.kind === "lipid" || m.kind === "insulin").map((m, i) => (i ? inSentence(valueOf(m.matchedOn)) : valueOf(m.matchedOn)))
   const weight = matches.find((m) => m.kind === "metabolic")
   const items: Item[] = [
-    TEST_ITEM("panel", blood.length ? `${blood.join(" and ")}, also covers insulin` : "Sets your starting values"),
     TEST_ITEM("dexa", weight ? `${valueOf(weight.matchedOn)}, separates fat from lean mass` : "Separates fat from lean mass"),
     TEST_ITEM("rmr", "No metabolic rate on file"),
     { key: "sleep", name: ADD_ONS.sleep.name, says: "Two nights at home, you said you wake at three", price: ADD_ONS.sleep.price, info: SLEEP, insurance: ADD_ONS.sleep.insurance },
