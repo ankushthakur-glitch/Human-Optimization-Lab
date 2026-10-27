@@ -842,3 +842,16 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Removed: Clinic Manager Portal / Settings / Roles and permissions
 - Removed: Clinic Manager Portal / Settings / Alerts
 - Removed: Patient Portal / Mobile App: Connect / Connect tab
+
+## 27-Oct-2026
+
+- Clinical content console, practice dashboard variations, paid plan cleanup
+- Six steps plan builder replaces the 81 plan match in the paid flow
+- Plan tab shows the six steps as a grid, filled where her numbers add
+- Proactive coach, strength progression, alcohol week, daily weigh-in
+- Drink count stepper on Eat's alcohol log; drop label photo and also taking from Medication
+- Laboratory opens a list of lab panels to select several and order in one draw
+- Alcohol back to the Log drinks card that opens a sheet with the slider input
+- Log drinks sheet uses fields for the day and the drink count
+- Added: Super Admin Portal / Clinical / Clinical content
+- Added: Clinic Manager Portal / Dashboard / Dashboard

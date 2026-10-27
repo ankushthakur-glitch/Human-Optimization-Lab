@@ -8,7 +8,6 @@ import { usePlanMatches } from "@/components/plan-match"
 import { PlanStepPage } from "@/components/plan-steps"
 import { Sheet } from "@/components/sheet"
 import { ADD_ONS, BASELINE_TESTS, chosenAddOns, chosenTests, dollars, type AddOnId, type BaselineTestId, type Coverage } from "@/lib/baseline-tests"
-import { MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
 
@@ -52,9 +51,6 @@ const TEST_ITEM = (id: BaselineTestId, says: string): Item => ({
 /** "LDL 162", from "Matched on LDL 162 · up 34 since Apr 2022". */
 const valueOf = (matchedOn: string) => matchedOn.replace(/^Matched on /, "").split(" · ")[0]
 
-/** The same mid-sentence: "triglycerides 188", while "LDL 162" keeps its capitals. */
-const inSentence = (value: string) => (/^[A-Z][a-z]/.test(value) ? value.charAt(0).toLowerCase() + value.slice(1) : value)
-
 export default function BaselineScreen() {
   const onboarding = useOnboarding()
   const { matches } = usePlanMatches()
@@ -80,10 +76,8 @@ export default function BaselineScreen() {
   }
 
   // Each test names the numbers it was picked for, when her record has them.
-  const blood = matches.filter((m) => m.kind === "lipid" || m.kind === "insulin").map((m, i) => (i ? inSentence(valueOf(m.matchedOn)) : valueOf(m.matchedOn)))
   const weight = matches.find((m) => m.kind === "metabolic")
   const items: Item[] = [
-    TEST_ITEM("panel", blood.length ? `${blood.join(" and ")}, also covers insulin` : "Sets your starting values"),
     TEST_ITEM("dexa", weight ? `${valueOf(weight.matchedOn)}, separates fat from lean mass` : "Separates fat from lean mass"),
     TEST_ITEM("rmr", "No metabolic rate on file"),
     { key: "sleep", name: ADD_ONS.sleep.name, says: "Two nights at home, you said you wake at three", price: ADD_ONS.sleep.price, info: SLEEP, insurance: ADD_ONS.sleep.insurance },
@@ -115,6 +109,17 @@ export default function BaselineScreen() {
       }
     >
       <View style={styles.groups}>
+        <Text style={styles.sectionHead}>ALREADY IN YOUR RECORD</Text>
+        <View style={[styles.group, styles.record]}>
+          <View style={styles.body}>
+            <Text style={styles.recordName}>{BASELINE_TESTS.panel.name}</Text>
+            <Text style={styles.says}>Drawn 12 days ago, in your record</Text>
+          </View>
+          <View style={styles.pill}>
+            <Text style={styles.pillText}>No charge</Text>
+          </View>
+        </View>
+        <Text style={styles.sectionHead}>NEW TESTS TO BOOK</Text>
         <View style={styles.group}>
           {items.map((item, i) => {
             const checked = on(item.key)
@@ -152,8 +157,11 @@ export default function BaselineScreen() {
           })}
         </View>
         <View style={styles.note}>
-          <Info size={16} color={color.amber} />
-          <Text style={styles.noteText}>{`${MEMBER.doctorShort} checks each test against your insurance before you book. Anything covered goes through the office.`}</Text>
+          <Info size={16} color={ink.secondary} />
+          <Text style={styles.noteText}>
+            <Text style={styles.noteBold}>All tests are cash pay. </Text>
+            We reuse what is already in your record: blood work from the last 30 days, other tests from the last 6 months.
+          </Text>
         </View>
       </View>
     </PlanStepPage>
@@ -197,10 +205,16 @@ const styles = StyleSheet.create({
     padding: space.item,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: color.amberEdge,
-    backgroundColor: color.amberTint,
+    borderColor: color.primaryEdge,
+    backgroundColor: color.primaryTint,
   },
-  noteText: { ...type.label, flex: 1, fontSize: 12, lineHeight: 17, fontFamily: font.medium, color: "#7A4210" },
+  noteText: { ...type.label, flex: 1, fontSize: 13, lineHeight: 19, color: ink.content },
+  noteBold: { fontFamily: font.medium, color: ink.primary },
+  sectionHead: { ...type.sectionLabel, fontSize: 12, lineHeight: 16, letterSpacing: 0.6 },
+  record: { flexDirection: "row", alignItems: "center", gap: space.item, paddingVertical: space.rowY, paddingHorizontal: space.rowX },
+  recordName: { ...type.title, fontSize: 14, color: ink.strong },
+  pill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999, backgroundColor: color.okTint },
+  pillText: { ...type.label, fontSize: 12, fontFamily: font.medium, color: ink.good },
   whyPart: { gap: space.line },
   whyHead: { ...type.title, fontSize: 13, color: ink.strong },
   whyBody: { ...type.body, fontSize: 13, lineHeight: 19 },
