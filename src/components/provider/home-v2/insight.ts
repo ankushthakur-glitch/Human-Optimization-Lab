@@ -758,17 +758,6 @@ const REVIEW_NOTES: Record<ReviewDue["review"], Notes & { body: { heading: strin
       { heading: "Screening", body: "PHQ-9 7, GAD-7 5. Alcohol 4 drinks per week. Non smoker." },
     ],
   },
-  "Care plan review": {
-    recommendations: [
-      { kind: "next", label: "Review", value: "Check each plan's Why, then approve or deselect the baseline tests" },
-      { kind: "message", label: "Send", value: "Approve and send goes to the patient in the app" },
-    ],
-    risks: [{ tone: "warn", strong: "Waiting on you", text: "the patient sees \"in physician review\" until you approve" }],
-    body: [
-      { heading: "Optimization plans", body: "Plans the AI matched from the record, each with its biomarker evidence, plus any the patient selected." },
-      { heading: "Proposed baseline tests", body: "Tests the plans need that the record doesn't have yet." },
-    ],
-  },
 }
 
 function reviewInsight(item: QueueItem, r: ReviewDue): Insight {

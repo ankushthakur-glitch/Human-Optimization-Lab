@@ -1649,7 +1649,7 @@ export const NOTIFICATIONS: Notice[] = [
 /** A member's notifications with fixed days, newest first; lib/todo.ts
     noticesFor() adds the one about this week's booked tests. */
 export const MEMBER_NOTIFICATIONS: Notice[] = [
-  { id: "m-plan-v2", kind: "review", title: "Version 2 of your plan is approved", body: "Dr. Patel approved your updated plan.", at: "2026-09-12T15:10", when: "Sep 12", day: "Earlier", href: "/plan" },
+  { id: "m-plan-v2", kind: "review", title: "Version 2 of your plan is live", body: "Your updated plan starts today.", at: "2026-09-12T15:10", when: "Sep 12", day: "Earlier", href: "/plan" },
   { id: "m-labs", kind: "result", title: "New lab results", body: "Your lipid and metabolic panel from Quest has arrived and is with Dr. Patel for review.", at: "2026-08-14T16:20", when: "Aug 14", day: "Earlier", href: "/biomarker/ldl" },
   { id: "m-mammogram", kind: "reminder", title: "Screening mammogram", body: "Reminder 3 of 3. Dr. Patel's team will reach out.", at: "2026-04-15T09:00", when: "Apr 15", day: "Earlier", href: "/order/mammogram" },
 ]

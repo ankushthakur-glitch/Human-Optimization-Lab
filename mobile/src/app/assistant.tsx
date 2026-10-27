@@ -38,7 +38,6 @@ import {
   LIMIT,
   PLAN_ASKS,
   PROMPTS,
-  REVIEW_PLAN_ASKS,
   TOPICS,
   TOPIC_PARAM,
   URGENT,
@@ -236,7 +235,6 @@ export default function AssistantScreen() {
   // Help with today's plan needs a live plan; the counter, any active
   // membership (C.4.1).
   const planLive = experience === "member"
-  const reviewing = allowance.member && !planLive
   const name = onboarding.profile?.preferredName || onboarding.profile?.firstName || PATIENT.firstName
   const greet = () => greeting(name, planLive, { asOf: sharingOff?.on })
 
@@ -248,9 +246,9 @@ export default function AssistantScreen() {
   /** After an answer, the next tap: anything else at all. */
   const anythingElse = (): Draft => ({ kind: "ask", text: ELSE, options: topics(), step: "topic" })
   const greetingAsk = (): Draft => ({ kind: "ask", text: greet(), options: topics(), step: "topic" })
-  /** The plan questions she can tap: today's for a live plan, the plan with
-      Dr. Patel for a new member, what the plan is for anyone else. */
-  const planAsks = (): string[] => (planLive ? [...PLAN_ASKS] : reviewing ? [...REVIEW_PLAN_ASKS] : [...FREE_PLAN_ASKS])
+  /** The plan questions she can tap: today's for a live plan, what the
+      plan is for anyone else. */
+  const planAsks = (): string[] => (planLive ? [...PLAN_ASKS] : [...FREE_PLAN_ASKS])
 
   /** A thread's title in the history: its first question, with the result
       it was opened about when the question does not name it. */
@@ -324,7 +322,7 @@ export default function AssistantScreen() {
         return [{ kind: "ask", text: URGENT.ask, options: [URGENT.yes, URGENT.no], step: "urgent" }]
       case "plan":
         if (experience === "paused") return [{ kind: "answer", answer: PAUSED, scope: "plan" }]
-        return [{ kind: "ask", text: planLive ? PROMPTS.plan : reviewing ? "What would you like to know about your plan?" : "What would you like to know about the plan?", options: planAsks(), step: "plan" }]
+        return [{ kind: "ask", text: planLive ? PROMPTS.plan : "What would you like to know about the plan?", options: planAsks(), step: "plan" }]
     }
   }
 
@@ -597,7 +595,6 @@ export default function AssistantScreen() {
       else is pointed to where the plan lives, never a price here. */
   function planReply(said: string): Answer {
     if (planLive) return planAnswer(said, onboarding)
-    if (reviewing) return planInfoAnswer(said, true)
     if (experience === "paused") return PAUSED
     return planInfoAnswer(said)
   }

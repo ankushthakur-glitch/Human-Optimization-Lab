@@ -62,7 +62,7 @@ export function priorityOf(item: WorkItem): Priority {
     case "review_due": {
       const r = item.payload
       if (r.review === "Intake summary" && r.phq9Item9Positive) return "urgent"
-      return r.review === "Care plan review" ? "moderate" : "routine"
+      return "routine"
     }
     case "care_gap":
       return item.payload.gapType === "Clinical" ? "moderate" : "routine"

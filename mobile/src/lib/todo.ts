@@ -891,8 +891,6 @@ export function bannerTarget(b: HomeBanner): { href: Href } | { tab: "results" |
     case "new-results":
     case "checked":
       return { tab: "results" }
-    case "plan-review":
-      return { tab: "plan" }
     default:
       return undefined
   }

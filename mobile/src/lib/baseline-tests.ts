@@ -113,29 +113,6 @@ export function testCosts(ids: string[] | undefined) {
   return { tests, subtotal, saving, total: subtotal - saving }
 }
 
-/* -------------------------------------------- insurance or Inlay -- */
-
-/** When she pays for the tests (/enrollment): with the membership, and
-    covered ones are refunded; or after her physician has sorted them,
-    only for those booked through Inlay. Unset means now. */
-export type TestPay = "now" | "later"
-
-/** Her physician's sorting of the paid tests (/your-tests): the ids that go
-    through her insurance, ordered by the office; every other one is booked
-    in the app through Inlay. */
-export type TestReview = { at: string; insurance: string[]; message: string }
-
-/** What AI suggests to her physician: every test insurance likely covers
-    goes through insurance. */
-export function suggestedInsurance(ids: string[]) {
-  return ids.filter((id) => (BASELINE_TESTS[id as BaselineTestId] ?? ADD_ONS[id as AddOnId])?.insurance === "likely")
-}
-
-/** A test or add-on by id, for the lists after payment. */
-export function itemOf(id: string): { id: string; name: string; price: number } | undefined {
-  return BASELINE_TESTS[id as BaselineTestId] ?? ADD_ONS[id as AddOnId]
-}
-
 /* ----------------------------------------------------------- scheduling -- */
 
 /** Where each test is done and the times it opens on a weekday. The blood

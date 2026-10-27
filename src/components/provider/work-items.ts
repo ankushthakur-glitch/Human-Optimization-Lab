@@ -112,7 +112,6 @@ export type ReviewDue = {
     | "Initial record validation"
     | "Quarterly review"
     | "Intake summary"
-    | "Care plan review"
   due: string
   lastReview?: string
   /** Intake summaries: PHQ-9 item 9 answered above zero. */
@@ -371,11 +370,6 @@ const SEED: WorkItem[] = [
     id: "W23", type: "review_due", patientId: "P10318", ...open,
     createdAt: "2026-09-28T07:00", source: "Rules", isOutsideSource: false,
     payload: { review: "Quarterly review", due: "2026-10-12", lastReview: "2026-08-12" },
-  },
-  {
-    id: "W24", type: "review_due", patientId: "P10422", ...open,
-    createdAt: "2026-10-01T14:30", source: "AI plan", isOutsideSource: false,
-    payload: { review: "Care plan review", due: "2026-10-03" },
   },
   {
     id: "W25", type: "review_due", patientId: "P10455", ...open,

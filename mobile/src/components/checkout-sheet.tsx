@@ -5,7 +5,7 @@ import { chosenTests } from "@/lib/baseline-tests"
 import { useMarkers } from "@/lib/experience"
 import { logEvent, planFocus } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
-import { type Cadence, type ProgramId } from "@/lib/plans"
+import { firstPlan, type Cadence, type ProgramId } from "@/lib/plans"
 import type { FocusArea } from "@/lib/record"
 
 /** The payment button's pending state (C.0.8). */
@@ -42,15 +42,16 @@ export function useStartMembership() {
       .sort((a, b) => b.version - a.version)
     const programs = [...new Set(planFocus(onboarding, markers, 3).areas.map((a) => PROGRAM_OF[a]))]
     await onboarding.save({
-      membership: { tier: "optimization", programs, startedAt: now.toISOString(), card, billing, renewalConsentAt: agreedAt },
-      // A draft with the doctor. After a cancel and a rejoin it takes the
-      // next number after every version she kept, so none is reused.
-      plan: { status: "review", version: Math.max(0, ...kept.map((v) => v.version)) + 1, versions: [] },
+      membership: { tier: "optimization", programs, startedAt: now.toISOString(), approvedAt: now.toISOString(), card, billing, renewalConsentAt: agreedAt },
+      // Live at once: nothing goes to her physician for review (27 Oct
+      // 2026). After a cancel and a rejoin it takes the next number after
+      // every version she kept, so none is reused.
+      plan: firstPlan(Math.max(0, ...kept.map((v) => v.version)) + 1),
+      planReadySeen: true,
       planHistory: kept.length ? kept : undefined,
       // The set-up's baseline tests, paid with the membership, to schedule
       // from the enrolled page.
-      // Her physician sorts them into insurance or Inlay first (/your-tests).
-      ...(enrolled ? { startingTests: { ids: chosenTests(onboarding.baselinePicks).map((t) => t.id), at: now.toISOString() }, testReview: undefined } : {}),
+      ...(enrolled ? { startingTests: { ids: chosenTests(onboarding.baselinePicks).map((t) => t.id), at: now.toISOString() } } : {}),
     })
     logEvent(onboarding, "checkout_completed")
     setPending(false)
@@ -64,7 +65,7 @@ export function useStartMembership() {
       open()
       return
     }
-    showToast("Welcome in. Dr. Patel is reviewing your plan.")
+    showToast("Welcome in. Your plan is ready.")
     router.dismissTo("/plan")
   }
 

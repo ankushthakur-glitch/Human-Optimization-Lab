@@ -295,8 +295,10 @@ const takenFrom = (fields: [string, string][]) =>
     supplement read from a photo first asks "How do you take it?" in her
     own words, which the doctor sees, and a supplement is checked against
     her record (lib/supplement-check). Typed in opens the kind's form. The
-    prototype reads a sample of the kind. */
-export function AddToRecordSheet({ kind: fixed, onClose }: { kind?: AddKind; onClose: () => void }) {
+    prototype reads a sample of the kind. `kinds` narrows the first
+    choice, as Medication's "Add a new one" offers only medicine or
+    supplement. */
+export function AddToRecordSheet({ kind: fixed, kinds, onClose }: { kind?: AddKind; kinds?: AddKind[]; onClose: () => void }) {
   const onboarding = useOnboarding()
   const [kind, setKind] = React.useState<AddKind | undefined>(fixed)
   const [stage, setStage] = React.useState<AddStage>(fixed ? "how" : "kind")
@@ -389,7 +391,7 @@ export function AddToRecordSheet({ kind: fixed, onClose }: { kind?: AddKind; onC
   const glyph = optionIcon
   const options: SheetOption[] =
     stage === "kind"
-      ? ADD_KINDS.map((k) => ({
+      ? ADD_KINDS.filter((k) => !kinds || kinds.includes(k.kind)).map((k) => ({
           key: k.kind,
           title: k.name,
           icon: (

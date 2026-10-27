@@ -445,7 +445,7 @@ export function changeCourse(b: Biomarker, s: Snapshot = {}) {
     focus: b.focus,
     title: "Want to change course?",
     body,
-    meta: "Reviewed by your physician before it starts.",
+    meta: "Built from your record. It starts the day you enroll.",
     action: "See how the plan works",
     dismiss: "Not now",
     /** The quiet variant at middling readiness. */
@@ -458,7 +458,6 @@ export function changeCourse(b: Biomarker, s: Snapshot = {}) {
         `Your own ${name} target and timeline`,
         "Meals and exercise built for you",
         "Weekly progress, with adjustments",
-        `${MEMBER.doctorShort} reviews and approves it`,
         `A forecast of where your ${name} ${b.plural ? "are" : "is"} heading`,
         "More AI credit for your assistant",
       ],

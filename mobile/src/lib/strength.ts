@@ -159,3 +159,26 @@ export function nextWeekOf(s: Store, lift: Lift, today: Date = new Date()): Step
 
 /** The heaviest load of each session, for the resistance trend. */
 export const resistanceOf = (list: Session[]) => list.map((x) => ({ date: x.day, value: Math.max(...x.entries.map((e) => e.weightLb ?? 0)) }))
+
+/* --------------------------------------------------------- the record -- */
+
+export type LiftChange = NonNullable<Store["liftChanges"]>[number]
+
+/** A lift's changes to its weight or reps, oldest first. */
+export const changesOf = (s: Store, lift: Lift) => (s.liftChanges ?? []).filter((c) => c.lift === lift.id)
+
+/** The store fields that set a lift's target to `to` from now on and write
+    the change to her record; nothing when it is the target already. */
+export function changeTo(s: Store, lift: Lift, to: Target, at = new Date().toISOString()) {
+  const from = targetOf(s, lift)
+  if (from.sets === to.sets && from.reps === to.reps && from.load === to.load) return {}
+  return { liftHolds: { ...s.liftHolds, [lift.id]: to }, liftChanges: [...(s.liftChanges ?? []), { at, lift: lift.id, from, to }] }
+}
+
+/** "Weight 15 to 20 lb", "Reps 10 to 12", or both joined. */
+export function changeText(lift: Lift, c: Pick<LiftChange, "from" | "to">) {
+  const parts: string[] = []
+  if (c.from.load !== c.to.load) parts.push(`Weight ${loadShort(lift, c.from.load)} to ${loadShort(lift, c.to.load)}`)
+  if (c.from.sets !== c.to.sets || c.from.reps !== c.to.reps) parts.push(`${parts.length ? "reps" : "Reps"} ${setsText(c.from)} to ${setsText(c.to)}`)
+  return parts.join(", ")
+}

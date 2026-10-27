@@ -99,9 +99,8 @@ export default function DayScreen() {
   const now = new Date()
   const day = dayOf(params.date, now)
   const stage = memberStage(s)
-  // The member's own days only: a plan with the doctor has no days yet,
-  // and the free record has none.
-  if (!day || !stage || stage === "review") return <PageNotFoundState />
+  // The member's own days only: the free record has none.
+  if (!day || !stage) return <PageNotFoundState />
 
   const key = localDay(day)
   const offset = daysBetween(now, day)

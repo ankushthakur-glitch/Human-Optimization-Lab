@@ -5,14 +5,15 @@ import { StyleSheet, Text, View } from "react-native"
 import { Barbell, Brain, Flask, Leaf, Moon, Package, Scales, Scan, ShieldPlus, Watch } from "@/components/ph"
 import { Block, Group, HUE, NeedsRow } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
-import { CATEGORIES, itemsIn, money, type Category } from "@/lib/catalog"
+import { CATEGORIES, money, type Category } from "@/lib/catalog"
 import { ink, space, type } from "@/lib/theme"
 
 /* Care, a tab (client deck, screen 52, "The Catalog": "Everything we can
    order, priced"): what the patient's physician can order, in nine
    categories drawn from the vetted partner directory. Each row names its
    category, the national partners behind it and the price it starts at,
-   and opens an item (screen 53), which goes straight to a time (screen 54).
+   and opens the list of its items; each opens its own page (screen 53),
+   which goes straight to a time (screen 54).
 
    Membership and billing are no longer the Care tab: they stay one tap
    away on Profile and in the Plan tab. */
@@ -53,9 +54,6 @@ export default function CareScreen() {
     item. */
 function CategoryRow({ category: c }: { category: Category }) {
   const Icon = ICON[c.id] ?? Barbell
-  // Laboratory has many panels and opens the list to pick from; every
-  // other category opens its one item.
-  const items = itemsIn(c.id)
   return (
     <NeedsRow
       icon={<Icon size={16} color={HUE[c.hue].ink} />}
@@ -69,11 +67,7 @@ function CategoryRow({ category: c }: { category: Category }) {
         </View>
       }
       accessibilityLabel={`${c.title}. ${c.meta}. ${c.exact ? "" : "From "}${money(c.price)}`}
-      onPress={() =>
-        items.length > 1
-          ? router.push({ pathname: "/catalog/category/[id]", params: { id: c.id } })
-          : router.push({ pathname: "/catalog/[id]", params: { id: c.item } })
-      }
+      onPress={() => router.push({ pathname: "/catalog/category/[id]", params: { id: c.id } })}
     />
   )
 }

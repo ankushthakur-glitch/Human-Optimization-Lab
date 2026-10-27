@@ -10,9 +10,8 @@ import { trendCounts } from "@/lib/trends"
    selector, so no screen tests the membership tier on its own. The first
    rule that matches wins:
 
-   member-review  a member whose first plan is with Dr. Patel
-   member         a member with a live plan, a newer version possibly with
-                  Dr. Patel meanwhile (the live one stays, M-55)
+   member         a member, her plan live from enrolment (nothing goes to
+                  her physician for review, 27 Oct 2026)
    paused         a member who paused: the free home, with Resume
    free           everyone else, a cancelled member included (back on the
                   free record, every plan version kept)
@@ -21,10 +20,8 @@ import { trendCounts } from "@/lib/trends"
    for a record never connected or still arriving.
 
    Home draws the member home for member only, and the free home for the
-   rest: a member whose first plan is with Dr. Patel sees the app as any
-   free patient does (9 Oct 2026), and only the Upgrade tab tells her where
-   her plan is. The Plan tab draws the member's plan for any member, paused
-   and in review included, and the showroom for the rest.
+   rest. The Plan tab draws the member's plan for any member, paused
+   included, and the showroom for the rest.
 
    On top of any experience sit the modifiers: sharing turned off in
    Profile (what was collected stays, nothing new arrives, one banner on
@@ -34,24 +31,20 @@ import { trendCounts } from "@/lib/trends"
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
 
-export type Experience = "member-review" | "member" | "paused" | "free"
+export type Experience = "member" | "paused" | "free"
 
 /** The one experience for this state. */
 export function experience(s: Snapshot): Experience {
   const stage = memberStage(s)
-  if (stage === "review") return "member-review"
-  if (stage === "live" || stage === "redraft") return "member"
+  if (stage === "live") return "member"
   if (stage === "paused") return "paused"
   return "free"
 }
 
 export type ExperienceInfo = {
   experience: Experience
-  /** memberStage(): review, live, redraft or paused; undefined on
-      the free record. */
+  /** memberStage(): live or paused; undefined on the free record. */
   stage?: MemberStage
-  /** The version with the doctor while another is live (member-redraft). */
-  redraft?: number
   /** Sharing turned off after the record was collected: `since` is when
       (ISO; empty when the store never kept the day), `on` the same as
       "Oct 3". */
@@ -69,7 +62,6 @@ export function experienceOf(s: Snapshot): ExperienceInfo {
   return {
     experience: experience(s),
     stage,
-    redraft: stage === "redraft" ? s.plan?.version : undefined,
     sharingOff: off ? { since: off.at ?? "", on: off.on } : undefined,
     readiness: readinessBand(s),
     firstSession: firstSession(s),
@@ -112,18 +104,17 @@ export function homeFor(e: Which): "free" | "member" {
   return nameOf(e) === "member" ? "member" : "free"
 }
 
-/** Which Plan tab draws an experience: any member, paused and in review
-    included, sees her own plan; everyone else the showroom. */
+/** Which Plan tab draws an experience: any member, paused included, sees
+    her own plan; everyone else the showroom. */
 export function planFor(e: Which): "free" | "member" {
   const name = nameOf(e)
-  return name === "member" || name === "member-review" || name === "paused" ? "member" : "free"
+  return name === "member" || name === "paused" ? "member" : "free"
 }
 
 /** Whether the plan tab reads "Upgrade", with a crown: for everyone who has
-    no plan to follow yet, a member whose first plan is with Dr. Patel
-    included, since the rest of her app is the free one. */
+    no plan to follow yet. */
 export function upgradeTab(e: Which): boolean {
-  return planFor(e) === "free" || nameOf(e) === "member-review"
+  return planFor(e) === "free"
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]

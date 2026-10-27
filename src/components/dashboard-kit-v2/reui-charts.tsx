@@ -26,7 +26,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/design-system/ui/chart"
-import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
+import { SUBTLE } from "@/components/patient-dashboard/widgets/palette"
 import { AXIS_PROPS, PALETTE, useReducedMotion } from "@/components/dashboard-kit-v2/charts"
 
 /* ReUI's chart set (reui.io c-chart 1 to 25, MIT, Keenthemes), ported as

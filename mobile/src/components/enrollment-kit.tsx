@@ -12,7 +12,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 import { CaretRight, Check } from "@/components/ph"
 import { Sheet } from "@/components/sheet"
 import { Button } from "@/components/ui"
-import { chosenAddOns, chosenTests, dollars, dollarsExact, type TestPay } from "@/lib/baseline-tests"
+import { chosenAddOns, chosenTests, dollars, dollarsExact } from "@/lib/baseline-tests"
 import { CADENCES, TIERS, YEARLY_TEST_DISCOUNT, type Cadence } from "@/lib/plans"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
@@ -28,7 +28,6 @@ const INCLUDES = [
   "Testing and analysis",
   "Nutrition and exercise",
   "AI insights",
-  "Physician approval",
   "Progress tracking",
 ]
 
@@ -64,10 +63,7 @@ export function planName(goals: string[] | undefined) {
 export function firstMonth(
   ids: string[] | undefined,
   billing: Cadence,
-  addOnIds?: string[],
-  /** "later": the tests are paid after her physician's review, so today
-      is the membership alone. */
-  testPay?: TestPay
+  addOnIds?: string[]
 ) {
   const tests = chosenTests(ids)
   const addOns = chosenAddOns(addOnIds)
@@ -85,10 +81,9 @@ export function firstMonth(
     addOnTotal,
     membership,
     discount,
-    later: testPay === "later",
     /** The tests and add-ons after the yearly discount. */
     testsTotal: subtotal + addOnTotal - discount,
-    total: testPay === "later" ? membership : subtotal + addOnTotal + membership - discount,
+    total: subtotal + addOnTotal + membership - discount,
     monthlyToday: subtotal + addOnTotal + priceNumber("monthly"),
     yearlySaving: priceNumber("monthly") * 12 - priceNumber("yearly"),
   }
@@ -331,18 +326,15 @@ export function CostBreakdownSheet({
   addOns,
   billing,
   goals,
-  testPay,
   onClose,
 }: {
   tests: string[] | undefined
   addOns?: string[]
-  /** "later": the tests are listed, paid after her physician's review. */
-  testPay?: TestPay
   billing: Cadence
   goals: string[] | undefined
   onClose: () => void
 }) {
-  const cost = firstMonth(tests, billing, addOns, testPay)
+  const cost = firstMonth(tests, billing, addOns)
   const price = TIERS.optimization.billing[billing]
   return (
     <Sheet title="Cost breakdown" onClose={onClose}>
@@ -359,8 +351,8 @@ export function CostBreakdownSheet({
             <ReceiptRow key={t.id} label={t.name} value={dollars(t.price)} />
           ))}
           <ReceiptRow
-            label={cost.later ? "Paid after your physician's review" : "Tests subtotal"}
-            value={cost.later ? "$0 today" : dollars(cost.subtotal)}
+            label="Tests subtotal"
+            value={dollars(cost.subtotal)}
             quiet
           />
           {cost.discount > 0 && (

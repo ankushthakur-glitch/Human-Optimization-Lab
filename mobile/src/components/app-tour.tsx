@@ -48,7 +48,7 @@ function stopsFor(member: boolean, namesAsk: boolean): Stop[] {
       target: "tabs",
       title: "Find your way around",
       body: member
-        ? "Home is your day. To do lists what is open, Record holds your results, Connect links your doctors and devices, and Plan is your plan with Dr. Patel."
+        ? "Home is your day. To do lists what is open, Record holds your results, Connect links your doctors and devices, and Plan is your plan."
         : "Home is your day. To do lists what is open, Record holds your results, Connect links your doctors and devices, and Upgrade shows what a membership adds.",
     },
     {

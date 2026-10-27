@@ -1,25 +1,23 @@
-import { useLocalSearchParams } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import { useVideoPlayer } from "expo-video"
 import * as React from "react"
 import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { ChoiceRow, SheetRows } from "@/components/care-orders-rows"
-import { ProgressChart } from "@/components/charts"
 import { PageNotFoundState } from "@/components/error-state"
 import { ExerciseVideoModal } from "@/components/exercise-video"
-import { Checkbox } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
 import { Play } from "@/components/ph"
-import { Readout, entryDay } from "@/components/progress-parts"
 import { Block, Tag, TextAction, toast } from "@/components/record-kit"
 import { SetTable, type SetEntry } from "@/components/set-table"
 import { Sheet, useKeyboardHeight } from "@/components/sheet"
-import { amount, saveLog } from "@/components/today-exercise-parts"
+import { amount, decimal, digits, saveLog } from "@/components/today-exercise-parts"
 import { TopicPage } from "@/components/topic-kit"
+import { TextField } from "@/components/ui"
 import { localDay } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { EFFORT, loadShort, resistanceOf, sessionsOf, setsText, targetOf, type SetLog } from "@/lib/strength"
+import { EFFORT, changeText, changeTo, targetOf, type SetLog } from "@/lib/strength"
 import { LIFTS, liftOf, type Lift } from "@/lib/topics"
 import { card, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 
@@ -32,7 +30,10 @@ import { card, color, font, hairline, ink, space, surface, type } from "@/lib/th
    Logging is optional: the footer's Log your sets opens her sets in a
    sheet, reps and weight per set, and once saved asks how many more reps
    her last set had left; next week's target steps on from it (lib/strength.ts).
-   View progress under it opens the load she has lifted, week by week. */
+   Change weight or reps under it (Dr. Blanchard, 27 Oct) sets the lift's
+   sets, reps and weight from now on and writes the change to her record;
+   View progress, across from the lift's chip, opens the lift's
+   progression chart in Exercise history. */
 
 const CLIP = require("../../../assets/videos/exercise-demo.mp4")
 const RATIO = 16 / 9
@@ -51,7 +52,7 @@ function LiftBody({ lift }: { lift: Lift }) {
   const s = useOnboarding()
   const [watching, setWatching] = React.useState(false)
   // The log sheet, then once saved the question about her last set.
-  const [open, setOpen] = React.useState<"log" | "progress">()
+  const [open, setOpen] = React.useState<"log" | "change">()
   const [asking, setAsking] = React.useState(false)
   const keyboard = useKeyboardHeight()
   const day = localDay()
@@ -64,9 +65,6 @@ function LiftBody({ lift }: { lift: Lift }) {
       weight: String(saved[i]?.weightLb ?? target.load),
     })),
   )
-  // Ticked, today's sets hold as the target from now on; ticked already for
-  // a lift she has held before.
-  const [keep, setKeep] = React.useState(!!s.liftHolds?.[lift.id])
   const ready = rows.every((r) => amount(r.reps) !== undefined && amount(r.weight) !== undefined)
   const edit = (i: number, part: Partial<SetEntry>) => setRows((was) => was.map((r, j) => (j === i ? { ...r, ...part } : r)))
 
@@ -77,11 +75,6 @@ function LiftBody({ lift }: { lift: Lift }) {
   }
   async function save() {
     await write(saved[rows.length - 1]?.rir)
-    // Held at the first set's numbers; unticked, the lift goes back to the plan.
-    const liftHolds = { ...s.liftHolds }
-    if (keep) liftHolds[lift.id] = { sets: rows.length, reps: amount(rows[0].reps)!, load: amount(rows[0].weight)! }
-    else delete liftHolds[lift.id]
-    await s.save({ liftHolds })
     setOpen(undefined)
     setAsking(true)
   }
@@ -103,7 +96,7 @@ function LiftBody({ lift }: { lift: Lift }) {
         <View style={styles.footer}>
           <PrimaryButton onPress={() => setOpen("log")}>{saved.some((e) => e.reps !== undefined) ? "Edit your sets" : "Log your sets"}</PrimaryButton>
           <View style={styles.tertiary}>
-            <TextAction onPress={() => setOpen("progress")}>View progress</TextAction>
+            <TextAction onPress={() => setOpen("change")}>Change weight or reps</TextAction>
           </View>
         </View>
       }
@@ -113,16 +106,13 @@ function LiftBody({ lift }: { lift: Lift }) {
           <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
             <Sheet title="Log your sets" onClose={() => setOpen(undefined)}>
               <SetTable rows={rows} onEdit={edit} target={String(target.reps)} />
-              <Checkbox checked={keep} onChange={setKeep}>
-                Keep these weights and reps
-              </Checkbox>
               <PrimaryButton onPress={save} disabled={!ready}>
                 Save your sets
               </PrimaryButton>
             </Sheet>
           </View>
         )) ||
-        (open === "progress" && <ProgressSheet lift={lift} onClose={() => setOpen(undefined)} />) || (
+        (open === "change" && <ChangeSheet lift={lift} onClose={() => setOpen(undefined)} />) || (
           <ExerciseVideoModal visible={watching} player={player} title={lift.name} ratio={RATIO} onClose={() => setWatching(false)} />
         )
       }
@@ -131,10 +121,9 @@ function LiftBody({ lift }: { lift: Lift }) {
         <View style={styles.chip}>
           <Tag tone="primary">{`Lift ${at} of ${LIFTS.length}`}</Tag>
         </View>
-        <Text style={type.body}>
-          {`${setsText(target)} at `}
-          <Text style={styles.load}>{loadShort(lift, target.load)}</Text>
-        </Text>
+        <TextAction onPress={() => router.push({ pathname: "/topic-history/[id]", params: { id: "exercise", lift: lift.id } })} chevron>
+          View progress
+        </TextAction>
       </View>
 
       <Pressable onPress={() => setWatching(true)} accessibilityRole="button" accessibilityLabel={`Play the ${lift.name} form video`} style={({ pressed }) => [styles.video, pressed && styles.pressed]}>
@@ -225,22 +214,45 @@ function EffortSheet({ onPick }: { onPick: (rir: number | undefined) => void }) 
   )
 }
 
-/** The heaviest load of every session, oldest first. */
-function ProgressSheet({ lift, onClose }: { lift: Lift; onClose: () => void }) {
+/** Change weight or reps: the lift's sets, reps and weight from now on,
+    filled with this week's target. Saving holds the lift there and writes
+    the change to her record, where Exercise history charts it. */
+function ChangeSheet({ lift, onClose }: { lift: Lift; onClose: () => void }) {
   const s = useOnboarding()
-  const points = resistanceOf(sessionsOf(s, lift))
-  const latest = points[points.length - 1]
-  const first = points[0]
-  const up = latest ? latest.value - first.value : 0
+  const target = targetOf(s, lift)
+  const keyboard = useKeyboardHeight()
+  const [sets, setSets] = React.useState(String(target.sets))
+  const [reps, setReps] = React.useState(String(target.reps))
+  const [weight, setWeight] = React.useState(String(target.load))
+  const to = { sets: amount(sets)!, reps: amount(reps)!, load: amount(weight)! }
+  const ready = [to.sets, to.reps, to.load].every((n) => n !== undefined && n > 0)
+  const same = ready && to.sets === target.sets && to.reps === target.reps && to.load === target.load
+
+  async function save() {
+    await s.save(changeTo(s, lift, to))
+    toast(`${lift.name}: ${changeText(lift, { from: target, to })}`)
+    onClose()
+  }
+
   return (
-    <Sheet title={`${lift.name} progress`} onClose={onClose}>
-      {latest && (
-        <>
-          <Readout value={String(latest.value)} unit="lb" label={up > 0 ? `Up ${up} lb since ${entryDay(String(first.date))}` : `Since ${entryDay(String(first.date))}`} />
-          <ProgressChart readings={points} trend={points} name={`${lift.name.toLowerCase()} load`} readingsLabel="Sessions" unit="lb" caption={null} playKey={`lift:${lift.id}`} />
-        </>
-      )}
-    </Sheet>
+    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
+      <Sheet title="Change weight or reps" onClose={onClose}>
+        <View style={styles.fields}>
+          <View style={styles.fill}>
+            <TextField label="Sets" value={sets} onChangeText={(v) => setSets(digits(v))} keyboardType="number-pad" maxLength={2} />
+          </View>
+          <View style={styles.fill}>
+            <TextField label="Reps" value={reps} onChangeText={(v) => setReps(digits(v))} keyboardType="number-pad" maxLength={3} />
+          </View>
+          <View style={styles.fill}>
+            <TextField label="Weight" value={weight} onChangeText={(v) => setWeight(decimal(v))} keyboardType="decimal-pad" trailing={<Text style={styles.unit}>lb</Text>} />
+          </View>
+        </View>
+        <PrimaryButton onPress={save} disabled={!ready || same}>
+          Save the change
+        </PrimaryButton>
+      </Sheet>
+    </View>
   )
 }
 
@@ -260,10 +272,9 @@ function bold(text: string) {
 const styles = StyleSheet.create({
   fill: { flex: 1, minWidth: 0 },
   pressed: { opacity: 0.7 },
-  // The chip sits left and the sets and weight right, on one line.
+  // The chip sits left and View progress right, on one line.
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.inline },
   chip: { alignSelf: "center" },
-  load: { fontFamily: font.semibold, color: ink.strong },
 
 
   video: { aspectRatio: RATIO, borderRadius: 12, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: color.primarySoft },
@@ -298,6 +309,8 @@ const styles = StyleSheet.create({
 
   footer: { gap: space.inline },
   tertiary: { alignItems: "center" },
+  fields: { flexDirection: "row", gap: space.inline },
+  unit: { ...type.label, color: ink.secondary },
   sheetFrame: { position: "absolute", top: 0, left: 0, right: 0 },
 
 })

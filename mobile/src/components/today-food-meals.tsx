@@ -1,5 +1,5 @@
 import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { Image, StyleSheet, Text, View } from "react-native"
 
 import { BowlFood, Check } from "@/components/ph"
 import { foodsLine } from "@/components/member-day-nutrient"
@@ -214,6 +214,13 @@ export function MealSheet({
   return (
     <Sheet title={name} onClose={onClose}>
       <Text style={styles.meta}>{`${meal.time}, ${HOW[meal.how]}`}</Text>
+      {!!meal.photos?.length && (
+        <View style={styles.photos}>
+          {meal.photos.map((uri, i) => (
+            <Image key={uri} source={{ uri }} style={styles.photo} accessibilityLabel={`Photo ${i + 1} of ${meal.photos?.length}`} />
+          ))}
+        </View>
+      )}
       <Group>
         {meal.foods.map((f, i) => (
           <NeedsRow
@@ -259,6 +266,8 @@ const styles = StyleSheet.create({
   body: { ...type.body },
   label: { ...type.label },
   meta: { ...type.meta },
+  photos: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
+  photo: { width: 72, height: 72, borderRadius: 14, backgroundColor: chart.track },
   totals: { gap: space.stack },
   totalsTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item },
   buttons: { flexDirection: "row", gap: space.item },

@@ -1,11 +1,10 @@
 import * as React from "react"
 
 import type { Allowance } from "@/lib/allowance"
-import type { TestPay, TestReview } from "@/lib/baseline-tests"
 import type { Answers } from "@/lib/conversation"
 import type { Life } from "@/lib/wellbeing"
 import type { ActivityLog, Entry, Meal, SavedQuestion } from "@/lib/member"
-import { dayKey } from "@/lib/dates"
+import { dayKey, showDate } from "@/lib/dates"
 import { dayOfAt } from "@/lib/member"
 import type { DrinkLog } from "@/lib/alcohol"
 import type { OfferLog } from "@/lib/offers"
@@ -81,17 +80,13 @@ export type Membership = {
   pastCards?: { card: string; until: string }[]
 }
 
-/** The plan is with the doctor ("review") until the doctor sends it to her
-    ("proposed"); she reads it and accepts it, or asks for a change, which
-    sends it back, round after round until she accepts. Each
-    accepted version replaces the last, which is kept. */
+/** Her plan, live from the moment she enrolls: nothing goes to her
+    physician for review (27 Oct 2026). Each newer version replaces the
+    last, which is kept. */
 export type Plan = {
-  status: "review" | "proposed" | "live"
+  status: "live"
   version: number
   versions: { version: number; approved: string; why: string }[]
-  /** The changes she asked for on this version, oldest first; cleared once
-      she accepts it. */
-  requests?: { at: string; text: string }[]
 }
 
 /** A test booked with a cash partner: where, when, what it cost, and the
@@ -271,6 +266,10 @@ export type State = {
       weights and reps going forward"), by lift id; today's target holds at
       these until she clears it (lib/strength.ts). */
   liftHolds?: Record<string, { sets: number; reps: number; load: number }>
+  /** Every change she made to a lift's weight or reps ("Change weight or
+      reps", or a Changed lift kept going forward), oldest first: the
+      progression in her longitudinal record (lib/strength.ts). */
+  liftChanges?: { at: string; lift: string; from: { sets: number; reps: number; load: number }; to: { sets: number; reps: number; load: number } }[]
   /** Questions saved for the doctor. */
   questions?: SavedQuestion[]
   /** Banners and cards the patient closed, by id, with when. */
@@ -317,11 +316,6 @@ export type State = {
   /** How she chose to pay on /enrollment, before any membership exists;
       unset means yearly. */
   billingPick?: Cadence
-  /** When she chose to pay for the tests on /enrollment; unset means now. */
-  testPay?: TestPay
-  /** Her physician's sorting of the paid tests into insurance or Inlay
-      (/your-tests); unset until it is done. */
-  testReview?: TestReview
   /** The baseline tests her membership paid for (/payment), and when she
       chose to schedule them later (/schedule-tests): until each is booked
       it waits in To do, brought up every other day. */
@@ -335,10 +329,12 @@ export type State = {
   startingPoint?: { at: string; weight: number; waist: number; bother: { wake: number; irritable: number; gain: number } }
   /** How she answered each of the six topics on Today, by day (lib/topics.ts):
       the way she chose and when. `night` is Sleep's "Log what actually
-      happened": bed and up as minutes after 6 pm, times woken, CPAP minutes. */
+      happened": bed and up as minutes after 6 pm, times woken, CPAP minutes.
+      `marks` is Exercise's per exercise answer: as written, part done,
+      changed or skipped. */
   topicLog?: Record<
     string,
-    Partial<Record<string, { way: string; at: string; parts?: string[]; skipped?: string[]; minutes?: number; note?: string; night?: { bed: number; up: number; latency?: number; woke: number; cpap: number } }>>
+    Partial<Record<string, { way: string; at: string; parts?: string[]; skipped?: string[]; marks?: Record<string, "written" | "part" | "changed" | "skipped">; minutes?: number; note?: string; night?: { bed: number; up: number; latency?: number; woke: number; cpap: number } }>>
   >
   /** Apps and devices she connected from a topic's ways ("Connect your
       device", "Import from another app"), by name. */
@@ -407,6 +403,15 @@ function migrate(parsed: State & Record<string, unknown>): State {
       parsed.allowance = { month, threads: Array.from({ length: count }, (_, i) => `asked-${i + 1}`), batches: [] }
     delete parsed.asked
   }
+  // A plan saved while it waited on the physician (before 27 Oct 2026)
+  // goes live: nothing waits on review now.
+  const plan = parsed.plan as (Omit<Plan, "status"> & { status: string; requests?: unknown }) | undefined
+  if (plan && plan.status !== "live") {
+    const versions = plan.versions.length ? plan.versions : [{ version: plan.version, approved: showDate(), why: "Your first plan" }]
+    parsed.plan = { status: "live", version: Math.max(...versions.map((v) => v.version)), versions }
+  }
+  delete parsed.testReview
+  delete parsed.testPay
   return parsed
 }
 

@@ -151,13 +151,6 @@ export function ItemActions({ item, patient, onAct }: { item: QueueItem; patient
       Open chart
     </Link>
   )
-  /* A care plan is approved on its own page, not marked reviewed here. */
-  if (item.type === "review_due" && item.payload.review === "Care plan review")
-    return (
-      <Link href={chartHref(patient.id, "care-plan")} className={cn(buttonVariants())}>
-        Review care plan
-      </Link>
-    )
   return <PanelActions item={item} openChart={openChart} onAct={onAct} />
 }
 

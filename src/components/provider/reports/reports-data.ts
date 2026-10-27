@@ -178,28 +178,6 @@ export const REPORTS: Report[] = [
     },
   },
   {
-    id: "care-plans",
-    name: "Care plan review",
-    tiles: ["received", "approved", "pending", "turnaround"],
-    columns: [
-      { id: "received", header: "Sent for review", format: "count", value: raw("received") },
-      { id: "approved", header: "Approved", format: "count", value: raw("approved") },
-      { id: "changes", header: "Changes requested", format: "count", value: raw("changes") },
-      { id: "pending", header: "Waiting", format: "count", value: raw("pending") },
-      { id: "turnaround", header: "Average turnaround", format: "days", value: per("days", "approved") },
-    ],
-    counts: ({ n, rand: r }) => {
-      const approved = n(2, 14)
-      const changes = n(0, 4)
-      const pending = n(0, 5)
-      return {
-        approved, changes, pending,
-        received: approved + changes + pending,
-        days: approved * (0.6 + r() * 2.4),
-      }
-    },
-  },
-  {
     id: "results",
     name: "Result review turnaround",
     tiles: ["received", "abnormal", "within", "hours"],

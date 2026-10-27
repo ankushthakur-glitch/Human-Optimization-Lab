@@ -67,3 +67,13 @@ export const TONE: Record<
   },
 }
 
+/** The donut's softer status colours: the same four hues as the status
+    pills, a step under full strength so the chart reads calm beside the
+    table but still holds its colour. */
+export const SUBTLE = {
+  red: "#DE6F68",
+  orange: "#EB9A52",
+  violet: "#9C86E6",
+  green: "#5FB386",
+  blue: "#6E9CE8",
+} as const

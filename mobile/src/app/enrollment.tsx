@@ -29,7 +29,7 @@ export default function EnrollmentScreen() {
   const onboarding = useOnboarding()
   const billing = onboarding.billingPick ?? "yearly"
   const [included, setIncluded] = React.useState(false)
-  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns, onboarding.testPay)
+  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns)
   // The tests ticked on /baseline, held as she arrived so one cleared here
   // stays in the list to tick again.
   const [listed] = React.useState(() => [

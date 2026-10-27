@@ -4,8 +4,8 @@ import { addDays } from "@/lib/member"
    54, stage 07 "Catalog and ordering"): everything Inlay can order for a
    patient, priced. Nine categories drawn from the vetted partner
    directory, each naming the national partner behind it and the price it
-   starts at; a category opens its one item, or, for Laboratory, the list
-   of its panels to pick several and order them in one draw. An item has what it does, what it
+   starts at; every category opens the list of its items, each ordered on
+   its own from its page. An item has what it does, what it
    cannot tell you, who writes the order, and one button that orders and
    pays; a test or scan then goes straight to a time.
 
@@ -25,21 +25,21 @@ export type Category = {
   price: number
   exact?: boolean
   hue: Hue
-  /** The item the row opens. */
-  item: string
+  /** What one item in it is called, and many: the list's heading and count. */
+  noun: readonly [string, string]
 }
 
 /** Screen 52's nine categories, in the client's order. */
 export const CATEGORIES: readonly Category[] = [
-  { id: "lab", title: "Laboratory", meta: "12 panels · Quest, Labcorp, Boston Heart", price: 39, hue: "teal", item: "blood-panel" },
-  { id: "body", title: "Body composition & metabolism", meta: "DEXA, RMR, VO₂ max · Fitnescity", price: 129, hue: "red", item: "dexa" },
-  { id: "imaging", title: "Imaging", meta: "MRI, CT, whole-body · SimonMed, RAYUS", price: 699, hue: "teal", item: "whole-body-mri" },
-  { id: "cancer", title: "Cancer screening", meta: "Galleri, Shield, hereditary · GRAIL, Guardant", price: 249, hue: "red", item: "multi-cancer" },
-  { id: "brain", title: "Brain health", meta: "AD-Detect, ApoE, ATN · Quest, Labcorp", price: 199, hue: "amber", item: "ad-detect" },
-  { id: "sleep", title: "Sleep", meta: "Two-night home study · Lofta", price: 299, exact: true, hue: "amber", item: "sleep-study" },
-  { id: "devices", title: "Devices & wearables", meta: "CGM, ring, cuff, scale · Dexcom, Oura", price: 99, hue: "teal", item: "cgm" },
-  { id: "programmes", title: "Programmes", meta: "SMART, nutrition, movement · Benson–Henry", price: 100, hue: "green", item: "smart" },
-  { id: "home", title: "Home & care products", meta: "Supplies, meals, transport · Medline", price: 19, hue: "blue", item: "home-care" },
+  { id: "lab", title: "Laboratory", meta: "12 panels · Quest, Labcorp, Boston Heart", price: 39, hue: "teal", noun: ["panel", "panels"] },
+  { id: "body", title: "Body composition & metabolism", meta: "DEXA, RMR, VO₂ max · Fitnescity", price: 129, hue: "red", noun: ["test", "tests"] },
+  { id: "imaging", title: "Imaging", meta: "MRI, CT, whole-body · SimonMed, RAYUS", price: 99, hue: "teal", noun: ["scan", "scans"] },
+  { id: "cancer", title: "Cancer screening", meta: "Galleri, Shield, hereditary · GRAIL, Guardant", price: 249, hue: "red", noun: ["test", "tests"] },
+  { id: "brain", title: "Brain health", meta: "AD-Detect, ApoE, ATN · Quest, Labcorp", price: 149, hue: "amber", noun: ["test", "tests"] },
+  { id: "sleep", title: "Sleep", meta: "Two-night home study · Lofta", price: 299, exact: true, hue: "amber", noun: ["study", "studies"] },
+  { id: "devices", title: "Devices & wearables", meta: "CGM, ring, cuff, scale · Dexcom, Oura", price: 79, hue: "teal", noun: ["device", "devices"] },
+  { id: "programmes", title: "Programmes", meta: "SMART, nutrition, movement · Benson–Henry", price: 100, hue: "green", noun: ["programme", "programmes"] },
+  { id: "home", title: "Home & care products", meta: "Supplies, meals, transport · Medline", price: 19, hue: "blue", noun: ["product", "products"] },
 ]
 
 /** A test or scan is booked at a site; a device, a programme or supplies
@@ -510,12 +510,327 @@ export const ITEMS: readonly Item[] = [
     inlay: "connects you to Medline and sends your order",
     fulfil: "ship",
   },
+  {
+    id: "rmr",
+    category: "body",
+    name: "Resting metabolic rate test",
+    tag: "Metabolism",
+    intro: "Fitnescity. Ten minutes of quiet breathing, results the same day.",
+    priceNote: "Member price · done at any Fitnescity site",
+    member: 149,
+    when: { label: "Results", value: "Same day" },
+    does: [
+      "Measures **how many calories you burn at rest** from the air you breathe out.",
+      "Gives your eating plan a number that is yours, not an estimate from a formula.",
+    ],
+    cannot: [
+      "**It does not count what you burn moving.** Activity adds to it.",
+      "**Food, caffeine and poor sleep can skew it.** Come rested and fasted.",
+    ],
+    inlay: "connects you to Fitnescity, schedules the test and carries the result back",
+    fulfil: "visit",
+    site: "Fitnescity",
+    visit: { noun: "test", about: "One visit, about thirty minutes.", bring: "Come fasted, with no caffeine that morning." },
+  },
+  {
+    id: "vo2-max",
+    category: "body",
+    name: "VO₂ max test",
+    tag: "Fitness",
+    intro: "Fitnescity. A short graded run or ride with a mask, results the same day.",
+    priceNote: "Member price · done at any Fitnescity site",
+    member: 199,
+    when: { label: "Results", value: "Same day" },
+    does: [
+      "Measures **how much oxygen your body can use** at its hardest effort.",
+      "One of the strongest single markers of fitness, and a number to train against.",
+    ],
+    cannot: [
+      "**It is not a heart check.** Your physician decides if you need one first.",
+      "**One test is one day.** Retest after a few months of training.",
+    ],
+    inlay: "connects you to Fitnescity, schedules the test and carries the result back",
+    fulfil: "visit",
+    site: "Fitnescity",
+    visit: { noun: "test", about: "One visit, about forty five minutes.", bring: "Wear clothes and shoes you can run in." },
+  },
+  {
+    id: "calcium-ct",
+    category: "imaging",
+    name: "Coronary calcium CT",
+    tag: "Imaging",
+    intro: "RAYUS. A ten minute scan of the heart, results in a few days.",
+    priceNote: "Member price · done at any RAYUS site",
+    member: 99,
+    when: { label: "Results", value: "2–3 days" },
+    does: [
+      "Counts **calcium in the heart's arteries**, a sign of plaque built up over years.",
+      "Helps your physician weigh heart risk beside your lipid results.",
+    ],
+    cannot: [
+      "**It does not see soft plaque** that has not yet hardened.",
+      "**It uses a small dose of radiation**, so it is not repeated often.",
+    ],
+    inlay: "connects you to RAYUS, schedules the scan and carries the result back",
+    fulfil: "visit",
+    site: "RAYUS",
+    visit: { noun: "scan", about: "One visit, about fifteen minutes.", bring: "No caffeine for four hours before." },
+  },
+  {
+    id: "brain-mri",
+    category: "imaging",
+    name: "Brain MRI",
+    tag: "Imaging",
+    intro: "SimonMed. One scan with no radiation, read by a radiologist.",
+    priceNote: "Member price · done at any SimonMed site",
+    member: 499,
+    when: { label: "Results", value: "1 wk" },
+    does: [
+      "Looks at **the brain's structure and blood vessels** without radiation.",
+      "Gives your physician a baseline to compare against later.",
+    ],
+    cannot: [
+      "**It does not measure memory or thinking.** Those need other tests.",
+      "**Small harmless findings are common** and may need a second look.",
+    ],
+    inlay: "connects you to SimonMed, schedules the scan and carries the result back",
+    fulfil: "visit",
+    site: "SimonMed",
+    visit: { noun: "scan", about: "One visit, about forty minutes.", bring: "Nothing metal on you." },
+  },
+  {
+    id: "shield",
+    category: "cancer",
+    name: "Colorectal cancer blood test",
+    tag: "Screening",
+    intro: "Shield, by Guardant. One blood draw, results in about two weeks.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 249,
+    when: { label: "Results", value: "About 2 wks" },
+    does: [
+      "Looks for **signs of colorectal cancer in the blood**, with no prep and no stool sample.",
+      "An option for people who keep putting off a colonoscopy.",
+    ],
+    cannot: [
+      "**It does not replace a colonoscopy.** A positive result leads to one.",
+      "**It misses most precancerous polyps**, which a colonoscopy can remove.",
+    ],
+    inlay: "connects you to Guardant, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes, no fasting.", bring: "Quest has the order before you arrive." },
+  },
+  {
+    id: "hereditary",
+    category: "cancer",
+    name: "Hereditary cancer gene panel",
+    tag: "Genetics",
+    intro: "Quest Diagnostics. One blood draw, results in two to three weeks.",
+    priceNote: "Member price · drawn at any Quest site",
+    member: 299,
+    when: { label: "Results", value: "2–3 wks" },
+    does: [
+      "Checks **genes linked to inherited cancer risk**, such as BRCA1 and BRCA2.",
+      "Comes with a genetic counsellor to talk the result through.",
+    ],
+    cannot: [
+      "**It does not tell you if you have cancer.** It tells you about inherited risk.",
+      "**Most cancers are not inherited**, so a clear result does not mean low risk.",
+    ],
+    inlay: "connects you to Quest, schedules the draw and books your counsellor",
+    fulfil: "visit",
+    site: "Quest Diagnostics",
+    visit: { noun: "draw", about: "One visit, about ten minutes, no fasting.", bring: "Quest has the order before you arrive." },
+  },
+  {
+    id: "apoe",
+    category: "brain",
+    name: "ApoE genotype",
+    tag: "Genetics",
+    intro: "Labcorp. One blood draw, results in about a week.",
+    priceNote: "Member price · drawn at any Labcorp site",
+    member: 149,
+    when: { label: "Results", value: "About 1 wk" },
+    does: [
+      "Shows **which ApoE gene variants you carry**, which shape Alzheimer's and heart risk.",
+      "Helps your physician decide how closely to watch the years ahead.",
+    ],
+    cannot: [
+      "**It does not predict who gets Alzheimer's.** Many carriers never do.",
+      "**The result cannot change**, so think it through with your physician first.",
+    ],
+    inlay: "connects you to Labcorp, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Labcorp",
+    visit: { noun: "draw", about: "One visit, about ten minutes, no fasting.", bring: "Labcorp has the order before you arrive." },
+  },
+  {
+    id: "atn",
+    category: "brain",
+    name: "ATN amyloid and tau panel",
+    tag: "Brain health",
+    intro: "Labcorp. One blood draw, results in one to two weeks.",
+    priceNote: "Member price · drawn at any Labcorp site",
+    member: 399,
+    when: { label: "Results", value: "1–2 wks" },
+    does: [
+      "Measures **amyloid, tau and nerve damage markers** together in the blood.",
+      "Gives a fuller picture than one marker, for a physician weighing memory concerns.",
+    ],
+    cannot: [
+      "**It does not diagnose Alzheimer's.** It is read beside an exam and history.",
+      "**It is newer testing**, so results are best tracked over time.",
+    ],
+    inlay: "connects you to Labcorp, schedules the draw and carries the result back",
+    fulfil: "visit",
+    site: "Labcorp",
+    visit: { noun: "draw", about: "One visit, about ten minutes, no fasting.", bring: "Labcorp has the order before you arrive." },
+  },
+  {
+    id: "oura",
+    category: "devices",
+    name: "Smart ring",
+    tag: "Devices",
+    intro: "Oura. A ring that tracks sleep, heart rate and activity.",
+    priceNote: "Member price · sent to your door",
+    member: 299,
+    when: { label: "Arrives", value: "3–5 days" },
+    does: [
+      "Tracks **sleep, resting heart rate and heart rate variability** every night.",
+      "Brings the readings into your record beside everything else.",
+    ],
+    cannot: [
+      "**It is not a medical device.** It shows trends, not diagnoses.",
+      "**Sleep stages are estimates**, not a sleep study.",
+    ],
+    inlay: "connects you to Oura, sends the ring and brings the readings into your record",
+    fulfil: "ship",
+  },
+  {
+    id: "bp-cuff",
+    category: "devices",
+    name: "Blood pressure cuff",
+    tag: "Devices",
+    intro: "Withings. An upper arm cuff that syncs each reading.",
+    priceNote: "Member price · sent to your door",
+    member: 79,
+    when: { label: "Arrives", value: "3–5 days" },
+    does: [
+      "Takes **blood pressure at home**, where readings are often truer than in a clinic.",
+      "Each reading lands in your record, so your physician sees the trend.",
+    ],
+    cannot: [
+      "**One high reading is not a diagnosis.** Patterns matter.",
+      "**Position and cuff fit change the number.** Follow the set-up steps.",
+    ],
+    inlay: "connects you to Withings, sends the cuff and brings the readings into your record",
+    fulfil: "ship",
+  },
+  {
+    id: "smart-scale",
+    category: "devices",
+    name: "Smart scale",
+    tag: "Devices",
+    intro: "Withings. Weight and body composition every morning.",
+    priceNote: "Member price · sent to your door",
+    member: 99,
+    when: { label: "Arrives", value: "3–5 days" },
+    does: [
+      "Logs **weight and body fat** each time you step on.",
+      "Sends each weigh-in to your record, so there is nothing to type.",
+    ],
+    cannot: [
+      "**Body fat at home is an estimate.** A DEXA scan is far more exact.",
+      "**Weight moves day to day** with water and food. Watch the trend.",
+    ],
+    inlay: "connects you to Withings, sends the scale and brings the readings into your record",
+    fulfil: "ship",
+  },
+  {
+    id: "nutrition",
+    category: "programmes",
+    name: "Nutrition coaching",
+    tag: "Programme",
+    intro: "A registered dietitian, four video sessions over two months.",
+    priceNote: "Member price · starts in the app",
+    member: 150,
+    when: { label: "Starts", value: "This week" },
+    does: [
+      "Builds **eating habits around your results**, not a generic diet.",
+      "Your dietitian sees your record and checks in between sessions.",
+    ],
+    cannot: [
+      "**It is not a meal plan.** It teaches choices you make yourself.",
+      "**Change takes weeks**, not one session.",
+    ],
+    inlay: "matches you with a dietitian and books your first session",
+    fulfil: "ship",
+  },
+  {
+    id: "movement",
+    category: "programmes",
+    name: "Movement programme",
+    tag: "Programme",
+    intro: "Short guided workouts, built up week by week.",
+    priceNote: "Member price · starts in the app",
+    member: 120,
+    when: { label: "Starts", value: "This week" },
+    does: [
+      "Builds **strength and stamina** with short sessions at home or the gym.",
+      "Steps up as you get stronger, logged beside the rest of your data.",
+    ],
+    cannot: [
+      "**It is not physical therapy** for an injury.",
+      "**It works through practice.** What you get depends on showing up.",
+    ],
+    inlay: "starts the programme in the app",
+    fulfil: "ship",
+  },
+  {
+    id: "meals",
+    category: "home",
+    name: "Prepared meals",
+    tag: "Home & care",
+    intro: "Medline. A week of balanced meals, sent to your door.",
+    priceNote: "Member price · sent to your door",
+    member: 59,
+    when: { label: "Arrives", value: "2–4 days" },
+    does: [
+      "Sends **ready meals** for the days cooking is hard.",
+      "Choose from plain options with the nutrition on every label.",
+    ],
+    cannot: [
+      "**It is not medical nutrition.** Ask your physician about special diets.",
+      "**Menus vary** by week and address.",
+    ],
+    inlay: "connects you to Medline and sends your order",
+    fulfil: "ship",
+  },
+  {
+    id: "transport",
+    category: "home",
+    name: "Ride to an appointment",
+    tag: "Home & care",
+    intro: "Medline. A booked ride there and back.",
+    priceNote: "Member price · each round trip",
+    member: 25,
+    when: { label: "Booked", value: "Within 1 day" },
+    does: [
+      "Books **a ride to and from** a test, scan or visit.",
+      "The driver has the address and time, so there is nothing to arrange.",
+    ],
+    cannot: [
+      "**It is not an ambulance.** For an emergency, call 911.",
+      "**Rides need a day's notice** in most areas.",
+    ],
+    inlay: "connects you to Medline and books your ride",
+    fulfil: "ship",
+  },
 ]
 
 export const item = (id: string) => ITEMS.find((i) => i.id === id)
 
-/** Every item in a category, in catalog order. A category with more than
-    one (Laboratory) opens as a list to pick from. */
+/** Every item in a category, in catalog order: the list a category opens. */
 export const itemsIn = (category: string) => ITEMS.filter((i) => i.category === category)
 
 /** "$854" */

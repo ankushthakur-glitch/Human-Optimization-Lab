@@ -60,7 +60,6 @@ import {
 } from "@/components/dashboard-kit-v2"
 import { AreaSpark } from "@/components/dashboard-kit-v2/charts"
 import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
-import { useCarePlansToReview } from "@/components/provider/chart-care-plan"
 import { CHAT_ME, chats, lastOf } from "@/components/provider/communication/chat-data"
 import { ms } from "@/components/provider/mock-clock"
 import { PROVIDER_ID } from "@/components/provider/provider-shell"
@@ -1129,7 +1128,6 @@ function useActivity(day: Day): Activity[] {
   const allTasks = tasks.use().items
   const threads = chats.use().items
   const staff = providers.use().items
-  const plans = useCarePlansToReview()
   const person = (id: string) => {
     if (id === ME || id === PROVIDER_ID) return "You"
     const s = staff.find((x) => x.id === id)
@@ -1192,25 +1190,9 @@ function useActivity(day: Day): Activity[] {
         chip: th.unread > 0 ? { key: "Thread", label: "Review", tone: "violet" } : { key: "Thread", label: "Read", tone: "gray" },
       })
     }
-    for (const p of plans) {
-      out.push({
-        id: `plan-${p.patientId}`,
-        at: p.event.at,
-        avatar: day.byId.get(p.patientId),
-        icon: IconFileCheck,
-        actor: p.event.by,
-        verb: p.event.kind === "Changes requested" ? "asked for changes to" : "sent for review",
-        object: `care plan version ${p.event.version}`,
-        detail: p.event.note,
-        chip:
-          p.status === "Changes requested"
-            ? { key: "Plan", label: "Watch", tone: "amber" }
-            : { key: "Plan", label: "Review", tone: "violet" },
-      })
-    }
     return out.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 24)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [all, allTasks, threads, staff, plans, day.byId, now])
+  }, [all, allTasks, threads, staff, day.byId, now])
 }
 
 function ActivityView({ day }: { day: Day }) {

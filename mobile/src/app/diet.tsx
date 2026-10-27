@@ -12,7 +12,6 @@ import { LoggedCheck, MealRow, MealSheet, logLabel, minutesOf, slotName, unbroke
 import { toast } from "@/components/toast"
 import {
   MEAL_SLOTS,
-  MEMBER,
   dayScore,
   goalRowsOf,
   localDay,
@@ -31,7 +30,7 @@ import { space, type } from "@/lib/theme"
 /* The member's diet plan, opened from the Diet plan door on the Today
    hero (FINAL-SPEC C.21; Ed, 30 Sep: "this is my diet ... they can click
    on it"). Targets and food ideas, not a meal plan (M-13, Q-13): the
-   day's targets as the doctor approved them, what she has eaten so far,
+   day's targets from her plan, what she has eaten so far,
    one focus from yesterday, each meal logged or a line on what fits it,
    ideas that fit the rest, and one tap to log a meal.
 
@@ -68,7 +67,7 @@ export default function DietScreen() {
   const s = useOnboarding()
   const [open, setOpen] = React.useState<string>()
   const stage = memberStage(s)
-  if (stage !== "live" && stage !== "redraft") return <NoPlanYet stage={stage} />
+  if (stage !== "live") return <NoPlanYet stage={stage} />
 
   const now = new Date()
   const key = localDay(now)
@@ -106,7 +105,7 @@ export default function DietScreen() {
             {profile.diet.title}
           </Text>
           <Text style={headText.line}>{unbroken(profile.diet.summary)}</Text>
-          {version !== undefined && <Text style={[headText.meta, styles.headMeta]}>{keepEnd(`Version ${version}, approved by ${MEMBER.doctorShort}`)}</Text>}
+          {version !== undefined && <Text style={[headText.meta, styles.headMeta]}>{keepEnd(`Version ${version}`)}</Text>}
         </HeadCard>
 
         <View style={styles.section}>
@@ -196,15 +195,12 @@ export default function DietScreen() {
   )
 }
 
-/** Before a plan is live (with the doctor, paused) or on the free
-    record, there are no targets to show yet. */
+/** A paused plan or the free record has no targets to show. */
 function NoPlanYet({ stage }: { stage: ReturnType<typeof memberStage> }) {
   const empty =
-    stage === "review"
-      ? { title: `Your targets arrive once ${MEMBER.doctorShort} approves your plan`, action: "Log a meal", go: () => router.push({ pathname: "/topic/[id]", params: { id: "eat" } }) }
-      : stage === "paused"
-        ? { title: "Your plan is paused", action: "Resume my plan", go: () => router.push({ pathname: "/membership", params: { sheet: "resume" } }) }
-        : { title: "No diet plan yet" }
+    stage === "paused"
+      ? { title: "Your plan is paused", action: "Resume my plan", go: () => router.push({ pathname: "/membership", params: { sheet: "resume" } }) }
+      : { title: "No diet plan yet" }
   return (
     <FlowScreen page title="Diet plan">
       <EmptyState art="bowl" artSize={64} title={empty.title} action={empty.action} onAction={empty.go} />

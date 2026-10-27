@@ -10,9 +10,7 @@ import {
   IconCalendar,
   IconChat,
   IconEqual,
-  IconFileCheck,
   IconFileList,
-  IconLab,
   IconLocation,
   IconUsersGroup,
   IconVideo,
@@ -46,8 +44,6 @@ import {
   useReducedMotion,
 } from "@/components/dashboard-kit-v2"
 import {
-  useBaselinesToSort,
-  useCarePlansToReview,
 } from "@/components/provider/chart-care-plan"
 import { CHAT_ME, chats, lastOf } from "@/components/provider/communication/chat-data"
 import { clockTime, ms } from "@/components/provider/mock-clock"
@@ -240,7 +236,6 @@ export function OverviewStats({
   onUrgent: () => void
 }) {
   const allTasks = tasks.use().items
-  const plans = useCarePlansToReview()
   const threads = chats.use().items
 
   const mine = allTasks.filter((t) => t.assigneeId === ME && t.status !== "Completed")
@@ -252,7 +247,7 @@ export function OverviewStats({
   const fresh = urgent.filter((i) => i.isNew).length
 
   return (
-    <section aria-label="Today at a glance" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <section aria-label="Today at a glance" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard
         icon={IconCalendar}
         label="Appointments"
@@ -288,22 +283,6 @@ export function OverviewStats({
           color: TASK_COLOR[p],
         }))}
         footer={<FooterLink href={`${BASE}/tasks`}>Open tasks</FooterLink>}
-      />
-      <StatCard
-        icon={IconFileCheck}
-        label="Care plans"
-        when="To review"
-        value={plans.length}
-        meta={plans.length ? `Oldest from ${SHORT.format(new Date(ms(plans[plans.length - 1]!.event.at)))}` : "All reviewed"}
-        segments={[
-          { label: "Pending", value: plans.filter((p) => p.status === "Pending review").length, color: SUBTLE.blue },
-          { label: "Changes", value: plans.filter((p) => p.status === "Changes requested").length, color: SUBTLE.orange },
-        ]}
-        footer={
-          <FooterLink href={plans[0] ? `${BASE}/${plans[0].patientId}?section=care-plan` : `${BASE}`}>
-            {plans[0] ? "Review the newest" : "Open patients"}
-          </FooterLink>
-        }
       />
       <StatCard
         icon={IconChat}
@@ -504,8 +483,6 @@ export function NeedsYou({
   onOpen: (item: QueueItem, from: HTMLElement) => void
   className?: string
 }) {
-  const plans = useCarePlansToReview()
-  const baselines = useBaselinesToSort()
   const allTasks = tasks.use().items
   const threads = chats.use().items
   const staff = providers.use().items
@@ -527,24 +504,6 @@ export function NeedsYou({
       meta: `${TYPE_META[i.type].word} · ${name(i.patientId)}`,
       verb: "Review",
       onPress: (from) => onOpen(i, from),
-    })),
-    ...plans.map<Action>((p) => ({
-      id: `plan-${p.patientId}`,
-      icon: IconFileCheck,
-      color: p.status === "Changes requested" ? SUBTLE.orange : SUBTLE.blue,
-      title: p.status === "Changes requested" ? "Care plan changes asked" : "Care plan to review",
-      meta: name(p.patientId),
-      verb: "Review",
-      href: `${BASE}/${p.patientId}?section=care-plan`,
-    })),
-    ...baselines.map<Action>((b) => ({
-      id: `baseline-${b.patientId}`,
-      icon: IconLab,
-      color: SUBTLE.blue,
-      title: "Baseline tests to sort",
-      meta: name(b.patientId),
-      verb: "Sort",
-      href: `${BASE}/${b.patientId}?section=care-plan&tab=baseline`,
     })),
     ...allTasks
       .filter((t) => t.assigneeId === ME && isOverdue(t))

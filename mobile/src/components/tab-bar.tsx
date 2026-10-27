@@ -127,7 +127,7 @@ export function TabScreen({
       from a tab (a topic opened from Today). */
   back?: boolean
   /** No header bar at all: the page starts under the status bar and keeps
-      the tab bar, e.g. the plan while the doctor reviews it. */
+      the tab bar. */
   headless?: boolean
   /** Stays above the tab bar while the page scrolls beneath it, e.g. the
       Plan tab's "Start my optimization plan". */
@@ -233,8 +233,8 @@ export function TabScreen({
 /** The floating pill and the assistant orb, for a page of its own that
     keeps the tabs (e.g. "Your personalized plan is ready"). */
 export function TabBar({ active, bottom }: { active: TabName; bottom: number }) {
-  // The plan tab reads "Upgrade", with a crown, for everyone who has no
-  // plan to follow yet (5 Oct call), a member in review included.
+  // The plan tab wears the crown for a free patient only (5 Oct call); a
+  // member's plan is live from enrolment, so she gets the Plan icon at once.
   const upgradeLabel = upgradeTab(useExperience())
   // A plan to follow brings its own tabs; the Upgrade tab keeps home's.
   // The bar keeps Home, To do, Record, Plan and Care on the Plan tab too

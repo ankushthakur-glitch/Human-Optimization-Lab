@@ -505,7 +505,6 @@ export type BannerState =
   | { kind: "arriving"; got?: number; of?: number }
   | { kind: "not-found"; place: string }
   | { kind: "new-results"; count: number; from?: string; on?: string; batch?: string }
-  | { kind: "plan-review"; version: number; by: string }
   | { kind: "checking"; by: string }
   | { kind: "checked"; by: string; on: string }
 
@@ -525,8 +524,6 @@ export type BannerFacts = {
   arriving?: { got: number; of: number } | null
   /** A place where no records were found. */
   notFound?: string | null
-  /** Member: a newer plan version with the doctor. */
-  planReview?: { version: number; by: string } | null
   /** Today, for review links and tests; defaults to now. */
   today?: Date
 }
@@ -558,7 +555,6 @@ export function pickBanner(f: BannerFacts): BannerState | null {
     const on = toDay(f.newResults.on)
     return { kind: "new-results", count: f.newResults.count, from: f.newResults.from, on: on && shortDay(on, today), batch: f.newResults.batch }
   }
-  if (f.planReview) return { kind: "plan-review", version: f.planReview.version, by: f.planReview.by }
   if (f.review) {
     const done = toDay(f.review.done)
     if (!done) return { kind: "checking", by: f.review.by }
@@ -621,8 +617,6 @@ function bannerWords(s: BannerState): BannerCopy {
         meta: [`${s.count} ${s.count === 1 ? "result" : "results"}${s.from ? ` from ${s.from}` : ""}`, s.on].filter(Boolean).join(", "),
         tappable: true,
       }
-    case "plan-review":
-      return { hue: "teal", icon: "documents", title: `Version ${s.version} is with ${s.by}`, meta: "Your current plan stays in place", live: true, tappable: true }
     case "checking":
       return { hue: "teal", icon: "clinic", title: `${s.by} is checking your new record`, live: true, tappable: false }
     case "checked":
@@ -1208,15 +1202,11 @@ export function StatRow({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** The member's plan line for the home header: "Version 2, approved by Dr.
-    Patel", and while a newer version is with the doctor a second line,
-    "Version 3 is with Dr. Patel", with a breathing dot (M-55). The current
-    version stays live meanwhile. */
+/** The member's plan line for the home header: "Version 2, since Sep 12". */
 export function PlanLine({
   version,
   by,
   on,
-  reviewing,
   paused,
   onPress,
 }: {
@@ -1225,8 +1215,6 @@ export function PlanLine({
   by: string
   /** When, e.g. "Sep 12". */
   on?: string
-  /** A newer version's number while it is with the doctor. */
-  reviewing?: number
   paused?: boolean
   onPress?: () => void
 }) {
@@ -1244,17 +1232,9 @@ export function PlanLine({
         )}
         <Text style={styles.planText} numberOfLines={1}>
           <Text style={styles.planStrong}>{`Version ${version}`}</Text>
-          {paused ? " is paused" : keep(`, approved by ${by}${on ? ` on ${on}` : ""}`)}
+          {paused ? " is paused" : keep(on ? `, since ${on}` : "")}
         </Text>
       </View>
-      {reviewing != null && (
-        <View style={styles.planRow}>
-          <View style={styles.planMarkWrap}>
-            <LiveDot size={7} />
-          </View>
-          <Text style={styles.planText} numberOfLines={1}>{`Version ${reviewing} is with ${keep(by)}`}</Text>
-        </View>
-      )}
     </>
   )
   if (!onPress) return <View style={styles.planLine}>{body}</View>

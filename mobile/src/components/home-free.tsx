@@ -32,11 +32,7 @@ import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
 
    Since 6 Oct 2026 the Needs you banner is red, a rising result out of
    range is drawn red in its tile, and the teal "A healthier you is
-   possible" banner after Upcoming opens Upgrade.
-
-   A member whose first plan is with Dr. Patel gets this home too (9 Oct
-   2026), without the upgrade banner: she has upgraded, and the Upgrade
-   tab shows where her plan is. */
+   possible" banner after Upcoming opens Upgrade. */
 
 export function FreeHome() {
   const onboarding = useOnboarding()
@@ -71,7 +67,7 @@ export function FreeHome() {
 
 /** The record part of the free home, from Biological age to Ask about
     your results; To do sits after Your medicines (21 Oct 2026). The upgrade banner only for a patient who can still upgrade:
-    not a paused member, nor one whose plan is with Dr. Patel. Since 16 Oct
+    not a paused member. Since 16 Oct
     2026 Your connections follows Needs you; since 19 Oct 2026 it holds
     her health records only, no devices. */
 export function RecordSections({ onOpenAge }: { onOpenAge: () => void }) {
@@ -80,7 +76,7 @@ export function RecordSections({ onOpenAge }: { onOpenAge: () => void }) {
     <View style={styles.page}>
       <AgeCard onPress={onOpenAge} />
       <Trends />
-      {exp !== "paused" && exp !== "member-review" && <UpgradeCard />}
+      {exp !== "paused" && <UpgradeCard />}
       <Upcoming />
       <NewInRecord />
       <Medicines />

@@ -16,9 +16,7 @@ import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
    list, no grouping; each test has its own checkbox, says the number it was
    picked for. A
    test she clears greys out with its price struck through. The (i) beside
-   a test opens what it is and why it matters in a bottom sheet. A note
-   says her physician sorts the tests into insurance or Inlay before she
-   books. Continue opens step 3
+   a test opens what it is and why it matters in a bottom sheet. Continue opens step 3
    (/enrollment). The blood panel, DEXA and RMR are kept in the onboarding
    picks, the sleep study in the add-ons; enrollment and payment charge
    from both. */

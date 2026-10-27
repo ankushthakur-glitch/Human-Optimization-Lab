@@ -986,8 +986,8 @@ export function planAnswer(question: string, s: Snapshot, now: Date = new Date()
   }
   const live = profile.versions.find((v) => v.status === "Active") ?? profile.versions[0]
   return live
-    ? { text: `Version ${live.version}, approved by Dr. Patel on ${live.approved.replace(/,\s*\d{4}$/, "")}: ${lower(live.why)}`, shows: live.changes.map((c) => `${c}.`).join(" ") }
-    : { text: "Your plan is with Dr. Patel. Once it's approved, I can answer anything about it." }
+    ? { text: `Version ${live.version}, since ${live.approved.replace(/,\s*\d{4}$/, "")}: ${lower(live.why)}`, shows: live.changes.map((c) => `${c}.`).join(" ") }
+    : { text: "Your plan is being set up. Once it's ready, I can answer anything about it." }
 }
 
 /** The Plan tab, where its price lives: the assistant never says one (D.4).
@@ -1004,21 +1004,15 @@ export const PLAN_FOR_FREE: Answer = {
 /** `?topic=plan` without a live plan: the free record's questions about the
     plan, and a new member's while the plan is with Dr. Patel. */
 export const FREE_PLAN_ASKS = ["What does the plan include?", "How does it start?", "What stays free?", "How do I stop it?"] as const
-export const REVIEW_PLAN_ASKS = ["How was my plan built?", "What happens next?", "When does billing start?"] as const
 
 /** About the plan, for anyone without a live one: what it does, how it
     starts and stops, what stays free. Inlay speaks, never the doctor, and
     never a price (D.1, D.4); never counted. */
-export function planInfoAnswer(question: string, reviewing = false): Answer {
-  if (reviewing) {
-    if (/built/i.test(question)) return { text: "From your record, your questionnaire and the why you shared at the start. Dr. Patel reviews it before it starts." }
-    if (/bill|charge|pay/i.test(question)) return { text: "Billing starts on the day Dr. Patel approves your plan, not before. Your details are in Membership.", link: { label: "Open Membership", href: "/membership" } }
-    return { text: "Once Dr. Patel approves your plan, it goes live here: your targets, your week and your daily score." }
-  }
+export function planInfoAnswer(question: string): Answer {
   if (/includ|what (do|does)|get/i.test(question))
-    return { text: "It turns your results into a plan for every day, reviewed by your physician every 3 months.", points: TIERS.optimization.included.filter((x) => !/physician/i.test(x)), link: PLAN_PAGE }
+    return { text: "It turns your results into a plan for every day, updated every 3 months.", points: [...TIERS.optimization.included], link: PLAN_PAGE }
   if (/start|begin|work/i.test(question))
-    return { text: "A short questionnaire and a few starting tests go into one plan built around you. Your physician reviews it before it starts, and the first charge comes only once it's approved.", link: PLAN_PAGE }
+    return { text: "A short questionnaire and a few starting tests go into one plan built around you. It starts the day you enroll.", link: PLAN_PAGE }
   if (/free/i.test(question)) return { text: "Your record stays free, always, with or without the plan.", points: [...FREE_STAYS] }
   if (/stop|cancel|pause|leave/i.test(question))
     return { text: "You can pause or cancel online at any time, with one confirmation. If you stop, you keep your record and every version of your plan." }

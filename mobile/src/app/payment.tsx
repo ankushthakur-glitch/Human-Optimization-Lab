@@ -26,7 +26,7 @@ import { PlanStepPage } from "@/components/plan-steps"
 import { Card, KeyValue, TextAction } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
-import { dollarsExact, type TestPay } from "@/lib/baseline-tests"
+import { dollarsExact } from "@/lib/baseline-tests"
 import { useOnboarding } from "@/lib/onboarding"
 import { priceLabel, YEARLY_TEST_DISCOUNT } from "@/lib/plans"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
@@ -34,10 +34,7 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
 /* Step 4 of the plan's set-up, "Payment method": opens from "Continue to
    payment" on step 3 (/enrollment), in the same frame and with the same
    small pieces as every step. The first month's total on one row, its
-   breakdown a tap away, when she pays for the tests (now, with any her
-   insurance covers refunded after her physician sorts them, or after that
-   review, only for the ones booked through Inlay; the total follows),
-   how she pays, and her agreement. "Complete
+   breakdown a tap away, how she pays, and her agreement. "Complete
    enrollment" stays off until she has a way to pay and has ticked the
    agreement; then the membership starts and she lands on the enrolled
    page (/enrolled).
@@ -107,8 +104,7 @@ export default function PaymentScreen() {
   const onboarding = useOnboarding()
   const { start, pending } = useStartMembership()
   const billing = onboarding.billingPick ?? "yearly"
-  const testPay: TestPay = onboarding.testPay ?? "now"
-  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns, testPay)
+  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns)
   const [method, setMethod] = React.useState<Method>("card")
   // A saved card per kind; the prototype's demo credit card to start.
   const [cards, setCards] = React.useState<Partial<Record<CardMethod, SavedCard>>>({
@@ -187,7 +183,6 @@ export default function PaymentScreen() {
           <CostBreakdownSheet
             tests={onboarding.baselinePicks}
             addOns={onboarding.addOns}
-            testPay={onboarding.testPay}
             billing={billing}
             goals={onboarding.goals}
             onClose={() => setSheet(undefined)}

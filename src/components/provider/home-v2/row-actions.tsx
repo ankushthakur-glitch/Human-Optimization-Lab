@@ -46,13 +46,6 @@ function actionsFor(item: QueueItem): { main: Action; more: Action[] } {
 export function RowActions({ item, onAct }: { item: QueueItem; onAct: RowAct }) {
   const router = useRouter()
   const { main, more } = actionsFor(item)
-  /* A care plan is approved on its own page, so the row goes there. */
-  if (item.type === "review_due" && item.payload.review === "Care plan review")
-    return (
-      <Button variant="outline" size="sm" onClick={() => router.push(chartHref(item.patientId, "care-plan"))}>
-        Review care plan
-      </Button>
-    )
   return (
     <div className="flex items-center gap-1.5">
       <Button variant="outline" size="sm" onClick={() => onAct(item, main.kind, main.opts)}>

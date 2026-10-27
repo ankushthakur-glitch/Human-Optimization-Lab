@@ -4,6 +4,7 @@ import * as React from "react"
 import { AlcoholHistory } from "@/components/alcohol-week"
 import { PageNotFoundState } from "@/components/error-state"
 import { HistoryView } from "@/components/history-view"
+import { LiftProgress } from "@/components/lift-progress"
 import { TopicPage } from "@/components/topic-kit"
 import { HISTORY } from "@/lib/history"
 import { topicOf } from "@/lib/topics"
@@ -12,16 +13,18 @@ import { topicOf } from "@/lib/topics"
    Mind, Medication, Measure), opened from Plan > Your history or from the
    topic's own page. The same view as the overall history, with the day as
    a window and the topic's own metrics: what the plan asked of her, and
-   what the window says she did. */
+   what the window says she did. Exercise adds each lift's progression,
+   opened on one lift by `lift`. */
 
 export default function TopicHistoryScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const { id, lift } = useLocalSearchParams<{ id: string; lift?: string }>()
   const topic = topicOf(id)
   if (!topic) return <PageNotFoundState />
   const history = HISTORY[topic.id]
   return (
     <TopicPage title={`${topic.id === "medication" ? "Medication" : topic.name} history`}>
       <HistoryView history={history} />
+      {topic.id === "exercise" && <LiftProgress initial={lift} />}
       {topic.id === "eat" && <AlcoholHistory />}
     </TopicPage>
   )

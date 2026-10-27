@@ -39,7 +39,7 @@ export function PlanFree() {
         <Block title="Your past plans">
           <Group>
             {past.map((v) => (
-              <NeedsRow key={v.version} title={`Version ${v.version}`} meta={`Approved ${v.approved.replace(/,\s*\d{4}$/, "")}. Kept.`} />
+              <NeedsRow key={v.version} title={`Version ${v.version}`} meta={`Started ${v.approved.replace(/,\s*\d{4}$/, "")}. Kept.`} />
             ))}
           </Group>
         </Block>

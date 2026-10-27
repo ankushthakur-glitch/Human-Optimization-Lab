@@ -6,6 +6,7 @@ import Svg, { Circle } from "react-native-svg"
 import {
   ArrowsLeftRight,
   Barbell,
+  Barcode,
   Brain,
   Camera,
   Check,
@@ -57,6 +58,7 @@ const ICON: Record<IconKey, React.ComponentType<IconProps>> = {
   swap: ArrowsLeftRight,
   practice: FlowerLotus,
   drink: Wine,
+  barcode: Barcode,
 }
 
 export function TopicIcon({ name, size = 16, color: tone = color.primary, weight }: { name: IconKey; size?: number; color?: string; weight?: IconProps["weight"] }) {

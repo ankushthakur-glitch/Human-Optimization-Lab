@@ -173,12 +173,6 @@ export const PLAN_VERSIONS: PlanVersion[] = [
     Replaces the earlier spaced Thursday schedule (user, 26 Oct 2026). */
 export const WEIGH_IN = { often: "Every morning", detail: "First thing, before breakfast", every: "every 1 to 3 days" } as const
 
-/** The next version while it is with the doctor (sample data until plans
-    come from the server, C.16.1 item 2): what is changing in it. */
-export const PLAN_DRAFT = {
-  changes: ["Protein up to 120 g a day", "Strength sessions up to 25 minutes"],
-} as const
-
 /** Physician reviews are quarterly (M-56). */
 export const NEXT_REVIEW = { month: "December", at: "2026-12-08", words: "Next review in December" } as const
 
@@ -186,10 +180,10 @@ export const NEXT_REVIEW = { month: "December", at: "2026-12-08", words: "Next r
 export function planLine(versions: { version: number; approved: string }[] = PLAN_VERSIONS) {
   const live = versions[0]
   if (!live) return ""
-  return `Version ${live.version}, approved by ${MEMBER.doctorShort} on ${live.approved.replace(/, \d{4}$/, "")}`
+  return `Version ${live.version}, since ${live.approved.replace(/, \d{4}$/, "")}`
 }
 
-export type MemberStage = "review" | "live" | "redraft" | "paused"
+export type MemberStage = "live" | "paused"
 
 /** Whether a membership has ended: cancelled, and the paid month it ran
     to (`endsAt`) is over. Until then she is still a member. */
@@ -204,14 +198,12 @@ export function membershipEnded(m: Snapshot["membership"], now: Date = new Date(
     everywhere on the same day. */
 export const membershipOn = (m: Snapshot["membership"], now: Date = new Date()) => m?.tier === "optimization" && !membershipEnded(m, now)
 
-/** Where a member is: version 1 with the doctor (or not drafted yet), live,
-    live with a new version in review, or paused. A cancelled membership
+/** Where a member is: live or paused. A cancelled membership
     stays a membership until its paid month runs out (`endsAt`, C.17), then
     reads as the free record. Undefined for a patient on the free record. */
 export function memberStage(s: Snapshot, now: Date = new Date()): MemberStage | undefined {
   if (!s.membership || !membershipOn(s.membership, now)) return undefined
   if (s.membership.paused) return "paused"
-  if (!s.plan || s.plan.status !== "live") return s.plan?.versions.length ? "redraft" : "review"
   return "live"
 }
 
@@ -371,8 +363,11 @@ export type Meal = {
   /** Checked by the patient, or kept as an estimate after "Not sure"
       (shown as Estimated, M-16). */
   status: "confirmed" | "estimated"
-  /** The answer to the hidden fats and portion questions. */
+  /** The answer to the hidden fats and portion questions, or the words she
+      added to her photos. */
   note?: string
+  /** The photos she logged it with: the plate, a menu, a label. */
+  photos?: string[]
 }
 
 /** A nutrient total: partial when some food had no value for it. */

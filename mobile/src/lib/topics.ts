@@ -19,19 +19,18 @@ export type TopicId = "exercise" | "eat" | "sleep" | "mind" | "medication" | "me
 /** How a figure reads: green is done or on target, amber short, red missed. */
 export type Tone = "good" | "warn" | "bad" | "plain"
 
-export type IconKey = "exercise" | "eat" | "sleep" | "mind" | "medication" | "measure" | "check" | "pencil" | "mic" | "import" | "search" | "camera" | "upload" | "phone" | "device" | "shift" | "swap" | "practice" | "drink"
+export type IconKey = "exercise" | "eat" | "sleep" | "mind" | "medication" | "measure" | "check" | "pencil" | "mic" | "import" | "search" | "camera" | "upload" | "phone" | "device" | "shift" | "swap" | "practice" | "drink" | "barcode"
 
 /** What a way does when she taps it. `done` answers the topic and says so on
     Today; `go` opens the screen that already does it; `ask` hands it to the
     assistant in her own words; `sheet` opens the measurements sheet; `part`
     opens the session's parts, each done or skipped; `short` how many
     minutes of the practice she did and what; `meal` asks which meal
-    she is adding, then opens that way of logging it; `voice` asks the
-    same, then listens while she says what she ate; `dose` opens one of
-    Medication's sheets: tick the doses taken, log one missed, report a side
-    effect to the physician, or photograph a new label; `night` opens
-    Sleep's log of the night she actually had; `pick` the plan's pre-planned
-    meals, one tap to add; `apps` the apps and devices the topic can post
+    she is adding, then opens its photos and the words about it, typed or
+    spoken; `barcode` asks the same, then opens the barcode scan; `dose` opens one of
+    Medication's sheets: tick the doses taken, report a side effect to the
+    physician, or add a new medicine or supplement; `night` opens
+    Sleep's log of the night she actually had; `apps` the apps and devices the topic can post
     itself from, each connected in place (`upload` adds a file of her own
     programme above them). */
 export type Act =
@@ -43,9 +42,8 @@ export type Act =
   | { kind: "short" }
   | { kind: "night" }
   | { kind: "meal" }
-  | { kind: "voice" }
-  | { kind: "dose"; sheet: "taken" | "missed" | "side" }
-  | { kind: "pick" }
+  | { kind: "barcode" }
+  | { kind: "dose"; sheet: "taken" | "side" | "add" }
   | { kind: "apps"; title: string; apps: string[]; upload?: boolean }
 
 export type Way = { id: string; title: string; says: string; badge: string; tone: "good" | "warn" | "info"; icon: IconKey; act: Act }
@@ -106,8 +104,8 @@ export const TOPICS: Topic[] = [
     figure: "0 of 3",
     intro: FOUR,
     ways: [
-      { id: "photo", title: "Photograph the plate", says: "Snap it and we read the macros", badge: "Scores what you ate", tone: "warn", icon: "camera", act: { kind: "meal" } },
-      { id: "say", title: "Say what you ate", says: "Out loud, in your own words", badge: "Nothing to type", tone: "good", icon: "mic", act: { kind: "voice" } },
+      { id: "photo", title: "Photograph your meal", says: "The plate, a menu or a label, with a few words", badge: "Scores what you ate", tone: "warn", icon: "camera", act: { kind: "meal" } },
+      { id: "barcode", title: "Scan a barcode", says: "Packaged food, read from its label", badge: "Exact macros", tone: "good", icon: "barcode", act: { kind: "barcode" } },
       { id: "import", title: "Import from another app", says: "Apple Health, MyFitnessPal, Cronometer", badge: "Posts itself", tone: "info", icon: "import", act: { kind: "apps", title: "Import your meals", apps: ["Apple Health", "MyFitnessPal", "Cronometer"] } },
     ],
   },
@@ -161,8 +159,8 @@ export const TOPICS: Topic[] = [
     intro: "Today's doses, and three ways to answer them.",
     ways: [
       { id: "taken", title: "Mark it taken", says: "One tap per dose", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "dose", sheet: "taken" } },
-      { id: "missed", title: "Mark a dose missed", says: "No judgement, we just need the truth", badge: "Logged honestly", tone: "warn", icon: "pencil", act: { kind: "dose", sheet: "missed" } },
       { id: "side", title: "Report a side effect", says: "Say what happened, in your words", badge: "Goes to Dr. Patel", tone: "good", icon: "phone", act: { kind: "dose", sheet: "side" } },
+      { id: "add", title: "Add a new one", says: "A medicine or supplement you started", badge: "Checked for interactions", tone: "good", icon: "camera", act: { kind: "dose", sheet: "add" } },
     ],
     done: false,
   },
@@ -454,20 +452,9 @@ export const CARDIO = { name: "Zone 2 cardio", detail: "30 min", say: "Treadmill
 
 /* ------------------------------------------------------------------ eat -- */
 
-/** The meal database behind "Pick from the meal database": the plan's
-    pre-planned meals, macros already known, so one tap adds one whole. */
-export const PLANNED_MEALS: { id: string; name: string; slot: "breakfast" | "lunch" | "dinner" | "snack"; portion: string; nutrients: { calories: number; protein: number; fiber: number; calcium: number } }[] = [
-  { id: "yogurt-bowl", name: "Greek yogurt, berries and chia", slot: "breakfast", portion: "1 bowl", nutrients: { calories: 380, protein: 34, fiber: 9, calcium: 350 } },
-  { id: "egg-scramble", name: "Egg white scramble with spinach and toast", slot: "breakfast", portion: "1 plate", nutrients: { calories: 360, protein: 32, fiber: 6, calcium: 180 } },
-  { id: "chicken-quinoa", name: "Chicken, quinoa and greens", slot: "lunch", portion: "1 bowl", nutrients: { calories: 540, protein: 48, fiber: 8, calcium: 160 } },
-  { id: "lentil-soup", name: "Lentil and chicken soup", slot: "lunch", portion: "2 cups", nutrients: { calories: 420, protein: 38, fiber: 11, calcium: 120 } },
-  { id: "salmon-veg", name: "Salmon, sweet potato and broccoli", slot: "dinner", portion: "1 plate", nutrients: { calories: 610, protein: 52, fiber: 9, calcium: 140 } },
-  { id: "turkey-chili", name: "Turkey and black bean chili", slot: "dinner", portion: "1 bowl", nutrients: { calories: 520, protein: 46, fiber: 14, calcium: 190 } },
-  { id: "cottage-cheese", name: "Cottage cheese and pear", slot: "snack", portion: "1 cup", nutrients: { calories: 210, protein: 24, fiber: 4, calcium: 220 } },
-]
-
 /** What the prototype "hears" where nothing can transcribe (Expo Go, a
-    browser without speech recognition), one sentence per meal. */
+    browser without speech recognition), and what it reads from a meal's
+    photos when she adds no words, one sentence per meal. */
 export const SPOKEN_SAMPLE: Record<"breakfast" | "lunch" | "dinner", string> = {
   breakfast: "Two scrambled eggs, a slice of whole grain toast and a black coffee",
   lunch: "A grilled chicken salad with olive oil and an apple",
@@ -512,9 +499,13 @@ export const DOSES = [
   { id: "berberine", name: "Berberine", dose: "500 mg", when: "Twice daily" },
 ] as const
 
-export const MISSED_WHY = ["Forgot", "Felt unwell", "Ran out", "Side effects", "Other"] as const
-
 export const SEVERITY = ["Mild", "Moderate", "Severe"] as const
+
+export const ALSO_TAKING = [
+  { name: "Magnesium glycinate", dose: "400 mg, nightly", interacts: false },
+  { name: "Fish oil", dose: "1,000 mg, with dinner", interacts: false },
+  { name: "Berberine", dose: "500 mg, twice daily", interacts: true },
+]
 
 /* -------------------------------------------------------------- measure -- */
 

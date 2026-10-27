@@ -15,9 +15,7 @@ import { color, space, type } from "@/lib/theme"
 import { bookingOf, localIso } from "@/lib/todo"
 
 /* "Schedule your tests": opens from "Schedule my tests" on the enrolled
-   page (/enrolled) or "Your tests" (/your-tests), once her physician has
-   sorted the tests. Each Inlay test with its
-   place, a Date and a Time field; "Confirm schedule" books
+   page (/enrolled). Each test she paid for with its place, a Date and a Time field; "Confirm schedule" books
    them all and only then opens the confirmation (/schedule-confirmed):
    "Personalize my care" there leads to the flourishing questions,
    "I'll do this later" walks on to her plan. "Schedule later" stays on the
@@ -49,9 +47,7 @@ export default function ScheduleTestsScreen() {
   const { test: one } = useLocalSearchParams<{ test?: string }>()
   const onboarding = useOnboarding()
   const single = one && one in BASELINE_TESTS ? BASELINE_TESTS[one as BaselineTestId] : undefined
-  // Tests her physician sent to her insurance are ordered by the office, never booked here.
-  const sent = new Set(onboarding.testReview?.insurance ?? [])
-  const tests = single ? [single] : chosenTests(onboarding.startingTests?.ids ?? onboarding.baselinePicks).filter((t) => !sent.has(t.id))
+  const tests = single ? [single] : chosenTests(onboarding.startingTests?.ids ?? onboarding.baselinePicks)
   // Three weeks of weekdays open on the calendar.
   const [days] = React.useState(() => openDays(new Date(), 15))
   const [slots, setSlots] = React.useState<Record<string, Slot>>(() => {

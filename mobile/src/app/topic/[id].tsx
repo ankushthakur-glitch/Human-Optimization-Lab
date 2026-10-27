@@ -1,33 +1,119 @@
 import * as DocumentPicker from "expo-document-picker"
+import * as ImagePicker from "expo-image-picker"
 import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native"
 
 import { AlcoholLog } from "@/components/alcohol-week"
+import { DAYS_LIMIT, SITTING_LIMIT, daysThisWeek, drinksWord, sittingsOf } from "@/lib/alcohol"
+import {
+  MAX_ATTACHMENTS,
+  type Attachment,
+} from "@/components/attach-sheet"
 import { PageNotFoundState } from "@/components/error-state"
 import { Checkbox } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
 import { ProductStep, ScanStep } from "@/components/meal-scan"
 import { MeasureSheet } from "@/components/measure-sheet"
-import { Check, DeviceMobile, ForkKnife, Microphone, Play, StopSquare, UploadSimple } from "@/components/ph"
+import {
+  Check,
+  DeviceMobile,
+  ForkKnife,
+  Microphone,
+  Play,
+  Plus,
+  StopSquare,
+  UploadSimple,
+  Warning,
+  X,
+} from "@/components/ph"
 import { ChoiceRow, SheetRows } from "@/components/care-orders-rows"
-import { Block, Card, ChipRow, Group, HUE, NeedsRow, Tabs, Tag, TickCircle, toast, type Hue } from "@/components/record-kit"
+import {
+  Block,
+  Card,
+  Group,
+  HUE,
+  NeedsRow,
+  Tabs,
+  Tag,
+  TickCircle,
+  toast,
+  type Hue,
+} from "@/components/record-kit"
+import { AddToRecordSheet } from "@/components/record-rows"
 import { Sheet, useKeyboardHeight } from "@/components/sheet"
 import { SetTable } from "@/components/set-table"
 import { amount } from "@/components/today-exercise-parts"
 import { isSlot, logDay, slotName } from "@/components/today-food-meals"
 import type { Product } from "@/components/scan-food"
 import { SelectField, TextField } from "@/components/ui"
-import { ScoreDial, TargetCard, TopicPage, Ways, askAbout } from "@/components/topic-kit"
+import {
+  ScoreDial,
+  TargetCard,
+  TopicPage,
+  Ways,
+  askAbout,
+} from "@/components/topic-kit"
 import { VoiceBeam } from "@/components/voice-beam"
 import { WaistGuideButton, WaistGuideSheet } from "@/components/waist-guide"
-import { MEAL_SLOTS, clockOf, localDay, mealName, mealsOn, profileOf, totalsOf, type Meal, type MealSlot } from "@/lib/member"
+import {
+  MEAL_SLOTS,
+  clockOf,
+  localDay,
+  mealName,
+  mealsOn,
+  profileOf,
+  totalsOf,
+  type Meal,
+  type MealSlot,
+} from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
-import { CARDIO, DOSES, LIFTS, MISSED_WHY, PLANNED_MEALS, SEVERITY, SLEEP_LAST, SPOKEN_FOODS, SPOKEN_SAMPLE, WARMUP, hm, inBed, rowOf, topicOf, type Topic, type Way } from "@/lib/topics"
+import {
+  ALSO_TAKING,
+  CARDIO,
+  DOSES,
+  LIFTS,
+  SEVERITY,
+  SLEEP_LAST,
+  SPOKEN_FOODS,
+  SPOKEN_SAMPLE,
+  WARMUP,
+  hm,
+  inBed,
+  rowOf,
+  topicOf,
+  type Topic,
+  type Way,
+} from "@/lib/topics"
 import { formatNumber } from "@/lib/trends"
-import { loadShort, setsText, targetOf, type Target } from "@/lib/strength"
+import {
+  changeTo,
+  loadShort,
+  setsText,
+  targetOf,
+  type Target,
+} from "@/lib/strength"
 import { useVoiceInput } from "@/lib/voice"
-import { card, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
+import {
+  card,
+  chart,
+  color,
+  font,
+  hairline,
+  ink,
+  space,
+  surface,
+  type,
+} from "@/lib/theme"
 
 /* One topic of the plan, opened from a row on Today (Journey_14 screens 31
    and 33 to 37; the lift's own page is /lift/[id]). Every topic opens the
@@ -41,37 +127,64 @@ import { card, color, font, hairline, ink, space, surface, type } from "@/lib/th
    the screen that already does it, or the assistant, in her own words. */
 
 export default function TopicScreen() {
-  const { id, slot, day } = useLocalSearchParams<{ id: string; slot?: string; day?: string }>()
+  const { id, slot, day } = useLocalSearchParams<{
+    id: string
+    slot?: string
+    day?: string
+  }>()
   const topic = topicOf(id)
   if (!topic) return <PageNotFoundState />
-  return <TopicBody topic={topic} slot={isSlot(slot) ? slot : undefined} mealDay={day} />
+  return (
+    <TopicBody
+      topic={topic}
+      slot={isSlot(slot) ? slot : undefined}
+      mealDay={day}
+    />
+  )
 }
 
 /** `slot` and `mealDay` come from a Log a meal door that already knows the
     meal (a planned dinner, a day's empty lunch): Eat's ways then skip the
     question and log straight into it. */
-function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; mealDay?: string }) {
+function TopicBody({
+  topic,
+  slot,
+  mealDay,
+}: {
+  topic: Topic
+  slot?: MealSlot
+  mealDay?: string
+}) {
   const s = useOnboarding()
   const [sheet, setSheet] = React.useState(false)
   const [part, setPart] = React.useState(false)
   const [short, setShort] = React.useState(false)
   const [night, setNight] = React.useState(false)
-  // Which way asked for the meal: the photo opens the scan, voice the speaking sheet.
-  const [meal, setMeal] = React.useState<"scan" | "voice">()
-  const [speak, setSpeak] = React.useState<MealSlot>()
+  // Which way asked for the meal: the photo opens its photos and words, the barcode the scan.
+  const [meal, setMeal] = React.useState<"photo" | "barcode">()
+  const [photo, setPhoto] = React.useState<MealSlot>()
   const [guide, setGuide] = React.useState(false)
   const [drinks, setDrinks] = React.useState(false)
-  const [dose, setDose] = React.useState<"taken" | "missed" | "side">()
-  const [planned, setPlanned] = React.useState(false)
-  const [apps, setApps] = React.useState<Extract<Way["act"], { kind: "apps" }>>()
+  const [dose, setDose] = React.useState<"taken" | "side" | "add">()
+  const [apps, setApps] =
+    React.useState<Extract<Way["act"], { kind: "apps" }>>()
   // The scan opens over this page as its popup.
   const [scan, setScan] = React.useState<MealSlot>()
-  const [found, setFound] = React.useState<{ product: Product; servings?: number }>()
+  const [found, setFound] = React.useState<{
+    product: Product
+    servings?: number
+  }>()
   const closeScan = () => (setScan(undefined), setFound(undefined))
   async function saveScan(draft: Omit<Meal, "id" | "time">) {
     const on = logDay(mealDay, new Date())
-    const meal: Meal = { ...draft, id: `m-${Date.now().toString(36)}`, time: clockOf(new Date()) }
-    await s.save({ meals: { ...s.meals, [on.key]: [...(s.meals?.[on.key] ?? []), meal] } })
+    const meal: Meal = {
+      ...draft,
+      id: `m-${Date.now().toString(36)}`,
+      time: clockOf(new Date()),
+    }
+    await s.save({
+      meals: { ...s.meals, [on.key]: [...(s.meals?.[on.key] ?? []), meal] },
+    })
     toast(`${slotName(meal.slot)} saved`)
     closeScan()
   }
@@ -82,22 +195,32 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
   function pick(way: Way) {
     const act = way.act
     if (act.kind === "done") {
-      s.save({ topicLog: { ...s.topicLog, [day]: { ...s.topicLog?.[day], [topic.id]: { way: way.id, at: new Date().toISOString() } } } })
-      toast(`${topic.name === "Medication & supplements" ? "Medication" : topic.name} logged. ${way.badge}.`)
-    } else if (act.kind === "go") router.push({ pathname: act.href as never, params: act.params })
+      s.save({
+        topicLog: {
+          ...s.topicLog,
+          [day]: {
+            ...s.topicLog?.[day],
+            [topic.id]: { way: way.id, at: new Date().toISOString() },
+          },
+        },
+      })
+      toast(
+        `${topic.name === "Medication & supplements" ? "Medication" : topic.name} logged. ${way.badge}.`
+      )
+    } else if (act.kind === "go")
+      router.push({ pathname: act.href as never, params: act.params })
     else if (act.kind === "ask") askAbout(act.ask)
     else if (act.kind === "part") setPart(true)
     else if (act.kind === "short") setShort(true)
     else if (act.kind === "night") setNight(true)
     else if (act.kind === "dose") setDose(act.sheet)
-    else if (act.kind === "pick") setPlanned(true)
     else if (act.kind === "apps") setApps(act)
     else if (act.kind === "meal") {
+      if (slot) setPhoto(slot)
+      else setMeal("photo")
+    } else if (act.kind === "barcode") {
       if (slot) setScan(slot)
-      else setMeal("scan")
-    } else if (act.kind === "voice") {
-      if (slot) setSpeak(slot)
-      else setMeal("voice")
+      else setMeal("barcode")
     } else setSheet(true)
   }
 
@@ -107,26 +230,45 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
       sheet={
         (sheet && <MeasureSheet onClose={() => setSheet(false)} />) ||
         (drinks && <DrinksSheet onClose={() => setDrinks(false)} />) ||
-        (guide && <WaistGuideSheet onClose={() => setGuide(false)} onEnter={() => setSheet(true)} />) ||
+        (guide && (
+          <WaistGuideSheet
+            onClose={() => setGuide(false)}
+            onEnter={() => setSheet(true)}
+          />
+        )) ||
         (part && <PartSheet onClose={() => setPart(false)} />) ||
         (short && <ShortSheet onClose={() => setShort(false)} />) ||
         (night && <NightSheet onClose={() => setNight(false)} />) ||
-        (dose === "taken" && <TakenSheet onClose={() => setDose(undefined)} />) ||
-        (dose === "missed" && <MissedSheet onClose={() => setDose(undefined)} />) ||
-        (dose === "side" && <SideEffectSheet onClose={() => setDose(undefined)} />) ||
-        (planned && <PlannedMeals slot={slot} onSave={(m) => (setPlanned(false), saveScan(m))} onClose={() => setPlanned(false)} />) ||
+        (dose === "taken" && (
+          <TakenSheet onClose={() => setDose(undefined)} />
+        )) ||
+        (dose === "side" && (
+          <SideEffectSheet onClose={() => setDose(undefined)} />
+        )) ||
+        (dose === "add" && (
+          <AddToRecordSheet
+            kinds={["medicines", "supplements"]}
+            onClose={() => setDose(undefined)}
+          />
+        )) ||
         (apps && <AppsSheet act={apps} onClose={() => setApps(undefined)} />) ||
         (meal && (
           <WhichMeal
             onPick={(to) => {
               setMeal(undefined)
-              if (meal === "voice") setSpeak(to)
+              if (meal === "photo") setPhoto(to)
               else setScan(to)
             }}
             onClose={() => setMeal(undefined)}
           />
         )) ||
-        (speak && <SpeakMeal slot={speak} onSave={(m) => (setSpeak(undefined), saveScan(m))} onClose={() => setSpeak(undefined)} />) ||
+        (photo && (
+          <PhotoMeal
+            slot={photo}
+            onSave={(m) => (setPhoto(undefined), saveScan(m))}
+            onClose={() => setPhoto(undefined)}
+          />
+        )) ||
         (scan && (
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             {found ? (
@@ -136,20 +278,35 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
                 slot={scan}
                 onSlot={setScan}
                 day={logDay(mealDay, new Date())}
-                ids={profileOf(s).goals.map((g) => g.id).filter((g) => g !== "calories")}
+                ids={profileOf(s)
+                  .goals.map((g) => g.id)
+                  .filter((g) => g !== "calories")}
                 onBack={() => setFound(undefined)}
                 onSave={saveScan}
               />
             ) : (
-              <ScanStep slot={scan} onBack={closeScan} onFound={(product, servings) => setFound({ product, servings })} onSave={saveScan} />
+              <ScanStep
+                slot={scan}
+                onBack={closeScan}
+                onFound={(product, servings) => setFound({ product, servings })}
+                onSave={saveScan}
+              />
             )}
           </View>
         ))
-      }>
+      }
+    >
       <View style={styles.chip}>
         <Tag tone="primary">{topic.tag}</Tag>
       </View>
-      <TargetCard icon={topic.id} title={topic.target.replace(/ · 1,000 mg calcium$/, "")} detail={topic.detail} figure={logged ? (topic.id === "sleep" ? undefined : row.text) : topic.figure} />
+      <TargetCard
+        icon={topic.id}
+        title={topic.target.replace(/ · 1,000 mg calcium$/, "")}
+        detail={topic.detail}
+        figure={
+          logged ? (topic.id === "sleep" ? undefined : row.text) : topic.figure
+        }
+      />
 
       {topic.id === "exercise" && <Session />}
       {topic.id === "eat" && <TodaysMeals />}
@@ -159,7 +316,11 @@ function TopicBody({ topic, slot, mealDay }: { topic: Topic; slot?: MealSlot; me
 
       {topic.id === "eat" && <AlcoholLog onLog={() => setDrinks(true)} />}
 
-      {topic.id === "measure" && <WaistGuideButton onPress={() => setGuide(true)} />}
+      {topic.id === "medication" && <AlsoTaking />}
+
+      {topic.id === "measure" && (
+        <WaistGuideButton onPress={() => setGuide(true)} />
+      )}
     </TopicPage>
   )
 }
@@ -180,50 +341,102 @@ function Session() {
   const done = (id: string) => {
     const l = LIFTS.find((x) => x.id === id)!
     const entries = log?.[id]?.entries
-    return !!skipped?.includes(id) || (!!log?.[id] && (!entries || entries.filter((e) => e.reps !== undefined).length >= targetOf(s, l).sets))
+    return (
+      !!skipped?.includes(id) ||
+      (!!log?.[id] &&
+        (!entries ||
+          entries.filter((e) => e.reps !== undefined).length >=
+            targetOf(s, l).sets))
+    )
   }
-  const lifts = [...LIFTS.filter((l) => !done(l.id)), ...LIFTS.filter((l) => done(l.id))]
+  const lifts = [
+    ...LIFTS.filter((l) => !done(l.id)),
+    ...LIFTS.filter((l) => done(l.id)),
+  ]
   return (
     <Block title="Today's session">
       <View style={styles.table}>
-        <Line name={WARMUP.name} detail={WARMUP.detail} end={WARMUP.say} shaded />
+        <Line
+          name={WARMUP.name}
+          detail={WARMUP.detail}
+          end={WARMUP.say}
+          shaded
+        />
         {lifts.map((l) => {
           const finished = done(l.id)
           const t = targetOf(s, l)
           return (
-            <View key={l.id} style={[styles.line, styles.rule, finished && styles.closed]}>
+            <View
+              key={l.id}
+              style={[styles.line, styles.rule, finished && styles.closed]}
+            >
               <Pressable
-                onPress={() => router.push({ pathname: "/lift/[id]", params: { id: l.id } })}
+                onPress={() =>
+                  router.push({ pathname: "/lift/[id]", params: { id: l.id } })
+                }
                 disabled={finished}
                 accessibilityRole="button"
                 accessibilityState={{ disabled: finished }}
-                accessibilityLabel={finished ? `${l.name}, ${skipped?.includes(l.id) ? "skipped" : "done"}` : `How to do the ${l.name}`}
+                accessibilityLabel={
+                  finished
+                    ? `${l.name}, ${skipped?.includes(l.id) ? "skipped" : "done"}`
+                    : `How to do the ${l.name}`
+                }
                 hitSlop={8}
-                style={({ pressed }) => [styles.lift, styles.fill, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.lift,
+                  styles.fill,
+                  pressed && styles.pressed,
+                ]}
               >
                 <View style={[styles.playDot, finished && styles.playDotDone]}>
-                  {finished ? <Check size={10} weight="bold" color={color.ok} /> : <Play size={10} weight="fill" color={ink.primary} />}
+                  {finished ? (
+                    <Check size={10} weight="bold" color={color.ok} />
+                  ) : (
+                    <Play size={10} weight="fill" color={ink.primary} />
+                  )}
                 </View>
-                <Text style={[styles.lineName, styles.fill, finished && styles.struck]}>{l.name}</Text>
+                <Text
+                  style={[
+                    styles.lineName,
+                    styles.fill,
+                    finished && styles.struck,
+                  ]}
+                >
+                  {l.name}
+                </Text>
               </Pressable>
-              <Text style={[styles.sets, type.label, finished && styles.struck]}>{setsText(t)}</Text>
-              <Text style={[styles.load, finished && styles.struck]}>{skipped?.includes(l.id) ? "Skipped" : loadShort(l, t.load)}</Text>
+              <Text
+                style={[styles.sets, type.label, finished && styles.struck]}
+              >
+                {setsText(t)}
+              </Text>
+              <Text style={[styles.load, finished && styles.struck]}>
+                {skipped?.includes(l.id) ? "Skipped" : loadShort(l, t.load)}
+              </Text>
             </View>
           )
         })}
-        <Line name={CARDIO.name} detail={CARDIO.detail} end={CARDIO.say} shaded rule />
+        <Line
+          name={CARDIO.name}
+          detail={CARDIO.detail}
+          end={CARDIO.say}
+          shaded
+          rule
+        />
       </View>
     </Block>
   )
 }
 
-/** "Do part of it": every part of today's session, each As planned,
-    Changed or Skipped. As planned needs no typing and saves the plan's sets;
-    a lift marked Changed opens its sets as a compact table, filled with the
-    plan's numbers (or what she already saved on the lift's page) for her to
-    correct. Saving writes each lift's sets to the day's log, so the session
-    strikes them through, and answers the topic with what she did and what
-    she skipped. */
+/** "Do part of it": every part of today's session, each As written, Part
+    done, Changed or Skipped (HOL, 27 Oct). As written needs no typing and
+    saves the plan's sets; a lift marked Part done or Changed opens its sets
+    as a compact table, filled with the plan's numbers (or what she already
+    saved on the lift's page) for her to correct. A Changed lift can keep its
+    new numbers going forward, written to her record as a change of weight
+    or reps. Saving writes each lift's sets to the day's log, so the session
+    strikes them through, and answers the topic with each part's mark. */
 function PartSheet({ onClose }: { onClose: () => void }) {
   const s = useOnboarding()
   const day = localDay()
@@ -232,32 +445,55 @@ function PartSheet({ onClose }: { onClose: () => void }) {
   const [sets, setSets] = React.useState<Record<string, SetRow[]>>(() =>
     Object.fromEntries(
       LIFTS.map((l) => {
-        const logged = saved?.[l.id]?.entries?.map((e) => ({ reps: e.reps !== undefined ? String(e.reps) : "", weight: e.weightLb !== undefined ? String(e.weightLb) : "" }))
+        const logged = saved?.[l.id]?.entries?.map((e) => ({
+          reps: e.reps !== undefined ? String(e.reps) : "",
+          weight: e.weightLb !== undefined ? String(e.weightLb) : "",
+        }))
         return [l.id, logged?.length ? logged : planOf(targetOf(s, l))]
-      }),
-    ),
+      })
+    )
   )
-  // A lift saved with numbers other than the plan's opens as Changed.
+  // Each part opens as she marked it; a lift saved on its page with
+  // numbers other than the plan's opens as Changed.
   const [status, setStatus] = React.useState<Record<string, Status>>(() => {
     const all = [WARMUP_ID, ...LIFTS.map((l) => l.id), CARDIO_ID]
     return Object.fromEntries(
       all.map((id) => {
+        if (before?.marks?.[id]) return [id, before.marks[id]]
         if (before?.skipped?.includes(id)) return [id, "skipped"]
         const lift = LIFTS.find((l) => l.id === id)
-        return [id, lift && sets[id] && JSON.stringify(sets[id]) !== JSON.stringify(planOf(targetOf(s, lift))) ? "changed" : "done"]
-      }),
+        return [
+          id,
+          lift &&
+          sets[id] &&
+          JSON.stringify(sets[id]) !== JSON.stringify(planOf(targetOf(s, lift)))
+            ? "changed"
+            : "written",
+        ]
+      })
     )
   })
-  // Lifts whose Changed numbers she wants to keep going forward; ticked
-  // already for a lift held from an earlier session.
-  const [keep, setKeep] = React.useState<Record<string, boolean>>(() => Object.fromEntries(LIFTS.map((l) => [l.id, !!s.liftHolds?.[l.id]])))
+  // Lifts whose Changed numbers she wants to keep going forward.
+  const [keep, setKeep] = React.useState<Record<string, boolean>>({})
   const [note, setNote] = React.useState(before?.note ?? "")
   const keyboard = useKeyboardHeight()
-  const edit = (id: string, i: number, part: Partial<SetRow>) => setSets((was) => ({ ...was, [id]: was[id].map((r, j) => (j === i ? { ...r, ...part } : r)) }))
+  const edit = (id: string, i: number, part: Partial<SetRow>) =>
+    setSets((was) => ({
+      ...was,
+      [id]: was[id].map((r, j) => (j === i ? { ...r, ...part } : r)),
+    }))
 
   const ids = Object.keys(status)
   const done = ids.filter((id) => status[id] !== "skipped")
-  const ready = LIFTS.every((l) => status[l.id] !== "changed" || sets[l.id].every((r) => amount(r.reps) !== undefined && amount(r.weight) !== undefined))
+  const typed = (id: string) =>
+    status[id] === "part" || status[id] === "changed"
+  const ready = LIFTS.every(
+    (l) =>
+      !typed(l.id) ||
+      sets[l.id].every(
+        (r) => amount(r.reps) !== undefined && amount(r.weight) !== undefined
+      )
+  )
 
   async function save() {
     // One write for the whole session: each lift done carries its sets, a
@@ -271,44 +507,127 @@ function PartSheet({ onClose }: { onClose: () => void }) {
       }
       // Her after-set answers from the lift's page stay with their sets.
       const felt = saved?.[l.id]?.entries
-      const list = (status[l.id] === "changed" ? sets[l.id] : planOf(targetOf(s, l))).map((r, i) => ({ reps: amount(r.reps)!, weightLb: amount(r.weight)!, rir: felt?.[i]?.rir }))
-      day_[l.id] = { at, sets: list.length, reps: list[0].reps, weightLb: list[0].weightLb, entries: list }
+      const list = (typed(l.id) ? sets[l.id] : planOf(targetOf(s, l))).map(
+        (r, i) => ({
+          reps: amount(r.reps)!,
+          weightLb: amount(r.weight)!,
+          rir: felt?.[i]?.rir,
+        })
+      )
+      day_[l.id] = {
+        at,
+        sets: list.length,
+        reps: list[0].reps,
+        weightLb: list[0].weightLb,
+        entries: list,
+      }
     }
     const skipped = ids.filter((id) => status[id] === "skipped")
     // A Changed lift ticked to keep holds at its first set's numbers from
-    // now on; unticked, it goes back to the plan.
-    const liftHolds = { ...s.liftHolds }
+    // now on, each change written to her record.
+    let held: Partial<typeof s> = {}
     for (const l of LIFTS) {
-      if (status[l.id] !== "changed") continue
-      if (keep[l.id]) liftHolds[l.id] = { sets: sets[l.id].length, reps: amount(sets[l.id][0].reps)!, load: amount(sets[l.id][0].weight)! }
-      else delete liftHolds[l.id]
+      if (status[l.id] !== "changed" || !keep[l.id]) continue
+      held = {
+        ...held,
+        ...changeTo(
+          { ...s, ...held },
+          l,
+          {
+            sets: sets[l.id].length,
+            reps: amount(sets[l.id][0].reps)!,
+            load: amount(sets[l.id][0].weight)!,
+          },
+          at
+        ),
+      }
     }
     await s.save({
-      liftHolds,
+      ...held,
       exercises: { ...s.exercises, [day]: day_ },
-      topicLog: { ...s.topicLog, [day]: { ...s.topicLog?.[day], exercise: { way: "part", at, parts: done, skipped, note: note.trim() || undefined } } },
+      topicLog: {
+        ...s.topicLog,
+        [day]: {
+          ...s.topicLog?.[day],
+          exercise: {
+            way: "part",
+            at,
+            parts: done,
+            skipped,
+            marks: status,
+            note: note.trim() || undefined,
+          },
+        },
+      },
     })
-    toast(`Exercise logged: ${done.length} of ${ids.length} done${skipped.length ? `, ${skipped.length} skipped` : ""}.`)
+    toast(
+      `Exercise logged: ${done.length} of ${ids.length} done${skipped.length ? `, ${skipped.length} skipped` : ""}.`
+    )
     onClose()
   }
 
   return (
-    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
+    <View
+      style={[styles.sheetFrame, { bottom: keyboard }]}
+      pointerEvents="box-none"
+    >
       <Sheet title="Log your session" onClose={onClose} tall>
         <Text style={type.meta}>{`${done.length} of ${ids.length} done`}</Text>
-        <ScrollView style={styles.partScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={styles.partScroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.parts}>
-            <PartCard name={WARMUP.name} detail={`${WARMUP.detail}, ${WARMUP.say.toLowerCase()}`} options={PLAIN} status={status[WARMUP_ID]} onStatus={(v) => setStatus((was) => ({ ...was, [WARMUP_ID]: v }))} />
+            <PartCard
+              name={WARMUP.name}
+              detail={`${WARMUP.detail}, ${WARMUP.say.toLowerCase()}`}
+              options={PLAIN}
+              status={status[WARMUP_ID]}
+              onStatus={(v) => setStatus((was) => ({ ...was, [WARMUP_ID]: v }))}
+            />
             {LIFTS.map((l) => (
-              <PartCard key={l.id} name={l.name} detail={`${setsText(targetOf(s, l))} at ${loadShort(l, targetOf(s, l).load)}`} options={STATUS} status={status[l.id]} onStatus={(v) => setStatus((was) => ({ ...was, [l.id]: v }))}>
-                <SetTable rows={sets[l.id]} onEdit={(i, part) => edit(l.id, i, part)} target={String(targetOf(s, l).reps)} onInset />
-                <Checkbox checked={keep[l.id]} onChange={(on) => setKeep((was) => ({ ...was, [l.id]: on }))}>
-                  Keep these weights and reps
-                </Checkbox>
+              <PartCard
+                key={l.id}
+                name={l.name}
+                detail={`${setsText(targetOf(s, l))} at ${loadShort(l, targetOf(s, l).load)}`}
+                options={STATUS}
+                status={status[l.id]}
+                onStatus={(v) => setStatus((was) => ({ ...was, [l.id]: v }))}
+              >
+                <SetTable
+                  rows={sets[l.id]}
+                  onEdit={(i, part) => edit(l.id, i, part)}
+                  target={String(targetOf(s, l).reps)}
+                  onInset
+                />
+                {status[l.id] === "changed" && (
+                  <Checkbox
+                    checked={!!keep[l.id]}
+                    onChange={(on) =>
+                      setKeep((was) => ({ ...was, [l.id]: on }))
+                    }
+                  >
+                    Keep these weights and reps
+                  </Checkbox>
+                )}
               </PartCard>
             ))}
-            <PartCard name={CARDIO.name} detail={`${CARDIO.detail}, ${CARDIO.say}`} options={PLAIN} status={status[CARDIO_ID]} onStatus={(v) => setStatus((was) => ({ ...was, [CARDIO_ID]: v }))} />
-            <TextField label="Note" value={note} onChangeText={setNote} placeholder="How it went, what you changed" multiline autoCapitalize="sentences" />
+            <PartCard
+              name={CARDIO.name}
+              detail={`${CARDIO.detail}, ${CARDIO.say}`}
+              options={PLAIN}
+              status={status[CARDIO_ID]}
+              onStatus={(v) => setStatus((was) => ({ ...was, [CARDIO_ID]: v }))}
+            />
+            <TextField
+              label="Note"
+              value={note}
+              onChangeText={setNote}
+              placeholder="How it went, what you changed"
+              multiline
+              autoCapitalize="sentences"
+            />
           </View>
         </ScrollView>
         <PrimaryButton onPress={save} disabled={!done.length || !ready}>
@@ -319,13 +638,15 @@ function PartSheet({ onClose }: { onClose: () => void }) {
   )
 }
 
-type Status = "done" | "changed" | "skipped"
+type Status = "written" | "part" | "changed" | "skipped"
 type SetRow = { reps: string; weight: string }
 const WARMUP_ID = "warmup"
 const CARDIO_ID = "cardio"
-// A lift can be done differently; the warm-up and cool-down are done or not.
+// A lift can be done in part or changed; the warm-up and cardio are done
+// as written, in part, or not at all.
 const STATUS: { value: Status; label: string; hue?: Hue }[] = [
-  { value: "done", label: "As planned" },
+  { value: "written", label: "As written" },
+  { value: "part", label: "Part done", hue: "amber" },
   { value: "changed", label: "Changed", hue: "amber" },
   { value: "skipped", label: "Skipped", hue: "neutral" },
 ]
@@ -333,25 +654,57 @@ const PLAIN = STATUS.filter((o) => o.value !== "changed")
 
 /** A lift's target sets, one row each with its reps and weight. */
 function planOf(t: Target): SetRow[] {
-  return Array.from({ length: t.sets }, () => ({ reps: String(t.reps), weight: String(t.load) }))
+  return Array.from({ length: t.sets }, () => ({
+    reps: String(t.reps),
+    weight: String(t.load),
+  }))
 }
 
 /** One part of the session in the log sheet, on a grey card: its name and
-    plan, then how it went, and under it, once Changed, its sets. */
-function PartCard({ name, detail, options, status, onStatus, children }: { name: string; detail: string; options: typeof STATUS; status: Status; onStatus: (v: Status) => void; children?: React.ReactNode }) {
+    plan, then how it went, and under it, once Part done or Changed, its
+    sets. */
+function PartCard({
+  name,
+  detail,
+  options,
+  status,
+  onStatus,
+  children,
+}: {
+  name: string
+  detail: string
+  options: typeof STATUS
+  status: Status
+  onStatus: (v: Status) => void
+  children?: React.ReactNode
+}) {
   return (
     <View style={styles.partCard}>
       <View>
-        <Text style={[styles.lineName, status === "skipped" && styles.struck]}>{name}</Text>
+        <Text style={[styles.lineName, status === "skipped" && styles.struck]}>
+          {name}
+        </Text>
         <Text style={type.label}>{detail}</Text>
       </View>
       <Tabs options={options} value={status} onChange={onStatus} snug />
-      {status === "changed" && children}
+      {(status === "part" || status === "changed") && children}
     </View>
   )
 }
 
-function Line({ name, detail, end, shaded, rule }: { name: string; detail: string; end: string; shaded?: boolean; rule?: boolean }) {
+function Line({
+  name,
+  detail,
+  end,
+  shaded,
+  rule,
+}: {
+  name: string
+  detail: string
+  end: string
+  shaded?: boolean
+  rule?: boolean
+}) {
   return (
     <View style={[styles.line, shaded && styles.shaded, rule && styles.rule]}>
       <Text style={[styles.lineName, styles.fill]}>{name}</Text>
@@ -365,67 +718,146 @@ function Line({ name, detail, end, shaded, rule }: { name: string; detail: strin
 
 /** Before any way of logging a meal: which meal it is. Breakfast, lunch
     and dinner, one tap each, then straight into the way she chose. */
-function WhichMeal({ onPick, onClose }: { onPick: (slot: MealSlot) => void; onClose: () => void }) {
+function WhichMeal({
+  onPick,
+  onClose,
+}: {
+  onPick: (slot: MealSlot) => void
+  onClose: () => void
+}) {
   return (
     <Sheet title="Which meal are you adding?" onClose={onClose}>
       <SheetRows>
         {MEAL_SLOTS.filter((m) => m.main).map((m) => (
-          <NeedsRow key={m.id} icon={<ForkKnife size={16} color={HUE.teal.ink} />} title={m.name} onPress={() => onPick(m.id)} />
+          <NeedsRow
+            key={m.id}
+            icon={<ForkKnife size={16} color={HUE.teal.ink} />}
+            title={m.name}
+            onPress={() => onPick(m.id)}
+          />
         ))}
       </SheetRows>
     </Sheet>
   )
 }
 
-/** The meal database: the plan's pre-planned meals, the ones for this meal
-    first when the door already knows it, each added whole in one tap. */
-function PlannedMeals({ slot, onSave, onClose }: { slot?: MealSlot; onSave: (meal: Omit<Meal, "id" | "time">) => void; onClose: () => void }) {
-  const list = slot ? PLANNED_MEALS.filter((m) => m.slot === slot) : PLANNED_MEALS
-  return (
-    <Sheet title={slot ? `Pick a ${slotName(slot).toLowerCase()}` : "Pick a meal"} onClose={onClose}>
-      <ScrollView style={styles.plannedList}>
-        <SheetRows>
-          {list.map((m) => (
-            <NeedsRow
-              key={m.id}
-              icon={<ForkKnife size={16} color={HUE.teal.ink} />}
-              title={m.name}
-              meta={`${slotName(m.slot)}, ${formatNumber(m.nutrients.calories)} kcal, ${m.nutrients.protein} g protein`}
-              action={{ label: "Add", onPress: () => onSave({ title: m.name, slot: slot ?? m.slot, how: "typed", status: "confirmed", foods: [{ name: m.name, portion: m.portion, confidence: "high", nutrients: m.nutrients }] }) }}
-            />
-          ))}
-        </SheetRows>
-      </ScrollView>
-    </Sheet>
-  )
-}
-
-/** Say what you ate: the sheet opens listening, the words written into
-    the box as they are heard, the voice beam along its edge. When she stops,
-    what she said is read into foods, each with its usual portion, and the
-    box stays editable to correct a word; a food the app does not know is
-    kept by name. Saved as an estimate, logged by voice. */
-function SpeakMeal({ slot, onSave, onClose }: { slot: MealSlot; onSave: (meal: Omit<Meal, "id" | "time">) => void; onClose: () => void }) {
+/** Photograph your meal: up to four photos (the plate, a menu, a label)
+    and the words about it in one box, typed or spoken, the voice beam along
+    its edge while she speaks. The words are read into foods as she goes,
+    each with its usual portion; with photos and no words the photos are
+    read instead. A food the app does not know is kept by name. Saved as an
+    estimate, with her words as the meal's note. */
+function PhotoMeal({
+  slot,
+  onSave,
+  onClose,
+}: {
+  slot: MealSlot
+  onSave: (meal: Omit<Meal, "id" | "time">) => void
+  onClose: () => void
+}) {
+  const [photos, setPhotos] = React.useState<Attachment[]>([])
   const [said, setSaid] = React.useState("")
-  const speech = useVoiceInput(setSaid, { sample: SPOKEN_SAMPLE[slot as keyof typeof SPOKEN_SAMPLE] ?? SPOKEN_SAMPLE.lunch, keep: true })
+  const [spoke, setSpoke] = React.useState(false)
+  const [reading, setReading] = React.useState(false)
+  const sample =
+    SPOKEN_SAMPLE[slot as keyof typeof SPOKEN_SAMPLE] ?? SPOKEN_SAMPLE.lunch
+  const speech = useVoiceInput(setSaid, { sample, keep: true })
   const keyboard = useKeyboardHeight()
   const listening = speech.state === "listening"
   const hearing = speech.state !== "idle"
-  const foods = hearing ? [] : foodsIn(said)
-  const name = slotName(slot).toLowerCase()
-
-  // Opened from "Say what you ate", so it starts listening once the sheet
-  // is up. Deferred so a development double mount starts it only once.
+  const words = said.trim()
+  // The prototype "reads" new photos for a moment, as the camera "finds" a barcode.
   React.useEffect(() => {
-    const t = setTimeout(() => speech.start(""), 350)
+    if (!photos.length) return
+    setReading(true)
+    const t = setTimeout(() => setReading(false), 900)
     return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [photos.length])
+  const busy = reading && !words
+  const foods =
+    hearing || busy ? [] : foodsIn(words || (photos.length ? sample : ""))
+  const name = slotName(slot).toLowerCase()
+  const room = MAX_ATTACHMENTS - photos.length
+
+  // The plus opens the phone's own photo picker straight away, several at once.
+  async function addPhotos() {
+    if (hearing) speech.stop()
+    const r = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      selectionLimit: room,
+      quality: 0.8,
+    }).catch(() => undefined)
+    if (!r || r.canceled) return
+    const more = r.assets.map((a) => ({
+      id: Math.random().toString(36).slice(2, 10),
+      kind: "image" as const,
+      uri: a.uri,
+      name: a.fileName ?? "Photo",
+    }))
+    setPhotos((p) => [...p, ...more].slice(0, MAX_ATTACHMENTS))
+  }
 
   return (
-    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
-      <Sheet title={`Say your ${name}`} onClose={onClose} dismissOnScrim={!hearing}>
-        <VoiceBeam level={speech.level} active={listening} processing={speech.state === "processing"} radius={16} style={styles.speakBox}>
+    <View
+      style={[styles.sheetFrame, { bottom: keyboard }]}
+      pointerEvents="box-none"
+    >
+      <Sheet
+        title={`Log your ${name}`}
+        onClose={onClose}
+        dismissOnScrim={!hearing}
+      >
+        <View style={styles.photos}>
+          {photos.map((p) => (
+            <View key={p.id} style={styles.photo}>
+              <Image
+                source={{ uri: p.uri }}
+                style={styles.photoImage}
+                accessibilityLabel={p.name}
+              />
+              <Pressable
+                onPress={() =>
+                  setPhotos((list) => list.filter((x) => x.id !== p.id))
+                }
+                accessibilityRole="button"
+                accessibilityLabel="Remove photo"
+                hitSlop={8}
+                style={({ pressed }) => [
+                  styles.photoRemove,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <X size={12} color={color.onPrimary} weight="bold" />
+              </Pressable>
+            </View>
+          ))}
+          {room > 0 && (
+            <Pressable
+              onPress={addPhotos}
+              accessibilityRole="button"
+              accessibilityLabel="Add photos"
+              style={({ pressed }) => [
+                styles.photo,
+                styles.photoAdd,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Plus size={20} color={color.primary} />
+              <Text style={[type.metaStrong, { color: color.primary }]}>
+                {photos.length ? "More" : "Photo"}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+        <VoiceBeam
+          level={speech.level}
+          active={listening}
+          processing={speech.state === "processing"}
+          radius={16}
+          style={styles.speakBox}
+        >
           <TextInput
             value={said}
             onChangeText={setSaid}
@@ -434,30 +866,52 @@ function SpeakMeal({ slot, onSave, onClose }: { slot: MealSlot; onSave: (meal: O
             placeholder={listening ? "Listening…" : "What did you eat?"}
             placeholderTextColor={ink.tertiary}
             accessibilityLabel={`What you had for ${name}`}
-            style={styles.speakText}
+            style={[styles.speakText, styles.describeText]}
           />
-        </VoiceBeam>
-        <View style={styles.speakMic}>
           <Pressable
-            onPress={() => (hearing ? speech.stop() : speech.start(said))}
+            onPress={() =>
+              hearing ? speech.stop() : (setSpoke(true), speech.start(said))
+            }
             disabled={speech.state === "processing"}
             accessibilityRole="button"
             accessibilityLabel={hearing ? "Stop listening" : "Speak"}
             hitSlop={8}
-            style={({ pressed }) => [styles.micButton, hearing && styles.micButtonOn, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.describeMic,
+              hearing && styles.micButtonOn,
+              pressed && styles.pressed,
+            ]}
           >
-            {hearing ? <StopSquare size={22} color={color.primary} weight="fill" /> : <Microphone size={26} color={color.onPrimary} />}
+            {hearing ? (
+              <StopSquare size={16} color={color.primary} weight="fill" />
+            ) : (
+              <Microphone size={18} color={color.onPrimary} />
+            )}
           </Pressable>
-          <Text style={[type.label, styles.micLabel]}>{listening ? "Tap to stop" : speech.state === "processing" ? "Finishing up…" : said ? "Tap to add more" : "Tap to speak"}</Text>
-        </View>
+        </VoiceBeam>
         {speech.problem && (
           <View style={styles.speakProblem}>
-            <Text style={[type.label, styles.fill, { color: ink.primary }]}>{speech.problem.words}</Text>
+            <Text style={[type.label, styles.fill, { color: ink.primary }]}>
+              {speech.problem.words}
+            </Text>
             {speech.problem.action && (
-              <Pressable onPress={speech.problem.action.onPress} accessibilityRole="button" hitSlop={8} style={({ pressed }) => pressed && styles.pressed}>
-                <Text style={[type.metaStrong, { color: color.primary }]}>{speech.problem.action.label}</Text>
+              <Pressable
+                onPress={speech.problem.action.onPress}
+                accessibilityRole="button"
+                hitSlop={8}
+                style={({ pressed }) => pressed && styles.pressed}
+              >
+                <Text style={[type.metaStrong, { color: color.primary }]}>
+                  {speech.problem.action.label}
+                </Text>
               </Pressable>
             )}
+          </View>
+        )}
+        {busy && (
+          <View style={styles.reading} accessibilityLiveRegion="polite">
+            <ActivityIndicator color={color.primary} />
+            <Text style={type.label}>Reading your photos</Text>
           </View>
         )}
         {foods.length > 0 && (
@@ -467,13 +921,33 @@ function SpeakMeal({ slot, onSave, onClose }: { slot: MealSlot; onSave: (meal: O
                 key={f.name}
                 icon={<ForkKnife size={16} color={HUE.teal.ink} />}
                 title={f.name}
-                meta={[f.portion, f.nutrients.calories !== undefined && `${formatNumber(f.nutrients.calories)} kcal`, f.nutrients.protein !== undefined && `${f.nutrients.protein} g protein`].filter(Boolean).join(", ")}
+                meta={[
+                  f.portion,
+                  f.nutrients.calories !== undefined &&
+                    `${formatNumber(f.nutrients.calories)} kcal`,
+                  f.nutrients.protein !== undefined &&
+                    `${f.nutrients.protein} g protein`,
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
                 chevron={false}
               />
             ))}
           </SheetRows>
         )}
-        <PrimaryButton onPress={() => onSave({ slot, how: "voice", status: "estimated", foods })} disabled={!foods.length}>
+        <PrimaryButton
+          onPress={() =>
+            onSave({
+              slot,
+              how: photos.length ? "photo" : spoke ? "voice" : "typed",
+              status: "estimated",
+              foods,
+              note: words || undefined,
+              photos: photos.length ? photos.map((p) => p.uri) : undefined,
+            })
+          }
+          disabled={!foods.length}
+        >
           {`Save ${name}`}
         </PrimaryButton>
       </Sheet>
@@ -486,19 +960,42 @@ function SpeakMeal({ slot, onSave, onClose }: { slot: MealSlot; onSave: (meal: O
     name with nothing known about it. */
 function foodsIn(said: string): Meal["foods"] {
   const out: Meal["foods"] = []
-  for (const raw of said.toLowerCase().split(/,|\.|\band\b|\bwith\b|\bplus\b/)) {
-    const piece = raw.replace(/^(\s*(i (had|ate)|for (breakfast|lunch|dinner)|some|a|an|the|two|one)\b)+/, "").trim()
+  for (const raw of said
+    .toLowerCase()
+    .split(/,|\.|\band\b|\bwith\b|\bplus\b/)) {
+    const piece = raw
+      .replace(
+        /^(\s*(i (had|ate)|for (breakfast|lunch|dinner)|some|a|an|the|two|one)\b)+/,
+        ""
+      )
+      .trim()
     if (piece.length < 3) continue
     const known = SPOKEN_FOODS.find((f) => f.says.test(piece))
     const food = known
-      ? { name: known.name, portion: known.portion, confidence: "medium" as const, nutrients: known.nutrients }
-      : { name: piece[0].toUpperCase() + piece.slice(1), portion: "One serving", confidence: "low" as const, nutrients: {} }
+      ? {
+          name: known.name,
+          portion: known.portion,
+          confidence: "medium" as const,
+          nutrients: known.nutrients,
+        }
+      : {
+          name: piece[0].toUpperCase() + piece.slice(1),
+          portion: "One serving",
+          confidence: "low" as const,
+          nutrients: {},
+        }
     if (!out.some((f) => f.name === food.name)) out.push(food)
   }
   return out
 }
 
-const HOW: Record<Meal["how"], string> = { photo: "Logged by photo", voice: "Logged by voice", typed: "Typed in", again: "Logged again", scan: "Logged by scan" }
+const HOW: Record<Meal["how"], string> = {
+  photo: "Logged by photo",
+  voice: "Logged by voice",
+  typed: "Typed in",
+  again: "Logged again",
+  scan: "Logged by scan",
+}
 
 /** What she has logged today, once she logs a meal: each with how it was
     logged, what it was and its energy and protein, and Swap to log it again. */
@@ -507,7 +1004,11 @@ function TodaysMeals() {
   const logged = mealsOn(s, localDay())
   if (!logged.length) return null
   const mains = MEAL_SLOTS.filter((m) => m.main).length
-  const count = new Set(logged.filter((m) => MEAL_SLOTS.find((x) => x.id === m.slot)?.main).map((m) => m.slot)).size
+  const count = new Set(
+    logged
+      .filter((m) => MEAL_SLOTS.find((x) => x.id === m.slot)?.main)
+      .map((m) => m.slot)
+  ).size
   return (
     <Block title="Today's meals" meta={`${count} of ${mains} logged`}>
       <Group>
@@ -515,8 +1016,10 @@ function TodaysMeals() {
           const totals = totalsOf([m])
           const facts = [
             mealName(m),
-            totals.calories && `${formatNumber(Math.round(totals.calories.value))} kcal`,
-            totals.protein && `${formatNumber(Math.round(totals.protein.value))} g protein`,
+            totals.calories &&
+              `${formatNumber(Math.round(totals.calories.value))} kcal`,
+            totals.protein &&
+              `${formatNumber(Math.round(totals.protein.value))} g protein`,
           ]
             .filter(Boolean)
             .join(", ")
@@ -546,7 +1049,8 @@ const DRINK_DAYS = [
 function DrinksSheet({ onClose }: { onClose: () => void }) {
   const s = useOnboarding()
   const [count, setCount] = React.useState("1")
-  const [when, setWhen] = React.useState<(typeof DRINK_DAYS)[number]["value"]>("today")
+  const [when, setWhen] =
+    React.useState<(typeof DRINK_DAYS)[number]["value"]>("today")
   const [picking, setPicking] = React.useState(false)
   const keyboard = useKeyboardHeight()
   const n = /^\d+$/.test(count.trim()) ? parseInt(count, 10) : 0
@@ -557,24 +1061,49 @@ function DrinksSheet({ onClose }: { onClose: () => void }) {
     const date = new Date()
     if (when === "yesterday") date.setDate(date.getDate() - 1)
     const at = new Date().toISOString()
-    await s.save({ drinks: [...(s.drinks ?? []), { id: `d-${Date.now().toString(36)}`, day: localDay(date), count: n, at }] })
-    toast(`${n} ${n === 1 ? "drink" : "drinks"} logged`)
+    const drinks = [...(s.drinks ?? []), { id: `d-${Date.now().toString(36)}`, day: localDay(date), count: n, at }]
+    await s.save({ drinks })
+    // Said plainly when a sitting goes over one of the two limits.
+    const days = daysThisWeek(sittingsOf(drinks))
+    const over = n > SITTING_LIMIT ? `, more than ${SITTING_LIMIT} at one time` : days > DAYS_LIMIT ? `, ${days} drinking days this week` : ""
+    toast(`${drinksWord(n)} logged${over}`)
     onClose()
   }
 
   return (
-    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
+    <View
+      style={[styles.sheetFrame, { bottom: keyboard }]}
+      pointerEvents="box-none"
+    >
       <Sheet title="Log drinks" onClose={onClose}>
-        <SelectField label="When" value={DRINK_DAYS.find((d) => d.value === when)?.label} placeholder="Choose a day" onPress={() => setPicking((p) => !p)} />
+        <SelectField
+          label="When"
+          value={DRINK_DAYS.find((d) => d.value === when)?.label}
+          placeholder="Choose a day"
+          onPress={() => setPicking((p) => !p)}
+        />
         {picking && (
           <SheetRows>
             {DRINK_DAYS.map((d) => (
-              <ChoiceRow key={d.value} title={d.label} selected={d.value === when} onPress={() => (setWhen(d.value), setPicking(false))} />
+              <ChoiceRow
+                key={d.value}
+                title={d.label}
+                selected={d.value === when}
+                onPress={() => (setWhen(d.value), setPicking(false))}
+              />
             ))}
           </SheetRows>
         )}
-        <TextField label="Drinks at this sitting" value={count} onChangeText={setCount} keyboardType="number-pad" placeholder="1" />
-        <PrimaryButton onPress={save} disabled={!valid}>Save</PrimaryButton>
+        <TextField
+          label="Drinks at this sitting"
+          value={count}
+          onChangeText={setCount}
+          keyboardType="number-pad"
+          placeholder="1"
+        />
+        <PrimaryButton onPress={save} disabled={!valid}>
+          Save
+        </PrimaryButton>
       </Sheet>
     </View>
   )
@@ -589,13 +1118,23 @@ function LastNight() {
   return (
     <>
       <View style={styles.score}>
-        <ScoreDial value={SLEEP_LAST.score} size={52} stroke={4} tone={color.amber} track={color.amberEdge} ink={ink.strong} />
+        <ScoreDial
+          value={SLEEP_LAST.score}
+          size={52}
+          stroke={4}
+          tone={color.amber}
+          track={color.amberEdge}
+          ink={ink.strong}
+        />
         <View style={styles.fill}>
           <Text style={type.section}>Last night's sleep score</Text>
           <Text style={type.label}>{SLEEP_LAST.line}</Text>
         </View>
       </View>
-      <Block title={`What made it ${SLEEP_LAST.score}`} meta={`${SLEEP_LAST.parts.length} parts`}>
+      <Block
+        title={`What made it ${SLEEP_LAST.score}`}
+        meta={`${SLEEP_LAST.parts.length} parts`}
+      >
         <View style={styles.table}>
           {SLEEP_LAST.parts.map((p, i) => (
             <View key={p.name} style={[styles.line, i > 0 && styles.rule]}>
@@ -621,7 +1160,10 @@ const clockAt = (m: number) => {
 /** "11:50 pm", "23:50", "6" or "6:15": with no am or pm, whichever half
     of the day lands inside the slider's range. */
 function parseClock(text: string, min: number, max: number) {
-  const m = text.trim().toLowerCase().match(/^(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm|a|p)?$/)
+  const m = text
+    .trim()
+    .toLowerCase()
+    .match(/^(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm|a|p)?$/)
   if (!m) return undefined
   const h = Number(m[1])
   const mm = Number(m[2] ?? 0)
@@ -658,23 +1200,97 @@ function NightSheet({ onClose }: { onClose: () => void }) {
 
   async function save() {
     const night = { bed, up, latency, woke, cpap: Math.min(cpap, total) }
-    await s.save({ topicLog: { ...s.topicLog, [day]: { ...s.topicLog?.[day], sleep: { way: "log", at: new Date().toISOString(), night, note: note.trim() || undefined } } } })
+    await s.save({
+      topicLog: {
+        ...s.topicLog,
+        [day]: {
+          ...s.topicLog?.[day],
+          sleep: {
+            way: "log",
+            at: new Date().toISOString(),
+            night,
+            note: note.trim() || undefined,
+          },
+        },
+      },
+    })
     toast(`Sleep logged: ${inBed(night)} in bed.`)
     onClose()
   }
 
   return (
-    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
+    <View
+      style={[styles.sheetFrame, { bottom: keyboard }]}
+      pointerEvents="box-none"
+    >
       <Sheet title="Last night" onClose={onClose} tall>
         <Text style={type.meta}>{`${hm(total)} in bed`}</Text>
-        <ScrollView style={styles.partScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={styles.partScroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.parts}>
-            <ValueField label="In bed at" value={bed} min={180} max={480} show={clockAt} parse={(t) => parseClock(t, 180, 480)} onChange={setBed} placeholder="11:30 pm" />
-            <ValueField label="Up at" value={up} min={600} max={960} show={clockAt} parse={(t) => parseClock(t, 600, 960)} onChange={setUp} placeholder="6:30 am" />
-            <ValueField label="Minutes to fall asleep" value={latency} min={0} max={180} show={(n) => `${n} min`} parse={(t) => (/^\d+/.test(t.trim()) ? parseInt(t, 10) : undefined)} onChange={setLatency} keyboardType="number-pad" />
-            <ValueField label="Times you woke" value={woke} min={0} max={20} show={(n) => String(n)} parse={(t) => (/^\d+$/.test(t.trim()) ? Number(t) : undefined)} onChange={setWoke} keyboardType="number-pad" />
-            <ValueField label="CPAP worn" value={Math.min(cpap, total)} min={0} max={total} show={hm} parse={parseHours} onChange={setCpap} placeholder="5 h 40 m" />
-            <TextField label="Note" value={note} onChangeText={setNote} placeholder="Anything that woke you" multiline autoCapitalize="sentences" />
+            <ValueField
+              label="In bed at"
+              value={bed}
+              min={180}
+              max={480}
+              show={clockAt}
+              parse={(t) => parseClock(t, 180, 480)}
+              onChange={setBed}
+              placeholder="11:30 pm"
+            />
+            <ValueField
+              label="Up at"
+              value={up}
+              min={600}
+              max={960}
+              show={clockAt}
+              parse={(t) => parseClock(t, 600, 960)}
+              onChange={setUp}
+              placeholder="6:30 am"
+            />
+            <ValueField
+              label="Minutes to fall asleep"
+              value={latency}
+              min={0}
+              max={180}
+              show={(n) => `${n} min`}
+              parse={(t) =>
+                /^\d+/.test(t.trim()) ? parseInt(t, 10) : undefined
+              }
+              onChange={setLatency}
+              keyboardType="number-pad"
+            />
+            <ValueField
+              label="Times you woke"
+              value={woke}
+              min={0}
+              max={20}
+              show={(n) => String(n)}
+              parse={(t) => (/^\d+$/.test(t.trim()) ? Number(t) : undefined)}
+              onChange={setWoke}
+              keyboardType="number-pad"
+            />
+            <ValueField
+              label="CPAP worn"
+              value={Math.min(cpap, total)}
+              min={0}
+              max={total}
+              show={hm}
+              parse={parseHours}
+              onChange={setCpap}
+              placeholder="5 h 40 m"
+            />
+            <TextField
+              label="Note"
+              value={note}
+              onChangeText={setNote}
+              placeholder="Anything that woke you"
+              multiline
+              autoCapitalize="sentences"
+            />
           </View>
         </ScrollView>
         <PrimaryButton onPress={save}>Save</PrimaryButton>
@@ -699,30 +1315,78 @@ function ShortSheet({ onClose }: { onClose: () => void }) {
   const keyboard = useKeyboardHeight()
 
   async function save() {
-    await s.save({ topicLog: { ...s.topicLog, [day]: { ...s.topicLog?.[day], mind: { way: "short", at: new Date().toISOString(), minutes, note: note.trim() || undefined } } } })
+    await s.save({
+      topicLog: {
+        ...s.topicLog,
+        [day]: {
+          ...s.topicLog?.[day],
+          mind: {
+            way: "short",
+            at: new Date().toISOString(),
+            minutes,
+            note: note.trim() || undefined,
+          },
+        },
+      },
+    })
     toast(`Mind logged: ${minutes} min. Partial credit.`)
     onClose()
   }
 
   return (
-    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
+    <View
+      style={[styles.sheetFrame, { bottom: keyboard }]}
+      pointerEvents="box-none"
+    >
       <Sheet title="Your short version" onClose={onClose}>
-        <SliderField label="Minutes done" value={minutes} min={1} max={SHORT_MAX} show={(n) => `${n} min`} parse={(t) => (/^\d+/.test(t.trim()) ? parseInt(t, 10) : undefined)} onChange={setMinutes} keyboardType="number-pad" />
-        <TextField label="What you did" value={note} onChangeText={setNote} placeholder="Breathing, a body scan, a quiet walk" multiline autoCapitalize="sentences" />
+        <SliderField
+          label="Minutes done"
+          value={minutes}
+          min={1}
+          max={SHORT_MAX}
+          show={(n) => `${n} min`}
+          parse={(t) => (/^\d+/.test(t.trim()) ? parseInt(t, 10) : undefined)}
+          onChange={setMinutes}
+          keyboardType="number-pad"
+        />
+        <TextField
+          label="What you did"
+          value={note}
+          onChangeText={setNote}
+          placeholder="Breathing, a body scan, a quiet walk"
+          multiline
+          autoCapitalize="sentences"
+        />
         <PrimaryButton onPress={save}>Save</PrimaryButton>
       </Sheet>
     </View>
   )
 }
 
-type SliderProps = { value: number; min: number; max: number; step?: number; label: string; show: (n: number) => string; onChange: (n: number) => void }
+type SliderProps = {
+  value: number
+  min: number
+  max: number
+  step?: number
+  label: string
+  show: (n: number) => string
+  onChange: (n: number) => void
+}
 
-const snap = (n: number, min: number, max: number, step: number) => Math.max(min, Math.min(max, min + Math.round((n - min) / step) * step))
+const snap = (n: number, min: number, max: number, step: number) =>
+  Math.max(min, Math.min(max, min + Math.round((n - min) / step) * step))
 
 /** A slider with its value in a small box on the right of the label: drag
     the track, or tap the box and type it. A typed value snaps into the
     slider's range; one it cannot read goes back to what it was. */
-function SliderField({ parse, keyboardType, ...slider }: SliderProps & { parse: (text: string) => number | undefined; keyboardType?: "default" | "number-pad" }) {
+function SliderField({
+  parse,
+  keyboardType,
+  ...slider
+}: SliderProps & {
+  parse: (text: string) => number | undefined
+  keyboardType?: "default" | "number-pad"
+}) {
   const { value, min, max, step = 1, label, show, onChange } = slider
   const [draft, setDraft] = React.useState<string>()
   const [focused, setFocused] = React.useState(false)
@@ -756,7 +1420,21 @@ function SliderField({ parse, keyboardType, ...slider }: SliderProps & { parse: 
 
 /** A typed value in the shared text field: shown formatted, edited as
     free text, read back and kept in range when she leaves the field. */
-function ValueField({ value, min, max, label, show, parse, onChange, keyboardType, placeholder }: Omit<SliderProps, "step"> & { parse: (text: string) => number | undefined; keyboardType?: "default" | "number-pad"; placeholder?: string }) {
+function ValueField({
+  value,
+  min,
+  max,
+  label,
+  show,
+  parse,
+  onChange,
+  keyboardType,
+  placeholder,
+}: Omit<SliderProps, "step"> & {
+  parse: (text: string) => number | undefined
+  keyboardType?: "default" | "number-pad"
+  placeholder?: string
+}) {
   const [draft, setDraft] = React.useState<string>()
   function commit() {
     const n = draft === undefined ? undefined : parse(draft)
@@ -781,11 +1459,20 @@ function ValueField({ value, min, max, label, show, parse, onChange, keyboardTyp
 
 /** A stepped slider: tap or drag along the track, the teal fill and thumb
     following. */
-function Slider({ value, min, max, step = 1, label, show, onChange }: SliderProps) {
+function Slider({
+  value,
+  min,
+  max,
+  step = 1,
+  label,
+  show,
+  onChange,
+}: SliderProps) {
   const width = React.useRef(0)
   const share = max > min ? (value - min) / (max - min) : 0
   const set = (x: number) => {
-    if (width.current > 0) onChange(snap(min + (x / width.current) * (max - min), min, max, step))
+    if (width.current > 0)
+      onChange(snap(min + (x / width.current) * (max - min), min, max, step))
   }
   return (
     <View
@@ -803,19 +1490,29 @@ function Slider({ value, min, max, step = 1, label, show, onChange }: SliderProp
       accessibilityLabel={label}
       accessibilityValue={{ min, max, now: value, text: show(value) }}
       accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
-      onAccessibilityAction={(e) => onChange(snap(value + (e.nativeEvent.actionName === "increment" ? step : -step), min, max, step))}
+      onAccessibilityAction={(e) =>
+        onChange(
+          snap(
+            value + (e.nativeEvent.actionName === "increment" ? step : -step),
+            min,
+            max,
+            step
+          )
+        )
+      }
     >
       <View style={styles.sliderTrack} pointerEvents="none">
         <View style={[styles.sliderFill, { width: `${share * 100}%` }]} />
       </View>
-      <View style={[styles.sliderThumb, { left: `${share * 100}%` }]} pointerEvents="none" />
+      <View
+        style={[styles.sliderThumb, { left: `${share * 100}%` }]}
+        pointerEvents="none"
+      />
     </View>
   )
 }
 
 /* ----------------------------------------------------------- medication -- */
-
-const doseName = (d: (typeof DOSES)[number]) => `${d.name}, ${d.when.toLowerCase()}`
 
 /** "Mark it taken": today's doses, one tap each to tick. The morning two
     start ticked; saving answers the topic with the doses ticked. */
@@ -823,19 +1520,43 @@ function TakenSheet({ onClose }: { onClose: () => void }) {
   const s = useOnboarding()
   const day = localDay()
   const before = s.topicLog?.[day]?.medication
-  const [taken, setTaken] = React.useState<string[]>(() => before?.parts ?? DOSES.filter((d) => "taken" in d && d.taken).map((d) => d.id))
-  const flip = (id: string) => setTaken((was) => (was.includes(id) ? was.filter((x) => x !== id) : [...was, id]))
+  const [taken, setTaken] = React.useState<string[]>(
+    () =>
+      before?.parts ??
+      DOSES.filter((d) => "taken" in d && d.taken).map((d) => d.id)
+  )
+  const flip = (id: string) =>
+    setTaken((was) =>
+      was.includes(id) ? was.filter((x) => x !== id) : [...was, id]
+    )
 
   async function save() {
-    await s.save({ topicLog: { ...s.topicLog, [day]: { ...s.topicLog?.[day], medication: { way: "taken", at: new Date().toISOString(), parts: taken } } } })
+    await s.save({
+      topicLog: {
+        ...s.topicLog,
+        [day]: {
+          ...s.topicLog?.[day],
+          medication: {
+            way: "taken",
+            at: new Date().toISOString(),
+            parts: taken,
+          },
+        },
+      },
+    })
     toast(`Medication logged: ${taken.length} of ${DOSES.length} doses taken.`)
     onClose()
   }
 
   return (
     <Sheet title="Which doses have you taken?" onClose={onClose} tall>
-      <Text style={type.meta}>{`${taken.length} of ${DOSES.length} taken`}</Text>
-      <ScrollView style={styles.partScroll} showsVerticalScrollIndicator={false}>
+      <Text
+        style={type.meta}
+      >{`${taken.length} of ${DOSES.length} taken`}</Text>
+      <ScrollView
+        style={styles.partScroll}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.doses}>
           {DOSES.map((d) => {
             const on = taken.includes(d.id)
@@ -846,12 +1567,18 @@ function TakenSheet({ onClose }: { onClose: () => void }) {
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: on }}
                 accessibilityLabel={`${d.name} ${d.dose}, ${d.when}`}
-                style={({ pressed }) => [styles.dose, on && styles.doseOn, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.dose,
+                  on && styles.doseOn,
+                  pressed && styles.pressed,
+                ]}
               >
                 <TickCircle done={on} />
                 <View style={styles.fill}>
                   <Text style={styles.lineName}>{d.name}</Text>
-                  <Text style={type.label}>{`${d.dose}, ${d.when.toLowerCase()}`}</Text>
+                  <Text
+                    style={type.label}
+                  >{`${d.dose}, ${d.when.toLowerCase()}`}</Text>
                 </View>
               </Pressable>
             )
@@ -862,38 +1589,6 @@ function TakenSheet({ onClose }: { onClose: () => void }) {
         Save
       </PrimaryButton>
     </Sheet>
-  )
-}
-
-/** "Mark a dose missed": why, and a note if she wants one. The dose is
-    the evening metformin the card is asking about.
-    Saving answers the topic as missed, so Dr. Patel sees it with the day. */
-function MissedSheet({ onClose }: { onClose: () => void }) {
-  const s = useOnboarding()
-  const day = localDay()
-  const dose = "metformin-pm"
-  const [why, setWhy] = React.useState<(typeof MISSED_WHY)[number]>()
-  const [note, setNote] = React.useState("")
-  const keyboard = useKeyboardHeight()
-
-  async function save() {
-    const said = [why, note.trim()].filter(Boolean).join(": ")
-    await s.save({ topicLog: { ...s.topicLog, [day]: { ...s.topicLog?.[day], medication: { way: "missed", at: new Date().toISOString(), skipped: [dose], note: said || undefined } } } })
-    toast(`Missed dose logged: ${doseName(DOSES.find((d) => d.id === dose)!)}.`)
-    onClose()
-  }
-
-  return (
-    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
-      <Sheet title="Missed dose" onClose={onClose}>
-        <View style={styles.field}>
-          <Text style={type.title}>Why</Text>
-          <ChipRow options={MISSED_WHY.map((w) => ({ value: w, label: w }))} value={why} onChange={setWhy} wrap label="Why" />
-        </View>
-        <TextField label="Note" value={note} onChangeText={setNote} placeholder="Anything Dr. Patel should know" multiline autoCapitalize="sentences" />
-        <PrimaryButton onPress={save}>Log missed dose</PrimaryButton>
-      </Sheet>
-    </View>
   )
 }
 
@@ -910,14 +1605,33 @@ function SideEffectSheet({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
+    <View
+      style={[styles.sheetFrame, { bottom: keyboard }]}
+      pointerEvents="box-none"
+    >
       <Sheet title="Report a side effect" onClose={onClose}>
         <View style={styles.field}>
           <Text style={type.title}>How bad</Text>
-          <Tabs options={SEVERITY.map((v) => ({ value: v, label: v }))} value={how} onChange={setHow} snug />
+          <Tabs
+            options={SEVERITY.map((v) => ({ value: v, label: v }))}
+            value={how}
+            onChange={setHow}
+            snug
+          />
         </View>
-        <TextField label="What happened" value={what} onChangeText={setWhat} placeholder="Nausea after the morning dose" multiline autoCapitalize="sentences" />
-        {how === "Severe" && <Text style={[type.label, styles.urgent]}>If it feels like an emergency, call 911 now.</Text>}
+        <TextField
+          label="What happened"
+          value={what}
+          onChangeText={setWhat}
+          placeholder="Nausea after the morning dose"
+          multiline
+          autoCapitalize="sentences"
+        />
+        {how === "Severe" && (
+          <Text style={[type.label, styles.urgent]}>
+            If it feels like an emergency, call 911 now.
+          </Text>
+        )}
         <PrimaryButton onPress={send} disabled={!what.trim()}>
           Send to Dr. Patel
         </PrimaryButton>
@@ -926,12 +1640,60 @@ function SideEffectSheet({ onClose }: { onClose: () => void }) {
   )
 }
 
+/** What she takes that nobody prescribed, screened against the prescribed
+    list as it is entered.
+    Dr. Blanchard asks only whether she takes each one as listed, never
+    single missed doses (call, 26 Oct 2026); new ones are added with the
+    "Add a new one" way above. */
+function AlsoTaking() {
+  return (
+    <Block title="Also taking, added by you">
+      <View style={styles.table}>
+        {ALSO_TAKING.map((m, i) => (
+          <View
+            key={m.name}
+            style={[
+              styles.line,
+              i > 0 && styles.rule,
+              m.interacts && styles.flag,
+            ]}
+          >
+            {m.interacts ? (
+              <Warning size={14} color={HUE.amber.ink} />
+            ) : (
+              <Check size={14} weight="bold" color={chart.inRange} />
+            )}
+            <Text style={styles.lineName}>{m.name}</Text>
+            <Text style={[type.label, styles.fill]} numberOfLines={1}>
+              {m.dose}
+            </Text>
+            <Text
+              style={[
+                styles.verdict,
+                { color: m.interacts ? HUE.amber.ink : ink.good },
+              ]}
+            >
+              {m.interacts ? "Interaction" : "No interaction"}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </Block>
+  )
+}
+
 /* ----------------------------------------------------------------- apps -- */
 
 /** The apps and devices a topic can post itself from: Connect shows a
     loader, then the row says Connected. Exercise adds a file of her own
     programme above them, which the plan then monitors. */
-function AppsSheet({ act, onClose }: { act: Extract<Way["act"], { kind: "apps" }>; onClose: () => void }) {
+function AppsSheet({
+  act,
+  onClose,
+}: {
+  act: Extract<Way["act"], { kind: "apps" }>
+  onClose: () => void
+}) {
   const s = useOnboarding()
   const linked = s.linkedApps ?? []
   const [busy, setBusy] = React.useState<string>()
@@ -947,7 +1709,10 @@ function AppsSheet({ act, onClose }: { act: Extract<Way["act"], { kind: "apps" }
   }
 
   async function upload() {
-    const r = await DocumentPicker.getDocumentAsync({ type: ["application/pdf", "image/*", "text/plain", "text/csv"], copyToCacheDirectory: true })
+    const r = await DocumentPicker.getDocumentAsync({
+      type: ["application/pdf", "image/*", "text/plain", "text/csv"],
+      copyToCacheDirectory: true,
+    })
     if (r.canceled) return
     setFile(r.assets[0].name)
     toast("Programme uploaded. We monitor yours.")
@@ -974,8 +1739,16 @@ function AppsSheet({ act, onClose }: { act: Extract<Way["act"], { kind: "apps" }
               icon={<DeviceMobile size={16} color={HUE.teal.ink} />}
               title={app}
               tag={on ? { tone: "ok", label: "Connected" } : undefined}
-              right={busy === app ? <ActivityIndicator color={color.primary} /> : undefined}
-              action={on || busy === app ? undefined : { label: "Connect", onPress: () => connect(app) }}
+              right={
+                busy === app ? (
+                  <ActivityIndicator color={color.primary} />
+                ) : undefined
+              }
+              action={
+                on || busy === app
+                  ? undefined
+                  : { label: "Connect", onPress: () => connect(app) }
+              }
               chevron={false}
             />
           )
@@ -989,7 +1762,6 @@ function AppsSheet({ act, onClose }: { act: Extract<Way["act"], { kind: "apps" }
 
 const styles = StyleSheet.create({
   fill: { flex: 1, minWidth: 0 },
-  plannedList: { maxHeight: 420 },
   pressed: { opacity: 0.7 },
   // A finished lift: struck through, in the quiet grey.
   struck: { textDecorationLine: "line-through", color: ink.tertiary },
@@ -997,8 +1769,21 @@ const styles = StyleSheet.create({
   // The programme chip sits left, over the target card, at its own width.
   chip: { alignSelf: "flex-start" },
 
-  table: { borderRadius: 10, overflow: "hidden", backgroundColor: color.background, borderWidth: 1, borderColor: hairline.edge, boxShadow: card.shadowXs },
-  line: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingHorizontal: space.item, paddingVertical: 10 },
+  table: {
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: color.background,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+    boxShadow: card.shadowXs,
+  },
+  line: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.inline,
+    paddingHorizontal: space.item,
+    paddingVertical: 10,
+  },
   rule: { borderTopWidth: 1, borderTopColor: hairline.rule },
   shaded: { backgroundColor: surface.inset },
   // A finished lift: a deeper grey than the warm-up and cardio rows, so it
@@ -1007,37 +1792,173 @@ const styles = StyleSheet.create({
   lineName: { ...type.title, color: ink.strong },
   lineEnd: { ...type.metaStrong, color: ink.strong },
   sets: { minWidth: 34, textAlign: "right" },
-  load: { ...type.value, minWidth: 44, textAlign: "right", fontVariant: ["tabular-nums"] },
+  load: {
+    ...type.value,
+    minWidth: 44,
+    textAlign: "right",
+    fontVariant: ["tabular-nums"],
+  },
   // The play icon leads the lift's name; the pair opens how it is done.
   lift: { flexDirection: "row", alignItems: "center", gap: space.inline },
   // The icon sits on the chip's pale teal, in a circle.
-  playDot: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: color.primarySoft },
+  playDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: color.primarySoft,
+  },
 
-  score: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 12, backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge },
+  score: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.lead,
+    padding: space.item,
+    borderRadius: 12,
+    backgroundColor: color.amberTint,
+    borderWidth: 1,
+    borderColor: color.amberEdge,
+  },
   part: { width: 104 },
   partScroll: { flexGrow: 0, flexShrink: 1 },
   parts: { gap: space.item, paddingBottom: space.item },
-  partCard: { gap: space.item, padding: space.item, borderRadius: 16, backgroundColor: surface.inset },
-  minutesHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.inline },
+  partCard: {
+    gap: space.item,
+    padding: space.item,
+    borderRadius: 16,
+    backgroundColor: surface.inset,
+  },
+  minutesHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: space.inline,
+  },
   // The typed value: a small box, right-aligned, teal edge while typing.
-  sliderInput: { ...type.value, color: ink.strong, fontVariant: ["tabular-nums"], width: 112, height: 36, paddingHorizontal: 10, paddingVertical: 0, textAlign: "right", borderRadius: 10, borderWidth: 1, borderColor: hairline.edge, backgroundColor: color.background },
+  sliderInput: {
+    ...type.value,
+    color: ink.strong,
+    fontVariant: ["tabular-nums"],
+    width: 112,
+    height: 36,
+    paddingHorizontal: 10,
+    paddingVertical: 0,
+    textAlign: "right",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+    backgroundColor: color.background,
+  },
   sliderInputOn: { borderColor: color.primary },
   slider: { height: 32, justifyContent: "center", marginHorizontal: 11 },
-  sliderTrack: { height: 6, borderRadius: 3, overflow: "hidden", backgroundColor: hairline.rule },
-  sliderFill: { height: "100%", borderRadius: 3, backgroundColor: color.primary },
-  sliderThumb: { position: "absolute", top: 5, width: 22, height: 22, marginLeft: -11, borderRadius: 11, backgroundColor: color.background, borderWidth: 2, borderColor: color.primary },
+  sliderTrack: {
+    height: 6,
+    borderRadius: 3,
+    overflow: "hidden",
+    backgroundColor: hairline.rule,
+  },
+  sliderFill: {
+    height: "100%",
+    borderRadius: 3,
+    backgroundColor: color.primary,
+  },
+  sliderThumb: {
+    position: "absolute",
+    top: 5,
+    width: 22,
+    height: 22,
+    marginLeft: -11,
+    borderRadius: 11,
+    backgroundColor: color.background,
+    borderWidth: 2,
+    borderColor: color.primary,
+  },
   sheetFrame: { position: "absolute", top: 0, left: 0, right: 0 },
-  speakBox: { minHeight: 112, borderRadius: 16, borderWidth: 1, borderColor: hairline.edge, backgroundColor: surface.inset },
-  speakText: { ...type.body, color: ink.strong, minHeight: 112, padding: space.item, textAlignVertical: "top" },
-  speakMic: { alignItems: "center", gap: space.inline },
-  micButton: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", backgroundColor: color.primary },
+  speakBox: {
+    minHeight: 112,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+    backgroundColor: surface.inset,
+  },
+  speakText: {
+    ...type.body,
+    color: ink.strong,
+    minHeight: 112,
+    padding: space.item,
+    textAlignVertical: "top",
+  },
+  describeText: { paddingRight: 52 },
+  describeMic: {
+    position: "absolute",
+    right: space.inline,
+    bottom: space.inline,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: color.primary,
+  },
+  photos: { flexDirection: "row", flexWrap: "wrap", gap: space.inline },
+  photo: {
+    width: 72,
+    height: 72,
+    borderRadius: 14,
+    overflow: "hidden",
+    backgroundColor: surface.inset,
+  },
+  photoImage: { width: "100%", height: "100%" },
+  photoRemove: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.55)",
+  },
+  photoAdd: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+    borderStyle: "dashed",
+  },
+  reading: { flexDirection: "row", alignItems: "center", gap: space.inline },
   micButtonOn: { backgroundColor: color.primarySoft },
-  micLabel: { color: ink.detail },
-  speakProblem: { flexDirection: "row", alignItems: "center", gap: space.inline, padding: space.item, borderRadius: 10, backgroundColor: color.amberTint, borderWidth: 1, borderColor: color.amberEdge },
+  speakProblem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.inline,
+    padding: space.item,
+    borderRadius: 10,
+    backgroundColor: color.amberTint,
+    borderWidth: 1,
+    borderColor: color.amberEdge,
+  },
 
   urgent: { color: "#A95413" },
+  flag: { backgroundColor: color.amberTint },
+  verdict: { ...type.metaStrong },
   doses: { gap: space.inline, paddingBottom: space.item },
-  dose: { flexDirection: "row", alignItems: "center", gap: space.lead, padding: space.item, borderRadius: 10, backgroundColor: color.background, borderWidth: 1, borderColor: hairline.edge },
-  doseOn: { borderColor: color.primaryLine, backgroundColor: color.primaryTint },
+  dose: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.lead,
+    padding: space.item,
+    borderRadius: 10,
+    backgroundColor: color.background,
+    borderWidth: 1,
+    borderColor: hairline.edge,
+  },
+  doseOn: {
+    borderColor: color.primaryLine,
+    backgroundColor: color.primaryTint,
+  },
   field: { gap: space.inline },
 })

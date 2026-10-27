@@ -1,6 +1,6 @@
 import { router } from "expo-router"
 import * as React from "react"
-import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { Animated, Easing, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { useReducedMotion } from "@/components/chat"
@@ -10,7 +10,6 @@ import { PageFooter, PageGround } from "@/components/hol"
 import { Check, CaretRight } from "@/components/ph"
 import { Card, Steps, TextAction, type Step } from "@/components/record-kit"
 import { Button, useTopInset } from "@/components/ui"
-import { MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { startingTestsLine } from "@/lib/todo"
 import { priceLabel } from "@/lib/plans"
@@ -18,22 +17,19 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* After the plan set-up's last step (Journey_7 screen 7, "Four steps,
    then the plan"): the membership has started. She leaves the purchase
-   knowing what happens next, in what order, and who does it; her
-   physician's review is named before it happens. A page of its own, no
+   knowing what happens next and in what order. A page of its own, no
    header bar and no tab bar. It opens on a moment: the teal tick pops in,
    two rings and a ring of dots spread from it, then the words, the steps
    and the buttons rise in turn (all still under Reduce Motion). The steps
-   are the kit's track: enrolled done today, her physician sorting the
-   tests into insurance or Inlay now (26 Oct 2026), then scheduling, the
-   rest to come. "See my tests" opens that sorting (/your-tests); once it
-   is in, "Schedule my tests" opens the day and time for each Inlay test
+   are the kit's track: enrolled done today, scheduling the tests now,
+   the plan ready next. Nothing goes to her physician for review (27 Oct
+   2026). "Schedule my tests" opens the day and time for each test
    (/schedule-tests); "Confirm schedule" there then opens the
    confirmation (/schedule-confirmed), which leads on to the flourishing
    questions. "Schedule later" leaves them in To do, brought up
    every other day, and opens the same health profile and flourishing
-   questions (/health-profile). Either way she walks on to her plan with
-   Dr. Patel (/plan?walk=1), which this build approves after a moment, so the
-   set-up plays through to "Your personalized plan is ready". The
+   questions (/health-profile). Either way she walks on to her plan
+   (/plan?walk=1), live from the moment she enrolled. The
    payment and its receipt were confirmed in a popup just before. */
 
 const native = Platform.OS !== "web"
@@ -86,21 +82,15 @@ export default function EnrolledScreen() {
   // Scheduled on the step before, the first test's day; left for later,
   // To do with its reminders.
   const tests = startingTestsLine(onboarding)
-  // Every test is cash pay and nothing waits on her physician (26 Oct
-  // 2026 call): scheduling is the next step, and Dr. Patel is sent a copy
-  // of the plan.
+  // Every test is cash pay and nothing goes to her physician for review
+  // (27 Oct 2026): scheduling is the next step, then the plan.
   const steps: Step[] = [
     { label: "Enrolled in Inlay", date: dayLabel(membership?.startedAt), state: "done" },
     tests.booked
       ? { label: "Complete your scheduled tests", date: tests.line, state: "now" }
       : { label: "Schedule your tests", date: onboarding.startingTests?.laterAt ? tests.line : "The new tests you paid for", state: "now" },
-    { label: `${MEMBER.doctorShort} gets a copy of your plan`, date: "Your plan does not wait on review", state: "next" },
     { label: "Your plan is ready", date: "We let you know right away", state: "next" },
   ]
-
-  // The secret button: a tap on the tick skips the physician's wait and
-  // opens her tests already sorted (/your-tests?now=1), for demos.
-  const reviewed = () => router.push("/your-tests?now=1")
 
   const viewPlan = () => router.replace("/plan?walk=1")
 
@@ -171,15 +161,13 @@ export default function EnrolledScreen() {
                 />
               )
             })}
-            <Pressable onPress={reviewed} accessible={false}>
-              <Animated.View style={[styles.halo, { opacity: t.badge, transform: [{ scale: t.badge }] }]}>
-                <View style={styles.badge}>
-                  <Animated.View style={{ opacity: t.tick, transform: [{ scale: t.tick.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }] }}>
-                    <Check size={34} color={color.onPrimary} weight="bold" />
-                  </Animated.View>
-                </View>
-              </Animated.View>
-            </Pressable>
+            <Animated.View style={[styles.halo, { opacity: t.badge, transform: [{ scale: t.badge }] }]}>
+              <View style={styles.badge}>
+                <Animated.View style={{ opacity: t.tick, transform: [{ scale: t.tick.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }] }}>
+                  <Check size={34} color={color.onPrimary} weight="bold" />
+                </Animated.View>
+              </View>
+            </Animated.View>
           </View>
 
           <Animated.View style={[styles.words, rise(0)]}>

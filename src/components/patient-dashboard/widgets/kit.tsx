@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
 import { SUB_TAB, SUB_TABS_LIST } from "@/components/practice/directory"
 import { RecordTable } from "@/components/provider/chart-layout"
 import { usePaged } from "@/components/table-pager"
+import { SUBTLE } from "@/components/patient-dashboard/widgets/palette"
 
 /* The widget dashboard's pieces, shared by the free and the optimization
    member's views and the provider home: the weather-app widget (a rounded
@@ -117,16 +118,9 @@ export function WidgetTabs<K extends string>({
   )
 }
 
-/** The donut's softer status colours: the same four hues as the status
-    pills, a step under full strength so the chart reads calm beside the
-    table but still holds its colour. */
-export const SUBTLE = {
-  red: "#DE6F68",
-  orange: "#EB9A52",
-  violet: "#9C86E6",
-  green: "#5FB386",
-  blue: "#6E9CE8",
-} as const
+/* The softer status colours live with the palette, so the chart kit can
+   read them without importing this file back (a cycle). */
+export { SUBTLE }
 
 export type DonutSlice<K extends string> = { key: K; label: string; value: number; color: string }
 

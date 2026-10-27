@@ -1,53 +1,97 @@
 import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { Pressable, StyleSheet, Text, View } from "react-native"
+import { StyleSheet, Text } from "react-native"
 
 import { PageNotFoundState } from "@/components/error-state"
-import { CheckMark, FlowScreen } from "@/components/flow"
-import { PrimaryButton } from "@/components/hol"
-import { CaretRight } from "@/components/ph"
-import { Block, Group } from "@/components/record-kit"
+import { FlowScreen } from "@/components/flow"
+import {
+  Barbell,
+  Brain,
+  Butterfly,
+  Car,
+  Dna,
+  Drop,
+  Fish,
+  Flame,
+  Flask,
+  FlowerLotus,
+  ForkKnife,
+  Gauge,
+  GenderIntersex,
+  Heart,
+  Heartbeat,
+  Leaf,
+  Magnet,
+  Moon,
+  Package,
+  Scales,
+  Scan,
+  ShieldPlus,
+  Sun,
+  Watch,
+  Wind,
+} from "@/components/ph"
+import { Block, Group, HUE, NeedsRow, type Hue } from "@/components/record-kit"
 import { CATEGORIES, itemsIn, money, type Item } from "@/lib/catalog"
-import { ink, space, type } from "@/lib/theme"
+import { type } from "@/lib/theme"
 
-/* A category with more than one item (Laboratory): every panel in it,
-   priced. The patient ticks the ones she wants and orders them together,
-   one draw for all of them; the caret on a row opens that panel's own
-   page (what it does, what it cannot tell you). */
+/* A category's list (every Care row opens one): every item in it, priced.
+   Each is ordered on its own: a row opens that item's page (what it does,
+   what it cannot tell you), which orders and pays. */
+
+/** Each item's tile: what it measures or is, in a hue of its own. */
+const ICON: Record<string, { Icon: React.ComponentType<{ size?: number; color?: string }>; hue: Hue }> = {
+  "blood-panel": { Icon: Drop, hue: "red" },
+  "lipid-advanced": { Icon: Heart, hue: "red" },
+  a1c: { Icon: Gauge, hue: "amber" },
+  thyroid: { Icon: Butterfly, hue: "violet" },
+  "vitamin-d": { Icon: Sun, hue: "amber" },
+  hormones: { Icon: GenderIntersex, hue: "violet" },
+  inflammation: { Icon: Flame, hue: "red" },
+  iron: { Icon: Magnet, hue: "blue" },
+  kidney: { Icon: Flask, hue: "teal" },
+  liver: { Icon: ShieldPlus, hue: "green" },
+  "omega-3": { Icon: Fish, hue: "blue" },
+  micronutrients: { Icon: Leaf, hue: "green" },
+  dexa: { Icon: Scales, hue: "red" },
+  rmr: { Icon: Flame, hue: "amber" },
+  "vo2-max": { Icon: Wind, hue: "blue" },
+  "whole-body-mri": { Icon: Scan, hue: "teal" },
+  "calcium-ct": { Icon: Heart, hue: "red" },
+  "brain-mri": { Icon: Brain, hue: "violet" },
+  "multi-cancer": { Icon: ShieldPlus, hue: "red" },
+  shield: { Icon: Drop, hue: "amber" },
+  hereditary: { Icon: Dna, hue: "violet" },
+  "ad-detect": { Icon: Brain, hue: "amber" },
+  apoe: { Icon: Dna, hue: "violet" },
+  atn: { Icon: Flask, hue: "teal" },
+  "sleep-study": { Icon: Moon, hue: "amber" },
+  cgm: { Icon: Drop, hue: "teal" },
+  oura: { Icon: Watch, hue: "violet" },
+  "bp-cuff": { Icon: Heartbeat, hue: "red" },
+  "smart-scale": { Icon: Scales, hue: "blue" },
+  smart: { Icon: FlowerLotus, hue: "green" },
+  nutrition: { Icon: ForkKnife, hue: "amber" },
+  movement: { Icon: Barbell, hue: "blue" },
+  "home-care": { Icon: Package, hue: "blue" },
+  meals: { Icon: ForkKnife, hue: "green" },
+  transport: { Icon: Car, hue: "teal" },
+}
 
 export default function CatalogCategoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const category = CATEGORIES.find((c) => c.id === id)
   const items = category ? itemsIn(category.id) : []
-  const [picked, setPicked] = React.useState<readonly string[]>([])
 
   if (!category || items.length === 0) return <PageNotFoundState />
-
-  const chosen = items.filter((i) => picked.includes(i.id))
-  const total = chosen.reduce((sum, i) => sum + i.member, 0)
-  const flip = (it: Item) => setPicked((p) => (p.includes(it.id) ? p.filter((x) => x !== it.id) : [...p, it.id]))
-
-  // Every panel is drawn at Quest, so they book as one visit.
-  const order = () => {
-    const [first, ...rest] = chosen
-    if (!first) return
-    router.push({ pathname: "/catalog/book/[id]", params: { id: first.id, ...(rest.length ? { more: rest.map((i) => i.id).join(",") } : {}) } })
-  }
+  const [one, plural] = category.noun
 
   return (
-    <FlowScreen
-      page
-      title={category.title}
-      footer={
-        <PrimaryButton onPress={order} disabled={chosen.length === 0}>
-          {chosen.length === 0 ? "Select tests to order" : `Order ${chosen.length} ${chosen.length === 1 ? "test" : "tests"} · ${money(total)}`}
-        </PrimaryButton>
-      }
-    >
-      <Block title="Panels" meta={chosen.length ? `${chosen.length} selected` : `${items.length} panels`}>
+    <FlowScreen page title={category.title}>
+      <Block title={plural.charAt(0).toUpperCase() + plural.slice(1)} meta={`${items.length} ${items.length === 1 ? one : plural}`}>
         <Group>
           {items.map((it) => (
-            <LabRow key={it.id} item={it} checked={picked.includes(it.id)} onPress={() => flip(it)} />
+            <ItemRow key={it.id} item={it} />
           ))}
         </Group>
       </Block>
@@ -55,45 +99,23 @@ export default function CatalogCategoryScreen() {
   )
 }
 
-/** One panel: the tick, its name and partner, its price, and a caret to its
-    own page. */
-function LabRow({ item: it, checked, onPress }: { item: Item; checked: boolean; onPress: () => void }) {
+/** One item: its tile, name and partner, its price, opening its own page. */
+function ItemRow({ item: it }: { item: Item }) {
+  const { Icon, hue } = ICON[it.id] ?? { Icon: Flask, hue: "teal" as Hue }
   return (
-    <View style={styles.row}>
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked }}
-        accessibilityLabel={`${it.name}, ${money(it.member)}. ${it.intro}`}
-        style={({ pressed }) => [styles.pick, pressed && styles.pressed]}
-      >
-        <CheckMark checked={checked} centered />
-        <View style={styles.body}>
-          <Text style={styles.name}>{it.name}</Text>
-          <Text style={styles.meta}>{it.intro}</Text>
-        </View>
-        <Text style={styles.price}>{money(it.member)}</Text>
-      </Pressable>
-      <Pressable
-        onPress={() => router.push({ pathname: "/catalog/[id]", params: { id: it.id } })}
-        accessibilityRole="button"
-        accessibilityLabel={`About ${it.name}`}
-        hitSlop={8}
-        style={({ pressed }) => pressed && styles.pressed}
-      >
-        <CaretRight size={16} color={ink.tertiary} />
-      </Pressable>
-    </View>
+    <NeedsRow
+      icon={<Icon size={16} color={HUE[hue].ink} />}
+      hue={hue}
+      title={it.name}
+      meta={it.intro}
+      right={<Text style={styles.price}>{money(it.member)}</Text>}
+      accessibilityLabel={`${it.name}, ${money(it.member)}. ${it.intro}`}
+      onPress={() => router.push({ pathname: "/catalog/[id]", params: { id: it.id } })}
+    />
   )
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingVertical: space.rowY },
-  pick: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.item },
-  body: { flex: 1, gap: 2 },
-  name: { ...type.title },
-  meta: { ...type.label },
   // Digits of one width, so the prices line up down the column.
-  price: { ...type.value, fontVariant: ["tabular-nums"] },
-  pressed: { opacity: 0.6 },
+  price: { ...type.stat, fontVariant: ["tabular-nums"] },
 })

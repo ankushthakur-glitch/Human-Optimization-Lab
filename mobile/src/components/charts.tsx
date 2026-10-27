@@ -2637,6 +2637,9 @@ export type WeekDay = {
 export type WeekBarsProps = {
   days: WeekDay[]
   goal?: number
+  /** The goal is a ceiling (drinks at one time): its line reads Limit, a
+      bar on or under it counts, and a bar over it is drawn out of range. */
+  limit?: boolean
   /** A range to land in (sleep, 7 to 9 h): a band behind the bars. */
   band?: [number, number]
   format?: (v: number) => string
@@ -2679,6 +2682,7 @@ export function WeekBars(props: WeekBarsProps) {
   const {
     days,
     goal,
+    limit = false,
     band,
     format = (v: number) => formatNumber(v),
     unit = "",
@@ -2715,7 +2719,8 @@ export function WeekBars(props: WeekBarsProps) {
   // themselves in a gutter that fits them; with neither, the bars take the
   // whole width.
   const goalText = goal !== undefined ? `${format(goal)}${unit ? ` ${unit}` : ""}` : ""
-  const gutter = mini || (goal === undefined && !band) ? 0 : gutterFor([...(goal !== undefined ? ["Goal", goalText] : []), ...(band ?? []).map((v) => format(v))], 36)
+  const goalWord = limit ? "Limit" : "Goal"
+  const gutter = mini || (goal === undefined && !band) ? 0 : gutterFor([...(goal !== undefined ? [goalWord, goalText] : []), ...(band ?? []).map((v) => format(v))], 36)
   const plotW = W - gutter
   const slot = plotW / n
   const bw = Math.min(22, Math.max(10, slot * 0.52))
@@ -2748,7 +2753,8 @@ export function WeekBars(props: WeekBarsProps) {
   // chart and the words beside it never disagree by one.
   const places = 10 ** Math.max(0, ...counted.map(decimalsOf))
   const average = logged ? Math.floor(((counted.reduce((s, v) => s + v, 0) / logged) * places) + 1e-9) / places : 0
-  const onGoal = goal !== undefined ? counted.filter((v) => v >= goal).length : band ? counted.filter((v) => v >= band[0] && v <= band[1]).length : undefined
+  const over = (v: number) => limit && goal !== undefined && v > goal
+  const onGoal = goal !== undefined ? counted.filter((v) => (limit ? v <= goal : v >= goal)).length : band ? counted.filter((v) => v >= band[0] && v <= band[1]).length : undefined
   // The bars in words, as they read: the days shown, the goal or range with
   // its unit, the average and the count of complete days (a count only when
   // some made it), the days still to come. The mini strip has no buttons
@@ -2761,9 +2767,9 @@ export function WeekBars(props: WeekBarsProps) {
   const summary = [
     `${name ?? "Daily values"}, ${span(past) || span(days)}.`,
     mini && past.length ? `${past.map(dayWords).join("; ")}.` : "",
-    !mini && goal !== undefined ? `Goal ${amount(goal)}.` : !mini && band ? `Range ${format(band[0])} to ${amount(band[1])}.` : "",
+    !mini && goal !== undefined ? `${goalWord} ${amount(goal)}.` : !mini && band ? `Range ${format(band[0])} to ${amount(band[1])}.` : "",
     logged ? `Average ${amount(average)}.` : values.length ? "" : "No readings.",
-    onGoal && logged ? `${goal !== undefined ? "On goal" : "In range"} ${onGoal} of ${logged} ${dayWord}.` : "",
+    onGoal && logged ? `${goal !== undefined ? (limit ? "Within limit" : "On goal") : "In range"} ${onGoal} of ${logged} ${dayWord}.` : "",
     ahead.length ? `${span(ahead)} still to come.` : "",
   ]
     .filter(Boolean)
@@ -2783,7 +2789,7 @@ export function WeekBars(props: WeekBarsProps) {
             // verdict, so the average stands in for it.
             props.trailing ??
             (onGoal && logged
-              ? `${onGoal} of ${logged} ${dayWord} ${goal !== undefined ? "on goal" : "in range"}`
+              ? `${onGoal} of ${logged} ${dayWord} ${goal !== undefined ? (limit ? "within limit" : "on goal") : "in range"}`
               : logged
                 ? `Average ${format(average)}`
                 : undefined)
@@ -2813,7 +2819,9 @@ export function WeekBars(props: WeekBarsProps) {
                 style={[
                   styles.bar,
                   at,
-                  d.partial ? [styles.barPartial, { borderColor: strong ? chart.dataStrong : chart.dataPast }] : { backgroundColor: strong ? chart.dataStrong : chart.dataPast },
+                  d.partial
+                    ? [styles.barPartial, { borderColor: strong ? chart.dataStrong : chart.dataPast }]
+                    : { backgroundColor: d.value !== undefined && over(d.value) ? outOfRangeColor() : strong ? chart.dataStrong : chart.dataPast },
                   { height: phase(motion, (35 * i) / D, (35 * i + 450) / D, 0, h, easeOut) },
                 ]}
               />
@@ -2824,7 +2832,7 @@ export function WeekBars(props: WeekBarsProps) {
               <>
                 <Line x1={0} x2={plotW} y1={gy} y2={gy} stroke={chart.goal} strokeWidth={1} />
                 <Label x={plotW + 6} y={goalSpots[0]}>
-                  Goal
+                  {goalWord}
                 </Label>
                 <Label x={plotW + 6} y={goalSpots[1]} weight="medium" tone={ink.detail}>
                   {goalText}

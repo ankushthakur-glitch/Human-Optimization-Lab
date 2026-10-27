@@ -13,22 +13,10 @@ import type { Plan, useOnboarding } from "@/lib/onboarding"
    membership page; never in an offer, the assistant, a notification or
    next to a doctor (FINAL-SPEC D.4). */
 
-/** Dr. Patel sends the version to her, to read through. */
-export const proposedPlan = (plan: Plan): Plan => ({ ...plan, status: "proposed" })
-
-/** She asks for a change: the version goes back to Dr. Patel with her
-    words, and comes back to her once it is updated. */
-export const changeRequested = (plan: Plan, text: string): Plan => ({
-  ...plan,
-  status: "review",
-  requests: [...(plan.requests ?? []), { at: new Date().toISOString(), text }],
-})
-
-/** She accepts the version Dr. Patel sent: it goes live, dated today,
-    and the one before is kept. */
-export function acceptedPlan(plan: Plan): Plan {
-  const why = plan.versions.length ? "New readings from home" : "Your first plan"
-  return { status: "live", version: plan.version, versions: [{ version: plan.version, approved: showDate(), why }, ...plan.versions] }
+/** Her plan the moment she enrolls: live, dated today. Nothing waits on
+    her physician (27 Oct 2026). */
+export function firstPlan(version: number): Plan {
+  return { status: "live", version, versions: [{ version, approved: showDate(), why: "Your first plan" }] }
 }
 
 type Snapshot = Parameters<ReturnType<typeof useOnboarding>["save"]>[0]
@@ -67,7 +55,7 @@ export type Tier = "free" | "optimization"
 /** What the membership includes, in this order (the checkout and the
     member's billing page, S-66). */
 const INCLUDED = [
-  "Your plan, approved by your physician and reviewed every 3 months",
+  "Your plan, built from your record and updated every 3 months",
   "A meal plan with daily targets",
   "An exercise program with short videos",
   "Daily monitoring and a score for yesterday's goals",
@@ -123,9 +111,7 @@ function newest(versions: Plan["versions"]) {
 }
 
 /** The member's live plan version for the plan line and the Plan tab:
-    "Version 2, approved by Dr. Patel on Sep 12", and while a newer
-    version is with the doctor its number (M-55: the live one stays).
-    Undefined before any version is approved. */
+    "Version 2, since Sep 12". Undefined before she enrolls. */
 export function livePlan(s: Snapshot) {
   const live = newest(s.plan?.versions ?? [])
   if (!live || !s.plan) return undefined
@@ -137,7 +123,5 @@ export function livePlan(s: Snapshot) {
     on: live.approved.replace(/,\s*\d{4}$/, ""),
     why: live.why,
     by: MEMBER.doctorShort,
-    /** The version with the doctor, while one is. */
-    reviewing: s.plan.status !== "live" && s.plan.version > live.version ? s.plan.version : undefined,
   }
 }
