@@ -22,7 +22,7 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    The card lists each booked test with its day, time and place. Under it
    the assistant's offer, with its two buttons:
      "Personalize my care" opens "Tell us about you" (/health-profile),
-       then the flourishing video, questions and result, which walks on
+       then the flourishing video, questions and result, the sleep screen, which walks on
        to her plan (/plan?walk=1);
      "I'll do this later" skips them for now and walks on to her plan the same way.
        The questions stay open: she can start them from the plan, and

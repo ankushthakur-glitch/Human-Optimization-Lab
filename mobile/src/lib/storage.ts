@@ -7,8 +7,24 @@ import { DEMOGRAPHICS } from "@/lib/patient"
 /** Screens open whatever the account state, or before signing in. */
 const SIGNED_OUT = ["activate", "sign-in", "errors", "session-expired"]
 
-/** The member's own pages: her day, progress and billing. */
-const MEMBER = ["today", "review", "diet", "day", "progress", "history", "membership", "plan-ready"]
+/** The member's own pages: her day, its topics and lifts, her history,
+    progress and billing. A link to any of them opens as the paid member, so
+    Home and the other tabs match the page. */
+const MEMBER = [
+  "today",
+  "review",
+  "diet",
+  "day",
+  "yesterday",
+  "topic",
+  "lift",
+  "progress",
+  "history",
+  "history-trends",
+  "topic-history",
+  "membership",
+  "plan-ready",
+]
 
 /** Each setup screen and the step it belongs to. */
 const STEPS: Record<string, Step> = {

@@ -134,6 +134,8 @@ function Routes() {
           <Stack.Screen name="flourishing" />
           <Stack.Screen name="flourishing-questions" />
           <Stack.Screen name="flourishing-result" />
+          <Stack.Screen name="sleep-questions" />
+          <Stack.Screen name="sleep-result" />
           <Stack.Screen name="baseline" />
           <Stack.Screen name="enrollment" />
           <Stack.Screen name="payment" />

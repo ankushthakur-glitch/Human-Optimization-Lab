@@ -17,7 +17,8 @@ import { chart, color, font, ink, space, type } from "@/lib/theme"
    over a yellow to green bar that fills as the page opens, her
    strongest part of life and the one with most room to grow, then each of
    the eight as a bar that grows in turn. It is shared with her physician
-   to shape the plan. "See my plan" walks on to her plan (/plan?walk=1). */
+   to shape the plan. Continue opens the sleep apnea screen
+   (/sleep-questions), whose result walks on to her plan. */
 
 /* The index bar's soft yellow to soft green, as in the reference. */
 const INDEX_FROM = "#EBD89A"
@@ -63,8 +64,8 @@ export default function FlourishingResultScreen() {
     <PlanStepPage
       headerTitle="Flourishing"
       title="Your flourishing result"
-      onNext={() => router.replace("/plan?walk=1")}
-      nextLabel="See my plan"
+      onNext={() => router.push("/sleep-questions")}
+      nextLabel="Continue"
       nextWide
     >
       <Card style={styles.indexCard}>

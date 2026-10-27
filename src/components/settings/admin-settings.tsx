@@ -1,17 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { toast } from "@/design-system/ui/sonner"
 import {
   IconAdd,
   IconClipboard,
   IconCreditCard,
-  IconEdit,
   IconFileText,
   IconHandshake,
   IconHistory,
-  IconLock,
-  IconLockOpen,
   IconShield,
   IconSparkles,
   IconTarget,
@@ -20,15 +16,8 @@ import {
 
 import { AdminShell } from "@/components/admin/admin-shell"
 import {
-  MultiSelectDropdownField,
-  SelectField,
   TextField,
 } from "@/components/form-kit"
-import {
-  type Column,
-  Directory,
-  RowMenu,
-} from "@/components/practice/directory"
 import { AuditLogPage } from "@/components/settings/audit-log"
 import { ConsentDocsPage } from "@/components/settings/consent-docs"
 import { PartnersPage } from "@/components/settings/partners"
@@ -37,31 +26,22 @@ import {
   INTERVAL_UNITS,
   LONGEVITY_ITEMS,
   MODELS,
-  PHASES,
-  type Phase,
-  type Plan,
   RERATE_INTERVALS,
-  RETEST_INTERVALS,
   SOURCES,
   TEMPLATE_SECTIONS,
   TESTS,
   TEST_GUARDS,
   TOP_UPS,
-  plans,
 } from "@/components/settings/settings-data"
 import {
   ChoiceSelect,
   NumberInput,
-  SettingsBack,
   SettingsFrame,
-  type SettingStatus,
   type SettingsGroup,
   SettingsHome,
   SettingsRoute,
   SettingsSection,
   SettingsTable,
-  SettingsHeading,
-  StatusDot,
   ValueCard,
   ValueRow,
   shown,
@@ -76,7 +56,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/design-system/ui/dialog"
-import { DropdownMenuItem } from "@/design-system/ui/dropdown-menu"
 import { Input } from "@/design-system/ui/input"
 import { Switch } from "@/design-system/ui/switch"
 import { TableCell, TableRow } from "@/design-system/ui/table"
@@ -106,11 +85,6 @@ const GROUPS: SettingsGroup[] = [
     title: "Optimization plans",
     icon: IconTarget,
     pages: [
-      {
-        id: "catalogue",
-        label: "Plan catalogue",
-        render: () => <PlanCatalogue />,
-      },
       {
         id: "intervals",
         label: "Test intervals",
@@ -233,261 +207,6 @@ export function AdminSettingsPage({
 /* -------------------------------------------------------------------------- */
 /*  Optimization plans                                                         */
 /* -------------------------------------------------------------------------- */
-
-const PHASE_TONE: Record<Phase, "success" | "warning" | "muted"> = {
-  V1: "success",
-  V2: "warning",
-  Later: "muted",
-}
-
-/** The master list of 81 plans and the tests suggested with each. */
-function PlanCatalogue() {
-  const { items } = plans.use()
-  const [editing, setEditing] = React.useState<Plan | "new" | null>(null)
-
-  /* Phase and retesting are still open in the scope sheet. */
-  const allColumns: (Column<Plan> & { status?: SettingStatus })[] = [
-    {
-      id: "id",
-      header: "ID",
-      className: "hidden w-20 text-primary-tint tabular-nums md:table-cell",
-      cell: (p) => p.id,
-      sortValue: (p) => p.id,
-    },
-    {
-      id: "name",
-      header: "Plan",
-      cell: (p) => (
-        <Button
-          variant="link"
-          className="h-auto p-0 font-medium text-foreground"
-          onClick={() => setEditing(p)}
-        >
-          {p.name}
-        </Button>
-      ),
-      sortValue: (p) => p.name,
-    },
-    {
-      id: "phase",
-      status: "Open",
-      header: "Phase",
-      cell: (p) => <StatusDot tone={PHASE_TONE[p.phase]}>{p.phase}</StatusDot>,
-      sortValue: (p) => PHASES.indexOf(p.phase),
-    },
-    {
-      id: "tests",
-      header: "Suggested tests",
-      className: "hidden lg:table-cell max-w-96 truncate text-foreground/80",
-      cell: (p) => p.tests.join(", "),
-    },
-    {
-      id: "retest",
-      status: "Open",
-      header: "Retest",
-      className: "hidden md:table-cell text-foreground/80",
-      cell: (p) => p.retest,
-    },
-    {
-      id: "status",
-      header: "Status",
-      cell: (p) => (
-        <StatusDot tone={p.status === "Active" ? "success" : "muted"}>
-          {p.status}
-        </StatusDot>
-      ),
-    },
-    {
-      id: "actions",
-      header: "",
-      className: "w-12 text-right",
-      cell: (p) => (
-        <RowMenu label={`Actions for ${p.name}`}>
-          <DropdownMenuItem onClick={() => setEditing(p)}>
-            <IconEdit />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              const status = p.status === "Active" ? "Retired" : "Active"
-              plans.patch(p.id, { status })
-              toast.success(
-                status === "Retired"
-                  ? `${p.name} retired`
-                  : `${p.name} restored`
-              )
-            }}
-          >
-            {p.status === "Active" ? <IconLock /> : <IconLockOpen />}
-            {p.status === "Active" ? "Retire" : "Restore"}
-          </DropdownMenuItem>
-        </RowMenu>
-      ),
-    },
-  ]
-
-  const columns = allColumns.filter((c) => shown(c.status ?? "Discussed"))
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <Directory
-        title="Plan catalogue"
-        leading={<SettingsBack />}
-        heading={<SettingsHeading />}
-        noun="plans"
-        rows={items}
-        columns={columns}
-        search={(p) => [p.id, p.name, ...p.tests]}
-        statusTabs={
-          shown("Open") ? { options: PHASES, value: (p) => p.phase } : undefined
-        }
-        filters={[
-          {
-            id: "test",
-            label: "Suggested test",
-            all: "All tests",
-            options: TESTS,
-            match: (p, v) => p.tests.includes(v),
-          },
-          {
-            id: "status",
-            label: "Status",
-            all: "Any status",
-            options: ["Active", "Retired"],
-            match: (p, v) => p.status === v,
-          },
-        ]}
-        primaryAction={{
-          label: "Add plan",
-          icon: <IconAdd />,
-          onClick: () => setEditing("new"),
-        }}
-        exportName="Optimization plans"
-        exportRow={(p) => ({
-          ID: p.id,
-          Plan: p.name,
-          "Suggested tests": p.tests.join(", "),
-          ...(shown("Open") ? { Phase: p.phase, Retest: p.retest } : {}),
-          Status: p.status,
-        })}
-        emptyIllustration="no-results"
-      />
-      <Dialog
-        open={editing !== null}
-        onOpenChange={(o) => !o && setEditing(null)}
-      >
-        <DialogContent className="sm:max-w-lg">
-          {editing && (
-            <PlanForm
-              plan={editing === "new" ? null : editing}
-              count={items.length}
-              onClose={() => setEditing(null)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
-
-function PlanForm({
-  plan,
-  count,
-  onClose,
-}: {
-  plan: Plan | null
-  count: number
-  onClose: () => void
-}) {
-  const [draft, setDraft] = React.useState({
-    name: plan?.name ?? "",
-    phase: plan?.phase ?? "V1",
-    tests: plan?.tests ?? [],
-    retest: plan?.retest ?? RETEST_INTERVALS[0],
-  })
-  const [error, setError] = React.useState("")
-
-  function submit(event: React.FormEvent) {
-    event.preventDefault()
-    if (!draft.name.trim()) {
-      setError("Enter the plan's name")
-      return
-    }
-    const values = {
-      ...draft,
-      name: draft.name.trim(),
-      phase: draft.phase as Phase,
-    }
-    if (plan) {
-      plans.patch(plan.id, values)
-      toast.success("Plan updated")
-    } else {
-      plans.add([
-        {
-          ...values,
-          id: `PL${String(count + 1).padStart(3, "0")}`,
-          status: "Active",
-        },
-      ])
-      toast.success("Plan added")
-    }
-    onClose()
-  }
-
-  return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-      <DialogHeader>
-        <DialogTitle>{plan ? "Edit plan" : "Add plan"}</DialogTitle>
-        <DialogDescription className="sr-only">
-          The plan&apos;s name, suggested tests, phase and retesting.
-        </DialogDescription>
-      </DialogHeader>
-      <TextField
-        id="plan-name"
-        label="Plan name"
-        required
-        value={draft.name}
-        error={error}
-        onChange={(e) => {
-          setDraft({ ...draft, name: e.target.value })
-          setError("")
-        }}
-      />
-      <MultiSelectDropdownField
-        id="plan-tests"
-        label="Suggested tests"
-        options={TESTS}
-        value={draft.tests}
-        placeholder="Select tests"
-        onChange={(tests) => setDraft({ ...draft, tests })}
-      />
-      {shown("Open") && (
-        <SelectField
-          id="plan-phase"
-          label="Phase"
-          options={PHASES}
-          value={draft.phase}
-          onChange={(phase) => setDraft({ ...draft, phase: phase as Phase })}
-        />
-      )}
-      {shown("Open") && (
-        <SelectField
-          id="plan-retest"
-          label="Retest"
-          options={RETEST_INTERVALS}
-          value={draft.retest}
-          onChange={(retest) => setDraft({ ...draft, retest })}
-        />
-      )}
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit">{plan ? "Save changes" : "Add plan"}</Button>
-      </DialogFooter>
-    </form>
-  )
-}
 
 /** Tests that must never be recommended more often than a set period. */
 function TestIntervals() {

@@ -305,6 +305,9 @@ export type State = {
   /** What she changed on /health-profile (Journey_7 screen 4), by field;
       everything else stays as her record has it. */
   healthProfile?: Record<string, string>
+  /** Her answers to the sleep apnea screen on /sleep-questions
+      (STOP-BANG, lib/sleep-screen.ts), yes or no by question. */
+  sleepScreen?: Partial<Record<import("@/lib/sleep-screen").SleepId, boolean>>
   /** The baseline tests she left ticked on /baseline (Journey_7 screen
       5); unset means all three. (Renamed from baselineTests, which held
       only the optional extras, so old saves start fresh.) */

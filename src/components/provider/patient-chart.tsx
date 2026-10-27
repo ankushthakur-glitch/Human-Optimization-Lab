@@ -301,7 +301,7 @@ export function PatientChart({ patient }: { patient: Patient }) {
             <CarePlanView
               patient={patient}
               tab={
-                tab === "plan" || tab === "history"
+                tab === "plan" || tab === "review" || tab === "history"
                   ? tab
                   : undefined
               }

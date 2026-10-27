@@ -30,6 +30,7 @@ import {
   monthYear,
 } from "@/components/patient-dashboard/widgets/peek-chart"
 import { ME, atLabel, nowAt } from "@/components/provider/chart-epic"
+import { QuarterlyReview } from "@/components/provider/chart-quarterly-review"
 import {
   Section,
   SectionBar,
@@ -69,7 +70,8 @@ import { Textarea } from "@/design-system/ui/textarea"
    and there are no baseline tests to sort (27 Oct 2026). The physician can
    edit it, which saves a new version, and marks each step as AI built it
    right or wrong, with a note. Every version is kept. Built to be read in
-   about a minute. */
+   about a minute. Every quarter the physician reviews how the patient is
+   doing on it (chart-quarterly-review.tsx). */
 
 /* -------------------------------------------------------------- model -- */
 
@@ -128,8 +130,10 @@ type PlanEvent = {
   at: string
   by: string
   role: "Patient" | "Provider"
-  kind: "Plan started" | "Plan updated"
+  kind: "Plan started" | "Plan updated" | "Quarterly review"
   version: number
+  /** A quarterly review's outcome: "Quarter 1: On track". */
+  note?: string
 }
 
 type CarePlan = {
@@ -295,14 +299,14 @@ function seed(): CarePlan[] {
           version: 1,
           by: "Olivia Bennett",
           role: "Patient",
-          at: shift(-1, "08:42"),
+          at: shift(-90, "08:42"),
           steps: OLIVIA_STEPS,
         },
       ],
       events: [
         {
           id: "EV-1",
-          at: shift(-1, "08:42"),
+          at: shift(-90, "08:42"),
           by: "Olivia Bennett",
           role: "Patient",
           kind: "Plan started",
@@ -318,21 +322,21 @@ function seed(): CarePlan[] {
           version: 1,
           by: "Marcus Hale",
           role: "Patient",
-          at: shift(-6, "19:05"),
+          at: shift(-178, "19:05"),
           steps: MARCUS_V1,
         },
         {
           version: 2,
           by: ME,
           role: "Provider",
-          at: shift(-4, "15:20"),
+          at: shift(-150, "15:20"),
           steps: MARCUS_V2,
         },
       ],
       events: [
         {
           id: "EV-1",
-          at: shift(-6, "19:05"),
+          at: shift(-178, "19:05"),
           by: "Marcus Hale",
           role: "Patient",
           kind: "Plan started",
@@ -340,11 +344,20 @@ function seed(): CarePlan[] {
         },
         {
           id: "EV-2",
-          at: shift(-4, "15:20"),
+          at: shift(-150, "15:20"),
           by: ME,
           role: "Provider",
           kind: "Plan updated",
           version: 2,
+        },
+        {
+          id: "EV-3",
+          at: shift(-87, "16:10"),
+          by: ME,
+          role: "Provider",
+          kind: "Quarterly review",
+          version: 2,
+          note: "Quarter 1: Needs changes",
         },
       ],
     },
@@ -354,7 +367,7 @@ function seed(): CarePlan[] {
 export const carePlans = createCollection<CarePlan>(
   "hol-care-plans",
   seed(),
-  "v4"
+  "v5"
 )
 
 const countOf = (steps: PlanStep[]) => {
@@ -452,7 +465,7 @@ function changedIds(
 
 /* -------------------------------------------------------------- view -- */
 
-export type CarePlanTab = "plan" | "history"
+export type CarePlanTab = "plan" | "review" | "history"
 
 export function CarePlanView({
   patient,
@@ -577,6 +590,7 @@ export function CarePlanView({
             id: "plan",
             label: `Plan (version ${editing ? latest.version + 1 : latest.version})`,
           },
+          { id: "review", label: "Quarterly review" },
           { id: "history", label: `History (${plan.events.length})` },
         ]}
         value={tab}
@@ -586,6 +600,31 @@ export function CarePlanView({
       <SectionBody className="flex flex-col gap-3 *:shrink-0">
         {tab === "history" ? (
           <History plan={plan} />
+        ) : tab === "review" ? (
+          <QuarterlyReview
+            patient={patient}
+            started={plan.versions[0].at.slice(0, 10)}
+            onEditPlan={() => {
+              onTab("plan")
+              setDraft(latest.steps)
+            }}
+            onReviewed={(review, quarter) =>
+              carePlans.patch(plan.id, {
+                events: [
+                  ...plan.events,
+                  {
+                    id: nextId("EV", plan.events),
+                    at: review.at,
+                    by: review.by,
+                    role: "Provider",
+                    kind: "Quarterly review",
+                    version: latest.version,
+                    note: `Quarter ${quarter}: ${review.outcome}`,
+                  },
+                ],
+              })
+            }
+          />
         ) : (
           <>
             {editing ? (
@@ -1281,7 +1320,9 @@ function History({ plan }: { plan: CarePlan }) {
           const changes =
             e.kind === "Plan updated" && v && before
               ? changesBetween(before, v)
-              : []
+              : e.note
+                ? [e.note]
+                : []
           return (
             <li key={e.id} className="rounded-lg border bg-card px-4 py-3">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -1289,7 +1330,11 @@ function History({ plan }: { plan: CarePlan }) {
                   <span
                     className={cn(
                       "size-2 shrink-0 rounded-full",
-                      e.kind === "Plan updated" ? "bg-primary" : "bg-info"
+                      e.kind === "Plan updated"
+                        ? "bg-primary"
+                        : e.kind === "Quarterly review"
+                          ? "bg-success"
+                          : "bg-info"
                     )}
                   />
                   <span className="font-semibold">{e.kind}</span>
