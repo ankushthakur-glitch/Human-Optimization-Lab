@@ -937,3 +937,6 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Removed: Patient Portal / Mobile App: Profile and Settings / Care tab: membership
 - Removed: Super Admin Portal / Clinical / Clinical content
 - Removed: Clinic Manager Portal / Dashboard / Dashboard
+
+## 29-Oct-2026
+
