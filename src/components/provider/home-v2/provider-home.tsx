@@ -54,16 +54,14 @@ const UNDO_MS = 5000
 
 type Finished = { label: string; snapshot: WorkItem; timer: ReturnType<typeof setTimeout> }
 
-const tabFromSlug = (slug: string | null): WorklistTab =>
-  slug === "urgent" || slug === "all" ? slug : (CARD_TYPES.find((t) => TYPE_META[t].slug === slug) ?? CARD_TYPES[0]!)
-
 export function ProviderHomeV2() {
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
   /* The provider home shows the signed-in provider's own patients. */
   const scope: Scope = "mine"
-  const tab = tabFromSlug(params.get("tab"))
+  /* The worklist is the abnormal results list only. */
+  const tab = "abnormal_result" as WorklistTab
 
   const roster = patients.use()
   const work = workItems.use()

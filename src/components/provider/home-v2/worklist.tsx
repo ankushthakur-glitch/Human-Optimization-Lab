@@ -196,8 +196,10 @@ export function Worklist({
         <Tabs value={tab} onValueChange={(v) => onTab(v as WorklistTab)} className="min-w-0 gap-0">
           <TabsList aria-label="Worklist" className={cn(SUB_TABS_LIST, "h-9!")}>
             {[
-              { value: "urgent" as WorklistTab, label: "Urgent action needed" },
-              ...CARD_TYPES.map((t) => ({ value: t as WorklistTab, label: TYPE_META[t].metric })),
+              {
+                value: "abnormal_result" as WorklistTab,
+                label: TYPE_META.abnormal_result.metric,
+              },
             ].map((t) => (
               <TabsTrigger key={t.value} value={t.value} className={cn(SUB_TAB, "tabular-nums")}>
                 {t.label} ({fmtInt(counts[t.value] ?? 0)})
