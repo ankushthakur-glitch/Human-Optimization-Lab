@@ -940,3 +940,22 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 
 ## 29-Oct-2026
 
+
+## 30-Oct-2026
+
+- Added: Provider Portal / Dashboard / Dashboard variation 6: briefing
+- Added: Provider Portal / Dashboard / Dashboard variation 7: workspace
+- Added: Clinic Manager Portal / Settings / Import history
+- Added: Clinic Manager Portal / Settings / Import history: patients sheet
+- Added: Provider Portal / Settings / Import history
+- Added: Provider Portal / Settings / Import history: patients sheet
+- Added: Patient Portal / Mobile App: Ask Inlay / Ask Inlay (optimization member)
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Plan tab: what an optimization plan adds (free patient)
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 1: your nine opportunities
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Opportunity details (sleep and apnoea)
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 2: what all nine need (tests and prices)
+- Removed: Super Admin Portal / Practices / Provider adoption
+- Removed: Patient Portal / Mobile App: Ask Inlay / Ask Inlay
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 1: what your plan would work on
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 2: what your baseline needs
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Plan tab (free patient)
