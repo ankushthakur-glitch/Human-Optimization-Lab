@@ -584,9 +584,7 @@ function rowResult<T>(
 ): { result: ImportResult; note: string } {
   if (r.errors.length) {
     const note = r.errors.join(" ")
-    const repeat = r.errors.every((e) =>
-      /already exists|^Repeats row/.test(e)
-    )
+    const repeat = r.errors.every((e) => /already exists|^Repeats row/.test(e))
     return { result: repeat ? "duplicate" : "error", note }
   }
   if (r.outcome) {
@@ -807,7 +805,7 @@ function Review<T>({
   )
 }
 
-export function Stat({
+function Stat({
   icon,
   tone,
   label,

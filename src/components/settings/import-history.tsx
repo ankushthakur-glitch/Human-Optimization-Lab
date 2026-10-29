@@ -2,23 +2,12 @@
 
 import * as React from "react"
 import Link from "next/link"
-import {
-  IconAlert,
-  IconCheckCircle,
-  IconDownload,
-  IconFileText,
-  IconRefresh,
-  IconSearch,
-  IconWarning,
-} from "@/design-system/icons"
+import { IconDownload, IconFileText, IconSearch } from "@/design-system/icons"
 
-import { Stat } from "@/components/practice/bulk-import"
 import {
   type Column,
   Directory,
   exportRows,
-  SUB_TAB,
-  SUB_TABS_LIST,
 } from "@/components/practice/directory"
 import {
   type ImportRecord,
@@ -55,7 +44,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/design-system/ui/table"
-import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
 
 /* The bulk uploads behind Settings > Security, below the audit log: each
    sheet with who uploaded it and when, and on opening it, every row with
@@ -212,7 +200,7 @@ export function ImportHistoryPage({
   )
 }
 
-/** One upload as its own page: the upload's details, the totals, then
+/** One upload as its own page: the upload's details, then
     every row of the sheet as uploaded with what became of it. */
 export function ImportSheetPage({
   scope,
@@ -253,23 +241,17 @@ function SheetView({
   record: ImportRecord
   back: string
 }) {
-  const [filter, setFilter] = React.useState<ImportResult | "all">("all")
   const [query, setQuery] = React.useState("")
   const q = query.trim().toLowerCase()
   const shownRows = r.rows.filter(
     (row) =>
-      (filter === "all" || row.result === filter) &&
-      (!q ||
-        [row.name, row.note, ...Object.values(row.cells)].some((v) =>
-          v.toLowerCase().includes(q)
-        ))
+      !q ||
+      [row.name, row.note, ...Object.values(row.cells)].some((v) =>
+        v.toLowerCase().includes(q)
+      )
   )
   const paged = usePaged(shownRows)
-  const present = (Object.keys(RESULT_LABEL) as ImportResult[]).filter(
-    (k) => countOf(r, k) > 0
-  )
-  const patients = r.list === "patients"
-  const one = patients ? "patient" : "provider"
+  const one = r.list === "patients" ? "patient" : "provider"
   const label = (k: ImportResult) =>
     k === "new" ? `New ${one}` : RESULT_LABEL[k]
 
@@ -310,70 +292,9 @@ function SheetView({
         />
       </RecordCard>
 
-      <div
-        className={
-          patients
-            ? "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
-            : "grid gap-3 sm:grid-cols-3"
-        }
-      >
-        <Stat
-          icon={<IconCheckCircle className="size-4" />}
-          tone="success"
-          label={`New ${r.list}`}
-          value={countOf(r, "new")}
-        />
-        <Stat
-          icon={<IconFileText className="size-4" />}
-          tone="neutral"
-          label="Duplicates"
-          value={duplicates(r)}
-        />
-        {patients && (
-          <Stat
-            icon={<IconRefresh className="size-4" />}
-            tone="info"
-            label="Reactivated"
-            value={countOf(r, "reactivated")}
-          />
-        )}
-        {patients && (
-          <Stat
-            icon={<IconWarning className="size-4" />}
-            tone="warning"
-            label="Needs review"
-            value={countOf(r, "review")}
-          />
-        )}
-        <Stat
-          icon={<IconAlert className="size-4" />}
-          tone="destructive"
-          label="Errors"
-          value={countOf(r, "error")}
-        />
-      </div>
-
       <RecordCard title="Sheet">
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Tabs
-              value={filter}
-              onValueChange={(v) => {
-                setFilter(v as ImportResult | "all")
-                paged.setPage(1)
-              }}
-            >
-              <TabsList className={SUB_TABS_LIST}>
-                <TabsTrigger value="all" className={SUB_TAB}>
-                  All ({r.rows.length})
-                </TabsTrigger>
-                {present.map((k) => (
-                  <TabsTrigger key={k} value={k} className={SUB_TAB}>
-                    {label(k)} ({countOf(r, k)})
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+          <div className="flex flex-wrap items-center gap-3">
             <InputGroup className="h-8 w-full border-border bg-card sm:w-64">
               <InputGroupAddon>
                 <IconSearch className="size-4" />
