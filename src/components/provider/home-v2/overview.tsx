@@ -869,12 +869,12 @@ export function useClinicDay(now: string | null) {
     const start = new Date(`${now.slice(0, 10)}T00:00:00`)
     const on = (d: Date) => all.filter((a) => a.start.startsWith(isoDay(d)))
     const today = isWorkingDay(start) ? on(start) : []
-    if (today.length) return { today, day: today, title: `Today, ${SHORT.format(start)}` }
+    if (today.some((a) => !isPast(a))) return { today, day: today, title: "Today's schedule" }
     const d = new Date(start)
     for (let i = 0; i < 7; i++) {
       d.setDate(d.getDate() + 1)
       const list = isWorkingDay(d) ? on(d) : []
-      if (list.length) return { today, day: list, title: i === 0 ? `Tomorrow, ${SHORT.format(d)}` : LONG.format(d) }
+      if (list.length) return { today, day: list, title: i === 0 ? `Today, ${SHORT.format(d)}` : LONG.format(d) }
     }
     return { ...none, today }
   }, [all, now])
