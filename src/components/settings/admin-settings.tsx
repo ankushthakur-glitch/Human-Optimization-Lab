@@ -5,7 +5,6 @@ import {
   IconAdd,
   IconClipboard,
   IconCreditCard,
-  IconFileText,
   IconHandshake,
   IconHistory,
   IconShield,
@@ -19,7 +18,6 @@ import {
   TextField,
 } from "@/components/form-kit"
 import { AuditLogPage } from "@/components/settings/audit-log"
-import { ConsentDocsPage } from "@/components/settings/consent-docs"
 import { PartnersPage } from "@/components/settings/partners"
 import { RolesPage } from "@/components/settings/roles"
 import {
@@ -150,18 +148,6 @@ const GROUPS: SettingsGroup[] = [
     title: "Partners",
     icon: IconHandshake,
     pages: [{ id: "list", label: "Partners", render: () => <PartnersPage /> }],
-  },
-  {
-    id: "consent",
-    title: "Consent",
-    icon: IconFileText,
-    pages: [
-      {
-        id: "documents",
-        label: "Consent documents",
-        render: () => <ConsentDocsPage />,
-      },
-    ],
   },
   {
     id: "security",

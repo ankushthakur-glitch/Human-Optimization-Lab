@@ -7,7 +7,6 @@ import {
   IconArrowDown,
   IconArrowUp,
   IconCalendar,
-  IconCalendarCheck,
   IconChevronDown,
   IconChevronRight,
   IconClock,
@@ -15,8 +14,6 @@ import {
   IconFileCheck,
   IconSearch,
   IconShare,
-  IconTarget,
-  IconWarning,
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
@@ -53,10 +50,8 @@ import { type Act, ItemPanel } from "@/components/provider/home-v2/item-panel"
 import { TYPE_META, chartHref, itemDetail, itemName } from "@/components/provider/home-v2/labels"
 import { recordAudit, workItems } from "@/components/provider/home-v2/mock"
 import {
-  FooterLink,
   type Segment,
   SegmentBar,
-  StatCard,
   StatCardSkeleton,
 } from "@/components/provider/home-v2/overview"
 import { actionLabel, applyAction, byPriority, toQueue } from "@/components/provider/home-v2/selectors"
@@ -70,7 +65,7 @@ import {
   LUNCH,
   endOf,
 } from "@/components/provider/schedule/schedule-data"
-import { VariantFrame } from "@/components/provider/dashboard-variants/frame"
+import { MetricCards, VariantFrame } from "@/components/provider/dashboard-variants/frame"
 import {
   type Optimization,
   PLAN_CATALOG,
@@ -84,8 +79,9 @@ import { useProviderDay } from "@/components/provider/dashboard-variants/use-pro
 /* Variation 4, the clinic day, laid out after ReUI's Miro clinic dashboard
    and built only from the portal's own components: a left panel with the
    day's booked time, visits by status and the next visits (each with the
-   patient's plan week and biological age gap); the live dashboard's stat
-   cards; plans by goal and biological age as chart cards; and the panel
+   patient's plan week and biological age gap); the four metric cards
+   (upcoming appointments, patients needing attention, active optimization
+   members, open tasks); plans by goal and biological age as chart cards; and the panel
    broken down by patient, plan or plan stage as a heat table of progress,
    symptoms, watchful trends, open items and baseline tests to route. */
 
@@ -109,14 +105,6 @@ const STATUS_TONE: Record<AppointmentStatus, Tone> = {
   Cancelled: "light",
 }
 
-const STATUS_COLOR: Record<AppointmentStatus, string> = {
-  Scheduled: SUBTLE.blue,
-  "Checked in": SUBTLE.orange,
-  Completed: SUBTLE.green,
-  "No show": SUBTLE.red,
-  Cancelled: "#B5B5B5",
-}
-
 const STATUS_ORDER: AppointmentStatus[] = ["Checked in", "Scheduled", "Completed", "No show", "Cancelled"]
 
 const PRIORITY_LABEL: Record<Priority, string> = { urgent: "Urgent", moderate: "Moderate", routine: "Routine" }
@@ -126,7 +114,7 @@ const upcoming = (a: Appointment) => a.status === "Scheduled" || a.status === "C
 /* ------------------------------------------------------------- page -- */
 
 export function DashboardTriage() {
-  const { ready, byId, open, urgent, now, clinic, work } = useProviderDay()
+  const { ready, byId, open, now, clinic, work } = useProviderDay()
   const opt = useOptimization()
   const all = React.useMemo(() => work.map(toQueue), [work])
   const [visitId, setVisitId] = React.useState<string | null>(null)
@@ -195,7 +183,7 @@ export function DashboardTriage() {
 
           {loaded ? (
             <>
-              <Stats today={clinic.today} open={open} urgent={urgent} opt={opt} />
+              <MetricCards />
               <div className="grid gap-4 xl:grid-cols-2">
                 <PlansByGoal byPlan={opt.byPlan} />
                 <BioAgeChart now={now!} all={opt.all} />
@@ -477,92 +465,6 @@ function GapBadge({ gap }: { gap: number }) {
     <Badge tone={gap < 0 ? "success" : gap > 0 ? "warning" : "light"}>
       Bio age {g === 0 ? "on par" : `${g} y ${gap < 0 ? "younger" : "older"}`}
     </Badge>
-  )
-}
-
-/* ------------------------------------------------------------ stats -- */
-
-function Stats({
-  today,
-  open,
-  urgent,
-  opt,
-}: {
-  today: Appointment[]
-  open: QueueItem[]
-  urgent: QueueItem[]
-  opt: ReturnType<typeof useOptimization>
-}) {
-  const booked = today.filter((a) => a.status !== "Cancelled")
-  const seen = today.filter((a) => a.status === "Completed").length
-  const noShow = today.filter((a) => a.status === "No show").length
-  const kept = booked.length ? Math.round(((booked.length - noShow) / booked.length) * 100) : 100
-  const oldest = Math.max(0, ...opt.reviewing.map((o) => o.stageDays ?? 0))
-  const oldestPlan = [...opt.reviewing].sort((a, b) => (b.stageDays ?? 0) - (a.stageDays ?? 0))[0]
-  /* On track: no marker out of range and still worsening. */
-  const onTrack = opt.members.filter((o) => !o.markers.some((m) => !m.inRange && m.dir === "worse")).length
-  const stage = (s: (typeof PLAN_STAGES)[number]) => opt.byStage.find((x) => x.stage === s)?.count ?? 0
-
-  return (
-    <section aria-label="The day at a glance" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard
-        icon={IconCalendarCheck}
-        label="Seen today"
-        when="Today"
-        value={seen}
-        of={booked.length}
-        meta={`${kept}% of visits kept`}
-        segments={STATUS_ORDER.map((s) => ({
-          label: s,
-          value: today.filter((a) => a.status === s).length,
-          color: STATUS_COLOR[s],
-        })).filter((s) => s.label !== "Cancelled")}
-        footer={<FooterLink href={`${BASE}/schedule`}>Open schedule</FooterLink>}
-      />
-      <StatCard
-        icon={IconFileCheck}
-        label="Plans to review"
-        when="AI drafted"
-        value={opt.reviewing.length}
-        meta={opt.reviewing.length ? `Oldest waits ${oldest} days` : "All reviewed"}
-        segments={[
-          { label: "Pending", value: stage("Pending review"), color: SUBTLE.violet },
-          { label: "Changes", value: stage("Changes requested"), color: SUBTLE.orange },
-        ]}
-        footer={
-          <FooterLink href={oldestPlan ? `${BASE}/${oldestPlan.patient.id}?section=care-plan` : BASE}>
-            {oldestPlan ? "Review the oldest" : "Open patients"}
-          </FooterLink>
-        }
-      />
-      <StatCard
-        icon={IconTarget}
-        label="On track"
-        when="Members"
-        value={onTrack}
-        of={opt.members.length}
-        meta={opt.active.length ? `${Math.round(opt.avgProgress * 100)}% to goal on average` : `${opt.improving.length} markers improving`}
-        segments={[
-          { label: "On track", value: onTrack, color: SUBTLE.green },
-          { label: "Off track", value: opt.members.length - onTrack, color: SUBTLE.orange },
-        ]}
-        footer={<FooterLink href={BASE}>Open patients</FooterLink>}
-      />
-      <StatCard
-        icon={IconWarning}
-        label="Urgent items"
-        when="Now"
-        value={urgent.length}
-        of={open.length}
-        meta={`${open.length} open in the queue`}
-        segments={[
-          { label: "Urgent", value: urgent.length, color: SUBTLE.red },
-          { label: "Moderate", value: open.filter((i) => i.priority === "moderate").length, color: SUBTLE.orange },
-          { label: "Routine", value: open.filter((i) => i.priority === "routine").length, color: "#B5B5B5" },
-        ]}
-        footer={<FooterLink href={`${BASE}/dashboard?tab=urgent`}>Show urgent items</FooterLink>}
-      />
-    </section>
   )
 }
 

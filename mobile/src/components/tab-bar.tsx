@@ -309,6 +309,8 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
             )
           })}
         </View>
+        {/* The free patient has no AI chat, so no orb (28 Oct 2026). */}
+        {!upgradeLabel && (
         <View style={styles.orbColumn}>
           <View ref={orbRef} style={styles.orbWrap}>
             <BlurView
@@ -321,6 +323,7 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
           {/* No words under the orb: a tooltip over it says "Ask AI" now and then. */}
           <OrbTooltip />
         </View>
+        )}
       </View>
     </View>
   )

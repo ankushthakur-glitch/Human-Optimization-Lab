@@ -4,16 +4,16 @@ import { Animated, Easing, Platform, ScrollView, StyleSheet, Text, View } from "
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 
 import { useReducedMotion } from "@/components/chat"
-import { WASH, planName } from "@/components/enrollment-kit"
+import { WASH } from "@/components/enrollment-kit"
 import { DarkStatusBar } from "@/components/error-state"
 import { PageFooter, PageGround } from "@/components/hol"
-import { Check, CaretRight } from "@/components/ph"
-import { Card, Steps, TextAction, type Step } from "@/components/record-kit"
+import { Check, CaretRight, Info } from "@/components/ph"
+import { TextAction } from "@/components/record-kit"
 import { Button, useTopInset } from "@/components/ui"
 import { useOnboarding } from "@/lib/onboarding"
 import { startingTestsLine } from "@/lib/todo"
-import { priceLabel } from "@/lib/plans"
-import { color, font, hairline, ink, space, type } from "@/lib/theme"
+import { dueToday, usd } from "@/lib/upgrade"
+import { chart, color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* After the plan set-up's last step (Journey_7 screen 7, "Four steps,
    then the plan"): the membership has started. She leaves the purchase
@@ -39,8 +39,8 @@ const BADGE = 72
 const BURST = 64
 const DOTS = 8
 
-const dayLabel = (iso?: string) =>
-  new Date(iso ?? Date.now()).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+const fullDay = (iso?: string) =>
+  new Date(iso ?? Date.now()).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
 
 export default function EnrolledScreen() {
   const top = useTopInset()
@@ -82,14 +82,18 @@ export default function EnrolledScreen() {
   // Scheduled on the step before, the first test's day; left for later,
   // To do with its reminders.
   const tests = startingTestsLine(onboarding)
-  // Every test is cash pay and nothing goes to her physician for review
-  // (27 Oct 2026): scheduling is the next step, then the plan.
-  const steps: Step[] = [
-    { label: "Enrolled in Inlay", date: dayLabel(membership?.startedAt), state: "done" },
+  const billing = membership?.billing ?? onboarding.billingPick ?? "yearly"
+  const cost = dueToday(onboarding.removedOpps, billing)
+  const testingTotal = cost.total - cost.membership
+  // The four steps (client deck, screen 28): enrolled and paid is done, and
+  // the only one the patient owns, scheduling, is marked as next.
+  const steps = [
+    { label: "Enrolled and paid", sub: `${fullDay(membership?.startedAt)} · ${billing} plan`, done: true },
     tests.booked
-      ? { label: "Complete your scheduled tests", date: tests.line, state: "now" }
-      : { label: "Schedule your tests", date: onboarding.startingTests?.laterAt ? tests.line : "The new tests you paid for", state: "now" },
-    { label: "Your plan is ready", date: "We let you know right away", state: "next" },
+      ? { label: "Complete your scheduled tests", sub: tests.line }
+      : { label: "Schedule your testing", sub: "Next — book whichever suits you first" },
+    { label: "We send the order to Dr. Patel", sub: "In the background — nothing for you to chase" },
+    { label: "Your plan is built from your results", sub: "Automatically, as soon as the results are in" },
   ]
 
   const viewPlan = () => router.replace("/plan?walk=1")
@@ -174,20 +178,29 @@ export default function EnrolledScreen() {
             <Text style={styles.title} accessibilityRole="header">
               You're enrolled
             </Text>
-            <Text style={styles.lead}>Thank you for joining Inlay. Your next step is your baseline testing.</Text>
-            <View style={styles.chip}>
-              <Text style={styles.chipText} numberOfLines={1}>{`${planName(onboarding.goals)}, ${priceLabel(membership?.billing)}`}</Text>
-            </View>
+            <Text style={styles.lead}>
+              {`Paid today, ${usd(cost.total)} — ${billing === "yearly" ? `${usd(cost.membership)} for the year` : `${usd(cost.membership)} for the first month`} plus ${usd(testingTotal)} of testing, in full. Here is what happens next.`}
+            </Text>
           </Animated.View>
         </View>
 
         <Animated.View style={[styles.cards, rise(1)]}>
-          <Card style={styles.card}>
-            <Text style={type.section} accessibilityRole="header">
-              What happens next
-            </Text>
-            <Steps steps={steps} />
-          </Card>
+          <View style={styles.list}>
+            {steps.map((st, i) => (
+              <View key={i} style={styles.stepRow}>
+                <View style={styles.rail}>
+                  <View style={[styles.node, st.done && styles.nodeDone]}>
+                    {st.done ? <Check size={11} color={color.onPrimary} weight="bold" /> : <Text style={styles.nodeText}>{i + 1}</Text>}
+                  </View>
+                  {i < steps.length - 1 && <View style={styles.line} />}
+                </View>
+                <View style={styles.stepWords}>
+                  <Text style={styles.stepName}>{st.label}</Text>
+                  <Text style={styles.stepSub}>{st.sub}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
         </Animated.View>
       </ScrollView>
       <Animated.View style={rise(2)}>
@@ -206,6 +219,10 @@ export default function EnrolledScreen() {
                 <TextAction tone="muted" onPress={() => void later()}>
                   Schedule later
                 </TextAction>
+                <View style={styles.note}>
+                  <Info size={13} color={ink.tertiary} />
+                  <Text style={styles.noteText}>Scheduling later keeps your testing at the top of your To do list.</Text>
+                </View>
               </View>
             </>
           )}
@@ -262,14 +279,16 @@ const styles = StyleSheet.create({
   card: { gap: space.item },
   // The help line under the card, filling the space above the button.
   rule: { height: 1, backgroundColor: hairline.rule },
-  chip: {
-    marginTop: space.inline,
-    paddingHorizontal: space.item,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: color.background,
-    borderWidth: 1,
-    borderColor: color.primaryEdge,
-  },
-  chipText: { ...type.label, color: color.primaryText },
+  list: { paddingHorizontal: space.inline },
+  stepRow: { flexDirection: "row", gap: space.lead },
+  rail: { alignItems: "center", width: 22 },
+  node: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: hairline.outline, backgroundColor: color.background },
+  nodeDone: { borderColor: chart.inRange, backgroundColor: chart.inRange },
+  nodeText: { fontFamily: font.medium, fontSize: 11, lineHeight: 14, color: ink.secondary },
+  line: { flex: 1, width: 1, minHeight: 18, marginVertical: 2, backgroundColor: hairline.outline },
+  stepWords: { flex: 1, gap: 1, paddingBottom: space.item },
+  stepName: { ...type.title, fontFamily: font.semibold, color: ink.strong },
+  stepSub: { ...type.label, color: ink.secondary },
+  note: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingTop: space.item, paddingHorizontal: space.gutter },
+  noteText: { ...type.meta, flex: 1, textAlign: "center" },
 })

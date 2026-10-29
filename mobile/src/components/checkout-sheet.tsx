@@ -4,6 +4,7 @@ import { showToast } from "@/components/toast"
 import { chosenTests } from "@/lib/baseline-tests"
 import { useMarkers } from "@/lib/experience"
 import { logEvent, planFocus } from "@/lib/offers"
+import { inPlan } from "@/lib/upgrade"
 import { useOnboarding } from "@/lib/onboarding"
 import { firstPlan, type Cadence, type ProgramId } from "@/lib/plans"
 import type { FocusArea } from "@/lib/record"
@@ -50,8 +51,15 @@ export function useStartMembership() {
       planReadySeen: true,
       planHistory: kept.length ? kept : undefined,
       // The set-up's baseline tests, paid with the membership, to schedule
-      // from the enrolled page.
-      ...(enrolled ? { startingTests: { ids: chosenTests(onboarding.baselinePicks).map((t) => t.id), at: now.toISOString() } } : {}),
+      // from the enrolled page: DEXA and RMR come with body composition.
+      ...(enrolled
+        ? {
+            startingTests: {
+              ids: inPlan(onboarding.removedOpps).some((o) => o.id === "body") ? chosenTests(onboarding.baselinePicks).map((t) => t.id) : [],
+              at: now.toISOString(),
+            },
+          }
+        : {}),
     })
     logEvent(onboarding, "checkout_completed")
     setPending(false)

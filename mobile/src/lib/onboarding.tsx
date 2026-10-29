@@ -312,6 +312,9 @@ export type State = {
       5); unset means all three. (Renamed from baselineTests, which held
       only the optional extras, so old saves start fresh.) */
   baselinePicks?: string[]
+  /** The opportunities (lib/upgrade.ts) she took out of her plan on
+      /plan-tests; unset means all nine are in. */
+  removedOpps?: string[]
   /** The home sleep study and SMART program she left on at /baseline
       ("sleep", "smart"); unset means both. Priced into the total on
       /enrollment, /payment and the receipt. */

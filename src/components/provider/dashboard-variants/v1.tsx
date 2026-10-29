@@ -5,14 +5,9 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   IconCopy,
-  IconDna,
-  IconFileCheck,
   IconFilter,
   IconMore,
-  IconRefresh,
   IconSearch,
-  IconTarget,
-  IconWarning,
 } from "@/design-system/icons"
 
 import { Button, buttonVariants } from "@/design-system/ui/button"
@@ -42,7 +37,6 @@ import {
 import { Progress } from "@/design-system/ui/progress"
 import { Skeleton } from "@/design-system/ui/skeleton"
 import { toast } from "@/design-system/ui/sonner"
-import { Spinner } from "@/design-system/ui/spinner"
 import { Illustration } from "@/components/illustrations/illustration"
 import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
 import { type Patient, fullName } from "@/components/practice/practice-data"
@@ -64,7 +58,7 @@ import {
   Th,
   type Tone,
 } from "@/components/dashboard-kit-v2"
-import { NOW, daysSince, fmtDateTime } from "@/components/provider/home-v2/clock"
+import { NOW, daysSince } from "@/components/provider/home-v2/clock"
 import { ItemPanel } from "@/components/provider/home-v2/item-panel"
 import { TYPE_META, chartHref, itemTitle } from "@/components/provider/home-v2/labels"
 import { recordAudit, workItems } from "@/components/provider/home-v2/mock"
@@ -73,7 +67,6 @@ import {
   FooterLink,
   type Segment,
   SegmentBar,
-  StatCard,
   StatCardSkeleton,
 } from "@/components/provider/home-v2/overview"
 import {
@@ -82,14 +75,13 @@ import {
   applyAction,
   ITEM_TYPES,
   isOpen,
-  oldestSync,
   openSeries,
   toQueue,
   urgentSeries,
   weekDelta,
 } from "@/components/provider/home-v2/selectors"
 import type { ActionKind, ItemType, QueueItem } from "@/components/provider/home-v2/types"
-import { VariantFrame } from "@/components/provider/dashboard-variants/frame"
+import { MetricCards, VariantFrame } from "@/components/provider/dashboard-variants/frame"
 import {
   type Marker,
   type Optimization,
@@ -101,7 +93,7 @@ import { useProviderDay } from "@/components/provider/dashboard-variants/use-pro
 
 /* Variation 1, Queue: Inlay's optimization work read the way a help desk
    reads its tickets, after ReUI's Pulse, drawn only with the portal's own
-   components. Four stat cards led by plans to review and biological age,
+   components. Four metric cards (upcoming appointments, patients needing attention, active optimization members, open tasks),
    the plan pipeline by stage beside the members' biological age gap, then
    one paged table of what to act on: care plans, off track and watchful
    trends, and urgent clinical items. */
@@ -115,7 +107,6 @@ const STAGE_COLOR: Record<PlanStage, string> = {
   "Sent to patient": SUBTLE.blue,
   Active: SUBTLE.green,
 }
-const GREY = "#B5B5B5"
 
 const days = (n: number) => `${n} d`
 const years = (n: number) => `${Math.abs(n).toFixed(1)} y`
@@ -696,12 +687,9 @@ export function DashboardOverview() {
   const [done, setDone] = React.useState<Record<string, string>>({})
   const [panel, setPanel] = React.useState<{ id: string; list: string[] } | null>(null)
   const openerRef = React.useRef<HTMLElement | null>(null)
-  const [syncedAt, setSyncedAt] = React.useState<string | null>(null)
-  const [syncing, setSyncing] = React.useState(false)
 
   const { open, urgent, byId } = d
   const ready = d.ready && opt.ready
-  const synced = syncedAt ?? oldestSync(d.mine)
 
   /* Every item the panel may walk, worked ones included. */
   const all = React.useMemo(() => d.work.filter((i) => byId.has(i.patientId)).map(toQueue), [d.work, byId])
@@ -711,22 +699,6 @@ export function DashboardOverview() {
     [all, done, d.mine]
   )
   const rows = React.useMemo(() => buildRows(opt, urgentListed, byId), [opt, urgentListed, byId])
-
-  const waits = opt.reviewing.reduce((m, o) => Math.max(m, o.stageDays ?? 0), 0)
-  const toRoute = opt.tests.filter(({ t }) => t.route === "Physician to decide").length
-  const gap = opt.active.length ? opt.bio.avgGapMembers : opt.bio.avgGap
-  const erVisits = open.filter(
-    (i) => i.type === "outside_care" && (i.payload.event === "ED visit" || i.payload.event === "Admission")
-  ).length
-  const critical = open.filter((i) => i.type === "abnormal_result" && (i.payload.flag === "Critical" || !!i.payload.redFlag)).length
-
-  function syncNow() {
-    setSyncing(true)
-    setTimeout(() => {
-      setSyncedAt(NOW)
-      setSyncing(false)
-    }, 1200)
-  }
 
   /* Work an item, audit it, and offer Undo. */
   function work(item: QueueItem, kind: ActionKind, opts: ActionOptions = {}) {
@@ -777,27 +749,10 @@ export function DashboardOverview() {
   const at = panel ? panel.list.indexOf(panel.id) : -1
   const step = (dir: -1 | 1) => (panel && panel.list[at + dir] ? () => setPanel({ ...panel, id: panel.list[at + dir]! }) : undefined)
 
-  const stageSegments: Segment[] = PLAN_STAGES.map((s) => ({
-    label: s,
-    value: opt.members.filter((o) => o.stage === s).length,
-    color: STAGE_COLOR[s],
-  }))
-
   return (
     <VariantFrame>
       <header className="flex flex-wrap items-center gap-2.5">
         <h1 className="text-lg leading-7 font-semibold">Home</h1>
-        <div className="ml-auto flex flex-wrap items-center gap-2.5">
-          {!ready ? (
-            <Skeleton className="h-4 w-48 rounded-sm" />
-          ) : (
-            synced && <span className="text-[13px] text-muted-foreground tabular-nums">Records synced {fmtDateTime(synced)}</span>
-          )}
-          <Button variant="outline" size="sm" disabled={!ready || syncing} onClick={syncNow} className="bg-card">
-            {syncing ? <Spinner /> : <IconRefresh />}
-            {syncing ? "Syncing" : "Sync now"}
-          </Button>
-        </div>
       </header>
 
       {!ready ? (
@@ -815,78 +770,7 @@ export function DashboardOverview() {
         </>
       ) : (
         <>
-          <section aria-label="Optimization at a glance" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              icon={IconFileCheck}
-              label="Plans to review"
-              when="Waiting"
-              value={opt.reviewing.length}
-              meta={
-                opt.reviewing.length ? (
-                  <span className={waits > 7 ? "text-destructive" : undefined}>
-                    Oldest waits {days(waits)}, {plural(toRoute, "test")} to route
-                  </span>
-                ) : (
-                  "All reviewed"
-                )
-              }
-              segments={[
-                { label: "Pending", value: opt.reviewing.filter((o) => o.stage === "Pending review").length, color: STAGE_COLOR["Pending review"] },
-                { label: "Changes", value: opt.reviewing.filter((o) => o.stage === "Changes requested").length, color: STAGE_COLOR["Changes requested"] },
-              ]}
-              footer={
-                <FooterLink href={opt.reviewing[0] ? CARE_PLAN(opt.reviewing[0].patient.id) : "/screens/patients"}>
-                  {opt.reviewing[0] ? "Review the oldest" : "Open patients"}
-                </FooterLink>
-              }
-            />
-            <StatCard
-              icon={IconTarget}
-              label="Optimization members"
-              when="Panel"
-              value={opt.members.length}
-              of={opt.all.length}
-              meta={`${opt.active.length} active, ${opt.active.length ? `${Math.round(opt.avgProgress * 100)}% to goal` : "none running"}`}
-              segments={stageSegments}
-              footer={<FooterLink href="/screens/patients">{plural(opt.upgrade.length, "free patient")} fit a plan</FooterLink>}
-            />
-            <StatCard
-              icon={IconDna}
-              label="Biological age gap"
-              when={opt.active.length ? "Members" : "Panel"}
-              value={gap}
-              meta={`Years ${gap <= 0 ? "younger" : "older"} than real age on average`}
-              segments={[
-                { label: "Younger", value: opt.bio.younger, color: SUBTLE.green },
-                { label: "Near", value: opt.bio.near, color: GREY },
-                { label: "Older", value: opt.bio.older, color: SUBTLE.red },
-              ]}
-              footer={<FooterLink href="/screens/patients">Open patients</FooterLink>}
-            />
-            <StatCard
-              icon={IconWarning}
-              label="Urgent clinical items"
-              when="Now"
-              value={urgent.length}
-              of={open.length}
-              meta={`${plural(erVisits, "ER visit")} or admission, ${critical} critical`}
-              segments={[
-                { label: "Urgent", value: urgent.length, color: SUBTLE.red },
-                { label: "Moderate", value: open.filter((i) => i.priority === "moderate").length, color: SUBTLE.orange },
-                { label: "Routine", value: open.filter((i) => i.priority === "routine").length, color: GREY },
-              ]}
-              footer={
-                <FooterLink
-                  onClick={() => {
-                    const first = urgent[0]
-                    if (first) setPanel({ id: first.id, list: urgent.map((i) => i.id) })
-                  }}
-                >
-                  Review urgent items
-                </FooterLink>
-              }
-            />
-          </section>
+          <MetricCards />
 
           <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
             <Pipeline opt={opt} />

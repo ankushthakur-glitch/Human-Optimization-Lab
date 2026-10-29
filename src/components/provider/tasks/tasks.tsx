@@ -569,6 +569,7 @@ function TaskList() {
           )
         }}
         exportName="Tasks"
+        hideExport
         exportRow={(t) => ({
           ID: t.id,
           Priority: t.priority,

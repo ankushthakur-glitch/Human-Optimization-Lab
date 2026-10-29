@@ -1,13 +1,12 @@
 import { Platform, Share } from "react-native"
 
-import { firstMonth, planName } from "@/components/enrollment-kit"
-import { dollarsExact } from "@/lib/baseline-tests"
 import type { State } from "@/lib/onboarding"
 import { priceLabel } from "@/lib/plans"
+import { dueToday, usd } from "@/lib/upgrade"
 
 /* The itemized receipt for the set-up's payment (16 Oct call: HSA and FSA
-   administrators ask for one): the membership, each baseline test, the
-   yearly discount and the total, with the card that paid. The web build
+   administrators ask for one): the membership, each optimization opportunity
+   with what it tests, and the total, with the card that paid. The web build
    saves it as a file; a phone opens the share sheet, so she can save it to
    Files or send it on. */
 
@@ -24,19 +23,17 @@ export type Receipt = {
 export function receiptOf(onboarding: State): Receipt {
   const m = onboarding.membership
   const billing = m?.billing ?? "yearly"
-  const cost = firstMonth(onboarding.baselinePicks, billing, onboarding.addOns)
+  const cost = dueToday(onboarding.removedOpps, billing)
   const at = new Date(m?.startedAt ?? Date.now())
   return {
     number: `INL-${at.getTime().toString().slice(-8)}`,
     date: at.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     paidWith: m?.card ?? "Card",
     lines: [
-      { label: `${planName(onboarding.goals)}, ${priceLabel(billing)}`, amount: dollarsExact(cost.membership) },
-      ...cost.tests.map((t) => ({ label: t.name, amount: dollarsExact(t.price) })),
-      ...cost.addOns.map((a) => ({ label: a.name, amount: dollarsExact(a.price) })),
-      ...(cost.discount ? [{ label: "Yearly discount on tests", amount: `-${dollarsExact(cost.discount)}` }] : []),
+      { label: `Optimization membership, ${priceLabel(billing)}`, amount: usd(cost.membership) },
+      ...cost.plan.map((o) => ({ label: `${o.n} · ${o.short}: ${o.tests}`, amount: o.price ? usd(o.price) : "No charge" })),
     ],
-    total: dollarsExact(cost.total),
+    total: usd(cost.total),
     amount: cost.total,
   }
 }

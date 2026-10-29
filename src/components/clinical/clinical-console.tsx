@@ -2,8 +2,6 @@
 
 import * as React from "react"
 import {
-  IconBookmark,
-  IconChartUp,
   IconFileCheck,
   IconFileText,
   IconLab,
@@ -16,17 +14,10 @@ import {
   RangesPage,
   SexAgeRulesPage,
 } from "@/components/clinical/catalog"
-import {
-  RegressionGatePage,
-  SourcesPage,
-  TestCasesPage,
-  VersionLogPage,
-} from "@/components/clinical/eval-evidence"
+import { TestCasesPage } from "@/components/clinical/eval-evidence"
 import {
   AlertRulesPage,
-  ForecastPage,
   ProtocolsPage,
-  ScoreWeightsPage,
 } from "@/components/clinical/protocols-rules"
 import {
   type SettingsGroup,
@@ -65,7 +56,7 @@ const GROUPS: SettingsGroup[] = [
     pages: [
       {
         id: "library",
-        label: "Protocols and SOPs",
+        label: "Protocols",
         render: () => <ProtocolsPage />,
       },
     ],
@@ -76,23 +67,6 @@ const GROUPS: SettingsGroup[] = [
     icon: IconShieldAlert,
     pages: [
       { id: "alerts", label: "Alert rules", render: () => <AlertRulesPage /> },
-      {
-        id: "weights",
-        label: "Score weights",
-        render: () => <ScoreWeightsPage />,
-      },
-    ],
-  },
-  {
-    id: "forecast",
-    title: "Forecast",
-    icon: IconChartUp,
-    pages: [
-      {
-        id: "thresholds",
-        label: "Forecast thresholds",
-        render: () => <ForecastPage />,
-      },
     ],
   },
   {
@@ -104,24 +78,6 @@ const GROUPS: SettingsGroup[] = [
         id: "cases",
         label: "Test-case library",
         render: () => <TestCasesPage />,
-      },
-      {
-        id: "gate",
-        label: "Regression gate",
-        render: () => <RegressionGatePage />,
-      },
-      { id: "log", label: "Version log", render: () => <VersionLogPage /> },
-    ],
-  },
-  {
-    id: "evidence",
-    title: "Evidence",
-    icon: IconBookmark,
-    pages: [
-      {
-        id: "sources",
-        label: "Sources and re-review",
-        render: () => <SourcesPage />,
       },
     ],
   },

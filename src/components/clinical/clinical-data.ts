@@ -162,7 +162,7 @@ export const sexAgeRules = createCollection<SexAgeRule>(
 /*  Protocols                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export const PROTOCOL_TYPES = ["Protocol", "SOP"] as const
+export const PROTOCOL_TYPES = ["Protocol"] as const
 export const PILLARS = [
   "Exercise",
   "Eat",
@@ -196,9 +196,6 @@ export const protocols = createCollection<Protocol>(
     { id: "PR005", title: "Inflammation reduction", type: "Protocol", pillar: "Eat", biomarkerIds: ["BM022", "BM023"], summary: "Anti inflammatory nutrition with omega-3 support.", steps: "Add two servings of oily fish a week\nConsider omega-3 supplement\nRetest hs-CRP in 8 weeks", author: "Dr. Elise Harrington", updatedAt: "2026-09-21", status: "Active" },
     { id: "PR006", title: "Zone 2 training", type: "Protocol", pillar: "Exercise", biomarkerIds: ["BM009", "BM008"], summary: "Aerobic base building for cardiometabolic health.", steps: "150 minutes a week at conversational pace\nTrack heart rate in zone 2\nIncrease by 10% each 2 weeks", author: "Dr. Edward Blanchard", updatedAt: "2026-10-18", status: "Active" },
     { id: "PR007", title: "Stress and coping", type: "Protocol", pillar: "Mind", biomarkerIds: ["BM016"], summary: "Breathing practice and distress screening.", steps: "Screen with PHQ-4\nTeach box breathing\nRefer to behavioral health above threshold", author: "Dr. Elise Harrington", updatedAt: "2026-10-12", status: "Active" },
-    { id: "SOP001", title: "Critical lab value callback", type: "SOP", pillar: "Operations", biomarkerIds: ["BM001", "BM029"], summary: "Who calls the patient and how fast after a critical value.", steps: "Physician notified within 1 hour\nPatient called the same day\nDocument the call in the chart", author: "Dr. Edward Blanchard", updatedAt: "2026-10-06", status: "Active" },
-    { id: "SOP002", title: "Medication reconciliation", type: "SOP", pillar: "Operations", biomarkerIds: [], summary: "Steps to confirm a patient's medication change.", steps: "Compare the app list with Epic\nFlag differences to the physician\nPhysician confirms or rejects", author: "Dr. Edward Blanchard", updatedAt: "2026-09-28", status: "Active" },
-    { id: "SOP003", title: "Baseline test ordering", type: "SOP", pillar: "Measure", biomarkerIds: [], summary: "Fixed required tests and how they are ordered.", steps: "Order the baseline panel after payment\nSend reminders on day 3 and 7\nEscalate after 14 days", author: "Dr. Edward Blanchard", updatedAt: "2026-08-19", status: "Retired" },
   ],
   VERSION
 )
@@ -378,7 +375,7 @@ export const sources = createCollection<EvidenceSource>(
     { id: "EV005", title: "Clinical Practice Guideline for Obstructive Sleep Apnea", publisher: "AASM", type: "Guideline", url: "aasm.org", protocolIds: ["PR004"], reviewedAt: "2026-05-22", reviewBy: "2026-11-15", expires: "2027-05-22" },
     { id: "EV006", title: "FDA Drug Safety Communication: statins and blood sugar", publisher: "FDA", type: "Safety notice", url: "fda.gov", protocolIds: ["PR001"], reviewedAt: "2024-09-12", reviewBy: "2025-09-12", expires: "2026-09-12" },
     { id: "EV007", title: "Omega-3 fatty acids and cardiovascular outcomes", publisher: "JAMA", type: "Study", url: "jamanetwork.com", protocolIds: ["PR005"], reviewedAt: "2026-02-08", reviewBy: "2027-02-08", expires: "2028-02-08" },
-    { id: "EV008", title: "KDIGO Guideline for CKD Evaluation and Management", publisher: "KDIGO", type: "Guideline", url: "kdigo.org", protocolIds: ["SOP001"], reviewedAt: "2026-04-18", reviewBy: "2027-04-18", expires: "2028-04-18" },
+    { id: "EV008", title: "KDIGO Guideline for CKD Evaluation and Management", publisher: "KDIGO", type: "Guideline", url: "kdigo.org", protocolIds: [], reviewedAt: "2026-04-18", reviewBy: "2027-04-18", expires: "2028-04-18" },
   ],
   VERSION
 )

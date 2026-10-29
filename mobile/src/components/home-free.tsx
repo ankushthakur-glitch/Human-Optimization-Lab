@@ -81,7 +81,7 @@ export function RecordSections({ onOpenAge }: { onOpenAge: () => void }) {
       <NewInRecord />
       <Medicines />
       <ToDo />
-      <AskRow />
+      {exp !== "free" && <AskRow />}
     </View>
   )
 }

@@ -8,7 +8,6 @@ import {
   IconChartUp,
   IconChat,
   IconCopy,
-  IconDna,
   IconEdit,
   IconExpandVertical,
   IconFileCheck,
@@ -16,7 +15,6 @@ import {
   IconFilter,
   IconMore,
   IconSearch,
-  IconTarget,
   IconTrendUp,
 } from "@/design-system/icons"
 
@@ -61,13 +59,11 @@ import { recordAudit, workItems } from "@/components/provider/home-v2/mock"
 import {
   FooterLink,
   IconTile,
-  type Segment,
-  StatCard,
   StatCardSkeleton,
 } from "@/components/provider/home-v2/overview"
 import { type ActionOptions, actionLabel, applyAction, toQueue } from "@/components/provider/home-v2/selectors"
 import type { ActionKind, QueueItem } from "@/components/provider/home-v2/types"
-import { VariantFrame } from "@/components/provider/dashboard-variants/frame"
+import { MetricCards, VariantFrame } from "@/components/provider/dashboard-variants/frame"
 import {
   type Optimization,
   type PlanStage,
@@ -77,8 +73,8 @@ import {
 import { useProviderDay } from "@/components/provider/dashboard-variants/use-provider-day"
 
 /* Variation 2, after ReUI's Flowly dashboard, built from the portal's own
-   components: four stat cards (plan health, members on track, biological
-   age, today's visits), the members' daily optimization score beside what
+   components: four stat cards (upcoming appointments, patients needing
+   attention, active optimization members, open tasks), the members' daily optimization score beside what
    needs the physician, then the optimization members as a table. */
 
 const BASE = "/screens/patients"
@@ -94,12 +90,6 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 const SHORT = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" })
 const WEEKDAY = new Intl.DateTimeFormat("en-US", { weekday: "short" })
 
-const STAGE_COLOR: Record<PlanStage, string> = {
-  Active: SUBTLE.green,
-  "Sent to patient": SUBTLE.blue,
-  "Pending review": SUBTLE.violet,
-  "Changes requested": SUBTLE.orange,
-}
 const STAGE_TONE: Record<PlanStage, Tone> = {
   Active: "success",
   "Sent to patient": "info",
@@ -587,7 +577,7 @@ function MembersTable({ members }: { members: Optimization[] }) {
 /* ------------------------------------------------------------- page -- */
 
 export function DashboardClinicDay() {
-  const { ready, byId, mine, urgent, now, clinic, work } = useProviderDay()
+  const { ready, byId, mine, urgent, now, work } = useProviderDay()
   const opt = useOptimization()
   const queue = React.useMemo(() => work.map(toQueue), [work])
   const nameOf = (id: string) => {
@@ -622,42 +612,6 @@ export function DashboardClinicDay() {
     const next = rest[at] ?? rest[at - 1]
     setPanel(next ? { id: next, list: rest } : null)
   }
-
-  /* Plans */
-  const stages: Segment[] = (["Active", "Sent to patient", "Pending review", "Changes requested"] as const).map((s) => ({
-    label: s,
-    value: opt.members.filter((o) => o.stage === s).length,
-    color: STAGE_COLOR[s],
-  }))
-  const firstReview = [...opt.reviewing].sort((a, b) => (b.stageDays ?? 0) - (a.stageDays ?? 0))[0]
-
-  /* Members on track: today's daily score of members with a running plan. */
-  const todayScores = opt.active.map((o) => o.dailyScore?.[6]).filter((n): n is number => n !== undefined)
-  const weekAgo = Math.round(avg(opt.active.map((o) => o.dailyScore?.[0]).filter((n): n is number => n !== undefined)))
-  const todayAvg = Math.round(avg(todayScores))
-  const scoreSegs: Segment[] = [
-    { label: "On track", value: todayScores.filter((n) => n >= 70).length, color: SUBTLE.green },
-    { label: "Slipping", value: todayScores.filter((n) => n >= 50 && n < 70).length, color: SUBTLE.orange },
-    { label: "Missed", value: todayScores.filter((n) => n < 50).length, color: SUBTLE.red },
-  ]
-
-  /* Biological age against real age, across engaged patients. */
-  const bioSegs: Segment[] = [
-    { label: "Younger", value: opt.bio.younger, color: SUBTLE.green },
-    { label: "Near age", value: opt.bio.near, color: "#B5B5B5" },
-    { label: "Older", value: opt.bio.older, color: SUBTLE.red },
-  ]
-
-  /* Visits */
-  const day = clinic.today
-  const booked = day.filter((a) => a.status !== "Cancelled")
-  const seen = day.filter((a) => a.status === "Completed").length
-  const visitSegs: Segment[] = [
-    { label: "Completed", value: seen, color: SUBTLE.green },
-    { label: "Checked in", value: day.filter((a) => a.status === "Checked in").length, color: SUBTLE.orange },
-    { label: "Scheduled", value: day.filter((a) => a.status === "Scheduled").length, color: SUBTLE.blue },
-    { label: "Missed", value: day.filter((a) => a.status === "No show" || a.status === "Cancelled").length, color: SUBTLE.red },
-  ]
 
   const faces = mine.filter((p) => p.photo).slice(0, 3)
   const loaded = ready && opt.ready && now
@@ -697,63 +651,7 @@ export function DashboardClinicDay() {
         </div>
       ) : (
         <>
-          <section aria-label="Optimization at a glance" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              icon={IconTarget}
-              label="Plan health"
-              when="Now"
-              value={stages[0]!.value}
-              of={opt.members.length}
-              meta={`${opt.reviewing.length} waiting on your review`}
-              segments={stages}
-              footer={
-                <FooterLink href={firstReview ? carePlan(firstReview.patient.id) : BASE}>
-                  {firstReview ? `Review ${firstReview.name}` : "View members"}
-                </FooterLink>
-              }
-            />
-            <StatCard
-              icon={IconChartUp}
-              label="Members on track"
-              when="Today"
-              value={scoreSegs[0]!.value}
-              of={todayScores.length}
-              meta={
-                todayScores.length > 0
-                  ? `Average daily score ${todayAvg}, ${weekAgo} a week ago`
-                  : `No running plans, ${opt.reviewing.length} in review`
-              }
-              segments={scoreSegs}
-              footer={<FooterLink href={BASE}>View daily scores</FooterLink>}
-            />
-            <StatCard
-              icon={IconDna}
-              label="Bio age gap"
-              when="Panel"
-              value={opt.bio.avgGap}
-              meta={
-                <span>
-                  Years against real age, members{" "}
-                  <span style={{ color: word(opt.bio.avgGapMembers <= 0 ? SUBTLE.green : SUBTLE.red) }}>
-                    {opt.bio.avgGapMembers > 0 ? "+" : ""}
-                    {opt.bio.avgGapMembers} y
-                  </span>
-                </span>
-              }
-              segments={bioSegs}
-              footer={<FooterLink href={BASE}>View biological ages</FooterLink>}
-            />
-            <StatCard
-              icon={IconCalendar}
-              label="Visits"
-              when="Today"
-              value={seen}
-              of={booked.length}
-              meta={`${booked.length - seen} still to see`}
-              segments={visitSegs}
-              footer={<FooterLink href={`${BASE}/schedule`}>Open schedule</FooterLink>}
-            />
-          </section>
+          <MetricCards />
 
           <div className="grid gap-4 xl:grid-cols-3">
             <Activity now={now} active={opt.active} className="xl:col-span-2" />

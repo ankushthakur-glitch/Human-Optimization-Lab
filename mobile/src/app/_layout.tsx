@@ -129,14 +129,17 @@ function Routes() {
           <Stack.Screen name="medications" />
           <Stack.Screen name="medicine/[id]" />
           <Stack.Screen name="tell-us" />
-          <Stack.Screen name="goal-plans" />
           <Stack.Screen name="health-profile" />
           <Stack.Screen name="flourishing" />
           <Stack.Screen name="flourishing-questions" />
           <Stack.Screen name="flourishing-result" />
           <Stack.Screen name="sleep-questions" />
           <Stack.Screen name="sleep-result" />
-          <Stack.Screen name="baseline" />
+          {/* The free plan and upgrade flow: the nine opportunities, what they need, and taking one out. */}
+          <Stack.Screen name="plans" />
+          <Stack.Screen name="opportunities" />
+          <Stack.Screen name="opportunity/[id]" />
+          <Stack.Screen name="plan-tests" />
           <Stack.Screen name="enrollment" />
           <Stack.Screen name="payment" />
           <Stack.Screen name="schedule-tests" />

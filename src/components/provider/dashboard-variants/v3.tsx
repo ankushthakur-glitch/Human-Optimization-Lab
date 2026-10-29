@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { ArrowDown02Icon, ArrowUp02Icon } from "@hugeicons/core-free-icons"
 import {
   IconCalendar,
+  IconFileList,
   IconChat,
   IconCheck,
   IconCheckCircle,
@@ -75,7 +76,7 @@ import { type ActionOptions, ITEM_TYPES, actionLabel, applyAction, byPriority, t
 import type { ActionKind, ItemType, Priority, WorkItem } from "@/components/provider/home-v2/types"
 import { VariantFrame } from "@/components/provider/dashboard-variants/frame"
 import { useOptimization } from "@/components/provider/dashboard-variants/optimization-data"
-import { useProviderDay } from "@/components/provider/dashboard-variants/use-provider-day"
+import { useDashboardMetrics, useProviderDay } from "@/components/provider/dashboard-variants/use-provider-day"
 
 /* Variation 3, after ReUI's Verve CRM: the practice as a CRM. A secondary
    nav switches six views (Dashboard, Today, Activity, Quick stats, Care
@@ -191,15 +192,6 @@ function Chip({
     <Badge tone={BADGE[tone]} dot={dot} className={className}>
       {icon}
       {children}
-    </Badge>
-  )
-}
-
-function Delta({ value }: { value: number }) {
-  return (
-    <Badge tone={value > 0 ? "success" : value < 0 ? "error" : "light"} icon={value < 0 ? ArrowDown02Icon : value > 0 ? ArrowUp02Icon : undefined}>
-      {value > 0 ? "+" : ""}
-      {value}
     </Badge>
   )
 }
@@ -489,7 +481,7 @@ export function DashboardBoard() {
               </div>
             </div>
           ) : view === "dashboard" ? (
-            <DashboardView day={day} />
+            <DashboardView />
           ) : view === "today" ? (
             <TodayView day={day} />
           ) : view === "activity" ? (
@@ -535,9 +527,9 @@ function KpiCard({
   icon: typeof IconCalendar
   title: string
   sub: React.ReactNode
-  badge: React.ReactNode
+  badge?: React.ReactNode
   value: React.ReactNode
-  bars: number[]
+  bars?: number[]
   tone: Tone
   href: string
 }) {
@@ -554,7 +546,7 @@ function KpiCard({
         </div>
         <div className="flex items-end justify-between gap-3">
           <span className="text-[26px] leading-8 font-semibold tracking-tight tabular-nums">{value}</span>
-          <AreaSpark values={bars} color={HUE[tone]} label={`${title}, recent values`} />
+          {bars && <AreaSpark values={bars} color={HUE[tone]} label={`${title}, recent values`} />}
         </div>
       </VFrame>
     </Link>
@@ -583,67 +575,56 @@ const ROUTE_TONE: Record<"Insurance" | "Cash" | "Physician to decide", Tone> = {
   "Physician to decide": "amber",
 }
 
-function DashboardView({ day }: { day: Day }) {
-  const now = day.now!
+function DashboardView() {
   const opt = useOptimization()
-  const joined30 = opt.members.filter((o) => o.patient.respondedAt && daysAgo(o.patient.respondedAt, now) <= 30).length
-  /* Members joining per month over the last eight months. */
-  const joinBars = Array.from({ length: 8 }, (_, i) => {
-    const d = new Date(`${now.slice(0, 10)}T00:00:00`)
-    d.setMonth(d.getMonth() - (7 - i))
-    const key = isoDay(d).slice(0, 7)
-    return opt.members.filter((o) => (o.patient.respondedAt ?? o.patient.invitedAt ?? "").startsWith(key)).length
-  })
-  const waits = opt.reviewing.map((o) => o.stageDays ?? 0).sort((a, b) => a - b)
-  const changes = opt.reviewing.filter((o) => o.stage === "Changes requested").length
-  const onTrack = opt.active.filter((o) => memberStatus(o).label === "On track").length
-  const freeActive = opt.all.filter((o) => !o.member && o.patient.status === "Active").length
-  const pad = (xs: number[]) => [...Array<number>(Math.max(0, 10 - xs.length)).fill(0), ...xs].slice(-10)
+  const m = useDashboardMetrics()
 
   return (
     <div className="flex flex-col gap-4">
-      <section aria-label="At a glance" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          icon={IconUsersGroup}
-          title="Members"
-          sub={`${opt.active.length} on an active plan`}
-          badge={<Delta value={joined30} />}
-          value={opt.members.length}
-          bars={joinBars}
-          tone="teal"
-          href={`${BASE}/dashboard/v3?view=members`}
-        />
-        <KpiCard
-          icon={IconFileCheck}
-          title="Plans to review"
-          sub={`${changes} ${changes === 1 ? "change" : "changes"} asked`}
-          badge={waits.length ? <Chip tone="amber">{waits[waits.length - 1]} d</Chip> : <Chip tone="green">Clear</Chip>}
-          value={opt.reviewing.length}
-          bars={pad(waits)}
-          tone="violet"
-          href={`${BASE}/dashboard/v3?view=plans`}
-        />
-        <KpiCard
-          icon={IconTarget}
-          title="Goal progress"
-          sub={`${opt.active.length} active plans`}
-          badge={<Chip tone="green">{onTrack} on track</Chip>}
-          value={`${Math.round(opt.avgProgress * 100)}%`}
-          bars={pad(opt.active.map((o) => Math.round((o.progress ?? 0) * 100)).sort((a, b) => a - b))}
-          tone="green"
-          href={`${BASE}/dashboard/v3?view=members`}
-        />
-        <KpiCard
-          icon={IconFlash}
-          title="Upgrade fit"
-          sub={`Of ${freeActive} free, $149 a month`}
-          badge={<Chip tone="violet">+${(opt.upgrade.length * 149).toLocaleString("en-US")}</Chip>}
-          value={opt.upgrade.length}
-          bars={pad(opt.upgrade.map((o) => o.markers.filter((m) => !m.inRange || m.watchful).length + Math.max(0, o.gap)))}
-          tone="amber"
-          href={`${BASE}/dashboard/v3?view=upgrade`}
-        />
-      </section>
+      {!m.ready ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-[116px] rounded-[7.2px]" />
+          ))}
+        </div>
+      ) : (
+        <section aria-label="At a glance" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <KpiCard
+            icon={IconCalendar}
+            title="Upcoming Appointments"
+            sub={m.upcoming.today > 0 ? `${m.upcoming.today} later today` : "None later today"}
+            badge={<Chip tone="blue">Next 7 days</Chip>}
+            value={m.upcoming.count}
+            tone="blue"
+            href={`${BASE}/schedule`}
+          />
+          <KpiCard
+            icon={IconUsersGroup}
+            title="Patients Needing Attention"
+            sub={`Review or follow-up, ${m.attention.urgent} with urgent items`}
+            value={m.attention.patients}
+            tone="amber"
+            href={BASE}
+          />
+          <KpiCard
+            icon={IconTarget}
+            title="Active Optimization Members"
+            sub={`Of ${m.active.members} optimization members`}
+            value={m.active.count}
+            tone="teal"
+            href={`${BASE}/dashboard/v3?view=members`}
+          />
+          <KpiCard
+            icon={IconFileList}
+            title="Open Tasks"
+            sub={m.tasks.overdue > 0 ? `${m.tasks.overdue} overdue` : "None overdue"}
+            badge={m.tasks.overdue > 0 ? <Chip tone="red">{m.tasks.overdue} overdue</Chip> : undefined}
+            value={m.tasks.open}
+            tone="violet"
+            href={`${BASE}/tasks`}
+          />
+        </section>
+      )}
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Performance opt={opt} />
