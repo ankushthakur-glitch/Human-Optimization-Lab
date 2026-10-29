@@ -44,6 +44,11 @@ import {
 } from "@/design-system/ui/table"
 import { TablePager, usePaged } from "@/components/table-pager"
 import { Illustration } from "@/components/illustrations/illustration"
+import {
+  type ImportResult,
+  recordImport,
+} from "@/components/practice/import-history"
+import { usePortal } from "@/components/practice/portal"
 
 /* -------------------------------------------------------------------------- */
 /*  Spec                                                                       */
@@ -361,6 +366,7 @@ function ImportBody<T>({
   spec: ImportSpec<T>
   onDone: () => void
 }) {
+  const portal = usePortal()
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [file, setFile] = React.useState<File | null>(null)
   const [reading, setReading] = React.useState(false)
@@ -410,6 +416,23 @@ function ImportBody<T>({
   function runImport() {
     if (ready.length) spec.onImport(ready.map((r) => r.value as T))
     if (routed.length) spec.onResolve?.(routed)
+    if (rows) {
+      recordImport({
+        portal: portal.key,
+        list: spec.many,
+        fileName: file?.name ?? `${spec.many} import.csv`,
+        rows: rows.map((r) => {
+          const { result, note } = rowResult(r, skipDuplicates, spec.addOnly)
+          return {
+            row: r.row,
+            name: r.label || "Unnamed",
+            detail: r.detail,
+            result,
+            note,
+          }
+        }),
+      })
+    }
     onDone()
     const n = ready.length
     const noun = n === 1 ? spec.one : spec.many
@@ -545,6 +568,34 @@ function ImportBody<T>({
       </DialogFooter>
     </>
   )
+}
+
+/* What became of one row, for the import history. Errors that only say the
+   person is already on file, or repeat an earlier row, count as duplicates. */
+function rowResult<T>(
+  r: ParsedRow<T>,
+  skipDuplicates: boolean,
+  addOnly?: boolean
+): { result: ImportResult; note: string } {
+  if (r.errors.length) {
+    const note = r.errors.join(" ")
+    const repeat = r.errors.every((e) =>
+      /already exists|^Repeats row/.test(e)
+    )
+    return { result: repeat ? "duplicate" : "error", note }
+  }
+  if (r.outcome) {
+    const result = (
+      { skip: "on-file", reactivate: "reactivated", review: "review" } as const
+    )[r.outcome.kind]
+    return { result, note: r.outcome.note }
+  }
+  if (r.warning && skipDuplicates)
+    return { result: "duplicate", note: `${r.warning} Skipped.` }
+  return {
+    result: "new",
+    note: r.warning ?? (addOnly ? "Added" : "Invited"),
+  }
 }
 
 function Review<T>({
@@ -751,7 +802,7 @@ function Review<T>({
   )
 }
 
-function Stat({
+export function Stat({
   icon,
   tone,
   label,

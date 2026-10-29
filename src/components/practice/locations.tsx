@@ -193,6 +193,7 @@ export function LocationsScreen() {
           icon: <IconAdd />,
           onClick: () => router.push(NEW_LOCATION_HREF),
         }}
+        hideExport
         exportName="Locations"
         exportRow={(l) => ({
           "Location ID": l.id,

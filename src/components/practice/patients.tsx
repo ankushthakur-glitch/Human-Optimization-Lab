@@ -877,6 +877,7 @@ export function PatientsScreen() {
             )}
           </>
         )}
+        hideExport
         exportName="Patients"
         exportRow={(p) => ({
           "Patient ID": p.id,

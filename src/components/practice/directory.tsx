@@ -550,20 +550,22 @@ export function Directory<T extends { id: string }>({
               {selected.length} selected
             </span>
             {bulkActions?.(selectedRows, clear)}
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-md"
-              onClick={() =>
-                exportRows(
-                  `${exportName} (selected)`,
-                  selectedRows.map(exportRow)
-                )
-              }
-            >
-              <IconDownload />
-              Export
-            </Button>
+            {!hideExport && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-md"
+                onClick={() =>
+                  exportRows(
+                    `${exportName} (selected)`,
+                    selectedRows.map(exportRow)
+                  )
+                }
+              >
+                <IconDownload />
+                Export
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
