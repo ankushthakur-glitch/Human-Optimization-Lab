@@ -855,3 +855,88 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Log drinks sheet uses fields for the day and the drink count
 - Added: Super Admin Portal / Clinical / Clinical content
 - Added: Clinic Manager Portal / Dashboard / Dashboard
+
+## 28-Oct-2026
+
+- Added: Super Admin Portal / Clinical Content / Clinical content home
+- Added: Provider Portal / Dashboard / Dashboard variation 1: queue
+- Added: Provider Portal / Dashboard / Dashboard variation 2: activity
+- Added: Provider Portal / Dashboard / Dashboard variation 3: practice
+- Added: Provider Portal / Dashboard / Dashboard variation 4: clinic day
+- Added: Provider Portal / Dashboard / Dashboard variation 5: panel
+- Added: Clinic Manager Portal / Dashboard / Dashboard variation 1: operations
+- Added: Clinic Manager Portal / Dashboard / Dashboard variation 2: activity
+- Added: Clinic Manager Portal / Dashboard / Dashboard variation 3: growth
+- Added: Clinic Manager Portal / Dashboard / Dashboard variation 4: team
+- Added: Clinic Manager Portal / Dashboard / Dashboard variation 5: locations
+- Added: Clinic Manager Portal / Reports / Reports (enrollment, encounters, outcomes, alerts, value and renewal, membership)
+- Added: Provider Portal / Patient Chart / Care plan: plan
+- Added: Provider Portal / Patient Chart / Care plan: quarterly review
+- Added: Provider Portal / Patient Chart / Care plan: plan edited by the physician (version 2)
+- Added: Provider Portal / Patient Chart / Care plan: history with versions
+- Added: Provider Portal / Patient Chart / Sticky notes
+- Added: Super Admin Portal / Clinical Content / Catalog: biomarker definitions
+- Added: Super Admin Portal / Clinical Content / Catalog: range management
+- Added: Super Admin Portal / Clinical Content / Catalog: sex and age rules
+- Added: Super Admin Portal / Clinical Content / Protocols and SOPs
+- Added: Super Admin Portal / Clinical Content / Rules: alert rules
+- Added: Super Admin Portal / Clinical Content / Rules: score weights
+- Added: Super Admin Portal / Clinical Content / Forecast thresholds
+- Added: Super Admin Portal / Clinical Content / Eval: test-case library
+- Added: Super Admin Portal / Clinical Content / Eval: regression gate
+- Added: Super Admin Portal / Clinical Content / Eval: version log
+- Added: Super Admin Portal / Clinical Content / Evidence: sources and re-review
+- Added: Patient Portal / Mobile App: Connect Records / Connect your records
+- Added: Patient Portal / Mobile App: Connect Records / Connect your records: texts and signature
+- Added: Patient Portal / Mobile App: Connect Records / Record building after connecting
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Plan tab (free patient)
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Sleep apnea questions
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Your sleep result
+- Added: Patient Portal / Mobile App: Upgrade and Plan Set Up / Set your starting point
+- Added: Patient Portal / Mobile App: Optimization Member / Plan tab: Today
+- Added: Patient Portal / Mobile App: Optimization Member / Plan tab: History
+- Added: Patient Portal / Mobile App: Optimization Member / Plan tab: Progress
+- Added: Patient Portal / Mobile App: Optimization Member / Plan tab: Outlook
+- Added: Patient Portal / Mobile App: Optimization Member / Exercise
+- Added: Patient Portal / Mobile App: Optimization Member / Lift details and progression (goblet squat)
+- Added: Patient Portal / Mobile App: Optimization Member / Eat (log a meal, alcohol)
+- Added: Patient Portal / Mobile App: Optimization Member / Sleep
+- Added: Patient Portal / Mobile App: Optimization Member / Mind
+- Added: Patient Portal / Mobile App: Optimization Member / Medication and supplements
+- Added: Patient Portal / Mobile App: Optimization Member / Measure (weigh-in, waist)
+- Added: Patient Portal / Mobile App: Optimization Member / Yesterday in numbers
+- Added: Patient Portal / Mobile App: Optimization Member / History trends
+- Added: Patient Portal / Mobile App: Optimization Member / Exercise history
+- Added: Patient Portal / Mobile App: Optimization Member / Eat history
+- Added: Patient Portal / Mobile App: Care / Care tab (catalog categories)
+- Added: Patient Portal / Mobile App: Care / Category: Laboratory (select panels)
+- Added: Patient Portal / Mobile App: Care / Category: Devices and wearables
+- Added: Patient Portal / Mobile App: Care / Item: test booked at a visit
+- Added: Patient Portal / Mobile App: Care / Item: device shipped home
+- Added: Patient Portal / Mobile App: Care / Book a time
+- Added: Patient Portal / Mobile App: Profile and Settings / Access (connected records)
+- Added: Patient Portal / Mobile App: Profile and Settings / Membership and billing
+- Removed: Patient Portal / Mobile App: Optimization Member / Yesterday
+- Removed: Patient Portal / Mobile App: Optimization Member / History
+- Removed: Patient Portal / Mobile App: Profile and Settings / Access (connected records and devices)
+- Removed: Patient Portal / Mobile App: Optimization Member / Exercise move
+- Removed: Provider Portal / Patient Chart / Care plan: changes requested
+- Removed: Patient Portal / Mobile App: Connect / Connect your records
+- Removed: Patient Portal / Mobile App: Connect / Connect your records: texts and signature
+- Removed: Patient Portal / Mobile App: Connect / Record building after connecting
+- Removed: Patient Portal / Mobile App: Optimization Member / Today
+- Removed: Provider Portal / Patient Chart / Care plan: pending review
+- Removed: Provider Portal / Patient Chart / Care plan: history, changes requested
+- Removed: Super Admin Portal / Settings / Optimization plans: plan catalogue
+- Removed: Patient Portal / Mobile App: Optimization Member / Today's exercise
+- Removed: Provider Portal / Dashboard / Dashboard
+- Removed: Clinic Manager Portal / Reports / Reports (enrollment, encounters, outcomes, alerts, value and renewal, membership, care plans)
+- Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Plan tab (free patient: plans matched to the record)
+- Removed: Patient Portal / Mobile App: Optimization Member / Plan tab: Review (day, week, month), Progress, Photos and Outlook
+- Removed: Patient Portal / Mobile App: Optimization Member / Log a meal (scan food, voice or typing)
+- Removed: Patient Portal / Mobile App: Profile and Settings / Care tab: membership
+- Removed: Super Admin Portal / Clinical / Clinical content
+- Removed: Clinic Manager Portal / Dashboard / Dashboard
+
+## 29-Oct-2026
+
