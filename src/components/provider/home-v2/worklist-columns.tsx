@@ -14,7 +14,6 @@ import {
   TYPE_META,
   itemDetail,
   itemTitle,
-  labValue,
   medicationBadgeText,
   outOfRange,
 } from "@/components/provider/home-v2/labels"
@@ -120,16 +119,8 @@ const RESULTS: Column[] = [
   {
     key: "result",
     head: "Result",
-    width: 280,
-    cell: (i) => {
-      const r = as<"abnormal_result">(i).payload
-      return (
-        <span className="inline-flex min-w-0 items-center gap-2">
-          <span className={TEXT}>{r.kind === "lab" ? labValue(r) : r.value}</span>
-          <ResultStatus r={r} />
-        </span>
-      )
-    },
+    width: 140,
+    cell: (i) => <ResultStatus r={as<"abnormal_result">(i).payload} />,
   },
   { key: "source", head: "Source", width: 260, cell: (i) => <Source item={i} /> },
   {

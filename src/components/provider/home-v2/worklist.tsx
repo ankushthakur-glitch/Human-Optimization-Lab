@@ -13,13 +13,14 @@ import { Button } from "@/design-system/ui/button"
 import { Empty, EmptyHeader, EmptyTitle } from "@/design-system/ui/empty"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/design-system/ui/input-group"
 import { Skeleton } from "@/design-system/ui/skeleton"
+import { Tabs, TabsList, TabsTrigger } from "@/design-system/ui/tabs"
+import { SUB_TAB, SUB_TABS_LIST } from "@/components/practice/directory"
 import { type Patient, fullName } from "@/components/practice/practice-data"
 import {
   Avatar,
   Badge,
   Card,
   CardFooter,
-  CardHeader,
   DIVIDER,
   DataTable,
   KitIcon,
@@ -33,6 +34,7 @@ import {
   PRIORITY_WORD,
   PatientLink,
   SyncFailedBadge,
+  TYPE_META,
   ageSex,
 } from "@/components/provider/home-v2/labels"
 import { AGE_BUCKETS, type AgeBucket, CARD_TYPES } from "@/components/provider/home-v2/selectors"
@@ -185,13 +187,25 @@ export function Worklist({
       aria-labelledby="worklist"
       className="h-[600px] scroll-mt-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
     >
-      {/* The card's heading on the left, search and filters on the right. */}
-      <CardHeader
-        title="Abnormal results"
-        titleId="worklist"
-        className="h-[65px] py-0"
-        actions={
-        <div className="flex flex-wrap items-center gap-2">
+      {/* The tabs are the card's heading: the segmented switch on the left,
+          search and filters on the right. */}
+      <header className={cn("flex shrink-0 flex-wrap items-center gap-3 border-b px-4 py-3", DIVIDER)}>
+        <h2 id="worklist" className="sr-only">
+          Worklist
+        </h2>
+        <Tabs value={tab} onValueChange={(v) => onTab(v as WorklistTab)} className="min-w-0 gap-0">
+          <TabsList aria-label="Worklist" className={cn(SUB_TABS_LIST, "h-9!")}>
+            {[
+              { value: "urgent" as WorklistTab, label: "Urgent action needed" },
+              ...CARD_TYPES.filter((t) => t !== "care_gap").map((t) => ({ value: t as WorklistTab, label: TYPE_META[t].metric })),
+            ].map((t) => (
+              <TabsTrigger key={t.value} value={t.value} className={cn(SUB_TAB, "tabular-nums")}>
+                {t.label} ({fmtInt(counts[t.value] ?? 0)})
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           {tab === "all" && <FilterBadge label="All types" onClear={() => onTab(CARD_TYPES[0]!)} />}
           {priority && <FilterBadge label={PRIORITY_WORD[priority]} onClear={onClearPriority} />}
           {ageLabel && <FilterBadge label={ageLabel} onClear={onClearAge} />}
@@ -207,8 +221,7 @@ export function Worklist({
             />
           </InputGroup>
         </div>
-        }
-      />
+      </header>
 
       {!ready ? (
         <WorklistSkeleton />
