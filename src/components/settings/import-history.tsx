@@ -2,13 +2,9 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { IconDownload, IconFileText } from "@/design-system/icons"
+import { IconFileText } from "@/design-system/icons"
 
-import {
-  type Column,
-  Directory,
-  exportRows,
-} from "@/components/practice/directory"
+import { type Column, Directory } from "@/components/practice/directory"
 import {
   type ImportRecord,
   type ImportResult,
@@ -242,29 +238,7 @@ function SheetView({
     k === "new" ? `New ${one}` : RESULT_LABEL[k]
 
   return (
-    <RecordPage
-      title={r.fileName}
-      backHref={back}
-      action={
-        <Button
-          variant="outline"
-          onClick={() =>
-            exportRows(
-              r.fileName.replace(/\.(csv|xlsx)$/i, "") + " results",
-              r.rows.map((row) => ({
-                Row: row.row,
-                ...row.cells,
-                Result: label(row.result),
-                Note: row.note,
-              }))
-            )
-          }
-        >
-          <IconDownload />
-          Download
-        </Button>
-      }
-    >
+    <RecordPage title={r.fileName} backHref={back}>
       <RecordCard title="Upload">
         <DetailGrid
           className="sm:grid-cols-2 lg:grid-cols-5"
