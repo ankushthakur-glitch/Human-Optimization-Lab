@@ -2,6 +2,7 @@ import { router } from "expo-router"
 import * as React from "react"
 import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 
+import { ChangePasswordSheet } from "@/components/change-password-sheet"
 import { FlowScreen } from "@/components/flow"
 import { PageGround } from "@/components/hol"
 import { billingOf } from "@/components/plan-account-pieces"
@@ -19,7 +20,7 @@ import {
   Stethoscope,
   Watch,
 } from "@/components/ph"
-import { Block, SmallAction, toast } from "@/components/record-kit"
+import { Block, SmallAction, Tag, toast } from "@/components/record-kit"
 import { Chevron, Row, Rows, SwitchRow, Tile, rowTitle } from "@/components/settings-rows"
 import { Sheet, SheetText } from "@/components/sheet"
 import { Button } from "@/components/ui"
@@ -60,6 +61,7 @@ export default function ProfileScreen() {
   const bill = billingOf(membership)
   const paid = bill.state !== "none" && bill.state !== "ended"
   const [devices, setDevices] = React.useState(false)
+  const [password, setPassword] = React.useState(false)
   const [noFaceId, setNoFaceId] = React.useState(false)
   const [loggingOut, setLoggingOut] = React.useState(false)
   const name = `${profile?.firstName ?? PATIENT.firstName} ${profile?.lastName ?? PATIENT.lastName}`
@@ -110,9 +112,11 @@ export default function ProfileScreen() {
           <MembershipCard membership={membership} period={period} />
         </Block>
 
-        {/* Devices are part of the paid plan (user, 5 Oct 2026). */}
-        {paid && (
-          <Block title="Devices">
+        {/* Devices are part of the paid plan (user, 5 Oct 2026): a member
+            connects them here; a free patient sees the row with its badge,
+            which opens what the plan adds (29 Oct 2026). */}
+        <Block title="Devices">
+          {paid ? (
             <Rows>
               {connectionsOf(onboarding, paid)
                 .filter((c) => c.kind === "device")
@@ -122,12 +126,31 @@ export default function ProfileScreen() {
                 })}
               <Row icon={<Plus size={16} color={color.primary} />} title="Add a device" right={<Chevron />} onPress={() => setDevices(true)} />
             </Rows>
-          </Block>
-        )}
+          ) : (
+            <Rows>
+              <Row
+                icon={<Watch size={16} color={color.primary} />}
+                title="Watch, ring or scale"
+                gap={10}
+                onPress={() => setDevices(true)}
+                accessibilityLabel="Watch, ring or scale, included in paid plan"
+                right={
+                  <>
+                    {/* Tag sits at the top of its column; the View centres it on the row. */}
+                    <View>
+                      <Tag tone="primary">Included in paid plan</Tag>
+                    </View>
+                    <Chevron />
+                  </>
+                }
+              />
+            </Rows>
+          )}
+        </Block>
 
         <Block title="Security">
           <Rows>
-            <Row icon={<Key size={16} color={color.primary} />} title="Change password" right={<Chevron />} onPress={() => router.push("/change-password")} />
+            <Row icon={<Key size={16} color={color.primary} />} title="Change password" right={<Chevron />} onPress={() => setPassword(true)} />
             <SwitchRow icon={<ScanSmiley size={16} color={color.primary} />} title="Face ID to open the app" value={!!onboarding.faceId} onChange={setFaceId} regular={false} />
           </Rows>
         </Block>
@@ -148,6 +171,7 @@ export default function ProfileScreen() {
       </FlowScreen>
 
       {devices && <DevicesSheet onClose={() => setDevices(false)} />}
+      {password && <ChangePasswordSheet onClose={() => setPassword(false)} />}
 
       {noFaceId && (
         <Sheet title="Face ID isn't set up" onClose={() => setNoFaceId(false)}>

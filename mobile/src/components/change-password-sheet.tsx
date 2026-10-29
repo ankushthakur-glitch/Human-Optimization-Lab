@@ -1,19 +1,17 @@
-import { router } from "expo-router"
 import * as React from "react"
-import { StyleSheet, type TextInput } from "react-native"
+import { KeyboardAvoidingView, Platform, StyleSheet, type TextInput } from "react-native"
 
-import { FlowScreen } from "@/components/flow"
 import { IconLock } from "@/components/icons"
-import { Card, toast } from "@/components/record-kit"
+import { toast } from "@/components/record-kit"
+import { Sheet } from "@/components/sheet"
 import { Button, PasswordField } from "@/components/ui"
 import { useAuth } from "@/lib/auth"
-import { space } from "@/lib/theme"
 import { confirmError, newPasswordError, VALIDATE } from "@/lib/validate"
 
-/** Change password, from Profile's Security: the current password, then a
-    new one and its confirmation, with the same rules as activation. She
-    stays signed in, and goes back to Profile with a toast. */
-export default function ChangePasswordScreen() {
+/** Change password, a popup over Profile's Security (29 Oct 2026): the
+    current password, then a new one and its confirmation, with the same
+    rules as activation. She stays signed in; it closes with a toast. */
+export function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
   const { changePassword } = useAuth()
   const [current, setCurrent] = React.useState("")
   const [password, setPassword] = React.useState("")
@@ -36,22 +34,13 @@ export default function ChangePasswordScreen() {
     const result = await changePassword(current, password)
     setPending(false)
     if (!result.ok) return setErrors({ current: result.message })
+    onClose()
     toast("Password changed")
-    if (router.canGoBack()) router.back()
-    else router.replace("/profile")
   }
 
   return (
-    <FlowScreen
-      page
-      title="Change password"
-      footer={
-        <Button onPress={onSubmit} pending={pending}>
-          Change password
-        </Button>
-      }
-    >
-      <Card style={styles.fields}>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Sheet popup title="Change password" onClose={onClose} dismissOnScrim={false}>
         <PasswordField
           label="Current password"
           icon={IconLock}
@@ -93,12 +82,10 @@ export default function ChangePasswordScreen() {
           onSubmitEditing={onSubmit}
           error={errors.confirm}
         />
-      </Card>
-    </FlowScreen>
+        <Button onPress={onSubmit} pending={pending}>
+          Change password
+        </Button>
+      </Sheet>
+    </KeyboardAvoidingView>
   )
 }
-
-const styles = StyleSheet.create({
-  // Frontline's form card: 16 inside and 16 between its fields.
-  fields: { gap: space.card },
-})
