@@ -3,11 +3,11 @@
 import * as React from "react"
 import {
   IconAdd,
-  IconCheck,
   IconEdit,
   IconEye,
   IconHelp,
   IconRefresh,
+  IconSend,
   IconSparkles,
   IconThumbsDown,
   IconThumbsUp,
@@ -560,8 +560,8 @@ export function CarePlanView({
           Cancel
         </Button>
         <Button size="sm" onClick={save}>
-          <IconCheck />
-          Save changes
+          <IconSend />
+          Send to patient
         </Button>
       </>
     ) : (
