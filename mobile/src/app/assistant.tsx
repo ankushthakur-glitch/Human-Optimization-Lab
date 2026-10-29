@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router"
+import { Redirect, router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -15,7 +15,6 @@ import {
   VisitBubble,
   keepTogether,
 } from "@/components/assistant-thread"
-import { AskUpgrade } from "@/components/ask-upgrade"
 import { AskWelcome, DISCLAIMER } from "@/components/ask-welcome"
 import { AttachSheet, MAX_ATTACHMENTS, type Attachment } from "@/components/attach-sheet"
 import { ChatBar, MyBubble, Options, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
@@ -223,6 +222,12 @@ const CHOOSERS = new Set<Msg["kind"]>(["ask", "results", "medicines", "urgent"])
 const STARTER_CATEGORIES = new Set<ChatTopic>(["result", "medicine", "visit", "plan"])
 
 export default function AssistantScreen() {
+  // The free patient has no AI chat (28 Oct 2026): any link here goes home.
+  if (useExperience().experience === "free") return <Redirect href="/" />
+  return <AssistantChat />
+}
+
+function AssistantChat() {
   // It rises from the bottom; the left edge swipe still drags it away.
   useDragBack("slide_from_bottom")
   const top = useTopInset()
@@ -955,7 +960,6 @@ export default function AssistantScreen() {
 
           {!ended && (
             <View>
-              {asking && experience === "free" && !bare && <AskUpgrade onPress={() => router.push("/plan")} />}
               <ChatBar
                 notice={creditNotice && creditNotice.words !== hiddenNotice && !limitShown ? { ...creditNotice, onClose: () => setHiddenNotice(creditNotice.words) } : undefined}
                 value={draft}

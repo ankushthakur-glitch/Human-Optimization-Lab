@@ -60,7 +60,7 @@ const INCLUDED = [
   "An exercise program with short videos",
   "Daily monitoring and a score for yesterday's goals",
   "Progress since you start, with a forecast",
-  "More AI credit for your assistant, and you can add more",
+  "Ask Inlay about your own record",
 ] as const
 
 /** How a member pays: monthly, cancel anytime, or a year up front for
@@ -103,7 +103,7 @@ export const priceOf = (cadence: Cadence = "monthly") => BILLING[cadence].price
 
 /** What stays free, membership or not (S-03), on the same page as the
     price. */
-export const FREE_STAYS = ["Every result and trend", "Reminders and care gaps", "Booking and paying for tests", "Weekly AI credit for your assistant"]
+export const FREE_STAYS = ["Every result and trend", "Reminders and care gaps", "Booking and paying for tests"]
 
 /** The newest approved version among a plan's versions. */
 function newest(versions: Plan["versions"]) {

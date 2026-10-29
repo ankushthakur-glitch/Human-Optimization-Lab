@@ -3,7 +3,7 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
-import { CalendarCheck, ChartLineUp, ClipboardText, Heart, Heartbeat, Info, Sparkle } from "@/components/ph"
+import { CalendarCheck, ChartLineUp, ClipboardText, Heart, Heartbeat, Info } from "@/components/ph"
 import { Group, HUE, NeedsRow, type Hue } from "@/components/record-kit"
 import { Button } from "@/components/ui"
 import { color, font, ink, space, touchRadius } from "@/lib/theme"
@@ -26,7 +26,6 @@ const BENEFITS: { title: string; meta: string; icon: Icon; hue: Hue }[] = [
   { title: "Your medicines and appointments", meta: "Kept up to date from your records, not by you", icon: CalendarCheck, hue: "blue" },
   { title: "Where your tests stand", meta: "See each test's status without a phone call", icon: ClipboardText, hue: "amber" },
   { title: "How you feel, in body and mind", meta: "What your records can't show, asked directly", icon: Heart, hue: "red" },
-  { title: "Ask Inlay about your record", meta: "Free questions every week", icon: Sparkle, hue: "violet" },
 ]
 
 export default function YourWhyScreen() {

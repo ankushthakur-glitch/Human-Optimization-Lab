@@ -107,7 +107,7 @@ const PAGES = {
   "/screens/practice/settings/[group]/[page]": [MANAGER, "Settings", "", { skip: true }],
   // A provider's portal, reached from the provider invite.
   "/screens/patients/dashboard": [PROVIDER, "Dashboard", "Dashboard: overview and worklist (abnormal results)"],
-  ...variations(PROVIDER, "/screens/patients/dashboard", ["queue", "activity", "practice", "clinic day", "panel"]),
+  ...variations(PROVIDER, "/screens/patients/dashboard", ["queue", "activity", "practice", "clinic day", "panel", "briefing", "workspace"]),
   "/screens/patients": [PROVIDER, "Patients", "Patients (list, status tabs, last sync)"],
   "/screens/patients/tasks": [PROVIDER, "Tasks", "Tasks (all and my tasks, task details)"],
   "/screens/patients/communication": [PROVIDER, "Communication", "Provider chats"],
@@ -120,7 +120,7 @@ const PAGES = {
   "/screens/patients/[id]/edit": [PROVIDER, "Patients", "Edit patient", { url: "/screens/patients/P10240/edit" }],
 }
 
-/** A dashboard's five design variations (v1..v5), offered for review
+/** A dashboard's design variations (v1, v2, ...), offered for review
     beside the dashboard until one is picked. */
 function variations(portal, base, names) {
   return Object.fromEntries(
@@ -247,11 +247,15 @@ const EXTRA = [
     ["Patient invitation: reminders", "invitations/reminders"],
     ["Alerts: notifications", "alerts/notifications"],
     ["Audit log", "security/audit-log"],
+    ["Import history", "security/import-history"],
+    ["Import history: patients sheet", "security/import-history/IM20481"],
   ]),
   ...settingsPages(PROVIDER, "/screens/patients/settings", [
     ["Patient flags", "account/flags"],
     ["Alerts: notifications", "alerts/notifications"],
     ["Audit log", "security/audit-log"],
+    ["Import history", "security/import-history"],
+    ["Import history: patients sheet", "security/import-history/IM20433"],
   ]),
 
   // A patient has no web invitation: they activate on the mobile app.
@@ -317,9 +321,10 @@ function patientApp() {
     [CONNECT, "Connect your records: texts and signature", at("/connect-texts")],
     [CONNECT, "Record building after connecting", at("/building")],
     [AI, "Ask Inlay", at("/assistant")],
-    [UPGRADE, "Plan tab (free patient)", at("/plan")],
-    [UPGRADE, "Step 1: what your plan would work on", at("/goal-plans")],
-    [UPGRADE, "Step 2: what your baseline needs", at("/baseline")],
+    [UPGRADE, "Plan tab: what an optimization plan adds (free patient)", at("/plan")],
+    [UPGRADE, "Step 1: your nine opportunities", at("/opportunities")],
+    [UPGRADE, "Opportunity details (sleep and apnoea)", at("/opportunity/sleep")],
+    [UPGRADE, "Step 2: what all nine need (tests and prices)", at("/plan-tests")],
     [UPGRADE, "Step 3: complete your enrollment", at("/enrollment")],
     [UPGRADE, "Step 4: payment method (card, HSA or FSA)", at("/payment")],
     [UPGRADE, "You're enrolled", at("/enrolled")],

@@ -43,7 +43,7 @@ const SEEN = "app-tour"
 type Stop = { target: TourTarget; title: string; body: string }
 
 function stopsFor(member: boolean, namesAsk: boolean): Stop[] {
-  return [
+  const stops: Stop[] = [
     {
       target: "tabs",
       title: "Find your way around",
@@ -52,18 +52,19 @@ function stopsFor(member: boolean, namesAsk: boolean): Stop[] {
         : "Home is your day. To do lists what is open, Record holds your results, Connect links your doctors and devices, and Upgrade shows what a membership adds.",
     },
     {
-      target: "assistant",
-      title: namesAsk ? "Ask Inlay" : "Ask your health assistant",
-      body: member
-        ? "Tap the circle to ask about your results, medicines, visits or plan."
-        : "Tap the circle to ask about your results, medicines or visits. The ring fills as you use this week's AI credit.",
-    },
-    {
       target: "account",
       title: "Your account",
       body: "Tap your photo for your profile, who can see your record, and your settings.",
     },
   ]
+  // The free patient has no AI chat, so no orb to point at (28 Oct 2026).
+  if (member)
+    stops.splice(1, 0, {
+      target: "assistant",
+      title: namesAsk ? "Ask Inlay" : "Ask your health assistant",
+      body: "Tap the circle to ask about your results, medicines, visits or plan.",
+    })
+  return stops
 }
 
 /** Wraps a tab's page: gives its parts useTourTarget and, on home, draws
