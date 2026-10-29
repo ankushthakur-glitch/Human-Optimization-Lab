@@ -869,7 +869,7 @@ export function useClinicDay(now: string | null) {
     const start = new Date(`${now.slice(0, 10)}T00:00:00`)
     const on = (d: Date) => all.filter((a) => a.start.startsWith(isoDay(d)))
     const today = isWorkingDay(start) ? on(start) : []
-    if (today.some((a) => !isPast(a))) return { today, day: today, title: "Today's schedule" }
+    if (today.length) return { today, day: today, title: `Today, ${SHORT.format(start)}` }
     const d = new Date(start)
     for (let i = 0; i < 7; i++) {
       d.setDate(d.getDate() + 1)
