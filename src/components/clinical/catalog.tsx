@@ -164,7 +164,7 @@ export function BiomarkersPage() {
             }}
           >
             {b.status === "Active" ? <IconLock /> : <IconLockOpen />}
-            {b.status === "Active" ? "Retire" : "Restore"}
+            {b.status === "Active" ? "Deactivate" : "Activate"}
           </DropdownMenuItem>
         </RowMenu>
       ),
@@ -209,6 +209,7 @@ export function BiomarkersPage() {
           icon: <IconAdd />,
           onClick: () => setEditing("new"),
         }}
+        hideExport
         exportName="Biomarker definitions"
         exportRow={(b) => ({
           ID: b.id,
@@ -471,6 +472,7 @@ export function RangesPage() {
             match: (b, v) => b.category === v,
           },
         ]}
+        hideExport
         exportName="Biomarker ranges"
         exportRow={(b) => ({
           Biomarker: b.name,
@@ -657,6 +659,7 @@ export function SexAgeRulesPage() {
           icon: <IconAdd />,
           onClick: () => setEditing("new"),
         }}
+        hideExport
         exportName="Sex and age rules"
         exportRow={(r) => ({
           Biomarker: nameOf(r.biomarkerId),

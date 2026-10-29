@@ -20,7 +20,6 @@ import {
 
 import { cn } from "@/lib/utils"
 import { BRAND_NAME, LOGO, MARK } from "@/lib/brand"
-import { AppearanceMenuSection } from "@/design-system/appearance-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/design-system/ui/avatar"
 import { Button } from "@/design-system/ui/button"
 import {
@@ -551,10 +550,6 @@ export function EhrShell({
                     Design system
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                {/* Light, dark or follow the OS. The accent is the product's,
-                    not the clinician's, so the colour row stays out of here. */}
-                <AppearanceMenuSection showAccent={false} />
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"

@@ -359,6 +359,7 @@ export function Directory<T extends { id: string }>({
   bulkActions,
   exportName,
   exportRow,
+  hideExport = false,
   emptyIllustration,
   initialFilters,
   aside,
@@ -386,6 +387,8 @@ export function Directory<T extends { id: string }>({
   exportName: string
   /** One row of the Excel export, keyed by column header. */
   exportRow: (row: T) => ExportRow
+  /** Drops the toolbar's export button. */
+  hideExport?: boolean
   emptyIllustration: IllustrationName
   /** Filter values to open with, keyed by filter id (e.g. from a link). */
   initialFilters?: Record<string, string>
@@ -661,24 +664,26 @@ export function Directory<T extends { id: string }>({
               </Popover>
             )}
 
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    className="rounded-md"
-                    aria-label={`Export ${noun}`}
-                    onClick={() =>
-                      exportRows(exportName, filtered.map(exportRow))
-                    }
-                  />
-                }
-              >
-                <IconDownload />
-              </TooltipTrigger>
-              <TooltipContent>Export to Excel</TooltipContent>
-            </Tooltip>
+            {!hideExport && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      className="rounded-md"
+                      aria-label={`Export ${noun}`}
+                      onClick={() =>
+                        exportRows(exportName, filtered.map(exportRow))
+                      }
+                    />
+                  }
+                >
+                  <IconDownload />
+                </TooltipTrigger>
+                <TooltipContent>Export to Excel</TooltipContent>
+              </Tooltip>
+            )}
 
             {addControl}
           </div>

@@ -18,7 +18,6 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconClock,
-  IconDna,
   IconDownload,
   IconFileCheck,
   IconInfo,
@@ -27,9 +26,7 @@ import {
   IconPulse,
   IconShare,
   IconSparkles,
-  IconTarget,
   IconTrendUp,
-  IconUserAdd,
   IconVideo,
 } from "@/design-system/icons"
 
@@ -67,7 +64,7 @@ import {
 } from "@/components/dashboard-kit-v2"
 import { AreaSpark } from "@/components/dashboard-kit-v2/charts"
 import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
-import { clockTime, ms } from "@/components/provider/mock-clock"
+import { clockTime } from "@/components/provider/mock-clock"
 import { NOW } from "@/components/provider/home-v2/clock"
 import { type Act, ItemPanel } from "@/components/provider/home-v2/item-panel"
 import { ageSex, itemName } from "@/components/provider/home-v2/labels"
@@ -76,21 +73,20 @@ import {
   CardLink,
   FooterLink,
   IconTile,
-  type Segment,
-  StatCard,
   StatCardSkeleton,
 } from "@/components/provider/home-v2/overview"
 import { type ActionOptions, actionLabel, applyAction, toQueue } from "@/components/provider/home-v2/selectors"
 import type { ActionKind, QueueItem } from "@/components/provider/home-v2/types"
 import { type Appointment, isoDay, useAppointments } from "@/components/provider/schedule/schedule-data"
-import { VariantFrame } from "@/components/provider/dashboard-variants/frame"
+import { MetricCards, VariantFrame } from "@/components/provider/dashboard-variants/frame"
 import { type Optimization, type PlanStage, PLAN_STAGES, useOptimization } from "@/components/provider/dashboard-variants/optimization-data"
 import { useProviderDay } from "@/components/provider/dashboard-variants/use-provider-day"
 
 /* Variation 5, "Panel": the physician's optimization panel, laid out after
    ReUI's Mesh home and Roster dashboard and drawn only with the build's own
-   components: the live dashboard's stat cards, the kit's metric cards,
-   cards, badges, table and spark, and the design system's items, insight
+   components: the four metric cards (upcoming appointments, patients
+   needing attention, active optimization members, open tasks), the kit's
+   metric cards, cards, badges, table and spark, and the design system's items, insight
    tiles, progress, sheet and chart. Visits run on the real clock, work
    items on the mock one. */
 
@@ -934,17 +930,6 @@ function ActionQueue({
 
 /* -------------------------------------------------------------- page -- */
 
-/** Today's visits by how they stand, as the live dashboard's stat card shows them. */
-function visitSegments(day: Appointment[]): Segment[] {
-  const n = (s: Appointment["status"][]) => day.filter((a) => s.includes(a.status)).length
-  return [
-    { label: "Completed", value: n(["Completed"]), color: SUBTLE.green },
-    { label: "Checked in", value: n(["Checked in"]), color: SUBTLE.orange },
-    { label: "Scheduled", value: n(["Scheduled"]), color: SUBTLE.blue },
-    { label: "Missed", value: n(["No show", "Cancelled"]), color: SUBTLE.red },
-  ]
-}
-
 export function DashboardBrief() {
   const d = useProviderDay()
   const opt = useOptimization()
@@ -994,16 +979,7 @@ export function DashboardBrief() {
 
   /* ------------------------------------------------------ stats -- */
 
-  const day = d.clinic.today
-  const booked = day.filter((a) => a.status !== "Cancelled")
-  const next = d.clinic.day.find((a) => a.status === "Scheduled" || a.status === "Checked in")
-  const nextPatient = next ? d.byId.get(next.patientId) : undefined
-  const minsTo = next && d.now ? Math.round((ms(next.start) - ms(d.now)) / 60_000) : 0
-  const late = opt.reviewing.filter((o) => (o.stageDays ?? 0) >= 7).length
-  const byStatus = (s: MemberStatus) => opt.active.filter((o) => statusOf(o) === s).length
   const upgradePlans = new Set(opt.upgrade.flatMap((o) => o.plans)).size
-  const free = opt.all.filter((o) => !o.member).length
-  const oldest = [...opt.reviewing].sort((a, b) => (b.stageDays ?? 0) - (a.stageDays ?? 0))[0]
 
   /* --------------------------------------------------- the queue -- */
 
@@ -1105,8 +1081,8 @@ export function DashboardBrief() {
 
       {!ready ? (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {Array.from({ length: 5 }, (_, i) => (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }, (_, i) => (
               <StatCardSkeleton key={i} />
             ))}
           </div>
@@ -1118,76 +1094,7 @@ export function DashboardBrief() {
         </>
       ) : (
         <>
-          <section aria-label="Your panel at a glance" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            <StatCard
-              icon={IconFileCheck}
-              label="Plans to review"
-              when="Waiting"
-              value={opt.reviewing.length}
-              of={opt.members.length}
-              meta={late > 0 ? `${late} waiting 7 days or more` : `${plural(opt.tests.length, "baseline test")} to route`}
-              segments={[
-                { label: "Pending review", value: opt.byStage.find((s) => s.stage === "Pending review")?.count ?? 0, color: SUBTLE.orange },
-                { label: "Changes asked", value: opt.byStage.find((s) => s.stage === "Changes requested")?.count ?? 0, color: SUBTLE.red },
-              ]}
-              footer={<FooterLink href={oldest ? carePlanHref(oldest.patient.id) : BASE}>Review the oldest</FooterLink>}
-            />
-            <StatCard
-              icon={IconTarget}
-              label="On track"
-              when="This week"
-              value={byStatus("On track")}
-              of={opt.active.length}
-              meta={`${Math.round(opt.avgProgress * 100)}% to goal on average`}
-              segments={(["On track", "At risk", "Slipping"] as MemberStatus[]).map((s) => ({
-                label: s,
-                value: byStatus(s),
-                color: STATUS_COLOR[s],
-              }))}
-              footer={<FooterLink href={BASE}>Open members</FooterLink>}
-            />
-            <StatCard
-              icon={IconDna}
-              label="Bio age gap"
-              when="Years"
-              value={opt.bio.avgGap}
-              meta={`Members on plans ${years(opt.bio.avgGapMembers)}`}
-              segments={[
-                { label: "Younger", value: opt.bio.younger, color: SUBTLE.green },
-                { label: "Near age", value: opt.bio.near, color: SUBTLE.blue },
-                { label: "Older", value: opt.bio.older, color: SUBTLE.red },
-              ]}
-              footer={<FooterLink href={BASE}>View patients</FooterLink>}
-            />
-            <StatCard
-              icon={IconUserAdd}
-              label="Upgrade candidates"
-              when="Free"
-              value={opt.upgrade.length}
-              of={free}
-              meta={`${plural(upgradePlans, "plan")} matched from records`}
-              segments={[
-                { label: "Plan fit", value: opt.upgrade.length, color: SUBTLE.violet },
-                { label: "Not yet", value: Math.max(0, free - opt.upgrade.length), color: GREY },
-              ]}
-              footer={<FooterLink href={BASE}>View candidates</FooterLink>}
-            />
-            <StatCard
-              icon={IconCalendar}
-              label="Visits"
-              when="Today"
-              value={booked.length}
-              meta={
-                next
-                  ? `Next ${clockTime(next.start)}, ${nextPatient ? fullName(nextPatient) : next.type}${
-                      next.status === "Checked in" ? ", in the room" : minsTo > 0 && minsTo < 60 ? `, in ${minsTo} min` : ""
-                    }`
-                  : "None left today"
-              }
-              segments={visitSegments(day)}
-              footer={<FooterLink href={`${BASE}/schedule`}>Open schedule</FooterLink>}
-            />
-          </section>
+          <MetricCards />
 
           <OptimizationOverview opt={opt} />
 

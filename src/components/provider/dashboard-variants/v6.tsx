@@ -2,21 +2,17 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { IconCalendar, IconChartUp, IconChat, IconFileList, IconTarget } from "@/design-system/icons"
+import { IconChat, IconFileList } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/design-system/ui/button"
-import { SUBTLE } from "@/components/patient-dashboard/widgets/kit"
 import { fullName } from "@/components/practice/practice-data"
 import { NOW } from "@/components/provider/mock-clock"
 import { ItemPanel } from "@/components/provider/home-v2/item-panel"
 import { recordAudit, workItems } from "@/components/provider/home-v2/mock"
 import {
-  FooterLink,
   MyTasks,
   NeedsYou,
-  type Segment,
-  StatCard,
   StatCardSkeleton,
   TodaySchedule,
   WeekAhead,
@@ -32,16 +28,15 @@ import {
 } from "@/components/provider/home-v2/selectors"
 import type { ActionKind, QueueItem, WorkItem } from "@/components/provider/home-v2/types"
 import { Worklist, type WorklistTab } from "@/components/provider/home-v2/worklist"
-import { VariantFrame } from "@/components/provider/dashboard-variants/frame"
-import { type Optimization, useOptimization } from "@/components/provider/dashboard-variants/optimization-data"
-import { isoDay, useAppointments } from "@/components/provider/schedule/schedule-data"
+import { MetricCards, VariantFrame } from "@/components/provider/dashboard-variants/frame"
+import { useOptimization } from "@/components/provider/dashboard-variants/optimization-data"
 import { Activity } from "@/components/provider/dashboard-variants/v2"
 import { CarePlanReview } from "@/components/provider/dashboard-variants/v5"
 import { useProviderDay } from "@/components/provider/dashboard-variants/use-provider-day"
 
 /* Variation 6, Briefing: the dashboard read top to bottom as a morning
-   briefing. Section 1 is the four numbers (appointments, members on track,
-   optimization members, visits). Section 2 is the day in three equal
+   briefing. Section 1 is the four numbers (upcoming appointments, patients
+   needing attention, active optimization members, open tasks). Section 2 is the day in three equal
    columns, what is booked, what is yours and what needs you, so nothing
    hides behind a chart. Section 3 is the trends: care plan review, the daily
    optimization score and visits by day. Section 4 is the Worklist table:
@@ -56,23 +51,11 @@ type Finished = { label: string; snapshot: WorkItem; timer: ReturnType<typeof se
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
-type Standing = "On track" | "Slipping" | "Off track" | "In review" | "Awaiting patient" | "Not a member"
-
-/** The one-word state of a patient's own dashboard. */
-function standingOf(o: Optimization): Standing {
-  if (!o.member) return "Not a member"
-  if (o.stage === "Pending review" || o.stage === "Changes requested") return "In review"
-  if (o.stage === "Sent to patient") return "Awaiting patient"
-  const last = o.dailyScore?.[o.dailyScore.length - 1] ?? 0
-  return last >= 70 ? "On track" : last >= 50 ? "Slipping" : "Off track"
-}
-
 /* ------------------------------------------------------------- page -- */
 
 export function DashboardBriefing() {
   const { ready, byId, mine, open, counts, urgent, now, clinic, work } = useProviderDay()
   const opt = useOptimization()
-  const appointments = useAppointments(now)
 
   /* The item panel walks the rows as the worklist shows them; a worked row
      keeps an Undo until its timer ends, as on the live dashboard. */
@@ -162,53 +145,6 @@ export function DashboardBriefing() {
   }
 
 
-  /* Appointments: this week, Monday to Friday, by where the visit happens. */
-  const week = React.useMemo(() => {
-    if (!now) return []
-    const today = new Date(`${now.slice(0, 10)}T00:00:00`)
-    const monday = new Date(today)
-    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
-    const friday = new Date(monday)
-    friday.setDate(monday.getDate() + 4)
-    return appointments.filter(
-      (a) => a.status !== "Cancelled" && a.start.slice(0, 10) >= isoDay(monday) && a.start.slice(0, 10) <= isoDay(friday)
-    )
-  }, [appointments, now])
-  const inPerson = week.filter((a) => a.mode === "In person").length
-  const apptSegs: Segment[] = [
-    { label: "In person", value: inPerson, color: SUBTLE.green },
-    { label: "Virtual", value: week.length - inPerson, color: SUBTLE.blue },
-  ]
-  const toCome = week.filter((a) => a.status === "Scheduled" || a.status === "Checked in").length
-
-  /* Optimization members by how their own dashboard reads today. */
-  const standings = opt.members.map(standingOf)
-  const memberSegs: Segment[] = [
-    { label: "On track", value: standings.filter((s) => s === "On track").length, color: SUBTLE.green },
-    { label: "Slipping", value: standings.filter((s) => s === "Slipping").length, color: SUBTLE.orange },
-    { label: "Off track", value: standings.filter((s) => s === "Off track").length, color: SUBTLE.red },
-    { label: "Not running", value: standings.filter((s) => s === "In review" || s === "Awaiting patient").length, color: SUBTLE.blue },
-  ]
-  const todayScores = opt.active.map((o) => o.dailyScore?.[6]).filter((n): n is number => n !== undefined)
-  const weekAgoScores = opt.active.map((o) => o.dailyScore?.[0]).filter((n): n is number => n !== undefined)
-  const mean = (xs: number[]) => (xs.length ? Math.round(xs.reduce((t, x) => t + x, 0) / xs.length) : 0)
-  const scoreSegs: Segment[] = [
-    { label: "On track", value: todayScores.filter((n) => n >= 70).length, color: SUBTLE.green },
-    { label: "Slipping", value: todayScores.filter((n) => n >= 50 && n < 70).length, color: SUBTLE.orange },
-    { label: "Missed", value: todayScores.filter((n) => n < 50).length, color: SUBTLE.red },
-  ]
-  const newMembers = opt.members.filter((o) => (o.stageDays ?? 99) <= 7 && o.stage !== "Active").length
-
-  const day = clinic.today
-  const booked = day.filter((a) => a.status !== "Cancelled")
-  const seen = day.filter((a) => a.status === "Completed").length
-  const visitSegs: Segment[] = [
-    { label: "Completed", value: seen, color: SUBTLE.green },
-    { label: "Checked in", value: day.filter((a) => a.status === "Checked in").length, color: SUBTLE.orange },
-    { label: "Scheduled", value: day.filter((a) => a.status === "Scheduled").length, color: SUBTLE.blue },
-    { label: "Missed", value: day.filter((a) => a.status === "No show" || a.status === "Cancelled").length, color: SUBTLE.red },
-  ]
-
   const loaded = ready && opt.ready && now
 
   return (
@@ -240,52 +176,7 @@ export function DashboardBriefing() {
         </div>
       ) : (
         <>
-          {/* Section 1: the four numbers. */}
-          <section aria-label="Optimization at a glance" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              icon={IconCalendar}
-              label="Appointments"
-              when="This week"
-              value={week.length}
-              meta={`${toCome} still to come, ${inPerson} in person, ${week.length - inPerson} virtual`}
-              segments={apptSegs}
-              footer={<FooterLink href={`${BASE}/schedule`}>View appointments</FooterLink>}
-            />
-            <StatCard
-              icon={IconChartUp}
-              label="Members on track"
-              when="Today"
-              value={scoreSegs[0]!.value}
-              of={todayScores.length}
-              meta={
-                todayScores.length > 0
-                  ? `Average daily score ${mean(todayScores)}, ${mean(weekAgoScores)} a week ago`
-                  : `No running plans, ${opt.reviewing.length} in review`
-              }
-              segments={scoreSegs}
-              footer={<FooterLink href={BASE}>View daily scores</FooterLink>}
-            />
-            <StatCard
-              icon={IconTarget}
-              label="Optimization members"
-              when="Now"
-              value={opt.members.length}
-              of={opt.all.length}
-              meta={`${opt.active.length} running a plan, ${plural(newMembers, "new member")} this week`}
-              segments={memberSegs}
-              footer={<FooterLink href={BASE}>View members</FooterLink>}
-            />
-            <StatCard
-              icon={IconCalendar}
-              label="Visits"
-              when="Today"
-              value={seen}
-              of={booked.length}
-              meta={`${booked.length - seen} still to see`}
-              segments={visitSegs}
-              footer={<FooterLink href={`${BASE}/schedule`}>Open schedule</FooterLink>}
-            />
-          </section>
+          <MetricCards />
 
           {/* Section 2: the day, in three equal columns. */}
           <section aria-label="Your day" className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">

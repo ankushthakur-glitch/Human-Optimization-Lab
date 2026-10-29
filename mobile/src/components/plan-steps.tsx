@@ -9,14 +9,15 @@ import { CaretLeft, CaretRight } from "@/components/ph"
 import { Button } from "@/components/ui"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
-/** The plan set-up's four steps (/goal-plans, /baseline,
-    /enrollment, /payment). */
+/** The plan set-up's four steps (client deck, 27 Oct 2026): what all nine
+    need (/plan-tests), taking one out (/plan-remove), /enrollment and
+    /payment. */
 export const PLAN_STEPS = 4
 
 /** Where Back goes from each step when there is no screen behind it (the
-    step opened from a link): the Plan tab before step 1, else the step
-    before. */
-const BEFORE = ["/plan", "/goal-plans", "/baseline", "/enrollment"] as const
+    step opened from a link): the list of nine before the first steps, else
+    the step before. */
+const BEFORE = ["/plan-tests", "/plan-tests", "/plan-tests", "/enrollment"] as const
 
 function backFrom(step?: number) {
   if (router.canGoBack()) router.back()
@@ -54,11 +55,14 @@ export function PlanStepPage({
   later,
   skip,
   noBack,
+  backLabel = "Back",
+  header,
   headerTitle = "Your plan",
   onTitlePress,
   title,
   lead,
-  onNext,
+  onNext = () => {},
+  noFoot,
   nextLabel = "Continue",
   nextDisabled,
   nextPending,
@@ -79,6 +83,10 @@ export function PlanStepPage({
   skip?: () => void
   /** No "Back" in the foot (the header's caret and the swipe still go back). */
   noBack?: boolean
+  /** The word beside the foot's caret, when it is not "Back" ("All nine"). */
+  backLabel?: string
+  /** Replaces the header bar: the pages before the set-up wear the Inlay mark. */
+  header?: React.ReactNode
   /** The header's words: "Your plan", or "Payment method" on the last step. */
   headerTitle?: string
   /** Makes the header's words a button (a demo shortcut). */
@@ -86,7 +94,9 @@ export function PlanStepPage({
   /** The heading over the list; none on the last step, whose header names it. */
   title?: string
   lead?: string
-  onNext: () => void
+  onNext?: () => void
+  /** No foot at all: the page is read, and the header's caret goes back. */
+  noFoot?: boolean
   nextLabel?: string
   nextDisabled?: boolean
   nextPending?: boolean
@@ -104,7 +114,7 @@ export function PlanStepPage({
     <View style={styles.screen}>
       <DarkStatusBar />
       <PageGround />
-      <PageHeader title={headerTitle} onTitlePress={onTitlePress} onBack={back} right={step ? <PlanSteps step={step} total={total} /> : undefined} />
+      {header ?? <PageHeader title={headerTitle} onTitlePress={onTitlePress} onBack={back} right={step ? <PlanSteps step={step} total={total} /> : undefined} />}
       {!!title && (
         <View style={styles.head}>
           <Text style={styles.title} accessibilityRole="header">
@@ -113,10 +123,11 @@ export function PlanStepPage({
           {!!lead && <Text style={styles.lead}>{lead}</Text>}
         </View>
       )}
-      <ScrollView style={styles.fill} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.fill} contentContainerStyle={[styles.list, !title && styles.listUntitled]} showsVerticalScrollIndicator={false}>
         {children}
       </ScrollView>
       {/* A slimmer foot than other pages, so more of the list shows. */}
+      {!noFoot && (
       <PageFooter
         style={{
           backgroundColor: "transparent",
@@ -138,7 +149,7 @@ export function PlanStepPage({
                 !noBack && (
                 <Pressable onPress={back} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
                   <CaretLeft size={16} color={ink.secondary} />
-                  <Text style={styles.backText}>Back</Text>
+                  <Text style={styles.backText}>{backLabel}</Text>
                 </Pressable>
                 )
               )}
@@ -156,6 +167,7 @@ export function PlanStepPage({
           </View>
         </View>
       </PageFooter>
+      )}
       {overlay}
     </View>
   )
@@ -175,6 +187,8 @@ const styles = StyleSheet.create({
   head: { gap: space.inline, paddingHorizontal: space.gutter, paddingTop: space.section, paddingBottom: space.item },
   title: { fontFamily: font.semibold, fontSize: 18, lineHeight: 24, letterSpacing: -0.2, color: ink.strong },
   lead: { ...type.body },
+  // No heading of its own: the first content sits as far under the header bar as a heading would.
+  listUntitled: { paddingTop: space.section },
   list: { gap: space.inline, paddingHorizontal: space.gutter, paddingTop: space.line, paddingBottom: space.item },
 
   aboveFoot: { marginBottom: space.item },

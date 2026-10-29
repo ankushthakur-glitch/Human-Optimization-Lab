@@ -2,15 +2,10 @@
 
 import * as React from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { RefreshIcon } from "@hugeicons/core-free-icons"
 
-import { Button } from "@/design-system/ui/button"
-import { Skeleton } from "@/design-system/ui/skeleton"
-import { Spinner } from "@/design-system/ui/spinner"
 import { fullName, patients, providers } from "@/components/practice/practice-data"
-import { KitIcon } from "@/components/dashboard-kit-v2"
 import { PROVIDER_ID, ProviderShell } from "@/components/provider/provider-shell"
-import { NOW, fmtDateTime } from "@/components/provider/home-v2/clock"
+import { NOW } from "@/components/provider/home-v2/clock"
 import { TYPE_META } from "@/components/provider/home-v2/labels"
 import { ItemPanel } from "@/components/provider/home-v2/item-panel"
 import {
@@ -33,7 +28,6 @@ import {
   applyAction,
   byPriority,
   isOpen,
-  oldestSync,
   openQueue,
   patientsInScope,
   toQueue,
@@ -41,7 +35,6 @@ import {
 } from "@/components/provider/home-v2/selectors"
 import type { ActionKind, QueueItem, WorkItem } from "@/components/provider/home-v2/types"
 import { Worklist, type WorklistTab } from "@/components/provider/home-v2/worklist"
-import { VariantSwitch } from "@/components/provider/dashboard-variants/frame"
 
 /* The provider home (/screens/patients/dashboard): the physician's whole
    day on one page, read top to bottom. Five stat cards (appointments,
@@ -108,19 +101,6 @@ export function ProviderHomeV2() {
   /* Appointments run on the real clock, as the Schedule does. */
   const now = useNow()
   const clinic = useClinicDay(now)
-  /* Sync now pulls a fresh copy for every patient; the mock stamps the
-     clock's time once the pull ends. */
-  const [syncedAt, setSyncedAt] = React.useState<string | null>(null)
-  const [syncing, setSyncing] = React.useState(false)
-  const synced = syncedAt ?? oldestSync(inScope)
-  function syncNow() {
-    setSyncing(true)
-    setTimeout(() => {
-      setSyncedAt(NOW)
-      setSyncing(false)
-    }, 1200)
-  }
-
   /* The Worklist keeps a worked row, with Undo, until its timer ends. */
   const listed = React.useMemo(() => {
     const ids = new Set(inScope.map((p) => p.id))
@@ -225,28 +205,12 @@ export function ProviderHomeV2() {
   return (
     <ProviderShell active="dashboard">
       <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-surface-sunken">
-        <div className="border-b border-border bg-card px-6 py-2">
-          <VariantSwitch />
-        </div>
         <div className="flex w-full min-w-0 flex-col gap-5 px-6 pt-5 pb-8">
-          {/* The greeting, with when the records last synced and Sync now at the row's end. */}
+          {/* The greeting. */}
           <header className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-lg leading-7 font-semibold">
               {greeting(NOW)}, Dr. {me ? fullName({ firstName: me.firstName, lastName: me.lastName }) : "Daniel Reyes"}
             </h1>
-            <div className="ml-auto flex flex-wrap items-center gap-2.5">
-              {!ready ? (
-                <Skeleton className="h-4 w-48 rounded-sm" />
-              ) : (
-                synced && (
-                  <span className="text-[13px] text-muted-foreground tabular-nums">Records synced {fmtDateTime(synced)}</span>
-                )
-              )}
-              <Button variant="outline" size="sm" disabled={!ready || syncing} onClick={syncNow} className="bg-card">
-                {syncing ? <Spinner /> : <KitIcon icon={RefreshIcon} />}
-                {syncing ? "Syncing" : "Sync now"}
-              </Button>
-            </div>
           </header>
 
           {ready && now ? (

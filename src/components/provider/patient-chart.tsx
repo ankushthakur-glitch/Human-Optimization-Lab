@@ -106,11 +106,6 @@ import {
 } from "@/design-system/ui/empty"
 import { Input } from "@/design-system/ui/input"
 import { Spinner } from "@/design-system/ui/spinner"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/design-system/ui/tooltip"
 import { Illustration } from "@/components/illustrations/illustration"
 
 /* The provider's patient chart, laid out like the Solid EHR "Patient
@@ -817,7 +812,7 @@ function SyncPanel({
   collapsed: boolean
   onNotes: () => void
 }) {
-  const { record, state, syncedAt, syncing, sync } = chart
+  const { record, state, syncedAt, syncing } = chart
   const { model } = useDashboard(patient, record)
   const waiting = state === "Awaiting consent"
   const status = syncing
@@ -837,27 +832,6 @@ function SyncPanel({
         .map((c) => c.tag ?? c.name)
     ),
   ]
-
-  const button = (
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={waiting || syncing}
-      onClick={sync}
-      className={cn(
-        "justify-center border-primary/40 bg-card text-primary-tint hover:text-primary-tint",
-        state === "Source exception" &&
-          "border-destructive/40 text-destructive hover:text-destructive"
-      )}
-    >
-      {syncing ? <Spinner /> : <IconRefresh />}
-      {syncing
-        ? "Syncing"
-        : state === "Source exception"
-          ? "Retry sync"
-          : "Sync now"}
-    </Button>
-  )
 
   return (
     <div
@@ -937,16 +911,6 @@ function SyncPanel({
           />
           {status}
         </SyncFact>
-        {waiting ? (
-          <Tooltip>
-            <TooltipTrigger render={<span tabIndex={0} />}>
-              {button}
-            </TooltipTrigger>
-            <TooltipContent>Available once the patient consents</TooltipContent>
-          </Tooltip>
-        ) : (
-          button
-        )}
       </FactCard>
       <FactCard collapsed={collapsed}>
         <SyncFact label="Last visit">

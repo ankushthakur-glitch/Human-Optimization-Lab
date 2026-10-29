@@ -8,6 +8,7 @@ import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 import { CaretLeft, Sparkle } from "@/components/ph"
 import { useTopInset } from "@/components/ui"
 import { SiriSheet } from "@/components/voiceorbs/siri-sheet"
+import { useExperience } from "@/lib/experience"
 import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* The page frame of the signed-in screens, from the Figma "Hol" file
@@ -60,8 +61,11 @@ export function PageHeader({
   compact,
   floating,
   onTitlePress,
+  fitTitle,
 }: {
   title?: string
+  /** A long title kept on one line at a smaller size, never cut with "…". */
+  fitTitle?: boolean
   /** Makes the title a button (a demo shortcut, e.g. the flourishing result). */
   onTitlePress?: () => void
   back?: boolean
@@ -103,7 +107,13 @@ export function PageHeader({
                   </Text>
                 </Pressable>
               ) : (
-                <Text style={styles.headerTitle} numberOfLines={1} accessibilityRole="header">
+                <Text
+                  style={[styles.headerTitle, fitTitle && styles.headerTitleFit]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit={fitTitle}
+                  minimumFontScale={0.8}
+                  accessibilityRole="header"
+                >
                   {title}
                 </Text>
               ))}
@@ -174,6 +184,8 @@ export function AskButton({
   params?: { marker?: string; topic?: string; ask?: string }
 }) {
   const open = onPress ?? (() => router.push(params ? { pathname: "/assistant", params } : "/assistant"))
+  // The free patient has no AI chat (28 Oct 2026).
+  if (useExperience().experience === "free") return null
   return (
     <Pressable
       onPress={open}
@@ -290,6 +302,7 @@ const styles = StyleSheet.create({
   headerInner: { flexDirection: "row", alignItems: "center", gap: space.item, width: "100%", maxWidth: 420, alignSelf: "center" },
   headerTitleRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.inline },
   headerTitle: { ...type.tabTitle, flexShrink: 1 },
+  headerTitleFit: { fontSize: 16, lineHeight: 23 },
   headerAction: { flexDirection: "row", alignItems: "center", gap: space.mark },
   headerActionText: { fontFamily: font.medium, fontSize: 14, lineHeight: 18, color: ink.primary },
 

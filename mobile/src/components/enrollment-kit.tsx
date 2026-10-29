@@ -146,17 +146,24 @@ export function PlanCard({
   goals,
   billing,
   onIncluded,
+  title,
+  billedNote,
 }: {
-  goals: string[] | undefined
+  goals?: string[] | undefined
   billing: Cadence
   onIncluded: () => void
+  /** The card's name, when it is not the plan named from her goals. */
+  title?: string
+  /** What follows "Billed yearly" / "Billed monthly" on the card's second line. */
+  billedNote?: string
 }) {
   const price = TIERS.optimization.billing[billing]
   const yearly = billing === "yearly"
-  const name = planName(goals)
+  const name = title ?? planName(goals)
   // Both notes fit one line and the struck price keeps its line when
   // monthly (hidden), so the card is the same height either way.
-  const note = yearly ? "Billed yearly, cancel anytime" : "Billed monthly, cancel anytime"
+  const tail = billedNote ?? "cancel anytime"
+  const note = yearly ? `Billed yearly, ${tail}` : `Billed monthly, ${tail}`
   const period = yearly ? "/ year" : "a month"
   return (
     <View style={styles.planCard}>

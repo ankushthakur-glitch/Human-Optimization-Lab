@@ -93,7 +93,7 @@ function useBiomarkerNames() {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Protocols and SOPs                                                         */
+/*  Protocols                                                         */
 /* -------------------------------------------------------------------------- */
 
 export function ProtocolsPage() {
@@ -177,7 +177,7 @@ export function ProtocolsPage() {
             }}
           >
             {p.status === "Active" ? <IconLock /> : <IconLockOpen />}
-            {p.status === "Active" ? "Retire" : "Restore"}
+            {p.status === "Active" ? "Deactivate" : "Activate"}
           </DropdownMenuItem>
         </RowMenu>
       ),
@@ -187,7 +187,7 @@ export function ProtocolsPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <Directory
-        title="Protocols and SOPs"
+        title="Protocols"
         leading={<SettingsBack />}
         statusTabs={{ options: PROTOCOL_TYPES, value: (p) => p.type }}
         noun="protocols"
@@ -215,7 +215,7 @@ export function ProtocolsPage() {
           icon: <IconAdd />,
           onClick: () => setEditing("new"),
         }}
-        exportName="Protocols and SOPs"
+        exportName="Protocols"
         exportRow={(p) => ({
           ID: p.id,
           Title: p.title,
@@ -277,7 +277,7 @@ function ProtocolForm({
       protocols.patch(protocol.id, values)
       toast.success("Protocol saved")
     } else {
-      const prefix = draft.type === "SOP" ? "SOP" : "PR"
+      const prefix = "PR"
       const n = items.filter((p) => p.id.startsWith(prefix)).length + 1
       protocols.add([
         {
@@ -502,6 +502,7 @@ export function AlertRulesPage() {
           icon: <IconAdd />,
           onClick: () => setEditing("new"),
         }}
+        hideExport
         exportName="Alert rules"
         exportRow={(r) => ({
           Rule: r.name,

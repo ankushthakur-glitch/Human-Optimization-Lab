@@ -173,7 +173,7 @@ export function StatCard({
   value: number
   of?: number
   meta: React.ReactNode
-  segments: Segment[]
+  segments?: Segment[]
   footer: React.ReactNode
 }) {
   return (
@@ -191,8 +191,12 @@ export function StatCard({
           </span>
           <span className="truncate text-xs text-muted-foreground tabular-nums">{meta}</span>
         </div>
-        <SegmentBar segments={segments} label={`${label}: ${segments.map((s) => `${s.label} ${s.value}`).join(", ")}`} />
-        <LegendGrid segments={segments} />
+        {segments && (
+          <>
+            <SegmentBar segments={segments} label={`${label}: ${segments.map((s) => `${s.label} ${s.value}`).join(", ")}`} />
+            <LegendGrid segments={segments} />
+          </>
+        )}
       </div>
       {footer}
     </Card>
@@ -348,7 +352,6 @@ export function TodaySchedule({
       <CardHeader
         title={title}
         count={<Badge tone="light">{day.length}</Badge>}
-        actions={<CardLink href={`${BASE}/schedule`}>Full schedule</CardLink>}
       />
       {day.length === 0 ? (
         <Empty className="flex-1 py-10">
