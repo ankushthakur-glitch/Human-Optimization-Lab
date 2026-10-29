@@ -7,7 +7,6 @@ import {
   IconEye,
   IconHelp,
   IconRefresh,
-  IconSend,
   IconSparkles,
   IconThumbsDown,
   IconThumbsUp,
@@ -560,7 +559,6 @@ export function CarePlanView({
           Cancel
         </Button>
         <Button size="sm" onClick={save}>
-          <IconSend />
           Send to patient
         </Button>
       </>
