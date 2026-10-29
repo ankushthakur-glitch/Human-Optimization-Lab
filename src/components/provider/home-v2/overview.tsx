@@ -874,7 +874,7 @@ export function useClinicDay(now: string | null) {
     for (let i = 0; i < 7; i++) {
       d.setDate(d.getDate() + 1)
       const list = isWorkingDay(d) ? on(d) : []
-      if (list.length) return { today, day: list, title: i === 0 ? `Tomorrow, ${SHORT.format(d)}` : LONG.format(d) }
+      if (list.length) return { today, day: list, title: i === 0 ? `Today, ${SHORT.format(d)}` : LONG.format(d) }
     }
     return { ...none, today }
   }, [all, now])

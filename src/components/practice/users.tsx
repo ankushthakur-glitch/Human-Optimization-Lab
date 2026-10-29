@@ -463,6 +463,7 @@ export function StaffPanel({ heading }: { heading: React.ReactNode }) {
           <BulkResend rows={rows.filter((u) => !u.self)} onDone={clear} />
         )}
         exportName="Non-clinical users"
+        hideExport
         exportRow={(u) => ({
           "User ID": u.id,
           "User name": fullName(u),

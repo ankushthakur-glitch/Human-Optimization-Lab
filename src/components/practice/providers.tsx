@@ -408,6 +408,7 @@ export function ProvidersPanel({ heading }: { heading: React.ReactNode }) {
         bulkActions={(rows, clear) => <BulkResend rows={rows} onDone={clear} />}
         hideExport
         exportName="Providers"
+        hideExport
         exportRow={(p) => ({
           "Provider ID": p.id,
           Name: fullName(p),

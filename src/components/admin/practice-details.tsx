@@ -257,7 +257,6 @@ function PracticeBody({
 
       <KpiGrid kpis={practiceKpis(adoption, hol)} />
       <AdoptionTabs
-        practiceId={practice.id}
         initialTab={tab}
         adoption={adoption}
         details={

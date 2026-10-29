@@ -2,11 +2,8 @@
 
 import * as React from "react"
 import {
-  IconMail,
   IconStethoscope,
-  IconTeam,
   IconUserCircle,
-  IconUserMinus,
   IconUsersGroup,
 } from "@/design-system/icons"
 
@@ -121,77 +118,6 @@ export function practiceKpis(a: Adoption, hol: ReturnType<typeof holAverages>): 
     },
   ]
 }
-
-export function providerKpis(a: Adoption, id: string): Kpi[] {
-  const p = a.providers.find((x) => x.id === id)!
-  const practiceInvited = a.invited
-  const withPatients = a.providers.filter((x) => x.patients.length).length
-  const rate = p.rate ?? 0
-  const invitedRate = share(p.invited, p.open)
-  const declinedRate = share(p.declined, p.open)
-  return [
-    {
-      label: "Patients enrolled",
-      icon: IconUserCircle,
-      value: p.enrolled,
-      total: p.open,
-      unit: "enrolled",
-      rate,
-      parts: [
-        { label: "Enrolled", value: p.enrolled, tone: "fill" },
-        { label: "Pending", value: p.invited, tone: "soft" },
-        { label: "Declined", value: p.declined, tone: "alert" },
-      ],
-      benchmark: { label: "Practice", rate: a.rate ?? 0 },
-      tone: toneFor(rate, a.rate ?? 0),
-    },
-    {
-      label: "Pending",
-      icon: IconMail,
-      value: p.invited,
-      total: p.open,
-      unit: "waiting",
-      rate: invitedRate,
-      invert: true,
-      parts: [
-        { label: "Waiting", value: p.invited, tone: "warn" },
-        { label: "Other", value: p.open - p.invited, tone: "empty" },
-      ],
-      benchmark: { label: "Practice", rate: share(practiceInvited, a.open) },
-      tone: toneFor(invitedRate, share(practiceInvited, a.open), true),
-    },
-    {
-      label: "Declined",
-      icon: IconUserMinus,
-      value: p.declined,
-      total: p.open,
-      unit: "declined",
-      rate: declinedRate,
-      invert: true,
-      parts: [
-        { label: "Declined", value: p.declined, tone: "alert" },
-        { label: "Other", value: p.open - p.declined, tone: "empty" },
-      ],
-      benchmark: { label: "Practice", rate: share(a.declined, a.open) },
-      tone: toneFor(declinedRate, share(a.declined, a.open), true),
-    },
-    {
-      label: "Share of practice patients",
-      icon: IconTeam,
-      value: p.patients.length,
-      total: a.patientsTotal,
-      unit: "patients",
-      rate: share(p.patients.length, a.patientsTotal),
-      parts: [
-        { label: "This provider", value: p.patients.length, tone: "fill" },
-        { label: "Others", value: a.patientsTotal - p.patients.length, tone: "empty" },
-      ],
-      benchmark: { label: "Even split", rate: share(1, withPatients) },
-      tone: "neutral",
-    },
-  ]
-}
-
 
 export const PART_BG: Record<PartTone, string> = {
   fill: "bg-primary",

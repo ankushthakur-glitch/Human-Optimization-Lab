@@ -197,7 +197,7 @@ export function Worklist({
           <TabsList aria-label="Worklist" className={cn(SUB_TABS_LIST, "h-9!")}>
             {[
               { value: "urgent" as WorklistTab, label: "Urgent action needed" },
-              ...CARD_TYPES.map((t) => ({ value: t as WorklistTab, label: TYPE_META[t].metric })),
+              ...CARD_TYPES.filter((t) => t !== "care_gap").map((t) => ({ value: t as WorklistTab, label: TYPE_META[t].metric })),
             ].map((t) => (
               <TabsTrigger key={t.value} value={t.value} className={cn(SUB_TAB, "tabular-nums")}>
                 {t.label} ({fmtInt(counts[t.value] ?? 0)})

@@ -189,7 +189,7 @@ export function ProtocolsPage() {
       <Directory
         title="Protocols"
         leading={<SettingsBack />}
-        statusTabs={{ options: PROTOCOL_TYPES, value: (p) => p.type }}
+        heading={<SettingsHeading />}
         noun="protocols"
         rows={items}
         columns={columns}

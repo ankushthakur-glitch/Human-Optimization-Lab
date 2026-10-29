@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 
 import { cn } from "@/lib/utils"
@@ -14,13 +13,11 @@ import { formatDate } from "@/components/admin/practices-store"
 import {
   avatarTone,
   initials,
-  NAME_LINK,
   StatusBadge,
   SUB_TAB,
   SUB_TABS_LIST,
 } from "@/components/practice/directory"
 import { Avatar, AvatarFallback, AvatarImage } from "@/design-system/ui/avatar"
-import { Button } from "@/design-system/ui/button"
 import { Card } from "@/design-system/ui/card"
 import {
   Empty,
@@ -94,12 +91,10 @@ export function parsePracticeTab(value: string | undefined): PracticeTab {
    in the URL (?tab=providers) so coming back from a provider's page lands on
    the same tab. */
 export function AdoptionTabs({
-  practiceId,
   adoption,
   details,
   initialTab,
 }: {
-  practiceId: string
   adoption: Adoption
   details: React.ReactNode
   initialTab: PracticeTab
@@ -132,7 +127,7 @@ export function AdoptionTabs({
       </TabsList>
       {tab === "details" && details}
       {tab === "providers" && (
-        <ProvidersTable practiceId={practiceId} adoption={adoption} />
+        <ProvidersTable adoption={adoption} />
       )}
       {tab === "users" && <UsersTable users={adoption.users} />}
     </Tabs>
@@ -197,13 +192,7 @@ function byRate(a: ProviderAdoption, b: ProviderAdoption) {
   return a.rate - b.rate || b.open - a.open
 }
 
-function ProvidersTable({
-  practiceId,
-  adoption,
-}: {
-  practiceId: string
-  adoption: Adoption
-}) {
+function ProvidersTable({ adoption }: { adoption: Adoption }) {
   const sorting = useTableSort([...adoption.providers].sort(byRate), {
     name: (p) => p.name,
     status: (p) => p.status,
@@ -270,18 +259,7 @@ function ProvidersTable({
               <TableCell className="max-w-[18rem]">
                 <div className="flex min-w-0 items-center gap-2">
                   <PersonAvatar name={p.name} photo={p.photo} />
-                  <Button
-                    variant="link"
-                    className={NAME_LINK}
-                    nativeButton={false}
-                    render={
-                      <Link
-                        href={`/screens/admin/practices/${practiceId}/providers/${p.id}`}
-                      />
-                    }
-                  >
-                    {p.name}
-                  </Button>
+                  <span className="truncate">{p.name}</span>
                 </div>
               </TableCell>
               <TableCell className="hidden md:table-cell">
