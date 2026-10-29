@@ -357,8 +357,6 @@ export type Location = {
   /** A data URL, or empty. */
   photo: string
   status: LocationStatus
-  /** The location the practice was created with. */
-  primary?: boolean
 }
 
 export type Provider = {
@@ -530,7 +528,7 @@ export const emptyEmergencyContact = (): EmergencyContact => ({
   email: "",
 })
 
-export type LocationInput = Omit<Location, "id" | "status" | "primary">
+export type LocationInput = Omit<Location, "id" | "status">
 export type ProviderInput = Omit<
   Provider,
   "id" | "status" | "invitedAt" | "lastLogin"
@@ -800,7 +798,6 @@ const LOCATION_BASE: Omit<Location, LocationExtra>[] = [
     timeZone: "Pacific (PT)",
     hours: defaultHours(),
     status: "Active",
-    primary: true,
   },
   {
     id: "LOC1002",

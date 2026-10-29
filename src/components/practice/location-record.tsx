@@ -5,7 +5,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "@/design-system/ui/sonner"
 import {
-  IconCopy,
   IconEdit,
   IconLock,
   IconLockOpen,
@@ -36,7 +35,6 @@ import {
   locations,
   personAddress,
   providers,
-  time12,
 } from "@/components/practice/practice-data"
 import { PracticeShell } from "@/components/practice/practice-shell"
 import { validNpi } from "@/components/practice/provider-record"
@@ -48,9 +46,7 @@ import {
   RecordPage,
 } from "@/components/practice/record-page"
 import { DeactivateDialog } from "@/components/practice/sheets"
-import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
-import { Checkbox } from "@/design-system/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,22 +61,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/design-system/ui/empty"
-import { Field, FieldError } from "@/design-system/ui/field"
-import { Input } from "@/design-system/ui/input"
 import { Skeleton } from "@/design-system/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/design-system/ui/table"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/design-system/ui/tooltip"
 import { Illustration } from "@/components/illustrations/illustration"
 
 const LIST_HREF = "/screens/practice/locations"
@@ -119,10 +100,6 @@ function validate(v: LocationInput, others: Location[]): Errors {
   if (!/^\d{5}$/.test(v.zip)) e.zip = "Enter a 5-digit ZIP code."
   if (!v.city.trim()) e.city = "Enter a city."
   if (!v.state) e.state = "Select a state."
-  v.hours.forEach((h, i) => {
-    if (h.open && (!h.start || !h.end || h.end <= h.start))
-      e[`hours${i}`] = "End after start."
-  })
   return e
 }
 
@@ -164,26 +141,6 @@ function LocationForm({ location }: { location?: Location }) {
       set(key)(
         (format ? format(event.target.value) : event.target.value) as never
       )
-
-  function setDay(i: number, changes: Partial<LocationInput["hours"][number]>) {
-    setValues((prev) => ({
-      ...prev,
-      hours: prev.hours.map((h, j) => (j === i ? { ...h, ...changes } : h)),
-    }))
-  }
-
-  /* The copy button puts one day's hours on every other open day. */
-  function copyToAll(i: number) {
-    const { start, end } = values.hours[i]
-    setValues((prev) => ({
-      ...prev,
-      hours: prev.hours.map((h) => (h.open ? { ...h, start, end } : h)),
-    }))
-    toast.success(`${values.hours[i].day} hours copied to every open day`)
-  }
-
-  const allOpen = values.hours.every((h) => h.open)
-  const someOpen = values.hours.some((h) => h.open)
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -332,7 +289,7 @@ function LocationForm({ location }: { location?: Location }) {
               error={errors.website}
             />
             <PhotoField value={values.photo} onChange={set("photo")} />
-            {location && !location.primary && (
+            {location && (
               <SelectField
                 id="location-status"
                 label="Status"
@@ -389,99 +346,6 @@ function LocationForm({ location }: { location?: Location }) {
             />
           </div>
         </RecordCard>
-
-        <RecordCard title="Working hours">
-          <Table
-            containerClassName="overflow-hidden rounded-md border"
-            className="table-fixed"
-          >
-            <TableHeader className="bg-surface-head [&_th]:h-auto [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-xs [&_th]:text-muted-foreground">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[41%]">
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      checked={allOpen}
-                      indeterminate={someOpen && !allOpen}
-                      onCheckedChange={() =>
-                        set("hours")(
-                          values.hours.map((h) => ({ ...h, open: !allOpen }))
-                        )
-                      }
-                      aria-label="Open every day"
-                    />
-                    Day
-                  </div>
-                </TableHead>
-                <TableHead>Start time</TableHead>
-                <TableHead>End time</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="[&_td]:px-4 [&_td]:py-2.5 [&_td]:align-top">
-              {values.hours.map((h, i) => (
-                <TableRow key={h.day} className="hover:bg-transparent">
-                  <TableCell>
-                    <div className="flex h-9 items-center gap-3">
-                      <Checkbox
-                        checked={h.open}
-                        onCheckedChange={(c) => setDay(i, { open: c === true })}
-                        aria-label={`Open on ${h.day}`}
-                      />
-                      <span className="min-w-24 text-sm">{h.day}</span>
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              className="text-primary-tint"
-                              aria-label={`Copy ${h.day} hours to every open day`}
-                              disabled={!h.open}
-                              onClick={() => copyToAll(i)}
-                            />
-                          }
-                        >
-                          <IconCopy />
-                        </TooltipTrigger>
-                        <TooltipContent>Copy to every open day</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      id={`location-hours${i}`}
-                      type="time"
-                      aria-label={`${h.day} start time`}
-                      disabled={!h.open}
-                      value={h.start}
-                      onChange={(e) => setDay(i, { start: e.target.value })}
-                      aria-invalid={errors[`hours${i}`] ? true : undefined}
-                      className="max-w-44"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Field
-                      data-invalid={errors[`hours${i}`] ? true : undefined}
-                    >
-                      <Input
-                        type="time"
-                        aria-label={`${h.day} end time`}
-                        disabled={!h.open}
-                        value={h.end}
-                        onChange={(e) => setDay(i, { end: e.target.value })}
-                        aria-invalid={errors[`hours${i}`] ? true : undefined}
-                        className="max-w-44"
-                      />
-                      {errors[`hours${i}`] && (
-                        <FieldError>{errors[`hours${i}`]}</FieldError>
-                      )}
-                    </Field>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </RecordCard>
       </form>
     </RecordPage>
   )
@@ -513,7 +377,6 @@ function ProfileBody({ location: l }: { location: Location }) {
     <RecordPage
       title={l.name}
       backHref={LIST_HREF}
-      badge={l.primary ? <Badge variant="info">Primary</Badge> : undefined}
       action={
         <div className="flex items-center gap-2">
           <Button
@@ -523,36 +386,29 @@ function ProfileBody({ location: l }: { location: Location }) {
             <IconEdit />
             Edit info
           </Button>
-          {/* The practice's primary location can't go offline. */}
-          {!l.primary && (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    aria-label="More actions"
-                  >
-                    <IconMoreVertical />
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuGroup>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (l.status === "Active") return setDeactivating(true)
-                      locations.patch(l.id, { status: "Active" })
-                      toast.success(`${l.name} is active again`)
-                    }}
-                  >
-                    {l.status === "Active" ? <IconLock /> : <IconLockOpen />}
-                    {l.status === "Active" ? "Deactivate" : "Activate"}
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="outline" size="icon" aria-label="More actions">
+                  <IconMoreVertical />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (l.status === "Active") return setDeactivating(true)
+                    locations.patch(l.id, { status: "Active" })
+                    toast.success(`${l.name} is active again`)
+                  }}
+                >
+                  {l.status === "Active" ? <IconLock /> : <IconLockOpen />}
+                  {l.status === "Active" ? "Deactivate" : "Activate"}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       }
     >
@@ -607,16 +463,6 @@ function ProfileBody({ location: l }: { location: Location }) {
         <DetailGrid
           className="md:grid-cols-2"
           items={[{ label: "Practice address", value: personAddress(l) }]}
-        />
-      </RecordCard>
-
-      <RecordCard title="Working hours">
-        <DetailGrid
-          className="sm:grid-cols-4 lg:grid-cols-7"
-          items={l.hours.map((h) => ({
-            label: h.day,
-            value: h.open ? `${time12(h.start)} - ${time12(h.end)}` : "Closed",
-          }))}
         />
       </RecordCard>
 

@@ -30,7 +30,6 @@ import {
 } from "@/components/practice/practice-data"
 import { PracticeShell } from "@/components/practice/practice-shell"
 import { DeactivateDialog } from "@/components/practice/sheets"
-import { Badge } from "@/design-system/ui/badge"
 import { DropdownMenuItem } from "@/design-system/ui/dropdown-menu"
 
 /* The location list. Adding, viewing and editing a location happen on full
@@ -67,7 +66,6 @@ export function LocationsScreen() {
           name={l.name}
           photo={l.photo}
           onOpen={() => router.push(locationHref(l.id))}
-          badge={l.primary ? <Badge variant="info">Primary</Badge> : undefined}
         />
       ),
     },
@@ -136,19 +134,16 @@ export function LocationsScreen() {
             <IconEdit />
             Edit
           </DropdownMenuItem>
-          {/* The practice's primary location can't go offline. */}
-          {!l.primary && (
-            <DropdownMenuItem
-              onClick={() => {
-                if (l.status === "Active") return setDeactivating(l)
-                locations.patch(l.id, { status: "Active" })
-                toast.success(`${l.name} is active again`)
-              }}
-            >
-              {l.status === "Active" ? <IconLock /> : <IconLockOpen />}
-              {l.status === "Active" ? "Deactivate" : "Activate"}
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            onClick={() => {
+              if (l.status === "Active") return setDeactivating(l)
+              locations.patch(l.id, { status: "Active" })
+              toast.success(`${l.name} is active again`)
+            }}
+          >
+            {l.status === "Active" ? <IconLock /> : <IconLockOpen />}
+            {l.status === "Active" ? "Deactivate" : "Activate"}
+          </DropdownMenuItem>
         </RowMenu>
       ),
     },

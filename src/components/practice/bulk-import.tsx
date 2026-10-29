@@ -76,6 +76,8 @@ export type ParsedRow<T> = {
   key?: string
   /** The row matched a record already on file: it isn't created as new. */
   outcome?: RowOutcome
+  /** The row's cells as uploaded, keyed by column header, for the history. */
+  cells?: Record<string, string>
 }
 
 /* What happens to a row that matched an existing record: skipped (already on
@@ -230,6 +232,7 @@ async function readFile<T>(
     })
     const rowNumber = i + 2
     const parsed = spec.parse(record, rowNumber)
+    parsed.cells = record
     if (VALIDATE && parsed.key) {
       const first = seen.get(parsed.key)
       if (first) parsed.errors.push(`Repeats row ${first}.`)
@@ -420,6 +423,7 @@ function ImportBody<T>({
       recordImport({
         portal: portal.key,
         list: spec.many,
+        columns: spec.columns.map((c) => c.header),
         fileName: file?.name ?? `${spec.many} import.csv`,
         rows: rows.map((r) => {
           const { result, note } = rowResult(r, skipDuplicates, spec.addOnly)
@@ -427,6 +431,7 @@ function ImportBody<T>({
             row: r.row,
             name: r.label || "Unnamed",
             detail: r.detail,
+            cells: r.cells ?? {},
             result,
             note,
           }

@@ -32,6 +32,7 @@ import {
 import { PracticeShell } from "@/components/practice/practice-shell"
 import { PatientFlagsPage } from "@/components/settings/patient-flags"
 import { AuditLogPage } from "@/components/settings/audit-log"
+import { ImportHistoryPage } from "@/components/settings/import-history"
 import { NotificationsPage } from "@/components/settings/notifications"
 import {
   ACTION_EVENTS,
@@ -156,6 +157,11 @@ const GROUPS: SettingsGroup[] = [
         id: "audit-log",
         label: "Audit log",
         render: () => <AuditLogPage scope="practice" />,
+      },
+      {
+        id: "import-history",
+        label: "Import history",
+        render: () => <ImportHistoryPage scope="practice" />,
       },
     ],
   },

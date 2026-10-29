@@ -39,6 +39,8 @@ export type ImportedRow = {
   row: number
   name: string
   detail: string
+  /** The row's cells as uploaded, keyed by column header. */
+  cells: Record<string, string>
   result: ImportResult
   note: string
 }
@@ -53,6 +55,8 @@ export type ImportRecord = {
   /** Plural, lower case: "patients" or "providers". */
   list: string
   fileName: string
+  /** The sheet's column headers, in order. */
+  columns: string[]
   rows: ImportedRow[]
 }
 
@@ -78,14 +82,87 @@ const NOTE: Record<ImportResult, string> = {
   error: "Not added",
 }
 
-function rows(seed: SeedRow[]): ImportedRow[] {
-  return seed.map(([name, detail, result, note], i) => ({
-    row: i + 2,
-    name,
-    detail,
-    result,
-    note: note ?? NOTE[result],
-  }))
+const PATIENT_COLUMNS = [
+  "First name",
+  "Last name",
+  "Date of birth",
+  "Sex at birth",
+  "Email",
+  "Mobile number",
+  "Location",
+  "Primary provider",
+  "Employer",
+]
+
+const PROVIDER_COLUMNS = [
+  "First name",
+  "Last name",
+  "Credential",
+  "NPI",
+  "Email",
+  "Mobile number",
+  "Role",
+  "Specialty",
+  "Locations",
+]
+
+const SEXES = ["Female", "Male"]
+const EMPLOYERS = ["", "Pacific Shoreline Bank", ""]
+
+/* The seed keeps each row as name and detail; the cells are spelled out
+   from them so the sheet reads as uploaded. */
+function cellsFor(
+  list: string,
+  name: string,
+  detail: string,
+  i: number,
+  provider: string
+): Record<string, string> {
+  const [first, ...rest] = name.replace(/,.*$/, "").split(" ")
+  const [a, b] = detail.split(" | ")
+  const phone = `(858)-555-01${String(20 + i).padStart(2, "0")}`
+  if (list === "patients")
+    return {
+      "First name": first,
+      "Last name": rest.join(" "),
+      "Date of birth": a,
+      "Sex at birth": SEXES[i % 2],
+      Email: b,
+      "Mobile number": i % 3 === 2 ? "" : phone,
+      Location: "La Jolla",
+      "Primary provider": provider,
+      Employer: EMPLOYERS[i % 3],
+    }
+  return {
+    "First name": first,
+    "Last name": rest.join(" "),
+    Credential: name.split(", ")[1] ?? "",
+    NPI: `19${String(40213 + i * 7919).padStart(8, "0")}`,
+    Email: a,
+    "Mobile number": phone,
+    Role: "Physician",
+    Specialty: "Internal Medicine",
+    Locations: b,
+  }
+}
+
+function sheet(
+  list: string,
+  seed: SeedRow[],
+  provider = "Daniel Reyes, MD"
+): Pick<ImportRecord, "list" | "columns" | "rows"> {
+  return {
+    list,
+    columns: list === "patients" ? PATIENT_COLUMNS : PROVIDER_COLUMNS,
+    rows: seed.map(([name, detail, result, note], i) => ({
+      row: i + 2,
+      name,
+      detail,
+      cells: cellsFor(list, name, detail, i, provider),
+      result,
+      note: note ?? NOTE[result],
+    })),
+  }
 }
 
 const SEED: ImportRecord[] = [
@@ -94,9 +171,8 @@ const SEED: ImportRecord[] = [
     at: "2026-10-28T17:42:00.000Z",
     ...importActor("practice"),
     portal: "practice",
-    list: "patients",
     fileName: "Harborview patients October.csv",
-    rows: rows([
+    ...sheet("patients", [
       ["Jordan Ellery", "07/14/1978 | jordan.ellery@example.com", "new"],
       ["Renata Solis", "02/03/1985 | renata.solis@example.com", "new"],
       ["Curtis Vale", "11/22/1969 | curtis.vale@example.com", "new"],
@@ -136,12 +212,11 @@ const SEED: ImportRecord[] = [
     at: "2026-10-26T21:15:00.000Z",
     ...importActor("practice"),
     portal: "practice",
-    list: "providers",
     fileName: "New providers Q4.csv",
-    rows: rows([
+    ...sheet("providers", [
       [
         "Avery Sutherland, MD",
-        "avery.sutherland@harborviewlongevity.com | Harborview Main",
+        "avery.sutherland@harborviewlongevity.com | Carlsbad",
         "new",
         "Invited",
       ],
@@ -153,21 +228,21 @@ const SEED: ImportRecord[] = [
       ],
       [
         "Theo Brandt, NP",
-        "theo.brandt@harborviewlongevity.com | Harborview Main",
+        "theo.brandt@harborviewlongevity.com | Carlsbad",
         "new",
         "Invited",
       ],
       [
         "Daniel Reyes, MD",
-        "daniel.reyes@harborviewlongevity.com | Harborview Main",
+        "daniel.reyes@harborviewlongevity.com | Carlsbad",
         "duplicate",
         "A provider with this NPI already exists.",
       ],
       [
         "Priya Raman, DO",
-        "priya.raman@harborviewlongevity.com | Del Mar",
+        "priya.raman@harborviewlongevity.com | Encinitas",
         "error",
-        "Location \"Del Mar\" doesn't exist.",
+        "Location \"Encinitas\" doesn't exist.",
       ],
       [
         "Marco Ruiz, PA",
@@ -182,9 +257,10 @@ const SEED: ImportRecord[] = [
     at: "2026-10-23T16:05:00.000Z",
     ...importActor("provider"),
     portal: "provider",
-    list: "patients",
     fileName: "Dr Harrington panel.xlsx",
-    rows: rows([
+    ...sheet(
+      "patients",
+      [
       ["Clara Benton", "02/11/1971 | clara.benton@example.com", "new"],
       ["Rafael Ortega", "07/25/1964 | rafael.ortega@example.com", "new"],
       ["Marcus Hale", "05/02/1968 | marcus.hale@example.com", "on-file"],
@@ -195,16 +271,17 @@ const SEED: ImportRecord[] = [
         "Name and date of birth match Priya Natarajan (P10422).",
       ],
       ["June Abara", "03/14/1990 | june.abara@example.com", "new"],
-    ]),
+      ],
+      "Elise Harrington, MD"
+    ),
   },
   {
     id: "IM20402",
     at: "2026-10-20T18:30:00.000Z",
     ...importActor("practice"),
     portal: "practice",
-    list: "providers",
     fileName: "La Jolla providers.xlsx",
-    rows: rows([
+    ...sheet("providers", [
       [
         "Elise Harrington, MD",
         "elise.harrington@harborviewlongevity.com | La Jolla",
