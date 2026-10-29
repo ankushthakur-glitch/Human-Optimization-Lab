@@ -53,6 +53,9 @@ type Auth = {
       sign in with it comes next. */
   setPassword: (password: string) => Promise<Result>
   signIn: (email: string, password: string) => Promise<Result>
+  /** From Profile, signed in: the current password, then the new one,
+      which replaces it and keeps her signed in. */
+  changePassword: (current: string, next: string) => Promise<Result>
   signOut: () => Promise<void>
   /** Prototype reviews: forget the password so the next run starts at
       activation with the code, as a first-time patient would. */
@@ -158,6 +161,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // leads back to sign in rather than activation.
         setActivated(true)
         setStatus("signedIn")
+        return { ok: true }
+      },
+
+      async changePassword(current, next) {
+        await settle()
+        const saved = await store.getItemAsync(KEY_HASH)
+        if (VALIDATE && saved && (await hash(current)) !== saved) {
+          return { ok: false, message: "That isn’t your current password." }
+        }
+        await store.setItemAsync(KEY_HASH, await hash(next))
+        setActivated(true)
         return { ok: true }
       },
 

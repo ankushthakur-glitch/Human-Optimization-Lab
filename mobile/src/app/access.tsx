@@ -6,11 +6,12 @@ import { FlowScreen } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
 import { Heart, Hospital, Plus, Watch } from "@/components/ph"
 import { billingOf } from "@/components/plan-account-pieces"
-import { Block, TextAction, toast } from "@/components/record-kit"
+import { DevicesSheet } from "@/components/plan-tab-devices"
+import { Block, toast } from "@/components/record-kit"
 import { Chevron, Pair, Row, Rows, SwitchPair } from "@/components/settings-rows"
 import { Sheet, SheetText } from "@/components/sheet"
 import { Button } from "@/components/ui"
-import { ADDABLE, type Connection, type ConnectionKind, connectionsOf } from "@/lib/access"
+import { type Connection, type ConnectionKind, connectionsOf } from "@/lib/access"
 import { DEFAULT_PERIOD, periodEnd, periodLabel } from "@/lib/consent"
 import { rowDate } from "@/lib/dates"
 import { sharingOff } from "@/lib/experience"
@@ -59,12 +60,6 @@ export default function AccessScreen() {
     toast(c.what === "withdraw" ? "Sharing turned off" : "Sharing renewed")
   }
 
-  async function add(c: Connection) {
-    await onboarding.save({ devices: [...(onboarding.devices ?? []), c.id] })
-    setAdding(false)
-    toast(`${c.name} connected`)
-  }
-
   return (
     <View style={styles.fill}>
       <FlowScreen page title="Access">
@@ -109,7 +104,7 @@ export default function AccessScreen() {
             ))}
       </FlowScreen>
 
-      {adding && <AddDeviceSheet added={onboarding.devices ?? []} onAdd={add} onClose={() => setAdding(false)} />}
+      {adding && <DevicesSheet onClose={() => setAdding(false)} />}
 
       {confirm && (
         <Sheet
@@ -136,28 +131,6 @@ export default function AccessScreen() {
         </Sheet>
       )}
     </View>
-  )
-}
-
-/** A member picks a ring, scale or watch to connect; the ones already
-    connected are left out. */
-function AddDeviceSheet({ added, onAdd, onClose }: { added: string[]; onAdd: (c: Connection) => void; onClose: () => void }) {
-  const left = ADDABLE.filter((d) => !added.includes(d.id))
-  return (
-    <Sheet title="Add a device" onClose={onClose}>
-      {left.length ? (
-        <Rows>
-          {left.map((d) => (
-            <Row key={d.id} icon={<Watch size={16} color={color.primary} />} title={d.name} meta={d.via} gap={10} right={<TextAction onPress={() => onAdd(d)}>Connect</TextAction>} />
-          ))}
-        </Rows>
-      ) : (
-        <SheetText>Every device we work with is connected.</SheetText>
-      )}
-      <Button variant="outline" onPress={onClose}>
-        Not now
-      </Button>
-    </Sheet>
   )
 }
 

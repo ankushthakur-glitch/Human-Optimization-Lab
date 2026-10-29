@@ -9,19 +9,22 @@ import { DevicesSheet } from "@/components/plan-tab-devices"
 import {
   CreditCard,
   DownloadSimple,
+  Heart,
   Hospital,
+  Key,
   Lock,
+  Plus,
   ScanSmiley,
   SignOut,
   Stethoscope,
   Watch,
 } from "@/components/ph"
-import { Block, SmallAction, Tag, toast } from "@/components/record-kit"
+import { Block, SmallAction, toast } from "@/components/record-kit"
 import { Chevron, Row, Rows, SwitchRow, Tile, rowTitle } from "@/components/settings-rows"
 import { Sheet, SheetText } from "@/components/sheet"
 import { Button } from "@/components/ui"
 import { useAuth } from "@/lib/auth"
-import { connectedCount } from "@/lib/access"
+import { connectedCount, connectionsOf } from "@/lib/access"
 import { DEFAULT_PERIOD, periodLabel } from "@/lib/consent"
 import { rowDate } from "@/lib/dates"
 import { checkFaceId, faceIdAvailable } from "@/lib/face-id"
@@ -36,7 +39,8 @@ import { card, cardRadius, color, font, hairline, ink, space, type } from "@/lib
    practice, a call away; how she wants to hear from Inlay,
    texts about her care and news and offers as two separate choices (S-57,
    Q-11); her membership, whose billing, pause and cancel live on its own
-   page; a watch, ring or scale (coming, never shown as connected); Face
+   page; for a member her devices (Apple Health, her watch, any ring or
+   scale) and "Add a device" (29 Oct 2026); change password; Face
    ID; Access, one tap deeper, where the permission to collect her records
    and everything connected live (5 Oct 2026 call); who has looked at her
    record and a copy of it; and logging out, asked once more in a centred
@@ -110,29 +114,20 @@ export default function ProfileScreen() {
         {paid && (
           <Block title="Devices">
             <Rows>
-              <Row
-                icon={<Watch size={16} color={color.primary} />}
-                title="Watch, ring or scale"
-                meta="Included in your Optimization plan"
-                gap={10}
-                onPress={() => setDevices(true)}
-                accessibilityLabel="Watch, ring or scale, coming soon, included in your Optimization plan"
-                right={
-                  <>
-                    {/* Tag sits at the top of its column; the View centres it on the row. */}
-                    <View>
-                      <Tag tone="soon">Coming soon</Tag>
-                    </View>
-                    <Chevron />
-                  </>
-                }
-              />
+              {connectionsOf(onboarding, paid)
+                .filter((c) => c.kind === "device")
+                .map((c) => {
+                  const Icon = c.id === "apple-health" ? Heart : Watch
+                  return <Row key={c.id} icon={<Icon size={16} color={color.primary} />} title={c.name} meta={c.via} gap={10} />
+                })}
+              <Row icon={<Plus size={16} color={color.primary} />} title="Add a device" right={<Chevron />} onPress={() => setDevices(true)} />
             </Rows>
           </Block>
         )}
 
         <Block title="Security">
           <Rows>
+            <Row icon={<Key size={16} color={color.primary} />} title="Change password" right={<Chevron />} onPress={() => router.push("/change-password")} />
             <SwitchRow icon={<ScanSmiley size={16} color={color.primary} />} title="Face ID to open the app" value={!!onboarding.faceId} onChange={setFaceId} regular={false} />
           </Rows>
         </Block>

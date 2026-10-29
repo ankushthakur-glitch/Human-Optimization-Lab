@@ -2,38 +2,61 @@ import { router } from "expo-router"
 import { StyleSheet, View } from "react-native"
 
 import { Art } from "@/components/art"
-import { TextAction } from "@/components/record-kit"
+import { Watch } from "@/components/ph"
+import { TextAction, toast } from "@/components/record-kit"
+import { Row, Rows } from "@/components/settings-rows"
 import { Sheet, SheetText } from "@/components/sheet"
 import { Button } from "@/components/ui"
+import { ADDABLE, type Connection } from "@/lib/access"
 import { planFor, useExperience } from "@/lib/experience"
 import { useOffer, useShown } from "@/lib/offers"
-import { space } from "@/lib/theme"
+import { useOnboarding } from "@/lib/onboarding"
+import { color, space } from "@/lib/theme"
 
 /* "Watch, ring or scale" (FINAL-SPEC C.18, item 6), the one devices sheet
-   for Profile and the member's Plan tab. Devices are coming, never shown
-   as connected (M-68, A-33).
+   for Profile, Access and the member's Plan tab.
 
-   For a member: "Coming soon", her plan works without one. For everyone
-   else it is the member-feature touchpoint (D.2 #7), shown only because
-   she tapped the row: what sync will do, with "See the plan" unless her
-   readiness is low, and "Not now". Inlay speaks, never her doctor; no
-   price. */
+   For a member (since 29 Oct 2026, no longer "Coming soon"): "Add a
+   device", a ring, scale or watch to connect, the ones already connected
+   left out; it connects at once and says so. For everyone else it is the
+   member-feature touchpoint (D.2 #7), shown only because she tapped the
+   row: what sync will do, with "See the plan" unless her readiness is
+   low, and "Not now". Inlay speaks, never her doctor; no price. */
 
 export function DevicesSheet({ onClose }: { onClose: () => void }) {
   const info = useExperience()
-  if (planFor(info) === "member")
-    return (
-      <Sheet title="Coming soon" onClose={onClose}>
-        <View style={styles.top}>
-          <View style={styles.words}>
-            <SheetText>Connecting a watch, ring or scale arrives in a later update. Your plan works without one.</SheetText>
-          </View>
-          <Art name="watch" size={64} />
-        </View>
-        <Button onPress={onClose}>Got it</Button>
-      </Sheet>
-    )
+  if (planFor(info) === "member") return <AddDeviceSheet onClose={onClose} />
   return <FeatureSheet onClose={onClose} quiet={info.readiness === "low"} />
+}
+
+/** A member picks a ring, scale or watch to connect. */
+function AddDeviceSheet({ onClose }: { onClose: () => void }) {
+  const onboarding = useOnboarding()
+  const added = onboarding.devices ?? []
+  const left = ADDABLE.filter((d) => !added.includes(d.id))
+
+  async function add(c: Connection) {
+    await onboarding.save({ devices: [...added, c.id] })
+    onClose()
+    toast(`${c.name} connected`)
+  }
+
+  return (
+    <Sheet title="Add a device" onClose={onClose}>
+      {left.length ? (
+        <Rows>
+          {left.map((d) => (
+            <Row key={d.id} icon={<Watch size={16} color={color.primary} />} title={d.name} meta={d.via} gap={10} right={<TextAction onPress={() => add(d)}>Connect</TextAction>} />
+          ))}
+        </Rows>
+      ) : (
+        <SheetText>Every device we work with is connected.</SheetText>
+      )}
+      <Button variant="outline" onPress={onClose}>
+        Not now
+      </Button>
+    </Sheet>
+  )
 }
 
 /** The free patient's sheet: the member-feature touchpoint. */
