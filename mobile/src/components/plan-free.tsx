@@ -1,69 +1,10 @@
-import { router } from "expo-router"
-import * as React from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { PlanAdds } from "@/components/plan-adds"
 
-import { PlanShowroom, ShowroomActions } from "@/components/plan-showroom"
-import { Block, Card, Group, NeedsRow, TextAction } from "@/components/record-kit"
-import { TabScreen } from "@/components/tab-bar"
-import { useExperience } from "@/lib/experience"
-import { useOnboarding } from "@/lib/onboarding"
-import { space, type } from "@/lib/theme"
-
-/* The Plan tab for everyone who is not a member (FINAL-SPEC C.14.1):
-   honest about the plan (S-03); the step and why cards were removed (user,
-   5 Oct 2026); then the showroom: what a plan would do for her, what
-   it costs and what stays free. A place she opens herself, so it is never
-   capped and never badged (S-04).
-
-   States: readiness "Not ready" or "A little" keeps the showroom folded
-   behind one quiet link; a cancelled member finds her past plans above it
-   and the button reads "Start again", which opens the goals step
-   (/goals) ahead of the checkout. */
+/* The Plan tab for everyone who is not a member: the client's "What an
+   optimization plan adds" (screen 20, 27 Oct 2026), a page of its own with
+   the Inlay mark and no tab bar, whose caret and Back return to Home. See
+   components/plan-adds.tsx. */
 
 export function PlanFree() {
-  const onboarding = useOnboarding()
-  const { readiness } = useExperience()
-  // At low readiness the showroom waits behind "See what a plan includes".
-  const [open, setOpen] = React.useState(false)
-
-  const past = onboarding.planHistory ?? []
-  const showroom = readiness !== "low" || open
-  return (
-    <TabScreen
-      tab="plan"
-      title="Your personalized care plan"
-      fit={showroom && past.length === 0}
-      footer={showroom ? <ShowroomActions onStart={() => router.push("/goal-plans")} /> : undefined}
-    >
-      {past.length > 0 && (
-        <Block title="Your past plans">
-          <Group>
-            {past.map((v) => (
-              <NeedsRow key={v.version} title={`Version ${v.version}`} meta={`Started ${v.approved.replace(/,\s*\d{4}$/, "")}. Kept.`} />
-            ))}
-          </Group>
-        </Block>
-      )}
-      {showroom ? (
-        <PlanShowroom />
-      ) : (
-        <Card style={styles.ready}>
-          <View style={styles.readyWords}>
-            <Text style={styles.readyTitle}>When you're ready</Text>
-            <Text style={styles.body}>A plan can build on your step, one change at a time. No rush.</Text>
-          </View>
-          <TextAction onPress={() => setOpen(true)} chevron>
-            See what a plan includes
-          </TextAction>
-        </Card>
-      )}
-    </TabScreen>
-  )
+  return <PlanAdds />
 }
-
-const styles = StyleSheet.create({
-  body: { ...type.body },
-  ready: { gap: space.inline },
-  readyWords: { gap: space.stack },
-  readyTitle: { ...type.section },
-})
