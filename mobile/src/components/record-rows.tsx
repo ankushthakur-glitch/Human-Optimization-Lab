@@ -9,8 +9,9 @@ import { RecordIcon, type RecordIconName } from "@/components/record-icons"
 import { Banner, Card, DateBlock, DateTrack, Dot, Group, HUE, KeyValue, LiveDot, Tag, Tile, spokenDate, type DateLike, type Level, type Mark, type Tone, type TrackDate } from "@/components/record-kit"
 import { Sheet } from "@/components/sheet"
 import { Button, TextField } from "@/components/ui"
-import { ADD_KINDS, addKindOf, asksHowTaken, type AddKind } from "@/lib/add-record"
+import { ADD_KINDS, FREE_PHOTOS_A_DAY, addKindOf, asksHowTaken, photosToday, type AddKind } from "@/lib/add-record"
 import { showDate } from "@/lib/dates"
+import { useExperience } from "@/lib/experience"
 import { useOnboarding, type Added } from "@/lib/onboarding"
 import { PROVENANCE_LABEL, type Provenance } from "@/lib/record"
 import { checkSupplement } from "@/lib/supplement-check"
@@ -305,6 +306,9 @@ export function AddToRecordSheet({ kind: fixed, kinds, onClose }: { kind?: AddKi
   const [read, setRead] = React.useState<Added>()
   const [taken, setTaken] = React.useState("")
   const info = addKindOf(kind)
+  // A free patient's photos today, of every kind, against her 3 a day.
+  const free = useExperience().experience === "free"
+  const photosLeft = free ? Math.max(0, FREE_PHOTOS_A_DAY - photosToday(onboarding.added)) : undefined
 
   const finish = async (added: Added, how?: string) => {
     const now = new Date().toISOString()
@@ -406,7 +410,15 @@ export function AddToRecordSheet({ kind: fixed, kinds, onClose }: { kind?: AddKi
         }))
       : stage === "how"
         ? [
-            { key: "photo", title: (kind && PHOTO_TITLE[kind]) || "Add a photo", icon: glyph(Camera), onPress: () => setStage("photo") },
+            {
+              key: "photo",
+              title: (kind && PHOTO_TITLE[kind]) || "Add a photo",
+              icon: glyph(Camera),
+              onPress: () => setStage("photo"),
+              // A free patient sees how many of today's 3 are left; none left, it rests.
+              badge: photosLeft !== undefined ? <Tag tone={photosLeft === 0 ? "soon" : "primary"}>{`${photosLeft} of ${FREE_PHOTOS_A_DAY} left today`}</Tag> : undefined,
+              disabled: photosLeft === 0,
+            },
             {
               key: "typed",
               title: "Type it in",
@@ -431,24 +443,27 @@ export function AddToRecordSheet({ kind: fixed, kinds, onClose }: { kind?: AddKi
 }
 
 /** One choice in a sheet: its icon on a tile, its words and a chevron. */
-export type SheetOption = { key: string; title: string; icon: React.ReactNode; onPress: () => void }
+export type SheetOption = { key: string; title: string; icon: React.ReactNode; onPress: () => void; badge?: React.ReactNode; disabled?: boolean }
 
 /** A sheet's choices, one per row with a rule between, as "Add to your
     record" and "Update what you take" list them. */
 export function SheetOptions({ options }: { options: SheetOption[] }) {
   return (
     <ScrollView style={styles.sheetList} showsVerticalScrollIndicator={false}>
-      {options.map(({ key, title, icon, onPress }, i) => (
+      {options.map(({ key, title, icon, onPress, badge, disabled }, i) => (
         <Pressable
           key={key}
           onPress={onPress}
+          disabled={disabled}
           accessibilityRole="button"
           accessibilityLabel={title}
-          style={({ pressed }) => [styles.option, i > 0 && styles.optionRule, pressed && styles.pressed]}
+          accessibilityState={{ disabled }}
+          style={({ pressed }) => [styles.option, i > 0 && styles.optionRule, pressed && styles.pressed, disabled && styles.optionDisabled]}
         >
           {icon}
           <Text style={styles.optionTitle}>{title}</Text>
-          <CaretRight size={16} color={card.chevron} />
+          {badge}
+          {!disabled && <CaretRight size={16} color={card.chevron} />}
         </Pressable>
       ))}
     </ScrollView>
@@ -488,6 +503,7 @@ export function AddedOfKind({ kind }: { kind: AddKind }) {
 const FIELD = "#FBFBFB"
 
 const styles = StyleSheet.create({
+  optionDisabled: { opacity: 0.5 },
   // A 28 tile with a row's 12 above and below; the rules sit between rows.
   row: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY },
   rowTop: { alignItems: "flex-start" },

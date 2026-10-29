@@ -8,7 +8,7 @@ import { useOnboarding } from "@/lib/onboarding"
 import { OPPS, RETAKE_RULE, testing, usd, words } from "@/lib/upgrade"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
-/* "What all nine need" (client deck, screen 23): one tick and one price per
+/* "What all nine need" (client deck, screen 23): one tick, on the left, and one price per
    opportunity. Unticking one takes the whole of it out of her plan and
    reprices the total before she pays; nothing inside an opportunity can be
    unticked on its own. Under the list, what is already on file and so is
@@ -49,12 +49,10 @@ export default function PlanTestsScreen() {
               onPress={() => flip(o.id)}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: on }}
-              accessibilityLabel={`${o.n}. ${o.short}. ${o.tests}. ${o.price ? usd(o.price) : "No charge"}`}
+              accessibilityLabel={`${o.short}. ${o.tests}. ${o.price ? usd(o.price) : "No charge"}`}
               style={({ pressed }) => [styles.row, i > 0 && styles.rule, pressed && styles.pressed]}
             >
-              <View style={[styles.num, on && styles.numOn]}>
-                <Text style={[styles.numText, on ? styles.numTextOn : styles.off]}>{o.n}</Text>
-              </View>
+              <CheckMark checked={on} centered />
               <View style={styles.words}>
                 <Text style={[styles.name, !on && styles.off]}>{o.short}</Text>
                 <Text style={styles.says}>{o.tests}</Text>
@@ -62,7 +60,6 @@ export default function PlanTestsScreen() {
               <Text style={[o.price ? styles.price : styles.free, !on && styles.off, !on && o.price > 0 && styles.struck]}>
                 {o.price ? usd(o.price) : "no charge"}
               </Text>
-              <CheckMark checked={on} centered />
             </Pressable>
           )
         })}
@@ -84,11 +81,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: space.lead, paddingVertical: space.rowY, paddingHorizontal: space.rowX },
   rule: { borderTopWidth: 1, borderTopColor: hairline.rule },
   pressed: { opacity: 0.7 },
-  // The opportunity's number in a tile: teal while it is in the plan, grey once it is out.
-  num: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: color.surface },
-  numOn: { backgroundColor: color.primarySoft },
-  numText: { fontFamily: font.semibold, fontSize: 14, lineHeight: 20 },
-  numTextOn: { color: ink.primary },
   words: { flex: 1, gap: 1 },
   name: { ...type.title, fontFamily: font.semibold, color: ink.strong },
   says: { ...type.label, color: ink.secondary },

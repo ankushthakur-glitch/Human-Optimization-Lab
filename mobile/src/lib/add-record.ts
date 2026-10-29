@@ -1,4 +1,6 @@
 import type { RecordIconName } from "@/components/record-icons"
+import { showDate } from "@/lib/dates"
+import type { Added } from "@/lib/onboarding"
 
 /* What a patient can add to her record herself, by photo or by typing it
    in (user, 5 Oct 2026): one entry per kind of record, with the fields its
@@ -101,3 +103,10 @@ export const addKindOf = (kind: unknown) => ADD_KINDS.find((k) => k.kind === kin
 /** The kinds she says how she takes, in her own words, as she adds them:
     the doctor sees that with the medicine or supplement. */
 export const asksHowTaken = (kind: unknown) => kind === "medicines" || kind === "supplements"
+
+/** A free patient adds at most 3 photos a day, across every kind of
+    record (29 Oct 2026); a member has no limit. */
+export const FREE_PHOTOS_A_DAY = 3
+
+/** The photos she has added today, of any kind. */
+export const photosToday = (added: Pick<Added, "via" | "at">[] = []) => added.filter((a) => a.via === "photo" && a.at === showDate()).length
