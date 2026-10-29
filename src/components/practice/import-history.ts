@@ -1,6 +1,9 @@
 "use client"
 
-import { createCollection, nextId } from "@/components/practice/collection-store"
+import {
+  createCollection,
+  nextId,
+} from "@/components/practice/collection-store"
 import { PRACTICE } from "@/components/practice/practice-data"
 import type { PortalKey } from "@/components/practice/portal"
 
@@ -9,12 +12,7 @@ import type { PortalKey } from "@/components/practice/portal"
    practice and the provider their own. */
 
 export type ImportResult =
-  | "new"
-  | "duplicate"
-  | "on-file"
-  | "reactivated"
-  | "review"
-  | "error"
+  "new" | "duplicate" | "on-file" | "reactivated" | "review" | "error"
 
 export const RESULT_LABEL: Record<ImportResult, string> = {
   new: "New",
@@ -71,7 +69,12 @@ export function countOf(record: ImportRecord, ...results: ImportResult[]) {
 }
 
 /* Sample uploads; fictional people only. */
-type SeedRow = [name: string, detail: string, result: ImportResult, note?: string]
+type SeedRow = [
+  name: string,
+  detail: string,
+  result: ImportResult,
+  note?: string,
+]
 
 const NOTE: Record<ImportResult, string> = {
   new: "Added",
@@ -242,7 +245,7 @@ const SEED: ImportRecord[] = [
         "Priya Raman, DO",
         "priya.raman@harborviewlongevity.com | Encinitas",
         "error",
-        "Location \"Encinitas\" doesn't exist.",
+        'Location "Encinitas" doesn\'t exist.',
       ],
       [
         "Marco Ruiz, PA",
@@ -261,16 +264,16 @@ const SEED: ImportRecord[] = [
     ...sheet(
       "patients",
       [
-      ["Clara Benton", "02/11/1971 | clara.benton@example.com", "new"],
-      ["Rafael Ortega", "07/25/1964 | rafael.ortega@example.com", "new"],
-      ["Marcus Hale", "05/02/1968 | marcus.hale@example.com", "on-file"],
-      [
-        "Priya Natarajan",
-        "09/09/1980 | priya.n@example.com",
-        "review",
-        "Name and date of birth match Priya Natarajan (P10422).",
-      ],
-      ["June Abara", "03/14/1990 | june.abara@example.com", "new"],
+        ["Clara Benton", "02/11/1971 | clara.benton@example.com", "new"],
+        ["Rafael Ortega", "07/25/1964 | rafael.ortega@example.com", "new"],
+        ["Marcus Hale", "05/02/1968 | marcus.hale@example.com", "on-file"],
+        [
+          "Priya Natarajan",
+          "09/09/1980 | priya.n@example.com",
+          "review",
+          "Name and date of birth match Priya Natarajan (P10422).",
+        ],
+        ["June Abara", "03/14/1990 | june.abara@example.com", "new"],
       ],
       "Elise Harrington, MD"
     ),
@@ -304,11 +307,7 @@ const SEED: ImportRecord[] = [
   },
 ]
 
-export const importHistory = createCollection(
-  "hol-import-history",
-  SEED,
-  "1"
-)
+export const importHistory = createCollection("hol-import-history", SEED, "1")
 
 export function recordImport(
   record: Omit<ImportRecord, "id" | "at" | "actor" | "role">

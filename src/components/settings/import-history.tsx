@@ -109,7 +109,9 @@ export function ImportHistoryPage({
           variant="link"
           className="h-auto max-w-[18rem] justify-start gap-1.5 p-0 font-medium text-foreground"
           nativeButton={false}
-          render={<Link href={`${BASE[scope]}/security/import-history/${r.id}`} />}
+          render={
+            <Link href={`${BASE[scope]}/security/import-history/${r.id}`} />
+          }
         >
           <IconFileText className="size-4 shrink-0 text-muted-foreground" />
           <span className="truncate">{r.fileName}</span>
@@ -244,7 +246,13 @@ export function ImportSheetPage({
   return <SheetView record={record} back={back} />
 }
 
-function SheetView({ record: r, back }: { record: ImportRecord; back: string }) {
+function SheetView({
+  record: r,
+  back,
+}: {
+  record: ImportRecord
+  back: string
+}) {
   const [filter, setFilter] = React.useState<ImportResult | "all">("all")
   const [query, setQuery] = React.useState("")
   const q = query.trim().toLowerCase()

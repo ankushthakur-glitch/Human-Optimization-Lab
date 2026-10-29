@@ -343,13 +343,6 @@ const SEEDS: Seed[] = [
     { patientId: "P10318" },
   ],
   [
-    1440 + 125,
-    "marcus",
-    "Settings",
-    "Uploaded eligibility file",
-    "Eligibility, 1,284 rows",
-  ],
-  [
     1440 + 190,
     "victor",
     "Sign in",

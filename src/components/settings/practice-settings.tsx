@@ -14,7 +14,6 @@ import {
   IconMail,
   IconNotification,
   IconTrash,
-  IconUpload,
   IconUsersGroup,
 } from "@/design-system/icons"
 
@@ -290,8 +289,6 @@ function CareTeams() {
 function Employers() {
   const { items } = employers.use()
   const [editing, setEditing] = React.useState<Employer | "new" | null>(null)
-  const upload = React.useRef<HTMLInputElement>(null)
-  const [uploadFor, setUploadFor] = React.useState<Employer | null>(null)
 
   return (
     <SettingsFrame
@@ -302,22 +299,6 @@ function Employers() {
         </Button>
       }
     >
-      <input
-        ref={upload}
-        type="file"
-        accept=".csv,text/csv"
-        className="sr-only"
-        tabIndex={-1}
-        onChange={(event) => {
-          event.target.value = ""
-          if (!uploadFor) return
-          employers.patch(uploadFor.id, {
-            lastFile: new Date().toISOString().slice(0, 10),
-          })
-          toast.success(`${uploadFor.name} file uploaded`)
-          setUploadFor(null)
-        }}
-      />
       <SettingsTable
         columns={[
           { header: "Employer" },
@@ -360,15 +341,6 @@ function Employers() {
             </TableCell>
             <TableCell className="text-right">
               <RowMenu label={`Actions for ${employer.name}`}>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setUploadFor(employer)
-                    upload.current?.click()
-                  }}
-                >
-                  <IconUpload />
-                  Upload eligibility file
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setEditing(employer)}>
                   <IconEdit />
                   Edit
@@ -447,7 +419,6 @@ function EmployerForm({
               name: name.trim(),
               eligible: 0,
               matched: 0,
-              lastFile: "",
               reporting: false,
               status: "Active",
             },
@@ -895,11 +866,10 @@ function ReminderForm({
                 checked={draft.channels.includes(channel.id)}
                 onCheckedChange={(on) => {
                   set({
-                    channels: REMINDER_CHANNELS.map((c) => c.id).filter(
-                      (id) =>
-                        id === channel.id
-                          ? on === true
-                          : draft.channels.includes(id)
+                    channels: REMINDER_CHANNELS.map((c) => c.id).filter((id) =>
+                      id === channel.id
+                        ? on === true
+                        : draft.channels.includes(id)
                     ),
                   })
                   setChannelError("")

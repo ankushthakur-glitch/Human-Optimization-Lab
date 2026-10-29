@@ -67,11 +67,6 @@ export const PERMISSION_GROUPS: { title: string; items: Permission[] }[] = [
         description: "Invite, edit and deactivate providers and staff",
       },
       {
-        id: "practice.panel",
-        name: "Upload eligibility files",
-        description: "Load the practice and employer patient files",
-      },
-      {
         id: "practice.settings",
         name: "Practice settings",
         description: "Change invitations, alerts and the practice profile",
@@ -152,7 +147,6 @@ const ROLE_SEED: Role[] = [
       "patients.edit",
       "patients.invite",
       "practice.users",
-      "practice.panel",
       "practice.settings",
       "practice.reports",
     ],
@@ -507,7 +501,6 @@ export type Employer = {
   name: string
   eligible: number
   matched: number
-  lastFile: string
   reporting: boolean
   status: "Active" | "Inactive"
 }
@@ -518,7 +511,6 @@ const EMPLOYER_SEED: Employer[] = [
     name: "Ford Motor Company",
     eligible: 842,
     matched: 611,
-    lastFile: "2026-10-03",
     reporting: true,
     status: "Active",
   },
@@ -527,7 +519,6 @@ const EMPLOYER_SEED: Employer[] = [
     name: "Qualcomm",
     eligible: 520,
     matched: 402,
-    lastFile: "2026-09-28",
     reporting: true,
     status: "Active",
   },
@@ -536,7 +527,6 @@ const EMPLOYER_SEED: Employer[] = [
     name: "Scripps Health",
     eligible: 310,
     matched: 244,
-    lastFile: "2026-09-15",
     reporting: false,
     status: "Active",
   },
@@ -545,7 +535,6 @@ const EMPLOYER_SEED: Employer[] = [
     name: "City of San Diego",
     eligible: 188,
     matched: 120,
-    lastFile: "2026-08-30",
     reporting: false,
     status: "Active",
   },
@@ -554,7 +543,6 @@ const EMPLOYER_SEED: Employer[] = [
     name: "Petco",
     eligible: 64,
     matched: 41,
-    lastFile: "2026-07-12",
     reporting: false,
     status: "Inactive",
   },
