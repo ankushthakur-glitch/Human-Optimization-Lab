@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { IconDownload, IconFileText, IconSearch } from "@/design-system/icons"
+import { IconDownload, IconFileText } from "@/design-system/icons"
 
 import {
   type Column,
@@ -30,11 +30,6 @@ import { TablePager, usePaged } from "@/components/table-pager"
 import { Badge } from "@/design-system/ui/badge"
 import { Button } from "@/design-system/ui/button"
 import { Empty, EmptyHeader, EmptyTitle } from "@/design-system/ui/empty"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/design-system/ui/input-group"
 import { Spinner } from "@/design-system/ui/spinner"
 import {
   Table,
@@ -241,16 +236,7 @@ function SheetView({
   record: ImportRecord
   back: string
 }) {
-  const [query, setQuery] = React.useState("")
-  const q = query.trim().toLowerCase()
-  const shownRows = r.rows.filter(
-    (row) =>
-      !q ||
-      [row.name, row.note, ...Object.values(row.cells)].some((v) =>
-        v.toLowerCase().includes(q)
-      )
-  )
-  const paged = usePaged(shownRows)
+  const paged = usePaged(r.rows)
   const one = r.list === "patients" ? "patient" : "provider"
   const label = (k: ImportResult) =>
     k === "new" ? `New ${one}` : RESULT_LABEL[k]
@@ -294,24 +280,6 @@ function SheetView({
 
       <RecordCard title="Sheet">
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <InputGroup className="h-8 w-full border-border bg-card sm:w-64">
-              <InputGroupAddon>
-                <IconSearch className="size-4" />
-              </InputGroupAddon>
-              <InputGroupInput
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value)
-                  paged.setPage(1)
-                }}
-                className="h-full"
-                placeholder="Search..."
-                aria-label="Search rows"
-              />
-            </InputGroup>
-          </div>
-
           <div className="overflow-hidden rounded-md border">
             <Table>
               <TableHeader className="bg-surface-head [&_th]:h-8 [&_th]:px-3 [&_th]:text-xs [&_th]:font-medium [&_th]:whitespace-nowrap [&_th]:text-muted-foreground">
