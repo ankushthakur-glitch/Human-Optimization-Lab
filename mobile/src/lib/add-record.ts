@@ -20,8 +20,8 @@ export type AddKindInfo = {
   sample: { title: string; fields: [string, string][] }
 }
 
-// No medicines: a patient never adds one herself (29 Oct 2026); they come
-// from her records.
+// No medicines, immunizations or procedures: a patient never adds one
+// herself (29 Oct 2026); they come from her records.
 export const ADD_KINDS: AddKindInfo[] = [
   {
     kind: "supplements",
@@ -93,29 +93,6 @@ export const ADD_KINDS: AddKindInfo[] = [
         ["Visceral fat", "Being checked"],
       ],
     },
-  },
-  {
-    kind: "immunizations",
-    name: "Immunization",
-    action: "Add immunization",
-    icon: "immunizations",
-    fields: [
-      { id: "name", label: "Vaccine", placeholder: "Flu shot", required: true },
-      { id: "date", label: "Date", placeholder: "Oct 1, 2026" },
-    ],
-    sample: { title: "Tdap booster", fields: [["Date", "Mar 3, 2024"], ["Where", "CVS Pharmacy, La Jolla"]] },
-  },
-  {
-    kind: "procedures",
-    name: "Procedure",
-    action: "Add procedure",
-    icon: "procedures",
-    fields: [
-      { id: "name", label: "Procedure", placeholder: "Colonoscopy", required: true },
-      { id: "where", label: "Where", placeholder: "Scripps Memorial" },
-      { id: "date", label: "Date", placeholder: "May 4, 2025" },
-    ],
-    sample: { title: "Knee arthroscopy", fields: [["Where", "Scripps Clinic, La Jolla"], ["Date", "May 4, 2019"]] },
   },
 ]
 
