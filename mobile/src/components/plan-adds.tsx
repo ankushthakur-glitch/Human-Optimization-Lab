@@ -83,27 +83,31 @@ export function PlanAdds() {
           ))}
         </View>
       )}
-      {ADDS.map((a) => (
-        <View key={a.key} style={[styles.item, a.isNew && styles.itemNew]} accessible accessibilityLabel={`${a.title}${a.isNew ? ", new" : ""}. ${a.says}`}>
-          <View style={[styles.tile, a.isNew && styles.tileNew]}>
-            <a.Icon size={18} color={a.key === "plans" ? color.high : ink.primary} />
-          </View>
-          <View style={styles.words}>
-            <Text style={styles.name}>{a.title}</Text>
-            <Text style={styles.says}>{a.says}</Text>
-          </View>
-          {a.isNew && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>NEW</Text>
+      <View style={styles.list}>
+        {ADDS.map((a) => (
+          <View key={a.key} style={[styles.item, a.isNew && styles.itemNew]} accessible accessibilityLabel={`${a.title}${a.isNew ? ", new" : ""}. ${a.says}`}>
+            <View style={[styles.tile, a.isNew && styles.tileNew]}>
+              <a.Icon size={18} color={a.key === "plans" ? color.high : ink.primary} />
             </View>
-          )}
-        </View>
-      ))}
+            <View style={styles.words}>
+              <Text style={styles.name}>{a.title}</Text>
+              <Text style={styles.says}>{a.says}</Text>
+            </View>
+            {a.isNew && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>NEW</Text>
+              </View>
+            )}
+          </View>
+        ))}
+      </View>
     </TabScreen>
   )
 }
 
 const styles = StyleSheet.create({
+  // The cards sit 8 apart, as in every list; the page's 20 is for between sections.
+  list: { gap: space.inline },
   past: { gap: space.inline, marginBottom: space.inline },
   pastHead: { ...type.sectionLabel },
   item: {
