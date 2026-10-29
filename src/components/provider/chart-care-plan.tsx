@@ -547,8 +547,8 @@ export function CarePlanView({
     })
     setDraft(null)
     const n = countOf(kept).items
-    toast.success("Care plan updated", {
-      description: `Version ${version} for ${patient.firstName} with ${n} ${n === 1 ? "item" : "items"}.`,
+    toast.success("Care plan sent to patient", {
+      description: `Version ${version} with ${n} ${n === 1 ? "item" : "items"} was sent to ${patient.firstName}.`,
     })
   }
 
