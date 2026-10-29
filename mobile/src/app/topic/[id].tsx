@@ -247,7 +247,7 @@ function TopicBody({
         )) ||
         (dose === "add" && (
           <AddToRecordSheet
-            kinds={["medicines", "supplements"]}
+            kind="supplements"
             onClose={() => setDose(undefined)}
           />
         )) ||

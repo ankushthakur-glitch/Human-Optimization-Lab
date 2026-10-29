@@ -79,7 +79,7 @@ export function RecordTab() {
   // A member with a plan reads each result against where she started.
   const member = info.experience === "member" || info.experience === "paused"
   // The add sheet opens on the part of the record she is looking at.
-  const addKind = category === "medicines" ? "medicines" : category === "biomarkers" || category === "imaging" ? undefined : addKindOf(category)?.kind
+  const addKind = category === "medicines" || category === "biomarkers" || category === "imaging" ? undefined : addKindOf(category)?.kind
   return (
     <TabScreen
       tab="results"

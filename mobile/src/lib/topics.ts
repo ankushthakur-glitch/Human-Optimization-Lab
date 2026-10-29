@@ -29,7 +29,7 @@ export type IconKey = "exercise" | "eat" | "sleep" | "mind" | "medication" | "me
     she is adding, then opens its photos and the words about it, typed or
     spoken; `barcode` asks the same, then opens the barcode scan; `dose` opens one of
     Medication's sheets: tick the doses taken, report a side effect to the
-    physician, or add a new medicine or supplement; `night` opens
+    physician, or add a new supplement; `night` opens
     Sleep's log of the night she actually had; `apps` the apps and devices the topic can post
     itself from, each connected in place (`upload` adds a file of her own
     programme above them). */
@@ -160,7 +160,7 @@ export const TOPICS: Topic[] = [
     ways: [
       { id: "taken", title: "Mark it taken", says: "One tap per dose", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "dose", sheet: "taken" } },
       { id: "side", title: "Report a side effect", says: "Say what happened, in your words", badge: "Goes to Dr. Patel", tone: "good", icon: "phone", act: { kind: "dose", sheet: "side" } },
-      { id: "add", title: "Add a new one", says: "A medicine or supplement you started", badge: "Checked for interactions", tone: "good", icon: "camera", act: { kind: "dose", sheet: "add" } },
+      { id: "add", title: "Add a supplement", says: "A supplement you started", badge: "Checked for interactions", tone: "good", icon: "camera", act: { kind: "dose", sheet: "add" } },
     ],
     done: false,
   },

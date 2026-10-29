@@ -4,10 +4,8 @@ import { StyleSheet, View } from "react-native"
 
 import { FlowScreen } from "@/components/flow"
 import { MedicineConfirm } from "@/components/medicines"
-import { Plus } from "@/components/ph"
 import { AddToRecordSheet, AddedOfKind } from "@/components/record-rows"
 import type { AddKind } from "@/lib/add-record"
-import { color } from "@/lib/theme"
 
 /** Your medicines (FINAL-SPEC C.10): every list in one place, the ones that
     differ with a question each under Action needed, answered in place and
@@ -23,7 +21,7 @@ export default function MedicationsScreen() {
   const [adding, setAdding] = React.useState<AddKind>()
   return (
     <View style={styles.fill}>
-      <FlowScreen page title="Your medicines" action={{ label: "Add medicine", icon: <Plus size={16} color={color.primary} />, onPress: () => setAdding("medicines") }}>
+      <FlowScreen page title="Your medicines">
         <AddedOfKind kind="medicines" />
         <MedicineConfirm focus={id} onAddSupplement={() => setAdding("supplements")} />
         <AddedOfKind kind="supplements" />

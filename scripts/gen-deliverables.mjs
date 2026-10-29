@@ -320,7 +320,7 @@ function patientApp() {
     [CONNECT, "Connect your records", at("/connect")],
     [CONNECT, "Connect your records: texts and signature", at("/connect-texts")],
     [CONNECT, "Record building after connecting", at("/building")],
-    [AI, "Ask Inlay", at("/assistant")],
+    [AI, "Ask Inlay (optimization member)", at("/assistant?demo=paid")],
     [UPGRADE, "Plan tab: what an optimization plan adds (free patient)", at("/plan")],
     [UPGRADE, "Step 1: your nine opportunities", at("/opportunities")],
     [UPGRADE, "Opportunity details (sleep and apnoea)", at("/opportunity/sleep")],

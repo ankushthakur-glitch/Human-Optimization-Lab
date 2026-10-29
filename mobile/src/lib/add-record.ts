@@ -10,9 +10,9 @@ export type AddField = { id: string; label: string; placeholder: string; require
 
 export type AddKindInfo = {
   kind: AddKind
-  /** In the picker: "Medicine". */
+  /** In the picker: "Supplement". */
   name: string
-  /** The list's header action and the form's title: "Add medicine". */
+  /** The list's header action and the form's title: "Add supplement". */
   action: string
   icon: RecordIconName
   fields: AddField[]
@@ -20,20 +20,9 @@ export type AddKindInfo = {
   sample: { title: string; fields: [string, string][] }
 }
 
+// No medicines: a patient never adds one herself (29 Oct 2026); they come
+// from her records.
 export const ADD_KINDS: AddKindInfo[] = [
-  {
-    kind: "medicines",
-    name: "Medicine",
-    action: "Add medicine",
-    icon: "medications",
-    fields: [
-      { id: "name", label: "Medicine", placeholder: "Metformin", required: true },
-      { id: "dose", label: "Dose", placeholder: "500 mg" },
-      { id: "often", label: "How often", placeholder: "Twice a day" },
-      { id: "by", label: "Prescribed by", placeholder: "Dr. Patel" },
-    ],
-    sample: { title: "Metformin", fields: [["Dose", "500 mg"], ["How often", "Twice a day, with meals"], ["Prescribed by", "Dr. Lee"]] },
-  },
   {
     kind: "supplements",
     name: "Supplement",
