@@ -1,6 +1,6 @@
-import { Redirect, router, useLocalSearchParams } from "expo-router"
+import { Redirect, useLocalSearchParams } from "expo-router"
 import * as React from "react"
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import {
@@ -15,7 +15,6 @@ import {
   VisitBubble,
   keepTogether,
 } from "@/components/assistant-thread"
-import { AskWelcome, DISCLAIMER } from "@/components/ask-welcome"
 import { AttachSheet, MAX_ATTACHMENTS, type Attachment } from "@/components/attach-sheet"
 import { ChatBar, MyBubble, Options, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
 import { CategoryPicker } from "@/components/chat-categories"
@@ -24,9 +23,8 @@ import { useDragBack } from "@/components/drag-back"
 import { OUTLOOK_ASK, OutlookAnswer } from "@/components/outlook-answer"
 import { DarkStatusBar } from "@/components/error-state"
 import { PageGround, PageHeader } from "@/components/hol"
-import { ChatText, List } from "@/components/ph"
+import { ChatText } from "@/components/ph"
 import { CreditSheet, useCreditNotice } from "@/components/credit-banner"
-import { useTopInset } from "@/components/ui"
 import { costOf, questionKind, useAllowance, type QuestionKind } from "@/lib/allowance"
 import {
   AGAIN,
@@ -106,9 +104,13 @@ const ATTACHED = "Thanks, it's in this chat now. What would you like to know abo
    The thread is kept for 30 minutes after its last message, so closing and
    opening carries on; an older one ends with "Start a new chat".
 
-   Opened from the nav bar (or "New chat"), she first picks a category, or
-   makes one, and the chat starts in it (call, 5 Oct 2026); opened about a
-   result, a batch or a topic, that is its category. */
+   Every open from the nav bar (or "New chat") starts on "Choose a
+   category": she picks one, or makes one, and the chat starts in it (call,
+   5 Oct 2026; every flow again since 29 Oct 2026, in place of the orb and
+   topic pills). Opened about a result, a batch or a topic, that is its
+   category. */
+
+const DISCLAIMER = "Inlay provides general information, not medical advice."
 
 /** The typing bubble's pause before a reply (C.0.8). */
 const THINK_MS = 800
@@ -230,7 +232,6 @@ export default function AssistantScreen() {
 function AssistantChat() {
   // It rises from the bottom; the left edge swipe still drags it away.
   useDragBack("slide_from_bottom")
-  const top = useTopInset()
   const { bottom } = useSafeAreaInsets()
   const onboarding = useOnboarding()
   const allowance = useAllowance()
@@ -368,16 +369,8 @@ function AssistantChat() {
   const limitShown = thread.messages.some((m) => m.kind === "limit" && !m.gone)
   /** No category yet: the picker shows in place of the thread. */
   const choosing = !thread.topic && !thread.messages.length
-  /** "Ask Inlay", opening on the orb and the topics to tap with the
-      composer ready: every flow by default; version 1, the category
-      picker, only when the demo page switches back to it. */
-  const asking = onboarding.demo?.assistantVersion !== 1
   // A question it was opened with waits in the composer, unsent (A-42).
   const [draft, setDraft] = React.useState(params.ask ?? "")
-  // Opened from a page with the question already started (a topic's ways),
-  // or a paid member: just the composer, no suggestion pills or upgrade
-  // banner.
-  const bare = !!params.ask || allowance.member
   /** Borrowing or adding AI credit, asked in a sheet first. */
   const [credit, setCredit] = React.useState(false)
   // This week's AI credit from 75% used, joined to the composer as
@@ -462,15 +455,6 @@ function AssistantChat() {
     // Once, for the reply it was opened with.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  /** A topic tapped on the Ask Inlay opening: as the greeting's own list. */
-  function pickTopic(option: string) {
-    if (thinking) return
-    const topic = (Object.keys(TOPICS) as Topic[]).find((k) => TOPICS[k] === option) ?? "result"
-    setThread((t) => ({ ...t, topic: GROUP_OF[topic] }))
-    mine(option)
-    reply(topicOpening(topic))
-  }
 
   /* ---------------------------------------------------------- writing -- */
 
@@ -909,34 +893,13 @@ function AssistantChat() {
           white bars over or under the thread (user, 5 Oct 2026). */}
       <PageGround />
       <DarkStatusBar />
-      {asking ? (
-        <PageHeader title="Ask Inlay" action={{ label: "History", onPress: () => setMenu(true) }} />
-      ) : (
-        <View style={[styles.head, { paddingTop: top + 16 }]}>
-          {/* Only the chats menu here (user, 5 Oct 2026): no back caret,
-              title or "End chat". Swipe back still leaves the page. */}
-          <View style={styles.headRow}>
-            <Pressable
-              onPress={() => setMenu(true)}
-              hitSlop={10}
-              accessibilityRole="button"
-              accessibilityLabel="Chats"
-              style={({ pressed }) => [styles.menu, pressed && styles.closePressed]}
-            >
-              <List size={20} color={ink.detail} />
-            </Pressable>
-          </View>
-        </View>
-      )}
+      <PageHeader title="Ask Inlay" action={{ label: "History", onPress: () => setMenu(true) }} />
 
-      {choosing && !asking ? (
+      {choosing ? (
         <CategoryPicker chats={onboarding.chats ?? []} categories={onboarding.chatCategories} planLive={planLive} onStart={startIn} onCreate={createCategory} />
       ) : (
         <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={styles.fill}>
-          {choosing ? (
-            <AskWelcome options={bare ? [] : topics()} onPick={pickTopic} />
-          ) : (
           <ScrollView
             ref={scroll}
             onLayout={(e) => (viewport.current = e.nativeEvent.layout.height)}
@@ -955,7 +918,6 @@ function AssistantChat() {
             ))}
             {thinking && <TypingBubble />}
           </ScrollView>
-          )}
           </View>
 
           {!ended && (
@@ -966,15 +928,15 @@ function AssistantChat() {
                 onChange={setDraft}
                 onSend={send}
                 canSend={!thinking}
-                placeholder={awaiting ? "Describe what's bothering you" : asking ? "Ask anything" : "Ask a question"}
-                bottom={asking ? 0 : bottom}
+                placeholder={awaiting ? "Describe what's bothering you" : "Ask anything"}
+                bottom={0}
                 bare
                 voice
                 attachments={files}
                 onAttach={files.length < MAX_ATTACHMENTS ? () => setAttaching(true) : undefined}
                 onRemoveAttachment={(id) => setFiles((f) => f.filter((x) => x.id !== id))}
               />
-              {asking && <Text style={[styles.disclaimer, { paddingBottom: Math.max(bottom, space.gutter) }]}>{DISCLAIMER}</Text>}
+              <Text style={[styles.disclaimer, { paddingBottom: Math.max(bottom, space.gutter) }]}>{DISCLAIMER}</Text>
             </View>
           )}
           {ended && <View style={[styles.endedFoot, { height: Math.max(bottom, space.gutter) }]} />}
@@ -1024,10 +986,6 @@ const styles = StyleSheet.create({
 
   // No bar: the chats button floats on the page's ground, the consent
   // page's round back button (32, #EBEBEB, a 20 icon).
-  head: {},
-  headRow: { ...column, paddingBottom: 4, flexDirection: "row", alignItems: "center", gap: space.inline },
-  menu: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#EBEBEB", alignItems: "center", justifyContent: "center" },
-  closePressed: { opacity: 0.7 },
   endedFoot: {},
 
   // Under the header the page's own margin, as at its sides (Frontline

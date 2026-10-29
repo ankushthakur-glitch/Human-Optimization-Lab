@@ -363,7 +363,6 @@ export type State = {
   demo?: {
     steady?: boolean
     forceWeekCard?: boolean
-    assistantVersion?: 1 | 2
     /** Home variation: no "Ask Inlay" words under the orb; the app tour's
         second stop names it instead. */
     tourNamesAsk?: boolean
