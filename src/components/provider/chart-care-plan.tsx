@@ -7,6 +7,7 @@ import {
   IconEdit,
   IconEye,
   IconHelp,
+  IconRefresh,
   IconSparkles,
   IconThumbsDown,
   IconThumbsUp,
@@ -576,8 +577,8 @@ export function CarePlanView({
             setDraft(latest.steps)
           }}
         >
-          <IconEdit />
-          Edit plan
+          <IconRefresh />
+          Revise plan
         </Button>
       </>
     )
