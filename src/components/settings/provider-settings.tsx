@@ -4,6 +4,7 @@ import { IconFlag, IconHistory, IconNotification } from "@/design-system/icons"
 
 import { ProviderShell } from "@/components/provider/provider-shell"
 import { AuditLogPage } from "@/components/settings/audit-log"
+import { ImportHistoryPage } from "@/components/settings/import-history"
 import { NotificationsPage } from "@/components/settings/notifications"
 import { PatientFlagsPage } from "@/components/settings/patient-flags"
 import {
@@ -14,8 +15,8 @@ import {
 
 /* The provider's Settings: patient flags (from the Solid EHR "Provider
    Account > Patient Flags" frames, with ready-made flags to start from), their
-   own notifications and the audit log of their own activity and of everyone who opened their
-   patients' charts. */
+   own notifications, the audit log of their own activity and of everyone who opened their
+   patients' charts, and the history of their own bulk patient uploads. */
 
 const BASE = "/screens/patients/settings"
 
@@ -53,6 +54,11 @@ const GROUPS: SettingsGroup[] = [
         id: "audit-log",
         label: "Audit log",
         render: () => <AuditLogPage scope="provider" />,
+      },
+      {
+        id: "import-history",
+        label: "Import history",
+        render: () => <ImportHistoryPage scope="provider" />,
       },
     ],
   },
