@@ -322,7 +322,7 @@ function patientApp() {
     [RECORD, "Visit details", at("/visit/annual")],
     [RECORD, "Outside visit (urgent care)", at("/visit/urgent")],
     [RECORD, "Record item details (procedure)", at(`/record/item?d=${encodeURIComponent(JSON.stringify(SAMPLE_ITEM))}`)],
-    [RECORD, "Add to your record (medicine form)", at("/record/add?kind=medicines")],
+    [RECORD, "Add to your record (supplement form)", at("/record/add?kind=supplements")],
     [RECORD, "Tell us something", at("/tell-us")],
     [CONNECT, "Connect your records", at("/connect")],
     [CONNECT, "Connect your records: texts and signature", at("/connect-texts")],
