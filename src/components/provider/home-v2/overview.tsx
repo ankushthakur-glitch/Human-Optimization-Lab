@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Bar, BarChart, Rectangle, XAxis, YAxis } from "recharts"
 import {
   IconArrowDownDouble,
   IconArrowRight,
@@ -13,12 +12,10 @@ import {
   IconFileList,
   IconLocation,
   IconVideo,
-  IconWarning,
 } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/design-system/ui/button"
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/design-system/ui/chart"
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/design-system/ui/empty"
 import { Skeleton } from "@/design-system/ui/skeleton"
 import { Illustration } from "@/components/illustrations/illustration"
@@ -30,41 +27,38 @@ import {
   providers,
 } from "@/components/practice/practice-data"
 import {
-  AXIS_PROPS,
   Avatar,
   Badge,
   Card,
   CardHeader,
   FOCUS,
-  Grid,
   type IconDef,
   KitIcon,
-  ReDonut,
-  type ReSlice,
-  SegmentedControl,
-  useReducedMotion,
 } from "@/components/dashboard-kit-v2"
 import {
 } from "@/components/provider/chart-care-plan"
 import { CHAT_ME, chats, lastOf } from "@/components/provider/communication/chat-data"
 import { clockTime, ms } from "@/components/provider/mock-clock"
-import { PROVIDER_ID } from "@/components/provider/provider-shell"
 import {
   type Appointment,
+  DAY_END,
+  DAY_START,
+  LUNCH,
   isWorkingDay,
+  minuteOf,
   isoDay,
   useAppointments,
 } from "@/components/provider/schedule/schedule-data"
-import { AppointmentDialog, STATUS_TONE } from "@/components/provider/schedule/schedule"
+import { AppointmentDialog, EventCard, HATCH } from "@/components/provider/schedule/schedule"
 import { type Task, type TaskPriority, ME, isOverdue, tasks } from "@/components/provider/tasks/tasks-data"
 import { TYPE_META, itemName } from "@/components/provider/home-v2/labels"
 import type { QueueItem } from "@/components/provider/home-v2/types"
 
-/* The provider's overall dashboard, above the Worklist: the day at a glance
-   (five stat cards), today's schedule beside what needs the physician, then
-   the week, the task list and the panel. Each block reads the store its own
-   module reads (schedule on the real clock, tasks, chats and care plans on
-   the mock clock), so a number here always matches the page it links to. */
+/* The provider home's day blocks: the stat card kit (also used by the panel
+   blocks in panel.tsx), today's schedule, what needs the physician and the
+   task list. Each block reads the store its own module reads (schedule on
+   the real clock, tasks and chats on the mock clock), so a number here
+   always matches the page it links to. */
 
 const BASE = "/screens/patients"
 
@@ -153,8 +147,6 @@ export function CardLink({ href, children }: { href: string; children: React.Rea
   )
 }
 
-const people = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
-
 /* ------------------------------------------------------- stat cards -- */
 
 export function StatCard({
@@ -163,6 +155,7 @@ export function StatCard({
   when,
   value,
   of,
+  unit,
   meta,
   segments,
   footer,
@@ -172,6 +165,7 @@ export function StatCard({
   when: string
   value: number
   of?: number
+  unit?: string
   meta: React.ReactNode
   segments?: Segment[]
   footer?: React.ReactNode
@@ -187,6 +181,7 @@ export function StatCard({
         <div className="flex flex-col">
           <span className="flex items-baseline gap-0.5 tabular-nums">
             <span className="text-[28px] leading-9 font-semibold">{value}</span>
+            {unit && <span className="text-base text-muted-foreground">{unit}</span>}
             {of !== undefined && <span className="text-base text-muted-foreground">/{of}</span>}
           </span>
           <span className="truncate text-xs text-muted-foreground tabular-nums">{meta}</span>
@@ -214,96 +209,7 @@ export function StatCardSkeleton() {
   )
 }
 
-/** Today's visits by how they stand. */
-function appointmentSegments(day: Appointment[]): Segment[] {
-  const n = (s: Appointment["status"][]) => day.filter((a) => s.includes(a.status)).length
-  return [
-    { label: "Completed", value: n(["Completed"]), color: SUBTLE.green },
-    { label: "Checked in", value: n(["Checked in"]), color: SUBTLE.orange },
-    { label: "Scheduled", value: n(["Scheduled"]), color: SUBTLE.blue },
-    { label: "Missed", value: n(["No show", "Cancelled"]), color: SUBTLE.red },
-  ]
-}
-
 const TASK_COLOR: Record<TaskPriority, string> = { High: SUBTLE.red, Medium: SUBTLE.orange, Low: SUBTLE.green }
-
-export function OverviewStats({
-  day,
-  dayLabel,
-  open,
-  urgent,
-  onUrgent,
-}: {
-  day: Appointment[]
-  dayLabel: string
-  open: QueueItem[]
-  urgent: QueueItem[]
-  onUrgent: () => void
-}) {
-  const allTasks = tasks.use().items
-  const threads = chats.use().items
-
-  const mine = allTasks.filter((t) => t.assigneeId === ME && t.status !== "Completed")
-  const overdue = mine.filter(isOverdue).length
-  const booked = day.filter((a) => a.status !== "Cancelled")
-  const left = day.filter((a) => a.status === "Scheduled" || a.status === "Checked in").length
-  const unread = threads.filter((t) => t.unread > 0)
-  const unreadCount = unread.reduce((s, t) => s + t.unread, 0)
-  const fresh = urgent.filter((i) => i.isNew).length
-
-  return (
-    <section aria-label="Today at a glance" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard
-        icon={IconCalendar}
-        label="Appointments"
-        when={dayLabel}
-        value={booked.length}
-        meta={`${left} still to see`}
-        segments={appointmentSegments(day)}
-        footer={<FooterLink href={`${BASE}/schedule`}>Open schedule</FooterLink>}
-      />
-      <StatCard
-        icon={IconWarning}
-        label="Urgent items"
-        when="Now"
-        value={urgent.length}
-        of={open.length}
-        meta={fresh > 0 ? `${fresh} new since your last visit` : "Nothing new since your last visit"}
-        segments={[
-          { label: "Urgent", value: urgent.length, color: SUBTLE.red },
-          { label: "Moderate", value: open.filter((i) => i.priority === "moderate").length, color: SUBTLE.orange },
-          { label: "Routine", value: open.filter((i) => i.priority === "routine").length, color: "#B5B5B5" },
-        ]}
-        footer={<FooterLink onClick={onUrgent}>Show urgent items</FooterLink>}
-      />
-      <StatCard
-        icon={IconFileList}
-        label="My tasks"
-        when="Open"
-        value={mine.length}
-        meta={overdue > 0 ? <span style={{ color: word(SUBTLE.red) }}>{overdue} overdue</span> : "None overdue"}
-        segments={(["High", "Medium", "Low"] as TaskPriority[]).map((p) => ({
-          label: p,
-          value: mine.filter((t) => t.priority === p).length,
-          color: TASK_COLOR[p],
-        }))}
-        footer={<FooterLink href={`${BASE}/tasks`}>Open tasks</FooterLink>}
-      />
-      <StatCard
-        icon={IconChat}
-        label="Messages"
-        when="Unread"
-        value={unreadCount}
-        meta={unread.length > 0 ? `From ${people(unread.length, "colleague")}` : "All caught up"}
-        segments={[
-          { label: "Unread", value: unread.length, color: SUBTLE.blue },
-          { label: "Read", value: threads.length - unread.length, color: "#B5B5B5" },
-        ]}
-        footer={<FooterLink href={`${BASE}/communication`}>Open messages</FooterLink>}
-      />
-    </section>
-  )
-}
 
 /* -------------------------------------------------- today's schedule -- */
 
@@ -311,6 +217,12 @@ function ModeIcon({ a, className }: { a: Appointment; className?: string }) {
   const Icon = a.mode === "Virtual" ? IconVideo : IconLocation
   return <Icon aria-label={a.mode} className={cn("size-3.5 shrink-0", className)} />
 }
+
+/* The short day grid: clinic hours at 56px an hour. */
+const MINI_HOUR = 56
+const MINI_HOURS = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i)
+const MINI_GRID = MINI_HOURS.length * MINI_HOUR
+const miniTop = (minute: number) => ((minute - DAY_START * 60) / 60) * MINI_HOUR
 
 const isPast = (a: Appointment) => a.status === "Completed" || a.status === "No show" || a.status === "Cancelled"
 
@@ -328,8 +240,8 @@ export function TodaySchedule({
   const { items: roster } = patients.use()
   const byId = React.useMemo(() => new Map(roster.map((p) => [p.id, p])), [roster])
   const [openId, setOpenId] = React.useState<string | null>(null)
-  const listRef = React.useRef<HTMLOListElement>(null)
-  const nowRef = React.useRef<HTMLLIElement>(null)
+  const listRef = React.useRef<HTMLDivElement>(null)
+  const nowRef = React.useRef<HTMLDivElement>(null)
 
   const next = day.find((a) => a.status === "Scheduled" || a.status === "Checked in")
   const nextPatient = next ? byId.get(next.patientId) : undefined
@@ -337,15 +249,17 @@ export function TodaySchedule({
     const p = byId.get(a.patientId)
     return p ? fullName(p) : a.patientId
   }
-  /* The Now rule sits before the first visit still to come. */
-  const nowAt = day.findIndex((a) => !isPast(a))
+  /* The Now rule shows when the card is on today, inside clinic hours. */
+  const minute = minuteOf(now)
+  const nowMinute =
+    day[0]?.start.startsWith(now.slice(0, 10)) && minute >= DAY_START * 60 && minute <= DAY_END * 60 ? minute : null
 
-  /* Open on the present: the list scrolls the Now rule to its top. */
+  /* Open on the present (or the first visit): scroll it near the top. */
   React.useEffect(() => {
     const list = listRef.current
-    const rule = nowRef.current
-    if (list && rule) list.scrollTop = rule.offsetTop - list.offsetTop - 8
-  }, [day.length])
+    if (!list || !day.length) return
+    list.scrollTop = Math.max(0, miniTop(nowMinute ?? minuteOf(day[0].start)) - 24)
+  }, [day, nowMinute])
 
   return (
     <Card className={className}>
@@ -393,64 +307,54 @@ export function TodaySchedule({
             </div>
           )}
 
-          <ol ref={listRef} className="no-scrollbar relative max-h-[372px] min-h-0 flex-1 overflow-y-auto py-1.5">
-            {day.map((a, i) => {
-              const tone = STATUS_TONE[a.status]
-              const past = isPast(a)
-              return (
-                <React.Fragment key={a.id}>
-                  {i === nowAt && i > 0 && (
-                    <li ref={nowRef} aria-label={`Now, ${clockTime(now)}`} className="flex items-center gap-2 px-4 py-1">
-                      <span className="w-[68px] text-right text-[11px] font-medium" style={{ color: word(SUBTLE.red) }}>
-                        {clockTime(now)}
-                      </span>
-                      <span className="size-1.5 rounded-full" style={{ backgroundColor: SUBTLE.red }} />
-                      <span className="h-px flex-1" style={{ backgroundColor: SUBTLE.red }} />
-                    </li>
-                  )}
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => setOpenId(a.id)}
-                      className={cn(
-                        "flex w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-surface-soft",
-                        a.id === next?.id && "bg-surface-soft",
-                        FOCUS
-                      )}
-                    >
-                      <span className="flex w-[68px] shrink-0 flex-col items-end tabular-nums">
-                        <span className={cn("text-[13px] font-medium", past && "text-muted-foreground")}>
-                          {clockTime(a.start)}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">{a.minutes} min</span>
-                      </span>
-                      <span aria-hidden className="h-8 w-[3px] shrink-0 rounded-full" style={{ backgroundColor: tone.bar }} />
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <span
-                          className={cn(
-                            "truncate text-sm font-medium",
-                            past && "text-foreground/70",
-                            a.status === "Cancelled" && "text-muted-foreground line-through"
-                          )}
-                        >
-                          {nameOf(a)}
-                        </span>
-                        <span className="truncate text-xs text-muted-foreground">{a.type}</span>
-                      </span>
-                      <ModeIcon a={a} className="text-muted-foreground max-sm:hidden" />
-                      <span
-                        className="flex shrink-0 items-center gap-1.5 text-xs font-medium sm:w-[84px]"
-                        style={{ color: tone.word }}
-                      >
-                        <span aria-hidden className="size-1.5 rounded-full" style={{ backgroundColor: tone.bar }} />
-                        <span className="max-sm:sr-only">{a.status}</span>
-                      </span>
-                    </button>
-                  </li>
+          {/* The day as a short calendar: hour rules, lunch hatched, each
+              visit a block sized to its length, the Now rule in place. */}
+          <div ref={listRef} className="no-scrollbar relative max-h-[372px] min-h-0 flex-1 overflow-y-auto">
+            <div className="relative mx-4 my-2" style={{ height: MINI_GRID }}>
+              {MINI_HOURS.map((h) => (
+                <React.Fragment key={h}>
+                  <span
+                    className="absolute left-0 w-12 -translate-y-1/2 text-right text-[11px] text-muted-foreground tabular-nums"
+                    style={{ top: miniTop(h * 60) }}
+                  >
+                    {h % 12 || 12} {h < 12 ? "AM" : "PM"}
+                  </span>
+                  <span className="absolute right-0 left-14 border-t border-border/70" style={{ top: miniTop(h * 60) }} />
                 </React.Fragment>
-              )
-            })}
-          </ol>
+              ))}
+              <span className="absolute right-0 left-14 border-t border-border/70" style={{ top: MINI_GRID }} />
+              <div
+                aria-label="Lunch"
+                className={cn("absolute right-0 left-14", HATCH)}
+                style={{ top: miniTop(LUNCH.start), height: miniTop(LUNCH.end) - miniTop(LUNCH.start) }}
+              />
+              {day.map((a) => {
+                const height = (a.minutes / 60) * MINI_HOUR - 3
+                return (
+                  <EventCard
+                    key={a.id}
+                    a={a}
+                    name={nameOf(a)}
+                    size={height < 34 ? "line" : height < 60 ? "short" : "full"}
+                    onOpen={setOpenId}
+                    className="absolute right-0 left-[60px]"
+                    style={{ top: miniTop(minuteOf(a.start)) + 1.5, height }}
+                  />
+                )
+              })}
+              {nowMinute !== null && (
+                <div
+                  ref={nowRef}
+                  aria-label={`Now, ${clockTime(now)}`}
+                  className="pointer-events-none absolute right-0 left-14 z-10 flex items-center"
+                  style={{ top: miniTop(nowMinute) }}
+                >
+                  <span className="-ml-1 size-2 rounded-full ring-2 ring-card" style={{ backgroundColor: SUBTLE.red }} />
+                  <span className="h-px flex-1" style={{ backgroundColor: SUBTLE.red }} />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
       <AppointmentDialog
@@ -549,7 +453,7 @@ export function NeedsYou({
           </EmptyHeader>
         </Empty>
       ) : (
-        <ul className="no-scrollbar max-h-[456px] min-h-0 flex-1 divide-y divide-border overflow-y-auto">
+        <ul className="no-scrollbar max-h-[372px] min-h-0 flex-1 divide-y divide-border overflow-y-auto">
           {actions.map((a) => (
             <li key={a.id} className="flex items-center gap-3 px-4 py-3">
               <IconTile icon={a.icon} glyph={a.glyph} color={a.color} />
@@ -579,115 +483,7 @@ export function NeedsYou({
   )
 }
 
-/* ---------------------------------------------------------- the week -- */
-
-const WEEK_CONFIG = {
-  completed: { label: "Completed", color: SUBTLE.green },
-  upcoming: { label: "Upcoming", color: SUBTLE.blue },
-  missed: { label: "Missed", color: SUBTLE.red },
-} satisfies ChartConfig
-
-const WEEKDAY = new Intl.DateTimeFormat("en-US", { weekday: "short" })
 const SHORT = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" })
-
-export function WeekAhead({ now, className }: { now: string; className?: string }) {
-  const all = useAppointments(now)
-  const reduced = useReducedMotion()
-  const [week, setWeek] = React.useState<"this" | "next">("this")
-
-  const monday = new Date(`${now.slice(0, 10)}T00:00:00`)
-  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7) + (week === "next" ? 7 : 0))
-  const days = Array.from({ length: 5 }, (_, i) => {
-    const d = new Date(monday)
-    d.setDate(monday.getDate() + i)
-    return d
-  })
-  const rows = days.map((d) => {
-    const list = all.filter((a) => a.start.startsWith(isoDay(d)))
-    return {
-      day: WEEKDAY.format(d),
-      date: SHORT.format(d),
-      completed: list.filter((a) => a.status === "Completed").length,
-      upcoming: list.filter((a) => a.status === "Scheduled" || a.status === "Checked in").length,
-      missed: list.filter((a) => a.status === "No show" || a.status === "Cancelled").length,
-    }
-  })
-  const visits = all.filter(
-    (a) => a.status !== "Cancelled" && days.some((d) => a.start.startsWith(isoDay(d)))
-  )
-  const stats = [
-    { label: "Visits", value: visits.length },
-    { label: "New patients", value: visits.filter((a) => a.type === "New patient visit").length },
-    { label: "Virtual", value: visits.filter((a) => a.mode === "Virtual").length },
-  ]
-
-  return (
-    <Card className={className}>
-      <CardHeader
-        title="Visits by day"
-        actions={
-          <SegmentedControl
-            label="Week"
-            value={week}
-            onChange={setWeek}
-            items={[
-              { value: "this", label: "This week" },
-              { value: "next", label: "Next week" },
-            ]}
-          />
-        }
-      />
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <dl className="grid grid-cols-3 gap-3">
-          {stats.map((s) => (
-            <div key={s.label} className="flex flex-col">
-              <dt className="text-xs text-muted-foreground">{s.label}</dt>
-              <dd className="text-xl font-semibold tabular-nums">{s.value}</dd>
-            </div>
-          ))}
-        </dl>
-        <ul className="flex flex-wrap gap-x-4 gap-y-1">
-          {Object.entries(WEEK_CONFIG).map(([k, c]) => (
-            <li key={k} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span aria-hidden className="size-1.5 rounded-full" style={{ backgroundColor: c.color }} />
-              {c.label}
-            </li>
-          ))}
-        </ul>
-        <ChartContainer config={WEEK_CONFIG} className="aspect-auto h-[196px] w-full">
-          <BarChart data={rows} margin={{ top: 4, right: 0, left: -20, bottom: 0 }} barCategoryGap="28%">
-            <Grid />
-            <XAxis dataKey="day" {...AXIS_PROPS} />
-            <YAxis allowDecimals={false} {...AXIS_PROPS} />
-            <ChartTooltip
-              cursor={{ fill: "var(--secondary)", radius: 6 }}
-              content={
-                <ChartTooltipContent
-                  indicator="dot"
-                  labelFormatter={(_, p) => (p?.[0]?.payload as { date?: string })?.date ?? ""}
-                />
-              }
-            />
-            {(["completed", "missed", "upcoming"] as const).map((k, i, arr) => (
-              <Bar
-                key={k}
-                dataKey={k}
-                stackId="day"
-                fill={`var(--color-${k})`}
-                stroke="var(--card)"
-                strokeWidth={2}
-                isAnimationActive={!reduced}
-                shape={(props: React.ComponentProps<typeof Rectangle>) => (
-                  <Rectangle {...props} radius={i === arr.length - 1 ? [4, 4, 0, 0] : 0} />
-                )}
-              />
-            ))}
-          </BarChart>
-        </ChartContainer>
-      </div>
-    </Card>
-  )
-}
 
 /* ------------------------------------------------------------ tasks -- */
 
@@ -742,7 +538,7 @@ export function MyTasks({ byId, today, className }: { byId: Map<string, Patient>
           </EmptyHeader>
         </Empty>
       ) : (
-        <ul className="no-scrollbar max-h-[300px] min-h-0 flex-1 divide-y divide-border overflow-y-auto">
+        <ul className="no-scrollbar max-h-[372px] min-h-0 flex-1 divide-y divide-border overflow-y-auto">
           {mine.map((t) => {
             const Icon = PRIORITY_ICON[t.priority]
             const late = isOverdue(t)
@@ -777,80 +573,6 @@ export function MyTasks({ byId, today, className }: { byId: Map<string, Patient>
           })}
         </ul>
       )}
-    </Card>
-  )
-}
-
-/* ---------------------------------------------------------- patients -- */
-
-const STATUS_COLOR: Record<Patient["status"], string> = {
-  Active: SUBTLE.green,
-  Invited: SUBTLE.blue,
-  Declined: SUBTLE.orange,
-  Inactive: "#B5B5B5",
-}
-
-/** Days since a local "2026-10-12", on the real clock the patient app uses. */
-const daysAgo = (iso: string, today: string) => Math.round((ms(today) - ms(iso)) / 86_400_000)
-
-export function MyPatients({ today, className }: { today: string; className?: string }) {
-  const { items } = patients.use()
-  const mine = items.filter((p) => p.providerId === PROVIDER_ID)
-  const segments: Segment[] = (["Active", "Invited", "Declined", "Inactive"] as const).map((s) => ({
-    label: s,
-    value: mine.filter((p) => p.status === s).length,
-    color: STATUS_COLOR[s],
-  }))
-  const slices: ReSlice[] = segments.map((s) => ({
-    key: s.label.toLowerCase(),
-    label: s.label,
-    value: s.value,
-    color: s.color,
-    fill: "solid",
-  }))
-  const active = mine.filter((p) => p.status === "Active")
-  const quiet = active.filter((p) => !p.lastEngagedAt || daysAgo(p.lastEngagedAt, today) > 30).length
-  const members = mine.filter((p) => p.membership === "optimization").length
-
-  return (
-    <Card className={className}>
-      <CardHeader title="My patients" actions={<CardLink href={BASE}>All patients</CardLink>} />
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        {/* The panel by status as a pie, the total at its centre. */}
-        <ReDonut
-          data={slices}
-          centerValue={mine.length}
-          centerLabel="Patients"
-          height={176}
-          thickness={22}
-          className="mx-auto w-[176px]"
-        />
-        <ul className="flex flex-col divide-y divide-border">
-          {segments.map((s) => (
-            <li key={s.label} className="flex items-center gap-2 py-2 text-sm">
-              <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
-              <span className="font-medium">{s.label}</span>
-              <span className="ml-auto font-semibold tabular-nums">{s.value}</span>
-              <span className="w-10 text-right text-xs text-muted-foreground tabular-nums">
-                {mine.length ? Math.round((s.value / mine.length) * 100) : 0}%
-              </span>
-            </li>
-          ))}
-        </ul>
-        <dl className="mt-auto grid grid-cols-2 gap-3 rounded-lg bg-surface-soft p-3">
-          <div className="flex flex-col">
-            <dt className="text-xs text-muted-foreground">Optimization members</dt>
-            <dd className="text-lg font-semibold tabular-nums">{members}</dd>
-          </div>
-          <div className="flex flex-col">
-            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              {quiet > 0 && <span aria-hidden className="size-1.5 rounded-full" style={{ backgroundColor: SUBTLE.orange }} />}
-              Quiet for 30+ days
-            </dt>
-            <dd className="text-lg font-semibold tabular-nums">{quiet}</dd>
-          </div>
-        </dl>
-      </div>
     </Card>
   )
 }
