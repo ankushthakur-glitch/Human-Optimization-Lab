@@ -49,36 +49,60 @@ export type PanelMonth = {
 
 const pct = (num: number, den: number) => (den ? Math.round((num / den) * 100) : 0)
 
-/** The last twelve months, oldest first. Each month's new members and
-    cancellations come from the Membership report; month end members are
-    walked back from this month's report total so the bars add up. */
+type Flow = Omit<PanelMonth, "month" | "label" | "conversion">
+
+/** One provider's twelve months, oldest first. New members and
+    cancellations are the Membership report's; month end members are walked
+    back from this month's report total, so each month's start is the
+    month before's end and every bar adds up. */
+function providerMonths(id: string): Flow[] {
+  const periods = periodsFor("Month")
+  const rows: Flow[] = []
+  let end = 0
+  periods.forEach((p, i) => {
+    const c = totalFor(MEMBERSHIP, [id], p)
+    if (i === 0) end = c.members
+    const joined = Math.min(end, c.paid)
+    const continuing = end - joined
+    rows.unshift({
+      start: continuing + c.cancelled,
+      continuing,
+      joined,
+      dropped: c.cancelled,
+      members: end,
+      invited: c.invited,
+      activated: c.activated,
+    })
+    end = continuing + c.cancelled
+  })
+  return rows
+}
+
+/** The panel's twelve months, oldest first: each provider's months summed,
+    so a practice total always equals its By provider rows, and every rate
+    is worked from the same counts the bars draw. */
 export function usePanelMonths(providerIds: string[] = [PROVIDER_ID]): PanelMonth[] {
   const key = providerIds.join(",")
   return React.useMemo(() => {
-    const periods = periodsFor("Month")
-    const counts = periods.map((p) => totalFor(MEMBERSHIP, key ? key.split(",") : [], p))
-    const rows: PanelMonth[] = []
-    let end = counts[0]?.members ?? 0
-    periods.forEach((p, i) => {
-      const c = counts[i]
-      const joined = Math.min(end, c.paid)
-      const continuing = end - joined
-      const dropped = c.cancelled
-      rows.unshift({
+    const periods = periodsFor("Month").slice().reverse()
+    const each = (key ? key.split(",") : []).map(providerMonths)
+    return periods.map((p, i) => {
+      const f = (k: keyof Flow) => each.reduce((s, rows) => s + rows[i][k], 0)
+      const joined = f("joined")
+      const activated = f("activated")
+      return {
         month: p.label.slice(0, 3),
         label: p.label,
-        start: continuing + dropped,
-        continuing,
+        start: f("start"),
+        continuing: f("continuing"),
         joined,
-        dropped,
-        members: end,
-        invited: c.invited,
-        activated: c.activated,
-        conversion: pct(c.paid, c.activated),
-      })
-      end = continuing + dropped
+        dropped: f("dropped"),
+        members: f("members"),
+        invited: f("invited"),
+        activated,
+        conversion: pct(joined, activated),
+      }
     })
-    return rows
   }, [key])
 }
 
@@ -241,22 +265,36 @@ const CONVERSION_CONFIG = {
   conversion: { label: "Conversion rate", color: SUBTLE.blue },
 } satisfies ChartConfig
 
-/** Six months from invite to a member who stays, then the monthly rate. */
+/** Six or twelve months from invite to paid member, then the monthly rate.
+    The upgraded count is the members chart's new members over the same months. */
 export function ConversionFunnel({ months, className }: { months: PanelMonth[]; className?: string }) {
   const reduced = useReducedMotion()
-  const rows = months.slice(-6)
-  const sum = (k: "invited" | "activated" | "joined" | "dropped") => rows.reduce((s, r) => s + r[k], 0)
+  const [range, setRange] = React.useState<"6" | "12">("6")
+  const rows = months.slice(-Number(range))
+  const sum = (k: "invited" | "activated" | "joined") => rows.reduce((s, r) => s + r[k], 0)
   const steps = [
     { label: "Invited", value: sum("invited"), color: GREY },
     { label: "Joined the free app", value: sum("activated"), color: SUBTLE.blue },
     { label: "Upgraded to paid", value: sum("joined"), color: SUBTLE.violet },
-    { label: "Still on the plan", value: Math.max(0, sum("joined") - sum("dropped")), color: SUBTLE.green },
   ]
   const top = steps[0].value || 1
 
   return (
     <Card className={className}>
-      <CardHeader title="Free to paid" actions={<span className="text-xs text-muted-foreground">Last 6 months</span>} />
+      <CardHeader
+        title="Free to paid"
+        actions={
+          <SegmentedControl
+            label="Range"
+            value={range}
+            onChange={setRange}
+            items={[
+              { value: "6", label: "6 months" },
+              { value: "12", label: "12 months" },
+            ]}
+          />
+        }
+      />
       <div className="flex flex-1 flex-col gap-4 p-4">
         <ul className="flex flex-col gap-3">
           {steps.map((s, i) => (
