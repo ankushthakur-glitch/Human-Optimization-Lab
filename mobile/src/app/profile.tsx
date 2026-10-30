@@ -8,6 +8,7 @@ import { PageGround } from "@/components/hol"
 import { billingOf } from "@/components/plan-account-pieces"
 import { DevicesSheet } from "@/components/plan-tab-devices"
 import {
+  BellSimple,
   CreditCard,
   DownloadSimple,
   Heart,
@@ -40,7 +41,7 @@ import { card, cardRadius, color, font, hairline, ink, space, type } from "@/lib
    practice, a call away; how she wants to hear from Inlay,
    texts about her care and news and offers as two separate choices (S-57,
    Q-11); her membership, whose billing, pause and cancel live on its own
-   page; for a member her devices (Apple Health, her watch, any ring or
+   page, and her plan settings one tap deeper; for a member her devices (Apple Health, her watch, any ring or
    scale) and "Add a device" (29 Oct 2026); change password; Face
    ID; Access, one tap deeper, where the permission to collect her records
    and everything connected live (5 Oct 2026 call); who has looked at her
@@ -222,6 +223,7 @@ function MembershipCard({ membership, period }: { membership: ReturnType<typeof 
   return (
     <Rows>
       <Row icon={<CreditCard size={16} color={color.primary} />} title={TIERS.optimization.name} meta={meta} gap={10} right={<Chevron />} onPress={() => router.push("/membership")} />
+      <Row icon={<BellSimple size={16} color={color.primary} />} title="Plan settings" meta="Reminders, notifications and units" gap={10} right={<Chevron />} onPress={() => router.push("/plan-settings")} />
     </Rows>
   )
 }

@@ -121,8 +121,8 @@ export const FOLLOW_ON = {
 export const LIMIT = {
   title: "You've used this week's AI credit",
   body: (resetsOn: string) => `It comes back on ${resetsOn}. Your record, trends and past answers are all still here.`,
-  /** A member: add more for this week, as a share of the member budget. */
-  topUpBody: (share: number, price: string) => `Or add ${share}% more AI credit for this week, ${price}.`,
+  /** A member: add dollars of credit (/ai-credit). */
+  topUpBody: (from: number) => `Or add AI credit from $${from}. What you add stays until you use it.`,
   topUp: "Add more credit",
   /** The quiet line when a chat in progress finishes on grace. */
   grace: "Your AI credit ran out, so we'll let you finish this chat. It comes off next week's credit.",

@@ -23,6 +23,9 @@ const MEMBER = [
   "history-trends",
   "topic-history",
   "membership",
+  "membership-pay",
+  "ai-credit",
+  "plan-settings",
   "plan-ready",
 ]
 

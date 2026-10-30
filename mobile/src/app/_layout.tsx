@@ -164,7 +164,15 @@ function Routes() {
           <Stack.Screen name="progress" options={{ animation: "none" }} />
           {/* The member's own billing page: pause, resume and cancel. */}
           <Stack.Screen name="membership" />
+          {/* From Home's payment due banner and the membership page: pay
+              the next billing period now. */}
+          <Stack.Screen name="membership-pay" />
+          {/* A member's AI credit top up, from Ask Inlay's limit card and
+              the membership page. */}
+          <Stack.Screen name="ai-credit" />
           <Stack.Screen name="profile" />
+          {/* Under Profile, a member's reminders, notifications and units. */}
+          <Stack.Screen name="plan-settings" />
           {/* Under Profile: the sharing permission and every connection. */}
           <Stack.Screen name="access" />
           {/* The Connect tab: her doctors' systems and her devices. */}

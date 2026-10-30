@@ -2,10 +2,11 @@
 
 import * as React from "react"
 import {
+  IconBilling,
+  IconChartColumn,
   IconDashboard,
   IconHospital,
   IconSettings,
-  IconStethoscope,
 } from "@/design-system/icons"
 
 import {
@@ -15,7 +16,8 @@ import {
   type ShellAction,
 } from "@/components/ehr-shell"
 
-export type AdminModule = "dashboard" | "practices" | "clinical" | "settings"
+export type AdminModule =
+  "dashboard" | "practices" | "billing" | "reports" | "settings"
 
 const ADMIN_NAV: NavItem[] = [
   {
@@ -31,10 +33,16 @@ const ADMIN_NAV: NavItem[] = [
     href: "/screens/admin/practices",
   },
   {
-    id: "clinical",
-    label: "Clinical content",
-    icon: IconStethoscope,
-    href: "/screens/admin/clinical",
+    id: "billing",
+    label: "Billing",
+    icon: IconBilling,
+    href: "/screens/admin/billing",
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: IconChartColumn,
+    href: "/screens/admin/reports",
   },
   {
     id: "settings",
@@ -74,6 +82,7 @@ export function AdminShell({
       active={active}
       nav={ADMIN_NAV}
       homeHref="/screens/admin/practices"
+      profileHref="/screens/admin/profile"
       account={ADMIN_ACCOUNT}
       actions={ADMIN_ACTIONS}
     >

@@ -1,4 +1,4 @@
-import { Redirect, useLocalSearchParams } from "expo-router"
+import { Redirect, router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -24,7 +24,7 @@ import { OUTLOOK_ASK, OutlookAnswer } from "@/components/outlook-answer"
 import { DarkStatusBar } from "@/components/error-state"
 import { PageGround, PageHeader } from "@/components/hol"
 import { ChatText } from "@/components/ph"
-import { CreditSheet, useCreditNotice } from "@/components/credit-banner"
+import { useCreditNotice } from "@/components/credit-banner"
 import { costOf, questionKind, useAllowance, type QuestionKind } from "@/lib/allowance"
 import {
   AGAIN,
@@ -371,7 +371,8 @@ function AssistantChat() {
   const choosing = !thread.topic && !thread.messages.length
   // A question it was opened with waits in the composer, unsent (A-42).
   const [draft, setDraft] = React.useState(params.ask ?? "")
-  /** Borrowing or adding AI credit, asked in a sheet first. */
+  /** Gone to add AI credit (/ai-credit): back with credit, the question
+      waiting at the limit goes at once. */
   const [credit, setCredit] = React.useState(false)
   // This week's AI credit from 75% used, joined to the composer as
   // Claude's session limit is; closed, it stays hidden until it says
@@ -742,6 +743,18 @@ function AssistantChat() {
     ])
   }
 
+  // Back from adding AI credit with some to spend: the question waiting at
+  // the limit goes at once.
+  React.useEffect(() => {
+    if (!credit || allowance.out) return
+    setCredit(false)
+    const waiting = thread.messages.find((m) => m.kind === "limit" && !m.gone)
+    if (!waiting) return
+    patch(waiting.id, { gone: true })
+    send()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [credit, allowance.out])
+
   /* ------------------------------------------------------------ ending -- */
 
   const ended = thread.messages.at(-1)?.kind === "ended"
@@ -877,7 +890,10 @@ function AssistantChat() {
             }}
             onGone={() => patch(m.id, { gone: true })}
             member={allowance.member}
-            onTopUp={() => setCredit(true)}
+            onTopUp={() => {
+              setCredit(true)
+              router.push("/ai-credit")
+            }}
           />
         )
       case "ended":
@@ -951,18 +967,6 @@ function AssistantChat() {
         />
       )}
       {facts && <FactsSheet facts={facts} onClose={() => setFacts(undefined)} />}
-      {credit && (
-        <CreditSheet
-          onClose={() => setCredit(false)}
-          onDone={() => {
-            // A question waiting at the limit goes at once.
-            const waiting = thread.messages.find((m) => m.kind === "limit" && !m.gone)
-            if (!waiting) return
-            patch(waiting.id, { gone: true })
-            send()
-          }}
-        />
-      )}
       <ChatHistory
         open={menu}
         chats={history}

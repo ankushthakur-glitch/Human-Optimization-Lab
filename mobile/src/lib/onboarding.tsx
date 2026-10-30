@@ -78,6 +78,15 @@ export type Membership = {
       the moment she changed from it (ISO). A receipt names the card in use
       on its day, so changing the card never rewrites the history. */
   pastCards?: { card: string; until: string }[]
+  /** The next billing day (a local day key) when she paid it early from
+      /membership-pay: it counts as charged, and the one after is next. */
+  paidAhead?: string
+  /** A change of cadence (/membership-pay): from the billing day `on` (a
+      local day key) she pays `billing`; before it, `was`. */
+  switched?: { on: string; was: Cadence }
+  /** The AI credit she added (/ai-credit), oldest first: when, how many
+      dollars, and the card. */
+  creditBuys?: { at: string; dollars: number; card: string }[]
 }
 
 /** Her plan, live from the moment she enrolls: nothing goes to her
@@ -169,6 +178,17 @@ export type Batch = { id: string; at: string; source: string; count: number; ope
     she turns it on (S-57, Q-11). */
 export type Channel = "push" | "sms" | "call" | "email" | "news"
 
+export type PlanSettings = {
+  /** Each reminder on or off, by id; one never set is on. */
+  remind?: Record<string, boolean>
+  /** Each reminder's time ("7:00 AM"), by id. */
+  at?: Record<string, string>
+  quiet?: boolean
+  coach?: boolean
+  weight?: "lb" | "kg"
+  length?: "in" | "cm"
+}
+
 export type Added = {
   id: string
   title: string
@@ -225,6 +245,9 @@ export type State = {
   notify?: Partial<Record<Channel, boolean>>
   /** Face ID asked for each time the app opens. */
   faceId?: boolean
+  /** A member's plan settings (app/plan-settings.tsx): reminders on or off
+      and their times, quiet hours, Ask Inlay's daily question, units. */
+  planSettings?: PlanSettings
   /** Notifications the patient has opened. */
   seen?: string[]
   devices?: string[]

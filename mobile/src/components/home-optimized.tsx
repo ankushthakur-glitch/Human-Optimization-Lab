@@ -7,16 +7,18 @@ import { BiologicalAgeSheet } from "@/components/biological-age-sheet"
 import { CheckInSheet, type CheckInKind } from "@/components/check-in-sheet"
 import { Upcoming } from "@/components/home-free"
 import { HomeHeader, StatusBanner } from "@/components/home-header"
+import { billingOf } from "@/components/plan-account-pieces"
 import {
   ArrowDownRight,
   Barbell,
   CaretRight,
   Check,
+  CreditCard,
   Play,
   Scales,
   Sparkle,
 } from "@/components/ph"
-import { Block, Card, Heading, HUE, Rise, Tag } from "@/components/record-kit"
+import { Banner, Block, Card, Heading, HUE, Rise, Tag } from "@/components/record-kit"
 import { TONE_INK, TopicTile } from "@/components/topic-kit"
 import { TabScreen, openTab } from "@/components/tab-bar"
 import { biologicalAge } from "@/lib/biological-age"
@@ -36,7 +38,9 @@ import {
   type Meal,
   type MealSlot,
 } from "@/lib/member"
+import { rowDate } from "@/lib/dates"
 import { useOnboarding } from "@/lib/onboarding"
+import { priceOf } from "@/lib/plans"
 import { TOPICS, doneCount, rowOf, type Topic } from "@/lib/topics"
 import { chart, color, hairline, ink, space, type } from "@/lib/theme"
 import { formatNumber } from "@/lib/trends"
@@ -92,6 +96,7 @@ export function OptimizedHome() {
     >
       <View style={styles.page}>
         <StatusBanner variant="member" tab="home" />
+        <PaymentDue />
         <Rise at={2} id="home:goals">
           <TodaysGoals />
         </Rise>
@@ -107,6 +112,25 @@ export function OptimizedHome() {
         <Upcoming at={5} />
       </View>
     </TabScreen>
+  )
+}
+
+/** Her membership's next payment, from DUE_DAYS before her billing day
+    until it is paid (/membership-pay); left alone, the card on file is
+    charged on the day. */
+function PaymentDue() {
+  const onboarding = useOnboarding()
+  const bill = billingOf(onboarding.membership)
+  if (!bill.due || !bill.next) return null
+  return (
+    <Banner
+      hue="teal"
+      icon={<CreditCard size={18} color={HUE.teal.ink} />}
+      title={`Your membership payment is due ${rowDate(bill.next)}`}
+      meta={priceOf(onboarding.membership?.billing ?? "monthly")}
+      action="Pay"
+      onPress={() => router.push("/membership-pay")}
+    />
   )
 }
 

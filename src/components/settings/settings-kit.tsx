@@ -497,7 +497,7 @@ export function StatusDot({
   tone,
   children,
 }: {
-  tone: "success" | "warning" | "muted"
+  tone: "success" | "warning" | "danger" | "muted"
   children: React.ReactNode
 }) {
   return (
@@ -508,6 +508,8 @@ export function StatusDot({
           "size-1.5 rounded-full",
           tone === "success" && "bg-success",
           tone === "warning" && "bg-warning",
+          /* The subtle red, never full strength. */
+          tone === "danger" && "bg-[#DE6F68]",
           tone === "muted" && "bg-muted-foreground/50"
         )}
       />

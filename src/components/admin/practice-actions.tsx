@@ -1,5 +1,6 @@
 "use client"
 
+import { saveBilling } from "@/components/admin/billing/billing-data"
 import * as React from "react"
 import { toast } from "@/design-system/ui/sonner"
 import {
@@ -356,13 +357,16 @@ export function usePracticeActions() {
         open={formOpen}
         onOpenChange={setFormOpen}
         practice={editing}
-        onSubmit={(input) => {
+        onSubmit={(input, billing) => {
           setFormOpen(false)
           if (editing) {
             practiceStore.edit(editing.id, input)
+            saveBilling({ ...billing, id: editing.id })
             toast.success("Practice updated", { description: input.name })
           } else {
-            setCreated(practiceStore.create(input))
+            const practice = practiceStore.create(input)
+            saveBilling({ ...billing, id: practice.id })
+            setCreated(practice)
           }
         }}
       />

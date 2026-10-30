@@ -122,7 +122,7 @@ function spanOf(period: Period, dates: string[]) {
 /* The design system Card in the portal's own card style, the one the tables
    sit in: white, a hairline border, a faint shadow. Charts take a title bar
    with a rule under it; stat tiles are the same card without one. */
-const CARD =
+export const CARD =
   "min-w-0 gap-0 rounded-md border border-border py-0 shadow-[0_0_5px_rgb(0_0_0/0.08)] ring-0 [--card-spacing:--spacing(4)]"
 
 export function ChartCard({

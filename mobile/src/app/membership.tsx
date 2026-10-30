@@ -2,11 +2,12 @@ import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
+import { CARDS, CardSheet, withCard } from "@/components/card-sheet"
 import { keepTogether } from "@/components/care-gap"
 import { FlowScreen } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
-import { Check, CheckCircle, ClipboardText, CreditCard, Receipt } from "@/components/ph"
-import { billingOf, type Billing } from "@/components/plan-account-pieces"
+import { CheckCircle, ClipboardText, Receipt, Sparkle } from "@/components/ph"
+import { billingOf, cadenceOn, type Billing } from "@/components/plan-account-pieces"
 import { HeadCard, headText } from "@/components/plan-tab-pieces"
 import { Block, Card, CheckLines, Group, KeyValue, NeedsRow, SeeAllRow, SmallAction, Tag, TextAction, toast } from "@/components/record-kit"
 import { Sheet, SheetText } from "@/components/sheet"
@@ -28,13 +29,12 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
    The price shows here because this is her own plan's billing (D.4); it
    never shows in an offer. Opened from the Plan tab, Profile, and a paused
-   member's "Resume my plan" (`?sheet=resume` opens the resume sheet). */
+   member's "Resume my plan" (`?sheet=resume` opens the resume sheet).
+   A payment due soon is paid from "Pay now" (/membership-pay), and AI
+   credit is added from "Add AI credit" (/ai-credit); both show in the
+   receipts. */
 
-type SheetName = "pause" | "cancel" | "resume" | "included" | "card" | { receipt: Date }
-
-/** The prototype's sample cards: the one from checkout, and one to change
-    to. */
-const CARDS = ["Visa ending 4242", "Mastercard ending 4444"]
+type SheetName = "pause" | "cancel" | "resume" | "included" | "card" | { receipt: Date; credit?: number }
 
 /** The card a charge was made with: the one in use on its day. A charge on
     the day she changed cards was already made, so it keeps the old one. */
@@ -64,6 +64,12 @@ export default function MembershipScreen() {
   const pausedNow = bill.state === "paused" || (bill.state === "ending" && bill.paused === true)
   const [sheet, setSheet] = React.useState<SheetName | null>(asked === "resume" && (bill.state === "paused" || bill.state === "ending") ? "resume" : null)
   const close = () => setSheet(null)
+  // Every payment, newest first: the membership's charges and the AI
+  // credit she added.
+  const receipts = [
+    ...bill.charges.map((at) => ({ at, credit: undefined as number | undefined })),
+    ...(m?.creditBuys ?? []).map((b) => ({ at: new Date(b.at), credit: b.dollars })),
+  ].sort((a, b) => b.at.getTime() - a.at.getTime())
 
   /* Pausing stops the daily plan and billing; the record carries on. */
   async function pause() {
@@ -108,16 +114,12 @@ export default function MembershipScreen() {
     toast("Your membership has ended.")
   }
 
-  /* A new card is for the charges to come: the card it replaces is kept
-     with the day it stopped, so every receipt already made still names the
-     card it was charged to. */
+  /* A new card is for the charges to come (withCard keeps the old one for
+     the receipts already made). */
   async function chooseCard(card: string) {
     if (!m) return
     if (card === m.card) return close()
-    const next: Membership = m.card
-      ? { ...m, card, pastCards: [...(m.pastCards ?? []), { card: m.card, until: new Date().toISOString() }] }
-      : { ...m, card }
-    await onboarding.save({ membership: next })
+    await onboarding.save({ membership: withCard(m, card) })
     close()
     toast("Card updated")
   }
@@ -131,7 +133,7 @@ export default function MembershipScreen() {
           <>
             {bill.state === "active" && bill.renews && <YearCard renews={bill.renews} price={priceLabel(cadence)} now={now} onCancel={() => setSheet("cancel")} />}
 
-            <Summary bill={bill} price={price} card={m?.card} onCard={() => setSheet("card")} onAddCard={() => chooseCard(CARDS[0])} />
+            <Summary bill={bill} price={price} card={m?.card} onCard={() => setSheet("card")} onAddCard={() => chooseCard(CARDS[0])} onPay={() => router.push("/membership-pay")} />
 
             {bill.state === "ending" && (
               <View style={styles.block}>
@@ -144,11 +146,16 @@ export default function MembershipScreen() {
               </View>
             )}
 
-            {bill.charges.length > 0 && (
+            {receipts.length > 0 && (
               <Block title="Receipts">
                 <Group>
-                  {bill.charges.map((d) => (
-                    <NeedsRow key={d.toISOString()} icon={<Receipt size={16} color={color.primary} />} title={`${price}, ${rowDate(d)}`} onPress={() => setSheet({ receipt: d })} />
+                  {receipts.map((r) => (
+                    <NeedsRow
+                      key={`${r.at.toISOString()}${r.credit ?? ""}`}
+                      icon={r.credit ? <Sparkle size={16} color={color.primary} /> : <Receipt size={16} color={color.primary} />}
+                      title={r.credit ? `$${r.credit} of AI credit, ${rowDate(r.at)}` : `${priceOf(cadenceOn(m, r.at))}, ${rowDate(r.at)}`}
+                      onPress={() => setSheet({ receipt: r.at, credit: r.credit })}
+                    />
                   ))}
                 </Group>
               </Block>
@@ -156,6 +163,9 @@ export default function MembershipScreen() {
 
             <Group>
               <NeedsRow icon={<CheckCircle size={16} color={color.primary} />} title="What's included" onPress={() => setSheet("included")} />
+              {(bill.state === "active" || bill.state === "waiting" || bill.state === "ending") && !bill.paused && (
+                <NeedsRow icon={<Sparkle size={16} color={color.primary} />} title="Add AI credit" onPress={() => router.push("/ai-credit")} />
+              )}
               <YourPlanRow ended={bill.state === "ended"} />
             </Group>
 
@@ -255,12 +265,12 @@ export default function MembershipScreen() {
         <Sheet title="Receipt" onClose={close}>
           <Card style={styles.receipt}>
             <View style={styles.receiptTop}>
-              <Text style={styles.amount}>{price}</Text>
+              <Text style={styles.amount}>{sheet.credit ? `$${sheet.credit}` : priceOf(cadenceOn(m, sheet.receipt))}</Text>
               <Text style={styles.label}>{`Paid ${showDate(sheet.receipt)}`}</Text>
             </View>
             <View>
               <KeyValue label="Card" value={cardOn(m, sheet.receipt)} />
-              <KeyValue label="For" value={`Optimization membership, ${cadence}`} last />
+              <KeyValue label="For" value={sheet.credit ? "AI credit" : `Optimization membership, ${cadenceOn(m, sheet.receipt)}`} last />
             </View>
           </Card>
           <Button onPress={close}>Done</Button>
@@ -283,11 +293,18 @@ const STATE_TAG: Record<Billing["state"], { tone: "ok" | "muted"; label: (b: Bil
 
 /** What she has: the membership, the next payment (or why there is
     none), and the card. */
-function Summary({ bill, price, card, onCard, onAddCard }: { bill: Billing; price: string; card?: string; onCard: () => void; onAddCard: () => void }) {
+function Summary({ bill, price, card, onCard, onAddCard, onPay }: { bill: Billing; price: string; card?: string; onCard: () => void; onAddCard: () => void; onPay: () => void }) {
   const tag = STATE_TAG[bill.state]
-  const rows: { label: string; value: string }[] =
+  const rows: { label: string; value: string; action?: React.ReactNode }[] =
     bill.state === "active"
-      ? [{ label: "Next payment", value: bill.next ? `${price} on ${rowDate(bill.next)}` : "None" }]
+      ? [
+          {
+            label: "Next payment",
+            value: bill.next ? `${price} on ${rowDate(bill.next)}` : "None",
+            // Due within DUE_DAYS: paid now from /membership-pay.
+            action: bill.due ? <SmallAction onPress={onPay}>Pay now</SmallAction> : undefined,
+          },
+        ]
       : bill.state === "paused"
         ? [{ label: "Billing", value: "Paused" }]
         : bill.state === "waiting"
@@ -313,7 +330,7 @@ function Summary({ bill, price, card, onCard, onAddCard }: { bill: Billing; pric
       <Block title="Billing">
         <Card style={styles.summary}>
           {rows.map((r, i) => (
-            <KeyValue key={r.label} label={r.label} value={r.value} last={!showCard && i === rows.length - 1} />
+            <KeyValue key={r.label} label={r.label} value={r.value} action={r.action} last={!showCard && i === rows.length - 1} />
           ))}
           {showCard &&
             (card ? (
@@ -375,45 +392,6 @@ function YearCard({ renews, price, now, onCancel }: { renews: Date; price: strin
         </Button>
       </View>
     </Card>
-  )
-}
-
-/* ---------------------------------------------------------------- card -- */
-
-/** The card the membership is paid with: the sample cards, the one in use
-    ticked. */
-function CardSheet({ current, onUse, onClose }: { current?: string; onUse: (card: string) => void; onClose: () => void }) {
-  const [chosen, setChosen] = React.useState(current ?? CARDS[0])
-  return (
-    <Sheet title="Payment method" onClose={onClose}>
-      <Group>
-        {CARDS.map((c) => {
-          const on = c === chosen
-          return (
-            <NeedsRow
-              key={c}
-              icon={<CreditCard size={16} color={color.primary} />}
-              title={c}
-              meta={c === current ? "In use" : undefined}
-              right={on ? <Check size={18} color={color.primary} weight="bold" /> : undefined}
-              chevron={false}
-              onPress={() => setChosen(c)}
-              accessibilityLabel={`${c}${on ? ", selected" : ""}`}
-            />
-          )
-        })}
-      </Group>
-      <View style={styles.sheetActions}>
-        <Button onPress={() => onUse(chosen)} disabled={chosen === current}>
-          Use this card
-        </Button>
-        <View style={styles.quiet}>
-          <TextAction tone="muted" onPress={onClose}>
-            Not now
-          </TextAction>
-        </View>
-      </View>
-    </Sheet>
   )
 }
 

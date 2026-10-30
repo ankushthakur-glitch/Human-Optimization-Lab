@@ -137,8 +137,13 @@ type Row = { id: string; name: string; counts: Counts }
 export function ReportsView({
   reports,
   initialId,
+  title = "Reports",
+  leading,
 }: {
   reports: Report[]
+  title?: string
+  /** Replaces the title, e.g. with a module's tabs. */
+  leading?: React.ReactNode
   /** The report to open on, from a dashboard link. */
   initialId?: string | null
 }) {
@@ -171,12 +176,16 @@ export function ReportsView({
       (!providerId || p.id === providerId)
   )
 
+  /* A report with its own rows (vendors, practices) skips the providers. */
+  const own = report.rows
   const rowsFor = (at: Period): Row[] =>
-    shown.map((p) => ({
-      id: p.id,
-      name: providerName(p),
-      counts: countsFor(report, p.id, at, (typed && type) || null),
-    }))
+    own
+      ? own.items.map((item) => ({ ...item, counts: countsFor(report, item.id, at, null) }))
+      : shown.map((p) => ({
+          id: p.id,
+          name: providerName(p),
+          counts: countsFor(report, p.id, at, (typed && type) || null),
+        }))
   const rows = period ? rowsFor(period) : []
   const total = sumCounts(rows.map((r) => r.counts))
   const before = previous ? sumCounts(rowsFor(previous).map((r) => r.counts)) : null
@@ -186,7 +195,7 @@ export function ReportsView({
   function exportReport() {
     if (!period || rows.length === 0) return
     const line = (name: string, c: Counts): ExportRow => ({
-      Provider: name,
+      [own?.header ?? "Provider"]: name,
       ...Object.fromEntries(
         report.columns.map((col) => [col.header, formatValue(col.value(c), col.format)])
       ),
@@ -200,7 +209,7 @@ export function ReportsView({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 bg-surface-sunken px-4 pt-3 pb-4">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-lg font-semibold">Reports</h1>
+        {leading ?? <h1 className="font-heading text-lg font-semibold">{title}</h1>}
 
         <div className="flex flex-wrap items-center justify-end gap-3">
           <ToolbarSelect
@@ -241,6 +250,7 @@ export function ReportsView({
               onChange={setPeriodKey}
             />
           )}
+          {!own && (
           <ToolbarSelect
             label="Location"
             className="w-48"
@@ -253,7 +263,9 @@ export function ReportsView({
             value={locationId}
             onChange={setLocationId}
           />
+          )}
 
+          {!own && (
           <Popover>
             <PopoverTrigger
               render={
@@ -307,6 +319,7 @@ export function ReportsView({
               </div>
             </PopoverContent>
           </Popover>
+          )}
 
           <Button
             variant="outline"
@@ -396,12 +409,19 @@ function ReportList({
         onChange={onChange}
       />
       <Card className={cn(PANEL, "hidden w-60 shrink-0 p-2 lg:flex")}>
-        <nav aria-label="Reports" className="flex flex-col gap-0.5">
-          {reports.map((r) => {
+        <nav aria-label="Reports" className="flex flex-col gap-0.5 overflow-y-auto">
+          {reports.map((r, i) => {
             const on = r.id === value
+            /* A group's name heads its first report. */
+            const first = r.group && r.group !== reports[i - 1]?.group
             return (
+              <React.Fragment key={r.id}>
+              {first && (
+                <h2 className={cn("px-3 pb-1 text-xs font-medium text-muted-foreground", i > 0 ? "pt-4" : "pt-1")}>
+                  {r.group}
+                </h2>
+              )}
               <button
-                key={r.id}
                 type="button"
                 aria-current={on ? "page" : undefined}
                 onClick={() => onChange(r.id)}
@@ -412,6 +432,7 @@ function ReportList({
               >
                 {r.name}
               </button>
+              </React.Fragment>
             )
           })}
         </nav>
@@ -460,7 +481,9 @@ function ReportTable({
                 <Illustration name="no-results" />
               </EmptyMedia>
               <EmptyTitle>
-                {period ? "No providers match" : "Pick a date range"}
+                {period
+                  ? `No ${(report.rows?.header ?? "provider").toLowerCase()}s match`
+                  : "Pick a date range"}
               </EmptyTitle>
               {period && (
                 <EmptyDescription>
@@ -474,7 +497,7 @@ function ReportTable({
             <TableHeader className="sticky top-0 z-10 bg-surface-head [&_th]:h-9 [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
               <TableRow>
                 <TableSortHead {...sorting.headProps("provider")}>
-                  Provider
+                  {report.rows?.header ?? "Provider"}
                 </TableSortHead>
                 {report.columns.map((c) => (
                   <TableSortHead

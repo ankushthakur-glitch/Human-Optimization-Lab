@@ -10,7 +10,7 @@ import { DateBlock, Dot, Group, Nudge, SaveQuestion, SmallAction, Status, TextAc
 import { Sheet } from "@/components/sheet"
 import { Button } from "@/components/ui"
 import { FOLLOW_ON, FOOTER_LINE, LIMIT, PHONE_NUMBERS, URGENT, type Answer, type Fact, type NextVisit } from "@/lib/assistant"
-import { TOP_UP } from "@/lib/allowance"
+import { TOP_UPS } from "@/lib/allowance"
 import { call } from "@/lib/links"
 import { withQuestion } from "@/lib/member"
 import { useOffer, useShown, type Offer } from "@/lib/offers"
@@ -517,7 +517,7 @@ export function LimitCard({
       <Text style={styles.savedLineText}>Saved for your next visit</Text>
     </View>
   )
-  const lines = [LIMIT.body(resetsOn), ...(member ? [LIMIT.topUpBody(TOP_UP.share, TOP_UP.price)] : [])]
+  const lines = [LIMIT.body(resetsOn), ...(member ? [LIMIT.topUpBody(TOP_UPS[0])] : [])]
   const common = { art: "sparkle" as const, title: keepTogether(LIMIT.title), body: lines.map(keepTogether) }
   // A member adds more first, then "Save for my next visit", then the
   // card's ways out.

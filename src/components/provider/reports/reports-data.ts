@@ -115,6 +115,12 @@ export type Report = {
   typeFilter?: false
   /** One provider's counts, from the period's draws. */
   counts: (draw: Draw) => Counts
+  /** Rows other than the practice's providers, e.g. a report per vendor:
+      the first column's header and the rows. The location, provider and
+      patient type filters don't apply to these. */
+  rows?: { header: string; items: { id: string; name: string }[] }
+  /** Heads the report in the list, e.g. "Billing". */
+  group?: string
 }
 
 export const rate = (num: string, den: string) => (c: Counts) =>
@@ -128,6 +134,8 @@ export const raw = (key: string) => (c: Counts) => c[key]
     the period. `part(of, lo, hi)`: a share of a count already drawn.
     `months`: how many months the period holds. */
 export type Draw = {
+  /** The row being drawn: a provider, or one of the report's own rows. */
+  id: string
   n: (lo: number, hi: number) => number
   size: (lo: number, hi: number) => number
   part: (of: number, lo: number, hi: number) => number
@@ -278,7 +286,7 @@ export const REPORTS: Report[] = [
 /* -------------------------------------------------------------------------- */
 
 /* mulberry32 seeded by a string, so the same inputs give the same numbers. */
-function seeded(text: string) {
+export function seeded(text: string) {
   let h = 1779033703
   for (const ch of text) h = Math.imul(h ^ ch.charCodeAt(0), 3432918353)
   let a = (h ^ (h >>> 13)) >>> 0
@@ -310,6 +318,7 @@ export function countsFor(
   const draw = (scale: number) => (lo: number, hi: number) =>
     Math.round((lo + rand() * (hi - lo)) * scale)
   return report.counts({
+    id: providerId,
     n: draw(period.months * share),
     size: draw(share),
     part: (of, lo, hi) => Math.round(of * (lo + rand() * (hi - lo))),
