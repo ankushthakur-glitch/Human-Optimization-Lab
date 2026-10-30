@@ -246,13 +246,13 @@ export const MEMBERSHIP: Report = {
     },
   ],
   counts: ({ id, n, size, part, rand, filters }) => {
-    const invited = n(8, 30)
-    const activated = part(invited, 0.45, 0.8)
-    const paid = part(activated, 0.1, 0.35)
+    const invited = n(40, 90)
+    const activated = part(invited, 0.5, 0.8)
+    const paid = part(activated, 0.15, 0.35)
     const annualShare = 0.25 + rand() * 0.3
     const annual = Math.round(paid * annualShare)
-    const members = size(8, 35)
-    const cancelled = n(0, 3)
+    const members = size(60, 140)
+    const cancelled = n(3, 9)
     const days = paid * (6 + rand() * 34)
     const plan = filters.plan
     const keep = plan === "Annual" ? annualShare : plan === "Monthly" ? 1 - annualShare : 1
