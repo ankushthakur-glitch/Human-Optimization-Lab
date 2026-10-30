@@ -20,7 +20,7 @@ import { Empty, EmptyHeader, EmptyTitle } from "@/design-system/ui/empty"
 import { Input } from "@/design-system/ui/input"
 import { Skeleton } from "@/design-system/ui/skeleton"
 import { type Patient, type Provider, fullName, providerName } from "@/components/practice/practice-data"
-import { ALERTS, ENCOUNTERS, ENCOUNTER_TYPES, ENROLLMENT, VALUE } from "@/components/practice/practice-reports-data"
+import { ENCOUNTERS, ENCOUNTER_TYPES, ENROLLMENT, VALUE } from "@/components/practice/practice-reports-data"
 import {
   Avatar,
   Badge,
@@ -236,8 +236,9 @@ type Card5 = {
   /** What the number counts, in words. */
   meaning: string
   segments: { label: string; value: number; color: string }[]
-  href: string
-  linkLabel: string
+  /** The report it opens; none when no report covers it. */
+  href?: string
+  linkLabel?: string
 }
 
 function Overview({ board }: { board: Board }) {
@@ -267,7 +268,7 @@ function Overview({ board }: { board: Board }) {
         { label: "Declined", value: e.declined, color: SUBTLE.red },
       ],
       href: HREF.report(ENROLLMENT),
-      linkLabel: "Enrollment report",
+      linkLabel: "Conversion report",
     },
     {
       key: "activation",
@@ -285,7 +286,7 @@ function Overview({ board }: { board: Board }) {
         { label: "Not connected", value: e.enrolled - e.connected, color: GREY },
       ],
       href: HREF.report(ENROLLMENT),
-      linkLabel: "Activation report",
+      linkLabel: "Conversion report",
     },
     {
       key: "critical",
@@ -299,8 +300,6 @@ function Overview({ board }: { board: Board }) {
         { label: "Critical results", value: a.critical, color: SUBTLE.red },
         { label: "Routine alerts", value: a.raised - a.critical, color: GREY },
       ],
-      href: HREF.report(ALERTS),
-      linkLabel: "Alert report",
     },
     {
       key: "members",
@@ -315,7 +314,7 @@ function Overview({ board }: { board: Board }) {
         { label: "Renewal pending", value: Math.max(0, v.due - v.decided), color: SUBTLE.blue },
       ],
       href: HREF.report(VALUE),
-      linkLabel: "Value report",
+      linkLabel: "Membership report",
     },
     {
       key: "providers",
@@ -355,7 +354,7 @@ function Overview({ board }: { board: Board }) {
             <SegmentBar segments={c.segments} label={`${c.label}: ${c.segments.map((s) => `${s.label} ${s.value}`).join(", ")}`} />
             <LegendGrid segments={c.segments} />
           </div>
-          <FooterLink href={c.href}>{c.linkLabel}</FooterLink>
+          {c.href && <FooterLink href={c.href}>{c.linkLabel}</FooterLink>}
         </Card>
       ))}
     </section>
@@ -495,7 +494,6 @@ function EncountersByType({ board }: { board: Board }) {
   return (
     <TrendCard
       title="Encounters by type"
-      report={ENCOUNTERS}
       stats={[
         { label: "All encounters", value: show("total") },
         { label: "Per active patient", value: show("perPatient") },
@@ -574,7 +572,7 @@ function actionsOf(board: Board): Action[] {
       tone: a.open ? "error" : "warning",
       badge: a.open ? "Critical" : "Acknowledged",
       cta: "Review",
-      href: HREF.report(ALERTS),
+      href: patientsHref(board),
     },
     {
       key: "licences",

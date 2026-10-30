@@ -174,7 +174,7 @@ export function StatCard({
   of?: number
   meta: React.ReactNode
   segments?: Segment[]
-  footer: React.ReactNode
+  footer?: React.ReactNode
 }) {
   return (
     <Card>

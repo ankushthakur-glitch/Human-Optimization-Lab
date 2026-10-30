@@ -30,7 +30,8 @@ export function TrendCard({
   rows,
 }: {
   title: string
-  report: Report
+  /** The report the card opens; none when no report covers it. */
+  report?: Report
   stats: { label: string; value: string }[]
   config: ChartConfig
   stacked?: boolean
@@ -48,7 +49,7 @@ export function TrendCard({
     <Card>
       <CardHeader
         title={title}
-        actions={<CardLink href={reportHref(report)}>Report</CardLink>}
+        actions={report && <CardLink href={reportHref(report)}>Report</CardLink>}
       />
       <div className="flex flex-1 flex-col gap-4 p-4">
         <dl className="grid grid-cols-3 gap-3">

@@ -30,8 +30,8 @@ import {
 
 /* Billing's profit and loss, laid out like the deck's Reports screen: one
    statement per channel and the consolidated position for a month, then
-   the margin each test makes and the tax collected per state. The same
-   numbers as the P&L, margin and tax reports in Reports. */
+   the margin each test makes and the tax collected per state. Reports'
+   Channel revenue and margin reads the same seeded P&L. */
 
 const MARGIN = BILLING_REPORTS.find((r) => r.id === "margin-per-test")!
 const TAX = BILLING_REPORTS.find((r) => r.id === "tax")!

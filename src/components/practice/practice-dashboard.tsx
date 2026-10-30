@@ -212,7 +212,7 @@ function Dashboard() {
               { label: "Still invited", value: enroll.waiting, color: SUBTLE.blue },
               { label: "Declined", value: enroll.declined, color: SUBTLE.red },
             ]}
-            footer={<FooterLink href={reportHref(ENROLLMENT)}>Enrollment report</FooterLink>}
+            footer={<FooterLink href={reportHref(ENROLLMENT)}>Conversion report</FooterLink>}
           />
           <StatCard
             icon={IconActivity}
@@ -234,7 +234,7 @@ function Dashboard() {
                 color: GREY,
               },
             ]}
-            footer={<FooterLink href={reportHref(ENROLLMENT)}>Activation report</FooterLink>}
+            footer={<FooterLink href={reportHref(ENROLLMENT)}>Conversion report</FooterLink>}
           />
           <StatCard
             icon={IconChat}
@@ -248,7 +248,6 @@ function Dashboard() {
               { label: "Ask Inlay", value: enc.askInlay, color: "var(--primary)" },
               { label: "Other", value: enc.labDraws + enc.checkIns, color: GREY },
             ]}
-            footer={<FooterLink href={reportHref(ENCOUNTERS)}>Engagement report</FooterLink>}
           />
           <StatCard
             icon={IconWarning}
@@ -267,7 +266,6 @@ function Dashboard() {
               value: alerts[t.id],
               color: ALERT_COLOR[t.id],
             }))}
-            footer={<FooterLink href={reportHref(ALERTS)}>Alert report</FooterLink>}
           />
           <StatCard
             icon={IconCreditCard}
@@ -284,7 +282,7 @@ function Dashboard() {
                 color: SUBTLE.blue,
               },
             ]}
-            footer={<FooterLink href={reportHref(VALUE)}>Value report</FooterLink>}
+            footer={<FooterLink href={reportHref(VALUE)}>Membership report</FooterLink>}
           />
         </section>
 
@@ -292,7 +290,6 @@ function Dashboard() {
           <EnrollmentFunnel enroll={enroll} newMembers={value.newMembers} period={now} />
           <TrendCard
             title="Encounters by type"
-            report={ENCOUNTERS}
             stats={[
               { label: "All encounters", value: show(ENCOUNTERS, "total", enc) },
               { label: "Per active patient", value: show(ENCOUNTERS, "perPatient", enc) },
@@ -310,7 +307,6 @@ function Dashboard() {
         <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
           <TrendCard
             title="Outcomes"
-            report={OUTCOMES}
             stats={[
               { label: "Markers improved", value: show(OUTCOMES, "improvedRate", outcomes) },
               { label: "Symptoms better", value: show(OUTCOMES, "betterRate", outcomes) },
@@ -321,7 +317,6 @@ function Dashboard() {
           />
           <TrendCard
             title="Alert volume"
-            report={ALERTS}
             stats={[
               { label: "Open", value: show(ALERTS, "open", alerts) },
               { label: "Within 24 hours", value: show(ALERTS, "fast", alerts) },
