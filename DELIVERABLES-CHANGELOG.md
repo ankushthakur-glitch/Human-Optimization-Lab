@@ -959,3 +959,67 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 1: what your plan would work on
 - Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Step 2: what your baseline needs
 - Removed: Patient Portal / Mobile App: Upgrade and Plan Set Up / Plan tab (free patient)
+
+## 31-Oct-2026
+
+- Added: Super Admin Portal / Billing / Invoice details
+- Added: Super Admin Portal / Billing / Billing dashboard
+- Added: Super Admin Portal / Profile / My profile
+- Added: Super Admin Portal / Reports / Reports (practices and billing)
+- Added: Provider Portal / Billing / Invoice details
+- Added: Provider Portal / Billing / Billing overview (view only)
+- Added: Provider Portal / Profile / My profile
+- Added: Clinic Manager Portal / Billing / Invoice details
+- Added: Clinic Manager Portal / Billing / Billing overview
+- Added: Clinic Manager Portal / Profile / My profile
+- Added: Provider Portal / Patient Chart / Lab results: lab orders (order a test, priced)
+- Added: Provider Portal / Billing / Orders
+- Added: Provider Portal / Billing / Invoices and statements
+- Added: Clinic Manager Portal / Billing / Orders
+- Added: Clinic Manager Portal / Billing / Invoices and statements
+- Added: Super Admin Portal / Billing / Invoices
+- Added: Super Admin Portal / Billing / Vendor payouts
+- Added: Super Admin Portal / Billing / Physician review fees
+- Added: Super Admin Portal / Billing / Profit and loss
+- Added: Super Admin Portal / Settings / Pricing: AI credit top ups
+- Added: Super Admin Portal / Settings / Billing: catalogue and pricing
+- Added: Super Admin Portal / Settings / Billing: patient payments
+- Added: Super Admin Portal / Settings / Billing: cancellations
+- Added: Super Admin Portal / Settings / Clinical catalog: biomarkers
+- Added: Super Admin Portal / Settings / Clinical catalog: ranges
+- Added: Super Admin Portal / Settings / Clinical catalog: sex and age rules
+- Added: Super Admin Portal / Settings / Alert rules
+- Added: Super Admin Portal / Settings / Test cases
+- Added: Patient Portal / Login and Authentication / Invitation email with app download (desktop)
+- Added: Patient Portal / Login and Authentication / Invitation email with app download (mobile)
+- Added: Patient Portal / Mobile App: Record / Add to your record (supplement form)
+- Added: Patient Portal / Mobile App: Profile and Settings / Pay your membership (monthly or yearly)
+- Added: Patient Portal / Mobile App: Profile and Settings / Add AI credit (top up)
+- Added: Patient Portal / Mobile App: Profile and Settings / Plan settings (reminders, notifications, units)
+- Removed: Patient Portal / Mobile App: Record / Add to your record (medicine form)
+- Removed: Super Admin Portal / Settings / Pricing: longevity tests
+- Removed: Provider Portal / Patient Chart / Lab results: lab orders
+- Removed: Super Admin Portal / Clinical Content / Clinical content home
+- Removed: Provider Portal / Dashboard / Dashboard variation 1: queue
+- Removed: Provider Portal / Dashboard / Dashboard variation 2: activity
+- Removed: Provider Portal / Dashboard / Dashboard variation 3: practice
+- Removed: Provider Portal / Dashboard / Dashboard variation 4: clinic day
+- Removed: Provider Portal / Dashboard / Dashboard variation 5: panel
+- Removed: Clinic Manager Portal / Dashboard / Dashboard variation 1: operations
+- Removed: Clinic Manager Portal / Dashboard / Dashboard variation 2: activity
+- Removed: Clinic Manager Portal / Dashboard / Dashboard variation 3: growth
+- Removed: Clinic Manager Portal / Dashboard / Dashboard variation 4: team
+- Removed: Clinic Manager Portal / Dashboard / Dashboard variation 5: locations
+- Removed: Super Admin Portal / Clinical Content / Catalog: biomarker definitions
+- Removed: Super Admin Portal / Clinical Content / Catalog: range management
+- Removed: Super Admin Portal / Clinical Content / Catalog: sex and age rules
+- Removed: Super Admin Portal / Clinical Content / Protocols and SOPs
+- Removed: Super Admin Portal / Clinical Content / Rules: alert rules
+- Removed: Super Admin Portal / Clinical Content / Rules: score weights
+- Removed: Super Admin Portal / Clinical Content / Forecast thresholds
+- Removed: Super Admin Portal / Clinical Content / Eval: test-case library
+- Removed: Super Admin Portal / Clinical Content / Eval: regression gate
+- Removed: Super Admin Portal / Clinical Content / Eval: version log
+- Removed: Super Admin Portal / Clinical Content / Evidence: sources and re-review
+- Removed: Provider Portal / Dashboard / Dashboard variation 6: briefing
+- Removed: Provider Portal / Dashboard / Dashboard variation 7: workspace
