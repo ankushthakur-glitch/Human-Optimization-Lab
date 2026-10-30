@@ -265,9 +265,10 @@ const EXTRA = [
     ["Import history: patients sheet", "security/import-history/IM20433"],
   ]),
 
-  // A patient has no web invitation: they activate on the mobile app.
-  // The app's signed-out screens, served from public/app. Set password and
-  // home sit behind the app's session, so they have no link of their own.
+  // A patient's invitation email sends them to download the app and
+  // activate there. The app's signed-out screens, served from public/app.
+  [PATIENT, AUTH, "Invitation email with app download (desktop)", "/screens/login/invite-email?as=patient", -1],
+  [PATIENT, AUTH, "Invitation email with app download (mobile)", "/screens/login/invite-email/mobile?as=patient", -1],
   [PATIENT, AUTH, "Activate account (mobile app)", "/app/activate", -1],
   [PATIENT, AUTH, "Set password (mobile app)", "/app/set-password", -1],
   [PATIENT, AUTH, "Sign in (mobile app)", "/app/sign-in", -1],

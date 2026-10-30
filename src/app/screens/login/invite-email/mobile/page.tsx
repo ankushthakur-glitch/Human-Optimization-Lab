@@ -3,7 +3,7 @@ import Image from "next/image"
 
 import { BRAND_NAME, MARK } from "@/lib/brand"
 import { InviteEmailTemplate } from "@/components/auth/invite-email-template"
-import { inviteeFrom } from "@/components/auth/invitees"
+import { emailInviteeFrom } from "@/components/auth/invitees"
 import {
   IconButton,
   InboxChip,
@@ -51,7 +51,7 @@ export default async function InviteEmailMobileScreen({
 }: {
   searchParams: Promise<{ as?: string | string[] }>
 }) {
-  const invitee = inviteeFrom((await searchParams).as)
+  const invitee = emailInviteeFrom((await searchParams).as)
 
   return (
     <div
@@ -78,7 +78,7 @@ export default async function InviteEmailMobileScreen({
           {/* subject */}
           <div className="flex h-11 items-center gap-2 px-4">
             <h1 className="min-w-0 flex-1 truncate text-[22px] leading-7">
-              Welcome to {BRAND_NAME}: Activate Your {invitee.role} Account
+              Welcome to {BRAND_NAME}: Activate Your {invitee.key === "patient" ? "" : `${invitee.role} `}Account
             </h1>
             <span className="flex h-7 shrink-0 items-center gap-2">
               <Sym name="label_important" size={22} className="text-[#747775]" />
