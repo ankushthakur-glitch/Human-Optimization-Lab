@@ -1023,3 +1023,30 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 - Removed: Super Admin Portal / Clinical Content / Evidence: sources and re-review
 - Removed: Provider Portal / Dashboard / Dashboard variation 6: briefing
 - Removed: Provider Portal / Dashboard / Dashboard variation 7: workspace
+
+## 03-Nov-2026
+
+- Supplement conflict warning in red; KPI reports for provider and clinic manager
+- KPI filters say what they filter and fit the popover
+- Welcome and flourishing videos, consent and chat updates; deliverables 02-Nov-2026
+- Rebuild web app so the sharing ends banner is gone
+- Added: Super Admin Portal / Reports / Reports (channel revenue and margin, vendor performance, AI usage and cost)
+- Added: Provider Portal / Billing / Orders (view only)
+- Added: Provider Portal / Dashboard / Dashboard: panel (members, conversion, schedule, needs you, tasks, worklist)
+- Added: Provider Portal / Reports / Reports (10 Executive Health KPIs, employer, sex and age filters)
+- Added: Clinic Manager Portal / Dashboard / Practice dashboard (optimization members, conversion, by provider)
+- Added: Clinic Manager Portal / Reports / Reports (10 Executive Health KPIs, employer, sex and age filters)
+- Added: Patient Portal / Mobile App: Ask Inlay / Chat history (grouped by category)
+- Removed: Patient Portal / Mobile App: Profile and Settings / Renew sharing
+- Removed: Provider Portal / Dashboard / Care gaps
+- Removed: Provider Portal / Reports / Reports (report types, period, filters, export)
+- Removed: Super Admin Portal / Settings / Consent documents
+- Removed: Provider Portal / Dashboard / Dashboard: overview and worklist (abnormal results)
+- Removed: Clinic Manager Portal / Dashboard / Practice dashboard (enrollment, activation, encounters, outcomes, alerts, value)
+- Removed: Clinic Manager Portal / Reports / Reports (enrollment, encounters, outcomes, alerts, value and renewal, membership)
+- Removed: Super Admin Portal / Billing / Billing dashboard
+- Removed: Super Admin Portal / Reports / Reports (practices and billing)
+- Removed: Provider Portal / Billing / Billing overview (view only)
+- Removed: Clinic Manager Portal / Billing / Billing overview
+- Removed: Provider Portal / Billing / Orders
+- Removed: Super Admin Portal / Billing / Physician review fees
