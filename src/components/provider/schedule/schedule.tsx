@@ -130,7 +130,7 @@ const STATUS_BADGE: Record<
 }
 
 /* Off hours and lunch: a light diagonal hatch, as in the reference. */
-const HATCH =
+export const HATCH =
   "bg-[repeating-linear-gradient(135deg,transparent_0_6px,var(--border)_6px_7px)]"
 
 type Range = "day" | "week" | "month"
@@ -490,7 +490,7 @@ function NoAppointments() {
    cards show more: one line, then the time, then the status. */
 type CardSize = "line" | "short" | "full"
 
-function EventCard({
+export function EventCard({
   a,
   name,
   size,

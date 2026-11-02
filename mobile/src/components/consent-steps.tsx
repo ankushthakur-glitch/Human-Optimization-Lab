@@ -15,7 +15,6 @@ import {
 import { Flask, Lock } from "@/components/ph"
 import { Card } from "@/components/record-kit"
 import { Button } from "@/components/ui"
-import { DEFAULT_PERIOD, PERIODS } from "@/lib/consent"
 import { PATIENT } from "@/lib/patient"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
@@ -25,7 +24,7 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    5 Oct 2026); both boxes are needed to go on. 2: how Inlay may contact
    her (texts, calls, email), a box each, all optional. Page 2 has no Figma frame of its own,
    so it wears page 1's frame with its title under the object. Each page is its own route, so the swipe
-   goes back a page. The period travels to the last page as a route param.
+   goes back a page.
    Reading a document is never required. The wording of the documents
    lives in lib/consent.ts. */
 
@@ -34,10 +33,6 @@ const TERMS = "I agree to Inlay’s privacy policy, terms of service and lab req
 const TEXTS = "Inlay can text me about my care, like new results and reminders."
 const CALLS = "Inlay can call me about my care."
 const EMAILS = "Inlay can email me about my care."
-
-/** A period from a route param, or the default when it is missing or no
-    longer offered. */
-export const periodParam = (p: unknown) => (typeof p === "string" && PERIODS.includes(p) ? p : DEFAULT_PERIOD)
 
 /** One row of the records card: the tile, the title and its line, and
     "See all" when it opens more. */
@@ -68,11 +63,11 @@ function InfoRow({ icon, title, line, onSeeAll }: { icon: React.ReactNode; title
     authorization, and under it the privacy policy and terms (moved here
     from their own page by the user, 5 Oct 2026). Both boxes are needed to
     go on. */
-export function ConsentRecords({ onNext }: { onNext: (period: string) => void }) {
+export function ConsentRecords({ onNext }: { onNext: () => void }) {
   const page = useConsentPage()
   const [terms, setTerms] = React.useState(false)
   const [missing, setMissing] = React.useState(false)
-  const agree = () => (page.checked && terms ? onNext(DEFAULT_PERIOD) : setMissing(true))
+  const agree = () => (page.checked && terms ? onNext() : setMissing(true))
   return (
     <ConsentShell
       sheets={page}
@@ -111,13 +106,7 @@ export function ConsentRecords({ onNext }: { onNext: (period: string) => void })
 /** Page 2: how Inlay may contact her about her care, one box for each
     way (texts, phone calls, email; user, 5 Oct 2026). Each is optional:
     "Agree and continue" signs with whatever she ticked. */
-export function ConsentTexts({
-  period,
-  onSigned,
-}: {
-  period: string
-  onSigned: (signedAs: string, period: string) => Promise<void>
-}) {
+export function ConsentTexts({ onSigned }: { onSigned: (signedAs: string) => Promise<void> }) {
   const [sheet, setSheet] = React.useState<ConsentSheet | null>(null)
   const { sign, pending } = useSignConsent(onSigned)
   const [contact, setContact] = React.useState({ sms: false, call: false, email: false })
@@ -129,7 +118,7 @@ export function ConsentTexts({
       showTitle
       art={<Art name="bell" size={112} />}
       footer={
-        <Button onPress={() => sign(period, contact)} pending={pending}>
+        <Button onPress={() => sign(contact)} pending={pending}>
           Agree and continue
         </Button>
       }

@@ -63,6 +63,7 @@ export type ModuleId =
   | "tasks"
   | "communication"
   | "reports"
+  | "billing"
   | "settings"
 
 export type NavItem = {
@@ -223,6 +224,7 @@ export function EhrShell({
   active = "patients",
   nav = PRIMARY_NAV,
   homeHref = "/screens/patients",
+  profileHref = "/screens/patients/profile",
   account = EHR_ACCOUNT,
   actions = EHR_ACTIONS,
   notifications = [],
@@ -231,6 +233,8 @@ export function EhrShell({
   active?: ModuleId | (string & {})
   nav?: NavItem[]
   homeHref?: string
+  /** The signed-in person's own profile page. */
+  profileHref?: string
   account?: ShellAccount
   actions?: ShellAction[]
   notifications?: ShellNotification[]
@@ -537,11 +541,20 @@ export function EhrShell({
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem render={<Link href={profileHref} />}>
                     <IconUserCircle />
                     My profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem
+                    render={
+                      <Link
+                        href={
+                          nav.find((n) => n.id === "settings")?.href ??
+                          `${homeHref}/settings`
+                        }
+                      />
+                    }
+                  >
                     <IconSettings />
                     Settings
                   </DropdownMenuItem>

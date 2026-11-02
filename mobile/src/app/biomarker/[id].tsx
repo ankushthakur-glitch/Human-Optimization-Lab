@@ -137,7 +137,8 @@ export default function MarkerScreen() {
       <Readout b={b} t={t} member={member} review={review} />
       <OverTime b={b} t={t} />
       {!!home && <HomeReadings list={homeList} average={home} />}
-      {b.kind === "imaging" ? <Reports b={b} /> : <EveryResult b={b} t={t} />}
+      {/* The free app shows the chart, never the raw list of results (2 Nov 2026). */}
+      {b.kind === "imaging" ? <Reports b={b} /> : member && <EveryResult b={b} t={t} />}
       {!review && offer.show && course && (
         <PlanAdds
           {...course.adds}

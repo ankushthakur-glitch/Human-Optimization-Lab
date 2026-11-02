@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router"
+import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, View } from "react-native"
 
@@ -12,7 +12,6 @@ import { Chevron, Pair, Row, Rows, SwitchPair } from "@/components/settings-rows
 import { Sheet, SheetText } from "@/components/sheet"
 import { Button } from "@/components/ui"
 import { type Connection, type ConnectionKind, connectionsOf } from "@/lib/access"
-import { DEFAULT_PERIOD, periodEnd, periodLabel } from "@/lib/consent"
 import { rowDate } from "@/lib/dates"
 import { sharingOff } from "@/lib/experience"
 import { useOnboarding } from "@/lib/onboarding"
@@ -20,8 +19,8 @@ import { PATIENT } from "@/lib/patient"
 import { color, space } from "@/lib/theme"
 
 /* Access, one tap under Profile (5 Oct 2026 call): the permission she gave
-   to collect her records (until when, stopped by its switch, renewed from
-   the sharing banner's "Renew" through `?sheet=renew`), then everything her
+   to collect her records (on until she turns it off with its switch; it
+   no longer runs out, 2 Nov 2026), then everything her
    record is connected to: her doctors' systems, and for a member her
    devices (Apple Health, her watch, any ring or scale) with "Add a device".
    Devices come with the paid plan, so a free patient sees no Devices
@@ -30,7 +29,6 @@ import { color, space } from "@/lib/theme"
    Without the permission nothing is connected: the card says so and offers
    to connect. */
 
-type Confirm = { what: "withdraw" } | { what: "renew" }
 
 const GROUPS: { kind: ConnectionKind; title: string }[] = [
   { kind: "ehr", title: "Health records" },
@@ -41,23 +39,20 @@ const iconOf = (c: Connection) => (c.kind === "ehr" ? Hospital : c.id === "apple
 
 export default function AccessScreen() {
   const onboarding = useOnboarding()
-  const { sheet } = useLocalSearchParams<{ sheet?: string }>()
   const { consent, consentAt, profile } = onboarding
   const [adding, setAdding] = React.useState(false)
   const paid = !["none", "ended"].includes(billingOf(onboarding.membership).state)
   const connections = connectionsOf(onboarding, paid)
-  const [confirm, setConfirm] = React.useState<Confirm | null>(sheet === "renew" && consent === "signed" ? { what: "renew" } : null)
-  const period = onboarding.consentPeriod ?? DEFAULT_PERIOD
+  const [withdrawing, setWithdrawing] = React.useState(false)
   const off = sharingOff(onboarding)
   const name = `${profile?.firstName ?? PATIENT.firstName} ${profile?.lastName ?? PATIENT.lastName}`
 
-  async function act(c: Confirm) {
+  async function withdraw() {
     // Stopping keeps everything collected; the day is kept for the banner
     // every tab shows (C.28).
-    if (c.what === "withdraw") await onboarding.save({ consent: "declined", sharingOffAt: new Date().toISOString() })
-    if (c.what === "renew") await onboarding.save({ consentAt: new Date().toISOString() })
-    setConfirm(null)
-    toast(c.what === "withdraw" ? "Sharing turned off" : "Sharing renewed")
+    await onboarding.save({ consent: "declined", sharingOffAt: new Date().toISOString() })
+    setWithdrawing(false)
+    toast("Sharing turned off")
   }
 
   return (
@@ -67,13 +62,12 @@ export default function AccessScreen() {
           {consent === "signed" ? (
             <Rows>
               <SwitchPair
-                label={`Until ${rowDate(periodEnd(period, consentAt ? new Date(consentAt) : new Date()))}`}
+                label="Sharing"
                 value
-                onChange={(on) => !on && setConfirm({ what: "withdraw" })}
+                onChange={(on) => !on && setWithdrawing(true)}
                 switchLabel="Share my records"
               />
               <Pair label="Signed" value={consentAt ? rowDate(new Date(consentAt)) : "At setup"} />
-              <Pair label="For" value={periodLabel(period)} />
               <Pair label="Signed as" value={onboarding.signedAs ?? name} />
               <Pair label="Shared with" value={PATIENT.practice} />
             </Rows>
@@ -106,26 +100,15 @@ export default function AccessScreen() {
 
       {adding && <DevicesSheet onClose={() => setAdding(false)} />}
 
-      {confirm && (
-        <Sheet
-          title={confirm.what === "withdraw" ? "Stop sharing your records?" : "Renew permission?"}
-          onClose={() => setConfirm(null)}
-        >
-          <SheetText>
-            {confirm.what === "withdraw"
-              ? "We'll stop collecting new records. What's already in your record stays, and your care team can still see it."
-              : `We'll keep collecting your records for another ${periodLabel(period)}, starting today.`}
-          </SheetText>
+      {withdrawing && (
+        <Sheet title="Stop sharing your records?" onClose={() => setWithdrawing(false)}>
+          <SheetText>We'll stop collecting new records. What's already in your record stays, and your care team can still see it.</SheetText>
           <View style={styles.actions}>
-            {confirm.what === "renew" ? (
-              <Button onPress={() => act(confirm)}>Renew</Button>
-            ) : (
-              <Button variant="destructive" onPress={() => act(confirm)}>
-                Stop sharing
-              </Button>
-            )}
-            <Button variant="outline" onPress={() => setConfirm(null)}>
-              {confirm.what === "renew" ? "Not now" : "Keep sharing"}
+            <Button variant="destructive" onPress={withdraw}>
+              Stop sharing
+            </Button>
+            <Button variant="outline" onPress={() => setWithdrawing(false)}>
+              Keep sharing
             </Button>
           </View>
         </Sheet>

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import {
+  IconBilling,
   IconChartColumn,
   IconDashboard,
   IconLocation,
@@ -26,6 +27,7 @@ export type PracticeModule =
   | "patients"
   | "locations"
   | "reports"
+  | "billing"
   | "settings"
 
 const BASE = "/screens/practice"
@@ -55,6 +57,12 @@ const PRACTICE_NAV: NavItem[] = [
     label: "Reports",
     icon: IconChartColumn,
     href: `${BASE}/reports`,
+  },
+  {
+    id: "billing",
+    label: "Billing",
+    icon: IconBilling,
+    href: `${BASE}/billing`,
   },
   {
     id: "settings",
@@ -104,6 +112,7 @@ export function PracticeShell({
       active={active}
       nav={PRACTICE_NAV}
       homeHref={`${BASE}/dashboard`}
+      profileHref={`${BASE}/profile`}
       account={MANAGER_ACCOUNT}
       actions={MANAGER_ACTIONS}
     >

@@ -433,18 +433,12 @@ export const RERATE_INTERVALS = [
 /*  Pricing                                                                    */
 /* -------------------------------------------------------------------------- */
 
-export const LONGEVITY_ITEMS = [
-  { id: "mced", name: "Multi-cancer early detection", price: 949, on: true },
-  { id: "alz", name: "Alzheimer's risk marker", price: 399, on: true },
-  { id: "metals", name: "Heavy metals panel", price: 249, on: true },
-  { id: "mri", name: "Full-body MRI", price: 2499, on: false },
-]
-
-/* The patient app shows a top up as "25% more AI credit" (placeholder). */
+/* Top ups add dollars of chat credit, like Anthropic's, never questions
+   (29 Oct call). Amounts are placeholders. */
 export const TOP_UPS = [
-  { id: "small", name: "25% more AI credit", price: 5, on: true },
-  { id: "medium", name: "50% more AI credit", price: 9, on: true },
-  { id: "large", name: "100% more AI credit", price: 15, on: false },
+  { id: "ten", name: "$10 of AI credit", price: 10, on: true },
+  { id: "twenty", name: "$20 of AI credit", price: 20, on: true },
+  { id: "fifty", name: "$50 of AI credit", price: 50, on: false },
 ]
 
 /* -------------------------------------------------------------------------- */

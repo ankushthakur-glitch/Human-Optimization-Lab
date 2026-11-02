@@ -12,6 +12,7 @@ import {
   IconChevronUp,
   IconHome,
   IconFileList,
+  IconImage,
   IconLab,
   IconLanguage,
   IconLocation,
@@ -126,6 +127,7 @@ export type ChartSection =
   | "allergies"
   | "vitals"
   | "labs"
+  | "imaging"
   | "family"
   | "notes"
   | "profile"
@@ -133,8 +135,9 @@ export type ChartSection =
 /* One section per Epic read in the "EHR Integration" sheet: Encounter,
    Appointment, Condition, MedicationRequest, AllergyIntolerance, Observation
    (vitals, labs), FamilyMemberHistory, and Patient, Consent, Practitioner and Location for the
-   profile. Epic sends no Immunization or imaging DiagnosticReport, so
-   Vaccines and Imaging are gone. */
+   profile. Epic sends no Immunization, so
+   Vaccines are gone. Imaging results list the imaging reports the sources
+   sent and the imaging orders placed here. */
 const SECTIONS: {
   id: ChartSection
   label: string
@@ -150,6 +153,7 @@ const SECTIONS: {
   { id: "allergies", label: "Allergies", icon: IconShieldAlert },
   { id: "vitals", label: "Vitals", icon: IconHeartPulse },
   { id: "labs", label: "Lab results", icon: IconLab },
+  { id: "imaging", label: "Imaging results", icon: IconImage },
   { id: "family", label: "Family history", icon: IconTeam },
   { id: "notes", label: "Sticky notes", icon: IconNote },
   { id: "profile", label: "Profile", icon: IconUserCircle },
@@ -325,8 +329,10 @@ export function PatientChart({ patient }: { patient: Patient }) {
               selected={item}
               onSelect={(i) => go({ item: i })}
             />
-          ) : section === "labs" ? (
+          ) : section === "labs" || section === "imaging" ? (
             <LabsView
+              key={section}
+              kind={section === "imaging" ? "Imaging" : "Lab"}
               patient={patient}
               record={chart.record}
               tab={tab === "orders" ? "orders" : "reports"}

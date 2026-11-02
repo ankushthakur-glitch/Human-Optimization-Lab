@@ -11,8 +11,9 @@ import {
 } from "@/components/auth/invitees"
 
 /* The invitation as it is sent, to a Super Admin, a practice's clinic
-   manager or a provider: a logo header, the letter, and a contact footer
-   for whoever sent it. Laid out from the approved email
+   manager, a provider or a patient: a logo header, the letter, and a contact
+   footer for whoever sent it. A patient's letter also carries the app store
+   buttons, since they activate in the patient app. Laid out from the approved email
    template (Figma "Main Container" for web, "Email Temp" for mobile), recoloured
    from its blue to the brand teal.
 
@@ -62,20 +63,61 @@ function Arrow() {
   )
 }
 
+/* Where a patient's buttons go in the prototype: the patient app's web
+   build, which stands in for the installed app. Activate account opens its
+   activation screen with the email filled in. */
+const PATIENT_APP = "/app"
+const PATIENT_ACTIVATE = `/app/activate?email=${encodeURIComponent(INVITEES.patient.email)}`
+
 /* The button the letter is built around: it opens the portal's activate
-   page. Drawn as a styled link, which is how a button is made in an email. */
+   page, or the patient app's. Drawn as a styled link, which is how a button
+   is made in an email. The patient app is a separate build, so its links are
+   plain anchors. */
 function ActivateButton({ invitee }: { invitee: InviteeKey }) {
   const className =
     "inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-[15px] font-semibold text-white no-underline"
-  return (
+  const label = (
+    <>
+      Activate account
+      <Arrow />
+    </>
+  )
+  return invitee === "patient" ? (
+    <a href={PATIENT_ACTIVATE} className={className} style={{ backgroundColor: PRIMARY }}>
+      {label}
+    </a>
+  ) : (
     <Link
       href={withInvitee("/screens/login/activate", invitee)}
       className={className}
       style={{ backgroundColor: PRIMARY }}
     >
-      Activate account
-      <Arrow />
+      {label}
     </Link>
+  )
+}
+
+/* The two store buttons a patient downloads the app from. Plain dark
+   buttons with the store's name, no store artwork. */
+const STORES = [
+  { lead: "Download on the", name: "App Store" },
+  { lead: "Get it on", name: "Google Play" },
+]
+
+function StoreButtons() {
+  return (
+    <div className="flex flex-wrap gap-3">
+      {STORES.map(({ lead, name }) => (
+        <a
+          key={name}
+          href={PATIENT_APP}
+          className="flex h-12 min-w-[150px] flex-col justify-center rounded-xl bg-[#171717] px-4 leading-tight text-white no-underline"
+        >
+          <span className="text-[11px] text-white/80">{lead}</span>
+          <span className="text-[16px] font-semibold">{name}</span>
+        </a>
+      ))}
+    </div>
   )
 }
 
@@ -92,6 +134,7 @@ export function InviteEmailTemplate({
   const invitee = INVITEES[key]
   const manager = key === "clinic-manager"
   const provider = key === "provider"
+  const patient = key === "patient"
   /* Practice staff get help with the portal, not the admin console. */
   const staff = manager || provider
   const { sender } = invitee
@@ -122,7 +165,22 @@ export function InviteEmailTemplate({
 
       <div className={web ? "px-7 py-5" : "px-4 py-5"}>
         <p className={cn(!web && "mb-[1.6em]")}>Dear {invitee.firstName},</p>
-        {provider ? (
+        {patient ? (
+          <>
+            <p>
+              <Name>{sender.name}</Name> and the team at{" "}
+              <Name>{invitee.practice}</Name> have invited you to {BRAND_NAME},
+              where you can see your health record from the clinic in one place.
+            </p>
+            <p className="mb-[1.6em]">
+              Download the {BRAND_NAME} app, then activate your account with
+              your email, your date of birth and the code below.
+            </p>
+            <div className="mb-[1.6em]">
+              <StoreButtons />
+            </div>
+          </>
+        ) : provider ? (
           <>
             <p>
               <Name>{sender.name}</Name>, clinic manager at{" "}
@@ -228,13 +286,15 @@ export function InviteEmailTemplate({
         </div>
 
         <p className="mb-[1.6em]">
-          If the code runs out, ask <Name>{sender.name}</Name> to send a new
+          If the code runs out, ask{" "}
+          <Name>{patient ? invitee.practice : sender.name}</Name> to send a new
           invitation.
         </p>
         <p>
           If you have any questions or need help accessing{" "}
-          {staff ? "the portal" : "the admin console"},
-          please contact <Name>{sender.name}</Name> at{" "}
+          {patient ? "the app" : staff ? "the portal" : "the admin console"},
+          please contact{" "}
+          <Name>{patient ? invitee.practice : sender.name}</Name> at{" "}
           <span
             className="underline underline-offset-2"
             style={{ color: PRIMARY_TINT }}
@@ -243,11 +303,13 @@ export function InviteEmailTemplate({
           </span>
           .
         </p>
-        <p className="mb-[1.6em]">We look forward to working with you.</p>
+        <p className="mb-[1.6em]">
+          {patient ? "We look forward to caring for you." : "We look forward to working with you."}
+        </p>
         <p>
           Warm regards,
           <br />
-          The {BRAND_NAME} team
+          {patient ? `${sender.name} and the ${invitee.practice} team` : `The ${BRAND_NAME} team`}
         </p>
       </div>
 

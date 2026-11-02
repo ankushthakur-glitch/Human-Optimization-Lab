@@ -3,10 +3,11 @@
    clinic manager invited from the Practices module, and a provider the
    clinic manager invites to the provider portal. The link carries
    `?as=clinic-manager` or `?as=provider`; without it the screens show the
-   Super Admin. A patient has no web invitation: they activate on the
-   patient app (mobile/). */
+   Super Admin. A patient gets only the invitation email (`?as=patient` on the
+   email screens): it sends them to download the patient app and activate
+   there (mobile/), never to these web sign-in screens. */
 
-export type InviteeKey = "super-admin" | "clinic-manager" | "provider"
+export type InviteeKey = "super-admin" | "clinic-manager" | "provider" | "patient"
 
 /** Who sent the invitation: named in the letter and its contact footer. */
 export type Sender = {
@@ -34,6 +35,18 @@ const PLATFORM_ADMIN: Sender = {
   website: "humanoptimizationlab.com",
   phone: "(229) 555-0109",
   address: "123 Main Street, Anytown, CA 12345",
+}
+
+/* The patient's practice writes to them in the name of their physician.
+   The same sample practice and physician as the patient app
+   (mobile/src/lib/patient.ts). */
+const PHYSICIAN: Sender = {
+  name: "Dr. Maya Patel",
+  title: "Physician",
+  email: "care@harborviewlongevity.com",
+  website: "harborviewlongevity.com",
+  phone: "(858) 555-0100",
+  address: "450 Harbor Drive, Anytown, CA 12345",
 }
 
 /** The 6-digit activation code a staff invitation carries, entered on the
@@ -98,13 +111,33 @@ export const INVITEES: Record<InviteeKey, Invitee> = {
     activationCode: ACTIVATION_CODE,
     sender: CLINIC_MANAGER,
   },
+  /* Olivia Bennett, the patient app's sample patient: the code and email are
+     the ones its activation screen accepts. */
+  patient: {
+    key: "patient",
+    firstName: "Olivia",
+    email: "olivia.bennett@example.com",
+    practice: "Harborview Longevity Clinic",
+    role: "Patient",
+    consoleName: "Inlay Health app",
+    consoleUrl: "app.inlayhealth.com/activate",
+    home: "/app",
+    activationCode: "731064",
+    sender: PHYSICIAN,
+  },
 }
 
-/** Reads `?as=` from a page's search params. */
+/** Reads `?as=` from a page's search params. Staff only: a patient never
+    signs in on the web screens. */
 export function inviteeFrom(as: string | string[] | undefined): Invitee {
   return as === "clinic-manager" || as === "provider"
     ? INVITEES[as]
     : INVITEES["super-admin"]
+}
+
+/** Reads `?as=` on the invitation email screens, which also serve a patient. */
+export function emailInviteeFrom(as: string | string[] | undefined): Invitee {
+  return as === "patient" ? INVITEES.patient : inviteeFrom(as)
 }
 
 /** Keeps a clinic manager or provider on their own path from screen to screen. */

@@ -9,15 +9,18 @@ import { NOW } from "@/components/provider/home-v2/clock"
 import { TYPE_META } from "@/components/provider/home-v2/labels"
 import { ItemPanel } from "@/components/provider/home-v2/item-panel"
 import {
-  MyPatients,
   MyTasks,
   NeedsYou,
-  OverviewStats,
   StatCardSkeleton,
   TodaySchedule,
-  WeekAhead,
   useClinicDay,
 } from "@/components/provider/home-v2/overview"
+import {
+  ConversionFunnel,
+  MembershipTrend,
+  PanelStats,
+  usePanelMonths,
+} from "@/components/provider/home-v2/panel"
 import { recordAudit, workItems } from "@/components/provider/home-v2/mock"
 import { useNow } from "@/components/provider/schedule/schedule-data"
 import {
@@ -36,12 +39,11 @@ import {
 import type { ActionKind, QueueItem, WorkItem } from "@/components/provider/home-v2/types"
 import { Worklist, type WorklistTab } from "@/components/provider/home-v2/worklist"
 
-/* The provider home (/screens/patients/dashboard): the physician's whole
-   day on one page, read top to bottom. Five stat cards (appointments,
-   urgent work, tasks, care plans, messages); today's schedule beside what
-   needs the physician; visits by day, the task list and the panel; then
-   the Worklist of clinical items. Every number comes from the stores the
-   linked pages read, and nothing here notifies. */
+/* The provider home (/screens/patients/dashboard), read top to bottom: the
+   panel at a glance (optimization members, conversion rate, members
+   continuing the paid plan); members by month beside the free to paid
+   funnel; today's schedule, what needs the physician and My tasks in one row; then
+   the Worklist of clinical items. Nothing here notifies. */
 
 const ACTOR = "Daniel Reyes, MD"
 
@@ -101,6 +103,7 @@ export function ProviderHomeV2() {
   /* Appointments run on the real clock, as the Schedule does. */
   const now = useNow()
   const clinic = useClinicDay(now)
+  const months = usePanelMonths()
   /* The Worklist keeps a worked row, with Undo, until its timer ends. */
   const listed = React.useMemo(() => {
     const ids = new Set(inScope.map((p) => p.id))
@@ -214,16 +217,10 @@ export function ProviderHomeV2() {
           </header>
 
           {ready && now ? (
-            <OverviewStats
-              day={clinic.today}
-              dayLabel="Today"
-              open={open}
-              urgent={urgent}
-              onUrgent={() => showTab("urgent", true)}
-            />
+            <PanelStats months={months} />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {Array.from({ length: 5 }, (_, i) => (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 3 }, (_, i) => (
                 <StatCardSkeleton key={i} />
               ))}
             </div>
@@ -231,17 +228,17 @@ export function ProviderHomeV2() {
 
           {ready && now && (
             <>
-              {/* The day beside what is waiting on the physician. */}
+              {/* Members month by month beside the free to paid funnel. */}
               <div className="grid gap-4 xl:grid-cols-3">
-                <TodaySchedule now={now} day={clinic.day} title={clinic.title} className="xl:col-span-2" />
-                <NeedsYou urgent={urgent} byId={byId} onOpen={(item, from) => openItem(item, from, [item.id])} />
+                <MembershipTrend months={months} className="xl:col-span-2" />
+                <ConversionFunnel months={months} />
               </div>
 
-              {/* The week, the task list and the panel. */}
+              {/* The day, what is waiting on the physician and the tasks, side by side. */}
               <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                <WeekAhead now={now} />
+                <TodaySchedule now={now} day={clinic.day} title={clinic.title} className="lg:col-span-2 xl:col-span-1" />
+                <NeedsYou urgent={urgent} byId={byId} onOpen={(item, from) => openItem(item, from, [item.id])} />
                 <MyTasks byId={byId} today={NOW.slice(0, 10)} />
-                <MyPatients today={now.slice(0, 10)} className="lg:col-span-2 xl:col-span-1" />
               </div>
             </>
           )}

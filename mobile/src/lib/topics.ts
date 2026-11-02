@@ -22,8 +22,10 @@ export type Tone = "good" | "warn" | "bad" | "plain"
 export type IconKey = "exercise" | "eat" | "sleep" | "mind" | "medication" | "measure" | "check" | "pencil" | "mic" | "import" | "search" | "camera" | "upload" | "phone" | "device" | "shift" | "swap" | "practice" | "drink" | "barcode"
 
 /** What a way does when she taps it. `done` answers the topic and says so on
-    Today; `go` opens the screen that already does it; `ask` hands it to the
-    assistant in her own words; `sheet` opens the measurements sheet; `part`
+    Today; `go` opens the screen that already does it; `ask` opens a sheet
+    for her own words, typed or spoken: `prompt` is the box's question,
+    `sample` the prototype's heard words, and `logs` answers the topic with
+    them (the rest rebuild the plan); `sheet` opens the measurements sheet; `part`
     opens the session's parts, each done or skipped; `short` how many
     minutes of the practice she did and what; `meal` asks which meal
     she is adding, then opens its photos and the words about it, typed or
@@ -36,10 +38,11 @@ export type IconKey = "exercise" | "eat" | "sleep" | "mind" | "medication" | "me
 export type Act =
   | { kind: "done" }
   | { kind: "go"; href: string; params?: Record<string, string> }
-  | { kind: "ask"; ask: string }
+  | { kind: "ask"; title: string; prompt: string; sample: string; send: string; logs?: boolean }
   | { kind: "sheet" }
   | { kind: "part" }
   | { kind: "short" }
+  | { kind: "practice" }
   | { kind: "night" }
   | { kind: "meal" }
   | { kind: "barcode" }
@@ -88,7 +91,7 @@ export const TOPICS: Topic[] = [
     ways: [
       { id: "written", title: "Do it as written", says: "All four lifts, then the cardio block", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "done" } },
       { id: "part", title: "Do part of it", says: "Log your sets, or skip an exercise", badge: "Scores on what you did", tone: "warn", icon: "pencil", act: { kind: "part" } },
-      { id: "easier", title: "Ask for an easier version", says: "Say why, out loud, it rebuilds", badge: "No one to call", tone: "info", icon: "mic", act: { kind: "ask", ask: "Today's session is too much. Can you make it easier? " } },
+      { id: "easier", title: "Ask for an easier version", says: "Say why, out loud, it rebuilds", badge: "No one to call", tone: "info", icon: "mic", act: { kind: "ask", title: "Make it easier", prompt: "What is too much today?", sample: "My knee is sore, so no lunges, and I only have twenty minutes", send: "Rebuild today's session" } },
       { id: "own", title: "Upload your own programme", says: "PDF, a photo or a spreadsheet", badge: "We monitor yours", tone: "info", icon: "upload", act: { kind: "apps", title: "Your own programme", apps: [], upload: true } },
     ],
   },
@@ -123,7 +126,7 @@ export const TOPICS: Topic[] = [
     ways: [
       { id: "window", title: "Follow tonight's window", says: "In bed 10:30, up at 6:00", badge: "Scores 100% for tonight", tone: "good", icon: "check", act: { kind: "done" } },
       { id: "log", title: "Log what actually happened", says: "Time in bed, time to fall asleep, times you woke", badge: "Scores on actual", tone: "warn", icon: "pencil", act: { kind: "night" } },
-      { id: "shift", title: "Ask to shift the window", says: "A late flight, a sick child, say why", badge: "Rebuilds tonight", tone: "info", icon: "shift", act: { kind: "ask", ask: "I need to shift tonight's sleep window because " } },
+      { id: "shift", title: "Ask to shift the window", says: "A late flight, a sick child, say why", badge: "Rebuilds tonight", tone: "info", icon: "shift", act: { kind: "ask", title: "Shift tonight's window", prompt: "What changes tonight?", sample: "My flight lands at eleven, so I can be in bed by midnight", send: "Rebuild tonight" } },
       { id: "device", title: "Connect your device", says: "CPAP, Oura, Apple Watch, Eight Sleep", badge: "Logged for you", tone: "info", icon: "device", act: { kind: "apps", title: "Connect your device", apps: ["ResMed CPAP", "Oura", "Apple Watch", "Eight Sleep"] } },
     ],
   },
@@ -141,8 +144,8 @@ export const TOPICS: Topic[] = [
     ways: [
       { id: "session", title: "Do today's session", says: "Twenty minutes, guided end to end", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "done" } },
       { id: "short", title: "Do the short version", says: "Eight minutes when the day is full", badge: "Partial credit", tone: "warn", icon: "pencil", act: { kind: "short" } },
-      { id: "swap", title: "Swap the practice", says: "Say what is not working for you", badge: "Rebuilds the week", tone: "info", icon: "swap", act: { kind: "ask", ask: "The relaxation practice is not working for me because " } },
-      { id: "own", title: "Log your own practice", says: "Yoga, prayer, a walk without a phone", badge: "Counts if you log it", tone: "good", icon: "practice", act: { kind: "ask", ask: "I did my own practice today: " } },
+      { id: "swap", title: "Swap the practice", says: "Say what is not working for you", badge: "Rebuilds the week", tone: "info", icon: "swap", act: { kind: "ask", title: "Swap the practice", prompt: "What is not working for you?", sample: "Breathing exercises make me more restless, I would rather move", send: "Rebuild the week" } },
+      { id: "own", title: "Log your own practice", says: "Yoga, prayer, a walk without a phone", badge: "Counts if you log it", tone: "good", icon: "practice", act: { kind: "practice" } },
     ],
     done: false,
   },
@@ -176,7 +179,7 @@ export const TOPICS: Topic[] = [
     intro: "Today's target, and three ways to answer it.",
     ways: [
       { id: "enter", title: "Enter today's numbers", says: "Weight, waist, blood pressure", badge: "Scores 100% for today", tone: "good", icon: "check", act: { kind: "sheet" } },
-      { id: "skip", title: "Skip today", says: "Say why, the gap stays in the series", badge: "No penalty", tone: "warn", icon: "pencil", act: { kind: "ask", ask: "I am skipping today's measurements because " } },
+      { id: "skip", title: "Skip today", says: "Say why, the gap stays in the series", badge: "No penalty", tone: "warn", icon: "pencil", act: { kind: "ask", title: "Skip today", prompt: "Why are you skipping?", sample: "I am travelling and the scale is at home", send: "Skip today", logs: true } },
       { id: "device", title: "Connect a scale or cuff", says: "Withings, Omron, Apple Health", badge: "Posts itself", tone: "info", icon: "device", act: { kind: "apps", title: "Connect a scale or cuff", apps: ["Withings scale", "Omron cuff", "Apple Health"] } },
     ],
     done: false,
@@ -207,9 +210,29 @@ export const NEXT_UP = { topic: "medication", title: "Evening metformin, 7 pm", 
 export function rowOf(s: Store, t: Topic, day = localDay()) {
   const logged = s.topicLog?.[day]?.[t.id]
   if (logged?.night) return { done: true, text: inBed(logged.night), tone: "good" as Tone, note: `Logged ${clockWords(logged.at)}` }
-  if (logged) return { done: true, text: t.answered.text, tone: "good" as Tone, note: t.answered.note(clockWords(logged.at)) }
+  if (logged) return { done: true, text: logged.minutes ? `${logged.minutes} min` : t.answered.text, tone: "good" as Tone, note: t.answered.note(clockWords(logged.at)) }
   return { done: !!t.done, text: t.state.text, tone: t.state.tone, note: t.state.note }
 }
+
+/** What she can log as her own Mind practice, Other with her own words. */
+export const PRACTICES = ["Yoga", "Prayer", "Walk, no phone", "Breathing", "Journaling", "Other"] as const
+export type Practice = (typeof PRACTICES)[number]
+
+/** When she did it: today counts toward today, yesterday is logged on yesterday. */
+export const PRACTICE_WHEN = [
+  { value: "now", label: "Just now" },
+  { value: "morning", label: "This morning" },
+  { value: "yesterday", label: "Yesterday" },
+] as const
+export type PracticeWhen = (typeof PRACTICE_WHEN)[number]["value"]
+
+/** How she felt after it, asked once it is logged. */
+export const PRACTICE_FELT = [
+  { value: "no", label: "Not really" },
+  { value: "little", label: "A little" },
+  { value: "lot", label: "A lot" },
+] as const
+export type PracticeFelt = (typeof PRACTICE_FELT)[number]["value"]
 
 export const doneCount = (s: Store, day = localDay()) => TOPICS.filter((t) => rowOf(s, t, day).done).length
 

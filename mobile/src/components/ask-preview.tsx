@@ -6,10 +6,10 @@ import { CategoryPicker } from "@/components/chat-categories"
 import { CHAT_GROUPS, ChatHistory } from "@/components/chat-history"
 import { PageGround, PageHeader } from "@/components/hol"
 import type { ChatCategory, PastChat } from "@/lib/onboarding"
-import { color } from "@/lib/theme"
+import { color, space } from "@/lib/theme"
 
 /* A review view of Ask Inlay's opening (29 Oct 2026), reached without a
-   live plan: "Choose a category" under the header, and the history drawer
+   live plan: the category question as Inlay's first bubble, and the history drawer
    with sample chats in every built in category and one she made, so each
    group shows. /choose-category opens on the picker, /chat-history with
    the drawer open. Nothing is saved; a category or chat tapped does
@@ -39,7 +39,9 @@ export function AskPreview({ drawer }: { drawer: boolean }) {
     <View style={styles.screen}>
       <PageGround />
       <PageHeader title="Ask Inlay" action={{ label: "History", onPress: () => setOpen(true) }} />
-      <CategoryPicker chats={CHATS} categories={CATEGORIES} planLive onStart={() => {}} onCreate={(name) => ({ ...CHAT_GROUPS[0], topic: name, name })} />
+      <View style={styles.thread}>
+        <CategoryPicker name="Liv" chats={CHATS} categories={CATEGORIES} planLive onStart={() => {}} onNew={() => {}} />
+      </View>
       <ChatHistory
         open={open}
         chats={CHATS}
@@ -54,4 +56,5 @@ export function AskPreview({ drawer }: { drawer: boolean }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.page },
+  thread: { width: "100%", maxWidth: 420 + space.gutter * 2, alignSelf: "center", padding: space.gutter },
 })

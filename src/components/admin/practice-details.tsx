@@ -13,6 +13,10 @@ import {
 
 import { cn } from "@/lib/utils"
 import { AdminShell } from "@/components/admin/admin-shell"
+import {
+  billingFor,
+  practiceBilling,
+} from "@/components/admin/billing/billing-data"
 import { usePracticeActions } from "@/components/admin/practice-actions"
 import { usePracticeAdoption } from "@/components/admin/practice-adoption"
 import {
@@ -275,6 +279,8 @@ function DetailsCards({
   onInvite: (practice: Practice) => void
 }) {
   const { manager, primaryContact: contact } = practice
+  const { items: saved } = practiceBilling.use()
+  const billing = billingFor(practice.id, saved)
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -422,6 +428,16 @@ function DetailsCards({
               </div>
             )
           }
+        />
+        <InfoCard
+          title="Billing"
+          rows={[
+            { label: "Invoice period", value: billing.period },
+            { label: "Payment terms", value: billing.terms },
+            { label: "Grace period", value: `${billing.grace} days` },
+            { label: "Late fee", value: `${billing.lateFee}% a month` },
+            { label: "Payment method", value: billing.method },
+          ]}
         />
       </div>
     </div>

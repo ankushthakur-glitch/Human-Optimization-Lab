@@ -3,8 +3,11 @@
 import * as React from "react"
 import {
   IconAdd,
+  IconBilling,
   IconClipboard,
   IconCreditCard,
+  IconFileText,
+  IconLab,
   IconHandshake,
   IconHistory,
   IconShield,
@@ -14,15 +17,24 @@ import {
 } from "@/design-system/icons"
 
 import { AdminShell } from "@/components/admin/admin-shell"
+import { TextField } from "@/components/form-kit"
 import {
-  TextField,
-} from "@/components/form-kit"
+  BiomarkersPage,
+  RangesPage,
+  SexAgeRulesPage,
+} from "@/components/clinical/catalog"
+import { TestCasesPage } from "@/components/clinical/eval-evidence"
+import { AlertRulesPage } from "@/components/clinical/protocols-rules"
+import { CataloguePanel } from "@/components/admin/billing/catalogue"
 import { AuditLogPage } from "@/components/settings/audit-log"
+import {
+  CancellationPolicy,
+  PatientPayments,
+} from "@/components/settings/billing-settings"
 import { PartnersPage } from "@/components/settings/partners"
 import { RolesPage } from "@/components/settings/roles"
 import {
   INTERVAL_UNITS,
-  LONGEVITY_ITEMS,
   MODELS,
   RERATE_INTERVALS,
   SOURCES,
@@ -34,8 +46,10 @@ import {
 import {
   ChoiceSelect,
   NumberInput,
+  SettingsBack,
   SettingsFrame,
   type SettingsGroup,
+  SettingsHeading,
   SettingsHome,
   SettingsRoute,
   SettingsSection,
@@ -54,6 +68,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/design-system/ui/dialog"
+import { Field, FieldLabel } from "@/design-system/ui/field"
 import { Input } from "@/design-system/ui/input"
 import { Switch } from "@/design-system/ui/switch"
 import { TableCell, TableRow } from "@/design-system/ui/table"
@@ -111,15 +126,36 @@ const GROUPS: SettingsGroup[] = [
     pages: [
       { id: "membership", label: "Membership", render: () => <Membership /> },
       {
-        id: "longevity",
-        label: "Longevity tests",
-        render: () => <PriceList kind="longevity" />,
-      },
-      {
         id: "top-ups",
         label: "AI credit top ups",
-        status: "Partly",
-        render: () => <PriceList kind="top-ups" />,
+        render: () => <TopUps />,
+      },
+    ],
+  },
+  {
+    id: "billing",
+    title: "Billing",
+    icon: IconBilling,
+    pages: [
+      {
+        id: "catalogue",
+        label: "Catalogue and pricing",
+        render: () => (
+          <CataloguePanel
+            leading={<SettingsBack />}
+            heading={<SettingsHeading />}
+          />
+        ),
+      },
+      {
+        id: "patients",
+        label: "Patient payments",
+        render: () => <PatientPayments />,
+      },
+      {
+        id: "cancellations",
+        label: "Cancellations",
+        render: () => <CancellationPolicy />,
       },
     ],
   },
@@ -140,6 +176,38 @@ const GROUPS: SettingsGroup[] = [
         label: "Approved sources",
         status: "Open",
         render: () => <Sources />,
+      },
+    ],
+  },
+  /* The clinical content console, folded into Settings on 30 Oct. */
+  {
+    id: "clinical",
+    title: "Clinical catalog",
+    icon: IconLab,
+    pages: [
+      {
+        id: "biomarkers",
+        label: "Biomarkers",
+        render: () => <BiomarkersPage />,
+      },
+      { id: "ranges", label: "Ranges", render: () => <RangesPage /> },
+      {
+        id: "sex-age",
+        label: "Sex and age rules",
+        render: () => <SexAgeRulesPage />,
+      },
+    ],
+  },
+  {
+    id: "rules",
+    title: "Rules",
+    icon: IconFileText,
+    pages: [
+      { id: "alerts", label: "Alert rules", render: () => <AlertRulesPage /> },
+      {
+        id: "cases",
+        label: "Test cases",
+        render: () => <TestCasesPage />,
       },
     ],
   },
@@ -446,6 +514,14 @@ function Membership() {
               </span>
             </ValueRow>
           )}
+          <ValueRow label="Active members">
+            <span className="text-sm tabular-nums">
+              <span className="font-medium">412</span>
+              <span className="text-muted-foreground">
+                , 318 monthly and 94 annual
+              </span>
+            </span>
+          </ValueRow>
         </ValueCard>
       </SettingsSection>
       {shown("Partly") && (
@@ -467,12 +543,17 @@ function Membership() {
 
 type PriceItem = { id: string; name: string; price: number; on: boolean }
 
-/** A charged list: the longevity tests, or the AI credit top ups. */
-function PriceList({ kind }: { kind: "longevity" | "top-ups" }) {
-  const seed = kind === "longevity" ? LONGEVITY_ITEMS : TOP_UPS
-  const settings = useSettings<{ items: PriceItem[] }>(kind, { items: seed })
+/** The AI credit a member can buy once the chat allowance runs out, sold
+    in dollars of credit, never in questions. */
+function TopUps() {
+  const settings = useSettings<{ items: PriceItem[] }>("top-ups-v2", {
+    items: TOP_UPS,
+  })
   const items = settings.draft.items
-  const noun = kind === "longevity" ? "test" : "top up"
+  const noun = "top up"
+  const [adding, setAdding] = React.useState(false)
+  const [name, setName] = React.useState("")
+  const [price, setPrice] = React.useState(0)
 
   function update(id: string, changes: Partial<PriceItem>) {
     settings.patch({
@@ -485,20 +566,9 @@ function PriceList({ kind }: { kind: "longevity" | "top-ups" }) {
   return (
     <SettingsFrame action={settings.actions}>
       <SettingsSection
-        title={kind === "longevity" ? "Longevity tests" : "AI credit top ups"}
+        title="AI credit top ups"
         action={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              settings.patch({
-                items: [
-                  ...items,
-                  { id: `new-${Date.now()}`, name: "", price: 0, on: false },
-                ],
-              })
-            }
-          >
+          <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
             <IconAdd />
             Add {noun}
           </Button>
@@ -506,7 +576,7 @@ function PriceList({ kind }: { kind: "longevity" | "top-ups" }) {
       >
         <SettingsTable
           columns={[
-            { header: kind === "longevity" ? "Test" : "Package" },
+            { header: "Package" },
             { header: "Price", className: "w-48" },
             { header: "Offered", className: "w-28" },
             { header: "", className: "w-14" },
@@ -518,9 +588,7 @@ function PriceList({ kind }: { kind: "longevity" | "top-ups" }) {
                 <Input
                   aria-label={`${noun} name`}
                   value={item.name}
-                  placeholder={
-                    kind === "longevity" ? "Test name" : "Package name"
-                  }
+                  placeholder="Package name"
                   onChange={(e) => update(item.id, { name: e.target.value })}
                   className="max-w-96 border-transparent bg-transparent px-0 font-medium shadow-none focus-visible:border-input focus-visible:px-3"
                 />
@@ -561,6 +629,68 @@ function PriceList({ kind }: { kind: "longevity" | "top-ups" }) {
           ))}
         </SettingsTable>
       </SettingsSection>
+
+      <Dialog open={adding} onOpenChange={setAdding}>
+        <DialogContent className="sm:max-w-md">
+          <form
+            noValidate
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (!name.trim()) return
+              settings.patch({
+                items: [
+                  ...items,
+                  {
+                    id: `new-${Date.now()}`,
+                    name: name.trim(),
+                    price,
+                    on: true,
+                  },
+                ],
+              })
+              setName("")
+              setPrice(0)
+              setAdding(false)
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>Add top up</DialogTitle>
+              <DialogDescription className="sr-only">
+                AI credit a member can buy.
+              </DialogDescription>
+            </DialogHeader>
+            <TextField
+              id="top-up-name"
+              label="Package name"
+              required
+              placeholder="$10 of AI credit"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <Field>
+              <FieldLabel>Price</FieldLabel>
+              <NumberInput
+                label="Price"
+                prefix="$"
+                value={price}
+                onChange={setPrice}
+                className="w-full"
+              />
+            </Field>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setAdding(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Add top up</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </SettingsFrame>
   )
 }
@@ -569,13 +699,15 @@ function PriceList({ kind }: { kind: "longevity" | "top-ups" }) {
 /*  AI                                                                         */
 /* -------------------------------------------------------------------------- */
 
-/* Each allowance is a number of questions or a dollar amount of tokens,
-   over a week or a month. Five questions a week for free patients, per the
-   scope sheet; the paid figure is a placeholder until it is agreed. */
-const LIMIT_BY = ["Questions", "Token spend"] as const
+/* Two pools, per the 29 Oct call. The background AI (plans, trends, record
+   analysis) has its own budget baked into the membership price: it is never
+   limited, so the app never stops working; Inlay is only alerted when a
+   member runs well over it. Only Ask Inlay chat is limited, in dollars of
+   tokens (never questions), and members can top it up. Free patients
+   have no AI at all (user, 30 Oct). */
 const LIMIT_PERIODS = ["Week", "Month"] as const
 
-type Allowance = { by: string; amount: number; per: string }
+type Allowance = { amount: number; per: string }
 
 function AllowanceCard({
   who,
@@ -586,18 +718,8 @@ function AllowanceCard({
   value: Allowance
   onChange: (value: Allowance) => void
 }) {
-  const tokens = value.by === "Token spend"
-  const per = `a ${value.per.toLowerCase()}`
   return (
     <ValueCard>
-      <ValueRow label="Limit by">
-        <ChoiceSelect
-          label={`${who} limit by`}
-          value={value.by}
-          options={LIMIT_BY}
-          onChange={(by) => onChange({ ...value, by })}
-        />
-      </ValueRow>
       <ValueRow label="Period">
         <ChoiceSelect
           label={`${who} allowance period`}
@@ -606,15 +728,15 @@ function AllowanceCard({
           onChange={(p) => onChange({ ...value, per: p })}
         />
       </ValueRow>
-      <ValueRow label="Allowance">
+      <ValueRow label="Chat allowance">
         <NumberInput
-          label={`${who} allowance`}
-          prefix={tokens ? "$" : undefined}
-          unit={tokens ? `of tokens ${per}` : `questions ${per}`}
+          label={`${who} chat allowance`}
+          prefix="$"
+          unit={`of tokens a ${value.per.toLowerCase()}`}
           value={value.amount}
           min={0}
           onChange={(amount) => onChange({ ...value, amount })}
-          className="w-56"
+          className="w-60"
         />
       </ValueRow>
     </ValueCard>
@@ -622,24 +744,44 @@ function AllowanceCard({
 }
 
 function AiCredit() {
-  const settings = useSettings("ai-credit-allowance", {
-    free: { by: "Questions", amount: 5, per: "Week" } as Allowance,
-    paid: { by: "Questions", amount: 40, per: "Week" } as Allowance,
+  const settings = useSettings("ai-credit-v3", {
+    background: 6,
+    alertAt: 200,
+    paid: { amount: 5, per: "Month" } as Allowance,
     grace: true,
   })
   const d = settings.draft
   return (
     <SettingsFrame action={settings.actions}>
-      <SettingsSection title="Free patients">
-        <AllowanceCard
-          who="Free"
-          value={d.free}
-          onChange={(free) => settings.patch({ free })}
-        />
+      <SettingsSection title="Background AI">
+        <ValueCard>
+          <ValueRow label="Limit" meta="Plans, trends, record analysis">
+            <span className="text-sm font-medium">Never limited</span>
+          </ValueRow>
+          <ValueRow label="Budget per member">
+            <NumberInput
+              label="Background AI budget per member"
+              prefix="$"
+              unit="a month"
+              value={d.background}
+              onChange={(background) => settings.patch({ background })}
+              className="w-48"
+            />
+          </ValueRow>
+          <ValueRow label="Alert Inlay above">
+            <NumberInput
+              label="Alert Inlay above"
+              unit="% of budget"
+              value={d.alertAt}
+              onChange={(alertAt) => settings.patch({ alertAt })}
+              className="w-48"
+            />
+          </ValueRow>
+        </ValueCard>
       </SettingsSection>
-      <SettingsSection title="Paid patients">
+      <SettingsSection title="Ask Inlay chat, members">
         <AllowanceCard
-          who="Paid"
+          who="Member"
           value={d.paid}
           onChange={(paid) => settings.patch({ paid })}
         />

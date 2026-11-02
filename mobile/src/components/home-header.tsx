@@ -22,8 +22,8 @@ import {
    props. The member's plan line is not part of it: it is the first row of
    the member home's scrolling content.
 
-   StatusBanner is the one status banner (sharing turned off, sharing
-   ending, records still arriving, Dr. Patel checking, new results), placed
+   StatusBanner is the one status banner (sharing turned off or ended,
+   records still arriving, Dr. Patel checking, new results), placed
    first in a tab's scrolling content; the sharing off banner shows on
    every tab. */
 

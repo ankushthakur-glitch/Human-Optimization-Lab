@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams, type Href } from "expo-router"
+import { router, type Href } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
@@ -18,13 +18,14 @@ import { useOnboarding } from "@/lib/onboarding"
 import { MEDICATIONS } from "@/lib/record"
 import { card, color, hairline, ink, space, surface, type } from "@/lib/theme"
 import { NEW_IN_RECORD_NOTE, comingUp, homeBanner, markSeen, todo, yourMedicines, type TodoItem } from "@/lib/todo"
-import { classify, homeTiles, watchList, type Trend } from "@/lib/trends"
+import { watchList, type Trend } from "@/lib/trends"
 
 /* Home on the free record (FINAL-SPEC C.1), as the Figma "Hol" Home
    (40024634:963, 5 Oct 2026): the one status banner when something is
    true; Your trends, a 2 by 2 grid of sparkline tiles; Upcoming; New in your
    record when an outside visit arrived; Your medicines; the teal Ask
-   about your results banner. The Inlay score, the "checking" banner and
+   about your results banner. Since 2 Nov 2026 Your trends holds a tile for
+   every abnormal result and nothing else. The Inlay score, the "checking" banner and
    the plan card left the home on 5 Oct 2026, at the user's word; the AI is metered in tokens now, so no question count.
 
    The same screen draws every state of the free record (C.1.4, C.28):
@@ -39,9 +40,7 @@ export function FreeHome() {
   const banner = homeBanner(onboarding)
   // The biological age sheet slides up over the tab bar, so it is the tab
   // screen's overlay; its button opens the plan options.
-  // Setup's last button lands here with `age=1`, so the sheet opens at once.
-  const { age: openAge } = useLocalSearchParams<{ age?: string }>()
-  const [age, setAge] = React.useState(openAge === "1")
+  const [age, setAge] = React.useState(false)
   const start = () => {
     setAge(false)
     openTab("/plan", "home")
@@ -81,7 +80,7 @@ export function RecordSections({ onOpenAge }: { onOpenAge: () => void }) {
       <NewInRecord />
       <Medicines />
       <ToDo />
-      {exp !== "free" && <AskRow />}
+      <AskRow />
     </View>
   )
 }
@@ -111,37 +110,33 @@ function AgeCard({ onPress }: { onPress: () => void }) {
 
 /* ------------------------------------------------------- your trends -- */
 
-const openResults = () => router.push("/results")
-
-/** Her trends (C.1.2, 6) as the Figma's 2 by 2 grid: a tile for each marker
-    worth watching, in the F-26 order with her own "improve" answers
-    breaking ties and the last cell going to good news when there is some.
-    Fewer than four worth watching, the grid fills with results that are in
-    range, the ones with the longest history first, so the section always
-    shows her data and never an empty cell. See all opens Results. */
+/** Every trend out of range or borderline (2 Nov 2026, the client's call
+    at 00:25) in the 2 by 2 grid, in the F-26 order with her own "improve"
+    answers breaking ties: the first four, and See all opens the rest in
+    place. No results in range fill the section and nothing leads to a list
+    of every marker or her raw history. A tile opens the marker. Nothing out
+    of range, no section. */
 export function Trends() {
   const onboarding = useOnboarding()
   const markers = useMarkers()
-  const list = watchList(markers, { improve: onboarding.why?.improve })
-  const tiles = [...homeTiles(list, { goodNews: true }).tiles]
-  if (tiles.length < 4) {
-    const steady = markers
-      .map(classify)
-      .filter((t) => !t.watch && !!t.latest && !tiles.some((x) => x.id === t.id))
-      .sort((a, b) => b.count - a.count)
-    tiles.push(...steady.slice(0, 4 - tiles.length))
-  }
-  if (!tiles.length) return null
+  const [all, setAll] = React.useState(false)
+  const abnormal = watchList(markers, { improve: onboarding.why?.improve }).filter((t) => t.status !== "in" && !!t.latest)
+  if (!abnormal.length) return null
   const open = (t: Trend) => router.push({ pathname: "/biomarker/[id]", params: { id: t.id } })
+  const more = abnormal.length > TREND_TILES
+  const link = more ? { label: all ? "Show less" : `See all ${abnormal.length}`, onPress: () => setAll((v) => !v) } : undefined
 
   return (
     <Rise at={2} id="home:trends">
-      <Block title="Your trends" onSeeAll={openResults}>
-        <TrendTiles trends={tiles} onOpen={open} />
+      <Block title="Your trends" link={link}>
+        <TrendTiles trends={all ? abnormal : abnormal.slice(0, TREND_TILES)} onOpen={open} />
       </Block>
     </Rise>
   )
 }
+
+/** Tiles the home shows before See all. */
+const TREND_TILES = 4
 
 /* ---------------------------------------------------------- upcoming -- */
 

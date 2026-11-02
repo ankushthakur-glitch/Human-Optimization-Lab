@@ -38,6 +38,19 @@ export function receiptOf(onboarding: State): Receipt {
   }
 }
 
+/** The receipt for one later payment: her membership's billing period, or
+    AI credit. */
+export function paymentReceipt(label: string, amount: number, card: string, at: Date = new Date()): Receipt {
+  return {
+    number: `INL-${at.getTime().toString().slice(-8)}`,
+    date: at.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    paidWith: card,
+    lines: [{ label, amount: usd(amount) }],
+    total: usd(amount),
+    amount,
+  }
+}
+
 function receiptText(r: Receipt) {
   return [
     "Inlay Health receipt",

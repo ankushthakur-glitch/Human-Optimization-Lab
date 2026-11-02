@@ -1,6 +1,7 @@
 import { dayKey } from "@/lib/dates"
 import { membershipEnded } from "@/lib/member"
 import type { Membership } from "@/lib/onboarding"
+import type { Cadence } from "@/lib/plans"
 
 /* Pieces the member's account screens share (Membership and Profile,
    FINAL-SPEC C.17, C.18): the billing calendar worked out from the
@@ -8,6 +9,13 @@ import type { Membership } from "@/lib/onboarding"
    member's own billing page. A row's date is lib/dates.ts rowDate. */
 
 /* ------------------------------------------------------------- billing -- */
+
+/** The cadence a charge was made on: before a change of cadence, the old
+    one. */
+export function cadenceOn(m: Membership | undefined, charged: Date): Cadence {
+  if (m?.switched && dayKey(charged) < m.switched.on) return m.switched.was
+  return m?.billing ?? "monthly"
+}
 
 export type Billing = {
   /** waiting: joined, no charge until her first plan is approved (S-66).
@@ -28,7 +36,13 @@ export type Billing = {
   ends?: Date
   /** The yearly renewal of the membership (S-70). */
   renews?: Date
+  /** Active with the next payment within DUE_DAYS: Home says so, and
+      /membership-pay pays it. */
+  due?: boolean
 }
+
+/** From this many days before her billing day the payment shows as due. */
+export const DUE_DAYS = 5
 
 const valid = (iso?: string) => {
   if (!iso) return undefined
@@ -60,15 +74,32 @@ export function billingOf(m: Membership | undefined, now: Date = new Date()): Bi
   const charges: Date[] = []
   let next: Date | undefined
   if (approved) {
-    const step = m.billing === "yearly" ? 12 : 1
+    const stepOf = (c?: Cadence) => (c === "yearly" ? 12 : 1)
+    // Billing days run from the approval on the cadence she had then, and
+    // from a change of cadence on the new one.
+    let from = approved
+    let step = stepOf(m.switched?.was ?? m.billing)
+    let switching = !!m.switched
     const until = dayKey(cancelled && cancelled < now ? cancelled : now)
     for (let i = 0; ; i++) {
-      const d = chargeIn(approved.getFullYear(), approved.getMonth() + i * step, approved.getDate())
+      let d = chargeIn(from.getFullYear(), from.getMonth() + i * step, approved.getDate())
+      if (switching && m.switched && dayKey(d) >= m.switched.on) {
+        switching = false
+        from = d
+        step = stepOf(m.billing)
+        i = 0
+        d = chargeIn(from.getFullYear(), from.getMonth(), approved.getDate())
+      }
       if (dayKey(d) > until) {
         next = d
         break
       }
       charges.unshift(d)
+    }
+    // Paid early: that billing day is charged, the one after it is next.
+    if (next && m.paidAhead === dayKey(next) && !cancelled && !m.paused) {
+      charges.unshift(next)
+      next = chargeIn(next.getFullYear(), next.getMonth() + stepOf(m.billing), approved.getDate())
     }
   }
 
@@ -76,5 +107,6 @@ export function billingOf(m: Membership | undefined, now: Date = new Date()): Bi
   if (cancelled) return { state: "ending", paused: m.paused === true, started, charges, ends: ends ?? next, renews }
   if (m.paused) return { state: "paused", started, charges, next, renews }
   if (!approved) return { state: "waiting", started, charges, renews }
-  return { state: "active", started, charges, next, renews }
+  const due = !!next && (next.getTime() - now.getTime()) / 86_400_000 <= DUE_DAYS
+  return { state: "active", started, charges, next, renews, due }
 }

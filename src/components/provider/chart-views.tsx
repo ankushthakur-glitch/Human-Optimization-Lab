@@ -19,6 +19,7 @@ import {
 } from "@/components/provider/chart-layout"
 import {
   EncounterPaper,
+  ImagingPaper,
   LabOrderPaper,
   LabReportPaper,
 } from "@/components/provider/chart-papers"
@@ -26,7 +27,13 @@ import {
   type LabOrder,
   LabOrderDialog,
   labOrders,
+  orderTypes,
 } from "@/components/provider/chart-lab-orders"
+import {
+  type TestCategory,
+  catalog,
+  money,
+} from "@/components/admin/billing/billing-data"
 import {
   type Updated,
   atLabel,
@@ -301,7 +308,10 @@ const ORDER_BADGE: Record<LabOrder["status"], "info" | "secondary"> = {
   Cancelled: "secondary",
 }
 
+/** Lab results and Imaging results: the same reports and orders tabs,
+    each showing only its own type of test. */
 export function LabsView({
+  kind = "Lab",
   patient,
   record,
   tab,
@@ -309,6 +319,7 @@ export function LabsView({
   selected,
   onSelect,
 }: {
+  kind?: TestCategory
   patient: Patient
   record: HealthRecord
   tab: "reports" | "orders"
@@ -320,12 +331,19 @@ export function LabsView({
   const [from, setFrom] = React.useState("all")
   const [ordering, setOrdering] = React.useState(false)
   const { items: allOrders } = labOrders.use()
-  const orders = allOrders.filter((o) => o.patientId === patient.id)
+  const { items: tests } = catalog.use()
+  const orders = allOrders.filter(
+    (o) => o.patientId === patient.id && orderTypes(o, tests).has(kind)
+  )
+  const imaging = kind === "Imaging"
+  const noun = imaging ? "Imaging" : "Lab"
+  const scans = record.documents.filter((d) => d.kind === "imaging")
+  const reportCount = imaging ? scans.length : record.labReports.length
 
   const addOrder = (
     <Button size="sm" onClick={() => setOrdering(true)}>
       <IconAdd />
-      Add lab order
+      Order a test
     </Button>
   )
 
@@ -333,8 +351,8 @@ export function LabsView({
     <Section>
       <SectionBar
         tabs={[
-          { id: "reports", label: `Lab reports (${record.labReports.length})` },
-          { id: "orders", label: `Lab orders (${orders.length})` },
+          { id: "reports", label: `${noun} reports (${reportCount})` },
+          { id: "orders", label: `${noun} orders (${orders.length})` },
         ]}
         value={tab}
         onTab={(t) => onTab(t as "reports" | "orders")}
@@ -343,9 +361,9 @@ export function LabsView({
             <SearchBox
               value={query}
               onChange={setQuery}
-              label={tab === "orders" ? "Search lab orders" : "Search lab reports"}
+              label={`Search ${noun.toLowerCase()} ${tab === "orders" ? "orders" : "reports"}`}
             />
-            {tab === "reports" && (
+            {tab === "reports" && !imaging && (
               <SourceSelect
                 items={record.labReports}
                 value={from}
@@ -359,6 +377,7 @@ export function LabsView({
       />
       {tab === "orders" ? (
         <LabOrders
+          noun={noun}
           patient={patient}
           orders={orders.filter((o) =>
             matches(query, o.id, o.lab, o.diagnosis, ...o.tests)
@@ -366,6 +385,15 @@ export function LabsView({
           selected={selected}
           onSelect={onSelect}
           onAdd={() => setOrdering(true)}
+        />
+      ) : imaging ? (
+        <ImagingReports
+          patient={patient}
+          rows={scans.filter((d) =>
+            matches(query, d.title, d.author, ...d.sections.map((x) => x.text))
+          )}
+          selected={selected}
+          onSelect={onSelect}
         />
       ) : (
         <LabReports
@@ -386,13 +414,14 @@ export function LabsView({
       )}
       <LabOrderDialog
         open={ordering}
-        patientId={patient.id}
+        type={kind}
+        patient={patient}
         record={record}
         onClose={() => setOrdering(false)}
         onCreated={(order) => {
           setOrdering(false)
           onTab("orders", order.id)
-          toast.success(`Lab order ${order.id} placed`)
+          toast.success(`${noun} order ${order.id} placed, ${money(order.total)} on the practice's next invoice`)
         }}
       />
     </Section>
@@ -476,13 +505,72 @@ function LabReports({
   )
 }
 
+function ImagingReports({
+  patient,
+  rows,
+  selected,
+  onSelect,
+}: {
+  patient: Patient
+  rows: HealthRecord["documents"]
+  selected: string
+  onSelect: (id: string) => void
+}) {
+  const current = rows.find((d) => d.id === selected) ?? rows[0]
+  return (
+    <Split
+      list={
+        rows.length === 0 ? (
+          <EmptyList>No imaging reports match</EmptyList>
+        ) : (
+          rows.map((d) => (
+            <ListItem
+              key={d.id}
+              title={d.title}
+              selected={d.id === current?.id}
+              onClick={() => onSelect(d.id)}
+              meta={
+                <span className="truncate">
+                  Resulted on and by: {usDate(d.date)},{" "}
+                  {source(d.sourceId)?.name}
+                </span>
+              }
+            />
+          ))
+        )
+      }
+      viewer={
+        current ? (
+          <Viewer
+            title={current.title}
+            updated={updatedOf(current.id, current.date, current.author)}
+            onDownload={() =>
+              download(`${current.title} ${current.date}`, [
+                `${current.title}, ${usDate(current.date)}`,
+                `Read by: ${current.author}`,
+                ...current.sections.map((x) => `${x.heading}: ${x.text}`),
+              ])
+            }
+          >
+            <ImagingPaper patient={patient} d={current} />
+          </Viewer>
+        ) : (
+          <EmptyList>Select an imaging report</EmptyList>
+        )
+      }
+    />
+  )
+}
+
 function LabOrders({
+  noun,
   patient,
   orders,
   selected,
   onSelect,
   onAdd,
 }: {
+  noun: string
   patient: Patient
   orders: LabOrder[]
   selected: string
@@ -495,10 +583,12 @@ function LabOrders({
       list={
         orders.length === 0 ? (
           <div className="flex flex-col items-center gap-3 px-2 py-6">
-            <p className="text-sm text-muted-foreground">No lab orders yet</p>
+            <p className="text-sm text-muted-foreground">
+              No {noun.toLowerCase()} orders yet
+            </p>
             <Button size="sm" variant="outline" onClick={onAdd}>
               <IconAdd />
-              Add lab order
+              Order a test
             </Button>
           </div>
         ) : (
@@ -524,6 +614,8 @@ function LabOrders({
                   </span>
                   <Sep />
                   <span className="truncate">{o.lab}</span>
+                  <Sep />
+                  <span className="shrink-0 tabular-nums">{money(o.total)}</span>
                 </>
               }
             />
@@ -533,7 +625,7 @@ function LabOrders({
       viewer={
         current ? (
           <Viewer
-            title={`Lab order ${current.id}`}
+            title={`${noun} order ${current.id}`}
             updated={{ by: current.orderedBy, at: current.orderedAt }}
             badge={
               <Badge variant={ORDER_BADGE[current.status]} className={PILL}>
@@ -546,7 +638,7 @@ function LabOrders({
                   variant="destructive"
                   onClick={() => {
                     labOrders.patch(current.id, { status: "Cancelled" })
-                    toast.success(`Lab order ${current.id} cancelled`)
+                    toast.success(`Lab order ${current.id} cancelled and credited to the practice`)
                   }}
                 >
                   Cancel order
@@ -574,7 +666,7 @@ function LabOrders({
             />
           </Viewer>
         ) : (
-          <EmptyList>Select a lab order</EmptyList>
+          <EmptyList>Select an order</EmptyList>
         )
       }
     />

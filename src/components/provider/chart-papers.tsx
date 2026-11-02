@@ -472,8 +472,8 @@ export function LabOrderPaper({
 
       <Part title="Tests ordered">
         <Grid
-          head={["#", "Test", "Diagnosis"]}
-          rows={o.tests.map((t, i) => [i + 1, t, o.diagnosis || "Not given"])}
+          head={["#", "Test", "Facility", "Diagnosis"]}
+          rows={o.items.map((t, i) => [i + 1, t.name, t.facility, o.diagnosis || "Not given"])}
         />
       </Part>
 

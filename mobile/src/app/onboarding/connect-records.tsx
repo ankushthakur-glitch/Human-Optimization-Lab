@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router"
+import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
@@ -25,9 +25,7 @@ export default function ConnectRecordsScreen() {
   const [step, setStep] = React.useState<Step | null>(null)
   const linked = sources.some((s) => s.connected)
 
-  const { period } = useLocalSearchParams<{ period?: string }>()
-
-  const next = () => router.push({ pathname: "/onboarding/consent-texts", params: period ? { period } : {} })
+  const next = () => router.push("/onboarding/consent-texts")
 
   return (
     <View style={styles.fill}>

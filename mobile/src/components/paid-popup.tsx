@@ -7,7 +7,7 @@ import { HUE, KeyValue } from "@/components/record-kit"
 import { Button } from "@/components/ui"
 import { dollarsExact } from "@/lib/baseline-tests"
 import { useOnboarding } from "@/lib/onboarding"
-import { downloadReceipt, receiptOf } from "@/lib/receipt"
+import { downloadReceipt, receiptOf, type Receipt } from "@/lib/receipt"
 import { color, font, ink, space, type } from "@/lib/theme"
 
 /* The payment went through (step 4, /payment): a small popup over the step
@@ -17,14 +17,15 @@ import { color, font, ink, space, type } from "@/lib/theme"
    in turn (all still under Reduce Motion). The details are what a receipt
    answers at a glance: who was paid, with what, when, and the receipt's
    number. "Download receipt" saves the itemized receipt and says so on the
-   button; Continue opens the enrolled page. */
+   button; Continue opens the enrolled page. The member's later payments
+   (her membership, AI credit) pass their own `receipt` and `lead`. */
 
 const native = Platform.OS !== "web"
 const BADGE = 56
 
-export function PaidPopup({ onContinue }: { onContinue: () => void }) {
+export function PaidPopup({ onContinue, receipt: given, lead = "Your membership has started." }: { onContinue: () => void; receipt?: Receipt; lead?: string }) {
   const onboarding = useOnboarding()
-  const [receipt] = React.useState(() => receiptOf(onboarding))
+  const [receipt] = React.useState(() => given ?? receiptOf(onboarding))
   const still = useReducedMotion()
   const [saved, setSaved] = React.useState(false)
   const [shown, setShown] = React.useState(still ? receipt.amount : 0)
@@ -133,7 +134,7 @@ export function PaidPopup({ onContinue }: { onContinue: () => void }) {
         <Text style={styles.amount} accessibilityLabel={receipt.total}>
           {shown >= receipt.amount ? receipt.total : dollarsExact(Math.round(shown * 100) / 100)}
         </Text>
-        <Text style={styles.lead}>Your membership has started.</Text>
+        <Text style={styles.lead}>{lead}</Text>
 
         <Animated.View style={[styles.details, rise(0)]}>
           <KeyValue label="Paid to" value="Inlay Health" />

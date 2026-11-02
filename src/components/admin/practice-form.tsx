@@ -24,6 +24,17 @@ import {
   tenantFromName,
 } from "@/components/admin/practices-store"
 import {
+  DEFAULT_BILLING,
+  INVOICE_PERIODS,
+  PAYMENT_TERMS,
+  PRACTICE_METHODS,
+  type PracticeBilling,
+  billingFor,
+  practiceBilling,
+} from "@/components/admin/billing/billing-data"
+import { NumberInput } from "@/components/settings/settings-kit"
+import { Field, FieldLabel } from "@/design-system/ui/field"
+import {
   EMAIL,
   type Errors,
   VALIDATE,
@@ -126,7 +137,7 @@ export function PracticeFormSheet({
   open: boolean
   onOpenChange: (open: boolean) => void
   practice?: Practice
-  onSubmit: (input: PracticeInput) => void
+  onSubmit: (input: PracticeInput, billing: PracticeBilling) => void
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -152,13 +163,22 @@ function PracticeFormBody({
   onCancel,
 }: {
   practice?: Practice
-  onSubmit: (input: PracticeInput) => void
+  onSubmit: (input: PracticeInput, billing: PracticeBilling) => void
   onCancel: () => void
 }) {
   const editing = Boolean(practice)
   const [values, setValues] = React.useState<PracticeInput>(() =>
     practice ? fromPractice(practice) : EMPTY
   )
+  /* What every invoice this practice receives is built from. */
+  const [billing, setBilling] = React.useState<PracticeBilling>(() =>
+    practice
+      ? billingFor(practice.id, practiceBilling.get())
+      : { ...DEFAULT_BILLING, id: "" }
+  )
+  const setBill = (changes: Partial<PracticeBilling>) =>
+    setBilling((b) => ({ ...b, ...changes }))
+  const perOrder = billing.period === "Per order"
   const [attempted, setAttempted] = React.useState(false)
 
   const tenant = editing ? values.tenant : tenantFromName(values.name)
@@ -187,17 +207,20 @@ function PracticeFormBody({
       document.getElementById(`practice-${first.replace(".", "-")}`)?.focus()
       return
     }
-    onSubmit({
-      ...values,
-      name: values.name.trim(),
-      primaryContact: {
-        ...values.primaryContact,
-        firstName: values.primaryContact.firstName.trim(),
-        lastName: values.primaryContact.lastName.trim(),
-        email: values.primaryContact.email.trim(),
+    onSubmit(
+      {
+        ...values,
+        name: values.name.trim(),
+        primaryContact: {
+          ...values.primaryContact,
+          firstName: values.primaryContact.firstName.trim(),
+          lastName: values.primaryContact.lastName.trim(),
+          email: values.primaryContact.email.trim(),
+        },
+        tenant,
       },
-      tenant,
-    })
+      perOrder ? { ...billing, terms: "On receipt" } : billing
+    )
   }
 
   return (
@@ -205,7 +228,7 @@ function PracticeFormBody({
       <SheetHeader className="shrink-0 border-b">
         <SheetTitle>{editing ? "Edit practice" : "Add practice"}</SheetTitle>
         <SheetDescription className="sr-only">
-          Practice details, region, primary contact, location, messaging and feature access.
+          Practice details, region, primary contact, location, messaging, billing and feature access.
         </SheetDescription>
       </SheetHeader>
 
@@ -358,6 +381,52 @@ function PracticeFormBody({
                 set("twilioNumber", formatPhone(event.target.value))
               }
               error={errors.twilioNumber}
+            />
+          </div>
+        </FormSection>
+
+        <FormSection title="Billing">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectField
+              id="practice-billing-period"
+              label="Invoice period"
+              options={INVOICE_PERIODS}
+              value={billing.period}
+              onChange={(period) => setBill({ period })}
+            />
+            <SelectField
+              id="practice-billing-terms"
+              label="Payment terms"
+              options={perOrder ? ["On receipt"] : PAYMENT_TERMS}
+              value={perOrder ? "On receipt" : billing.terms}
+              onChange={(terms) => setBill({ terms })}
+            />
+            <Field>
+              <FieldLabel>Grace period</FieldLabel>
+              <NumberInput
+                label="Grace period"
+                unit="days"
+                value={billing.grace}
+                onChange={(grace) => setBill({ grace })}
+                className="w-full"
+              />
+            </Field>
+            <Field>
+              <FieldLabel>Late fee</FieldLabel>
+              <NumberInput
+                label="Late fee"
+                unit="% a month"
+                value={billing.lateFee}
+                onChange={(lateFee) => setBill({ lateFee })}
+                className="w-full"
+              />
+            </Field>
+            <SelectField
+              id="practice-billing-method"
+              label="Payment method"
+              options={PRACTICE_METHODS}
+              value={billing.method}
+              onChange={(method) => setBill({ method })}
             />
           </div>
         </FormSection>

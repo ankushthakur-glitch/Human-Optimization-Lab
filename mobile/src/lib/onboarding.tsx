@@ -78,6 +78,15 @@ export type Membership = {
       the moment she changed from it (ISO). A receipt names the card in use
       on its day, so changing the card never rewrites the history. */
   pastCards?: { card: string; until: string }[]
+  /** The next billing day (a local day key) when she paid it early from
+      /membership-pay: it counts as charged, and the one after is next. */
+  paidAhead?: string
+  /** A change of cadence (/membership-pay): from the billing day `on` (a
+      local day key) she pays `billing`; before it, `was`. */
+  switched?: { on: string; was: Cadence }
+  /** The AI credit she added (/ai-credit), oldest first: when, how many
+      dollars, and the card. */
+  creditBuys?: { at: string; dollars: number; card: string }[]
 }
 
 /** Her plan, live from the moment she enrolls: nothing goes to her
@@ -169,6 +178,17 @@ export type Batch = { id: string; at: string; source: string; count: number; ope
     she turns it on (S-57, Q-11). */
 export type Channel = "push" | "sms" | "call" | "email" | "news"
 
+export type PlanSettings = {
+  /** Each reminder on or off, by id; one never set is on. */
+  remind?: Record<string, boolean>
+  /** Each reminder's time ("7:00 AM"), by id. */
+  at?: Record<string, string>
+  quiet?: boolean
+  coach?: boolean
+  weight?: "lb" | "kg"
+  length?: "in" | "cm"
+}
+
 export type Added = {
   id: string
   title: string
@@ -190,6 +210,9 @@ export type State = {
   step: Step
   profile?: Profile
   signedAs?: string
+  /** The welcome film on her first sign in (components/welcome-film): seen
+      or closed, so it opens only once. */
+  introSeen?: boolean
   /** The conversation's answers so far, and the turn the patient is on. */
   why?: Partial<Answers>
   whyAt?: number
@@ -199,8 +222,6 @@ export type State = {
   /** The one authorization: signed, or not now. */
   consent?: "signed" | "declined"
   consentAt?: string
-  /** How long the permission lasts before the patient is asked again. */
-  consentPeriod?: string
   /** Texts about her care (new results, reminders), one of the three
       optional boxes on the consent (texts, calls, email): what she chose,
       and when (ISO). Each box she ticks turns its channel on in
@@ -225,6 +246,9 @@ export type State = {
   notify?: Partial<Record<Channel, boolean>>
   /** Face ID asked for each time the app opens. */
   faceId?: boolean
+  /** A member's plan settings (app/plan-settings.tsx): reminders on or off
+      and their times, quiet hours, Ask Inlay's daily question, units. */
+  planSettings?: PlanSettings
   /** Notifications the patient has opened. */
   seen?: string[]
   devices?: string[]
@@ -337,10 +361,11 @@ export type State = {
       the way she chose and when. `night` is Sleep's "Log what actually
       happened": bed and up as minutes after 6 pm, times woken, CPAP minutes.
       `marks` is Exercise's per exercise answer: as written, part done,
-      changed or skipped. */
+      changed or skipped. `practice`, `when` and `felt` are Mind's "Log
+      your own practice": what she did, when, and whether it calmed her. */
   topicLog?: Record<
     string,
-    Partial<Record<string, { way: string; at: string; parts?: string[]; skipped?: string[]; marks?: Record<string, "written" | "part" | "changed" | "skipped">; minutes?: number; note?: string; night?: { bed: number; up: number; latency?: number; woke: number; cpap: number } }>>
+    Partial<Record<string, { way: string; at: string; parts?: string[]; skipped?: string[]; marks?: Record<string, "written" | "part" | "changed" | "skipped">; minutes?: number; note?: string; practice?: string; when?: "now" | "morning" | "yesterday"; felt?: "no" | "little" | "lot"; night?: { bed: number; up: number; latency?: number; woke: number; cpap: number } }>>
   >
   /** Apps and devices she connected from a topic's ways ("Connect your
       device", "Import from another app"), by name. */

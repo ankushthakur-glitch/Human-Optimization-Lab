@@ -17,7 +17,8 @@ import { useOnboarding } from "@/lib/onboarding"
    suggested questions costs nothing until she sends one (A-42).
 
    The 5 Oct 2026 call: the free record renews on its own and can't top up; a
-   member has a higher budget and can add more (TOP_UP). A chat in progress
+   member has a higher budget and can add dollars of credit (TOP_UPS,
+   /ai-credit). A chat in progress
    when the credit runs out is never cut off (6 Oct 2026, the grace
    proposal): once a week it finishes on GRACE tokens taken from next
    week, with no button and no word for it but one quiet line. A new chat
@@ -42,10 +43,19 @@ export const MEMBER_TOKENS = 480_000
     next week's budget, once a week. */
 export const GRACE = 12_000
 
-/** A member's top up: more tokens for this week only, shown as the share
-    of the member budget it adds. The price is a stand in until the client
-    sets it. */
-export const TOP_UP = { tokens: 120_000, share: 25, price: "$5" } as const
+/** A member's top ups (29 Oct call): dollars of AI credit, like
+    Anthropic's, never "10 more questions". The packs Inlay offers, as the
+    admin's Settings > AI credit top ups lists them ($50 is there but not
+    offered). Credit she adds stays until she uses it; the plan, trends and
+    analysis run on their own pool and never touch it. */
+export const TOP_UPS = [10, 20] as const
+
+/** What a dollar of credit buys. A stand in until the client maps tokens
+    to cost. */
+export const TOKENS_PER_DOLLAR = 24_000
+
+/** A pack as a share of a member's week: $10 is half a week. */
+export const topUpShare = (dollars: number) => Math.round(((dollars * TOKENS_PER_DOLLAR) / MEMBER_TOKENS) * 100)
 
 /** What one message spends: her words (about 4 characters a token), the
     record the answer reads, and the answer. A stand in for the model's own
@@ -61,7 +71,7 @@ export function tokensFor(text: string) {
     that spent any (for a chat in progress), the result batches already
     explained for free (kept from week to week), the grace tokens taken
     from next week, what last week took from this one, and the tokens a
-    member added. */
+    member added and has not used yet. */
 export type Allowance = {
   month: string
   tokens?: number
@@ -85,16 +95,19 @@ export function resetDate(now: Date = new Date()) {
     one average conversation's tokens. */
 const OLD_CONVERSATION = tokensFor("") * 3
 
-/** The allowance as this week has it: last week's tokens, its grace and
-    its top up drop, its grace is owed now, and the explained batches
-    stay. */
+/** The allowance as this week has it: last week's tokens and its grace
+    drop, its grace is owed now, what she added and didn't use carries on,
+    and the explained batches stay. */
 function current(a: Allowance | undefined, now: Date): Allowance {
   const week = weekKey(now)
   if (a?.month === week)
     return { ...a, tokens: a.tokens ?? (a.threads ?? []).length * OLD_CONVERSATION, threads: a.threads ?? [], batches: a.batches ?? [] }
   const last = new Date(now)
   last.setDate(last.getDate() - 7)
-  return { month: week, tokens: 0, threads: [], batches: a?.batches ?? [], owed: a?.month === weekKey(last) ? (a.borrowed ?? 0) : 0 }
+  // The week's own budget is spent first, then what she added. Only a
+  // member adds credit, so a week with any is a member's.
+  const bought = a?.bought ? Math.max(0, Math.min(a.bought, capOf(a, true) - (a.tokens ?? 0))) : 0
+  return { month: week, tokens: 0, threads: [], batches: a?.batches ?? [], owed: a?.month === weekKey(last) ? (a.borrowed ?? 0) : 0, ...(bought ? { bought } : {}) }
 }
 
 /** This week's budget: the plan's own, less last week's grace, plus this
@@ -211,7 +224,8 @@ const memberOf = (s: Snapshot) => membershipOn(s.membership) && !s.membership?.p
     `chat`, the chat's own id: at 100%, a chat that already spent credit
     this week is in progress, and finishes on the week's grace ("grace",
     which lets the message go). Check `costOf()` first: a message that
-    costs 0 never needs `spend`. `topUp()` adds TOP_UP for a member. */
+    costs 0 never needs `spend`. `topUp(dollars)` adds a member's pack
+    (TOP_UPS). */
 export function useAllowance() {
   const onboarding = useOnboarding()
   const ref = React.useRef<Writer>({ s: onboarding })
@@ -240,11 +254,11 @@ export function useAllowance() {
     if (!mine.batches.includes(batch)) write(w, markBatch(mine, batch))
   }, [])
 
-  const topUp = React.useCallback(() => {
+  const topUp = React.useCallback((dollars: number) => {
     const w = ref.current
     if (!memberOf(w.s)) return
     const mine = current(newest(w), new Date())
-    write(w, { ...mine, bought: (mine.bought ?? 0) + TOP_UP.tokens })
+    write(w, { ...mine, bought: (mine.bought ?? 0) + dollars * TOKENS_PER_DOLLAR })
   }, [])
 
   return { ...counts, member, spend: spendTokens, markBatch: markBatchUsed, topUp }

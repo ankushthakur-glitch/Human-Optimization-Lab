@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import {
+  IconBilling,
   IconCalendar,
   IconChartColumn,
   IconChat,
@@ -53,6 +54,12 @@ const PROVIDER_NAV: NavItem[] = [
     label: "Reports",
     icon: IconChartColumn,
     href: `${BASE}/reports`,
+  },
+  {
+    id: "billing",
+    label: "Billing",
+    icon: IconBilling,
+    href: `${BASE}/billing`,
   },
   {
     id: "settings",

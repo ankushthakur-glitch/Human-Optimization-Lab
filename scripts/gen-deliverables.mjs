@@ -76,9 +76,9 @@ const PAGES = {
   "/screens/admin/practices": [ADMIN, "Practices", "Practice list"],
   "/screens/admin/practices/[id]": [ADMIN, "Practices", "Practice details", { url: "/screens/admin/practices/593892" }],
   "/screens/admin/practices/[id]/providers/[providerId]": [ADMIN, "Practices", "Provider adoption", { url: "/screens/admin/practices/593892/providers/PR4775" }],
-  "/screens/admin/clinical": [ADMIN, "Clinical Content", "Clinical content home"],
-  // Each clinical page is [group]/[page]; CLINICAL below lists them.
-  "/screens/admin/clinical/[group]/[page]": [ADMIN, "Clinical Content", "", { skip: true }],
+  "/screens/admin/billing": [ADMIN, "Billing", "Invoices"],
+  "/screens/admin/billing/invoices/[id]": [ADMIN, "Billing", "Invoice details", { url: "/screens/admin/billing/invoices/INV-202609-001" }],
+  "/screens/admin/reports": [ADMIN, "Reports", "Reports (channel revenue and margin, vendor performance, AI usage and cost)"],
   "/screens/admin/settings": [ADMIN, "Settings", "Settings home"],
   // Each settings page is [group]/[page]; SETTINGS below lists them.
   "/screens/admin/settings/[group]/[page]": [ADMIN, "Settings", "", { skip: true }],
@@ -86,8 +86,7 @@ const PAGES = {
 
   // The clinic manager's practice portal.
   "/screens/practice": [MANAGER, "", "", { skip: true }],
-  "/screens/practice/dashboard": [MANAGER, "Dashboard", "Practice dashboard (enrollment, activation, encounters, outcomes, alerts, value)"],
-  ...variations(MANAGER, "/screens/practice/dashboard", ["operations", "activity", "growth", "team", "locations"]),
+  "/screens/practice/dashboard": [MANAGER, "Dashboard", "Practice dashboard (optimization members, conversion, by provider)"],
   "/screens/practice/users": [MANAGER, "Users", "Users: providers tab (list, bulk add)"],
   "/screens/practice/users/providers/new": [MANAGER, "Users", "Add provider"],
   "/screens/practice/users/providers/[id]": [MANAGER, "Users", "Provider profile", { url: "/screens/practice/users/providers/PR3132" }],
@@ -102,30 +101,25 @@ const PAGES = {
   "/screens/practice/locations/new": [MANAGER, "Locations", "Add location"],
   "/screens/practice/locations/[id]": [MANAGER, "Locations", "Location details", { url: "/screens/practice/locations/LOC1001" }],
   "/screens/practice/locations/[id]/edit": [MANAGER, "Locations", "Edit location", { url: "/screens/practice/locations/LOC1001/edit" }],
-  "/screens/practice/reports": [MANAGER, "Reports", "Reports (enrollment, encounters, outcomes, alerts, value and renewal, membership)"],
+  "/screens/practice/reports": [MANAGER, "Reports", "Reports (10 Executive Health KPIs, employer, sex and age filters)"],
+  "/screens/practice/billing": [MANAGER, "Billing", "Orders"],
+  "/screens/patients/billing": [PROVIDER, "Billing", "Orders (view only)"],
+  "/screens/patients/billing/invoices/[id]": [PROVIDER, "Billing", "Invoice details", { url: "/screens/patients/billing/invoices/INV-202609-002" }],
+  "/screens/practice/billing/invoices/[id]": [MANAGER, "Billing", "Invoice details", { url: "/screens/practice/billing/invoices/INV-202609-002" }],
   "/screens/practice/settings": [MANAGER, "Settings", "Settings home"],
   "/screens/practice/settings/[group]/[page]": [MANAGER, "Settings", "", { skip: true }],
   // A provider's portal, reached from the provider invite.
-  "/screens/patients/dashboard": [PROVIDER, "Dashboard", "Dashboard: overview and worklist (abnormal results)"],
-  ...variations(PROVIDER, "/screens/patients/dashboard", ["queue", "activity", "practice", "clinic day", "panel", "briefing", "workspace"]),
+  "/screens/patients/dashboard": [PROVIDER, "Dashboard", "Dashboard: panel (members, conversion, schedule, needs you, tasks, worklist)"],
   "/screens/patients": [PROVIDER, "Patients", "Patients (list, status tabs, last sync)"],
   "/screens/patients/tasks": [PROVIDER, "Tasks", "Tasks (all and my tasks, task details)"],
   "/screens/patients/communication": [PROVIDER, "Communication", "Provider chats"],
-  "/screens/patients/reports": [PROVIDER, "Reports", "Reports (report types, period, filters, export)"],
+  "/screens/patients/reports": [PROVIDER, "Reports", "Reports (10 Executive Health KPIs, employer, sex and age filters)"],
   "/screens/patients/schedule": [PROVIDER, "Schedule", "Schedule (calendar and list, appointment details)"],
   "/screens/patients/settings": [PROVIDER, "Settings", "Settings home"],
   "/screens/patients/settings/[group]/[page]": [PROVIDER, "Settings", "", { skip: true }],
   "/screens/patients/new": [PROVIDER, "Patients", "Add patient and send invite"],
   "/screens/patients/[id]": [PROVIDER, "Patient Chart", "Dashboard: free member", { url: "/screens/patients/P10240" }],
   "/screens/patients/[id]/edit": [PROVIDER, "Patients", "Edit patient", { url: "/screens/patients/P10240/edit" }],
-}
-
-/** A dashboard's design variations (v1, v2, ...), offered for review
-    beside the dashboard until one is picked. */
-function variations(portal, base, names) {
-  return Object.fromEntries(
-    names.map((name, i) => [`${base}/v${i + 1}`, [portal, "Dashboard", `Dashboard variation ${i + 1}: ${name}`]]),
-  )
 }
 
 /** The shared sign-in screens as one portal's user sees them (?as=key). */
@@ -184,7 +178,7 @@ const EXTRA = [
   [PROVIDER, "Patient Chart", "Vitals: table view", "/screens/patients/P10240?section=vitals&tab=table", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Vitals: trend view", "/screens/patients/P10318?section=vitals&tab=trends", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Lab results: reports", "/screens/patients/P10240?section=labs", "/screens/patients/[id]"],
-  [PROVIDER, "Patient Chart", "Lab results: lab orders", "/screens/patients/P10240?section=labs&tab=orders", "/screens/patients/[id]"],
+  [PROVIDER, "Patient Chart", "Lab results: lab orders (order a test, priced)", "/screens/patients/P10240?section=labs&tab=orders", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Family history", "/screens/patients/P10240?section=family", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Sticky notes", "/screens/patients/P10240?section=notes", "/screens/patients/[id]"],
   [PROVIDER, "Patient Chart", "Profile", "/screens/patients/P10240?section=profile", "/screens/patients/[id]"],
@@ -207,7 +201,6 @@ const EXTRA = [
     ["Urgent action needed", "urgent"],
     ["Medication changes", "medications"],
     ["Overdue orders", "orders"],
-    ["Care gaps", "care-gaps"],
     ["Reviews due", "reviews"],
     ["All types", "all"],
   ].map(([sub, tab]) => [PROVIDER, "Dashboard", sub, `/screens/patients/dashboard?tab=${tab}`, "/screens/patients/dashboard"]),
@@ -215,29 +208,27 @@ const EXTRA = [
   [PROVIDER, "Patients", "Bulk add patients", "/screens/patients?import=1", "/screens/patients"],
   [PROVIDER, "Tasks", "Add task", "/screens/patients/tasks?new=1", "/screens/patients/tasks"],
 
-  ...[
-    ["Catalog: biomarker definitions", "catalog/biomarkers"],
-    ["Catalog: range management", "catalog/ranges"],
-    ["Catalog: sex and age rules", "catalog/sex-age"],
-    ["Protocols and SOPs", "protocols/library"],
-    ["Rules: alert rules", "rules/alerts"],
-    ["Rules: score weights", "rules/weights"],
-    ["Forecast thresholds", "forecast/thresholds"],
-    ["Eval: test-case library", "eval/cases"],
-    ["Eval: regression gate", "eval/gate"],
-    ["Eval: version log", "eval/log"],
-    ["Evidence: sources and re-review", "evidence/sources"],
-  ].map(([sub, path]) => [ADMIN, "Clinical Content", sub, `/screens/admin/clinical/${path}`, "/screens/admin/clinical"]),
+  [PROVIDER, "Billing", "Invoices and statements", "/screens/patients/billing?tab=invoices", "/screens/patients/billing"],
+  [MANAGER, "Billing", "Invoices and statements", "/screens/practice/billing?tab=invoices", "/screens/practice/billing"],
+  [ADMIN, "Billing", "Vendor payouts", "/screens/admin/billing?tab=payouts", "/screens/admin/billing"],
+  [ADMIN, "Billing", "Profit and loss", "/screens/admin/billing?tab=pnl", "/screens/admin/billing"],
 
   ...settingsPages(ADMIN, "/screens/admin/settings", [
     ["Roles and permissions", "roles/permissions"],
     ["Optimization plans: test intervals", "plans/intervals"],
     ["Optimization plans: limits", "plans/limits"],
     ["Pricing: membership", "pricing/membership"],
-    ["Pricing: longevity tests", "pricing/longevity"],
+    ["Pricing: AI credit top ups", "pricing/top-ups"],
+    ["Billing: catalogue and pricing", "billing/catalogue"],
+    ["Billing: patient payments", "billing/patients"],
+    ["Billing: cancellations", "billing/cancellations"],
     ["AI credit", "ai/credit"],
+    ["Clinical catalog: biomarkers", "clinical/biomarkers"],
+    ["Clinical catalog: ranges", "clinical/ranges"],
+    ["Clinical catalog: sex and age rules", "clinical/sex-age"],
+    ["Alert rules", "rules/alerts"],
+    ["Test cases", "rules/cases"],
     ["Partners", "partners/list"],
-    ["Consent documents", "consent/documents"],
     ["Audit log", "security/audit-log"],
   ]),
   ...settingsPages(MANAGER, "/screens/practice/settings", [
@@ -258,9 +249,10 @@ const EXTRA = [
     ["Import history: patients sheet", "security/import-history/IM20433"],
   ]),
 
-  // A patient has no web invitation: they activate on the mobile app.
-  // The app's signed-out screens, served from public/app. Set password and
-  // home sit behind the app's session, so they have no link of their own.
+  // A patient's invitation email sends them to download the app and
+  // activate there. The app's signed-out screens, served from public/app.
+  [PATIENT, AUTH, "Invitation email with app download (desktop)", "/screens/login/invite-email?as=patient", -1],
+  [PATIENT, AUTH, "Invitation email with app download (mobile)", "/screens/login/invite-email/mobile?as=patient", -1],
   [PATIENT, AUTH, "Activate account (mobile app)", "/app/activate", -1],
   [PATIENT, AUTH, "Set password (mobile app)", "/app/set-password", -1],
   [PATIENT, AUTH, "Sign in (mobile app)", "/app/sign-in", -1],
@@ -315,12 +307,13 @@ function patientApp() {
     [RECORD, "Visit details", at("/visit/annual")],
     [RECORD, "Outside visit (urgent care)", at("/visit/urgent")],
     [RECORD, "Record item details (procedure)", at(`/record/item?d=${encodeURIComponent(JSON.stringify(SAMPLE_ITEM))}`)],
-    [RECORD, "Add to your record (medicine form)", at("/record/add?kind=medicines")],
+    [RECORD, "Add to your record (supplement form)", at("/record/add?kind=supplements")],
     [RECORD, "Tell us something", at("/tell-us")],
     [CONNECT, "Connect your records", at("/connect")],
     [CONNECT, "Connect your records: texts and signature", at("/connect-texts")],
     [CONNECT, "Record building after connecting", at("/building")],
     [AI, "Ask Inlay (optimization member)", at("/assistant?demo=paid")],
+    [AI, "Chat history (grouped by category)", at("/chat-history")],
     [UPGRADE, "Plan tab: what an optimization plan adds (free patient)", at("/plan")],
     [UPGRADE, "Step 1: your nine opportunities", at("/opportunities")],
     [UPGRADE, "Opportunity details (sleep and apnoea)", at("/opportunity/sleep")],
@@ -364,8 +357,10 @@ function patientApp() {
     [CARE, "Book a time", at("/catalog/book/blood-panel")],
     [PROFILE, "Profile", at("/profile")],
     [PROFILE, "Access (connected records)", at("/access")],
-    [PROFILE, "Renew sharing", at("/access?sheet=renew")],
     [PROFILE, "Membership and billing", at("/membership")],
+    [PROFILE, "Pay your membership (monthly or yearly)", at("/membership-pay")],
+    [PROFILE, "Add AI credit (top up)", at("/ai-credit")],
+    [PROFILE, "Plan settings (reminders, notifications, units)", at("/plan-settings")],
   ].map(([feature, sub, url]) => [PATIENT, feature, sub, url])
 }
 
