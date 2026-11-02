@@ -217,8 +217,19 @@ export const CARDIOVASCULAR: Report = {
   ],
   filters: [
     ...POPULATION,
-    { id: "bpTarget", label: "Blood pressure target", all: "Under 130/80", options: choices(["Under 140/90"]) },
-    { id: "ldlCut", label: "Elevated lipids", all: "LDL 130 or non-HDL 160 and over", options: choices(["LDL 160 or non-HDL 190 and over"]) },
+    {
+      id: "bpTarget",
+      label: "Blood pressure target",
+      all: "BP target 130/80",
+      options: [{ label: "BP target 140/90", value: "140/90" }],
+    },
+    /* Elevated from LDL 130 or non-HDL 160, or the stricter 160 and 190. */
+    {
+      id: "ldlCut",
+      label: "Elevated lipids",
+      all: "LDL 130 or non-HDL 160",
+      options: [{ label: "LDL 160 or non-HDL 190", value: "160" }],
+    },
   ],
   counts: (d) => {
     const risk = lean(d, "risk")
@@ -226,8 +237,8 @@ export const CARDIOVASCULAR: Report = {
     const patients = d.size(30, 70)
     const htn = tilt(patients, d.part(patients, 0.22, 0.4), risk)
     const bpTreated = tilt(htn, d.part(htn, 0.65, 0.88), care)
-    const loose = d.filters.bpTarget === "Under 140/90"
-    const high = d.filters.ldlCut === "LDL 160 or non-HDL 190 and over"
+    const loose = d.filters.bpTarget === "140/90"
+    const high = d.filters.ldlCut === "160"
     const ldl = tilt(patients, d.part(patients, high ? 0.08 : 0.25, high ? 0.16 : 0.45), risk)
     return narrowed(
       {
@@ -263,7 +274,7 @@ export const METABOLIC: Report = {
   ],
   filters: [
     ...POPULATION,
-    { id: "a1cTarget", label: "A1c target", all: "Under 7%", options: choices(["Under 8%"]) },
+    { id: "a1cTarget", label: "A1c target", all: "A1c target under 7%", options: [{ label: "A1c target under 8%", value: "8" }] },
   ],
   counts: (d) => {
     const risk = lean(d, "risk")
@@ -271,7 +282,7 @@ export const METABOLIC: Report = {
     const patients = d.size(30, 70)
     const diabetes = tilt(patients, d.part(patients, 0.07, 0.14), risk)
     const prediabetes = tilt(patients - diabetes, d.part(patients - diabetes, 0.18, 0.32), risk)
-    const loose = d.filters.a1cTarget === "Under 8%"
+    const loose = d.filters.a1cTarget === "8"
     const baseline = 7.2 + d.rand() * 1.2 + (risk - 1) * 0.3
     const latest = baseline - (0.1 + d.rand() * 0.6) * care
     return narrowed(
@@ -319,7 +330,7 @@ export const HEALTHY_WEIGHT: Report = {
   ],
   filters: [
     ...POPULATION,
-    { id: "loss", label: "Weight loss", all: "5% or more", options: choices(["10% or more"]) },
+    { id: "loss", label: "Weight loss", all: "Weight loss 5% or more", options: [{ label: "Weight loss 10% or more", value: "10" }] },
   ],
   counts: (d) => {
     const risk = lean(d, "risk")
@@ -333,7 +344,7 @@ export const HEALTHY_WEIGHT: Report = {
     const class1 = tilt(patients - class3 - class2, d.part(patients, 0.14, 0.2), heavier)
     const over = Math.min(patients - under - class1 - class2 - class3, tilt(patients, d.part(patients, 0.32, 0.4), Math.sqrt(heavier)))
     const above = over + class1 + class2 + class3
-    const big = d.filters.loss === "10% or more"
+    const big = d.filters.loss === "10"
     return narrowed(
       {
         patients, under, over, class1, class2, class3, above,
@@ -380,7 +391,10 @@ export const CARDIOMETABOLIC_SCORE: Report = {
       id: "band",
       label: "Score band",
       all: "All score bands",
-      options: (Object.keys(BANDS) as Band[]).map((b) => ({ label: b, value: b })),
+      options: (Object.keys(BANDS) as Band[]).map((b) => ({
+        label: `${b}, ${BANDS[b][0] ? `${BANDS[b][0]} to ${BANDS[b][1]}` : `under ${BANDS[b][1] + 1}`}`,
+        value: b,
+      })),
     },
   ],
   counts: (d) => {
@@ -428,7 +442,8 @@ const CONDITIONS = [
   { id: "prediabetes", name: "Prediabetes", share: 0.09 },
   { id: "arrhythmia", name: "Arrhythmia", share: 0.02 },
   { id: "apnea", name: "Sleep apnea", share: 0.04 },
-  { id: "cancer", name: "Cancer screening abnormality", share: 0.015 },
+  /* A significant cancer screening abnormality. */
+  { id: "cancer", name: "Abnormal cancer screen", share: 0.015 },
 ]
 
 export const HIGH_RISK_DETECTION: Report = {
@@ -450,8 +465,14 @@ export const HIGH_RISK_DETECTION: Report = {
     {
       id: "source",
       label: "Found by",
-      all: "Any source",
-      options: choices(["Annual exam", "Labs", "Imaging", "Questionnaire", "Wearable"]),
+      all: "Found by any source",
+      options: [
+        { label: "Found at annual exam", value: "exam" },
+        { label: "Found in labs", value: "labs" },
+        { label: "Found on imaging", value: "imaging" },
+        { label: "Found by questionnaire", value: "questionnaire" },
+        { label: "Found by wearable", value: "wearable" },
+      ],
     },
   ],
   counts: (d) => {
@@ -495,7 +516,15 @@ export const BEHAVIORAL_HEALTH: Report = {
   ],
   filters: [
     ...POPULATION,
-    { id: "tool", label: "Screening", all: "PHQ-9 and GAD-7", options: choices(["PHQ-9", "GAD-7"]) },
+    {
+      id: "tool",
+      label: "Screening",
+      all: "PHQ-9 and GAD-7",
+      options: [
+        { label: "PHQ-9 only", value: "PHQ-9" },
+        { label: "GAD-7 only", value: "GAD-7" },
+      ],
+    },
   ],
   counts: (d) => {
     const mood = lean(d, "mood")
@@ -524,8 +553,6 @@ export const BEHAVIORAL_HEALTH: Report = {
 /*  8. Access and continuity                                                   */
 /* -------------------------------------------------------------------------- */
 
-const ENCOUNTERS = ["MyChart", "Virtual visit", "In person visit"] as const
-
 export const ACCESS_CONTINUITY: Report = {
   id: "access-continuity",
   name: "Access and continuity of care",
@@ -547,7 +574,16 @@ export const ACCESS_CONTINUITY: Report = {
   ],
   filters: [
     ...POPULATION,
-    { id: "encounter", label: "Encounter type", all: "All encounter types", options: choices(ENCOUNTERS) },
+    {
+      id: "encounter",
+      label: "Encounter type",
+      all: "All encounter types",
+      options: [
+        { label: "MyChart only", value: "MyChart" },
+        { label: "Virtual visits only", value: "Virtual visit" },
+        { label: "In person visits only", value: "In person visit" },
+      ],
+    },
   ],
   counts: (d) => {
     const care = lean(d, "care")
@@ -555,7 +591,7 @@ export const ACCESS_CONTINUITY: Report = {
     const need = care * Math.sqrt(lean(d, "risk"))
     const patients = d.size(30, 70)
     const pick = d.filters.encounter
-    const keep = (type: (typeof ENCOUNTERS)[number], v: number) => (!pick || pick === type ? Math.round(v * need) : 0)
+    const keep = (type: string, v: number) => (!pick || pick === type ? Math.round(v * need) : 0)
     return narrowed(
       {
         patients,
@@ -607,7 +643,12 @@ export const POPULATION_IMPROVEMENT: Report = {
   filters: [
     ...POPULATION,
     { id: "factor", label: "Risk factor", all: "All key risk factors", options: choices(RISK_FACTORS) },
-    { id: "compare", label: "Compared with", all: "Same time last year", options: choices(["Enrolment"]) },
+    {
+      id: "compare",
+      label: "Compared with",
+      all: "Compared with last year",
+      options: [{ label: "Compared with enrolment", value: "Enrolment" }],
+    },
   ],
   counts: (d) => {
     const care = lean(d, "care")
@@ -654,7 +695,12 @@ export const OPTIMIZATION_SCORE: Report = {
   ],
   filters: [
     ...POPULATION,
-    { id: "tenure", label: "Time on plan", all: "Any time on plan", options: choices(Object.keys(TENURE)) },
+    {
+      id: "tenure",
+      label: "Time on plan",
+      all: "Any time on plan",
+      options: Object.keys(TENURE).map((t) => ({ label: `On plan ${t.toLowerCase()}`, value: t })),
+    },
   ],
   counts: (d) => {
     const care = lean(d, "care")

@@ -299,7 +299,7 @@ export function ReportsView({
               </Button>
             }
           />
-          <PopoverContent align="end" className="w-64">
+          <PopoverContent align="end" className="w-72">
             <div className="flex flex-col gap-3">
               {!list && !own && (
                 <ToolbarSelect
