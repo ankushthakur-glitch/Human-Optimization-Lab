@@ -86,7 +86,7 @@ export default function AddRecordScreen() {
       </Card>
       {warning && (
         <View accessibilityLiveRegion="polite">
-          <Banner hue="amber" icon={<Sparkle size={16} color={HUE.amber.ink} weight="fill" />} title={warning.title} meta={warning.why} />
+          <Banner hue="red" icon={<Sparkle size={16} color={HUE.red.ink} weight="fill" />} title={warning.title} meta={warning.why} />
         </View>
       )}
     </FlowScreen>

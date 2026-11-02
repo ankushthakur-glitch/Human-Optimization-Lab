@@ -13,10 +13,8 @@ import {
 } from "@/components/practice/practice-data"
 import { ProviderShell } from "@/components/provider/provider-shell"
 import {
-  EMPLOYER_UTILISATION,
   PATIENT_TYPES,
   PERIOD_KINDS,
-  REPORTS,
   type AnyReport,
   type Counts,
   type Format,
@@ -36,6 +34,7 @@ import {
   periodsFor,
   sumCounts,
 } from "@/components/provider/reports/reports-data"
+import { KPI_REPORTS } from "@/components/provider/reports/kpi-reports"
 import { StatusDot } from "@/components/settings/settings-kit"
 import { employers } from "@/components/settings/settings-data"
 import { TablePager, usePaged } from "@/components/table-pager"
@@ -138,28 +137,9 @@ export function ToolbarSelect({
 /* -------------------------------------------------------------------------- */
 
 export function ReportsScreen() {
-  const { items } = employers.use()
-  /* The employer report's rows are the practice's active employers. */
-  const reports = React.useMemo(
-    () =>
-      REPORTS.map((r) =>
-        r === EMPLOYER_UTILISATION
-          ? {
-              ...EMPLOYER_UTILISATION,
-              rows: {
-                header: "Employer",
-                items: items
-                  .filter((e) => e.status === "Active")
-                  .map((e) => ({ id: e.id, name: e.name })),
-              },
-            }
-          : r
-      ),
-    [items]
-  )
   return (
     <ProviderShell active="reports">
-      <ReportsView reports={reports} />
+      <ReportsView reports={KPI_REPORTS} />
     </ProviderShell>
   )
 }
@@ -651,7 +631,14 @@ function ReportTable({
   const sorting = useTableSort(rows, {
     provider: (r) => r.name,
     ...Object.fromEntries(
-      report.columns.map((c) => [c.id, (r: Row) => c.value(r.counts)])
+      report.columns.map((c) => [
+        c.id,
+        /* "None" sorts last, as an empty value. */
+        (r: Row) => {
+          const v = c.value(r.counts)
+          return Number.isNaN(v) ? null : v
+        },
+      ])
     ),
   })
   const paged = usePaged(sorting.rows, 25)

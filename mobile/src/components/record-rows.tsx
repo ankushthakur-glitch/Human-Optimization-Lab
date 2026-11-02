@@ -360,7 +360,7 @@ export function AddToRecordSheet({ kind: fixed, kinds, onClose }: { kind?: AddKi
           </Card>
           {warning && (
             <View accessibilityLiveRegion="polite">
-              <Banner hue="amber" icon={<Sparkle size={16} color={HUE.amber.ink} weight="fill" />} title={warning.title} meta={warning.why} />
+              <Banner hue="red" icon={<Sparkle size={16} color={HUE.red.ink} weight="fill" />} title={warning.title} meta={warning.why} />
             </View>
           )}
           <TextField label="How do you take it?" value={taken} onChangeText={setTaken} placeholder="Dose, how often, time of day" autoFocus />
