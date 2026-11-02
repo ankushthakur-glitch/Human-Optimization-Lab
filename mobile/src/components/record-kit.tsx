@@ -500,8 +500,6 @@ const keep = (text: string) =>
     the patient turning sharing off herself; it shows on every tab. */
 export type BannerState =
   | { kind: "sharing-off"; since: string }
-  | { kind: "sharing-ended"; on: string }
-  | { kind: "sharing-ends"; days: number; on: string }
   | { kind: "arriving"; got?: number; of?: number }
   | { kind: "not-found"; place: string }
   | { kind: "new-results"; count: number; from?: string; on?: string; batch?: string }
@@ -518,8 +516,6 @@ export type BannerFacts = {
   /** Results that arrived and have not been opened yet; `batch` is the
       batch's id, so the banner opens that batch. */
   newResults?: { count: number; from?: string; on?: DateLike; batch?: string } | null
-  /** When the patient's permission to pull records ends. */
-  sharingEnds?: DateLike | null
   /** Places answered so far while the record is still being built. */
   arriving?: { got: number; of: number } | null
   /** A place where no records were found. */
@@ -528,12 +524,13 @@ export type BannerFacts = {
   today?: Date
 }
 
-/** How long the timed states show: "checked" for seven days (F-13), and
-    the renewal warning from 30 days before sharing ends (Q-12). */
-export const BANNER_DAYS = { checked: 7, sharingWarn: 30 } as const
+/** How long the timed states show: "checked" for seven days (F-13). The
+    permission to share records no longer runs out (2 Nov 2026, user), so
+    there is no renewal warning or ended state. */
+export const BANNER_DAYS = { checked: 7 } as const
 
-/** The one banner to show, highest first: sharing turned off; sharing
-    ended, or ends within 30 days; records still arriving; a place with no
+/** The one banner to show, highest first: sharing turned off; records
+    still arriving; a place with no
     records; new results; a member's new plan version with the doctor; the
     doctor checking the new record; then "checked your record on Oct 3" for
     seven days, after which nothing shows. A null means no banner. */
@@ -542,12 +539,6 @@ export function pickBanner(f: BannerFacts): BannerState | null {
   if (f.sharingOff) {
     const off = toDay(f.sharingOff)
     return { kind: "sharing-off", since: off ? shortDay(off, today) : "" }
-  }
-  const ends = toDay(f.sharingEnds)
-  if (ends) {
-    const days = daysFrom(today, ends)
-    if (days < 0) return { kind: "sharing-ended", on: shortDay(ends, today) }
-    if (days <= BANNER_DAYS.sharingWarn) return { kind: "sharing-ends", days, on: shortDay(ends, today) }
   }
   if (f.arriving && f.arriving.got < f.arriving.of) return { kind: "arriving", got: f.arriving.got, of: f.arriving.of }
   if (f.notFound) return { kind: "not-found", place: f.notFound }
@@ -585,17 +576,6 @@ function bannerWords(s: BannerState): BannerCopy {
         title: s.since ? `You turned off sharing on ${s.since}` : "You turned off sharing",
         meta: "Your record stopped updating",
         action: "Turn on",
-        tappable: true,
-      }
-    case "sharing-ended":
-      return { hue: "amber", icon: "shield", title: `Sharing your records ended on ${s.on}`, meta: "Your record stopped updating", action: "Renew", tappable: true }
-    case "sharing-ends":
-      return {
-        hue: "amber",
-        icon: "shield",
-        title: s.days === 0 ? "Sharing your records ends today" : s.days === 1 ? "Sharing your records ends tomorrow" : `Sharing your records ends in ${s.days}\u00A0days`,
-        meta: s.days > 1 ? `On ${s.on}` : undefined,
-        action: "Renew",
         tappable: true,
       }
     case "arriving":

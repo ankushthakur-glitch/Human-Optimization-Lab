@@ -717,26 +717,6 @@ export function watchList(markers: Biomarker[] = BIOMARKERS, opts: { improve?: s
     )
 }
 
-/** The tiles the free home shows: the first four of the watch list. With
-    `goodNews`, the last tile goes to the best improving marker when the
-    four would otherwise all be concerns (a proposal, off by default; the
-    catalog's F-26 order is the rule). */
-export function homeTiles(list: Trend[], opts: { max?: number; goodNews?: boolean } = {}) {
-  const max = opts.max ?? 4
-  const tiles = list.slice(0, max)
-  if (opts.goodNews && list.length > max && !tiles.some((t) => t.meaning === "improving")) {
-    const good = list.find((t) => t.meaning === "improving")
-    if (good) tiles[max - 1] = good
-  }
-  return {
-    tiles,
-    /** Watched markers not on the home. */
-    more: list.length - tiles.length,
-    /** "See all 8 to watch", only when some are not shown. */
-    seeAll: list.length > tiles.length ? `See all ${list.length} to watch` : undefined,
-  }
-}
-
 export type TrendCounts = {
   /** Every marker in the record. */
   total: number

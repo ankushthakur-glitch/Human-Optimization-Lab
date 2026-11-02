@@ -1,4 +1,4 @@
-import { Redirect, router, useLocalSearchParams } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import * as React from "react"
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -17,8 +17,8 @@ import {
 } from "@/components/assistant-thread"
 import { AttachSheet, MAX_ATTACHMENTS, type Attachment } from "@/components/attach-sheet"
 import { ChatBar, MyBubble, Options, TheirBubble, TypingBubble, bubbleText } from "@/components/chat"
-import { CategoryPicker } from "@/components/chat-categories"
-import { ChatHistory, type ChatGroup } from "@/components/chat-history"
+import { CategoryPicker, NewCategory, categoryNamed } from "@/components/chat-categories"
+import { ChatHistory, chatGroups, type ChatGroup } from "@/components/chat-history"
 import { useDragBack } from "@/components/drag-back"
 import { OUTLOOK_ASK, OutlookAnswer } from "@/components/outlook-answer"
 import { DarkStatusBar } from "@/components/error-state"
@@ -224,12 +224,6 @@ const CHOOSERS = new Set<Msg["kind"]>(["ask", "results", "medicines", "urgent"])
 const STARTER_CATEGORIES = new Set<ChatTopic>(["result", "medicine", "visit", "plan"])
 
 export default function AssistantScreen() {
-  // The free patient has no AI chat (28 Oct 2026): any link here goes home.
-  if (useExperience().experience === "free") return <Redirect href="/" />
-  return <AssistantChat />
-}
-
-function AssistantChat() {
   // It rises from the bottom; the left edge swipe still drags it away.
   useDragBack("slide_from_bottom")
   const { bottom } = useSafeAreaInsets()
@@ -247,6 +241,11 @@ function AssistantChat() {
   const trendFor = (id?: string): Trend | undefined => {
     const b = id ? markers.find((m) => m.id === id) : undefined
     return b ? classify(b) : undefined
+  }
+  /** An answer's charts, less a result the chat's own card already draws. */
+  const chartsOf = (a: Answer) => {
+    const shown = new Set(thread.messages.flatMap((m) => (m.kind === "context" ? [m.marker] : [])))
+    return (a.charts ?? []).filter((id) => !shown.has(id)).flatMap((id) => trendFor(id) ?? [])
   }
   const topics = () => topicsFor(planLive).map((t) => TOPICS[t])
   /** After an answer, the next tap: anything else at all. */
@@ -437,6 +436,26 @@ function AssistantChat() {
     follow.current = Date.now()
     setThread(fresh(categoryOpening(g), undefined, g.topic))
   }
+
+  /** The sheet that names a new category. */
+  const [naming, setNaming] = React.useState(false)
+  /** A question typed before a category is picked: the chat starts under
+      General health questions and the question goes once it has. */
+  const pending = React.useRef(false)
+  function askBeforeChoosing() {
+    if (!draft.trim()) return
+    const general = chatGroups(onboarding.chatCategories).find((g) => g.topic === "other")
+    if (!general) return
+    pending.current = true
+    startIn(general)
+  }
+  React.useEffect(() => {
+    if (!pending.current || choosing) return
+    pending.current = false
+    send()
+    // Once the chosen category's chat has started.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [choosing])
 
   /** A category she named: kept, then a chat starts in it. */
   function createCategory(categoryName: string): ChatGroup {
@@ -863,6 +882,7 @@ function AssistantChat() {
             onWhy={m.answer.facts?.length ? () => setFacts(m.answer.facts) : undefined}
             followOn={m.followOn ? { key: `${thread.id}:${m.scope}`, eligible: true } : undefined}
             footer={m.first}
+            charts={chartsOf(m.answer)}
           />
         )
       case "outlook":
@@ -911,10 +931,7 @@ function AssistantChat() {
       <DarkStatusBar />
       <PageHeader title="Ask Inlay" action={{ label: "History", onPress: () => setMenu(true) }} />
 
-      {choosing ? (
-        <CategoryPicker chats={onboarding.chats ?? []} categories={onboarding.chatCategories} planLive={planLive} onStart={startIn} onCreate={createCategory} />
-      ) : (
-        <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={styles.fill}>
           <ScrollView
             ref={scroll}
@@ -927,6 +944,9 @@ function AssistantChat() {
             <View style={styles.top}>
               <Text style={styles.day}>{relativeDay(thread.startedAt)}</Text>
             </View>
+            {choosing && (
+              <CategoryPicker name={name} chats={onboarding.chats ?? []} categories={onboarding.chatCategories} planLive={planLive} onStart={startIn} onNew={() => setNaming(true)} />
+            )}
             {thread.messages.map((m) => (
               <View key={m.id} onLayout={(e) => tops.current.set(m.id, e.nativeEvent.layout.y)}>
                 {render(m)}
@@ -942,7 +962,7 @@ function AssistantChat() {
                 notice={creditNotice && creditNotice.words !== hiddenNotice && !limitShown ? { ...creditNotice, onClose: () => setHiddenNotice(creditNotice.words) } : undefined}
                 value={draft}
                 onChange={setDraft}
-                onSend={send}
+                onSend={choosing ? askBeforeChoosing : send}
                 canSend={!thinking}
                 placeholder={awaiting ? "Describe what's bothering you" : "Ask anything"}
                 bottom={0}
@@ -957,8 +977,16 @@ function AssistantChat() {
           )}
           {ended && <View style={[styles.endedFoot, { height: Math.max(bottom, space.gutter) }]} />}
         </KeyboardAvoidingView>
-      )}
 
+      {naming && (
+        <NewCategory
+          onClose={() => setNaming(false)}
+          onCreate={(n) => {
+            setNaming(false)
+            startIn(categoryNamed(n, onboarding.chatCategories, createCategory))
+          }}
+        />
+      )}
       {attaching && (
         <AttachSheet
           room={MAX_ATTACHMENTS - files.length}

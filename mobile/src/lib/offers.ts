@@ -459,7 +459,7 @@ export function changeCourse(b: Biomarker, s: Snapshot = {}) {
         "Meals and exercise built for you",
         "Weekly progress, with adjustments",
         `A forecast of where your ${name} ${b.plural ? "are" : "is"} heading`,
-        "Ask Inlay about your own record",
+        "More AI credit for Ask Inlay",
       ],
       note: "This page stays free.",
       action: "See plans",

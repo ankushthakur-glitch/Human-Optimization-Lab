@@ -13,9 +13,9 @@ export default function ConsentScreen() {
   const onboarding = useOnboarding()
   return (
     <ConsentRecords
-      onNext={async (period) => {
+      onNext={async () => {
         await onboarding.save({ step: "connect" })
-        router.push({ pathname: "/onboarding/connect-records", params: { period } })
+        router.push("/onboarding/connect-records")
       }}
     />
   )

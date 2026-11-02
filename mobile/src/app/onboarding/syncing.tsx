@@ -60,11 +60,10 @@ export default function SyncingScreen() {
   // offer anywhere in the app does), so Back lands on Home. Finishing swaps
   // the guarded screens and takes this one with it, so the moves after it run
   // from here, not from an effect.
-  // "See what my record does" finishes setup and opens the dashboard with the
-  // biological age sheet already up (the home reads `age=1`).
+  // "See what my record does" finishes setup and opens the dashboard.
   const next = async () => {
     await onboarding.save({ step: "done" })
-    setTimeout(() => router.replace("/?age=1"), 300)
+    setTimeout(() => router.replace("/"), 300)
   }
   // First visit, straight after "Your why": the record has only started, so
   // she needn't wait for it; the life questions come next while it builds.

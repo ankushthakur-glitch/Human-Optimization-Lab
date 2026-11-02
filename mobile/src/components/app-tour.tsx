@@ -57,13 +57,13 @@ function stopsFor(member: boolean, namesAsk: boolean): Stop[] {
       body: "Tap your photo for your profile, who can see your record, and your settings.",
     },
   ]
-  // The free patient has no AI chat, so no orb to point at (28 Oct 2026).
-  if (member)
-    stops.splice(1, 0, {
-      target: "assistant",
-      title: namesAsk ? "Ask Inlay" : "Ask your health assistant",
-      body: "Tap the circle to ask about your results, medicines, visits or plan.",
-    })
+  stops.splice(1, 0, {
+    target: "assistant",
+    title: namesAsk ? "Ask Inlay" : "Ask your health assistant",
+    body: member
+      ? "Tap the circle to ask about your results, medicines, visits or plan."
+      : "Tap the circle to ask about your results, medicines or visits. The ring fills as you use this week's AI credit.",
+  })
   return stops
 }
 
@@ -86,7 +86,8 @@ export function TourHost({
   const [open, setOpen] = React.useState(false)
   const fade = React.useRef(new Animated.Value(0)).current
 
-  const show = active && !onboarding.dismissed?.[SEEN]
+  // After the welcome video (components/welcome-video), never under it.
+  const show = active && !!onboarding.introSeen && !onboarding.dismissed?.[SEEN]
   const stops = stopsFor(member, !!onboarding.demo?.tourNamesAsk)
   const stop = stops[step]
   const targetId = stop?.target

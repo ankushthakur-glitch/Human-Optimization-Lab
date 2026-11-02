@@ -43,11 +43,6 @@ function cardOn(m: Membership | undefined, charged: Date) {
   return was?.card ?? m?.card ?? CARDS[0]
 }
 
-/* Shown 30 days before the yearly renewal (S-70); never in the demo, which
-   runs in her first year. Sample words for Olivia's first year. */
-const YEAR_DAYS = 30
-const YEAR_WORDS = "4 plan reviews, 2 lab rounds, 11 lb down"
-
 export default function MembershipScreen() {
   const onboarding = useOnboarding()
   const { sheet: asked } = useLocalSearchParams<{ sheet?: string }>()
@@ -131,7 +126,6 @@ export default function MembershipScreen() {
           <FreeRecord />
         ) : (
           <>
-            {bill.state === "active" && bill.renews && <YearCard renews={bill.renews} price={priceLabel(cadence)} now={now} onCancel={() => setSheet("cancel")} />}
 
             <Summary bill={bill} price={price} card={m?.card} onCard={() => setSheet("card")} onAddCard={() => chooseCard(CARDS[0])} onPay={() => router.push("/membership-pay")} />
 
@@ -376,25 +370,6 @@ function FreeRecord() {
   )
 }
 
-/** A month before the membership's yearly renewal (S-70): her year, the
-    renewal and the price, and the way out beside it. */
-function YearCard({ renews, price, now, onCancel }: { renews: Date; price: string; now: Date; onCancel: () => void }) {
-  const days = (renews.getTime() - now.getTime()) / 86_400_000
-  if (days < 0 || days > YEAR_DAYS) return null
-  return (
-    <Card style={styles.year}>
-      <Text style={styles.title}>Your year with Inlay</Text>
-      <Text style={styles.body}>{YEAR_WORDS}</Text>
-      <Text style={styles.label}>{`Renews ${rowDate(renews)} for ${price}`}</Text>
-      <View style={styles.yearAction}>
-        <Button variant="destructive" onPress={onCancel}>
-          Cancel membership
-        </Button>
-      </View>
-    </Card>
-  )
-}
-
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   flex: { flex: 1 },
@@ -427,6 +402,4 @@ const styles = StyleSheet.create({
   freeTop: { gap: space.stack, paddingVertical: space.card },
   cardLink: { borderTopWidth: 1, borderTopColor: hairline.rule },
 
-  year: { gap: space.stack },
-  yearAction: { alignSelf: "stretch" },
 })

@@ -131,12 +131,12 @@ function AddAction({ onPress }: { onPress: () => void }) {
   )
 }
 
-/** The banner every tab shares when sharing is off or ending, or a place
+/** The banner every tab shares when sharing is off, or a place
     had nothing; the others belong to Home. */
 function RecordBanner() {
   const onboarding = useOnboarding()
   const banner = homeBanner(onboarding)
-  const kinds = ["sharing-off", "sharing-ended", "sharing-ends", "not-found"]
+  const kinds = ["sharing-off", "not-found"]
   if (!banner || !kinds.includes(banner.kind)) return null
   return <StatusBanner tab="results" />
 }

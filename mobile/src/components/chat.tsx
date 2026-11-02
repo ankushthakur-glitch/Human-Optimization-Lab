@@ -292,7 +292,7 @@ export function ChatBar({
   /** A strip joined to the top of the field, as Claude's session limit
       sits on its composer: the words, a small action and a close; the
       field's edge takes its colour. */
-  notice?: { words: string; hue: "amber" | "red"; action?: { label: string; onPress: () => void }; onClose: () => void }
+  notice?: { words: string; hue: "grey" | "amber" | "red"; action?: { label: string; onPress: () => void }; onClose: () => void }
   value: string
   onChange: (text: string) => void
   onSend: () => void
@@ -551,9 +551,11 @@ function RecDot({ live }: { live: boolean }) {
   return <Animated.View style={[styles.voiceDot, live && styles.voiceDotLive, { opacity: pulse }]} />
 }
 
-/* The notice strip's two hues, as the record kit's banners draw amber and
-   red (HUE in record-kit, which imports this file). */
+/* The notice strip's hues, as the record kit's banners draw amber and
+   red (HUE in record-kit, which imports this file); grey is the free
+   patient's usage counter below 75% used. */
 const NOTICE = {
+  grey: { ink: ink.detail, tint: card.fill, edge: hairline.rule },
   amber: { ink: color.amber, tint: color.amberTint, edge: color.amberEdge },
   red: { ink: color.high, tint: color.highTint, edge: "#FECDCA" },
 } as const

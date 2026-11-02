@@ -8,7 +8,7 @@ import { CaretLeft, Check } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
 import { Sheet } from "@/components/sheet"
 import { Button, useTopInset } from "@/components/ui"
-import { DOCS, type Doc, PERIODS, docVersionLine, endDate, periodLabel } from "@/lib/consent"
+import { DOCS, type Doc, docVersionLine } from "@/lib/consent"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
 import { DATA_TYPES } from "@/lib/record"
@@ -17,7 +17,7 @@ import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
 /* The consent's parts, shared by setup and Connect your records: each
    page's state (its box and the open sheet), the signing, the sheets (what
    we collect, and each document a statement links to), the box with its
-   links, the periods and the shield. */
+   links and the shield. */
 
 export const SHIELD = require("../../assets/images/consent-shield.png")
 
@@ -46,19 +46,19 @@ export type ConsentPage = ReturnType<typeof useConsentPage>
 
 /** Signs as the patient on the last page, keeping how she agreed to be
     contacted about her care (texts, calls, email) and when she chose. */
-export function useSignConsent(onSigned: (signedAs: string, period: string) => Promise<void>) {
+export function useSignConsent(onSigned: (signedAs: string) => Promise<void>) {
   const onboarding = useOnboarding()
   const [pending, setPending] = React.useState(false)
   const legalName = `${onboarding.profile?.firstName ?? PATIENT.firstName} ${onboarding.profile?.lastName ?? PATIENT.lastName}`
 
-  async function sign(period: string, contact: { sms: boolean; call: boolean; email: boolean }) {
+  async function sign(contact: { sms: boolean; call: boolean; email: boolean }) {
     setPending(true)
     await onboarding.save({
       smsConsent: contact.sms,
       smsConsentAt: new Date().toISOString(),
       notify: { ...onboarding.notify, ...contact },
     })
-    await onSigned(legalName, period)
+    await onSigned(legalName)
     setPending(false)
   }
 
@@ -152,35 +152,6 @@ export function ConsentSheets({ page }: { page: Pick<ConsentPage, "sheet" | "set
   return null
 }
 
-/** The periods as three cards side by side, each with the day it would
-    end; the chosen one takes the teal tint and its teal edge. */
-export function PeriodList({ value, onChange }: { value: string; onChange: (m: string) => void }) {
-  return (
-    <View style={styles.periodList} accessibilityRole="radiogroup" accessibilityLabel="Keep collecting for">
-      {PERIODS.map((m) => {
-        const on = m === value
-        return (
-          <Pressable
-            key={m}
-            onPress={() => onChange(m)}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: on }}
-            accessibilityLabel={`${periodLabel(m)}, until ${endDate(m)}`}
-            style={({ pressed }) => [styles.period, on && styles.periodOn, pressed && !on && styles.pressed]}
-          >
-            <Text style={styles.periodName} numberOfLines={1}>
-              {periodLabel(m)}
-            </Text>
-            <Text style={styles.periodUntil} numberOfLines={1}>
-              {endDate(m)}
-            </Text>
-          </Pressable>
-        )
-      })}
-    </View>
-  )
-}
-
 /** One statement to agree to, on its lifted card. The box and the words
     both tick it; a link inside the words opens its document and ticks
     nothing. */
@@ -272,24 +243,6 @@ const styles = StyleSheet.create({
   legal: { gap: space.item },
   legalText: { ...type.body },
   docVersion: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: color.muted },
-
-  periodList: { flexDirection: "row", gap: space.item },
-  period: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: space.stack,
-    paddingHorizontal: 11.5,
-    paddingVertical: 7.5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: hairline.outline,
-    backgroundColor: card.fill,
-    boxShadow: card.shadow,
-  },
-  periodOn: { backgroundColor: color.primaryTint, borderColor: color.primaryLine },
-  periodName: { ...type.chip },
-  periodUntil: { fontFamily: font.regular, fontSize: 12, lineHeight: 16, color: color.muted },
 
   // The statement's card: white fading in from the page, lifted.
   checkCard: {

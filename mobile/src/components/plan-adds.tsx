@@ -2,7 +2,7 @@ import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
-import { CaretRight, ChartLine, ChatText, ClipboardText, Flask, Heart, ShieldCheck } from "@/components/ph"
+import { CaretRight, ChartLine, ClipboardText, Flask, Heart, ShieldCheck } from "@/components/ph"
 import { NeedsRow } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { Button } from "@/components/ui"
@@ -11,13 +11,11 @@ import { useOnboarding } from "@/lib/onboarding"
 import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* "What an optimization plan adds" (client deck, screen 20 of 56, 27 Oct
-   2026): the free plan's upgrade moment. AI is no longer part of the free
-   account, so this says what the membership actually buys, and Ask Inlay is
-   the headline: first, marked NEW, unlimited questions answered from the
-   patient's own results and explicitly not available free. Then the five that
-   follow from it: plans built from the record, tests ordered and scheduled, a
+   2026): the free plan's upgrade moment, saying what the membership
+   actually buys: plans built from the record, tests ordered and scheduled, a
    daily plan, progress against day one, and everything going to the
-   physician. Stated at the foot: the record, medications and appointments
+   physician. The Ask Inlay card left on 2 Nov 2026 (free patients have the
+   chat again). Stated at the foot: the record, medications and appointments
    stay free whether or not anyone ever takes a plan; the upgrade adds, it
    does not withhold. The call to action is "See what we found", not
    "Subscribe": the next screen is the argument.
@@ -27,14 +25,7 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
 type Icon = typeof Heart
 
-const ADDS: { key: string; title: string; says: string; Icon: Icon; isNew?: boolean }[] = [
-  {
-    key: "ask",
-    title: "Ask Inlay about your own record",
-    says: "Unanswered questions, answered from your results rather than from the internet. Not available on the free account.",
-    Icon: ChatText,
-    isNew: true,
-  },
+const ADDS: { key: string; title: string; says: string; Icon: Icon }[] = [
   { key: "plans", title: "Optimization plans built from your record", says: "Every opportunity your results and your answers reveal, ranked by what matters most", Icon: Heart },
   { key: "tests", title: "Tests ordered, scheduled and tracked", says: "Priced before you buy, booked in the app, and never re-ordered if we already hold it", Icon: Flask },
   { key: "daily", title: "A daily plan you can answer", says: "Six topics a day, each with four ways to answer and a score that follows what you did", Icon: ClipboardText },
@@ -85,19 +76,14 @@ export function PlanAdds() {
       )}
       <View style={styles.list}>
         {ADDS.map((a) => (
-          <View key={a.key} style={[styles.item, a.isNew && styles.itemNew]} accessible accessibilityLabel={`${a.title}${a.isNew ? ", new" : ""}. ${a.says}`}>
-            <View style={[styles.tile, a.isNew && styles.tileNew]}>
+          <View key={a.key} style={styles.item} accessible accessibilityLabel={`${a.title}. ${a.says}`}>
+            <View style={styles.tile}>
               <a.Icon size={18} color={a.key === "plans" ? color.high : ink.primary} />
             </View>
             <View style={styles.words}>
               <Text style={styles.name}>{a.title}</Text>
               <Text style={styles.says}>{a.says}</Text>
             </View>
-            {a.isNew && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>NEW</Text>
-              </View>
-            )}
           </View>
         ))}
       </View>
@@ -121,13 +107,8 @@ const styles = StyleSheet.create({
     borderColor: hairline.edge,
     backgroundColor: color.background,
   },
-  // The headline: Ask Inlay, a soft teal card with a light teal edge and a white tile.
-  itemNew: { borderColor: color.primaryEdge, backgroundColor: color.primarySoft },
   tile: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: color.surface },
-  tileNew: { backgroundColor: color.onPrimary },
   words: { flex: 1, gap: 2 },
   name: { ...type.title, fontFamily: font.semibold, color: ink.strong },
   says: { ...type.label, color: ink.secondary, lineHeight: 17 },
-  badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: color.primary },
-  badgeText: { fontFamily: font.semibold, fontSize: 10, lineHeight: 14, letterSpacing: 0.4, color: color.onPrimary },
 })

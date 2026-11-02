@@ -12,7 +12,6 @@ import { RecordIcon, type RecordIconName } from "@/components/record-icons"
 import { Block, Card, Group, HUE, KeyValue, NeedsRow, Tag, toast } from "@/components/record-kit"
 import { relativeDay, showDate } from "@/lib/dates"
 import { addToCalendar, call, directions } from "@/lib/links"
-import { useExperience } from "@/lib/experience"
 import { clock, dateOfAt, questionsFor, withQuestion } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { APPOINTMENTS, DOCUMENTS, ORDERS, PROCEDURES, PROVENANCE_LABEL, PROVENANCE_OF, REVIEW, VISITS, type Appointment, type Visit } from "@/lib/record"
@@ -244,7 +243,6 @@ function RecordReview({ a }: { a: Appointment }) {
 
 function PastVisit({ visit }: { visit: Visit }) {
   const s = useOnboarding()
-  const free = useExperience().experience === "free"
   const ordered = ordersAt(visit)
   const records = recordsFrom(visit)
   const askedFor = visit.askedFor ?? (ordered.length ? ordered.map((o) => `${o.name} by ${dueDay(o.due)}`).join(", ") : undefined)
@@ -288,7 +286,7 @@ function PastVisit({ visit }: { visit: Visit }) {
             <KeyValue key={d.label} label={d.label} value={keepTogether(d.value)} last={i === details.length - 1} />
           ))}
         </Card>
-        {visit.outside && !free && (
+        {visit.outside && (
           <Group>
             <NeedsRow
               icon={<Sparkle size={16} color={HUE.teal.ink} />}

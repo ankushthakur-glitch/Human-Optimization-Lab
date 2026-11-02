@@ -4,7 +4,6 @@ import { GAP_ICON, keepTogether } from "@/components/care-gap"
 import type { RecordIconName } from "@/components/record-icons"
 import { pickBanner, type BannerFacts, type BannerState, type Hue, type Tone } from "@/components/record-kit"
 import { BASELINE_TESTS, REMIND_EVERY_DAYS, lastReminderDay, type BaselineTestId } from "@/lib/baseline-tests"
-import { DEFAULT_PERIOD, periodEnd } from "@/lib/consent"
 import { dayOfWords } from "@/lib/dates"
 import { experience, sharingOff } from "@/lib/experience"
 import { NEXT_REVIEW, addDays, clock, dateOfAt, dayFrom, dayLabel, daysBetween, localDay, shortDay, thisWeek, weekdayOf, type SavedQuestion } from "@/lib/member"
@@ -64,13 +63,13 @@ export type TodoGroup = "needs" | "coming" | "visit" | "booked" | "done"
 
 export type TodoItem = {
   /** Unique across lists: "order:mammogram", "gap:follow-up", "meds",
-      "sharing", "appointment:cardio-follow-up", "question:q1",
+      "appointment:cardio-follow-up", "question:q1",
       "new:urgent". */
   id: string
   /** The list it sits in. New in your record items, already in the past,
       say "done"; they sit in `newInRecord`, never in a To do list. */
   group: TodoGroup
-  kind: "order" | "gap" | "meds" | "sharing" | "appointment" | "review" | "question" | "visit-outside" | "document"
+  kind: "order" | "gap" | "meds" | "appointment" | "review" | "question" | "visit-outside" | "document"
   icon: RecordIconName
   /** The tile's hue off the hero; rows on the hero are teal. */
   hue: Hue
@@ -90,7 +89,7 @@ export type TodoItem = {
   tag?: { tone: Tone; label: string }
   /** The row's one action: a pill that opens a page or dials a number, or
       "Remove" for a saved question (removeQuestion). */
-  action?: { label: "Book" | "Schedule" | "Call" | "Check" | "Save" | "Ask" | "Renew" | "Remove"; href?: Href; tel?: string; remove?: string }
+  action?: { label: "Book" | "Schedule" | "Call" | "Check" | "Save" | "Ask" | "Remove"; href?: Href; tel?: string; remove?: string }
   /** What the whole row opens: a typed route, ready for router.push. */
   href: Href
   /** When it happens or is due, local ("2026-11-12T23:59"), for sorting. */
@@ -116,8 +115,6 @@ const COMING_DAYS = 30
 const DONE_DAYS = 90
 /** New outside records show on Home this long after they arrive. */
 const NEW_DAYS = 14
-/** The renewal joins "Needs you" this many days before sharing ends (Q-12). */
-const RENEW_DAYS = 30
 
 const pad = (n: number) => String(n).padStart(2, "0")
 
@@ -594,23 +591,6 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
       rank: 4,
     })
 
-  /* Renewing the permission to share her records. */
-  const ends = sharingEnds(s)
-  if (ends && daysBetween(now, ends) <= RENEW_DAYS)
-    needs.push({
-      id: "sharing",
-      group: "needs",
-      kind: "sharing",
-      icon: "documents",
-      hue: "teal",
-      title: "Renew sharing your records",
-      meta: daysBetween(now, ends) < 0 ? `Sharing ended on ${shortDay(ends)}` : `Sharing ends on ${shortDay(ends)}`,
-      action: { label: "Renew", href: href("/access?sheet=renew") },
-      href: href("/access?sheet=renew"),
-      sortAt: localIso(ends),
-      rank: 5,
-    })
-
   /* Appointments from the practice's schedule, with the questions saved
      for each (one not tied to a visit goes to the next one). */
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -822,12 +802,6 @@ export function caughtUp(s: Snapshot, now: Date = new Date()) {
 
 /* ----------------------------------------------------------- banner -- */
 
-/** The day her permission to share records ends, while it is on. */
-export function sharingEnds(s: Snapshot): Date | undefined {
-  if (s.consent !== "signed" || !s.consentAt) return undefined
-  return periodEnd(s.consentPeriod ?? DEFAULT_PERIOD, new Date(s.consentAt))
-}
-
 /** Sharing turned off, in the older form some screens still read (`on`,
     "Oct 3"); homeBanner now returns the record kit's own state,
     `{ kind: "sharing-off", since: "Oct 3" }`. */
@@ -851,7 +825,6 @@ export function bannerFacts(s: Snapshot, now: Date = new Date()): BannerFacts {
     sharingOff: sharingOff(s) ? (s.sharingOffAt ?? null) : null,
     review: review ? { by: "Dr. Patel", done: review.status === "checked" ? (review.at ?? null) : null } : null,
     newResults: fresh ? { count: fresh.count, from: fresh.source, on: new Date(fresh.at), batch: fresh.id } : null,
-    sharingEnds: sharingEnds(s) ?? null,
     arriving: building ? { got: records?.got ?? 0, of: records?.of ?? 3 } : null,
     notFound: records?.notFound ?? null,
     today: now,
@@ -872,7 +845,7 @@ export function homeBanner(s: Snapshot, opts: { member?: boolean } = {}, now: Da
   // it off the home (5 Oct 2026); the review still shows in the record.
   // "Dr. Patel checked your record on Oct 5" went the same way (7 Oct 2026).
   if (!state || state.kind === "checking" || state.kind === "checked") return null
-  if (opts.member && state.kind !== "sharing-ended" && state.kind !== "sharing-ends" && state.kind !== "new-results") return null
+  if (opts.member && state.kind !== "new-results") return null
   return state
 }
 
@@ -883,9 +856,6 @@ export function bannerTarget(b: HomeBanner): { href: Href } | { tab: "results" |
   switch (b.kind) {
     case "sharing-off":
       return { href: href("/connect") }
-    case "sharing-ended":
-    case "sharing-ends":
-      return { href: href("/access?sheet=renew") }
     case "not-found":
       return { href: href("/tell-us") }
     case "new-results":

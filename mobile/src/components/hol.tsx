@@ -8,7 +8,6 @@ import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 import { CaretLeft, Sparkle } from "@/components/ph"
 import { useTopInset } from "@/components/ui"
 import { SiriSheet } from "@/components/voiceorbs/siri-sheet"
-import { useExperience } from "@/lib/experience"
 import { card, color, font, hairline, ink, space, type } from "@/lib/theme"
 
 /* The page frame of the signed-in screens, from the Figma "Hol" file
@@ -184,8 +183,6 @@ export function AskButton({
   params?: { marker?: string; topic?: string; ask?: string }
 }) {
   const open = onPress ?? (() => router.push(params ? { pathname: "/assistant", params } : "/assistant"))
-  // The free patient has no AI chat (28 Oct 2026).
-  if (useExperience().experience === "free") return null
   return (
     <Pressable
       onPress={open}

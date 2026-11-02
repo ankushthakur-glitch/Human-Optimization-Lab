@@ -210,6 +210,9 @@ export type State = {
   step: Step
   profile?: Profile
   signedAs?: string
+  /** The welcome film on her first sign in (components/welcome-film): seen
+      or closed, so it opens only once. */
+  introSeen?: boolean
   /** The conversation's answers so far, and the turn the patient is on. */
   why?: Partial<Answers>
   whyAt?: number
@@ -219,8 +222,6 @@ export type State = {
   /** The one authorization: signed, or not now. */
   consent?: "signed" | "declined"
   consentAt?: string
-  /** How long the permission lasts before the patient is asked again. */
-  consentPeriod?: string
   /** Texts about her care (new results, reminders), one of the three
       optional boxes on the consent (texts, calls, email): what she chose,
       and when (ISO). Each box she ticks turns its channel on in
@@ -360,10 +361,11 @@ export type State = {
       the way she chose and when. `night` is Sleep's "Log what actually
       happened": bed and up as minutes after 6 pm, times woken, CPAP minutes.
       `marks` is Exercise's per exercise answer: as written, part done,
-      changed or skipped. */
+      changed or skipped. `practice`, `when` and `felt` are Mind's "Log
+      your own practice": what she did, when, and whether it calmed her. */
   topicLog?: Record<
     string,
-    Partial<Record<string, { way: string; at: string; parts?: string[]; skipped?: string[]; marks?: Record<string, "written" | "part" | "changed" | "skipped">; minutes?: number; note?: string; night?: { bed: number; up: number; latency?: number; woke: number; cpap: number } }>>
+    Partial<Record<string, { way: string; at: string; parts?: string[]; skipped?: string[]; marks?: Record<string, "written" | "part" | "changed" | "skipped">; minutes?: number; note?: string; practice?: string; when?: "now" | "morning" | "yesterday"; felt?: "no" | "little" | "lot"; night?: { bed: number; up: number; latency?: number; woke: number; cpap: number } }>>
   >
   /** Apps and devices she connected from a topic's ways ("Connect your
       device", "Import from another app"), by name. */

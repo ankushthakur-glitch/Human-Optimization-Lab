@@ -127,7 +127,7 @@ export const LIMIT = {
   /** The quiet line when a chat in progress finishes on grace. */
   grace: "Your AI credit ran out, so we'll let you finish this chat. It comes off next week's credit.",
   save: "Save for my next visit",
-  more: "See what members get",
+  more: "Upgrade for more AI credit",
 } as const
 
 /* ------------------------------------------------------------ answers -- */
@@ -163,6 +163,9 @@ export type Answer = {
       decides whether it shows (lib/offers.ts, touchpoint assistant-plan),
       so the answer's words never depend on it. */
   link?: { label: string; href: string; offer?: boolean }
+  /** Markers the answer is about, drawn as small charts inside it (2 Nov
+      2026): her latest results over the range, never the raw list. */
+  charts?: string[]
 }
 
 /** What she can ask about one result. */
@@ -684,6 +687,10 @@ function doctorAnswer(t: Trend): Answer {
 /** The answer to one suggested question about one result. */
 export function answerFor(ask: Ask, t: Trend, ctx: { s: Snapshot; markers: Biomarker[]; now?: Date }): Answer {
   if (!t.latest) return doctorAnswer(t)
+  return { ...answerText(ask, t, ctx), charts: [t.id] }
+}
+
+function answerText(ask: Ask, t: Trend, ctx: { s: Snapshot; markers: Biomarker[]; now?: Date }): Answer {
   const now = ctx.now ?? new Date()
   switch (ask) {
     case "meaning":
@@ -828,6 +835,7 @@ export function concernAnswer(concern: string, markers: Biomarker[], said?: stri
       about: "tired",
       confidence: confidence("medium", `${found.length} of your latest results`),
       facts: found.map((t) => ({ title: t.marker.name, meta: `${pointDate(t.latest!)}, ${sourceOf(t.latest!)}`, value: t.valueWithUnit, level: t.status })),
+      charts: off.map((t) => t.id),
       askOpen: true,
     }
   }
@@ -842,6 +850,7 @@ export function concernAnswer(concern: string, markers: Biomarker[], said?: stri
       about: "bmi",
       confidence: confidence("medium", bmi ? countWords(bmi) : "your record"),
       facts: bmi ? resultFacts(bmi) : undefined,
+      charts: [bmi, ...with_].filter((t): t is Trend => Boolean(t?.latest)).map((t) => t.id),
       askOpen: true,
     }
   }
@@ -1251,5 +1260,6 @@ export function batchAnswer(id: string, markers: Biomarker[]): Answer | undefine
     about: "new-results",
     confidence: confidence("high", `${rows.length} new ${short} results and your earlier ones`),
     facts: rows.map((t) => ({ title: t.marker.name, meta: `${pointDate(t.latest!)}, ${sourceOf(t.latest!)}`, value: t.valueWithUnit, level: t.status })),
+    charts: rows.map((t) => t.id),
   }
 }

@@ -15,7 +15,7 @@ import { call } from "@/lib/links"
 import { withQuestion } from "@/lib/member"
 import { useOffer, useShown, type Offer } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
-import { card, cardRadius, color, font, hairline, ink, space, type } from "@/lib/theme"
+import { card, cardRadius, color, font, hairline, ink, space, surface, type } from "@/lib/theme"
 import { chartInput, pointDate, type Trend } from "@/lib/trends"
 
 /* The assistant thread's own pieces (FINAL-SPEC C.4), composed from the
@@ -68,6 +68,46 @@ export function ContextCard({ t }: { t: Trend }) {
 }
 
 /* ------------------------------------------------------------ answers -- */
+
+/** At most this many charts in one answer. */
+const MAX_CHARTS = 3
+
+/** A result inside an answer (2 Nov 2026): its name and status, the
+    latest value with when and where, and the dot graph of its last
+    results over her range, on the bubble's inset ground. Tapping it opens
+    the marker. */
+function AnswerChart({ t }: { t: Trend }) {
+  const b = t.marker
+  const unit = b.unit === "%" ? "%" : ` ${b.unit}`
+  return (
+    <Pressable
+      onPress={() => router.push({ pathname: "/biomarker/[id]", params: { id: b.id } })}
+      accessibilityRole="button"
+      accessibilityLabel={`${b.name}, ${t.valueWithUnit}, ${t.statusWord}`}
+      accessibilityHint="Opens details"
+      style={({ pressed }) => [styles.chart, pressed && styles.chartPressed]}
+    >
+      <View style={styles.contextTop}>
+        <Text style={styles.chartName} numberOfLines={1}>
+          {b.name}
+        </Text>
+        <Status level={t.status} />
+      </View>
+      {!!t.latest && (
+        <>
+          <Text style={styles.chartValue}>
+            {t.value}
+            <Text style={styles.contextUnit}>{unit}</Text>
+          </Text>
+          <Text style={styles.chartMeta}>{`${pointDate(t.latest)}, ${SOURCE_NAME[t.latest.origin] ?? "Your record"}`}</Text>
+          <View style={styles.contextGraph}>
+            <DotGraph {...chartInput(t)} height={40} hidden playKey={`answer:${b.id}`} />
+          </View>
+        </>
+      )}
+    </Pressable>
+  )
+}
 
 const PARTS = [
   { key: "shows", title: "What your record shows" },
@@ -132,9 +172,12 @@ export function AnswerBubble({
   onWhy,
   followOn,
   footer,
+  charts,
 }: {
   answer: Answer
   at?: string
+  /** The results the answer is about, drawn under its words. */
+  charts?: Trend[]
   /** Opens the facts behind it. */
   onWhy?: () => void
   /** The follow on line's conversation, when this answer may carry it. */
@@ -160,6 +203,14 @@ export function AnswerBubble({
     <View style={styles.turn}>
       <TheirBubble at={at} named wide>
         <Text style={bubbleText()}>{keepTogether(answer.text)}</Text>
+
+        {!!charts?.length && (
+          <View style={styles.charts}>
+            {charts.slice(0, MAX_CHARTS).map((t) => (
+              <AnswerChart key={t.id} t={t} />
+            ))}
+          </View>
+        )}
 
         {parts.length > 0 && (
           <Group inset style={styles.panel}>
@@ -480,9 +531,8 @@ export function UrgentBubble({ at, live, picked, onPick }: { at?: string; live: 
 /** The calm card when a new chat finds this week's AI credit used
     (C.4.7, 5 Oct call; a chat in progress finishes on grace instead): the
     question waits in the composer. A member can add more, which sends the
-    waiting question at once. Then saving it for the visit, and "See what
-    members get" only when the cap service allows the offer (touchpoint
-    allowance; never for a member, left out at low readiness). */
+    waiting question at once. Then saving it for the visit, and for a free
+    patient always "Upgrade for more AI credit" (touchpoint allowance). */
 export function LimitCard({
   question,
   about,
@@ -533,9 +583,9 @@ export function LimitCard({
       )}
     </View>
   )
-  // No offer at low readiness (C.4.7): the card shows without "See what
-  // members get", only saving and "Not now".
-  if (!offer.show)
+  // A free patient at her limit always gets the upgrade (2 Nov 2026); a
+  // member adds more instead.
+  if (member)
     return (
       <Nudge {...common} onDismiss={onGone}>
         {saveRow}
@@ -646,6 +696,13 @@ const styles = StyleSheet.create({
   // Under the bubble's words, with the bubble's own 4: a heading's 12 to
   // what it heads.
   panel: { marginTop: space.inline },
+  // Charts inside an answer: each on the bubble's inset ground.
+  charts: { marginTop: space.inline, gap: space.inline },
+  chart: { backgroundColor: surface.inset, borderRadius: cardRadius, padding: space.rowX },
+  chartPressed: { opacity: 0.8 },
+  chartName: { ...type.label, flex: 1, color: ink.detail },
+  chartValue: { ...type.title, marginTop: space.mark, fontVariant: ["tabular-nums"] },
+  chartMeta: { ...type.meta, marginTop: space.line },
   panelLabel: { ...type.metaStrong, marginTop: space.item, marginLeft: space.line },
   // A 44 pt row (C.0.9), as Frontline's rows in a grouped card.
   foldHead: { minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.item, paddingVertical: space.rowY },

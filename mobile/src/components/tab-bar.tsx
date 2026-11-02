@@ -264,10 +264,12 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
     <View style={[styles.bar, { bottom }]} pointerEvents="box-none">
       <View style={styles.barInner} pointerEvents="box-none">
         <View ref={tabsRef} style={styles.pill} accessibilityRole="tablist">
+          {/* Rounded itself: on the web the wrapper's clip misses the blur,
+              which showed as a square behind the pill. */}
           <BlurView
             intensity={BLUR}
             tint="light"
-            style={StyleSheet.absoluteFill}
+            style={[StyleSheet.absoluteFill, styles.pillBlur]}
           />
           {tabs.map(({ name, label: tabLabel, href: tabHref, Icon: TabIcon }, i) => {
             // Today and Progress sit inside the plan, so Plan stays selected on them.
@@ -309,21 +311,19 @@ export function TabBar({ active, bottom }: { active: TabName; bottom: number }) 
             )
           })}
         </View>
-        {/* The free patient has no AI chat, so no orb (28 Oct 2026). */}
-        {!upgradeLabel && (
+        {/* Every patient has the orb: the free one a limited chat (2 Nov 2026). */}
         <View style={styles.orbColumn}>
           <View ref={orbRef} style={styles.orbWrap}>
             <BlurView
               intensity={BLUR}
               tint="light"
-              style={StyleSheet.absoluteFill}
+              style={[StyleSheet.absoluteFill, styles.orbBlur]}
             />
             <OrbButton used={share} onPress={() => router.push("/assistant")} />
           </View>
           {/* No words under the orb: a tooltip over it says "Ask AI" now and then. */}
           <OrbTooltip />
         </View>
-        )}
       </View>
     </View>
   )
@@ -425,6 +425,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
   },
+  pillBlur: { borderRadius: 50 },
+  orbBlur: { borderRadius: 26 },
   orbColumn: { width: 52, height: 52 },
   // Sits over the orb with its right edge on the orb's, the arrow under the
   // orb's middle.

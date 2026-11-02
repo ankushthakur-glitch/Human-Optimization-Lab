@@ -14,11 +14,14 @@ import {
 } from "react-native"
 
 import { AlcoholLog } from "@/components/alcohol-week"
-import { DAYS_LIMIT, SITTING_LIMIT, daysThisWeek, drinksWord, sittingsOf } from "@/lib/alcohol"
 import {
-  MAX_ATTACHMENTS,
-  type Attachment,
-} from "@/components/attach-sheet"
+  DAYS_LIMIT,
+  SITTING_LIMIT,
+  daysThisWeek,
+  drinksWord,
+  sittingsOf,
+} from "@/lib/alcohol"
+import { MAX_ATTACHMENTS, type Attachment } from "@/components/attach-sheet"
 import { PageNotFoundState } from "@/components/error-state"
 import { Checkbox } from "@/components/flow"
 import { PrimaryButton } from "@/components/hol"
@@ -27,6 +30,7 @@ import { MeasureSheet } from "@/components/measure-sheet"
 import {
   Check,
   DeviceMobile,
+  FlowerLotus,
   ForkKnife,
   Microphone,
   Play,
@@ -40,6 +44,7 @@ import { ChoiceRow, SheetRows } from "@/components/care-orders-rows"
 import {
   Block,
   Card,
+  ChipRow,
   Group,
   HUE,
   NeedsRow,
@@ -56,13 +61,7 @@ import { amount } from "@/components/today-exercise-parts"
 import { isSlot, logDay, slotName } from "@/components/today-food-meals"
 import type { Product } from "@/components/scan-food"
 import { SelectField, TextField } from "@/components/ui"
-import {
-  ScoreDial,
-  TargetCard,
-  TopicPage,
-  Ways,
-  askAbout,
-} from "@/components/topic-kit"
+import { ScoreDial, TargetCard, TopicPage, Ways } from "@/components/topic-kit"
 import { VoiceBeam } from "@/components/voice-beam"
 import { WaistGuideButton, WaistGuideSheet } from "@/components/waist-guide"
 import {
@@ -82,6 +81,9 @@ import {
   CARDIO,
   DOSES,
   LIFTS,
+  PRACTICES,
+  PRACTICE_FELT,
+  PRACTICE_WHEN,
   SEVERITY,
   SLEEP_LAST,
   SPOKEN_FOODS,
@@ -91,6 +93,8 @@ import {
   inBed,
   rowOf,
   topicOf,
+  type Practice,
+  type PracticeWhen,
   type Topic,
   type Way,
 } from "@/lib/topics"
@@ -159,7 +163,9 @@ function TopicBody({
   const [sheet, setSheet] = React.useState(false)
   const [part, setPart] = React.useState(false)
   const [short, setShort] = React.useState(false)
+  const [practice, setPractice] = React.useState(false)
   const [night, setNight] = React.useState(false)
+  const [ask, setAsk] = React.useState<Way>()
   // Which way asked for the meal: the photo opens its photos and words, the barcode the scan.
   const [meal, setMeal] = React.useState<"photo" | "barcode">()
   const [photo, setPhoto] = React.useState<MealSlot>()
@@ -209,9 +215,10 @@ function TopicBody({
       )
     } else if (act.kind === "go")
       router.push({ pathname: act.href as never, params: act.params })
-    else if (act.kind === "ask") askAbout(act.ask)
+    else if (act.kind === "ask") setAsk(way)
     else if (act.kind === "part") setPart(true)
     else if (act.kind === "short") setShort(true)
+    else if (act.kind === "practice") setPractice(true)
     else if (act.kind === "night") setNight(true)
     else if (act.kind === "dose") setDose(act.sheet)
     else if (act.kind === "apps") setApps(act)
@@ -238,7 +245,15 @@ function TopicBody({
         )) ||
         (part && <PartSheet onClose={() => setPart(false)} />) ||
         (short && <ShortSheet onClose={() => setShort(false)} />) ||
+        (practice && <PracticeSheet onClose={() => setPractice(false)} />) ||
         (night && <NightSheet onClose={() => setNight(false)} />) ||
+        (ask && (
+          <SayWhySheet
+            topic={topic}
+            way={ask}
+            onClose={() => setAsk(undefined)}
+          />
+        )) ||
         (dose === "taken" && (
           <TakenSheet onClose={() => setDose(undefined)} />
         )) ||
@@ -311,6 +326,9 @@ function TopicBody({
       {topic.id === "exercise" && <Session />}
       {topic.id === "eat" && <TodaysMeals />}
       {topic.id === "sleep" && <LastNight />}
+      {topic.id === "mind" && logged?.way === "own" && (
+        <OwnPractice onEdit={() => setPractice(true)} />
+      )}
 
       <Ways ways={topic.ways} onPick={pick} picked={logged?.way} />
 
@@ -764,7 +782,6 @@ function PhotoMeal({
     SPOKEN_SAMPLE[slot as keyof typeof SPOKEN_SAMPLE] ?? SPOKEN_SAMPLE.lunch
   const speech = useVoiceInput(setSaid, { sample, keep: true })
   const keyboard = useKeyboardHeight()
-  const listening = speech.state === "listening"
   const hearing = speech.state !== "idle"
   const words = said.trim()
   // The prototype "reads" new photos for a moment, as the camera "finds" a barcode.
@@ -851,63 +868,14 @@ function PhotoMeal({
             </Pressable>
           )}
         </View>
-        <VoiceBeam
-          level={speech.level}
-          active={listening}
-          processing={speech.state === "processing"}
-          radius={16}
-          style={styles.speakBox}
-        >
-          <TextInput
-            value={said}
-            onChangeText={setSaid}
-            editable={!hearing}
-            multiline
-            placeholder={listening ? "Listening…" : "What did you eat?"}
-            placeholderTextColor={ink.tertiary}
-            accessibilityLabel={`What you had for ${name}`}
-            style={[styles.speakText, styles.describeText]}
-          />
-          <Pressable
-            onPress={() =>
-              hearing ? speech.stop() : (setSpoke(true), speech.start(said))
-            }
-            disabled={speech.state === "processing"}
-            accessibilityRole="button"
-            accessibilityLabel={hearing ? "Stop listening" : "Speak"}
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.describeMic,
-              hearing && styles.micButtonOn,
-              pressed && styles.pressed,
-            ]}
-          >
-            {hearing ? (
-              <StopSquare size={16} color={color.primary} weight="fill" />
-            ) : (
-              <Microphone size={18} color={color.onPrimary} />
-            )}
-          </Pressable>
-        </VoiceBeam>
-        {speech.problem && (
-          <View style={styles.speakProblem}>
-            <Text style={[type.label, styles.fill, { color: ink.primary }]}>
-              {speech.problem.words}
-            </Text>
-            {speech.problem.action && (
-              <Pressable
-                onPress={speech.problem.action.onPress}
-                accessibilityRole="button"
-                hitSlop={8}
-                style={({ pressed }) => pressed && styles.pressed}
-              >
-                <Text style={[type.metaStrong, { color: color.primary }]}>
-                  {speech.problem.action.label}
-                </Text>
-              </Pressable>
-            )}
-          </View>
-        )}
+        <SpeakBox
+          speech={speech}
+          value={said}
+          onChangeText={setSaid}
+          onSpeak={() => setSpoke(true)}
+          placeholder="What did you eat?"
+          label={`What you had for ${name}`}
+        />
         {busy && (
           <View style={styles.reading} accessibilityLiveRegion="polite">
             <ActivityIndicator color={color.primary} />
@@ -952,6 +920,152 @@ function PhotoMeal({
         </PrimaryButton>
       </Sheet>
     </View>
+  )
+}
+
+/** An `ask` way's sheet: what to change, or what she did, in one box,
+    typed or spoken, and one button. A way that `logs` answers the topic
+    with her words as its note; the others rebuild the plan from them. */
+function SayWhySheet({
+  topic,
+  way,
+  onClose,
+}: {
+  topic: Topic
+  way: Way
+  onClose: () => void
+}) {
+  const s = useOnboarding()
+  const act = way.act as Extract<Way["act"], { kind: "ask" }>
+  const [said, setSaid] = React.useState("")
+  const speech = useVoiceInput(setSaid, { sample: act.sample, keep: true })
+  const keyboard = useKeyboardHeight()
+  const hearing = speech.state !== "idle"
+  const words = said.trim()
+
+  async function send() {
+    if (act.logs) {
+      const day = localDay()
+      await s.save({
+        topicLog: {
+          ...s.topicLog,
+          [day]: {
+            ...s.topicLog?.[day],
+            [topic.id]: {
+              way: way.id,
+              at: new Date().toISOString(),
+              note: words,
+            },
+          },
+        },
+      })
+    }
+    toast(`${way.badge}.`)
+    onClose()
+  }
+
+  return (
+    <View
+      style={[styles.sheetFrame, { bottom: keyboard }]}
+      pointerEvents="box-none"
+    >
+      <Sheet title={act.title} onClose={onClose} dismissOnScrim={!hearing}>
+        <SpeakBox
+          speech={speech}
+          value={said}
+          onChangeText={setSaid}
+          placeholder={act.prompt}
+          label={act.prompt}
+        />
+        <PrimaryButton onPress={send} disabled={!words || hearing}>
+          {act.send}
+        </PrimaryButton>
+      </Sheet>
+    </View>
+  )
+}
+
+/** The words box of a sheet, typed or spoken: the voice beam runs along
+    its edge while she speaks, the mic sits in its corner and any problem
+    with the microphone shows under it. `speech` stays with the sheet, which
+    also needs to know when she is speaking. */
+function SpeakBox({
+  speech,
+  value,
+  onChangeText,
+  onSpeak,
+  placeholder,
+  label,
+}: {
+  speech: ReturnType<typeof useVoiceInput>
+  value: string
+  onChangeText: (text: string) => void
+  onSpeak?: () => void
+  placeholder: string
+  label: string
+}) {
+  const listening = speech.state === "listening"
+  const hearing = speech.state !== "idle"
+  return (
+    <>
+      <VoiceBeam
+        level={speech.level}
+        active={listening}
+        processing={speech.state === "processing"}
+        radius={16}
+        style={styles.speakBox}
+      >
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          editable={!hearing}
+          multiline
+          placeholder={listening ? "Listening…" : placeholder}
+          placeholderTextColor={ink.tertiary}
+          accessibilityLabel={label}
+          style={[styles.speakText, styles.describeText]}
+        />
+        <Pressable
+          onPress={() =>
+            hearing ? speech.stop() : (onSpeak?.(), speech.start(value))
+          }
+          disabled={speech.state === "processing"}
+          accessibilityRole="button"
+          accessibilityLabel={hearing ? "Stop listening" : "Speak"}
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.describeMic,
+            hearing && styles.micButtonOn,
+            pressed && styles.pressed,
+          ]}
+        >
+          {hearing ? (
+            <StopSquare size={16} color={color.primary} weight="fill" />
+          ) : (
+            <Microphone size={18} color={color.onPrimary} />
+          )}
+        </Pressable>
+      </VoiceBeam>
+      {speech.problem && (
+        <View style={styles.speakProblem}>
+          <Text style={[type.label, styles.fill, { color: ink.primary }]}>
+            {speech.problem.words}
+          </Text>
+          {speech.problem.action && (
+            <Pressable
+              onPress={speech.problem.action.onPress}
+              accessibilityRole="button"
+              hitSlop={8}
+              style={({ pressed }) => pressed && styles.pressed}
+            >
+              <Text style={[type.metaStrong, { color: color.primary }]}>
+                {speech.problem.action.label}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      )}
+    </>
   )
 }
 
@@ -1061,11 +1175,19 @@ function DrinksSheet({ onClose }: { onClose: () => void }) {
     const date = new Date()
     if (when === "yesterday") date.setDate(date.getDate() - 1)
     const at = new Date().toISOString()
-    const drinks = [...(s.drinks ?? []), { id: `d-${Date.now().toString(36)}`, day: localDay(date), count: n, at }]
+    const drinks = [
+      ...(s.drinks ?? []),
+      { id: `d-${Date.now().toString(36)}`, day: localDay(date), count: n, at },
+    ]
     await s.save({ drinks })
     // Said plainly when a sitting goes over one of the two limits.
     const days = daysThisWeek(sittingsOf(drinks))
-    const over = n > SITTING_LIMIT ? `, more than ${SITTING_LIMIT} at one time` : days > DAYS_LIMIT ? `, ${days} drinking days this week` : ""
+    const over =
+      n > SITTING_LIMIT
+        ? `, more than ${SITTING_LIMIT} at one time`
+        : days > DAYS_LIMIT
+          ? `, ${days} drinking days this week`
+          : ""
     toast(`${drinksWord(n)} logged${over}`)
     onClose()
   }
@@ -1360,6 +1482,160 @@ function ShortSheet({ onClose }: { onClose: () => void }) {
         <PrimaryButton onPress={save}>Save</PrimaryButton>
       </Sheet>
     </View>
+  )
+}
+
+/** "Log your own practice": what she did, how many minutes and when.
+    Today's practice answers today's Mind in full; one from yesterday is
+    logged on yesterday and leaves today open. Opens on today's log when
+    she edits it. */
+function PracticeSheet({ onClose }: { onClose: () => void }) {
+  const s = useOnboarding()
+  const today = localDay()
+  const before = s.topicLog?.[today]?.mind
+  const mine = before?.way === "own" ? before : undefined
+  const known = PRACTICES.find((p) => p === mine?.practice)
+  const [what, setWhat] = React.useState<Practice>(
+    known ?? (mine?.practice ? "Other" : "Yoga")
+  )
+  const [other, setOther] = React.useState(known ? "" : (mine?.practice ?? ""))
+  const [minutes, setMinutes] = React.useState(mine?.minutes ?? 20)
+  const [when, setWhen] = React.useState<PracticeWhen>(mine?.when ?? "now")
+  const keyboard = useKeyboardHeight()
+  const name = what === "Other" ? other.trim() : what
+
+  async function save() {
+    const yesterday = when === "yesterday"
+    const day = yesterday
+      ? localDay(new Date(Date.now() - 24 * 60 * 60 * 1000))
+      : today
+    const { mind: _mind, ...rest } = s.topicLog?.[today] ?? {}
+    await s.save({
+      topicLog: {
+        ...s.topicLog,
+        // Moved to yesterday: today's log of it goes.
+        ...(yesterday && mine ? { [today]: rest } : {}),
+        [day]: {
+          ...(day === today ? s.topicLog?.[today] : s.topicLog?.[day]),
+          mind: {
+            way: "own",
+            at: new Date().toISOString(),
+            practice: name,
+            minutes,
+            when,
+            felt: day === today ? mine?.felt : undefined,
+          },
+        },
+      },
+    })
+    toast(
+      yesterday
+        ? `${name} logged for yesterday, ${minutes} min`
+        : `${name} logged, ${minutes} min`
+    )
+    onClose()
+  }
+
+  return (
+    <View
+      style={[styles.sheetFrame, { bottom: keyboard }]}
+      pointerEvents="box-none"
+    >
+      <Sheet title="Your own practice" onClose={onClose}>
+        <View style={styles.field}>
+          <Text style={type.title}>What you did</Text>
+          <ChipRow
+            wrap
+            label="What you did"
+            options={PRACTICES.map((p) => ({ value: p, label: p }))}
+            value={what}
+            onChange={setWhat}
+          />
+        </View>
+        {what === "Other" && (
+          <TextField
+            label="Your practice"
+            value={other}
+            onChangeText={setOther}
+            placeholder="Tai chi, a quiet sit, gardening"
+            autoCapitalize="sentences"
+          />
+        )}
+        <SliderField
+          label="Minutes"
+          value={minutes}
+          min={5}
+          max={120}
+          step={5}
+          show={(n) => `${n} min`}
+          parse={(t) => (/^\d+/.test(t.trim()) ? parseInt(t, 10) : undefined)}
+          onChange={setMinutes}
+          keyboardType="number-pad"
+        />
+        <View style={styles.field}>
+          <Text style={type.title}>When</Text>
+          <ChipRow
+            wrap
+            label="When"
+            options={PRACTICE_WHEN.map((w) => ({ value: w.value, label: w.label }))}
+            value={when}
+            onChange={setWhen}
+          />
+        </View>
+        <PrimaryButton onPress={save} disabled={!name}>
+          Log practice
+        </PrimaryButton>
+      </Sheet>
+    </View>
+  )
+}
+
+/** Today's own practice on the Mind page once logged: what and how long,
+    Edit to reopen the sheet, Undo to take it off today, and whether it
+    calmed her. */
+function OwnPractice({ onEdit }: { onEdit: () => void }) {
+  const s = useOnboarding()
+  const day = localDay()
+  const log = s.topicLog?.[day]?.mind
+  if (!log || log.way !== "own") return null
+  const when = PRACTICE_WHEN.find((w) => w.value === log.when)?.label ?? "Today"
+
+  function save(mind: typeof log | undefined) {
+    const { mind: _mind, ...rest } = s.topicLog?.[day] ?? {}
+    return s.save({
+      topicLog: { ...s.topicLog, [day]: mind ? { ...rest, mind } : rest },
+    })
+  }
+
+  async function undo() {
+    await save(undefined)
+    toast("Practice removed from today")
+  }
+
+  return (
+    <Block title="Your practice" link={{ label: "Undo", onPress: undo }}>
+      <Group>
+        <NeedsRow
+          icon={<FlowerLotus size={16} color={HUE.teal.ink} />}
+          title={`${log.practice ?? "Practice"}, ${log.minutes ?? 0} min`}
+          meta={`${when} · counts in full`}
+          action={{ label: "Edit", onPress: onEdit, quiet: true }}
+          chevron={false}
+        />
+      </Group>
+      <Card>
+        <View style={styles.field}>
+          <Text style={type.title}>Felt calmer after?</Text>
+          <ChipRow
+            wrap
+            label="Felt calmer after?"
+            options={PRACTICE_FELT.map((f) => ({ value: f.value, label: f.label }))}
+            value={log.felt}
+            onChange={(felt) => save({ ...log, felt })}
+          />
+        </View>
+      </Card>
+    </Block>
   )
 }
 

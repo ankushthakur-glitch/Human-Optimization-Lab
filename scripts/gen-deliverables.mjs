@@ -76,9 +76,9 @@ const PAGES = {
   "/screens/admin/practices": [ADMIN, "Practices", "Practice list"],
   "/screens/admin/practices/[id]": [ADMIN, "Practices", "Practice details", { url: "/screens/admin/practices/593892" }],
   "/screens/admin/practices/[id]/providers/[providerId]": [ADMIN, "Practices", "Provider adoption", { url: "/screens/admin/practices/593892/providers/PR4775" }],
-  "/screens/admin/billing": [ADMIN, "Billing", "Billing dashboard"],
+  "/screens/admin/billing": [ADMIN, "Billing", "Invoices"],
   "/screens/admin/billing/invoices/[id]": [ADMIN, "Billing", "Invoice details", { url: "/screens/admin/billing/invoices/INV-202609-001" }],
-  "/screens/admin/reports": [ADMIN, "Reports", "Reports (practices and billing)"],
+  "/screens/admin/reports": [ADMIN, "Reports", "Reports (channel revenue and margin, vendor performance, AI usage and cost)"],
   "/screens/admin/settings": [ADMIN, "Settings", "Settings home"],
   // Each settings page is [group]/[page]; SETTINGS below lists them.
   "/screens/admin/settings/[group]/[page]": [ADMIN, "Settings", "", { skip: true }],
@@ -86,8 +86,7 @@ const PAGES = {
 
   // The clinic manager's practice portal.
   "/screens/practice": [MANAGER, "", "", { skip: true }],
-  "/screens/practice/dashboard": [MANAGER, "Dashboard", "Practice dashboard (enrollment, activation, encounters, outcomes, alerts, value)"],
-  ...variations(MANAGER, "/screens/practice/dashboard", ["operations", "activity", "growth", "team", "locations"]),
+  "/screens/practice/dashboard": [MANAGER, "Dashboard", "Practice dashboard (optimization members, conversion, by provider)"],
   "/screens/practice/users": [MANAGER, "Users", "Users: providers tab (list, bulk add)"],
   "/screens/practice/users/providers/new": [MANAGER, "Users", "Add provider"],
   "/screens/practice/users/providers/[id]": [MANAGER, "Users", "Provider profile", { url: "/screens/practice/users/providers/PR3132" }],
@@ -102,34 +101,25 @@ const PAGES = {
   "/screens/practice/locations/new": [MANAGER, "Locations", "Add location"],
   "/screens/practice/locations/[id]": [MANAGER, "Locations", "Location details", { url: "/screens/practice/locations/LOC1001" }],
   "/screens/practice/locations/[id]/edit": [MANAGER, "Locations", "Edit location", { url: "/screens/practice/locations/LOC1001/edit" }],
-  "/screens/practice/reports": [MANAGER, "Reports", "Reports (enrollment, encounters, outcomes, alerts, value and renewal, membership)"],
-  "/screens/practice/billing": [MANAGER, "Billing", "Billing overview"],
-  "/screens/patients/billing": [PROVIDER, "Billing", "Billing overview (view only)"],
+  "/screens/practice/reports": [MANAGER, "Reports", "Reports (10 Executive Health KPIs, employer, sex and age filters)"],
+  "/screens/practice/billing": [MANAGER, "Billing", "Orders"],
+  "/screens/patients/billing": [PROVIDER, "Billing", "Orders (view only)"],
   "/screens/patients/billing/invoices/[id]": [PROVIDER, "Billing", "Invoice details", { url: "/screens/patients/billing/invoices/INV-202609-002" }],
   "/screens/practice/billing/invoices/[id]": [MANAGER, "Billing", "Invoice details", { url: "/screens/practice/billing/invoices/INV-202609-002" }],
   "/screens/practice/settings": [MANAGER, "Settings", "Settings home"],
   "/screens/practice/settings/[group]/[page]": [MANAGER, "Settings", "", { skip: true }],
   // A provider's portal, reached from the provider invite.
-  "/screens/patients/dashboard": [PROVIDER, "Dashboard", "Dashboard: overview and worklist (abnormal results)"],
-  ...variations(PROVIDER, "/screens/patients/dashboard", ["queue", "activity", "practice", "clinic day", "panel", "briefing", "workspace"]),
+  "/screens/patients/dashboard": [PROVIDER, "Dashboard", "Dashboard: panel (members, conversion, schedule, needs you, tasks, worklist)"],
   "/screens/patients": [PROVIDER, "Patients", "Patients (list, status tabs, last sync)"],
   "/screens/patients/tasks": [PROVIDER, "Tasks", "Tasks (all and my tasks, task details)"],
   "/screens/patients/communication": [PROVIDER, "Communication", "Provider chats"],
-  "/screens/patients/reports": [PROVIDER, "Reports", "Reports (report types, period, filters, export)"],
+  "/screens/patients/reports": [PROVIDER, "Reports", "Reports (10 Executive Health KPIs, employer, sex and age filters)"],
   "/screens/patients/schedule": [PROVIDER, "Schedule", "Schedule (calendar and list, appointment details)"],
   "/screens/patients/settings": [PROVIDER, "Settings", "Settings home"],
   "/screens/patients/settings/[group]/[page]": [PROVIDER, "Settings", "", { skip: true }],
   "/screens/patients/new": [PROVIDER, "Patients", "Add patient and send invite"],
   "/screens/patients/[id]": [PROVIDER, "Patient Chart", "Dashboard: free member", { url: "/screens/patients/P10240" }],
   "/screens/patients/[id]/edit": [PROVIDER, "Patients", "Edit patient", { url: "/screens/patients/P10240/edit" }],
-}
-
-/** A dashboard's design variations (v1, v2, ...), offered for review
-    beside the dashboard until one is picked. */
-function variations(portal, base, names) {
-  return Object.fromEntries(
-    names.map((name, i) => [`${base}/v${i + 1}`, [portal, "Dashboard", `Dashboard variation ${i + 1}: ${name}`]]),
-  )
 }
 
 /** The shared sign-in screens as one portal's user sees them (?as=key). */
@@ -211,7 +201,6 @@ const EXTRA = [
     ["Urgent action needed", "urgent"],
     ["Medication changes", "medications"],
     ["Overdue orders", "orders"],
-    ["Care gaps", "care-gaps"],
     ["Reviews due", "reviews"],
     ["All types", "all"],
   ].map(([sub, tab]) => [PROVIDER, "Dashboard", sub, `/screens/patients/dashboard?tab=${tab}`, "/screens/patients/dashboard"]),
@@ -219,13 +208,9 @@ const EXTRA = [
   [PROVIDER, "Patients", "Bulk add patients", "/screens/patients?import=1", "/screens/patients"],
   [PROVIDER, "Tasks", "Add task", "/screens/patients/tasks?new=1", "/screens/patients/tasks"],
 
-  [PROVIDER, "Billing", "Orders", "/screens/patients/billing?tab=orders", "/screens/patients/billing"],
   [PROVIDER, "Billing", "Invoices and statements", "/screens/patients/billing?tab=invoices", "/screens/patients/billing"],
-  [MANAGER, "Billing", "Orders", "/screens/practice/billing?tab=orders", "/screens/practice/billing"],
   [MANAGER, "Billing", "Invoices and statements", "/screens/practice/billing?tab=invoices", "/screens/practice/billing"],
-  [ADMIN, "Billing", "Invoices", "/screens/admin/billing?tab=invoices", "/screens/admin/billing"],
   [ADMIN, "Billing", "Vendor payouts", "/screens/admin/billing?tab=payouts", "/screens/admin/billing"],
-  [ADMIN, "Billing", "Physician review fees", "/screens/admin/billing?tab=reviews", "/screens/admin/billing"],
   [ADMIN, "Billing", "Profit and loss", "/screens/admin/billing?tab=pnl", "/screens/admin/billing"],
 
   ...settingsPages(ADMIN, "/screens/admin/settings", [
@@ -244,7 +229,6 @@ const EXTRA = [
     ["Alert rules", "rules/alerts"],
     ["Test cases", "rules/cases"],
     ["Partners", "partners/list"],
-    ["Consent documents", "consent/documents"],
     ["Audit log", "security/audit-log"],
   ]),
   ...settingsPages(MANAGER, "/screens/practice/settings", [
@@ -329,6 +313,7 @@ function patientApp() {
     [CONNECT, "Connect your records: texts and signature", at("/connect-texts")],
     [CONNECT, "Record building after connecting", at("/building")],
     [AI, "Ask Inlay (optimization member)", at("/assistant?demo=paid")],
+    [AI, "Chat history (grouped by category)", at("/chat-history")],
     [UPGRADE, "Plan tab: what an optimization plan adds (free patient)", at("/plan")],
     [UPGRADE, "Step 1: your nine opportunities", at("/opportunities")],
     [UPGRADE, "Opportunity details (sleep and apnoea)", at("/opportunity/sleep")],
@@ -372,7 +357,6 @@ function patientApp() {
     [CARE, "Book a time", at("/catalog/book/blood-panel")],
     [PROFILE, "Profile", at("/profile")],
     [PROFILE, "Access (connected records)", at("/access")],
-    [PROFILE, "Renew sharing", at("/access?sheet=renew")],
     [PROFILE, "Membership and billing", at("/membership")],
     [PROFILE, "Pay your membership (monthly or yearly)", at("/membership-pay")],
     [PROFILE, "Add AI credit (top up)", at("/ai-credit")],

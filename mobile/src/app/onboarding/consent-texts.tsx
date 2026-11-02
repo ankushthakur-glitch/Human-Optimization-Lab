@@ -1,6 +1,6 @@
-import { router, useLocalSearchParams } from "expo-router"
+import { router } from "expo-router"
 
-import { ConsentTexts, periodParam } from "@/components/consent-steps"
+import { ConsentTexts } from "@/components/consent-steps"
 import { useOnboarding } from "@/lib/onboarding"
 
 /** Setup's consent, last page ("Updates about your care"), after "Connect
@@ -10,12 +10,10 @@ import { useOnboarding } from "@/lib/onboarding"
     home as "Complete your profile" (14 Oct 2026). */
 export default function ConsentTextsScreen() {
   const onboarding = useOnboarding()
-  const { period } = useLocalSearchParams<{ period?: string }>()
   return (
     <ConsentTexts
-      period={periodParam(period)}
-      onSigned={async (signedAs, consentPeriod) => {
-        await onboarding.save({ signedAs, consent: "signed", consentAt: new Date().toISOString(), consentPeriod, step: "yourWhy" })
+      onSigned={async (signedAs) => {
+        await onboarding.save({ signedAs, consent: "signed", consentAt: new Date().toISOString(), step: "yourWhy" })
         // Back returns here, and signing again moves on again.
         router.push("/onboarding/your-why")
       }}

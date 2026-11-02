@@ -27,7 +27,6 @@ import { Sheet, SheetText } from "@/components/sheet"
 import { Button } from "@/components/ui"
 import { useAuth } from "@/lib/auth"
 import { connectedCount, connectionsOf } from "@/lib/access"
-import { DEFAULT_PERIOD, periodLabel } from "@/lib/consent"
 import { rowDate } from "@/lib/dates"
 import { checkFaceId, faceIdAvailable } from "@/lib/face-id"
 import { call } from "@/lib/links"
@@ -66,7 +65,6 @@ export default function ProfileScreen() {
   const [noFaceId, setNoFaceId] = React.useState(false)
   const [loggingOut, setLoggingOut] = React.useState(false)
   const name = `${profile?.firstName ?? PATIENT.firstName} ${profile?.lastName ?? PATIENT.lastName}`
-  const period = onboarding.consentPeriod ?? DEFAULT_PERIOD
   const access = consent !== "signed" ? "Not sharing" : `${connectedCount(onboarding, paid)} connected`
 
   /* Turning it on checks her face once, so it's known to work before the
@@ -110,7 +108,7 @@ export default function ProfileScreen() {
         </Block>
 
         <Block title="Membership">
-          <MembershipCard membership={membership} period={period} />
+          <MembershipCard membership={membership} />
         </Block>
 
         {/* Devices are part of the paid plan (user, 5 Oct 2026): a member
@@ -189,7 +187,7 @@ export default function ProfileScreen() {
 /** Her membership in one card. Free: the plan she is on and a look at the
     Optimization plan (no price). A member: where it stands, opening the
     billing page. */
-function MembershipCard({ membership, period }: { membership: ReturnType<typeof useOnboarding>["membership"]; period: string }) {
+function MembershipCard({ membership }: { membership: ReturnType<typeof useOnboarding>["membership"] }) {
   const bill = billingOf(membership)
   if (bill.state === "none" || bill.state === "ended")
     return (
@@ -197,11 +195,7 @@ function MembershipCard({ membership, period }: { membership: ReturnType<typeof 
         <PageGround />
         <View style={styles.planWords}>
           <Text style={styles.planLabel}>Plan</Text>
-          <View style={styles.planLine}>
-            <Text style={styles.planValue}>{TIERS.free.name}</Text>
-            <View style={styles.planDot} />
-            <Text style={styles.planValue}>{periodLabel(period)}</Text>
-          </View>
+          <Text style={styles.planValue}>{TIERS.free.name}</Text>
         </View>
         <Pressable
           onPress={() => router.push("/plan")}
@@ -303,9 +297,7 @@ const styles = StyleSheet.create({
   },
   planWords: { flex: 1, gap: space.stack },
   planLabel: { ...type.label, color: ink.detail },
-  planLine: { flexDirection: "row", alignItems: "center", gap: space.mark },
   planValue: { ...type.metaStrong, color: ink.strong },
-  planDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#BEBEC2" },
   planLink: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: "rgba(255, 255, 255, 0.7)", boxShadow: "2px 4px 12px rgba(0, 0, 0, 0.06)" },
   planLinkText: { ...type.action },
 
