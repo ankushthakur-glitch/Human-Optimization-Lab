@@ -121,7 +121,7 @@ function EditSheet({
   return (
     <View style={[styles.sheetFrame, { bottom: keyboard }]} pointerEvents="box-none">
       <Sheet title={`Edit ${title.toLowerCase()}`} onClose={onClose}>
-        <ScrollView style={styles.sheetList} contentContainerStyle={styles.sheetFields} keyboardShouldPersistTaps="handled">
+        <ScrollView style={styles.sheetList} contentContainerStyle={styles.sheetFields} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           {fields.map((f, i) => (
             <TextField
               key={f.id}

@@ -559,7 +559,7 @@ export function CarePlanView({
           Cancel
         </Button>
         <Button size="sm" onClick={save}>
-          Save &amp; send
+          Send to patient
         </Button>
       </>
     ) : (

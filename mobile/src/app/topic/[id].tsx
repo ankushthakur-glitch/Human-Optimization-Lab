@@ -2000,6 +2000,7 @@ function AppsSheet({
         {act.upload && (
           <NeedsRow
             icon={<UploadSimple size={16} color={HUE.teal.ink} />}
+            tileSize={40}
             title="Upload a file"
             meta={file ?? "PDF, a photo or a spreadsheet"}
             tag={file ? { tone: "ok", label: "Uploaded" } : undefined}
