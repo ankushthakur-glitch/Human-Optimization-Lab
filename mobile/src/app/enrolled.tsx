@@ -220,8 +220,8 @@ export default function EnrolledScreen() {
                   Schedule later
                 </TextAction>
                 <View style={styles.note}>
-                  <Info size={13} color={ink.tertiary} />
-                  <Text style={styles.noteText}>Scheduling later keeps your testing at the top of your To do list.</Text>
+                  <Info size={13} color={ink.tertiary} style={styles.noteIcon} />
+                  <Text style={styles.noteText} numberOfLines={1}>Scheduling later keeps testing at the top of To do.</Text>
                 </View>
               </View>
             </>
@@ -289,6 +289,7 @@ const styles = StyleSheet.create({
   stepWords: { flex: 1, gap: 1, paddingBottom: space.item },
   stepName: { ...type.title, fontFamily: font.semibold, color: ink.strong },
   stepSub: { ...type.label, color: ink.secondary },
-  note: { flexDirection: "row", alignItems: "center", gap: space.inline, paddingTop: space.item, paddingHorizontal: space.gutter },
-  noteText: { ...type.meta, flex: 1, textAlign: "center" },
+  note: { flexDirection: "row", alignItems: "flex-start", justifyContent: "center", gap: space.inline, paddingTop: space.item, paddingHorizontal: space.gutter },
+  noteIcon: { marginTop: 1 },
+  noteText: { ...type.meta, flexShrink: 1 },
 })

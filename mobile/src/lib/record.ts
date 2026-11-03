@@ -1518,7 +1518,7 @@ export const ORDERS: Order[] = [
   // lipid panel were ordered together.
   {
     id: "labs-nov",
-    name: "Repeat A1c and lipid panel",
+    name: "Repeat A1c & lipid panel",
     by: "Dr. Maya Patel",
     ordered: "Aug 12, 2026",
     orderedAt: "2026-08-12",

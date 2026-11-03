@@ -882,6 +882,9 @@ export type NeedsRowProps = {
   /** The icon, on a tile tinted by `hue`. */
   icon?: React.ReactNode
   hue?: Hue
+  /** The icon tile's width and height, 28 unless the row's words are
+      taller (a title over a line of facts: 40). */
+  tileSize?: number
   /** A calendar block in place of the icon, for a dated row: "Wed" over
       "7" this week, "Oct" over "21" further off. Its day is said to a
       screen reader after the title. */
@@ -928,6 +931,7 @@ const ACTION_HEIGHT = 32
 export function NeedsRow({
   icon,
   hue = "teal",
+  tileSize = 28,
   date,
   title,
   meta,
@@ -945,7 +949,7 @@ export function NeedsRow({
   const left = date ? (
     <DateBlock date={date} hue={hue} />
   ) : icon ? (
-    <Tile hue={hue} size={28}>
+    <Tile hue={hue} size={tileSize}>
       {icon}
     </Tile>
   ) : null

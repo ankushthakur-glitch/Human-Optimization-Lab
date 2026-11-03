@@ -7,7 +7,7 @@ import { PageFooter, PageGround } from "@/components/hol"
 import { CaretLeft, Check } from "@/components/ph"
 import { RecordIcon } from "@/components/record-icons"
 import { Sheet } from "@/components/sheet"
-import { Button, useTopInset } from "@/components/ui"
+import { useTopInset } from "@/components/ui"
 import { DOCS, type Doc, docVersionLine } from "@/lib/consent"
 import { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
@@ -130,7 +130,6 @@ export function ConsentSheets({ page }: { page: Pick<ConsentPage, "sheet" | "set
             </View>
           ))}
         </View>
-        <Button onPress={close}>Done</Button>
       </Sheet>
     )
   if (page.sheet) {
@@ -145,7 +144,6 @@ export function ConsentSheets({ page }: { page: Pick<ConsentPage, "sheet" | "set
           ))}
           <Text style={styles.docVersion}>{docVersionLine(page.sheet)}</Text>
         </ScrollView>
-        <Button onPress={close}>Done</Button>
       </Sheet>
     )
   }

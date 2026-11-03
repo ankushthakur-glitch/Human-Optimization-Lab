@@ -3,10 +3,10 @@
 import * as React from "react"
 import {
   IconAdd,
-  IconCheck,
   IconEdit,
   IconEye,
   IconHelp,
+  IconRefresh,
   IconSparkles,
   IconThumbsDown,
   IconThumbsUp,
@@ -547,8 +547,8 @@ export function CarePlanView({
     })
     setDraft(null)
     const n = countOf(kept).items
-    toast.success("Care plan updated", {
-      description: `Version ${version} for ${patient.firstName} with ${n} ${n === 1 ? "item" : "items"}.`,
+    toast.success("Care plan sent to patient", {
+      description: `Version ${version} with ${n} ${n === 1 ? "item" : "items"} was sent to ${patient.firstName}.`,
     })
   }
 
@@ -559,8 +559,7 @@ export function CarePlanView({
           Cancel
         </Button>
         <Button size="sm" onClick={save}>
-          <IconCheck />
-          Save changes
+          Send to patient
         </Button>
       </>
     ) : (
@@ -576,8 +575,8 @@ export function CarePlanView({
             setDraft(latest.steps)
           }}
         >
-          <IconEdit />
-          Edit plan
+          <IconRefresh />
+          Revise plan
         </Button>
       </>
     )

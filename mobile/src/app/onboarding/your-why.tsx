@@ -36,7 +36,7 @@ export default function YourWhyScreen() {
     <FlowScreen
       hol
       title="Your why"
-      description="Before we ask anything else, here is what the account you just opened does for you. It is free, and it stays free."
+      description="Here is what your new account does for you. It is free, and it stays free."
       footer={<Button onPress={next}>Continue</Button>}
     >
       <View style={styles.stack}>

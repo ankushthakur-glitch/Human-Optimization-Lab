@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { IconCheck, IconEdit } from "@/design-system/icons"
+import { IconCheck, IconRefresh } from "@/design-system/icons"
 
 import { cn } from "@/lib/utils"
 import { createCollection, today } from "@/components/practice/collection-store"
@@ -734,8 +734,8 @@ function ReviewForm({
         <div className="flex flex-wrap justify-end gap-2">
           {outcome === "Needs changes" && (
             <Button variant="outline" size="sm" onClick={onEditPlan}>
-              <IconEdit />
-              Edit plan
+              <IconRefresh />
+              Revise plan
             </Button>
           )}
           <Button size="sm" onClick={complete}>

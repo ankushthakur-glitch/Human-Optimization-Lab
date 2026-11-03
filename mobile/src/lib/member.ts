@@ -1436,7 +1436,7 @@ export function thisWeek(_s: Snapshot = {}, now: Date = new Date()): WeekItem[] 
     item({
       id: "repeat-labs",
       kind: "test",
-      title: "Repeat A1c and lipid panel",
+      title: "Repeat A1c & lipid panel",
       date: labs,
       time: clock(7, 30),
       where: "Quest Diagnostics, Del Mar",
