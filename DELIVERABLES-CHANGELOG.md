@@ -1053,3 +1053,7 @@ Portal is one of: Global Pages, Super Admin Portal, Provider Portal, Patient Por
 
 ## 04-Nov-2026
 
+
+## 05-Nov-2026
+
+- Added: Provider Portal / Labs / Labs
