@@ -61,6 +61,7 @@ export type ModuleId =
   | "patients"
   | "schedule"
   | "tasks"
+  | "labs"
   | "communication"
   | "reports"
   | "billing"

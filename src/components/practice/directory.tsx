@@ -359,6 +359,7 @@ export function Directory<T extends { id: string }>({
   bulkActions,
   exportName,
   exportRow,
+  exportLines,
   hideExport = false,
   emptyIllustration,
   initialFilters,
@@ -387,6 +388,8 @@ export function Directory<T extends { id: string }>({
   exportName: string
   /** One row of the Excel export, keyed by column header. */
   exportRow: (row: T) => ExportRow
+  /** Several export rows per list row, e.g. a lab report's results. */
+  exportLines?: (row: T) => ExportRow[]
   /** Drops the toolbar's export button. */
   hideExport?: boolean
   emptyIllustration: IllustrationName
@@ -428,6 +431,8 @@ export function Directory<T extends { id: string }>({
   const setPage = paged.setPage
 
   const selectedRows = rows.filter((row) => selected.includes(row.id))
+  const toLines = (list: T[]) =>
+    exportLines ? list.flatMap(exportLines) : list.map(exportRow)
   const allOnPageSelected =
     visible.length > 0 && visible.every((row) => selected.includes(row.id))
   const clear = () => setSelected([])
@@ -558,7 +563,7 @@ export function Directory<T extends { id: string }>({
                 onClick={() =>
                   exportRows(
                     `${exportName} (selected)`,
-                    selectedRows.map(exportRow)
+                    toLines(selectedRows)
                   )
                 }
               >
@@ -676,7 +681,7 @@ export function Directory<T extends { id: string }>({
                       className="rounded-md"
                       aria-label={`Export ${noun}`}
                       onClick={() =>
-                        exportRows(exportName, filtered.map(exportRow))
+                        exportRows(exportName, toLines(filtered))
                       }
                     />
                   }

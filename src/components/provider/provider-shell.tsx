@@ -9,6 +9,7 @@ import {
   IconDashboard,
   IconFileList,
   IconFileUpload,
+  IconLab,
   IconSettings,
   IconUser,
   IconUserAdd,
@@ -43,6 +44,7 @@ const PROVIDER_NAV: NavItem[] = [
     href: `${BASE}/schedule`,
   },
   { id: "tasks", label: "Tasks", icon: IconFileList, href: `${BASE}/tasks` },
+  { id: "labs", label: "Labs", icon: IconLab, href: `${BASE}/labs` },
   {
     id: "communication",
     label: "Communication",
