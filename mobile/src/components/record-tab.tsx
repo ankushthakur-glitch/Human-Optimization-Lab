@@ -36,7 +36,12 @@ import { classify, type Status } from "@/lib/trends"
       Biomarkers.
 
    With sharing turned off, the same banner as every tab, over what was
-   collected before. Opening the tab reads any new results. */
+   collected before. Opening the tab reads any new results.
+
+   A free patient's record (4 Nov 2026) holds only the biomarkers trending
+   the wrong way: out of range, then borderline. No category pills, no other
+   part of the record and nothing to add; the full record comes with
+   membership. */
 
 type Category = "biomarkers" | "imaging" | "medicines" | "conditions" | "visits" | "allergies" | "tests" | "immunizations" | "procedures" | "added"
 
@@ -80,6 +85,12 @@ export function RecordTab() {
   const member = info.experience === "member" || info.experience === "paused"
   // The add sheet opens on the part of the record she is looking at.
   const addKind = category === "medicines" || category === "biomarkers" || category === "imaging" ? undefined : addKindOf(category)?.kind
+  if (!member)
+    return (
+      <TabScreen tab="results" title="Record" pinned={<RecordBanner />}>
+        <Results member={false} imaging={false} offTrack />
+      </TabScreen>
+    )
   return (
     <TabScreen
       tab="results"
@@ -153,7 +164,7 @@ function Categories({ value, onChange }: { value: Category; onChange: (c: Catego
 /* --------------------------------------------------------- results -- */
 
 /** Biomarkers with body system chips, or the scans' measures on their own. */
-function Results({ member, imaging }: { member: boolean; imaging: boolean }) {
+function Results({ member, imaging, offTrack = false }: { member: boolean; imaging: boolean; offTrack?: boolean }) {
   const markers = useMarkers().filter((m) => (m.kind === "imaging") === imaging)
   const [system, setSystem] = React.useState("all")
   // Only the body systems the record holds, in the record's order.
@@ -162,11 +173,11 @@ function Results({ member, imaging }: { member: boolean; imaging: boolean }) {
   const rows = markers
     .filter((m) => imaging || system === "all" || m.group === system)
     .map(classify)
-    .filter((t) => t.latest)
+    .filter((t) => t.latest && (!offTrack || t.status !== "in"))
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
   return (
     <View style={styles.results}>
-      <Heading title={imaging ? "Imaging" : "Biomarkers and results"} variant="title" />
+      <Heading title={offTrack ? "Off track" : imaging ? "Imaging" : "Biomarkers and results"} variant="title" />
       {!imaging && <ChipRow options={chips} value={system} onChange={setSystem} label="Body system" />}
       <Group>
         {rows.map((t) => (
