@@ -39,8 +39,8 @@ import { classify, type Status } from "@/lib/trends"
    collected before. Opening the tab reads any new results.
 
    A free patient's biomarkers (5 Nov 2026) leave out the ones in range:
-   only out of range, then borderline. Every other part of the record
-   stays. */
+   only out of range, then borderline. Imaging is for members only; every
+   other part of the record stays. */
 
 type Category = "biomarkers" | "imaging" | "medicines" | "conditions" | "visits" | "allergies" | "tests" | "immunizations" | "procedures" | "added"
 
@@ -92,7 +92,7 @@ export function RecordTab() {
       pinned={
         <>
           <RecordBanner />
-          <Categories value={category} onChange={setCategory} />
+          <Categories value={category} onChange={setCategory} member={member} />
         </>
       }
       overlay={
@@ -147,10 +147,11 @@ function RecordBanner() {
 
 /* ------------------------------------------------------ categories -- */
 
-function Categories({ value, onChange }: { value: Category; onChange: (c: Category) => void }) {
+function Categories({ value, onChange, member }: { value: Category; onChange: (c: Category) => void; member: boolean }) {
   const onboarding = useOnboarding()
   const added = onboarding.added ?? []
-  const options = added.length ? [...CATEGORIES, { value: "added" as const, label: "Added by you" }] : CATEGORIES
+  const shown = member ? CATEGORIES : CATEGORIES.filter((c) => c.value !== "imaging")
+  const options = added.length ? [...shown, { value: "added" as const, label: "Added by you" }] : shown
   return <ChipRow options={options} value={value} onChange={onChange} label="Part of your record" />
 }
 
