@@ -38,10 +38,9 @@ import { classify, type Status } from "@/lib/trends"
    With sharing turned off, the same banner as every tab, over what was
    collected before. Opening the tab reads any new results.
 
-   A free patient's record (4 Nov 2026) holds only the biomarkers trending
-   the wrong way: out of range, then borderline. No category pills, no other
-   part of the record and nothing to add; the full record comes with
-   membership. */
+   A free patient's biomarkers (5 Nov 2026) leave out the ones in range:
+   only out of range, then borderline. Every other part of the record
+   stays. */
 
 type Category = "biomarkers" | "imaging" | "medicines" | "conditions" | "visits" | "allergies" | "tests" | "immunizations" | "procedures" | "added"
 
@@ -85,12 +84,6 @@ export function RecordTab() {
   const member = info.experience === "member" || info.experience === "paused"
   // The add sheet opens on the part of the record she is looking at.
   const addKind = category === "medicines" || category === "biomarkers" || category === "imaging" ? undefined : addKindOf(category)?.kind
-  if (!member)
-    return (
-      <TabScreen tab="results" title="Record" pinned={<RecordBanner />}>
-        <Results member={false} imaging={false} offTrack />
-      </TabScreen>
-    )
   return (
     <TabScreen
       tab="results"
@@ -115,7 +108,7 @@ export function RecordTab() {
       }
     >
       {category === "biomarkers" || category === "imaging" ? (
-        <Results member={member} imaging={category === "imaging"} />
+        <Results member={member} imaging={category === "imaging"} offTrack={!member && category === "biomarkers"} />
       ) : category === "medicines" ? (
         <View style={styles.results}>
           <Heading title="Medicines" variant="title" />
@@ -177,7 +170,7 @@ function Results({ member, imaging, offTrack = false }: { member: boolean; imagi
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
   return (
     <View style={styles.results}>
-      <Heading title={offTrack ? "Off track" : imaging ? "Imaging" : "Biomarkers and results"} variant="title" />
+      <Heading title={imaging ? "Imaging" : "Biomarkers and results"} variant="title" />
       {!imaging && <ChipRow options={chips} value={system} onChange={setSystem} label="Body system" />}
       <Group>
         {rows.map((t) => (
