@@ -24,7 +24,6 @@ export type IntakePage = {
 export const DEVICES = [
   { id: "apple", name: "Apple Health", kind: "Watch and phone" },
   { id: "oura", name: "Oura", kind: "Ring" },
-  { id: "withings", name: "Withings", kind: "Scale and blood pressure cuff" },
   { id: "garmin", name: "Garmin", kind: "Watch" },
   { id: "fitbit", name: "Fitbit", kind: "Watch" },
 ] as const
