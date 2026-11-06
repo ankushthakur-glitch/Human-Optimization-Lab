@@ -93,7 +93,7 @@ function AddDeviceSheet({ onClose, welcome }: { onClose: () => void; welcome?: b
 
   return (
     <Sheet title={welcome ? "Connect your devices" : "Add a device"} onClose={onClose}>
-      {welcome && <SheetText>Your plan uses your steps, sleep and weight to adjust each week. You can add more later from Profile.</SheetText>}
+      {welcome && <SheetText>Your plan uses your steps, sleep and weight to adjust each week.</SheetText>}
       {left.length ? (
         <Rows>
           {left.map((d) => (
