@@ -166,7 +166,7 @@ function QuestionsFirst({ left, onStart }: { left: ReturnType<typeof questionsLe
       <Text style={styles.pastHead} accessibilityRole="header">
         First, answer these
       </Text>
-      <Text style={styles.firstLead}>What we found comes from your record and your answers. How you sleep and how your life is going never show in a lab result.</Text>
+      <Text style={styles.firstLead}>Your sleep and wellbeing shape what we find.</Text>
       <Group>
         {parts.map((p) => (
           <NeedsRow
