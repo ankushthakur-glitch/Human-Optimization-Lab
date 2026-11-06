@@ -12,7 +12,8 @@ import { useOnboarding } from "@/lib/onboarding"
 import { space, type } from "@/lib/theme"
 
 /* "Are you flourishing?" (16 Oct call): the moment before the flourishing
-   questions, opened by Confirm on "Tell us about you" (/health-profile).
+   questions, opened from To do or the upgrade page (6 Nov 2026: "Tell us
+   about you" is no longer a step).
    Why first, then what. Top to bottom:
    - the video;
    - "How it works", the three steps as the kit's track: watch, answer,
@@ -36,7 +37,7 @@ export default function FlourishingScreen() {
   ]
   return (
     <PlanStepPage
-      headerTitle="Flourishing"
+      headerTitle="Flourishing questions"
       onTitlePress={() => void demoToResult(onboarding)}
       title="Are you flourishing?"
       lead="A short video, then a few questions about your life."

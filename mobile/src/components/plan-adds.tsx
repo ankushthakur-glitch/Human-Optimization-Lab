@@ -3,12 +3,11 @@ import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { CaretRight, ChartLine, ClipboardText, Flask, Heart, Moon, ShieldCheck, Smiley } from "@/components/ph"
-import { Group, NeedsRow, Tag, TextAction } from "@/components/record-kit"
-import { Sheet } from "@/components/sheet"
+import { Group, NeedsRow, Tag } from "@/components/record-kit"
 import { TabScreen } from "@/components/tab-bar"
 import { Button } from "@/components/ui"
 import { FLOURISH } from "@/lib/conversation"
-import { questionsLeft } from "@/lib/flourishing"
+import { flourishingHref, questionsLeft } from "@/lib/flourishing"
 import { logEvent, useOffer, useShown } from "@/lib/offers"
 import { useOnboarding } from "@/lib/onboarding"
 import { STOP } from "@/lib/sleep-screen"
@@ -29,18 +28,44 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
 
    The gate (5 Nov 2026 call): what we found is built from her answers as
    well as her record (sleep and how her life is going never show in a lab
-   result), so while the flourishing or sleep questions are open in To do,
-   "See what we found" opens a sheet listing them instead. Starting there
-   remembers where she came from, and the last result opens what we found. */
+   result), so while the flourishing or sleep questions are open they sit
+   up front, above what the plan adds (6 Nov 2026), and the button starts
+   the next one instead of "See what we found". Each questionnaire's result
+   comes back here. */
 
 type Icon = typeof Heart
 
 const ADDS: { key: string; title: string; says: string; Icon: Icon }[] = [
-  { key: "plans", title: "Optimization plans built from your record", says: "Every opportunity your results and your answers reveal, ranked by what matters most", Icon: Heart },
-  { key: "tests", title: "Tests ordered, scheduled and tracked", says: "Priced before you buy, booked in the app, and never re-ordered if we already hold it", Icon: Flask },
-  { key: "daily", title: "A daily plan you can answer", says: "Six topics a day, each with four ways to answer and a score that follows what you did", Icon: ClipboardText },
-  { key: "progress", title: "Progress measured against day one", says: "Week, month, six months and year, with every number paired to the point it moved from", Icon: ChartLine },
-  { key: "physician", title: "Your physician sees all of it", says: "Every result and every change goes to their file, in a form they can keep", Icon: ShieldCheck },
+  {
+    key: "plans",
+    title: "Optimization plans built from your record",
+    says: "Every opportunity your results and your answers reveal, ranked by what matters most",
+    Icon: Heart,
+  },
+  {
+    key: "tests",
+    title: "Tests ordered, scheduled and tracked",
+    says: "Priced before you buy, booked in the app, and never re-ordered if we already hold it",
+    Icon: Flask,
+  },
+  {
+    key: "daily",
+    title: "A daily plan you can answer",
+    says: "Six topics a day, each with four ways to answer and a score that follows what you did",
+    Icon: ClipboardText,
+  },
+  {
+    key: "progress",
+    title: "Progress measured against day one",
+    says: "Week, month, six months and year, with every number paired to the point it moved from",
+    Icon: ChartLine,
+  },
+  {
+    key: "physician",
+    title: "Your physician sees all of it",
+    says: "Every result and every change goes to their file, in a form they can keep",
+    Icon: ShieldCheck,
+  },
 ]
 
 export function PlanAdds() {
@@ -57,20 +82,18 @@ export function PlanAdds() {
 
   const past = onboarding.planHistory ?? []
   const left = questionsLeft(onboarding)
-  const [gate, setGate] = React.useState(false)
+  const open = left.flourishing || left.sleep
 
   function seeWhatWeFound() {
     offer.markOpened()
-    if (left.flourishing || left.sleep) return setGate(true)
     logEvent(onboarding, "checkout_started", { from: "tab" })
     router.push("/opportunities")
   }
 
-  async function startQuestions() {
-    await onboarding.save({ questionsThen: "/opportunities" })
-    setGate(false)
-    if (!left.flourishing) return router.push("/sleep-questions")
-    router.push(left.flourishingGiven > 0 ? "/flourishing-questions" : "/health-profile")
+  // Each questionnaire comes back here when its result is seen.
+  async function start(part: "flourishing" | "sleep") {
+    await onboarding.save({ questionsThen: "/plans" })
+    router.push(part === "flourishing" ? flourishingHref(onboarding) : "/sleep-questions")
   }
 
   return (
@@ -79,16 +102,19 @@ export function PlanAdds() {
       back
       title="What an optimization plan adds"
       solidFooter
-      overlay={gate && <QuestionsGate left={left} onStart={() => void startQuestions()} onClose={() => setGate(false)} />}
       footer={
-        <Button
-          onPress={seeWhatWeFound}
-          trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}
-        >
-          See what we found
-        </Button>
+        open ? (
+          <Button onPress={() => void start(left.flourishing ? "flourishing" : "sleep")} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
+            {`${(left.flourishing ? left.flourishingGiven : left.sleepGiven) > 0 ? "Continue" : "Start"} the ${left.flourishing ? "flourishing" : "sleep"} questions`}
+          </Button>
+        ) : (
+          <Button onPress={seeWhatWeFound} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
+            See what we found
+          </Button>
+        )
       }
     >
+      {open && <QuestionsFirst left={left} onStart={(part) => void start(part)} />}
       {past.length > 0 && (
         <View style={styles.past}>
           <Text style={styles.pastHead}>Your past plans</Text>
@@ -114,31 +140,33 @@ export function PlanAdds() {
   )
 }
 
-/** The sheet over the plan while the questions are open: why first, then
-    the two parts with where she is in each, and one button. */
-function QuestionsGate({ left, onStart, onClose }: { left: ReturnType<typeof questionsLeft>; onStart: () => void; onClose: () => void }) {
-  const started = left.flourishingGiven + left.sleepGiven > 0
+/** Up front on the upgrade page while either questionnaire is open: why
+    first, then each with its Start, or Done once answered. */
+function QuestionsFirst({ left, onStart }: { left: ReturnType<typeof questionsLeft>; onStart: (part: "flourishing" | "sleep") => void }) {
   const parts = [
     {
-      key: "flourishing",
+      key: "flourishing" as const,
       Icon: Smiley,
       title: "Flourishing questions",
       open: left.flourishing,
+      started: left.flourishingGiven > 0,
       meta: left.flourishingGiven > 0 ? `${left.flourishingGiven} of ${FLOURISH.length} answered` : `${FLOURISH.length} questions, about 5 minutes`,
     },
     {
-      key: "sleep",
+      key: "sleep" as const,
       Icon: Moon,
       title: "Sleep questions",
       open: left.sleep,
+      started: left.sleepGiven > 0,
       meta: left.sleepGiven > 0 ? `${left.sleepGiven} of ${STOP.length} answered` : `${STOP.length} questions, about 1 minute`,
     },
   ]
   return (
-    <Sheet title="First, a few questions" onClose={onClose}>
-      <Text style={styles.gateLead}>
-        What we found comes from your record and your answers. How you sleep and how your life is going never show in a lab result.
+    <View style={styles.first}>
+      <Text style={styles.pastHead} accessibilityRole="header">
+        First, answer these
       </Text>
+      <Text style={styles.firstLead}>What we found comes from your record and your answers. How you sleep and how your life is going never show in a lab result.</Text>
       <Group>
         {parts.map((p) => (
           <NeedsRow
@@ -146,30 +174,28 @@ function QuestionsGate({ left, onStart, onClose }: { left: ReturnType<typeof que
             icon={<p.Icon size={16} color={color.primary} />}
             title={p.title}
             meta={p.open ? p.meta : undefined}
+            action={
+              p.open
+                ? {
+                    label: p.started ? "Continue" : "Start",
+                    onPress: () => onStart(p.key),
+                  }
+                : undefined
+            }
             right={p.open ? undefined : <Tag tone="ok">Done</Tag>}
             chevron={false}
+            onPress={p.open ? () => onStart(p.key) : undefined}
             accessibilityLabel={`${p.title}. ${p.open ? p.meta : "Done"}`}
           />
         ))}
       </Group>
-      <View style={styles.gateActions}>
-        <Button onPress={onStart} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
-          {started ? "Continue the questions" : "Start the questions"}
-        </Button>
-        <View style={styles.gateQuiet}>
-          <TextAction tone="muted" onPress={onClose}>
-            Not now
-          </TextAction>
-        </View>
-      </View>
-    </Sheet>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  gateLead: { ...type.body, color: ink.secondary },
-  gateActions: { gap: space.stack, marginTop: space.item },
-  gateQuiet: { alignItems: "center" },
+  first: { gap: space.inline, marginBottom: space.section },
+  firstLead: { ...type.label, color: ink.secondary, lineHeight: 17 },
   // The cards sit 8 apart, as in every list; the page's 20 is for between sections.
   list: { gap: space.inline },
   past: { gap: space.inline, marginBottom: space.inline },
@@ -185,7 +211,14 @@ const styles = StyleSheet.create({
     borderColor: hairline.edge,
     backgroundColor: color.background,
   },
-  tile: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: color.surface },
+  tile: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: color.surface,
+  },
   words: { flex: 1, gap: 2 },
   name: { ...type.title, fontFamily: font.semibold, color: ink.strong },
   says: { ...type.label, color: ink.secondary, lineHeight: 17 },

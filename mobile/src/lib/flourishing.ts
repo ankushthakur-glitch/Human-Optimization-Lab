@@ -55,13 +55,16 @@ export function questionsLeft(s: Answers) {
   }
 }
 
-/** Where the questions go after one part is done: on to the sleep
-    questions while they are open, else where she started from (the plan's
-    gate opens what we found; otherwise To do). */
-export async function afterQuestions(onboarding: ReturnType<typeof useOnboarding>, part: "flourishing" | "sleep") {
-  const left = questionsLeft(onboarding)
-  if (part === "flourishing" && left.sleep) return router.push("/sleep-questions")
-  const then = (onboarding.questionsThen ?? "/gaps") as Href
-  if (onboarding.questionsThen) await onboarding.save({ questionsThen: undefined })
-  router.replace(then)
+/** Where a questionnaire goes once its result is seen: back where she
+    started, the plan's upgrade page (/plans) or To do. The flourishing and
+    sleep questions are two separate questionnaires (6 Nov 2026), so one
+    never leads into the other. */
+export function afterQuestions(onboarding: ReturnType<typeof useOnboarding>) {
+  const from = (onboarding.questionsThen ?? "/gaps") as Href
+  onboarding.save({ questionsThen: undefined }).catch(() => {})
+  router.dismissTo(from)
 }
+
+/** Where each questionnaire starts: the short video first, or the
+    question she stopped at. */
+export const flourishingHref = (s: Answers): Href => (questionsLeft(s).flourishingGiven > 0 ? "/flourishing-questions" : "/flourishing")

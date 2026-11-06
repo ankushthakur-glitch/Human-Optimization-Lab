@@ -6,7 +6,7 @@ import { useReducedMotion } from "@/components/chat"
 import { PlanStepPage } from "@/components/plan-steps"
 import { Card, Tag } from "@/components/record-kit"
 import { DOMAINS, flourishScore, interpret } from "@/lib/conversation"
-import { AREAS, afterQuestions, questionsLeft } from "@/lib/flourishing"
+import { AREAS, afterQuestions } from "@/lib/flourishing"
 import { MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { chart, color, font, ink, space, type } from "@/lib/theme"
@@ -16,9 +16,8 @@ import { chart, color, font, ink, space, type } from "@/lib/theme"
    over a yellow to green bar that fills as the page opens, her
    strongest part of life and the one with most room to grow, then each of
    the eight as a bar that grows in turn. It is shared with her physician
-   to shape the plan. Continue opens the sleep apnea screen
-   (/sleep-questions) while it is open; otherwise Done goes back where she
-   started (To do, or what we found from the plan's gate). */
+   to shape the plan. Done goes back where she started (To do or the
+   upgrade page); the sleep questions are a separate questionnaire. */
 
 /* The index bar's soft yellow to soft green, as in the reference. */
 const INDEX_FROM = "#EBD89A"
@@ -62,10 +61,10 @@ export default function FlourishingResultScreen() {
 
   return (
     <PlanStepPage
-      headerTitle="Flourishing"
+      headerTitle="Flourishing questions"
       title="Your flourishing result"
-      onNext={() => void afterQuestions(onboarding, "flourishing")}
-      nextLabel={questionsLeft(onboarding).sleep ? "Continue" : "Done"}
+      onNext={() => afterQuestions(onboarding)}
+      nextLabel="Done"
       nextWide
     >
       <Card style={styles.indexCard}>

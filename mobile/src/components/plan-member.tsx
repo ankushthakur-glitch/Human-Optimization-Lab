@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { planName } from "@/components/enrollment-kit"
 
 import { Barbell, Camera, Heartbeat, PersonSimpleWalk, Ruler, Scales, Scan, Sparkle, Watch } from "@/components/ph"
-import { DevicesSheet } from "@/components/plan-tab-devices"
+import { DevicesSheet, WelcomeDevicesSheet } from "@/components/plan-tab-devices"
 import { FocusIcon, HeadCard, headText } from "@/components/plan-tab-pieces"
 import { RecordIcon } from "@/components/record-icons"
 import {
@@ -75,12 +75,22 @@ export function PlanMember() {
   }
   const [checkIn, setCheckIn] = React.useState<CheckInKind>()
   const onboarding = useOnboarding()
-  const { section: asked } = useLocalSearchParams<{ section?: string }>()
+  const { section: asked, walk } = useLocalSearchParams<{ section?: string; walk?: string }>()
   // Home's See more opens Plan straight on a section (Today's goals → Today).
   React.useEffect(() => {
     if (asked && SECTIONS.some((o) => o.value === asked)) setSection(asked as Section)
   }, [asked])
-  const overlay = devices ? (
+  // Her first visit to the paid plan, straight after enrolling
+  // (/plan?walk=1), offers her devices once (6 Nov 2026).
+  const [welcomed, setWelcomed] = React.useState(false)
+  const welcome = walk === "1" && onboarding.loaded && !onboarding.devicesOffered && !welcomed && experience !== "paused"
+  const closeWelcome = () => {
+    setWelcomed(true)
+    onboarding.save({ devicesOffered: true }).catch(() => {})
+  }
+  const overlay = welcome ? (
+    <WelcomeDevicesSheet onClose={closeWelcome} />
+  ) : devices ? (
     <DevicesSheet onClose={() => setDevices(false)} />
   ) : checkIn ? (
     <CheckInSheet kind={checkIn} onClose={() => setCheckIn(undefined)} />

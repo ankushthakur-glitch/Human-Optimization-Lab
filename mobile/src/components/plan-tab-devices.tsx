@@ -33,11 +33,20 @@ export function DevicesSheet({ onClose }: { onClose: () => void }) {
 
 const CONNECT_MS = 1800
 
+/** Apple Health as one to connect, for the first visit's sheet. */
+const APPLE_HEALTH: Connection = { id: "apple-health", kind: "device", name: "Apple Health", via: "Steps, sleep and heart rate" }
+
+/** The first time a paid member lands on her plan (6 Nov 2026): Apple
+    Health, Garmin and the rest to connect now, or later from Profile. */
+export function WelcomeDevicesSheet({ onClose }: { onClose: () => void }) {
+  return <AddDeviceSheet welcome onClose={onClose} />
+}
+
 /** A member picks a ring, scale or watch, then it connects. */
-function AddDeviceSheet({ onClose }: { onClose: () => void }) {
+function AddDeviceSheet({ onClose, welcome }: { onClose: () => void; welcome?: boolean }) {
   const onboarding = useOnboarding()
   const added = onboarding.devices ?? []
-  const left = ADDABLE.filter((d) => !added.includes(d.id))
+  const left = (welcome ? [APPLE_HEALTH, ...ADDABLE] : ADDABLE).filter((d) => !added.includes(d.id))
   const [connecting, setConnecting] = React.useState<Connection>()
   const [connected, setConnected] = React.useState<Connection>()
 
@@ -83,7 +92,8 @@ function AddDeviceSheet({ onClose }: { onClose: () => void }) {
     )
 
   return (
-    <Sheet title="Add a device" onClose={onClose}>
+    <Sheet title={welcome ? "Connect your devices" : "Add a device"} onClose={onClose}>
+      {welcome && <SheetText>Your plan uses your steps, sleep and weight to adjust each week. You can add more later from Profile.</SheetText>}
       {left.length ? (
         <Rows>
           {left.map((d) => (

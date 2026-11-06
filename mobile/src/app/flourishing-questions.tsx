@@ -71,7 +71,7 @@ export default function FlourishingQuestionsScreen() {
 
   return (
     <PlanStepPage
-      headerTitle="Flourishing"
+      headerTitle="Flourishing questions"
       onTitlePress={() => {
         if (at !== TOTAL - 1) go(TOTAL - 1)
       }}

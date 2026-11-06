@@ -65,7 +65,7 @@ export default function SleepQuestionsScreen() {
 
   return (
     <PlanStepPage
-      headerTitle="Sleep"
+      headerTitle="Sleep questions"
       onBack={() => (at === 0 ? router.back() : go(at - 1))}
       onNext={() => (last ? router.push("/sleep-result") : go(at + 1))}
       nextLabel={last ? "See my result" : "Continue"}

@@ -6,7 +6,7 @@ import { pickBanner, type BannerFacts, type BannerState, type Hue, type Tone } f
 import { BASELINE_TESTS, REMIND_EVERY_DAYS, lastReminderDay, type BaselineTestId } from "@/lib/baseline-tests"
 import { dayOfWords } from "@/lib/dates"
 import { experience, sharingOff } from "@/lib/experience"
-import { questionsLeft } from "@/lib/flourishing"
+import { flourishingHref, questionsLeft } from "@/lib/flourishing"
 import { NEXT_REVIEW, addDays, clock, dateOfAt, dayFrom, dayLabel, daysBetween, localDay, shortDay, thisWeek, weekdayOf, type SavedQuestion } from "@/lib/member"
 import type { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
@@ -596,7 +596,8 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
 
   /* The flourishing and sleep questions, for every free patient until
      answered (5 Nov 2026 call): her optimization opportunities come from
-     her answers as well as her record, so the plan waits for them. */
+     her answers as well as her record, so the plan waits for them. They
+     lead To do (6 Nov 2026). */
   if (!live) {
     const left = questionsLeft(s)
     const day = localIso(new Date(now.getFullYear(), now.getMonth(), now.getDate()))
@@ -609,10 +610,10 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
         hue: "teal",
         title: "Answer the flourishing questions",
         meta: left.flourishingGiven > 0 ? `${left.flourishingGiven} of ${FLOURISH.length} answered` : `${FLOURISH.length} questions, about 5 minutes`,
-        action: { label: left.flourishingGiven > 0 ? "Continue" : "Start", href: href(left.flourishingGiven > 0 ? "/flourishing-questions" : "/health-profile") },
-        href: href(left.flourishingGiven > 0 ? "/flourishing-questions" : "/health-profile"),
+        action: { label: left.flourishingGiven > 0 ? "Continue" : "Start", href: flourishingHref(s) },
+        href: flourishingHref(s),
         sortAt: day,
-        rank: 5,
+        rank: -1,
       })
     if (left.sleep)
       needs.push({
@@ -626,7 +627,7 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
         action: { label: left.sleepGiven > 0 ? "Continue" : "Start", href: href("/sleep-questions") },
         href: href("/sleep-questions"),
         sortAt: day,
-        rank: 5,
+        rank: -1,
       })
   }
 

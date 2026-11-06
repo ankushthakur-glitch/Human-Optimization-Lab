@@ -16,8 +16,8 @@ import { chart, font, hairline, ink, space, type } from "@/lib/theme"
    next (a home sleep study, offered with her optimization plan) and the
    honest limit. A second card shows what counted: her four answers, then
    the four facts from her record (BMI, age, sex; neck size not measured).
-   Done goes back to To do; from the plan's gate, "See what we found"
-   opens /opportunities (lib/flourishing.ts afterQuestions). */
+   Done goes back where she started, To do or the upgrade page
+   (lib/flourishing.ts afterQuestions). */
 
 const RISK: Record<SleepRisk, { tone: Tone; tag: string; line: string }> = {
   low: { tone: "ok", tag: "Low risk", line: "A low chance of sleep apnea." },
@@ -49,7 +49,7 @@ export default function SleepResultScreen() {
       : `${MEMBER.doctorShort} will look at your answers. A home sleep study, two nights in your own bed, is one way to find out, and it will be in your optimization plan.`
 
   return (
-    <PlanStepPage headerTitle="Sleep" title="Your sleep result" onNext={() => void afterQuestions(onboarding, "sleep")} nextLabel={onboarding.questionsThen ? "See what we found" : "Done"} nextWide>
+    <PlanStepPage headerTitle="Sleep questions" title="Your sleep result" onNext={() => afterQuestions(onboarding)} nextLabel="Done" nextWide>
       <Card style={styles.card}>
         <View style={styles.top} accessible accessibilityLabel={`${yes} of 8. ${r.tag}.`}>
           <View style={styles.score}>

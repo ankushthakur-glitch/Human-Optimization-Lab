@@ -11,9 +11,8 @@ import { useOnboarding } from "@/lib/onboarding"
 import { color, hairline, ink, space, type } from "@/lib/theme"
 
 /* "Tell us about you" (Journey_7 screen 29b, "Confirm, don't fill in"):
-   the first step of the flourishing questions, opened from To do or the
-   plan's gate (5 Nov 2026 call: the questions moved into the free app,
-   before any plan is priced). Her profile as the record has it, in three blocks;
+   not in any flow since 6 Nov 2026 (the flourishing questions open on
+   their video); kept for its link. Her profile as the record has it, in three blocks;
    she confirms it. Basic information and lifestyle edit in a sheet over
    this screen; medical has no Edit, as it is read from her record. Confirm
    opens "Are you flourishing?" (/flourishing), the short video before the
