@@ -1,10 +1,10 @@
-import { router } from "expo-router"
 import * as React from "react"
 import { StyleSheet, Text, View } from "react-native"
 
 import { PlanStepPage } from "@/components/plan-steps"
 import { Card, KeyValue, Tag, type Tone } from "@/components/record-kit"
 import { MEMBER } from "@/lib/member"
+import { afterQuestions } from "@/lib/flourishing"
 import { useOnboarding } from "@/lib/onboarding"
 import { BANG, fromRecord, sleepRisk, STOP, type SleepRisk } from "@/lib/sleep-screen"
 import { chart, font, hairline, ink, space, type } from "@/lib/theme"
@@ -13,10 +13,11 @@ import { chart, font, hairline, ink, space, type } from "@/lib/theme"
    One card: how many of the eight are yes (her four answers and her
    record) with the risk as a tag beside it, the three zones as a bar with
    her place marked, then one sentence on what it means and what comes
-   next (her home sleep study when she kept it at /baseline) and the
+   next (a home sleep study, offered with her optimization plan) and the
    honest limit. A second card shows what counted: her four answers, then
    the four facts from her record (BMI, age, sex; neck size not measured).
-   "See my plan" walks on to her plan (/plan?walk=1). */
+   Done goes back to To do; from the plan's gate, "See what we found"
+   opens /opportunities (lib/flourishing.ts afterQuestions). */
 
 const RISK: Record<SleepRisk, { tone: Tone; tag: string; line: string }> = {
   low: { tone: "ok", tag: "Low risk", line: "A low chance of sleep apnea." },
@@ -40,16 +41,15 @@ export default function SleepResultScreen() {
   const answers = { ...onboarding.sleepScreen, ...record.answers }
   const { yes, risk } = sleepRisk(answers)
   const r = RISK[risk]
-  const study = (onboarding.addOns ?? ["sleep", "smart"]).includes("sleep")
+  // Answered in To do, before any plan is priced (5 Nov 2026 call): a
+  // higher score puts a home sleep study among what we found.
   const next =
     risk === "low"
-      ? `${MEMBER.doctorShort} will see your answers with your plan.`
-      : study
-        ? "Your home sleep study, two nights in your own bed, will tell for sure."
-        : `${MEMBER.doctorShort} will look at your answers. A home sleep study is one way to find out.`
+      ? `${MEMBER.doctorShort} will see your answers.`
+      : `${MEMBER.doctorShort} will look at your answers. A home sleep study, two nights in your own bed, is one way to find out, and it will be in your optimization plan.`
 
   return (
-    <PlanStepPage headerTitle="Sleep" title="Your sleep result" onNext={() => router.replace("/plan?walk=1")} nextLabel="See my plan" nextWide>
+    <PlanStepPage headerTitle="Sleep" title="Your sleep result" onNext={() => void afterQuestions(onboarding, "sleep")} nextLabel={onboarding.questionsThen ? "See what we found" : "Done"} nextWide>
       <Card style={styles.card}>
         <View style={styles.top} accessible accessibilityLabel={`${yes} of 8. ${r.tag}.`}>
           <View style={styles.score}>

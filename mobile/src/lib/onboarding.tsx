@@ -332,6 +332,10 @@ export type State = {
   /** Her answers to the sleep apnea screen on /sleep-questions
       (STOP-BANG, lib/sleep-screen.ts), yes or no by question. */
   sleepScreen?: Partial<Record<import("@/lib/sleep-screen").SleepId, boolean>>
+  /** Where the flourishing and sleep questions lead once both are done:
+      "/opportunities" when she started them from the plan's gate (5 Nov
+      2026 call), unset to go back to To do. */
+  questionsThen?: string
   /** The baseline tests she left ticked on /baseline (Journey_7 screen
       5); unset means all three. (Renamed from baselineTests, which held
       only the optional extras, so old saves start fresh.) */

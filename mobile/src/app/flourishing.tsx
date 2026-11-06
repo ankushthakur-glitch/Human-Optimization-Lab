@@ -19,7 +19,8 @@ import { space, type } from "@/lib/theme"
      see your result. Watching to the end ticks the first;
    "Start the questions" opens the questionnaire (/flourishing-questions).
    Demo only: tapping "Flourishing" in the header jumps to the result.
-   The questions are needed before the plan starts, so there is no skip;
+   The questions are needed before her opportunities are shown, so there
+   is no skip;
    the video can be passed, and back still goes back.
 
    The clip is the flourishing film (components/film-frames, 30 seconds)

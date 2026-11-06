@@ -1,4 +1,3 @@
-import { router } from "expo-router"
 import * as React from "react"
 import { Animated, Easing, StyleSheet, Text, View } from "react-native"
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
@@ -7,7 +6,7 @@ import { useReducedMotion } from "@/components/chat"
 import { PlanStepPage } from "@/components/plan-steps"
 import { Card, Tag } from "@/components/record-kit"
 import { DOMAINS, flourishScore, interpret } from "@/lib/conversation"
-import { AREAS } from "@/lib/flourishing"
+import { AREAS, afterQuestions, questionsLeft } from "@/lib/flourishing"
 import { MEMBER } from "@/lib/member"
 import { useOnboarding } from "@/lib/onboarding"
 import { chart, color, font, ink, space, type } from "@/lib/theme"
@@ -18,7 +17,8 @@ import { chart, color, font, ink, space, type } from "@/lib/theme"
    strongest part of life and the one with most room to grow, then each of
    the eight as a bar that grows in turn. It is shared with her physician
    to shape the plan. Continue opens the sleep apnea screen
-   (/sleep-questions), whose result walks on to her plan. */
+   (/sleep-questions) while it is open; otherwise Done goes back where she
+   started (To do, or what we found from the plan's gate). */
 
 /* The index bar's soft yellow to soft green, as in the reference. */
 const INDEX_FROM = "#EBD89A"
@@ -64,8 +64,8 @@ export default function FlourishingResultScreen() {
     <PlanStepPage
       headerTitle="Flourishing"
       title="Your flourishing result"
-      onNext={() => router.push("/sleep-questions")}
-      nextLabel="Continue"
+      onNext={() => void afterQuestions(onboarding, "flourishing")}
+      nextLabel={questionsLeft(onboarding).sleep ? "Continue" : "Done"}
       nextWide
     >
       <Card style={styles.indexCard}>

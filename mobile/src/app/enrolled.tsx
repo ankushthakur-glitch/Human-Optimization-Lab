@@ -25,10 +25,8 @@ import { chart, color, font, hairline, ink, space, type } from "@/lib/theme"
    the plan ready next. Nothing goes to her physician for review (27 Oct
    2026). "Schedule my tests" opens the day and time for each test
    (/schedule-tests); "Confirm schedule" there then opens the
-   confirmation (/schedule-confirmed), which leads on to the flourishing
-   questions. "Schedule later" leaves them in To do, brought up
-   every other day, and opens the same health profile and flourishing
-   questions (/health-profile). Either way she walks on to her plan
+   confirmation (/schedule-confirmed). "Schedule later" leaves them in To
+   do, brought up every other day. Either way she walks on to her plan
    (/plan?walk=1), live from the moment she enrolled. The
    payment and its receipt were confirmed in a popup just before. */
 
@@ -102,12 +100,13 @@ export default function EnrolledScreen() {
   // confirms it (app/schedule-tests.tsx).
   const schedule = () => router.push("/schedule-tests")
 
-  // Left for later: the tests wait in To do, brought up every other day.
-  // The flourishing questions still follow, as after a confirmed schedule.
+  // Left for later: the tests wait in To do, brought up every other day,
+  // and she walks on to her plan (the questions were answered before she
+  // paid, 5 Nov 2026 call).
   async function later() {
     const paid = onboarding.startingTests
     if (paid) await onboarding.save({ startingTests: { ...paid, laterAt: new Date().toISOString() } })
-    router.replace("/health-profile")
+    router.replace("/plan?walk=1")
   }
 
   const rise = (i: number) => ({

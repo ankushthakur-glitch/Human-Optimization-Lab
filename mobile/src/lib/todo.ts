@@ -6,6 +6,7 @@ import { pickBanner, type BannerFacts, type BannerState, type Hue, type Tone } f
 import { BASELINE_TESTS, REMIND_EVERY_DAYS, lastReminderDay, type BaselineTestId } from "@/lib/baseline-tests"
 import { dayOfWords } from "@/lib/dates"
 import { experience, sharingOff } from "@/lib/experience"
+import { questionsLeft } from "@/lib/flourishing"
 import { NEXT_REVIEW, addDays, clock, dateOfAt, dayFrom, dayLabel, daysBetween, localDay, shortDay, thisWeek, weekdayOf, type SavedQuestion } from "@/lib/member"
 import type { useOnboarding } from "@/lib/onboarding"
 import { PATIENT } from "@/lib/patient"
@@ -27,6 +28,8 @@ import {
   type Order,
 } from "@/lib/record"
 import { timeOf } from "@/lib/trends"
+import { FLOURISH } from "@/lib/conversation"
+import { STOP } from "@/lib/sleep-screen"
 
 /* Everything open for the patient, worked out in one place so Home, the To
    do tab and the Record tab count the same things the same way (A-48,
@@ -69,7 +72,7 @@ export type TodoItem = {
   /** The list it sits in. New in your record items, already in the past,
       say "done"; they sit in `newInRecord`, never in a To do list. */
   group: TodoGroup
-  kind: "order" | "gap" | "meds" | "appointment" | "review" | "question" | "visit-outside" | "document"
+  kind: "order" | "gap" | "meds" | "appointment" | "review" | "question" | "visit-outside" | "document" | "questions"
   icon: RecordIconName
   /** The tile's hue off the hero; rows on the hero are teal. */
   hue: Hue
@@ -89,7 +92,7 @@ export type TodoItem = {
   tag?: { tone: Tone; label: string }
   /** The row's one action: a pill that opens a page or dials a number, or
       "Remove" for a saved question (removeQuestion). */
-  action?: { label: "Book" | "Schedule" | "Call" | "Check" | "Save" | "Ask" | "Remove"; href?: Href; tel?: string; remove?: string }
+  action?: { label: "Book" | "Schedule" | "Call" | "Check" | "Save" | "Ask" | "Remove" | "Start" | "Continue"; href?: Href; tel?: string; remove?: string }
   /** What the whole row opens: a typed route, ready for router.push. */
   href: Href
   /** When it happens or is due, local ("2026-11-12T23:59"), for sorting. */
@@ -590,6 +593,42 @@ export function todo(s: Snapshot, now: Date = new Date()): Todo {
       sortAt: localIso(new Date(now.getFullYear(), now.getMonth(), now.getDate())),
       rank: 4,
     })
+
+  /* The flourishing and sleep questions, for every free patient until
+     answered (5 Nov 2026 call): her optimization opportunities come from
+     her answers as well as her record, so the plan waits for them. */
+  if (!live) {
+    const left = questionsLeft(s)
+    const day = localIso(new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+    if (left.flourishing)
+      needs.push({
+        id: "questions:flourishing",
+        group: "needs",
+        kind: "questions",
+        icon: "documents",
+        hue: "teal",
+        title: "Answer the flourishing questions",
+        meta: left.flourishingGiven > 0 ? `${left.flourishingGiven} of ${FLOURISH.length} answered` : `${FLOURISH.length} questions, about 5 minutes`,
+        action: { label: left.flourishingGiven > 0 ? "Continue" : "Start", href: href(left.flourishingGiven > 0 ? "/flourishing-questions" : "/health-profile") },
+        href: href(left.flourishingGiven > 0 ? "/flourishing-questions" : "/health-profile"),
+        sortAt: day,
+        rank: 5,
+      })
+    if (left.sleep)
+      needs.push({
+        id: "questions:sleep",
+        group: "needs",
+        kind: "questions",
+        icon: "documents",
+        hue: "teal",
+        title: "Answer the sleep questions",
+        meta: left.sleepGiven > 0 ? `${left.sleepGiven} of ${STOP.length} answered` : `${STOP.length} questions, about 1 minute`,
+        action: { label: left.sleepGiven > 0 ? "Continue" : "Start", href: href("/sleep-questions") },
+        href: href("/sleep-questions"),
+        sortAt: day,
+        rank: 5,
+      })
+  }
 
   /* Appointments from the practice's schedule, with the questions saved
      for each (one not tied to a visit goes to the next one). */

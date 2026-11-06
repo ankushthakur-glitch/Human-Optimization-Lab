@@ -8,7 +8,7 @@ import { WASH } from "@/components/enrollment-kit"
 import { DarkStatusBar } from "@/components/error-state"
 import { PageFooter, PageGround } from "@/components/hol"
 import { Bone, CalendarCheck, CaretRight, Drop, MapPin, Wind } from "@/components/ph"
-import { Card, CheckLine, HUE, TextAction, Tile } from "@/components/record-kit"
+import { Card, CheckLine, HUE, Tile } from "@/components/record-kit"
 import { Button, useTopInset } from "@/components/ui"
 import { BASELINE_TESTS, TEST_SLOTS, chosenTests, type BaselineTestId } from "@/lib/baseline-tests"
 import { useOnboarding } from "@/lib/onboarding"
@@ -20,14 +20,10 @@ import { color, font, hairline, ink, space, type } from "@/lib/theme"
    no tab bar, the teal wash, a badge that pops in, then the words, the card
    and the buttons rising in turn (all still under Reduce Motion).
    The card lists each booked test with its day, time and place. Under it
-   the assistant's offer, with its two buttons:
-     "Personalize my care" opens "Tell us about you" (/health-profile),
-       then the flourishing video, questions and result, the sleep screen, which walks on
-       to her plan (/plan?walk=1);
-     "I'll do this later" skips them for now and walks on to her plan the same way.
-       The questions stay open: she can start them from the plan, and
-       nothing is lost. Either button replaces this page, so back never
-       returns to a confirmed schedule. */
+   one button, "See my plan" (/plan?walk=1), replacing this page so back
+   never returns to a confirmed schedule. The health profile, flourishing
+   and sleep questions no longer follow here: she answered them in the free
+   app before her plan was priced (5 Nov 2026 call). */
 
 const native = Platform.OS !== "web"
 
@@ -64,8 +60,7 @@ export default function ScheduleConfirmedScreen() {
   const tests = chosenTests(onboarding.startingTests?.ids ?? onboarding.baselinePicks)
   const count = tests.length
 
-  const chat = () => router.replace("/health-profile")
-  const later = () => router.replace("/plan?walk=1")
+  const plan = () => router.replace("/plan?walk=1")
 
   const rise = (i: number) => ({
     opacity: t.rise[i],
@@ -139,14 +134,9 @@ export default function ScheduleConfirmedScreen() {
       </ScrollView>
       <Animated.View style={rise(2)}>
         <PageFooter style={styles.footer}>
-          <Button onPress={chat} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
-            Personalize my care
+          <Button onPress={plan} trailing={({ color: c }) => <CaretRight size={16} weight="bold" color={c} />}>
+            See my plan
           </Button>
-          <View style={styles.later}>
-            <TextAction tone="muted" onPress={later}>
-              I’ll do this later
-            </TextAction>
-          </View>
         </PageFooter>
       </Animated.View>
     </View>
@@ -159,7 +149,6 @@ const styles = StyleSheet.create({
   washSvg: { width: "100%", height: "100%" },
   body: { flexGrow: 1, justifyContent: "center", paddingHorizontal: space.gutter, paddingBottom: space.section, gap: space.item },
   footer: { backgroundColor: "transparent", borderTopWidth: 0, paddingTop: 0 },
-  later: { alignItems: "center", paddingTop: space.stack },
   head: { alignItems: "center", gap: space.item },
   halo: {
     width: BADGE + 20,
